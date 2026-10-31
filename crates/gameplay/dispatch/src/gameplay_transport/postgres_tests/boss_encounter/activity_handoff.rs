@@ -262,15 +262,38 @@ pub(super) async fn qualify_activity_provenance(
     assert_eq!(participant_binding(h, admitted).await?, original);
     let writable: bool = sqlx::query_scalar(
         "SELECT has_table_privilege('oteryn_game_runtime', \
-        'game_activity_handoff_groups','INSERT') OR has_table_privilege('oteryn_game_runtime', \
+        'game_activity_handoff_groups','INSERT') AND has_table_privilege('oteryn_game_runtime', \
         'game_activity_handoff_participants','INSERT')",
     )
     .fetch_one(&h.pool)
     .await?;
+    // W02 coordinator ANSWER A installs the full grouped handoff writer in
+    // 0628. INSERT admits only its proven immutable provenance; it still cannot
+    // allocate a scope or erase either history. All probes above remain refused.
     assert!(
-        !writable,
-        "unqualified runtime received activity write authority"
+        writable,
+        "qualified activity writer lacks provenance INSERT"
     );
+    for table in [
+        "game_activity_handoff_groups",
+        "game_activity_handoff_participants",
+        "game_control_activity_scope_grants",
+        "game_runtime_scope_assignments",
+    ] {
+        let destructive: bool = sqlx::query_scalar(
+            "SELECT has_table_privilege('oteryn_game_runtime',$1,'DELETE,TRUNCATE,TRIGGER')",
+        )
+        .bind(table)
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            !destructive,
+            "runtime can destroy activity authority/history: {table}"
+        );
+    }
+    let grants: bool = sqlx::query_scalar("SELECT has_table_privilege('oteryn_game_runtime','game_control_activity_scope_grants','INSERT,UPDATE')")
+        .fetch_one(&h.pool).await?;
+    assert!(!grants, "runtime must not allocate its own activity scopes");
     concurrency::qualify_source_reservations(h, admitted).await?;
     Ok(())
 }

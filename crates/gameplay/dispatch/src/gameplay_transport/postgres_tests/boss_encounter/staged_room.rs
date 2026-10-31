@@ -1,4 +1,4 @@
-//! Staged storage/refusal qualification; this does not qualify successful Instance gameplay.
+//! Unqualified-content refusal remains covered alongside the accepted W02 writer privileges.
 use super::*;
 
 #[test]
@@ -11,8 +11,9 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
         .spawn(|| {
             run(async |admin| {
                 reset();
-                let h = Harness::create_with_admission_seed(admin, "boss_lever_staged", true, false)
-                    .await?;
+                let h =
+                    Harness::create_with_admission_seed(admin, "boss_lever_staged", true, false)
+                        .await?;
                 prepare_current_session(&h).await?;
                 eprintln!("Canonical PostgreSQL 18.6: staged boss lever dispatch refusal");
                 for table in [
@@ -36,7 +37,18 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                         .bind(privilege)
                         .fetch_one(&h.pool)
                         .await?;
-                        assert!(!writable, "staged table grants {privilege}: {table}");
+                        // W02 coordinator ANSWER A installs the complete fenced
+                        // writer in 0628. Only its activity/member INSERT is now
+                        // admitted; content, rewards and destructive rights are unchanged.
+                        let expected = privilege == "INSERT"
+                            && matches!(
+                                table,
+                                "game_boss_room_activities" | "game_boss_room_participants"
+                            );
+                        assert_eq!(
+                            writable, expected,
+                            "unexpected table privilege {privilege}: {table}"
+                        );
                     }
                 }
                 let deps = Dependencies::new()?;
@@ -50,7 +62,11 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                 .0;
                 admitted.item_fence = item_fence_of(current);
                 let seal = h.recovery.seal_current().map_err(debug)?;
-                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
                 let owner = deps.owner(&h, &authority);
                 deps.initialize(&owner).await;
                 owner

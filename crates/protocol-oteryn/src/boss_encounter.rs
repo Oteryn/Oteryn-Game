@@ -15,7 +15,70 @@ pub const COOLDOWN_PAGE_SIZE: usize = 64;
 pub const MAX_QUERY_BYTES: usize = 515;
 pub const MAX_RESULT_BYTES: usize = 34_400;
 pub const REWARD_CHEST_PAGE_SIZE: usize = 64;
+pub const MAX_REWARD_CHEST_QUERY_BYTES: usize = 18;
 pub const BOSS_REWARD_EXPIRY_MS: u64 = 7 * 24 * 60 * 60 * 1_000;
+
+/// Empty remains the legacy first page. Capability 224 adds the last returned
+/// death id as strict protobuf field 1; the server resolves its retained order.
+pub fn decode_reward_chest_query(payload: &[u8]) -> Result<Option<[u8; 16]>, Error> {
+    if payload.is_empty() {
+        return Ok(None);
+    }
+    if payload.len() > MAX_REWARD_CHEST_QUERY_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    if payload.len() != MAX_REWARD_CHEST_QUERY_BYTES || payload[..2] != [10, 16] {
+        return Err(Error::Malformed);
+    }
+    let death: [u8; 16] = payload[2..].try_into().map_err(|_| Error::Malformed)?;
+    if death == [0; 16] {
+        return Err(Error::Malformed);
+    }
+    Ok(Some(death))
+}
+
+pub fn encode_reward_chest_query(after: Option<[u8; 16]>) -> Result<Vec<u8>, Error> {
+    let mut out = Vec::new();
+    if let Some(death) = after {
+        if death == [0; 16] {
+            return Err(Error::Malformed);
+        }
+        push_message_field(&mut out, 1, &death);
+    }
+    Ok(out)
+}
+
+#[cfg(test)]
+mod reward_chest_query_tests {
+    use super::*;
+
+    #[test]
+    fn reward_group_cursor_preserves_legacy_empty_and_refuses_malformed_forms() -> Result<(), Error>
+    {
+        assert_eq!(encode_reward_chest_query(None)?, Vec::<u8>::new());
+        assert_eq!(decode_reward_chest_query(&[])?, None);
+        let bytes = encode_reward_chest_query(Some([7; 16]))?;
+        assert_eq!(bytes.len(), MAX_REWARD_CHEST_QUERY_BYTES);
+        assert_eq!(decode_reward_chest_query(&bytes)?, Some([7; 16]));
+        for end in 1..bytes.len() {
+            assert!(decode_reward_chest_query(&bytes[..end]).is_err());
+        }
+        let mut wrong_field = bytes.clone();
+        wrong_field[0] = 18;
+        assert!(decode_reward_chest_query(&wrong_field).is_err());
+        let mut trailing = bytes.clone();
+        trailing.push(0);
+        assert!(decode_reward_chest_query(&trailing).is_err());
+        let mut repeated = bytes.clone();
+        repeated.extend_from_slice(&bytes);
+        assert!(decode_reward_chest_query(&repeated).is_err());
+        let mut zero = bytes;
+        zero[2..].fill(0);
+        assert!(decode_reward_chest_query(&zero).is_err());
+        assert!(encode_reward_chest_query(Some([0; 16])).is_err());
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BossCooldownEntry {
@@ -76,9 +139,13 @@ pub fn encode_reward_chest(
     Ok(out)
 }
 
-// Reserved wire proposals; no production activity owner exists yet.
+// Activity intent/outcome codecs; admission authority remains with the native owner.
 #[path = "boss_encounter_staged.rs"]
 mod staged;
+pub use staged::{
+    BossActivityRefusal, BossActivityReply, BossLeverRequest, decode_boss_activity_reply,
+    decode_boss_key, encode_boss_activity_reply, encode_boss_key, encode_instance_receipt,
+};
 
 /// An empty cursor starts a list; subsequent cursors are the last key of a full page.
 /// Unknown/repeated fields, invalid keys and oversized requests fail closed.

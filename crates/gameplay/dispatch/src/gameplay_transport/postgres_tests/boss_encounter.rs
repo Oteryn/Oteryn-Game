@@ -288,7 +288,10 @@ async fn qualify_fence_changes(
         // fact unchanged. Each disposable database gets exactly one monotonic
         // history fault, with no history rewrite or high-water/completeness reset.
         if !matches!(history_probe, HistoryProbe::None) {
-            let excluded_session_fields: &[&str] = if matches!(history_probe, HistoryProbe::FreshOriginUnlinked) {
+            let excluded_session_fields: &[&str] = if matches!(
+                history_probe,
+                HistoryProbe::FreshOriginUnlinked
+            ) {
                 // Exercise the same-session retained-origin shape too. This is
                 // an administrative projection control, not a committed loss or
                 // reconnect. Its live participant and transport stay unchanged.
@@ -1001,14 +1004,90 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         // REWARDCHEST2: command 340 traverses serve_admitted, the production router and the
         // current-session durability proof. Continue the same command stream after the
         // cooldown checks; command IDs are shared across command types.
-        let minted: i64 = sqlx::query_scalar(
-            "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        sqlx::query("INSERT INTO game_character_boss_reward_chests(character_id,world_id,death_id,boss_key,minted_at,expires_at,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'oteryn:boss.fixture',$4,$4+604800000,2)")
-            .bind(fence.character_id.as_bytes().as_slice()).bind(admitted.world_id.as_bytes().as_slice())
-            .bind(characters::sid(90, 4).as_slice()).bind(minted).execute(&h.pool).await?;
+        let minted: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+                .fetch_one(&h.pool)
+                .await?;
+        use crate::durability::boss_encounter::reward_chest::{
+            BossRewardChestPlan, BossRewardContributor, BossRewardDeath, BossRewardItem,
+        };
+        let contribution = oteryn_gameplay_encounter_rules::boss::RewardParticipation {
+            damage_dealt: 1,
+            damage_received: 0,
+            healing_others: 0,
+        };
+        // W03 keeps empty reward receipts as immutable history. A full page of older,
+        // valid but empty groups must not hide the later group that still contains Items.
+        for ordinal in 0..REWARD_CHEST_PAGE_SIZE {
+            let mut empty_death = characters::sid(91, 4);
+            empty_death[15] = u8::try_from(ordinal)?;
+            assert!(
+                h.root
+                    .settle_boss_reward_chests(
+                        &authority,
+                        &h.node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        BossRewardDeath {
+                            death: empty_death,
+                            boss_key: "oteryn:boss.empty_fixture".into(),
+                            minted_at_unix_ms: u64::try_from(minted - 1)?,
+                            contributors: vec![BossRewardContributor {
+                                character_id: fence.character_id,
+                                session_id: fence.game_session_id,
+                                lease_generation: fence.character_lease_generation,
+                                contribution
+                            }],
+                            chests: vec![BossRewardChestPlan {
+                                character_id: fence.character_id,
+                                session_id: fence.game_session_id,
+                                lease_generation: fence.character_lease_generation,
+                                contribution,
+                                items: vec![]
+                            }],
+                        }
+                    )
+                    .await?
+            );
+        }
+        assert!(
+            h.root
+                .settle_boss_reward_chests(
+                    &authority,
+                    &h.node,
+                    fence.runtime_scope,
+                    fence.scope_ownership_generation,
+                    BossRewardDeath {
+                        death: characters::sid(90, 4),
+                        boss_key: "oteryn:boss.fixture".into(),
+                        minted_at_unix_ms: u64::try_from(minted)?,
+                        contributors: vec![BossRewardContributor {
+                            character_id: fence.character_id,
+                            session_id: fence.game_session_id,
+                            lease_generation: fence.character_lease_generation,
+                            contribution
+                        }],
+                        chests: vec![BossRewardChestPlan {
+                            character_id: fence.character_id,
+                            session_id: fence.game_session_id,
+                            lease_generation: fence.character_lease_generation,
+                            contribution,
+                            items: vec![
+                                BossRewardItem {
+                                    definition: crate::durability::item_mint::TypedDefinitionRef {
+                                        family: "Item".into(),
+                                        production_key: "oteryn:item.tibia.i3031".into(),
+                                        revision_ref: "definition-r1".into(),
+                                    },
+                                    quantity: 1
+                                };
+                                2
+                            ]
+                        }],
+                    }
+                )
+                .await?
+        );
         let reward_command_id = admitted.continuity.next_command_id;
         let (status, rewards) = exchange_kind(
             &owner,
@@ -1019,7 +1098,11 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         )
         .await?;
         assert_eq!(status, CommandStatus::Accepted);
-        assert!(rewards.windows(16).any(|bytes| bytes == characters::sid(90, 4)));
+        assert!(
+            rewards
+                .windows(16)
+                .any(|bytes| bytes == characters::sid(90, 4))
+        );
         assert_eq!(admitted.continuity.next_command_id, reward_command_id + 1);
         use crate::gameplay_transport::guild_intent::GuildReply;
         assert!(matches!(

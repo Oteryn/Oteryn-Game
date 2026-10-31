@@ -1,0 +1,17 @@
+{
+  "id": 99,
+  "name": "ACTIVITY_SCOPE",
+  "owner_decision": "W02 owner allocation, PR #2769 ANSWER 6543120139, 2026-10-31",
+  "owner": "Activity runtime and session handoff",
+  "capability": 117,
+  "revision": "One source-session StateSnapshot barrier per committed handoff, before sequence-one full destination snapshots.",
+  "delta_types": [],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "ACTIVITY_SCOPE_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/activity-scope-v1.md#snapshot",
+      "max_payload_bytes": 2048
+    }
+  ]
+}
