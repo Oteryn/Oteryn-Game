@@ -475,7 +475,11 @@ impl DurabilityRoot {
                                 ItemUseKind::PickRefine { .. } => {
                                     Some(item_use_achievement::PETROLOGIST)
                                 }
-                                ItemUseKind::Food | ItemUseKind::MountTaming => None,
+                                ItemUseKind::Food
+                                | ItemUseKind::MountTaming
+                                | ItemUseKind::ProficiencyCatalyst
+                                | ItemUseKind::ProficiencyOrb
+                                | ItemUseKind::Concoction => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(
