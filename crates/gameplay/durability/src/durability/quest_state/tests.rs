@@ -12,6 +12,17 @@ fn quest_door_storage_uses_the_durable_track_and_absence_is_minus_one() {
     assert!(copy.meets_door_storage(4500));
 }
 
+#[test]
+fn m06q_quest_door_resolves_the_named_durable_quest_track() {
+    let mut copy = QuestStateCopy::default();
+    let track = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/banshee_door";
+    assert!(!copy.meets_door_storage(10089));
+    copy.tracks.insert(track.into(), -1);
+    assert!(!copy.meets_door_storage(10089));
+    copy.tracks.insert(track.into(), 0);
+    assert!(copy.meets_door_storage(10089));
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [tag, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }

@@ -1,4 +1,4 @@
-"""Qualify the seven original Monk rewards through the existing native Item importer."""
+"""Qualify Amber and the seven original Monk rewards through the native Item importer."""
 import argparse
 import copy
 import hashlib
@@ -12,7 +12,7 @@ import build_source_item_profiles as source
 from build_spell_item_identities import XML_SHA, CRYSTAL_PIN
 
 PATH = 'tools/content-schema/native-gameplay/monk-reward-profiles.json'
-IDS = (50267, 50268, 50269, 50271, 50272, 50273, 50274)
+IDS = (50239, 50267, 50268, 50269, 50271, 50272, 50273, 50274)
 
 
 def capture(canary, crystal):
@@ -57,6 +57,10 @@ def capture(canary, crystal):
             if existing[group]['state'] == 'KNOWN' and (row['semantics'][group]['state'] == 'UNKNOWN'
                     or group in ('protection', 'skill_modifiers', 'imbuement')):
                 row['semantics'][group] = copy.deepcopy(existing[group])
+        if item == 50239:
+            # Global reduced Amber's attack to 44; retain that qualified stat over
+            # the older donor's 46 (historical wiki frame revision 1177239).
+            row['semantics']['weapon']['value']['attack'] = copy.deepcopy(existing['weapon']['value']['attack'])
         records.append(row)
     bound = source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records}, bindings, set(IDS))
     return {'schema':'OTERYN_NATIVE_MONK_REWARD_PROFILES/v1',

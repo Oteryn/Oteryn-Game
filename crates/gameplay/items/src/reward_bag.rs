@@ -54,6 +54,37 @@ pub fn reward_bag_draw(game_session_id: [u8; 16], command_id: u64, source: [u8; 
     u64::from_be_bytes(first)
 }
 
+/// Deterministic unbiased draw in `0..upper`; rejection avoids modulo bias.
+pub fn reward_bag_bounded_draw(
+    game_session_id: [u8; 16],
+    command_id: u64,
+    source: [u8; 16],
+    domain: u8,
+    upper: u64,
+) -> Option<u64> {
+    if upper == 0 {
+        return None;
+    }
+    let zone = u64::MAX - u64::MAX % upper;
+    for counter in 0_u32..=u32::MAX {
+        let mut hasher = Sha256::new();
+        hasher.update(DRAW_TAG);
+        hasher.update(game_session_id);
+        hasher.update(command_id.to_be_bytes());
+        hasher.update(source);
+        hasher.update([domain]);
+        hasher.update(counter.to_be_bytes());
+        let digest = hasher.finalize();
+        let mut first = [0_u8; 8];
+        first.copy_from_slice(&digest[..8]);
+        let value = u64::from_be_bytes(first);
+        if value < zone {
+            return Some(value % upper);
+        }
+    }
+    None
+}
+
 /// Canary `selectReward`: the first reward whose cumulative weight exceeds the roll.
 pub fn select_reward(rewards: &[Reward], draw: u64) -> Option<&Reward> {
     let total = rewards
@@ -105,6 +136,22 @@ fn playable_bag<'a>(bags: &'a [RewardBag], key: &str) -> Option<&'a RewardBag> {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bounded_draw_rejects_tail_and_preserves_seeded_domains() {
+        let draw = |upper| reward_bag_bounded_draw([1; 16], 7, [2; 16], 3, upper);
+        assert_eq!(draw(0), None);
+        assert_eq!(draw(1), Some(0));
+        assert_eq!(draw(98), Some(29));
+        assert_eq!(draw(10_000), Some(4437));
+        assert_eq!(draw(420), Some(197));
+        // This seed rejects counters 0 and 1, then accepts counter 2.
+        assert_eq!(draw((1 << 63) + 1), Some(845_863_996_175_274_660));
+        assert_ne!(
+            draw(10_000),
+            reward_bag_bounded_draw([1; 16], 7, [2; 16], 2, 10_000)
+        );
+    }
 
     fn reward(weight: u64) -> Reward {
         Reward {
