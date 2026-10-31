@@ -147,14 +147,15 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             .await
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                world,
-                Some(include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-                ))),
-            );
+        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+            world,
+            "content-1",
+            Some(include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            ))),
+        )?;
+        super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
         let room = pin.qualified_room().clone();
         let start = room.entry_start();
         let channel_pin = ChannelContentPin::from_activation(
@@ -230,7 +231,10 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
         if !matches!(transition, Some(WheelExtensionCase::Capacity)) {
             atelier_fixture::higher_level(&h).await?;
         }
-        // Initialize the actual actor from Character-owned cast facts, as admission does.
+        super::tutorial_vitals_fixture::native_asset_revisions(
+            &h, controller.active().ok_or("active native Wheel generation")?,
+        ).await?;
+        // The actual first-entry owner initializes equipment, build, vitals and access.
         let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } =
             crate::gameplay_transport::load_character_cast_facts(
                 &h.root,
@@ -246,40 +250,12 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             crate::spell::Vocation::Sorcerer,
             "permanent promotion does not rewrite the Character's base vocation"
         );
-        {
-            let mut runtime = deps.runtime.lock().await;
-            runtime
-                .initialize_first_entry_position(deps.actor)
-                .map_err(debug)?;
-            runtime
-                .bind_attacker_lease(
-                    deps.actor,
-                    session,
-                    crate::foundation::CharacterLease::new(
-                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                            .map_err(debug)?,
-                        fence.character_lease_generation,
-                    )
-                    .map_err(debug)?,
-                )
-                .map_err(debug)?;
-            assert!(
-                owner
-                    .states
-                    .spell_states
-                    .lock()
-                    .await
-                    .initialize(
-                        &runtime,
-                        deps.actor,
-                        session,
-                        facts,
-                        (0, 0),
-                        owner.owner_now()
-                    )
-                    .is_some()
-            );
-        }
+        super::tutorial_vitals_fixture::admit(&owner, &deps, &admission_request).await?;
+        assert!(
+            owner.refresh_and_apply_spell_access(deps.actor, session).await
+                .premium_gate().premium_current(),
+            "native admission must qualify current SQL content, equipment, promotion and Premium"
+        );
         // A session without an allocation must not compete with death reconciliation for
         // the root's single holder. No durable read may even request a replacement holder.
         h.root.maintain_ready_once().await?;

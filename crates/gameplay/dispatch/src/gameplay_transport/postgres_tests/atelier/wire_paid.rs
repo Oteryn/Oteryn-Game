@@ -90,31 +90,6 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
     .await?)
 }
 
-async fn native_asset_revisions(
-    h: &Harness,
-    active: &crate::content::ActiveGeneration,
-) -> TestResult {
-    let index = active.native_gameplay().and_then(|native| native.item_index())
-        .ok_or("native Item index")?;
-    // Fixture-only seed normalization. Every tested transition then runs with the
-    // ordinary restricted runtime role and the admitted native content generation.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx).await?;
-    let rows: Vec<(String, String)> = sqlx::query_as(
-        "SELECT item_instance_id::text,definition_production_key FROM game_item_instances \
-         WHERE world_id=encode($1,'hex')::uuid AND lifecycle=1 ORDER BY item_instance_id LIMIT 100",
-    ).bind(id(42).as_slice()).fetch_all(&mut *tx).await?;
-    assert!(rows.len() < 100, "fixture assets fit the bounded seed");
-    for (item, key) in rows {
-        let revision = index.revision(&key).ok_or("native seeded item")?;
-        sqlx::query("UPDATE game_item_instances SET definition_revision_ref=$2 WHERE item_instance_id=$1::uuid")
-            .bind(item).bind(revision).execute(&mut *tx).await?;
-    }
-    tx.commit().await?;
-    Ok(())
-}
-
 async fn nest_lesser_gems(h: &Harness) -> TestResult {
     // Fixture custody only: the actual command below uses the restricted runtime
     // role. Copy the admitted backpack definition so this is a real native bag.
@@ -191,13 +166,14 @@ async fn scope_footprint(h: &Harness) -> TestResult<serde_json::Value> {
 fn scenario(case: Case) -> TestResult {
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "atelier_paid_wire", true, false).await?;
-        prepare_current_session(&h).await?;
+        let admission_request = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (generation, pin) = super::super::death_ml_loss_composed::production_generation_with_pin(
             world, "content-1",
         )?;
+        super::super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
         let room = pin.qualified_room().clone();
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(
@@ -237,23 +213,10 @@ fn scenario(case: Case) -> TestResult {
             .await.map_err(debug)?;
         assert!(matches!(promoted, PurchaseOutcome::Committed(_)));
         fixture::paid_assets(&h).await?;
-        native_asset_revisions(&h, generation.active().ok_or("active native generation")?).await?;
-        let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } =
-            crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, fence.character_id).await
-        else { return Err("cast facts".into()); };
-        {
-            let mut runtime = deps.runtime.lock().await;
-            runtime.initialize_first_entry_position(deps.actor).map_err(debug)?;
-            runtime.bind_attacker_lease(
-                deps.actor, session, crate::foundation::CharacterLease::new(
-                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-                    fence.character_lease_generation,
-                ).map_err(debug)?,
-            ).map_err(debug)?;
-            assert!(owner.states.spell_states.lock().await.initialize(
-                &runtime, deps.actor, session, facts, (0, 0), owner.owner_now(),
-            ).is_some());
-        }
+        super::super::tutorial_vitals_fixture::native_asset_revisions(
+            &h, generation.active().ok_or("active native generation")?,
+        ).await?;
+        super::super::tutorial_vitals_fixture::admit(&owner, &deps, &admission_request).await?;
         owner.admit_wheel_session(session).await;
         let (current, _) = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session).await?;
@@ -394,7 +357,15 @@ fn scenario(case: Case) -> TestResult {
         restarted.wheel_ruleset = Some(ruleset);
         restarted.premium_coordinator = Some(&gate);
         restarted.admit_premium(id(40), session);
+        super::super::tutorial_vitals_fixture::admit(&restarted, &deps, &admission_request).await?;
         restarted.admit_wheel_session(session).await;
+        // A reconstructed Channel owner has a new command stream. Retaining the
+        // old CommandId without its session-owned high-water correctly fails closed;
+        // the durable Atelier occurrence below remains the same across this reload.
+        admitted.continuity = crate::gameplay_transport::connection::SessionContinuity::FRESH;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            restarted.offered_capabilities(), &[wire::CAPABILITY_WHEEL_ALLOCATION_V1],
+        ).ok_or("reloaded Wheel capability")?;
         assert_eq!(query(&restarted, &mut admitted).await?, current);
         assert_eq!(send_atelier(&restarted, &mut admitted, wire::COMMAND_TYPE_ATELIER_MUTATE, &payload).await?, reply_bytes);
         assert_eq!(footprint(&h).await?, unchanged);
