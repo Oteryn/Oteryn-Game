@@ -56,6 +56,16 @@ def build(checkout):
     # The action installs 1000 charges on every non-ammunition result (enchanting.lua:126-133).
     weapons = set(range(660, 675)) | set(range(679, 694)) | set(range(779, 799)) | set(range(801, 811))
     for item, record in zip(sorted(IDS), records):
+        # Crystal items.xml:22162: carry speed through the ItemAbility::Speed modifier.
+        speed = record['attributes']['speed_bonus']
+        if speed:
+            record['semantics']['skill_modifiers'] = native.K({'modifiers': native.K([{
+                'kind': 'SPEED',
+                'parameter': native.K({'kind': 'SIGNED_POINTS', 'value': speed}),
+                'evaluation_phase': native.U,
+                'priority': native.U,
+                'target_domain': native.U,
+            }])})
         if item in weapons:
             record['semantics']['charges'] = native.K({'count': native.K(1000)})
         if item in weapons | {761, 762, 763, 774, 8078, 8079, 8080, 8081}:

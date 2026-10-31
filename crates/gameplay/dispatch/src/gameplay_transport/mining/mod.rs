@@ -37,7 +37,10 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
     match target {
         Some(Some(ItemKey::Instance(_))) => {
             let result = dispatch(authority, actor, command, intent.clone(), view).await?;
-            if result.disposition == UseDisposition::NothingToUse {
+            // Shrine enchanting resolves only a handle source; a definition-sourced use keeps the pick's NothingToUse.
+            if result.disposition == UseDisposition::NothingToUse
+                && matches!(intent.target, UseTarget::Item(_))
+            {
                 super::item_craft::dispatch(authority, actor, command, intent, view).await
             } else {
                 Some(result)

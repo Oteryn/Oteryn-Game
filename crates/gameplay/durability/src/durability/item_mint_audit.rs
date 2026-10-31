@@ -1989,9 +1989,10 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
                 "crates/gameplay/durability/src/durability/consume_transform.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
-                "crates/gameplay/durability/src/durability/item_craft.rs",
                 // GEMX I19: shrine enchanting writes its outbox row from its Type2Transaction.
+                // production_sources() yields the item_craft/ directory before item_craft.rs.
                 "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
+                "crates/gameplay/durability/src/durability/item_craft.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
