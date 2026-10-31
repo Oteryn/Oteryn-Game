@@ -134,6 +134,22 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             let mut filled = entry(2874);
             filled["subtype"] = json!(1);
             table["entries"] = json!([filled, entry(2874)]);
+            // The vial is not materializable content loot (no Crystal monster drops one by
+            // sub-type), so this case admits it to the loot facts as it admits the table.
+            let vial = section["items"]
+                .as_array_mut()
+                .ok_or("items")?
+                .iter_mut()
+                .find(|row| row["item"]["key"] == "oteryn:item.tibia.i2874");
+            match vial {
+                Some(row) => row["materializable"] = json!(true),
+                None => section["items"].as_array_mut().ok_or("items")?.push(json!({
+                    "container_capacity": null,
+                    "item": {"family":"Item", "key":"oteryn:item.tibia.i2874",
+                        "revision":"definition-r1"},
+                    "materializable": true
+                })),
+            }
         }
         Case::BoostedBossUnique => {
             let mut amulet = entry(3081);
