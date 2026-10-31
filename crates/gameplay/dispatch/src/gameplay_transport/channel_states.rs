@@ -16,6 +16,8 @@ pub struct ChannelSessionStates {
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,
+    /// Shared activity owner installed by the boss instance composition root.
+    pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.

@@ -1082,6 +1082,7 @@ mod tests {
             &[],
             actor,
             &application,
+            0,
         )
         .unwrap();
         let state = states.get(&runtime, actor, session).unwrap();

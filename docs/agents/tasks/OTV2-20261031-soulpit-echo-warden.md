@@ -5,29 +5,33 @@ task_id: OTV2-20261031-soulpit-echo-warden
 title: Soulpit encounters and Echo Warden parity
 type: mechanic
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/soulpit
-pr: null
+pr: 2768
 base_sha: a52549e3b9230c7486a24df66f4e8ec59d1f96cb
-head_sha: null
+head_sha: 29017dd35ffec5f7a655204c32a20467694af60d
 final_head_sha: null
 final_head_frozen_at: null
 owner: soulpit-lead
 created_at: 2026-10-31T12:00:00Z
-updated_at: 2026-10-31T12:00:00Z
+updated_at: 2026-10-31T18:48:34Z
 execution_policy: continuous_progress
 owned_paths:
-  - crates/gameplay/domain/src/domain/soulpit.rs
-  - crates/gameplay/domain/src/domain/echo_warden.rs
+  - crates/gameplay/domain/src/domain/soulpit
+  - crates/gameplay/domain/src/domain/echo_warden
   - crates/gameplay/dispatch/src/gameplay_transport/soulpit
   - crates/gameplay/dispatch/src/gameplay_transport/echo_warden
   - crates/gameplay/durability/src/durability/soulpit
-  - crates/gameplay/durability/src/durability/charm_state
-  - apps/game-server/migrations/0652-0655
+  - crates/gameplay/durability/src/durability/item_craft/soulpit
+  - crates/gameplay/durability/src/durability/charm_state/echo_warden.rs
+  - crates/gameplay/entities/src/carrier/soulpit
+  - crates/gameplay/entities/src/carrier/echo_warden
+  - apps/game-server/migrations/0652-0654
 public_contracts: []
-depends_on: []
+depends_on:
+  - Oteryn/Oteryn-Game#2769
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -35,73 +39,147 @@ external_repositories: []
 
 ## Outcome
 
-Implement W07 Soulpit and the confirmed Global W06 Echo Warden mechanic through
-the existing native rules, dispatch, custody, session fences and charm owners.
-The initial commit opens the requested draft PR and its coordinator question
-channel; it does not claim any playable implementation or passing Rust tests.
+Native W07 Soulpit and W06 Echo Warden rules, runtime consumers, custody,
+durable receipts and regression cases are implemented in draft
+[PR #2768](https://github.com/Oteryn/Oteryn-Game/pull/2768).
+The shared destination Instance admission and return adapter belong to
+#2769. This task does not claim a playable admitted Soulpit lifecycle until
+the coordinator packages and qualifies both PRs.
+
+The resumed work preserves the original qualified base and all existing local
+implementation. There is no merge from main, second encounter owner, new
+wire command, capability, protocol projection or protected identity admission.
 
 ## Architecture and source of truth
 
-- PROVEN: starting main is `a52549e3b9230c7486a24df66f4e8ec59d1f96cb`.
-- PROVEN: the task pins Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
-- PROVEN: official Echo Raids announcement: https://www.tibia.com/news/?id=8834&subtopic=newsarchive.
+- PROVEN: qualification base is `a52549e3b9230c7486a24df66f4e8ec59d1f96cb`;
+  resumed published task head is `29017dd35ffec5f7a655204c32a20467694af60d`.
+- PROVEN: the primary task authority is Crystal
+  `201189f871d23597b82caf88fd611454a2ddefb8` (OTS_HYPOTHESIS_ONLY).
+  Donor-specific rules are not presented as proof of retail parity.
+- PROVEN: official Echo Raids/Echo Warden announcement (2026-06-11):
+  https://www.tibia.com/news/?id=8834&subtopic=newsarchive.
+  The official Summer Update release (2026-07-13) confirms the feature shipped:
+  https://www.tibia.com/news/?id=8845&subtopic=newsarchive.
 - PROVEN: bound organization policy is version 3.1.0 at
   `Oteryn/Oteryn@1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
-- UNKNOWN: the shared encounter handoff sufficient for Soulpit; inspect the
-  accepted instance owners and ask the coordinator if a new handoff is needed.
-- Separate mechanical rules from runtime authority. WorldId and ChannelId
-  remain distinct; mutations require live session-generation evidence.
+- PROVEN: ANSWER6542715454/6542791914 select BossActivityHandoff #2769.
+  Core debit, encounter receipt and shared handoff must commit in one borrowed
+  Type2Transaction. Missing legitimate destination admission fails closed.
+- WorldId and ChannelId remain distinct. Mutations use the current actor,
+  world/channel and session-generation fences; client input cannot assert
+  creature deaths, random outcomes or rewards.
 
-## High-risk authority/recovery qualification
+## Implementation
 
-Applicable: item consume/mint, encounter transitions and charm rewards.
-Required negative cases: mismatched character/world/channel/session, stale
-generation, replay with different intent, duplicate transition, interrupted
-fight, concurrent same-species reward and terminal replay. Each refusal must
-preserve prior custody and balances. The production runtime, not client input,
-supplies creature deaths, random draws and encounter outcomes.
+Soulpit has four seven-creature waves, source cadence, stack modifiers,
+runtime summon inheritance, saved Hex effects, survivor reward, terminal
+cleanup and recovery boundaries. The shared owner supplies actual Instance
+admission and retained successor evidence after session replacement.
 
-## Acceptance criteria
+Core, Prism and Exalted Core actions use existing custody, CRAFT audit,
+container/ground delivery and immutable replay receipts. Fusion preserves
+all 835 source choices. Conversion and drops use the complete pinned source
+Bestiary, without narrowing draws to currently admitted native creatures.
+The source capture contains 1,875 registered names and 819 Bestiary candidates;
+its canonical roster digest is
+`27cfcbf31352d07df650e93e6141c179c706bf13f68b54d899e67a4f9eb47f02`.
 
-- [ ] Four Soulpit waves, stack modifiers, entry/exit and terminal paths.
-- [ ] Durable fenced core, prism and exalted-core custody with replay receipts.
-- [ ] Echo death trigger, delayed portal, raid and first-species charm reward.
-- [ ] Existing server consumers read the committed encounter state.
-- [ ] Focused rule tests and real dispatch PostgreSQL transition cases.
-- [ ] Required formatting, clippy, registry and architecture checks.
-- [ ] Exact command results and open decisions recorded in the draft PR.
+Echo uses source kill eligibility, delayed portal and raid rules. Its runtime
+retains exact damage-participant sessions and passes first-species awards to
+the existing charm balance owner; custody produces the real scroll item.
+The narrow approved Forge integration uses the already scaled current
+maximum for Echo Minions, fills only on first admission and preserves ordinary
+Forge behavior (ANSWER6543746857).
+
+The existing Animus mastery owner now exposes `complete_in_transaction`.
+Standalone completion retains its existing checks and ledger. Soulpit calls
+the same helper inside the survivor completion transaction; no W08 rules,
+XP percentage, UI or parallel mastery ledger are introduced
+(ANSWER6543750439).
+
+Migrations 0652-0654 add encounter/event/survivor receipts, core craft proof
+and Echo reward receipts. Runtime-only grants, pinned search paths,
+deferred proof checks and immutable receipts retain the existing authority
+boundaries. Content manifests and pins are generated by repository tools.
 
 ## Reference parity
 
-| Behaviour | Reference | Oteryn | Test |
-|---|---|---|---|
-| Soulpit waves and stacks | Crystal lib/others/soulpit.lua and quests/soulpit/soulpit_fight.lua | Pending | Pending |
-| Core/prism custody | Crystal actions/soulpit and quests/soulpit scripts | Pending | Pending |
-| Echo raid | Crystal lib/core/echo_warden.lua and custom/echo_warden scripts | Pending | Pending |
-| Species charm reward | Crystal src/io/iobestiary.cpp:422-478 | Existing charm owner extension pending | Pending |
+| Behaviour | Pinned donor | Native owner / regression |
+|---|---|---|
+| Four waves and seven creatures | `soulpit.lua`, `soulpit_fight.lua` | domain Soulpit planner; dispatch cadence/runtime; carrier Soulpit tests |
+| Stack HP/attack and stack-40 XP | `monster.cpp:747-750,2341-2348,2672-2676,2752-2757` | carrier modifiers, combat/spell consumers and summon inheritance |
+| Core/Prism/Exalted custody | `items.cpp:215-219`, `game_functions.cpp:323-338`, `soulpit.lua:167-173` | item_craft/soulpit; real client-command PostgreSQL custody/replay case |
+| Survivor mastery | `soulpit_fight.lua:100-105` | shared Animus helper; two full PostgreSQL atomicity cases gated on #2769 |
+| Echo portal and raid | `echo_warden.lua:22-41,203-241` | domain/carrier/dispatch Echo rules and regressions |
+| First-species major charm points 1/2/5/10/15/30 | `iobestiary.cpp:422-478` | existing charm_state owner, real PostgreSQL reward/spend/replay/scroll case |
+| Saved Hex | `game.cpp:7279,7934-7942,8004-8006` | source deltas/refresh/expiry; approved single native buff application against a real Soulpit target |
 
-## Excluded scope
+## Left out / unqualified
 
-Animus Mastery W08 implementation, unrelated boss mechanics, deployment,
-production activation, merge, review requests, heavy-tests labels, vendor,
-workflows, repository protection and the shared re-audit document.
+- **#2769 shared admission, return and positive admitted lifecycle.** Migration
+  0265 preserves the 0247/0074 destination restriction; existing evidence is
+  `postgres_tests/boss_encounter/activity_handoff.rs:173-187,244-258`.
+  Real entry provenance/refusal tests run on this base, but do not prove a
+  successful committed destination admission.
+- **Two real PostgreSQL survivor/Animus cases are NOT_RUN here**, per
+  [ANSWER6543794006](https://github.com/Oteryn/Oteryn-Game/pull/2768#issuecomment-6543794006).
+  Both are fully written: complete four waves, atomically commit terminal
+  event/survivor/Animus and replay without duplicates; or reject a survivor
+  insert after the new Animus row is visible and prove the previous live
+  encounter plus every event/reward row is unchanged. Each names #2769 in
+  its ignore/prerequisite reason. No mock or fabricated committed authority.
+  The coordinator supplies the legitimate destination fixture and runs both
+  when packaging #2768 with #2769.
+- **15 fusion Item gaps:** 47899 and 53142-53155. A selected unadmitted result
+  refuses before consuming inputs; no filtering or redraw (ANSWER6542983549).
+- **22 native entry gaps:** 47588, 47621, 47654, 47691, 47697, 47758, 47773,
+  47976, 47977, 47979, 48034, 48089, 49007, 49033-49037, 49040, 49041, 49162,
+  49163. Entry refuses before debit (ANSWER6543121421).
+- **Purple Butterfly 47490 source-registration gap** is separate from those
+  22 native gaps. An existing Canary native profile does not establish exact
+  Crystal registration; preserve the core and the full draw pools
+  (ANSWER6543672719). Blue Butterfly 47503 uses the explicitly selected
+  canonical `oteryn:creature.blue_butterfly` mapping (ANSWER6542983549).
+- **Approved Hex deviation:** one native composed saved-buff application,
+  rather than Crystal's path-dependent second application. At Hex50 this
+  means 50% natively versus 25% in that source path, before rounding
+  (ANSWER6543595950).
+- **Wave warning VFX and stack icons** stay with the shared presentation
+  owner. No client-visible effect claim or new projection (ANSWER6543504120).
+- **node_boot qualification is NOT_RUN:** no Docker integration in the WSL
+  distribution, no pinned Platform checkout configured, and sudo requires interactive
+  authentication. No machine configuration or access-control bypass.
+- Full W08, unrelated mechanics, production deployment, activation, merge,
+  labels, review requests, vendor/workflow/protection changes and the shared
+  re-audit document remain outside this task.
 
-## Implementation / findings
+There are no unanswered scope questions; all listed exclusions have explicit
+answers or observed environment prerequisites.
 
-AUTHORING. Three workers own disjoint Soulpit rules, Echo rules and durable
-storage; the lead owns dispatch/protocol integration and all publication.
-Migrations 0652-0655, capabilities 236-237, commands 452-455 and mechanic
-ordinals/offer orders 592-595 are reserved by the task and must be checked
-against main and open PRs before use.
+## Validation and publication
 
-## Validation
+Local qualification passed: formatting (including all mounted source files),
+Clippy for all nine changed crates with all targets/features and warnings denied,
+and 3,702 Rust tests/doctests with zero failures. Twenty cases are ignored:
+the only two new ignores are the explicitly approved #2769 atomicity cases.
+All three executable PostgreSQL 18.6 cases completed: client-command crafting,
+entry provenance/refusal, and Echo reward/replay/scroll custody.
 
-Pending. Local cloud network proxy is unavailable and Rust is not installed.
-The authorized PC has Rust and PostgreSQL; use an isolated verification
-checkout and retain exact results. Do not count route-less PostgreSQL cases
-as database execution.
+The nine Python authoring tests, Ruff 0.16.1, exact pinned-source item and
+Bestiary recapture, byte-for-byte JSON/Rust repeatability, full repository
+content regeneration, 123 content integration tests, five content repository
+tests, world pin check, server smoke, registry validation, and 129 governance
+tests passed. The number scanner reports unrelated existing reservations
+624/625 and command 424 shared by #2779/#2771; 0652-0654 remain free on fetched
+main and in the open-PR report, and stay fixed as instructed.
 
-## PR and closeout
+Route-less PostgreSQL tests are not database qualification. The two #2769
+cases and node_boot remain explicitly unqualified regardless of the ordinary
+unit-suite result.
 
-One draft PR against main. Questions use individual `QUESTION:` comments;
-read `ANSWER:` comments before each new step. No merge or reviewer request.
+The final tested SHA, exact commands/results and remaining coordinator
+qualification are recorded in the closing PR #2768 comment and body. No
+release/merge readiness is inferred from this task record. The coordinator
+owns integration with current main and #2769; final-head freeze fields remain
+unset until that qualification.

@@ -1988,6 +1988,10 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/character_forge_dust.rs",
                 "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
+                // Soul Core conversion and the shared-transaction entry debit both bind
+                // their existing CRAFT audit envelope to the caller's Type2 transaction.
+                "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
+                "crates/gameplay/durability/src/durability/item_craft/soulpit.rs",
                 "crates/gameplay/durability/src/durability/item_craft.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",

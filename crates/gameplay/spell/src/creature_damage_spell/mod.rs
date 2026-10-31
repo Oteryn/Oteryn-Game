@@ -2004,15 +2004,36 @@ impl DamageSpellOwner {
             i64::from(source.maximum),
         ))
         .map_err(|_| AttackError::InvalidPlan)?;
-        let source_critical = source
-            .critical
-            .map(|policy| {
-                policy
-                    .draw(&root, id, source.entry_index as u64)
-                    .map_err(|_| AttackError::InvalidPlan)
+        let critical_draw =
+            deterministic_decision_u64(&root, id, "soulpit_overpower", source.entry_index as u64)
+                .map_err(|_| AttackError::InvalidPlan)?;
+        let critical_roll =
+            oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(critical_draw, 1, 100) as u8;
+        let (requested, soulpit_critical) = runtime
+            .encounter_source_damage(proposal.issuer, u64::from(requested), critical_roll)
+            .map_err(|_| AttackError::NumericOverflow)?;
+        let requested = u32::try_from(requested).map_err(|_| AttackError::NumericOverflow)?;
+        let source_critical = if runtime
+            .soulpit_variant(proposal.issuer)
+            .and_then(|tag| tag.boss)
+            .is_some_and(|boss| {
+                boss.ability == oteryn_gameplay_domain::domain::soulpit::BossAbility::Overpower
+            }) {
+            Some(crate::source_critical_baseline::SourceCriticalEvent {
+                critical: soulpit_critical,
+                bonus_basis_points: 2500,
+                qualification: "Crystal201189f.Soulpit.Overpower",
             })
-            .transpose()?;
-        // Source-default critical bonus ZERO: base HP/MP request unchanged. Dynamic boosts/VFX remain qualified gaps.
+        } else {
+            source
+                .critical
+                .map(|policy| {
+                    policy
+                        .draw(&root, id, source.entry_index as u64)
+                        .map_err(|_| AttackError::InvalidPlan)
+                })
+                .transpose()?
+        };
         // Preflight every source/policy/geometry before the first HP mutation. HP commits are
         // independent per target, not a durable all-target transaction. Partial receipts retained.
         let mut prepared = Vec::new();
