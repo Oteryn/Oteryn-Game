@@ -16,6 +16,9 @@ pub enum ProficiencyCause {
     /// PROFICIENCY-1B §4.3: the track line only advances the track's committed revision; the
     /// change is the receipt's one modification line. Only the modification writer uses it.
     PerkModification,
+    /// P08: one Proficiency Catalyst used on the weapon adds progress, as training does. The
+    /// item-use writer composes it with the unit it burns; no other writer uses it.
+    Catalyst,
 }
 
 impl ProficiencyCause {
@@ -25,6 +28,7 @@ impl ProficiencyCause {
             Self::PerkSelection => "perk_selection",
             Self::Migration => "migration",
             Self::PerkModification => "perk_modification",
+            Self::Catalyst => "catalyst",
         }
     }
 
@@ -34,6 +38,7 @@ impl ProficiencyCause {
             "perk_selection" => Self::PerkSelection,
             "migration" => Self::Migration,
             "perk_modification" => Self::PerkModification,
+            "catalyst" => Self::Catalyst,
             _ => return None,
         })
     }
@@ -79,7 +84,9 @@ pub fn legal_change(
     let same_revision = before.2 == after.2;
     let same_progress = before.3 == after.3;
     match cause {
-        ProficiencyCause::Training => after.3 > before.3 && same_revision && before.4 == after.4,
+        ProficiencyCause::Training | ProficiencyCause::Catalyst => {
+            after.3 > before.3 && same_revision && before.4 == after.4
+        }
         ProficiencyCause::PerkSelection => {
             same_progress
                 && same_revision
@@ -210,6 +217,7 @@ pub fn normalize_request_lines<T>(
         || lines.iter().any(|line| line_values(line).0 != cause)
         || (cause == ProficiencyCause::PerkSelection
             && (lines.len() != 1 || !has_expected_track_revision))
+        || (cause == ProficiencyCause::Catalyst && lines.len() != 1)
         || (cause != ProficiencyCause::PerkSelection && has_expected_track_revision)
     {
         return Err(ProficiencyInputError);
@@ -385,6 +393,38 @@ mod occurrence_tests {
             },
         ] {
             assert!(ProficiencyOccurrence::from_bytes(bytes).is_err());
+        }
+    }
+
+    #[test]
+    fn catalyst_adds_progress_on_one_unchanged_track() {
+        const ITEM: &str = "oteryn:item.tibia.i3295";
+        let track = |progress, choices: &'static [Option<u8>]| -> TrackValues<'static> {
+            (
+                ITEM,
+                "oteryn:proficiency.tibia.p1",
+                "definition-r1",
+                progress,
+                choices,
+            )
+        };
+        let catalyst = ProficiencyCause::Catalyst;
+        assert_eq!(ProficiencyCause::from_key(catalyst.key()), Some(catalyst));
+        assert!(legal_change(
+            catalyst,
+            track(10, &[None]),
+            track(25_010, &[None])
+        ));
+        for after in [track(10, &[None]), track(9, &[None]), track(11, &[Some(0)])] {
+            assert!(!legal_change(catalyst, track(10, &[None]), after));
+        }
+        let lines = |count| vec![(catalyst, ITEM); count];
+        assert!(normalize_request_lines(catalyst, lines(1), false, |line| *line).is_ok());
+        for (count, track_revision) in [(2, false), (1, true)] {
+            assert!(
+                normalize_request_lines(catalyst, lines(count), track_revision, |line| *line)
+                    .is_err()
+            );
         }
     }
 }

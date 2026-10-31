@@ -230,6 +230,7 @@ async fn run(
     assert_eq!(results, vec![UseDisposition::Committed]);
     assert_eq!(harness.count("game_pick_refinements").await?, 1);
     assert_eq!(harness.count("game_item_use_records").await?, 1);
+    assert_eq!(petrologist(harness).await?, vec![1]);
     let quantity: i64 = sqlx::query_scalar(
         "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
     )
@@ -385,5 +386,16 @@ async fn run(
         UseDisposition::StaleState
     );
     assert_eq!(harness.count("game_pick_refinements").await?, 2);
+    assert_eq!(petrologist(harness).await?, vec![2]);
     Ok(())
+}
+
+/// Petrologist progress: one per committed refinement, never per replay or refusal.
+async fn petrologist(harness: &Harness) -> TestResult<Vec<i64>> {
+    Ok(sqlx::query_scalar(
+        "SELECT progress FROM game_character_achievement_progress \
+          WHERE achievement_key = 'oteryn:achievement/petrologist'",
+    )
+    .fetch_all(&harness.pool)
+    .await?)
 }

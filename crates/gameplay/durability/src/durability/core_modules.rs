@@ -6,6 +6,7 @@
 
 // Keep sorted by module name; insert in order, never append.
 pub mod account_achievement;
+pub mod account_badge;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
 pub mod admission_journal;
@@ -52,6 +53,7 @@ pub mod charm_state;
 pub mod chat_text;
 pub mod coin_exchange;
 pub mod content_activation;
+pub mod cyclopedia_character;
 pub mod cyclopedia_tracker;
 mod db;
 pub mod depot_search;

@@ -34,3 +34,23 @@ owner decision 2026-10-30). IDs 1–4 retain their meanings. Honouring the Shrin
 Eternity earns this permanent title in the same fenced quest transaction; the
 Character title owner supplies its ordinary query, unlock and selection behavior.
 The existing `u8` title fields and capability 97 are unchanged.
+
+### Catalogue extension and automatic unlock (PAR-P12a)
+
+The catalogue appends IDs 6–43 (`CharacterTitle::ALL` in
+`crates/protocol-oteryn/src/character_info.rs`); IDs 1–5 keep their meanings and
+migration 0572 widens both title checks to 1–43. Names, female names,
+descriptions and permanence follow Global (TibiaWiki *Cyclopedia*, revision
+1197515). Each admitted title has one rule over a native owner: bank balance,
+level, rank 1 of the current World highscore snapshot, daily reward streak,
+guild leadership, Bosstiary points or unlocked bosses per category, the kill
+count of a named creature, or a ten-year-old Character. The 69 Global titles
+whose predicate has no native owner yet are listed with their reason in
+`NOT_ADMITTED_TITLES` and are never granted.
+
+The fenced durable owner grants every newly qualified title, clears a selection
+that no longer qualifies and revokes the failed conditional titles in one
+transaction. It runs at login admission, on the actor cadence after a kill
+settlement that changed the level, a tracked creature or a boss, and before the
+self query. The wire format, the `u8` title fields and capability 97 are
+unchanged.

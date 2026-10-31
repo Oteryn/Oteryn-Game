@@ -607,7 +607,8 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
     })
 }
 
-/// The achievement point owner of the fixture: two known keys worth two and three points; any
+/// The achievement point owner of the fixture: known keys worth two and three points, and the
+/// Hunting Permit a completed Bestiary entry grants worth one (`content/achievements`); any
 /// other key is unknown to it, as a retired catalogue's missing entry is to the real one.
 struct FixtureAchievementPoints;
 impl AchievementPoints for FixtureAchievementPoints {
@@ -616,6 +617,7 @@ impl AchievementPoints for FixtureAchievementPoints {
             match fact.achievement_key.as_str() {
                 "oteryn:achievement/a_friend_in_need" => Some(2),
                 "oteryn:achievement/highscore_second" => Some(3),
+                "oteryn:achievement/hunting_permit" => Some(1),
                 _ => None,
             }
             .and_then(|points| sum.checked_add(points))
@@ -737,7 +739,7 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/a_friend_in_need','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
             .bind(vec![1_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE source_kind='highscore-fixture'")
             .execute(&mut *tx).await?;
         tx.commit().await?;
         let ids = h
@@ -751,7 +753,8 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         let accounts = page(h, 10, None, 1, 0).await?;
         assert_eq!(accounts.rows.len(), 1);
         assert_eq!(accounts.rows[0].character_id.as_bytes(), &generated(100));
-        assert_eq!(accounts.rows[0].value, (2, 0));
+        // A Friend in Need (2) plus the Hunting Permit the completing kill granted (1).
+        assert_eq!(accounts.rows[0].value, (3, 0));
         // The account's representative is selected before a vocation filter; the asking
         // knight does not become a second representative of the same account.
         assert!(page(h, 10, Some("knight"), 1, 0).await?.rows.is_empty());
@@ -1110,7 +1113,7 @@ fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,'oteryn:achievement/highscore_missing','1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
             .bind(vec![2_u8]).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE source_kind='highscore-fixture'")
             .execute(&mut *tx).await?;
         tx.commit().await?;
         assert!(matches!(
@@ -1752,7 +1755,7 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
             sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,$3,'1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
                 .bind(vec![event]).bind(id(CHARACTER).as_slice()).bind(key).execute(&mut *tx).await?;
         }
-        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE source_kind='highscore-fixture'")
             .execute(&mut *tx).await?;
         tx.commit().await?;
         h.root

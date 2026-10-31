@@ -325,6 +325,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entry.retain();
         }
         self.admit_promotion(attempt.game_session_id).await;
+        // PAR-P12a: login is Crystal's title check point (`iologindata_load_player.cpp:1045`).
+        self.refresh_session_titles(attempt.game_session_id).await;
         let mut admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,

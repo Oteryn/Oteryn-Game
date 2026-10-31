@@ -1,0 +1,10 @@
+{
+  "id": 379,
+  "name": "PROFICIENCY_MODIFY",
+  "owner_decision": "P08",
+  "capability": 195,
+  "payload_schema": "weapon-proficiency-v1.md#modification-request",
+  "result_schema": "weapon-proficiency-v1.md#modification-reply",
+  "max_payload_bytes": 14,
+  "max_result_payload_bytes": 7
+}

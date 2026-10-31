@@ -235,5 +235,28 @@ class LootTablesTests(unittest.TestCase):
                 full.loot_tables({'records': [profile('a:looted')]}, *paths)
 
 
+class CreatureProductFactsTests(unittest.TestCase):
+    """W22b: Gut counts the client's "Creature Products" market category, read from the pin."""
+
+    def test_market_category_marks_creature_products_only(self):
+        products = full.creature_products()
+        self.assertIn(5878, products)  # minotaur leather
+        self.assertIn(5894, products)  # bat wing
+        self.assertNotIn(3031, products)  # gold coin
+        self.assertNotIn(3607, products)  # cheese
+        facts = json.loads(full.LOOT_TABLES.read_bytes())['items']
+        marked = {row['item']['key'] for row in facts if row.get('creature_product')}
+        self.assertIn('oteryn:item.tibia.i5878', marked)
+        self.assertNotIn('oteryn:item.tibia.i3031', marked)
+        self.assertTrue(all(row.get('creature_product') is True for row in facts if 'creature_product' in row))
+
+    def test_an_appearances_file_that_differs_from_its_pin_refuses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            forged = Path(directory) / full.APPEARANCES.name
+            forged.write_bytes(b'not the pinned client')
+            with self.assertRaisesRegex(ValueError, 'differ from their digest'):
+                full.creature_products(forged)
+
+
 if __name__ == '__main__':
     unittest.main()

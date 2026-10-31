@@ -1851,7 +1851,12 @@ mod tests {
                 .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
                 .unwrap()
                 .record();
-            assert_eq!(record.admission.materializable, id == 2815);
+            // E09 mail (#2755) admits the letter and the parcel label as carried items
+            // (Crystal items.xml 3505 maxtextlen 1999, 3507 maxtextlen 79).
+            assert_eq!(
+                record.admission.materializable,
+                matches!(id, 2815 | 3505 | 3507)
+            );
             assert_eq!(
                 record.admission.stack_class,
                 NativeItemStackClass::NonStackable

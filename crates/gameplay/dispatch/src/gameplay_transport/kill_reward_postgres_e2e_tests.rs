@@ -1276,6 +1276,7 @@ fn scenario_with_creature_charmed(
             drop(seal);
             return harness.cleanup().await;
         }
+        super::w22a_loot::before_kill(&owner, &harness, actor, session).await?;
         let mut swings = 0;
         loop {
             // ATTACK-2: the swing weapon (here fists) is read from the equipment owner first.
@@ -1510,6 +1511,7 @@ fn scenario_with_creature_charmed(
                         activity: &[],
                         queue: attack.kills(),
                         rewards: native.reward_table(),
+                        charms: None,
                     },
                     target,
                     facts.principal,

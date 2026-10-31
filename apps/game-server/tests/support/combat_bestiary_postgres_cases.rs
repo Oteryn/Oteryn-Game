@@ -65,6 +65,11 @@ fn definition(family: &str, key: &str) -> LootDefinitionRef {
 }
 
 fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
+    input_at(xp_amount, 1)
+}
+
+/// The reward input of a later kill: the principal's fence expects `revision`.
+fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInput<2>> {
     let context = context();
     Ok(CreatureDeathRewardInput {
         corpse_item: definition("ItemType", "fixture:bestiary.item.rat_corpse"),
@@ -89,7 +94,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
         },
         inflight_loot_mints_before_this_death: 0,
         reward_principals: vec![RewardPrincipal {
-            gameplay_fence: fence(1)?,
+            gameplay_fence: fence(revision)?,
         }],
         xp_amount: ExactI64::new(xp_amount),
         progression: Some(RewardProgressionBinding {
@@ -382,6 +387,143 @@ fn a_failed_xp_award_neither_blocks_the_kill_nor_is_rolled_back_by_it() -> TestR
         assert_eq!(kill.committed_character_revision.get(), 2);
         assert_eq!(harness.count("game_character_xp_receipts").await?, 0);
         assert_eq!(harness.root_revision().await?, "2");
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+const TERRIFIED_ELEPHANT: &str = "oteryn:creature.terrified_elephant";
+const HUNTING_PERMIT: &str = "oteryn:achievement/hunting_permit";
+const TRAIL_OF_THE_APE_GOD: &str = "oteryn:achievement/trail_of_the_ape_god";
+
+/// One credited kill of `race` by a creature of the Channel scope `generation`, so every
+/// generation is a distinct death; the principal's fence expects `revision`.
+async fn settle_kill(
+    session: &DurabilitySession<'_, '_, '_>,
+    generation: u64,
+    revision: u64,
+    race: BestiaryRace,
+) -> TestResult<BestiaryKillOutcome> {
+    let mut fixture = CombatDeathFixture::new(
+        WorldId::decode(&id(WORLD)).map_err(debug)?,
+        ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        ScopeOwnershipGeneration::new(generation).map_err(debug)?,
+    )
+    .map_err(debug)?;
+    fixture
+        .strike("fixture:bestiary.strike.lethal", CombatDeathFixture::HEALTH)
+        .map_err(debug)?;
+    fixture.project_death().map_err(debug)?;
+    let actor = fixture.actor();
+    let mut slot = CharacterRevisionSequencer::new()
+        .acquire(fence(revision)?.character_id)
+        .await;
+    let outcome = settle_on_fresh_lane(
+        capture(&mut fixture, actor, 0)?,
+        session,
+        &mut slot,
+        input_at(RAT_XP, revision)?,
+        CreatureDeathBestiaryInput {
+            boss: None,
+            race: Some(race),
+        },
+    )
+    .await
+    .map_err(debug)?;
+    match outcome.bestiary.map_err(debug)? {
+        CombatBestiaryOutcome::Recorded(kill) => Ok(kill),
+        other => Err(format!("kill was not recorded: {other:?}").into()),
+    }
+}
+
+async fn achievements(harness: &Harness) -> TestResult<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key",
+    )
+    .fetch_all(&harness.pool)
+    .await?)
+}
+
+#[test]
+fn completing_a_bestiary_entry_grants_hunting_permit_once_per_account() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "hunting_permit", false).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        // A one-kill entry completes on its first kill; the replay of that kill is the same
+        // occurrence and grants nothing more.
+        let race = || BestiaryRace::new(RAT, "definition-r1", vec![1]).map_err(debug);
+        for _replay in 0..2 {
+            settle_kill(&session, 1, 1, race()?).await?;
+            assert_eq!(achievements(&harness).await?, [HUNTING_PERMIT]);
+            assert_eq!(
+                harness
+                    .count("game_account_achievement_grant_requests")
+                    .await?,
+                1
+            );
+        }
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn the_fifth_terrified_elephant_kill_grants_trail_of_the_ape_god() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "ape_god", false).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        // Each kill advances the revision twice: its XP award, then its Bestiary kill.
+        let race = || BestiaryRace::new(TERRIFIED_ELEPHANT, "definition-r1", vec![25, 250, 500]);
+        for kill in 1..=6_u64 {
+            let outcome =
+                settle_kill(&session, kill, 1 + 2 * (kill - 1), race().map_err(debug)?).await?;
+            assert!(matches!(outcome, BestiaryKillOutcome::Committed(_)));
+            let expected: &[&str] = if kill < 5 {
+                &[]
+            } else {
+                &[TRAIL_OF_THE_APE_GOD]
+            };
+            assert_eq!(achievements(&harness).await?, expected, "kill {kill}");
+        }
+        // The sixth kill finds the fact held and records no second request.
+        assert_eq!(
+            harness
+                .count("game_account_achievement_grant_requests")
+                .await?,
+            1
+        );
+        assert_eq!(
+            progress_rows(&harness).await?,
+            vec![(TERRIFIED_ELEPHANT.to_owned(), 6)]
+        );
         drop(authority);
         drop(seal);
         harness.cleanup().await

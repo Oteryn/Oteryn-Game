@@ -206,6 +206,8 @@ pub struct SectionItemFacts {
     pub charges: Option<u32>,
     #[serde(default)]
     pub stackable: bool,
+    #[serde(default)]
+    pub creature_product: bool,
 }
 
 /// The pinned `loot_tables` section (`OTERYN_NATIVE_LOOT_TABLES/v1`).
@@ -252,6 +254,8 @@ fn lower_loot_entries(
                     stackable: facts.stackable,
                     subtype: entry.subtype,
                     unique: entry.unique,
+                    creature_product: facts.creature_product,
+                    gut_bonus_hundredths: 0,
                 },
             })
         })
