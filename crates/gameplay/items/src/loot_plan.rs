@@ -80,15 +80,32 @@ pub struct LootPlanEntry {
     /// Full charges from the admitted Item definition (lazy timed-state default).
     pub charges: Option<u32>,
     pub unique: bool,
+    /// Whether the admitted Item stacks; a stack takes its count and ignores the subtype.
+    pub stackable: bool,
 }
 
 impl LootPlanEntry {
-    /// Whether minting this entry would have to store its loot subtype. The donor drops a charged
-    /// item with its full charges and a stackable one with its count, and applies `subType` only
-    /// to any other item (Crystal `Container:addLoot`, the fluid of a fluid container). Full
-    /// charges are the lazy timed-state default, so only the latter needs state Oteryn lacks.
+    /// The fluid this entry is minted with. The donor drops a stackable item with its count and a
+    /// charged one with its full charges, and applies `subType` only to any other item, the
+    /// fluid of a fluid container; subtype 0 is the empty container (Crystal 201189f8
+    /// `data/libs/functions/container.lua:15-51`). Full charges are the lazy timed-state
+    /// default and an empty container has no fluid row, so both give `None`.
+    pub fn fluid_subtype(&self) -> Option<u8> {
+        match self.subtype {
+            Some(subtype) if self.charges.is_none() && !self.stackable => {
+                u8::try_from(subtype).ok().filter(|fluid| *fluid != 0)
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether the subtype names a fluid beyond the client's one-byte fluid range, which the
+    /// fluid state cannot hold.
     pub fn needs_subtype_state(&self) -> bool {
-        self.subtype.is_some() && self.charges.is_none()
+        self.subtype
+            .is_some_and(|subtype| subtype > u16::from(u8::MAX))
+            && self.charges.is_none()
+            && !self.stackable
     }
 }
 
@@ -120,7 +137,7 @@ pub enum LootPlanError {
     /// The loot table's algorithm is not the one this D2a slice implements
     /// (`IndependentBernoulliPpm`).
     UnsupportedAlgorithm,
-    /// The loot subtype of an uncharged Item (a fluid) needs instance state Oteryn does not store.
+    /// The loot subtype of an uncharged, unstacked Item is beyond the one-byte fluid range.
     UnsupportedItemSubtype,
     /// An entry's `min_count`/`max_count` is zero or out of order.
     InvalidQuantityRange,
@@ -371,6 +388,7 @@ fn roll_entries(
             subtype: entry.details.subtype,
             charges: entry.details.charges,
             unique: entry.details.unique,
+            stackable: entry.details.stackable,
         });
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
@@ -1406,30 +1424,43 @@ mod w22a_tests {
     }
 
     #[test]
-    fn only_an_uncharged_subtype_needs_instance_state() -> Result<(), LootPlanError> {
+    fn an_uncharged_unstacked_subtype_is_the_minted_fluid() -> Result<(), LootPlanError> {
         let reference = super::tests::table_ref("oteryn:loot.subtype.table");
         let mut table = super::tests::one_entry_table("oteryn:item.subtype", 1, 1, Some(1_000_000));
+        let plan = |table: &LootTableDefinition| {
+            plan_creature_loot(
+                LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+                &reference,
+                table,
+            )
+        };
         table.entries[0].details.subtype = Some(5);
-        let fluid = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
-        assert!(fluid.entries[0].needs_subtype_state());
+        let fluid = plan(&table)?;
+        assert_eq!(fluid.entries[0].fluid_subtype(), Some(5));
+        assert!(!fluid.entries[0].needs_subtype_state());
+        // Subtype 0 is the empty container: no fluid row.
+        table.entries[0].details.subtype = Some(0);
+        assert_eq!(plan(&table)?.entries[0].fluid_subtype(), None);
+        // A subtype beyond the one-byte fluid range cannot be held and stays refused.
+        table.entries[0].details.subtype = Some(300);
+        let wide = plan(&table)?;
+        assert_eq!(wide.entries[0].fluid_subtype(), None);
+        assert!(wide.entries[0].needs_subtype_state());
+        // A stack takes its count and ignores the subtype (container.lua:15-27).
+        table.entries[0].details.stackable = true;
+        let stack = plan(&table)?;
+        assert_eq!(stack.entries[0].fluid_subtype(), None);
+        assert!(!stack.entries[0].needs_subtype_state());
+        table.entries[0].details.stackable = false;
+        table.entries[0].details.subtype = Some(5);
         table.entries[0].details.charges = Some(5);
-        let charged = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
+        let charged = plan(&table)?;
+        assert_eq!(charged.entries[0].fluid_subtype(), None);
         assert!(!charged.entries[0].needs_subtype_state());
         table.entries[0].details.subtype = None;
         table.entries[0].details.charges = None;
-        let plain = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
+        let plain = plan(&table)?;
+        assert_eq!(plain.entries[0].fluid_subtype(), None);
         assert!(!plain.entries[0].needs_subtype_state());
         Ok(())
     }

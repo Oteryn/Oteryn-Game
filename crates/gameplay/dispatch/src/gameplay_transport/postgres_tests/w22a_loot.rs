@@ -12,6 +12,7 @@ enum Case {
     Nested,
     Outside,
     ChargedSubtype,
+    FluidSubtype,
     Gut,
     DuplexOn,
     DuplexOff,
@@ -39,6 +40,13 @@ fn w22a_nested_container_drop_mints_its_children_inside_the_container() -> TestR
 fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult {
     scenario_thread::run("w22a-charged-subtype", || {
         CASE.set(Some(Case::ChargedSubtype));
+        scenario()
+    })
+}
+#[test]
+fn w22a_fluid_loot_with_a_subtype_mints_the_filled_container() -> TestResult {
+    scenario_thread::run("w22a-fluid-subtype", || {
+        CASE.set(Some(Case::FluidSubtype));
         scenario()
     })
 }
@@ -119,6 +127,13 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             let mut amulet = entry(3081);
             amulet["subtype"] = json!(5);
             table["entries"] = json!([amulet]);
+        }
+        Case::FluidSubtype => {
+            // Crystal 201189f8 `data/libs/functions/container.lua:48-52`: a vial entry with a
+            // sub-type is minted holding that fluid (1, water); one without stays empty.
+            let mut filled = entry(2874);
+            filled["subtype"] = json!(1);
+            table["entries"] = json!([filled, entry(2874)]);
         }
         Case::BoostedBossUnique => {
             let mut amulet = entry(3081);
@@ -427,6 +442,16 @@ pub(super) async fn qualify(
                 .await?;
             assert_eq!(partial, 0);
         }
+        Case::FluidSubtype => {
+            assert_eq!((direct, nested), (2, 0));
+            let fluids: Vec<(i16, bool)> = sqlx::query_as("SELECT s.fluid_subtype, EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=s.item_instance_id) FROM game_item_fluid_states s JOIN game_item_fluid_loot_mints m ON m.item_instance_id=s.item_instance_id AND m.transaction_id=s.last_transaction_id AND m.fluid_subtype=s.fluid_subtype")
+                .fetch_all(&h.pool).await?;
+            assert_eq!(fluids, vec![(1, true)]);
+            let all: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(all, 1, "the vial without a sub-type stays empty");
+        }
         Case::Nested | Case::Outside => {
             assert_eq!(direct, 1);
             assert_eq!(nested, 3);
@@ -531,6 +556,7 @@ async fn outside_container_is_refused(
         placement: CorpseContainerPlacement {
             corpse_item_instance_id: bag.item_instance_id,
             placement_ordinal: 1,
+            fluid_subtype: None,
         },
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),
