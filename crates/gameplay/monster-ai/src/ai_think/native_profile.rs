@@ -48,16 +48,17 @@ pub(crate) fn project_native_record(
         let Data::Ability(ability) = &profile.data else {
             return Err(ProfileRefusal::Invalid);
         };
+        // Source-item operations may also be present in the complete canonical attack
+        // closure. A shared exact body is one profile; conflicting bodies still refuse.
         if abilities
             .insert(profile.target.clone(), ability.clone())
-            .is_some()
+            .is_some_and(|previous| previous != *ability)
         {
             return Err(ProfileRefusal::Invalid);
         }
     }
-    // The legacy native schema admits an explicit melee approximation but no full executable
-    // closure for those attacks. Preserve its existing swing owner and target-only projection;
-    // never manufacture an Ability body from a ref, presentation, or attack magnitude.
+    // Preserve every source schedule slot, even when another slot's callback has no executable
+    // closure. Missing bodies cannot be manufactured from names, presentation or magnitude.
     let mut projected = behavior.clone();
     // A resolved native melee body still uses the existing separately qualified swing
     // owner. Its source bounds supply the magnitude required by the think projection;
@@ -72,16 +73,7 @@ pub(crate) fn project_native_record(
             }
         }
     }
-    if projected
-        .attacks
-        .iter()
-        .chain(&projected.defenses)
-        .any(|entry| !abilities.contains_key(&entry.ability))
-    {
-        projected.attacks.clear();
-        projected.defenses.clear();
-    }
-    CreatureBehaviourProfile::project_with_summons(Some(&projected), &abilities)
+    CreatureBehaviourProfile::project_native(Some(&projected), &abilities)
 }
 
 impl CreatureAiTable {
@@ -116,6 +108,7 @@ impl CreatureAiTable {
             .position();
         let mut state = CreatureAiState::new(actor, profile, anchor);
         state.spawn = runtime.creature_spawn_cell(actor);
+        state.is_summon = !role.is_ordinary();
         self.admit(state, now);
         Ok(())
     }
