@@ -30,6 +30,7 @@ pub(in crate::gameplay_transport) struct Trap {
     pub maximum_damage: u32,
     pub element: ReferenceResistanceKind,
     pub optional_pvp_player_immune: bool,
+    pub player_immune: bool,
 }
 
 pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
@@ -40,6 +41,7 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
             maximum_damage: 100,
             element: ReferenceResistanceKind::Physical,
             optional_pvp_player_immune: false,
+            player_immune: false,
         },
         2147 => Trap {
             closed: 2148,
@@ -47,6 +49,7 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
             maximum_damage: 100,
             element: ReferenceResistanceKind::Physical,
             optional_pvp_player_immune: false,
+            player_immune: false,
         },
         3482 => Trap {
             closed: 3481,
@@ -54,6 +57,7 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
             maximum_damage: 30,
             element: ReferenceResistanceKind::Physical,
             optional_pvp_player_immune: true,
+            player_immune: false,
         },
         3944 => Trap {
             closed: 3945,
@@ -61,6 +65,17 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
             maximum_damage: 30,
             element: ReferenceResistanceKind::Earth,
             optional_pvp_player_immune: false,
+            player_immune: false,
+        },
+        // Crystal trap.lua:6,31-42: players never trigger the magic wolf trap.
+        // Monster stepping is owned by the creature-movement path, not this player owner turn.
+        12368 => Trap {
+            closed: 12368,
+            minimum_damage: 0,
+            maximum_damage: 0,
+            element: ReferenceResistanceKind::Physical,
+            optional_pvp_player_immune: false,
+            player_immune: true,
         },
         44529 => Trap {
             closed: 44530,
@@ -68,6 +83,7 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
             maximum_damage: 100,
             element: ReferenceResistanceKind::Physical,
             optional_pvp_player_immune: false,
+            player_immune: false,
         },
         _ => return None,
     })
@@ -218,12 +234,30 @@ impl ChannelSpellStates {
         else {
             return false;
         };
-        let to_swimming = ids
-            .iter()
-            .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let Some(current) = self.get(runtime, actor, session).cloned() else {
             return false;
         };
+        let mut changed = false;
+        // Crystal special_tiles.lua:1-2,6-16 and decay_to.lua:3-15. These map
+        // mutations run on the committed player StepIn route.
+        for (key, entry) in &ids {
+            let transformed = match entry.appearance_id {
+                293 | 475 | 1066 => Some(entry.appearance_id + 1),
+                419 => Some(420),
+                431 => Some(430),
+                452 => Some(453),
+                563 => Some(564),
+                549 => Some(562),
+                10145 => Some(10146),
+                _ => None,
+            };
+            if let Some(transformed) = transformed {
+                changed |= transform(map, *key, transformed);
+            }
+        }
+        let to_swimming = ids
+            .iter()
+            .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let mut next = current.clone();
         if from_swimming {
             next.conditions.remove_type(ConditionType::Outfit);
@@ -268,8 +302,8 @@ impl ChannelSpellStates {
                 );
             }
         }
-        let mut changed = next != current;
-        if changed {
+        changed |= next != current;
+        if next != current {
             let Some(revision) = current.revision().checked_add(1) else {
                 return false;
             };
@@ -280,12 +314,26 @@ impl ChannelSpellStates {
         }
         // trap.lua:59-69 reopens these four closed spike types on every step-out.
         if let Some(TileEntries {
-            protection_zone: false,
+            protection_zone: origin_protection_zone,
             entries,
         }) = origin.and_then(|at| tile_entries(map, at))
         {
             for (key, entry) in entries {
-                if matches!(entry.appearance_id, 2146 | 2148 | 3945 | 44530) {
+                let pressure = match entry.appearance_id {
+                    420 => Some(419),
+                    430 => Some(431),
+                    453 => Some(452),
+                    564 => Some(563),
+                    562 => Some(549),
+                    10146 => Some(10145),
+                    _ => None,
+                };
+                if let Some(open) = pressure {
+                    changed |= transform(map, key, open);
+                }
+                if !origin_protection_zone
+                    && matches!(entry.appearance_id, 2146 | 2148 | 3945 | 44530)
+                {
                     transform(map, key, entry.appearance_id - 1);
                 }
             }
@@ -297,6 +345,9 @@ impl ChannelSpellStates {
                 let Some(rule) = trap(entry.appearance_id) else {
                     continue;
                 };
+                if rule.player_immune {
+                    continue;
+                }
                 // An unavailable policy read cannot grant permission to harm with a jaw trap.
                 if rule.optional_pvp_player_immune && optional_pvp != Some(false) {
                     continue;
@@ -361,6 +412,191 @@ mod tests {
     use super::*;
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
 
+    // Exercise the same bundle projection and actor owner as committed paced movement.
+    fn movement_case(
+        before: u16,
+        after: u16,
+        protection_zone: bool,
+        reverses: bool,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+        use crate::map::boot::{self, BundleCollisionIndexExt};
+        use std::num::NonZeroU32;
+        let (mut runtime, actor, session) = runtime_with_player(0x71);
+        runtime
+            .initialize_first_entry_position(actor)
+            .map_err(|e| format!("{e:?}"))?;
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("state")?;
+        let keys = (
+            format!("oteryn:item.tibia.i{before}"),
+            format!(
+                "oteryn:item.tibia.i{}",
+                if before == after { 100 } else { after }
+            ),
+        );
+        let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&keys.0, 0), (&keys.1, 1));
+        let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
+        for tile in &mut bundle.sectors[0].tiles {
+            if tile.x == 6 && protection_zone {
+                tile.flags = 1;
+            }
+        }
+        let bytes = oteryn_world_bundle::writer::write(
+            &bundle.manifest,
+            &bundle.sectors,
+            &Default::default(),
+        )?;
+        pins.digest = oteryn_world_bundle::writer::read(&bytes)?.digest;
+        let pos = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let base = crate::map::load(&bytes, &pins).map_err(|e| format!("{e:?}"))?;
+        let booted = boot::boot(
+            &bytes,
+            &boot::BootPins {
+                map_revision: crate::map::overlay::map_revision(&base),
+                bundle: pins,
+                start: pos,
+            },
+            actor.world_id(),
+            actor.channel_id().ok_or("channel")?,
+            |key| {
+                Some(crate::map::facts::ItemDefinition {
+                    reference: NonZeroU32::new(if key == keys.0 { 1 } else { 2 })?,
+                    solid: Some(false),
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                })
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let room = crate::content::qualify_native_entry_room(actor.world_id())
+            .map_err(|e| format!("{e:?}"))?;
+        let cells = booted
+            .movement_cells(room.movement_cells())
+            .map_err(|e| format!("{e:?}"))?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(collision) =
+            cells.index()
+        else {
+            return Err("bundle collision".into());
+        };
+        let map = collision.map();
+        let at = MovementLocalPosition {
+            x: 6,
+            y: 0,
+            floor: 7,
+        };
+        let away = MovementLocalPosition { x: 1, ..at };
+        let key = placement_key(pos, 1).ok_or("placement")?;
+        let current = || map.facts.base_entry(pos, 1, 0).map(|e| e.appearance_id);
+        let health = states
+            .get(&runtime, actor, session)
+            .ok_or("player")?
+            .vitals()
+            .health;
+        let revision = map.facts.object_revision(key);
+        assert_eq!(current(), Some(before));
+        assert_eq!(
+            states.stage_special_movement_step(
+                &runtime,
+                map,
+                actor,
+                session,
+                1,
+                Some(away),
+                at,
+                Some(false)
+            ),
+            before != after
+        );
+        assert_eq!(current(), Some(after));
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .ok_or("player")?
+                .vitals()
+                .health,
+            health
+        );
+        if before == after {
+            assert_eq!(map.facts.object_revision(key), revision);
+        }
+        states.stage_special_movement_step(
+            &runtime,
+            map,
+            actor,
+            session,
+            2,
+            Some(at),
+            away,
+            Some(false),
+        );
+        assert_eq!(current(), Some(if reverses { before } else { after }));
+        Ok(())
+    }
+
+    #[test]
+    fn m10_special_tiles_step_in_and_out_include_protection_zones()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                for pz in [false, true] {
+                    for (before, after) in [
+                        (419, 420),
+                        (431, 430),
+                        (452, 453),
+                        (563, 564),
+                        (549, 562),
+                        (10145, 10146),
+                    ] {
+                        movement_case(before, after, pz, true)?;
+                    }
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
+    #[test]
+    fn m10_decay_tiles_step_in_without_pressure_step_out()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                for before in [293, 475, 1066] {
+                    movement_case(before, before + 1, false, false)?;
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
+    #[test]
+    fn m10_wolf_trap_player_step_never_transforms_or_damages()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| movement_case(12368, 12368, false, false))?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
     #[test]
     fn every_crystal_trap_has_transform_damage_element_and_optional_pvp_rule() {
         assert_eq!(
@@ -373,6 +609,7 @@ mod tests {
             trap(3944)
                 .is_some_and(|r| r.element == ReferenceResistanceKind::Earth && r.closed == 3945)
         );
+        assert!(trap(12368).is_some_and(|r| r.player_immune));
         assert_eq!(trap(44529).map(|r| r.closed), Some(44530));
     }
 

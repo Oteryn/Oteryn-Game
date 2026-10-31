@@ -298,4 +298,6 @@ pub struct VirtuePartyBonuses {
     pub auto_attack: u32,
     pub spell_damage: u32,
     pub spell_healing: u32,
+    /// Guiding holder projection; a recipient with its own mantra uses that instead.
+    pub mantra: u32,
 }
