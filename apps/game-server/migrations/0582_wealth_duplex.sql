@@ -1,13 +1,14 @@
 -- W22c Wealth Duplex. One use burns one concoction (item-use cause 527) and starts a one-hour
 -- effect row in the same transaction; a kill settled while it is live rolls its loot once more.
 -- Crystal ff7ede59 concoctions.lua:179-199, config.lua.dist:310-311.
+-- Keeps the proficiency catalyst (494, 0564) and orb (495, 0575) causes.
 -- Rollback: refuse cause 527 at the router in a successor; retain every effect row.
 ALTER TABLE game_item_use_records
  DROP CONSTRAINT game_item_use_records_cause_kind_check,
- ADD CONSTRAINT game_item_use_records_cause_kind_check CHECK(cause_kind IN (1,2,3,328,527)),
+ ADD CONSTRAINT game_item_use_records_cause_kind_check CHECK(cause_kind IN (1,2,3,328,494,495,527)),
  DROP CONSTRAINT game_item_use_cause_shape,
  ADD CONSTRAINT game_item_use_cause_shape
- CHECK((cause_kind IN (1,328,527) AND shape=1) OR cause_kind=2 OR (cause_kind=3 AND shape IN (3,4)));
+ CHECK((cause_kind IN (1,328,494,495,527) AND shape=1) OR cause_kind=2 OR (cause_kind=3 AND shape IN (3,4)));
 
 CREATE TABLE game_character_concoction_effects (
  transaction_id UUID PRIMARY KEY REFERENCES game_item_use_records(transaction_id)

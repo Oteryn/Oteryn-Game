@@ -101,7 +101,10 @@ impl ItemUseGate {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
-            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming => {
+            ItemUseKind::PickRefine { .. }
+            | ItemUseKind::MountTaming
+            | ItemUseKind::ProficiencyCatalyst
+            | ItemUseKind::ProficiencyOrb => {
                 return Err(UseDisposition::Rejected);
             }
         };

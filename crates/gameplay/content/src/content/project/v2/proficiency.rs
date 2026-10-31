@@ -10,7 +10,9 @@
 //! separate consumers.
 
 mod import;
+mod shaping;
 pub use import::*;
+pub use shaping::*;
 
 use serde::{Deserialize, Serialize};
 

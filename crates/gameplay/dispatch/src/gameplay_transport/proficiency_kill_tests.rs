@@ -14,6 +14,7 @@ fn owner() -> WeaponProficiencyDispatch {
                 .expect("shape"),
             progress: 0,
             selections: vec![None; 7],
+            modifications: [None, None],
             effects: ProficiencyAttackEffects::default(),
         },
     );

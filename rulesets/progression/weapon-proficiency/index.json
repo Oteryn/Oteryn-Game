@@ -6,5 +6,5 @@
   "repository": "Oteryn/Oteryn-Game",
   "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Weapon Proficiency progression rules (progression.json: thresholds, Mastery, kill credit and points); perk trees are content/proficiencies and Item bindings content/proficiencies/bindings.json."
+  "notes": "Weapon Proficiency progression rules (progression.json: thresholds, Mastery, kill credit and points; shaping.json: Global perk-shaping pools, values and costs, PROFICIENCY-1C); perk trees are content/proficiencies and Item bindings content/proficiencies/bindings.json."
 }

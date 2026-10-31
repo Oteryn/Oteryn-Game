@@ -10,8 +10,9 @@
 //! PROF-SHAPE-1b adds the dust SPEND shape (§7.2): a bound dust cost is burned by one forge dust
 //! `SPEND` entry (migration 0059) with cause `proficiency` under the receipt's occurrence, in the
 //! receipt's transaction, and migration 0060 requires the entry to equal the line's `dust_spent`.
-//! The orb BURN shape is not admitted yet: an operation with an orb count and ORB_RANK stay
-//! `NOT_ADMITTED`, and 0060 keeps every line's `orb_cost` at 0. The capability check and the rate cap belong to the
+//! PROFICIENCY-1C §5 adds the orb BURN shape: ORB_RANK burns the one carried orb the command path
+//! reserved, through the item-use writer (cause 495) in the receipt's transaction, and migration
+//! 0575 pairs the burn with the line at commit. The capability check and the rate cap belong to the
 //! command path: it calls [`DurabilityRoot::reconcile_character_proficiency_modification`]
 //! first, charges [`ProficiencyModificationRateCap`](crate::domain::weapon_proficiency::ProficiencyModificationRateCap) only for an unseen occurrence, then
 //! commits through a [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
@@ -29,8 +30,11 @@ use super::character_progression::{
     state_matches_root, uuid_text,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
+use super::item_use::proficiency_orb::burn_orb;
+use super::item_use::{ItemUseError, ItemUseOutcome, ItemUseRequest};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::weapon_proficiency::{
@@ -46,9 +50,6 @@ use sqlx::Row;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
-
-/// The orb BURN shape is not admitted yet (migration 0060 pins every line's `orb_cost` to 0).
-const ORB_BURN_AVAILABLE: bool = false;
 
 pub use oteryn_gameplay_progression::proficiency_modification::{ProficiencyModificationUsage, proficiency_shaping_key};
 
@@ -487,6 +488,35 @@ async fn load_rows(
     Ok(slots)
 }
 
+/// Every track's stored rows by item key, by slot (index 0 is slot 1), for the retained read.
+/// The caller holds the Character root lock, so no writer moves a row before it commits.
+pub(in crate::durability) async fn load_track_modifications(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> StoredResult<std::collections::BTreeMap<String, [Option<ProficiencyModifiedPerk>; 2]>> {
+    let rows = sqlx::query(
+        "SELECT item_key, slot, level, shaping_key, shaping_revision, entry_index, rank, \
+         pending_offer, coalesce(pending_offer IS NULL OR (array_ndims(pending_offer)=1 \
+             AND array_lower(pending_offer,1)=1),false) AS canonical_offer \
+         FROM game_character_proficiency_modifications \
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY item_key, slot",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut tracks = std::collections::BTreeMap::<String, [Option<ProficiencyModifiedPerk>; 2]>::new();
+    for row in rows {
+        let slot = usize::from(small(row.try_get("slot")?)?);
+        let target = tracks
+            .entry(row.try_get("item_key")?)
+            .or_default()
+            .get_mut(slot.wrapping_sub(1))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        *target = decode_perk(&row, "", "canonical_offer")?;
+    }
+    Ok(tracks)
+}
+
 /// §8: hold the key's shared retention lock until commit and find the revision retained.
 async fn retained(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -642,7 +672,7 @@ impl DurabilityRoot {
     /// lookup and the rate cap.
     #[allow(
         clippy::too_many_arguments,
-        reason = "the fences, the command, its runtime context and the two content sources"
+        reason = "the fences, the command, its runtime context, the orb and the two content sources"
     )]
     pub async fn commit_character_proficiency_modification(
         &self,
@@ -651,6 +681,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         command: ProficiencyModificationCommand,
         context: ProficiencyModificationContext,
+        orb: Option<ItemUseRequest>,
         definitions: std::sync::Arc<dyn ProficiencyDefinitions>,
         shaping: std::sync::Arc<dyn ProficiencyShapingSource>,
     ) -> Result<ProficiencyModificationOutcome> {
@@ -666,9 +697,12 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // Type-2 opener: an ORB_RANK writes its burn's audit event in this transaction.
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    let tuple = tx.tuple();
+                    let mut tx = tx.into_inner();
                     let character = fence.character_id;
                     sqlx::query(OCCURRENCE_LOCK)
                         .bind(command.occurrence().as_bytes().as_slice())
@@ -773,11 +807,11 @@ impl DurabilityRoot {
                     let row = rows[usize::from(command.slot()) - 1].as_ref().filter(|row| {
                         row.shaping_key == active.shaping_key && row.shaping_revision == active.revision
                     });
-                    // §3.3 plus this slice's gate: an orb count and ORB_RANK need the orb BURN shape.
-                    if let Some(cost) = active.admitted(command.kind(), command.slot(), row)
-                        && !ORB_BURN_AVAILABLE
-                        && (cost.orbs > 0
-                            || matches!(command.kind(), ProficiencyModificationCommandKind::OrbRank))
+                    // 1C §5: ORB_RANK is the orb's operation; a shaping without an orb count has none.
+                    if matches!(command.kind(), ProficiencyModificationCommandKind::OrbRank)
+                        && active
+                            .admitted(command.kind(), command.slot(), row)
+                            .is_some_and(|cost| cost.orbs == 0)
                     {
                         return refuse(ProficiencyModificationResult::NotAdmitted);
                     }
@@ -852,9 +886,14 @@ impl DurabilityRoot {
                     let usage = ProficiencyModificationUsage::of(plan.cost);
                     let dust = u32::try_from(plan.cost.dust)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if plan.cost.orbs > 0 || !usage.admitted() {
+                    if !usage.admitted() {
                         return Err(DurabilityError::InvalidStoredState);
                     }
+                    let orb = match (plan.cost.orbs, orb.as_ref()) {
+                        (0, _) => None,
+                        (_, None) => return refuse(ProficiencyModificationResult::NoOrb),
+                        (_, Some(orb)) => Some(orb),
+                    };
                     // §5 check 9 under the §7.2 lock order (the modification rows are locked):
                     // the dust balance row, held until commit, so the spend below cannot fail.
                     if dust > 0 {
@@ -875,6 +914,35 @@ impl DurabilityRoot {
                         && !retained(&mut tx, &after.shaping_key, &after.shaping_revision).await?
                     {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    // 1C §5 orb burn: the reserved stack loses one unit under the item fence the
+                    // gameplay fence already holds; a moved stack is `NO_ORB` and nothing commits.
+                    if let Some(orb) = orb {
+                        if orb.transaction_id != *command.occurrence().as_bytes() {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        }
+                        if orb.content_revision != root.content_revision
+                            || orb.ruleset_revision != root.ruleset_revision
+                        {
+                            return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                        }
+                        match burn_orb(&mut tx, &fence.item_fence(), orb, tuple).await {
+                            Ok(ItemUseOutcome::Written { .. }) => {}
+                            Ok(ItemUseOutcome::AlreadyCommitted { .. })
+                            | Err(ItemUseError::ConflictingCommand) => {
+                                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+                            }
+                            Err(ItemUseError::StaleState) => {
+                                return refuse(ProficiencyModificationResult::NoOrb);
+                            }
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(ItemUseError::InvalidInput | ItemUseError::Cooldown) => {
+                                return Ok(Err(CharacterProgressionError::InvalidInput));
+                            }
+                            Err(ItemUseError::AuthorityRejected) => {
+                                return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                            }
+                        }
                     }
                     let next = root
                         .revision
@@ -1049,6 +1117,26 @@ impl DurabilityRoot {
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(result))
+                })
+            })
+            .await?
+    }
+
+    /// The server seed of `proficiency_shaping` draws (SIM-DETERMINISM-01 §10): a durable
+    /// secret (migration 0575) that clients never see, so no restart reseeds a draw.
+    pub async fn read_proficiency_shaping_secret(&self) -> Result<[u8; 32]> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let secret: Vec<u8> = sqlx::query_scalar(
+                        "SELECT secret FROM game_proficiency_shaping_decision_root WHERE singleton",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(<[u8; 32]>::try_from(secret)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?))
                 })
             })
             .await?
@@ -1259,7 +1347,10 @@ pub(in crate::durability) async fn verify_modification_history(
             OR h.character_id<>m.character_id OR h.cause<>m.cause \
             OR h.committed_character_revision<>m.committed_character_revision \
             OR m.dust_spent<>m.dust_cost OR m.orbs_spent<>m.orb_cost \
-            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR') OR m.orb_cost<>0 \
+            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR') \
+            OR (m.operation='ORB_RANK')<>(m.orb_cost=1) OR (m.orb_cost=1 AND NOT EXISTS ( \
+              SELECT 1 FROM game_item_use_records u WHERE u.transaction_id=m.proficiency_occurrence_id \
+                AND u.character_id=m.character_id AND u.cause_kind=495 AND u.shape=1)) \
             OR m.dust_spent<>coalesce((SELECT sum(e.amount) FROM game_character_forge_dust_entries e \
               WHERE e.character_id=m.character_id AND e.cause='proficiency' AND e.kind='SPEND' \
                 AND e.cause_occurrence_id=m.proficiency_occurrence_id),0)) \

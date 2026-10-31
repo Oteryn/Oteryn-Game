@@ -2,7 +2,9 @@
 use super::{
     DurableProficiencyState, ProficiencyCause, ProficiencyLineCandidate, ProficiencyOccurrence,
 };
+use crate::domain::weapon_proficiency::ProficiencyModifiedPerk;
 use crate::domain::{CharacterId, CharacterRevision};
+use crate::durability::character_proficiency_modification::load_track_modifications;
 use crate::durability::character_authority::{
     ReconciledCharacterAuthority, assert_recovery_fence,
     verify_character_proficiency_history_with_definitions,
@@ -21,6 +23,9 @@ pub struct StoredProficiencyTrack {
     pub state: DurableProficiencyState,
     pub committed_character_revision: CharacterRevision,
     pub last_proficiency_occurrence_id: [u8; 16],
+    /// The track's stored modification rows by slot (index 0 is slot 1), filled by the
+    /// retained read; PROF-EFFECT-0 applies the active ones.
+    pub modifications: [Option<ProficiencyModifiedPerk>; 2],
 }
 /// Immutable committed evidence only; a recovery read never restores a controller.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -184,6 +189,7 @@ pub(in crate::durability) async fn verify_track_history(
                 state: line.after().clone(),
                 committed_character_revision,
                 last_proficiency_occurrence_id: occurrence(&row, "occurrence")?,
+                modifications: [None, None],
             },
         );
     }
@@ -211,6 +217,7 @@ pub(in crate::durability) async fn verify_track_history(
             state: decode_state(&row, "")?,
             committed_character_revision: revision(&row, "revision")?,
             last_proficiency_occurrence_id: occurrence(&row, "occurrence")?,
+            modifications: [None, None],
         };
         if latest.remove(track.state.item_key()).as_ref() != Some(&track) {
             return Err(DurabilityError::InvalidStoredState);
@@ -294,7 +301,12 @@ impl DurabilityRoot {
             let root = sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if root.is_none() { return Err(DurabilityError::InvalidStoredState); }
-            let tracks = verify_character_proficiency_history_with_definitions(&mut tx, character, definitions.as_deref()).await?;
+            let mut tracks = verify_character_proficiency_history_with_definitions(&mut tx, character, definitions.as_deref()).await?;
+            let mut modifications = load_track_modifications(&mut tx, character).await?;
+            for track in &mut tracks {
+                if let Some(rows) = modifications.remove(track.state.item_key()) { track.modifications = rows; }
+            }
+            if !modifications.is_empty() { return Err(DurabilityError::InvalidStoredState); }
             let receipt = if let Some(occurrence_id) = requested {
                 let row = sqlx::query("SELECT *, character_id::text AS character, proficiency_occurrence_id::text AS occurrence, \
                     original_character_revision::text AS original_revision, committed_character_revision::text AS revision \

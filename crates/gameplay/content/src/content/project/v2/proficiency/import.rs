@@ -77,10 +77,10 @@ pub fn import_committed_weapon_proficiency_data()
     import(INDEX, &SHARDS, BINDINGS, RULES)
 }
 
-fn invalid(reason: &'static str) -> ProjectError {
+pub(super) fn invalid(reason: &'static str) -> ProjectError {
     ProjectError::InvalidProject(reason)
 }
-fn parse<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, ProjectError> {
+pub(super) fn parse<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, ProjectError> {
     serde_json::from_str(text).map_err(|error| ProjectError::InvalidJson(error.to_string()))
 }
 
@@ -138,7 +138,7 @@ struct Bindings {
     source: SourceFile,
 }
 
-fn decimal_ratio(value: &Value) -> Result<Value, ProjectError> {
+pub(super) fn decimal_ratio(value: &Value) -> Result<Value, ProjectError> {
     let number = value
         .as_number()
         .ok_or_else(|| invalid("proficiency value is not numeric"))?

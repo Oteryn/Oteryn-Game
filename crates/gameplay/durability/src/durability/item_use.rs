@@ -48,6 +48,8 @@ mod carried_source;
 pub mod concoction;
 pub mod mining;
 pub mod mount_taming;
+pub mod proficiency_catalyst;
+pub mod proficiency_orb;
 
 pub use carried_inventory::ItemUseInventory;
 pub(super) use carried_inventory::read_use_inventory;
@@ -59,6 +61,10 @@ pub enum ItemUseKind {
     Food,
     Potion,
     MountTaming,
+    /// P08: one unit composed with its `catalyst` proficiency receipt.
+    ProficiencyCatalyst,
+    /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
+    ProficiencyOrb,
     Concoction,
     PickRefine {
         tool: [u8; 16],
@@ -73,6 +79,8 @@ impl ItemUseKind {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
+            Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
+            Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
             Self::Concoction => concoction::CONCOCTION_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
@@ -196,9 +204,18 @@ impl ItemUseRequest {
                 ItemUseKind::Food
                 | ItemUseKind::Potion
                 | ItemUseKind::MountTaming
-                | ItemUseKind::Concoction,
+                | ItemUseKind::Concoction
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb,
             ) => true,
-            (_, ItemUseKind::Food | ItemUseKind::MountTaming | ItemUseKind::Concoction) => false,
+            (
+                _,
+                ItemUseKind::Food
+                | ItemUseKind::MountTaming
+                | ItemUseKind::Concoction
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb,
+            ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -347,7 +364,10 @@ impl DurabilityRoot {
     ) -> Result<ItemUseOutcome> {
         if matches!(
             request.kind,
-            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming
+            ItemUseKind::PickRefine { .. }
+                | ItemUseKind::MountTaming
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb
         ) {
             return Err(ItemUseError::InvalidInput);
         }

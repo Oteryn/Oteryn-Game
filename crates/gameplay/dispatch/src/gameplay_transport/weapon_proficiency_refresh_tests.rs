@@ -39,6 +39,7 @@ fn attack_refresh_retains_pending_progress_and_death_deduplication() {
             .expect("shape"),
         progress: 0,
         selections: vec![None; 7],
+        modifications: [None, None],
         effects: ProficiencyAttackEffects::default(),
     };
     owner.install_track("weapon", track.clone());
