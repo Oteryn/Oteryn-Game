@@ -463,7 +463,7 @@ pub(super) async fn apply(
     let payment = if mutation == Mutation::RottenPurchase {
         match payment::prepare(admission, command, fence).await {
             Ok(payment) => Some(Box::new(payment)),
-            Err(outcome) => return outcome,
+            Err(outcome) => return *outcome,
         }
     } else {
         None

@@ -6,8 +6,8 @@ pub(super) async fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
     fence: CurrentCharacterGameplayFence,
-) -> Result<RottenBloodAccessPayment, NpcTalkOutcome> {
-    let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+) -> Result<RottenBloodAccessPayment, Box<NpcTalkOutcome>> {
+    let rejected = || Box::new(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
     let (gold, platinum, crystal, default_backpack) = {
         let runtime = admission.runtime.lock().await;
         let (gold, platinum, crystal) =
@@ -35,7 +35,7 @@ pub(super) async fn prepare(
         .root
         .read_character_backpack(admission.character, fence.character_id)
         .await
-        .map_err(|_| unknown())?;
+        .map_err(|_| Box::new(unknown()))?;
     let native = admission
         .active_generation
         .and_then(crate::content::ActiveGeneration::native_gameplay)

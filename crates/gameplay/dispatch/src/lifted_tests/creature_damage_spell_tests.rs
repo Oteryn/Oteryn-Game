@@ -3041,9 +3041,6 @@ fn dmg3_earth_death_target_sources_read_protection_and_replay() {
     }
 }
 
-/// A native scheduled cast reaches the real HP owner with the session's durable selection
-/// projection. The actual map admission owns frame qualification; this fixture supplies it.
-
 // Lab admission intentionally does not install a live CreaturePolicy. Hazard must
 // still prove a current wild monster, so use the existing actual source decoder.
 fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
@@ -3075,6 +3072,8 @@ fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, 
     );
 }
 
+/// A native scheduled cast reaches the real HP owner with the session's durable selection
+/// projection. The actual map admission owns frame qualification; this fixture supplies it.
 #[test]
 fn hazard_monster_spell_uses_current_zone_frame_rounding_and_replay() {
     for (at, frame, expected) in [
