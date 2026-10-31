@@ -6,18 +6,27 @@ use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
 
 #[test]
 fn daily_resting_persisted_streak_feeds_existing_vitals_owner() -> TestResult {
+    scenario(false)
+}
+
+#[test]
+fn daily_resting_premium_streak_feeds_vitals_and_soul_owner() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(premium: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || resting_scenario(premium).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "daily resting PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn resting_scenario(premium: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "daily_resting", false, false).await?;
         prepare_current_session(&h).await?;
@@ -92,9 +101,11 @@ fn scenario() -> TestResult {
                 state
                     .restore_bed_rest([5, 0, 0, 0], owner.owner_now().get())
                     .ok_or("resting soul seed")?;
-                state
-                    .apply_owner_premium_transition(true, Some(u64::MAX))
-                    .map_err(debug)?;
+                if premium {
+                    state
+                        .apply_owner_premium_transition(true, Some(u64::MAX))
+                        .map_err(debug)?;
+                }
             }
             // Initialization keeps microseconds; condition ticks truncate to milliseconds.
             // Advance a full second from the last observation, rounding up so even the
@@ -113,15 +124,20 @@ fn scenario() -> TestResult {
                 .get(&runtime, actor, session)
                 .ok_or("actor")?
                 .vitals();
-            // The production cadence consumes both the ordinary resting pools and the
-            // streak-seven soul clock while the Premium actor remains on the qualified tile.
+            // Free accounts retain the day-2/day-3 rates, even with a persisted streak of 7.
             assert_eq!(
                 (vitals.health, vitals.mana),
-                if inside { (160, 90) } else { (130, 50) }
+                if premium && inside {
+                    (160, 90)
+                } else {
+                    (130, 50)
+                }
             );
-            assert_eq!(vitals.soul, if inside { 6 } else { 5 });
+            // Free soul stays at the seeded 5: resting_area.rs:95 gates the streak-seven
+            // point on Premium, matching docs/reference/tibia-manual/characters.md:58.
+            assert_eq!(vitals.soul, if premium && inside { 6 } else { 5 });
             eprintln!(
-                "PG_MARKER daily-resting-real-tick-soul inside={inside} soul={}",
+                "PG_MARKER daily-resting-real-tick-soul premium={premium} inside={inside} soul={}",
                 vitals.soul
             );
         }
