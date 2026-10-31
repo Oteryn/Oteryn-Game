@@ -49,6 +49,109 @@ async fn cast(
     Ok(())
 }
 
+/// PR #2771 ANSWER6544065111: the existing percentage owner remains active;
+/// another member's Mantra is not a substitute for the absent complete-party owner.
+async fn assert_guiding_percentage_without_shared_mantra(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    source: (ExactActorRef, GameSessionId),
+    recipient: (ExactActorRef, GameSessionId),
+) -> TestResult {
+    use crate::player_lethal::PlayerHitKind;
+    let original_mantra = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        states
+            .get(&runtime, source.0, source.1)
+            .ok_or("Guiding source")?
+            .ascetic_attack_bonus(1)
+    };
+    let mut without_shared_mantra = None;
+    for source_mantra in [0, 17, 83] {
+        {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states
+                .get_mut(&runtime, source.0, source.1)
+                .ok_or("Guiding source")?;
+            // Explicit equipment projection fixture, installed by the same seam as
+            // admission equipment. Party membership and Guiding are read by the real
+            // native owner from the committed World and Wheel state above.
+            state.install_equipped_mantra(source_mantra);
+            assert_eq!(state.ascetic_attack_bonus(1), source_mantra);
+        }
+        owner
+            .refresh_source_party_serene(recipient.0, recipient.1)
+            .await;
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .get(&runtime, recipient.0, recipient.1)
+            .ok_or("Guiding recipient")?;
+        let now = owner.owner_now().get();
+        assert_eq!(state.virtue_party_bonuses(now).damage_reduction, 4);
+        assert!(state.vitals().health > 100);
+        let mut losses = Vec::new();
+        for kind in [
+            PlayerHitKind::Fire,
+            PlayerHitKind::Energy,
+            PlayerHitKind::Earth,
+            PlayerHitKind::Ice,
+        ] {
+            let (after, _) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                &runtime,
+                recipient.0,
+                state,
+                100,
+                kind,
+                now,
+            )
+            .map_err(debug)?;
+            let loss = state.vitals().health - after.vitals().health;
+            if source_mantra == 0 {
+                let mut without_virtue = state.clone();
+                without_virtue
+                    .install_virtue_party_bonuses(Default::default(), now)
+                    .map_err(debug)?;
+                let (plain, _) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                    &runtime,
+                    recipient.0,
+                    &without_virtue,
+                    100,
+                    kind,
+                    now,
+                )
+                .map_err(debug)?;
+                let plain_loss = state.vitals().health - plain.vitals().health;
+                assert!(plain_loss > 0);
+                assert_eq!(
+                    loss,
+                    plain_loss * 96 / 100,
+                    "Guiding percentage for {kind:?}"
+                );
+            }
+            losses.push(loss);
+        }
+        if let Some(expected) = &without_shared_mantra {
+            assert_eq!(
+                &losses, expected,
+                "party Mantra {source_mantra} must not change absorption"
+            );
+        } else {
+            without_shared_mantra = Some(losses);
+        }
+    }
+    let runtime = owner.runtime.lock().await;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .get_mut(&runtime, source.0, source.1)
+        .ok_or("Guiding source")?
+        .install_equipped_mantra(original_mantra);
+    Ok(())
+}
+
 pub(super) async fn scenario(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -279,6 +382,9 @@ pub(super) async fn scenario(
                 "Guiding={guided}, recipient={:?}",
                 recipient.0
             );
+        }
+        if guided {
+            assert_guiding_percentage_without_shared_mantra(owner, player, players[1]).await?;
         }
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.

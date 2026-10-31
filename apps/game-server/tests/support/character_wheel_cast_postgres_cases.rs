@@ -333,6 +333,9 @@ async fn snapshot(h: &Harness) -> TestResult<Vec<String>> {
         "game_character_wheel_state",
         "game_character_wheel_slots",
         "game_character_wheel_receipts",
+        "game_character_wheel_vessels",
+        "game_character_atelier_state",
+        "game_character_atelier_receipts",
         "game_wheel_ruleset_revisions",
         "game_wheel_ruleset_slot_capacities",
         "game_character_equipment_state",
@@ -497,6 +500,177 @@ fn current_cast_reads_no_row_then_committed_stages_and_expires_premium() -> Test
         );
         tx.commit().await?;
         assert_eq!(snapshot(h).await?, before, "stage read wrote durable state");
+        Ok(())
+    })
+}
+
+#[test]
+fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() -> TestResult {
+    use oteryn_gameplay_progression::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
+    run("wheel_cast_gem_effects", async |h| {
+        prepare_current_owners(h).await?;
+        let rules = ruleset()?;
+        let data = crate::wheel_gem_data::WheelGemData::embedded().map_err(debug)?;
+        let (_, actor) = current_actor(h)?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let coordinator =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                Default::default(),
+                None,
+                None,
+                Some(h.root.clone()),
+            );
+        // Historical Atelier state is the read fixture, while the current Wheel and vessel
+        // transitions are committed by the real writer. No admission-cache effect is supplied.
+        let mut atelier = AtelierState {
+            revision: 1,
+            vocation: "sorcerer".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        atelier.grades.insert((FragmentKind::Basic, 31), 3);
+        for phase in 0..2_u8 {
+            let mut points = [0; WHEEL_SLOTS];
+            let vessels = if phase == 0 {
+                for domain in [
+                    WheelDomain::Green,
+                    WheelDomain::Red,
+                    WheelDomain::Blue,
+                    WheelDomain::Purple,
+                ] {
+                    let mut remaining = 249;
+                    for capacity in [50, 75, 100, 150, 200] {
+                        for (index, slot) in rules.slots().iter().enumerate() {
+                            if slot.domain == domain && slot.capacity == capacity {
+                                let assigned = remaining.min(capacity);
+                                points[index] = assigned;
+                                remaining -= assigned;
+                            }
+                        }
+                    }
+                    assert_eq!(remaining, 0);
+                }
+                None
+            } else {
+                let mut reduced = false;
+                for (index, slot) in rules.slots().iter().enumerate() {
+                    if slot.domain == WheelDomain::Green {
+                        points[index] = slot.capacity;
+                        if slot.capacity == 200 && !reduced {
+                            points[index] = 50;
+                            reduced = true;
+                        }
+                    }
+                }
+                let gem_id = u128::from_be_bytes(id(105));
+                atelier.revision += 1;
+                atelier.gems.insert(
+                    gem_id,
+                    Gem {
+                        id: gem_id,
+                        quality: GemQuality::Greater,
+                        domain: WheelDomain::Green,
+                        mods: vec![31, 0, 5],
+                        locked: false,
+                        vessel: false,
+                        ruleset_revision: data.revision().into(),
+                    },
+                );
+                Some([Some(id(105)), None, None, None])
+            };
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_character_atelier_state(character_id,atelier_revision,gold,fragments_basic,fragments_supreme,state_json) VALUES(encode($1,'hex')::uuid,$2,0,0,0,$3) ON CONFLICT(character_id) DO UPDATE SET atelier_revision=excluded.atelier_revision,state_json=excluded.state_json")
+                .bind(id(CHARACTER).as_slice()).bind(i64::try_from(atelier.revision)?)
+                .bind(serde_json::to_value(&atelier)?).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let outcome = h
+                .root
+                .commit_character_wheel(
+                    &recovery,
+                    &h.node,
+                    fence(READY_CHARACTER_REVISION + u64::from(phase))?,
+                    WheelChangeRequest {
+                        vessels,
+                        occurrence: WheelOccurrence::from_bytes(id(106 + phase)).map_err(debug)?,
+                        expected_wheel_revision: u64::from(phase),
+                        slots: WheelSlots::new(points).map_err(debug)?,
+                    },
+                    Arc::clone(&rules),
+                    WheelChangeFacts {
+                        at_temple: phase != 0,
+                    },
+                    &coordinator,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(outcome, WheelCommitOutcome::Committed(_)));
+            let before = snapshot(h).await?;
+            let mut tx = runtime_tx(h).await?;
+            let authority = equipment_authority(&mut tx, h, &recovery).await?;
+            let raw = read_raw_cast_facts_in_transaction(&mut tx, &authority)
+                .await
+                .map_err(debug)?;
+            let read = read_current_allocation_in_transaction(&mut tx, &authority, &rules)
+                .await
+                .map_err(debug)?;
+            let current = binding(actor, READY_CHARACTER_REVISION + u64::from(phase) + 1)?;
+            let projected = project(&read, &raw, &rules, &current, 99)?;
+            let stages = projected.wheel.as_ref().ok_or("current gem stages")?;
+            let effects = &projected
+                .wheel_effects
+                .as_ref()
+                .ok_or("current gem effects")?
+                .value;
+            assert_eq!(effects.sockets.grade_iv_points, 1);
+            if phase == 0 {
+                assert_eq!(stages.value["gift_of_life"], 1);
+                assert_eq!(stages.value["beam_mastery"], 1);
+                assert_eq!(stages.value["Beam Mastery"], 1);
+                assert_eq!(stages.value["lord_of_destruction"], 1);
+                assert_eq!(stages.value["Lord of Destruction"], 1);
+                assert_eq!(stages.value["avatar_of_storm"], 1);
+                assert_eq!(stages.value["Avatar of Storm"], 1);
+                assert_eq!(stages.value["avatar of storm"], 1);
+                assert_eq!(effects.flat_damage_bonus(), Some(16));
+                assert_eq!(effects.flat_healing_bonus(), Some(16));
+            } else {
+                assert_eq!(read.allocation().slots.total(), 850);
+                assert!(
+                    read.atelier().ok_or("same transaction Atelier")?.gems
+                        [&u128::from_be_bytes(id(105))]
+                        .vessel
+                );
+                assert_eq!(
+                    stages.value["gift_of_life"], 3,
+                    "850 allocated +150 mastery +1 Grade IV opens stage3"
+                );
+                assert_eq!(stages.value["beam_mastery"], 0);
+                assert_eq!(stages.value["Beam Mastery"], 0);
+                assert_eq!(effects.flat_damage_bonus(), Some(20));
+                assert_eq!(effects.flat_healing_bonus(), Some(20));
+            }
+            let expired = project(&read, &raw, &rules, &current, 100)?;
+            assert!(expired.wheel.is_none() && expired.wheel_effects.is_none());
+            let mut replaced = current.clone();
+            replaced.lease_generation += 1;
+            let stale = project(&read, &raw, &rules, &replaced, 99)?;
+            assert!(stale.wheel.is_none() && stale.wheel_effects.is_none());
+            tx.commit().await?;
+            assert_eq!(
+                snapshot(h).await?,
+                before,
+                "the cast reader does not write Atelier or Wheel state"
+            );
+        }
+        eprintln!("WHEEL_CAST_GEMS POSTGRES_CASE_COMPLETED");
         Ok(())
     })
 }
