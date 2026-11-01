@@ -2377,6 +2377,9 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests;
 
+/// VIP request and result codec used by session-layer clients.
+pub use oteryn_protocol_oteryn::vip;
+
 #[cfg(test)]
 #[path = "guild_chat_tests.rs"]
 mod guild_chat_tests;

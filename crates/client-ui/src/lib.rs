@@ -48,6 +48,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// VIP list, group, and consent panel state.
+#[path = "features/0043-vip/mod.rs"]
+pub mod vip;
+
 /// House banker hireling status and controls.
 #[path = "features/0165-hireling/mod.rs"]
 pub mod hireling;

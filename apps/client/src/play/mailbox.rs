@@ -73,6 +73,7 @@ pub(super) struct Mailbox {
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
+    pub(super) vip: oteryn_client_ui::vip::VipPanel,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,

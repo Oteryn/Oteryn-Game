@@ -20,3 +20,28 @@ fn vip_codec_bounds_and_strict_decoding() {
     assert!(encode_result(1, 1, 0, 0, &"x".repeat(MAX_RESULT_BYTES)).is_err());
     assert_eq!(encode_result(1, 7, 2, 0, "{}").map(|v| v.len()), Ok(12));
 }
+
+#[test]
+fn client_codec_round_trips_server_codec() {
+    let request = Request {
+        operation: Operation::Edit,
+        number: 7,
+        text: "friend".into(),
+        icon: 3,
+        notify: true,
+        groups: vec![2, 4],
+    };
+    let (kind, bytes) = encode_request(&request).expect("valid request");
+    assert_eq!(decode_request(kind, &bytes), Ok(request));
+    let bytes = encode_result(8, 9, 7, 2, "{\"entries\":[]}").expect("valid result");
+    assert_eq!(
+        decode_result(&bytes),
+        Ok(ResultView {
+            code: 8,
+            revision: 9,
+            number: 7,
+            wait: 2,
+            view: "{\"entries\":[]}".into()
+        })
+    );
+}

@@ -13,6 +13,7 @@ pub enum PlayCommand {
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,
+    Vip(oteryn_client_runtime::vip::VipCommand),
     Guild(oteryn_client_runtime::guild::GuildCommand),
     Party(oteryn_client_runtime::party::PartyCommand),
     Hireling(oteryn_client_runtime::hireling::HirelingCommand),

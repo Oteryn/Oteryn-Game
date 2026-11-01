@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn vip_selected(&self) -> bool {
+        false
+    }
+    fn vip(
+        &mut self,
+        _request: &oteryn_client_runtime::vip::VipCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::vip::VipResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 43 }) }
+    }
     fn guild_selected(&self) -> bool {
         false
     }
@@ -171,6 +181,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn vip_selected(&self) -> bool {
+        self.is_selected(oteryn_session::vip::CAPABILITY_VIP_V1)
+    }
+    async fn vip(
+        &mut self,
+        request: &oteryn_client_runtime::vip::VipCommand,
+    ) -> Result<oteryn_client_runtime::vip::VipResponse, SessionError> {
+        oteryn_client_runtime::vip::send(self, request).await
+    }
     fn guild_selected(&self) -> bool {
         self.is_selected(oteryn_session::guild::CAPABILITY_GUILD_V1)
     }
@@ -229,6 +248,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.vip_initialize(session.vip_selected());
     outbox.guild_initialize(session.guild_selected());
     outbox.party_initialize(session.party_selected());
     outbox.hireling_initialize(session.hireling_selected());
@@ -301,6 +321,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Vip(request)) => match session.vip(&request).await {
+                Ok(response) => {
+                    outbox.vip_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

@@ -134,6 +134,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+/// VIP list, groups and consent commands.
+#[path = "features/0043-vip/protocol.rs"]
+pub mod vip;
+
 /// Hireling command execution through the admitted session.
 #[path = "features/0165-hireling/protocol.rs"]
 pub mod hireling;

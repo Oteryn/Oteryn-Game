@@ -35,6 +35,108 @@ pub struct Request {
     pub groups: Vec<u8>,
 }
 
+/// Encodes a request using the same strict shape accepted by [`decode_request`].
+pub fn encode_request(request: &Request) -> Result<(u32, Vec<u8>), Error> {
+    use crate::charm_wire::{push_message_field, push_varint_field};
+    let kind = match request.operation {
+        Operation::Add
+        | Operation::Remove
+        | Operation::Edit
+        | Operation::GroupAdd
+        | Operation::GroupRename
+        | Operation::GroupRemove => COMMAND_TYPE_VIP_LIST,
+        Operation::Accept
+        | Operation::Reject
+        | Operation::Revoke
+        | Operation::Withdraw
+        | Operation::Status => COMMAND_TYPE_VIP_CONSENT,
+        Operation::Query => COMMAND_TYPE_VIP_QUERY,
+    };
+    let mut out = Vec::new();
+    push_varint_field(&mut out, 1, request.operation as u64);
+    match request.operation {
+        Operation::Add | Operation::GroupAdd => {
+            push_message_field(&mut out, 3, request.text.as_bytes())
+        }
+        Operation::GroupRename => {
+            push_varint_field(&mut out, 2, request.number);
+            push_message_field(&mut out, 3, request.text.as_bytes());
+        }
+        Operation::Edit => {
+            push_varint_field(&mut out, 2, request.number);
+            push_message_field(&mut out, 3, request.text.as_bytes());
+            push_varint_field(&mut out, 4, u64::from(request.icon));
+            push_varint_field(&mut out, 5, u64::from(request.notify));
+            for group in &request.groups {
+                push_varint_field(&mut out, 6, u64::from(*group));
+            }
+        }
+        Operation::Query => {
+            if request.number != 0 {
+                push_varint_field(&mut out, 2, request.number);
+            }
+        }
+        _ => push_varint_field(&mut out, 2, request.number),
+    }
+    decode_request(kind, &out)?;
+    Ok((kind, out))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResultView {
+    pub code: u8,
+    pub revision: u64,
+    pub number: u64,
+    pub wait: u8,
+    pub view: String,
+}
+
+/// Decodes the server result produced by [`encode_result`].
+pub fn decode_result(bytes: &[u8]) -> Result<ResultView, Error> {
+    use crate::charm_wire::{read_bytes, read_varint, set_once};
+    if bytes.len() > MAX_RESULT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut code, mut revision, mut number, mut wait, mut view) = (None, None, None, None, None);
+    let mut cursor = 0;
+    while cursor < bytes.len() {
+        match read_varint(bytes, &mut cursor)? {
+            8 => set_once(
+                &mut code,
+                u8::try_from(read_varint(bytes, &mut cursor)?).map_err(|_| Error::Malformed)?,
+            )?,
+            16 => set_once(&mut revision, read_varint(bytes, &mut cursor)?)?,
+            24 => set_once(&mut number, read_varint(bytes, &mut cursor)?)?,
+            32 => set_once(
+                &mut wait,
+                u8::try_from(read_varint(bytes, &mut cursor)?).map_err(|_| Error::Malformed)?,
+            )?,
+            42 => set_once(
+                &mut view,
+                std::str::from_utf8(read_bytes(bytes, &mut cursor)?)
+                    .map_err(|_| Error::Malformed)?
+                    .to_owned(),
+            )?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let value = ResultView {
+        code: code.ok_or(Error::Malformed)?,
+        revision: revision.ok_or(Error::Malformed)?,
+        number: number.ok_or(Error::Malformed)?,
+        wait: wait.ok_or(Error::Malformed)?,
+        view: view.unwrap_or_default(),
+    };
+    encode_result(
+        value.code,
+        value.revision,
+        value.number,
+        value.wait,
+        &value.view,
+    )?;
+    Ok(value)
+}
+
 /// Strict bounded protobuf request. Fields: operation=1, number=2, text=3,
 /// icon=4, notify=5, repeated (unpacked) group numbers=6.
 pub fn decode_request(command_type: u32, bytes: &[u8]) -> Result<Request, Error> {
