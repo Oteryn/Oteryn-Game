@@ -616,6 +616,7 @@
       }
     },
     "quest_inputs": {
+      "description": "Quest source fingerprints: canonical JSON excluding shard definition oteryn_recipe and index authoring_sources, which are generated consumers of this capture.",
       "type": "array",
       "items": {
         "type": "object",

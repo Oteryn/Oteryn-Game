@@ -3,6 +3,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from donor_sources.output import quest_source_sha256
 
 PREFIX = 'tools/content-schema/quest-authoring/samples/'
 
@@ -12,7 +16,8 @@ def build(repo):
     inputs = {}
     def read(path):
         raw = (repo/path).read_bytes()
-        inputs[path] = hashlib.sha256(raw).hexdigest()
+        inputs[path] = (quest_source_sha256(repo/path) if path.startswith('content/quests/definitions/')
+                        else hashlib.sha256(raw).hexdigest())
         return json.loads(raw)
     index, bundle, manifest = (read(p) for p in files)
     donors = {q['identity']['key']: q for q in bundle['quests']}

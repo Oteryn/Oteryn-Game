@@ -13,6 +13,7 @@
           "type": "string"
         },
         "boss_descriptor_packet": {
+          "description": "SHA-256 of the exact decompressed boss descriptor JSON payload.",
           "pattern": "^[0-9a-f]{64}$",
           "type": "string"
         },

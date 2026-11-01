@@ -1,5 +1,6 @@
 """Source ownership, closed-schema and original-core regression controls."""
 import copy
+import gzip
 import hashlib
 import json
 import shutil
@@ -55,7 +56,10 @@ class DonorAttachmentTests(unittest.TestCase):
         jsonschema.Draft202012Validator(self.schema).validate(supplement)
         for ref in supplement['refs']:
             path = self.root / ref['path']
-            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), ref['packet_sha256'])
+            raw = path.read_bytes()
+            if path.suffix == '.gz':
+                raw = gzip.decompress(raw)
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), ref['packet_sha256'])
             value = tool.pointer(tool.read(path), ref['json_pointer'])
             self.assertEqual(tool.digest(value), ref['record_sha256'])
 

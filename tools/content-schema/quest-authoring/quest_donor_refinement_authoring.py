@@ -1,12 +1,12 @@
 """Reproduce concrete donor condition, component association and NPC context refinements."""
 import gzip
-import hashlib
 import json
 from pathlib import Path
 import subprocess
 import sys
 
 import jsonschema
+from donor_sources.output import payload_sha256
 
 OUTPUTS = ('conditions.json', 'conditions-qualification.json', 'guard-specs.json', 'mission-progress.json', 'mission-progress-config.json', 'joins.json',
            'dialogue.json.gz', 'summary.json')
@@ -17,10 +17,11 @@ def read(path):
     return json.loads(gzip.decompress(raw) if path.suffix == '.gz' else raw)
 
 
-def assemble(root, manifest, ast_root, output):
+def assemble(root, manifest, ast_root, output, components=None):
     here = Path(__file__).parent
     modules = here / 'donor_sources/refinements'
     output.mkdir(parents=True, exist_ok=True)
+    components = components or here / 'samples/donor-source/components248'
     commands = [
         [modules / 'conditions/builder.py', '--authoring', here, '--corpus-manifest', manifest,
          '--ast-root', ast_root, '--product-root', root, '--out', output / 'conditions.json'],
@@ -37,7 +38,7 @@ def assemble(root, manifest, ast_root, output):
          '--corpus-manifest', manifest, '--ast-root', ast_root,
          '--out', output / 'mission-progress-config.json'],
         [modules / 'joins_next2/builder.py', '--repo-root', root, '--assignment',
-         here / 'samples/donor-source/components248/assignments/all.json',
+         components / 'assignments/all.json', '--boss-packet', components / 'boss.json.gz',
          '--corpus-manifest', manifest, '--out', output / 'joins.json'],
         [modules / 'dialogue/quest_dialogue_links_all.py', '--repo-root', root,
          '--corpus-manifest', manifest, '--ast-root', ast_root, '--all-source-quests',
@@ -71,7 +72,7 @@ def summarize(output):
                'joins': packets['joins']['summary'], 'dialogue': packets['dialogue']['summary'],
                'canonical_opaque_replacements': 0, 'whole_quests_completed': 0,
                'native_admission': False, 'external_wiki_read': False,
-               'outputs': [{'path': name, 'sha256': hashlib.sha256((output / name).read_bytes()).hexdigest()}
+               'outputs': [{'path': name, 'sha256': payload_sha256(output / name)}
                            for name in OUTPUTS[:-1]]}
     (output / 'summary.json').write_text(json.dumps(summary, sort_keys=True, indent=2) + '\n')
     return summary

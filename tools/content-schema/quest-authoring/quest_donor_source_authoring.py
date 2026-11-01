@@ -13,6 +13,7 @@ import jsonschema
 from donor_sources.validate_archive import verify_archive
 from donor_sources.validate_corpus import safe_path
 from donor_sources.maps.verify import qualify as qualify_maps
+from donor_sources.output import matches_output, payload_sha256, write_output
 from quest_component_authoring import assemble as assemble_components, OUTPUTS as COMPONENT_OUTPUTS
 from quest_donor_refinement_authoring import assemble as assemble_refinements, OUTPUTS as REFINEMENT_OUTPUTS
 
@@ -171,7 +172,8 @@ def assemble(root, scratch):
     semantic_conditions = read(scratch / 'semantic-conditions.json')
     semantic_rewards = read(scratch / 'semantic-rewards.json')
     components = assemble_components(root, manifest_path, inputs / 'lua-ast', scratch / 'components248')
-    refinements = assemble_refinements(root, manifest_path, inputs / 'lua-ast', scratch / 'refinements')
+    refinements = assemble_refinements(root, manifest_path, inputs / 'lua-ast', scratch / 'refinements',
+                                      scratch / 'components248')
     report = {'schema': 'OTERYN_DONOR_FIRST_CAPTURE_COVERAGE/v1',
               'scope': 'SOURCE_CAPTURE_AND_STRUCTURE_NOT_SEMANTIC_QUEST_MIGRATION',
               'source_manifest_sha256': declaration['manifest_sha256'],
@@ -186,7 +188,7 @@ def assemble(root, scratch):
               'component_batch': {'component_count': components['component_count'], 'definition_count': components['definition_count'],
                                   'crosswalk': components['crosswalk'], 'dialogue': components['dialogue']},
               'quest_refinements': refinements,
-              'outputs': [{'path': name, 'sha256': sha(scratch / name)} for name in OUTPUTS[:-1]],
+              'outputs': [{'path': name, 'sha256': payload_sha256(scratch / name)} for name in OUTPUTS[:-1]],
               'source_quest_semantic_1_to_1': 'NOT_ESTABLISHED',
               'map_dependency_closure': 'NOT_ESTABLISHED',
               'native_admission': 'NOT_ASSESSED',
@@ -207,11 +209,10 @@ def main():
             path = args.root / DIRECTORY / name
             data = (scratch / name).read_bytes()
             if args.check:
-                if not path.is_file() or path.read_bytes() != data:
+                if not matches_output(path, data):
                     raise ValueError('stale donor Source capture: ' + name)
             else:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(data)
+                write_output(path, data)
         print(json.dumps({'raw': report['raw_source'], 'lua': report['lua_structure'],
                           'external_quest_research_allowed': False}, sort_keys=True))
 

@@ -38,7 +38,7 @@ def static_expression(raw,values):
   if raw[position:position+2]!='..':return None
   position+=2
 def build(manifest_path,capture_path):
- manifest=json.loads(manifest_path.read_text());raw=capture_path.read_bytes();capture=json.loads(gzip.decompress(raw) if capture_path.suffix=='.gz' else raw);rows={(r['source'],r['revision'],r['path']):r for r in manifest['files']};captured={(r['source'],r['revision'],r['path']) for r in capture['files']};proofs=[];proof_by={}
+ manifest=json.loads(manifest_path.read_text());raw=capture_path.read_bytes();raw=gzip.decompress(raw) if capture_path.suffix=='.gz' else raw;capture=json.loads(raw);rows={(r['source'],r['revision'],r['path']):r for r in manifest['files']};captured={(r['source'],r['revision'],r['path']) for r in capture['files']};proofs=[];proof_by={}
  def body(source,path):
   row=rows[(source,PINS[source][1],path)];return resolve_manifest_file(manifest_path,row).read_bytes().decode('utf8')
  def evidence(source,path,pattern):

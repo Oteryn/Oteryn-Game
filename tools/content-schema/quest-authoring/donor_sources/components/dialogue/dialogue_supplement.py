@@ -1,6 +1,8 @@
 """Pinned AST-derived dialogue supplement; no Lua execution or native admission."""
-import argparse, base64, gzip, hashlib, json, tarfile
+import argparse, base64, gzip, hashlib, json, sys, tarfile
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[3]))
+from donor_sources.output import quest_source_sha256
 PINS = {"canary":"04b83b512114bfd888000d6e1433ed8ecaec7c5b", "crystalserver":"9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"}
 FILES = {"tereban.lua", "tereban_functions.lua", "alesar.lua", "alesar_functions.lua", "captain_haba.lua", "captain_haba_open_sea.lua"}
 def digest(b): return hashlib.sha256(b).hexdigest()
@@ -147,10 +149,10 @@ def build(corpus_manifest,ast_root,repo_root):
     links=helper_links(projects)
     quest_inputs=[]; quest_links=[]
     index_path="content/quests/definitions/index.json"; qb=(repo_root/index_path).read_bytes(); qi=json.loads(qb)
-    quest_inputs.append({"path":index_path,"sha256":digest(qb)})
+    quest_inputs.append({"path":index_path,"sha256":quest_source_sha256(repo_root/index_path)})
     selected={(r["source"],r["revision"],r["path"],r["source_sha256"]) for r in records}
     for shard in qi["shards"]:
-        blob=(repo_root/shard).read_bytes(); quest_inputs.append({"path":shard,"sha256":digest(blob)})
+        blob=(repo_root/shard).read_bytes(); quest_inputs.append({"path":shard,"sha256":quest_source_sha256(repo_root/shard)})
         for entry in json.loads(blob)["records"]:
             q=entry["definition"]; refs=[]
             for track in q.get("source_data",{}).get("progress",[]):
@@ -160,7 +162,7 @@ def build(corpus_manifest,ast_root,repo_root):
                             refs.append({"progress_key":track["key"],"occurrence":occ,"binding":"EXISTING_EXACT_PROGRESS_SOURCE_OCCURRENCE_ONLY"})
             if refs: quest_links.append({"quest":q["identity"],"source_progress_occurrences":refs,"native_npc_binding":False,"complete_dialogue_certification":False})
     for descriptor in quest_inputs:
-        if digest((repo_root/descriptor["path"]).read_bytes())!=descriptor["sha256"]: raise ValueError("Quest input moved during build")
+        if quest_source_sha256(repo_root/descriptor["path"])!=descriptor["sha256"]: raise ValueError("Quest input moved during build")
     return {"schema":"OTERYN_DONOR_DIALOGUE_SEMANTIC_SUPPLEMENT/v1","scope":"BOUNDED_AST_GUARDED_SOURCE_DIALOGUE_NOT_RUNTIME_EQUIVALENCE","corpus_manifest_sha256":digest(corpus_manifest.read_bytes()),"ast_index_sha256":digest(stable(index)),"native_admission":False,"source_complete_quest_certification":False,"records":records,"helper_links":links,"quest_inputs":quest_inputs,"quest_links":quest_links,"summary":{"source_files":len(records),"guarded_branches":sum(len(r["branches"]) for r in records),"ordered_source_events":sum(len(r["events"]) for r in records),"helper_calls":len(links),"quests_with_existing_exact_source_links":len(quest_links),"scope_filenames":sorted(FILES)},"holds":["Global declaration candidate does not prove loader execution or deployed binding","Expression values, random results, external helpers and message tables retain exact AST without runtime evaluation","No Oteryn NPC identifiers or quest completion are inferred from filename or lexical similarity", "Existing canonical progress occurrence joins preserve existing attribution and do not prove sole quest ownership or complete dialogue", "Branch guards do not prove prior-return reachability, loop execution, expression short circuit or deployed global reassignments"]}
 def qualify(packet,corpus_manifest,ast_root,repo_root):
     expected=build(corpus_manifest,ast_root,repo_root)

@@ -145,7 +145,7 @@ def boss_descriptor(record, text, next_builder, mask):
     return boss_name, spans
 
 
-def build(repo_root, assignment, corpus_manifest):
+def build(repo_root, assignment, corpus_manifest, boss_packet=None):
     root = Path(repo_root)
     next_builder = prior(root)
     packet = next_builder.build(root, assignment, corpus_manifest)
@@ -160,7 +160,7 @@ def build(repo_root, assignment, corpus_manifest):
     rows_by_identity = {(r['provenance']['source'], r['provenance']['revision'], r['provenance']['path']): r for r in packet['records']}
     events, spell_names, monsters = defaultdict(list), defaultdict(list), defaultdict(list)
     event_counts, monster_counts, spell_counts = Counter(), Counter(), Counter()
-    boss_path = tool / 'samples/donor-source/components248/boss.json.gz'
+    boss_path = Path(boss_packet) if boss_packet else tool / 'samples/donor-source/components248/boss.json.gz'
     boss_packet = json.loads(gzip.decompress(boss_path.read_bytes()))
     controller_packets = {(c['provenance']['source'], c['provenance']['revision']): c for c in boss_packet['controllers']}
     controllers = {}
@@ -285,14 +285,15 @@ def build(repo_root, assignment, corpus_manifest):
         for item in row['proofs']:
             item.setdefault('association_direction', 'NONEXCLUSIVE_SOURCE_REFERENCE')
             item.setdefault('shared_dependency_witnesses', [])
-        row['proofs'] = list({base.canonical_hash(item): item for item in row['proofs']}.values())
+        proofs = {base.canonical_hash(item): item for item in row['proofs']}
+        row['proofs'] = [proofs[key] for key in sorted(proofs)]
         row['quest_keys'] = sorted({item['quest_key'] for item in row['proofs']})
         row['closed_mapping_gaps'] = ['MISSING_EXACT_SOURCE_COMPONENT_QUEST_ASSOCIATION'] if row['quest_keys'] else []
         if row['quest_keys']:
             row['remaining_holds'] = [h for h in row['remaining_holds'] if h != 'EXACT_QUEST_ASSOCIATION_NOT_ESTABLISHED']
             row['association_scope'] = 'MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES' if len(row['quest_keys']) > 1 else 'QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE'
     packet['schema'] = 'OTERYN_EXACT_SOURCE_COMPONENT_QUEST_JOINS/v3'
-    packet['input_sha256']['boss_descriptor_packet'] = base.sha(boss_path.read_bytes())
+    packet['input_sha256']['boss_descriptor_packet'] = base.sha(gzip.decompress(boss_path.read_bytes()))
     packet['quests'] = [{'quest_key': key, 'component_ids': sorted(r['source_component_id'] for r in packet['records'] if key in r['quest_keys']), 'closed_mapping_gaps': ['MISSING_EXACT_SOURCE_COMPONENT_QUEST_ASSOCIATION'], 'quest_completeness': 'NOT_ASSESSED'} for key in sorted({key for row in packet['records'] for key in row['quest_keys']})]
     for quest in packet['quests']:
         quest['source_traversal_holes'] = [{'source_component_id': row['source_component_id'], 'code': 'SOURCE_CALLBACK_EFFECTS_AND_REACHABILITY_NOT_CERTIFIED', 'source_path': row['provenance']['path'], 'native_admission': False} for row in packet['records'] if quest['quest_key'] in row['quest_keys']]
@@ -304,7 +305,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     for arg in ('repo-root', 'assignment', 'corpus-manifest', 'out'):
         parser.add_argument('--' + arg, required=True)
+    parser.add_argument('--boss-packet', type=Path)
     args = parser.parse_args()
-    result = build(args.repo_root, args.assignment, args.corpus_manifest)
+    result = build(args.repo_root, args.assignment, args.corpus_manifest, args.boss_packet)
     Path(args.out).write_text(json.dumps(result, sort_keys=True, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(result['summary'], sort_keys=True))

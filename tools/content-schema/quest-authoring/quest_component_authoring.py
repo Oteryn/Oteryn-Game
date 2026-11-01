@@ -1,7 +1,6 @@
 """Reproduce all 248 Source component definitions and their honest Quest crosswalk."""
 import argparse
 import gzip
-import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -11,6 +10,7 @@ import tempfile
 
 import jsonschema
 from donor_sources.validate_archive import verify_archive
+from donor_sources.output import matches_output, payload_sha256, write_output
 
 DIRECTORY = 'tools/content-schema/quest-authoring/samples/donor-source/components248'
 OUTPUTS = ('assignments/all.json', 'assignments/boss.json', 'assignments/events.json',
@@ -26,7 +26,7 @@ def read(path):
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     raw = (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + '\n').encode()
-    path.write_bytes(gzip.compress(raw, mtime=0) if path.suffix == '.gz' else raw)
+    write_output(path, gzip.compress(raw, mtime=0) if path.suffix == '.gz' else raw)
 
 
 def partition(records):
@@ -85,7 +85,7 @@ def assemble(root, manifest, ast_root, output):
                'crosswalk': crosswalk['summary'], 'dialogue': dialogue['summary'],
                'quest_semantic_completeness': 'NOT_ESTABLISHED', 'native_admission': False,
                'external_wiki_read': False,
-               'outputs': [{'path': name, 'sha256': hashlib.sha256((output / name).read_bytes()).hexdigest()} for name in OUTPUTS[:-1]]}
+               'outputs': [{'path': name, 'sha256': payload_sha256(output / name)} for name in OUTPUTS[:-1]]}
     write(output / 'summary.json', summary)
     return summary
 
@@ -116,11 +116,10 @@ def main():
             target = destination / name
             data = (scratch / 'outputs' / name).read_bytes()
             if args.check:
-                if not target.is_file() or target.read_bytes() != data:
+                if not matches_output(target, data):
                     raise ValueError('stale Source component output: ' + name)
             else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(data)
+                write_output(target, data)
         print(json.dumps({'components': summary['component_count'], 'definitions': summary['definition_count'],
                           'native_admission': False}, sort_keys=True))
 

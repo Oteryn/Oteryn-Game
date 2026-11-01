@@ -27,6 +27,7 @@ def build(repo_root, assignment, corpus_manifest):
     tool = root / 'tools/content-schema/quest-authoring'
     sys.path.insert(0, str(tool))
     import lua_writers
+    from donor_sources.output import quest_source_sha256
     samples = tool / 'samples'
     bundle = read_json(samples / 'source_migration/bundle.json')
     crosswalk = read_json(samples / 'binding_packets/source/crosswalk.json')
@@ -37,7 +38,7 @@ def build(repo_root, assignment, corpus_manifest):
     defs = {}
     input_digests = {}
     for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
-        input_digests[str(path.relative_to(root))] = digest(path.read_bytes())
+        input_digests[str(path.relative_to(root))] = quest_source_sha256(path)
         for record in read_json(path)['records']:
             d = record['definition']
             key = d['identity']['key']

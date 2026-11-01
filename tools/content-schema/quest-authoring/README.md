@@ -368,6 +368,24 @@ through optional `oteryn_recipe.donor_source_data`. A derived completion schema
 preserves every constraint of the pinned original schema. The original Source
 cores, readiness and holds remain unchanged; these links do not admit runtime.
 The existing offline Source replay reproduces `samples/donor-source/refinements/`.
+Generated donor capture hashes identify the exact **uncompressed payload bytes**:
+`coverage.json` and component/refinement `summary.json` output descriptors,
+`npc-index.json`'s `capture_artifact.sha256`, `npc-dependencies.json`'s
+`input_provenance.npc_capture_sha256`, the
+joins `input_sha256.boss_descriptor_packet`, attachment `packet_sha256`, and
+Quest tree `authoring_sources` digests all
+decompress `.gz` paths before hashing. Other paths hash their raw bytes. This
+does not change the container digests of immutable corpus or Lua AST inputs.
+Donor and component `--check` compare the same payload bytes; write mode retains
+an existing gzip container when its payload is unchanged. New gzip containers
+retain `mtime=0`. Refinement replay consumes the freshly assembled component
+assignment and boss packet, and sorts deduplicated proofs by canonical hash.
+NPC capture, component dialogue, component crosswalk and Source binding crosswalk
+Quest input hashes use
+canonical JSON (UTF-8, sorted keys, compact separators), excluding each shard
+definition's `oteryn_recipe` and the index's `authoring_sources`. Those generated
+attachments and provenance consume donor captures; hashing them back into the
+captures would create a cycle. All other Quest input fields remain fingerprinted.
 Run `python -m unittest test_quest_donor_attachment test_quest_donor_refinements
 test_quest_requirement_followup test_quest_reward_followup
 test_donor_missing_record_nil` and the ordinary `python run_checks.py`. Three

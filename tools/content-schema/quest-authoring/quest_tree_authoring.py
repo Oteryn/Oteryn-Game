@@ -7,11 +7,12 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import re
 from collections import Counter
 from pathlib import Path
+
+from donor_sources.output import payload_sha256
 
 SOURCE = 'tools/content-schema/quest-authoring/samples/questlog/quests.json'
 CLAIM_INDEX = 'content/interactions/reward_claims/index.json'
@@ -39,7 +40,7 @@ def read(root, relative):
 
 
 def digest(root, relative):
-    return hashlib.sha256((root / relative).read_bytes()).hexdigest()
+    return payload_sha256(root / relative)
 
 
 def claim_catalogue(root):
@@ -341,6 +342,7 @@ def expected_files(root, include_registration=False):
             'content/quests/world-callbacks.json',
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
+            'tools/content-schema/quest-authoring/donor_sources/output.py',
             'tools/content-schema/quest-authoring/quest_requirement_followup.py',
             'tools/content-schema/quest-authoring/samples/recipe-followup/requirements.json',
             'tools/content-schema/quest-authoring/quest_chosen_journal.py',

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import jsonschema
+from donor_sources.output import payload_sha256
 
 DIRECTORY = 'tools/content-schema/quest-authoring/'
 DATA = DIRECTORY + 'samples/donor-source/'
@@ -20,7 +21,7 @@ def cached_read(root, path, cache):
     cache.setdefault('digests', {})
     if path not in cache['documents']:
         cache['documents'][path] = read(root / path)
-        cache['digests'][path] = hashlib.sha256((root / path).read_bytes()).hexdigest()
+        cache['digests'][path] = payload_sha256(root / path)
     return cache['documents'][path]
 
 
@@ -63,7 +64,7 @@ def pointer(value, location):
 
 def reference(root, path, location, value, category, scope, target, cache=None):
     return {'category': category, 'projection_scope': scope, 'source_target': target,
-            'path': path, 'packet_sha256': cache['digests'][path] if cache else hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            'path': path, 'packet_sha256': cache['digests'][path] if cache else payload_sha256(root / path),
             'json_pointer': location, 'record_sha256': digest(value)}
 
 

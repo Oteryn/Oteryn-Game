@@ -17,6 +17,7 @@
           "pattern": "^[a-f0-9]{64}$"
         },
         "npc_capture_sha256": {
+          "description": "SHA-256 of the exact NPC capture payload, after gzip decompression when applicable.",
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         }

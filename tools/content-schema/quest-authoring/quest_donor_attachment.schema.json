@@ -79,6 +79,7 @@
             "pattern": "^tools/content-schema/quest-authoring/samples/donor-source/"
           },
           "packet_sha256": {
+            "description": "SHA-256 of the exact packet bytes, after gzip decompression for .gz paths.",
             "type": "string",
             "pattern": "^[a-f0-9]{64}$"
           },

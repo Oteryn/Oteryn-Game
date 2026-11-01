@@ -410,6 +410,7 @@
       "const": false
     },
     "input_sha256": {
+      "description": "Quest definition shards hash canonical JSON excluding generated oteryn_recipe attachments; other inputs hash their exact bytes.",
       "additionalProperties": {
         "pattern": "^[0-9a-f]{64}$",
         "type": "string"
