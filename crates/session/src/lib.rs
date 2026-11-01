@@ -79,6 +79,8 @@ mod tutorial_notices;
 mod vip_presence;
 /// Exiva permission-list wire contract.
 pub use oteryn_protocol_oteryn::exiva;
+/// Imbuement shrine wire values used by the native client adapter.
+pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 pub use oteryn_protocol_oteryn::vip_presence::{

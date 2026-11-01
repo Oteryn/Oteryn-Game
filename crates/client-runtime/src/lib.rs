@@ -137,6 +137,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+/// Imbuement commands executed through the admitted session.
+#[path = "features/0068-imbue/protocol.rs"]
+pub mod imbue;
+
 /// VIP list, groups and consent commands.
 #[path = "features/0043-vip/protocol.rs"]
 pub mod vip;

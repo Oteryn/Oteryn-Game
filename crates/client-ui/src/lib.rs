@@ -51,6 +51,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// Imbuement shrine state, actions, and plain-text view.
+#[path = "features/0068-imbue/mod.rs"]
+pub mod imbue;
+
 /// VIP list, group, and consent panel state.
 #[path = "features/0043-vip/mod.rs"]
 pub mod vip;

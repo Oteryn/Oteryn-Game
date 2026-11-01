@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn imbue_selected(&self) -> bool {
+        false
+    }
+    fn imbue(
+        &mut self,
+        _command: &oteryn_client_runtime::imbue::ImbueCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 68 }) }
+    }
     fn player_trade_selected(&self) -> bool {
         false
     }
@@ -195,6 +205,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn imbue_selected(&self) -> bool {
+        self.is_selected(oteryn_session::imbuement::CAPABILITY_IMBUE_V1)
+    }
+    async fn imbue(
+        &mut self,
+        command: &oteryn_client_runtime::imbue::ImbueCommand,
+    ) -> Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError> {
+        oteryn_client_runtime::imbue::send(self, command).await
+    }
     fn player_trade_selected(&self) -> bool {
         self.is_selected(oteryn_session::player_trade::CAPABILITY_PLAYER_TRADE_V1)
     }
@@ -275,6 +294,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.imbue_initialize(session.imbue_selected());
     outbox.player_trade_initialize(
         session.player_trade_selected(),
         session.player_trade_state(),
@@ -352,6 +372,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Imbue(command)) => match session.imbue(&command).await {
+                Ok(response) => {
+                    outbox.imbue_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
