@@ -34,6 +34,10 @@ pub mod spell_action_bar;
 #[path = "features/0001-bestiary-charms/mod.rs"]
 pub mod bestiary_charms;
 
+/// Prey difficulty, candidate lists and repeat-pick confirmation.
+#[path = "features/0140-prey/mod.rs"]
+pub mod prey;
+
 /// Editable server-owned Exiva player permissions.
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;

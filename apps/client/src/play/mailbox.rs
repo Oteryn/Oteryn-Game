@@ -57,6 +57,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) prey: oteryn_client_ui::prey::PreyPanel,
+    pub(super) prey_shutdown: bool,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
@@ -188,5 +190,6 @@ impl Drop for PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
+        mailbox.prey_shutdown = true;
     }
 }
