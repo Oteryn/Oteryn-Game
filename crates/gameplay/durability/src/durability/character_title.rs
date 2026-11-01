@@ -154,7 +154,10 @@ async fn read_title_facts(
     })
 }
 
-const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) SELECT \
+// Collapse immutable kill history once per read. A correlated LIMIT 1 per boss/category
+// rescanned receipts without a (Character, boss) index and exhausted the semantic pass.
+const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid), \
+ boss_categories AS MATERIALIZED (SELECT DISTINCT ON (boss_key) boss_key,category FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid) SELECT \
  COALESCE((SELECT greatest(sword_level,axe_level,club_level,distance_level)>=100 FROM game_character_build_state b WHERE b.character_id=me.character_id),false) AS weapon_mastery, \
  COALESCE((SELECT (progress->>'discovered')::boolean FROM game_character_cyclopedia c WHERE c.character_id=me.character_id),false) AS map_discovered, \
  EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=$4 AND q.value=1) AS monk_pilgrimage, \
@@ -164,8 +167,7 @@ const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_
  COALESCE((SELECT max(streak) FROM game_character_daily_rewards d WHERE d.character_id=me.character_id),0)::integer AS login_streak, \
  EXISTS(SELECT 1 FROM game_guild_members g WHERE g.character_id=me.character_id AND g.rank_level=1) AS guild_leader, \
  COALESCE((SELECT sum(boss_points) FROM game_character_bosstiary_progress p WHERE p.character_id=me.character_id),0)::bigint AS boss_points, \
- ARRAY(SELECT (SELECT count(*) FROM game_character_bosstiary_progress p WHERE p.character_id=me.character_id AND p.boss_points>0 \
-   AND (SELECT k.category FROM game_character_bosstiary_kill_receipts k WHERE k.character_id=p.character_id AND k.boss_key=p.boss_key LIMIT 1)=c.category) \
+ ARRAY(SELECT (SELECT count(*) FROM game_character_bosstiary_progress p JOIN boss_categories k USING(boss_key) WHERE p.character_id=me.character_id AND p.boss_points>0 AND k.category=c.category) \
    FROM unnest(ARRAY['bane','archfoe','nemesis']) WITH ORDINALITY c(category,n) ORDER BY c.n) AS bosses_unlocked, \
  ARRAY(SELECT greatest(COALESCE((SELECT kill_count FROM game_character_bestiary_progress b WHERE b.character_id=me.character_id AND b.race_key=t.key),0), \
    COALESCE((SELECT kill_count FROM game_character_bosstiary_progress p WHERE p.character_id=me.character_id AND p.boss_key=t.key),0)) \
