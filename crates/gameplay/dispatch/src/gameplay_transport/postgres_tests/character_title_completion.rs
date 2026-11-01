@@ -30,7 +30,13 @@ async fn seed_bosses(
     let mut tx = h.pool.begin().await?;
     for boss in bosses {
         let final_count = kill_thresholds(&boss.category).ok_or("category")?[2];
-        let count = final_count - u64::from(incomplete.contains(&boss.key));
+        // Keep a valid history beyond mastery: category qualification must not rescan
+        // every kill receipt for every boss and exhaust the two-second semantic pass.
+        let count = if incomplete.contains(&boss.key) {
+            final_count - 1
+        } else {
+            final_count * 8
+        };
         let points = progress(&boss.category, count)
             .ok_or("boss progress")?
             .points;
@@ -246,6 +252,31 @@ fn scenario() -> TestResult {
         .fetch_all(&h.pool)
         .await?;
         assert_eq!(stored, [61, 81, 82, 83, 84]);
+        let category_titles: Vec<i16> = sqlx::query_scalar(
+            "SELECT title FROM game_character_titles WHERE title BETWEEN 8 AND 13 ORDER BY title",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        let expected: Vec<i16> = [
+            (CharacterTitle::BossDestroyer, "archfoe", 10),
+            (CharacterTitle::BossDevastator, "nemesis", 10),
+            (CharacterTitle::BossHunter, "bane", 10),
+            (CharacterTitle::BossObliterator, "nemesis", 40),
+            (CharacterTitle::BossSmiter, "archfoe", 40),
+            (CharacterTitle::BossVeteran, "bane", 40),
+        ]
+        .into_iter()
+        .filter(|(_, category, threshold)| {
+            catalogue
+                .bosstiary
+                .iter()
+                .filter(|boss| boss.category == *category)
+                .count()
+                >= *threshold
+        })
+        .map(|(title, _, _)| i16::from(title.id()))
+        .collect();
+        assert_eq!(category_titles, expected, "count bosses, not kill receipts");
         assert_eq!(
             command(
                 &owner,

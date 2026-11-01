@@ -1,5 +1,12 @@
-//! Svargrond arena catalogue wire format.
-use crate::charm_wire::{CyclopediaWireError as Error, push_message_field, push_varint_field};
+//! Svargrond arena catalogue and authoritative match wire format.
+pub use crate::charm_wire::CyclopediaWireError as ArenaWireError;
+use crate::charm_wire::{
+    push_message_field, push_varint_field, read_bytes, read_uint32_fields, read_varint,
+};
+use ArenaWireError as Error;
+
+mod match_wire;
+pub use match_wire::*;
 
 pub const CAPABILITY_ARENA_V1: u32 = 170;
 pub const COMMAND_TYPE_ARENA_CATALOGUE: u32 = 240;
@@ -34,19 +41,19 @@ pub const SVARGROND_CHALLENGES: [ArenaChallenge; 3] = [
         rank: ArenaRank::Greenhorn,
         fee: 1_000,
         rooms: 10,
-        room_seconds: 120,
+        room_seconds: 600,
     },
     ArenaChallenge {
         rank: ArenaRank::Scrapper,
         fee: 5_000,
         rooms: 10,
-        room_seconds: 120,
+        room_seconds: 600,
     },
     ArenaChallenge {
         rank: ArenaRank::Warlord,
         fee: 10_000,
         rooms: 10,
-        room_seconds: 120,
+        room_seconds: 600,
     },
 ];
 
@@ -67,10 +74,46 @@ pub fn encode_catalogue() -> Result<Vec<u8>, Error> {
     }
 }
 
+pub fn decode_catalogue(payload: &[u8]) -> Result<Vec<ArenaChallenge>, Error> {
+    if payload.len() > MAX_RESULT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let mut entries = Vec::new();
+    let mut cursor = 0;
+    while cursor < payload.len() {
+        if entries.len() == 3 {
+            return Err(Error::LimitExceeded);
+        }
+        if read_varint(payload, &mut cursor)? != 10 {
+            return Err(Error::Malformed);
+        }
+        let [rank, fee, rooms, room_seconds] =
+            read_uint32_fields::<4>(read_bytes(payload, &mut cursor)?)?;
+        if rank != entries.len() as u32 + 1 || fee == 0 || rooms != 10 || room_seconds == 0 {
+            return Err(Error::Malformed);
+        }
+        let rank = match rank {
+            1 => ArenaRank::Greenhorn,
+            2 => ArenaRank::Scrapper,
+            3 => ArenaRank::Warlord,
+            _ => return Err(Error::Malformed),
+        };
+        entries.push(ArenaChallenge {
+            rank,
+            fee,
+            rooms: 10,
+            room_seconds: u16::try_from(room_seconds).map_err(|_| Error::Malformed)?,
+        });
+    }
+    if entries.len() != 3 {
+        return Err(Error::Malformed);
+    }
+    Ok(entries)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::charm_wire::read_varint;
 
     #[test]
     fn global_svargrond_catalogue_has_three_ten_room_challenges() -> Result<(), Error> {
@@ -83,6 +126,13 @@ mod tests {
                 .all(|challenge| challenge.rooms == 10)
         );
         let bytes = encode_catalogue()?;
+        assert_eq!(decode_catalogue(&bytes)?, SVARGROND_CHALLENGES);
+        // Crystal data-crystal/lib/quests/arena.lua:9 sets kickTime = 600.
+        assert!(
+            SVARGROND_CHALLENGES
+                .iter()
+                .all(|challenge| challenge.room_seconds == 600)
+        );
         let mut at = 0;
         let mut entries = 0;
         while at < bytes.len() {
@@ -92,6 +142,22 @@ mod tests {
             entries += 1;
         }
         assert_eq!(entries, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn arena_catalogue_decoder_refuses_partial_unknown_and_duplicate_entries() -> Result<(), Error>
+    {
+        assert_eq!(decode_catalogue(&[]), Err(Error::Malformed));
+        assert_eq!(decode_catalogue(&[8, 1]), Err(Error::Malformed));
+        assert_eq!(decode_catalogue(&[10, 5]), Err(Error::Malformed));
+        let mut repeated = encode_catalogue()?;
+        repeated.extend_from_slice(&encode_catalogue()?);
+        assert_eq!(decode_catalogue(&repeated), Err(Error::LimitExceeded));
+        assert_eq!(
+            decode_catalogue(&[0; MAX_RESULT_BYTES + 1]),
+            Err(Error::LimitExceeded)
+        );
         Ok(())
     }
 }

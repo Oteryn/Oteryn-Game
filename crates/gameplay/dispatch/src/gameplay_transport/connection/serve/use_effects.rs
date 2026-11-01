@@ -106,5 +106,15 @@ where
         session.admitted.continuity.overlay_revision = entry.revision;
     }
     achievement_notices::immediate(stream, authority, session, &outcome.earned).await?;
+    // W09: queued item-use status text follows its result and inventory delta immediately,
+    // rather than waiting for a later movement command. The existing capability gate applies.
+    tutorial_notices_transport::emit(
+        stream,
+        authority,
+        &mut session.admitted,
+        &mut session.sequence,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
     Ok(())
 }

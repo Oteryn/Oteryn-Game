@@ -255,6 +255,9 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
+        Dispatch::Reply(CommandStatus::Accepted, _) if forge::changes_inventory(command) => {
+            forge::refresh(stream, authority, session).await?;
+        }
         Dispatch::ItemMove(outcome, deltas, _) => {
             effects::item_move(stream, authority, session, outcome, deltas).await?;
         }
