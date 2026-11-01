@@ -37,3 +37,7 @@ pub mod bestiary_charms;
 /// Editable server-owned Exiva player permissions.
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
+
+/// Wheel allocation, vessels and Gem Atelier controls.
+#[path = "features/0148-wheel-allocation/mod.rs"]
+pub mod wheel_allocation;

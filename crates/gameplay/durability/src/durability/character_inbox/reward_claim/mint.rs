@@ -306,6 +306,51 @@ impl DurabilityRoot {
         })
     }
 
+    /// Charge the existing persistent retry budget before an owner composes the
+    /// frozen mint into its own already fenced value transaction.
+    pub(crate) async fn charge_reward_claim_inbox_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        candidate: &mut RewardClaimInboxMintCandidate,
+    ) -> Result<(), RewardClaimInboxError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimInboxError::AuthorityRejected)?;
+        let charge = candidate.frozen.clone();
+        let used = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let row = match sqlx::query(
+                        "SELECT work_units_used FROM game_reward_claim_inbox_mint_charge(\
+                encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4)",
+                    )
+                    .bind(charge.plan.command.game_session_id().as_bytes().as_slice())
+                    .bind(charge.plan.command.command_id().get().to_string())
+                    .bind(charge.plan.transaction_id.as_slice())
+                    .bind(charge.plan.binding().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await
+                    {
+                        Ok(row) => row,
+                        Err(error) => return Ok(Err(mint_sql_error(error))),
+                    };
+                    let Some(row) = row else {
+                        return Ok(Err(RewardClaimInboxError::CapacityExceeded));
+                    };
+                    let used = u8::try_from(row.try_get::<i16, _>("work_units_used")?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(used))
+                })
+            })
+            .await??;
+        candidate.work_units_used = used;
+        Ok(())
+    }
+
     /// Perform the actual fresh mint, Inbox placement and registered audit, then
     /// let the source record its claim and item bindings in the same transaction.
     /// The MAIL runner commits all of them together or rolls all value back.
@@ -404,42 +449,9 @@ impl DurabilityRoot {
         {
             return Ok(RewardClaimInboxOutcome::AlreadyCommitted(positions));
         }
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| RewardClaimInboxError::AuthorityRejected)?;
+        self.charge_reward_claim_inbox_mint(authority, candidate)
+            .await?;
         let frozen = candidate.frozen.clone();
-        let charge = frozen.clone();
-        let used = self
-            .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    let row = match sqlx::query(
-                        "SELECT work_units_used FROM game_reward_claim_inbox_mint_charge(\
-                encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4)",
-                    )
-                    .bind(charge.plan.command.game_session_id().as_bytes().as_slice())
-                    .bind(charge.plan.command.command_id().get().to_string())
-                    .bind(charge.plan.transaction_id.as_slice())
-                    .bind(charge.plan.binding().as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await
-                    {
-                        Ok(row) => row,
-                        Err(error) => return Ok(Err(mint_sql_error(error))),
-                    };
-                    let Some(row) = row else {
-                        return Ok(Err(RewardClaimInboxError::CapacityExceeded));
-                    };
-                    let used = u8::try_from(row.try_get::<i16, _>("work_units_used")?)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(used))
-                })
-            })
-            .await??;
-        candidate.work_units_used = used;
         self.with_inbox_authority(
             authority,
             node,
@@ -465,7 +477,57 @@ async fn mint_inbox(
     if context.plan != frozen.plan {
         return Err(RewardClaimInboxError::ConflictingDelivery);
     }
-    let plan = context.plan.clone();
+    let positions = mint_frozen_in_transaction(
+        &mut context.transaction,
+        frozen,
+        context.connection_generation,
+        context.character_lease_generation,
+        context.house_authority.as_ref(),
+    )
+    .await?;
+    context.positions = positions.into_iter().map(Some).collect();
+    Ok(())
+}
+
+impl RewardClaimInboxMintCandidate {
+    /// Existing mint/Inbox/audit owner participates in a composed, already fenced
+    /// transaction. Preparation and retry-budget charging are separate durable passes.
+    pub(crate) async fn mint_in_transaction(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
+        if self.work_units_used == 0
+            || self.work_units_used > RL08_RETRY_WORK_UNITS_MAX
+            || self.frozen.plan.character_id != fence.character_id
+            || self.frozen.plan.command.game_session_id() != fence.game_session_id
+            || self.frozen.plan.world_id != fence.runtime_scope.world_id()
+        {
+            return Err(RewardClaimInboxError::AuthorityRejected);
+        }
+        mint_frozen_in_transaction(
+            tx,
+            &self.frozen,
+            fence.connection_generation.get(),
+            fence.character_lease_generation,
+            None,
+        )
+        .await
+    }
+
+    pub(crate) fn outputs(&self) -> &[RewardClaimInboxMintOutput] {
+        &self.frozen.request.outputs
+    }
+}
+
+async fn mint_frozen_in_transaction(
+    tx: &mut Type2Transaction<'_>,
+    frozen: &FrozenInboxMint,
+    connection_generation: u64,
+    character_lease_generation: u64,
+    house_authority: Option<&authority::HouseAuditAuthority>,
+) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
+    let plan = &frozen.plan;
     let binding = plan.binding();
     // This narrow function reads the immutable reservation; it accepts no new
     // item definition, quantity or source facts from the commit caller.
@@ -477,12 +539,14 @@ async fn mint_inbox(
     .bind(plan.command.command_id().get().to_string())
     .bind(plan.transaction_id.as_slice())
     .bind(binding.as_slice())
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await
     .map_err(mint_sql_error)?;
     let mut outputs = Vec::with_capacity(plan.item_instance_ids.len());
+    let mut positions = Vec::with_capacity(plan.item_instance_ids.len());
     for (item, source) in plan.item_instance_ids.iter().zip(&frozen.request.outputs) {
-        let position = context.deliver(*item).await?;
+        let position = deliver_fresh_in_transaction(tx, plan, &binding, *item).await?;
+        positions.push(position);
         outputs.push(RewardClaimInboxMintOutputV1 {
             after: Some(OneItemStateV1 {
                 item_instance_id: item.to_vec(),
@@ -501,7 +565,7 @@ async fn mint_inbox(
         destination: None,
         before_semantically_absent: true,
         source: Some(OneItemRewardClaimCauseV1 {
-            typed_cause: context.typed_cause().into(),
+            typed_cause: REWARD_CLAIM_MINT_TYPED_CAUSE.into(),
             content_revision: frozen.request.content_revision.clone(),
             ruleset_revision: frozen.request.ruleset_revision.clone(),
             sim_revision: frozen.request.sim_revision.clone(),
@@ -514,18 +578,18 @@ async fn mint_inbox(
         inbox: Some(RewardClaimInboxMintV1 {
             character_id: plan.character_id.as_bytes().to_vec(),
             world_id: plan.world_id.as_bytes().to_vec(),
-            expected_session_generation: context.connection_generation,
+            expected_session_generation: connection_generation,
             source_binding: frozen.source_binding.to_vec(),
             outputs,
             plan_binding: binding.to_vec(),
             mint_intent_sha256: frozen.mint_intent_sha256.to_vec(),
-            expected_character_lease_generation: context.character_lease_generation,
-            house_key: context.house_authority.as_ref().map(|scope| scope.house.clone()),
-            house_scope_ownership_generation: context.house_authority.as_ref().map(|scope| scope.generation),
-            house_authority_kind: context.house_authority.as_ref().map(|scope| u32::from(scope.kind)),
+            expected_character_lease_generation: character_lease_generation,
+            house_key: house_authority.map(|scope| scope.house.clone()),
+            house_scope_ownership_generation: house_authority.map(|scope| scope.generation),
+            house_authority_kind: house_authority.map(|scope| u32::from(scope.kind)),
         }),
     };
-    let tuple = context.selected_type2_tuple();
+    let tuple = tx.tuple();
     let envelope = audit::encode_reward_claim_mint_event(
         RewardClaimMintEventIdentity {
             event_id: frozen.event_id,
@@ -547,19 +611,19 @@ async fn mint_inbox(
     .bind(plan.command.command_id().get().to_string())
     .bind(plan.transaction_id.as_slice())
     .bind(binding.as_slice())
-    .bind(context.connection_generation.to_string())
-    .bind(context.character_lease_generation.to_string())
+    .bind(connection_generation.to_string())
+    .bind(character_lease_generation.to_string())
     .bind(envelope_hash.as_slice())
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await
     .map_err(mint_sql_error)?;
-    if let Some(scope) = context.house_authority.clone() {
+    if let Some(scope) = house_authority {
         sqlx::query(
             "INSERT INTO game_hireling_inbox_scope_receipts(transaction_id,world_id,house_key,scope_ownership_generation,authority_kind) \
              VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,$5)",
         ).bind(plan.transaction_id.as_slice()).bind(plan.world_id.as_bytes().as_slice())
          .bind(&scope.house).bind(scope.generation.to_string()).bind(i16::from(scope.kind))
-         .execute(&mut **context.transaction()).await.map_err(mint_sql_error)?;
+         .execute(&mut ***tx).await.map_err(mint_sql_error)?;
     }
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,\
@@ -576,9 +640,9 @@ async fn mint_inbox(
     .bind(frozen.occurred_at)
     .bind(common::AUDIT_RETENTION_P90D_MS)
     .bind(envelope)
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await?;
-    Ok(())
+    Ok(positions)
 }
 
 #[cfg(test)]

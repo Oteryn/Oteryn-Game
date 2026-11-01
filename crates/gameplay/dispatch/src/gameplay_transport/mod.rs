@@ -49,6 +49,7 @@ mod dawnport_trial;
 #[path = "tests/death_ml_loss_postgres.rs"]
 mod death_ml_loss_postgres;
 mod depot;
+mod echo_warden;
 mod equipment_move;
 mod equipment_reflection;
 mod field_removal;
@@ -112,6 +113,7 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
@@ -132,6 +134,11 @@ pub mod server_save_countdown;
 mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
+mod soulpit;
+pub use soulpit::runtime as soulpit_runtime;
+pub use soulpit::{
+    BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
+};
 mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;
@@ -154,6 +161,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
 mod world_event;

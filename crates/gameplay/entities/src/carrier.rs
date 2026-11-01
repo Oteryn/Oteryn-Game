@@ -67,6 +67,11 @@ mod damage_contributors_tests;
 
 mod damage_ledger;
 
+#[path = "carrier/echo_warden.rs"]
+pub mod echo_warden;
+#[path = "carrier/soulpit.rs"]
+pub mod soulpit;
+
 pub mod house_custody;
 
 #[path = "carrier/encounter_access.rs"]
@@ -889,6 +894,7 @@ pub struct ChannelActorCarrier {
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
     native_summon_death_cursor: usize,
     encounter_hooks: Option<Box<dyn encounter_access::EncounterHooks>>,
+    soulpit: Option<Box<soulpit::SoulpitPhysicalState>>,
     /// The last write-fence transition id this carrier minted (CHARM-DESC-FENCE-LEASE §3 item 2).
     fence_transitions: u64,
     /// A2: the bound lease and write fence of each committed player slot that has one, keyed by
@@ -1069,6 +1075,7 @@ pub struct ChannelRuntimeV1 {
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
+    echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
     forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
@@ -1184,6 +1191,7 @@ impl ChannelRuntimeV1 {
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
             daily_boost: None,
+            echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,
             forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),
@@ -1603,6 +1611,7 @@ impl ChannelActorCarrier {
             occupied,
             corpse_item_bindings: Vec::new(),
             corpse_projection_pins: Vec::new(),
+            soulpit: None,
             house_custody: Vec::new(),
         })
     }

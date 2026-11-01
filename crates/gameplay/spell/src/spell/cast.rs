@@ -107,6 +107,7 @@ pub struct PlayerSpellState {
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
     pub cooldowns: Cooldowns,
+    pub(super) wheel_gift: super::wheel_gift::GiftOfLifeState,
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
     pub monk: Option<MonkState>,
@@ -118,6 +119,14 @@ pub struct PlayerSpellState {
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
     pub(super) owned_skills: Option<[u16; 7]>,
+    /// Projection of the current committed Wheel allocation and gem vessels.
+    pub(super) wheel_effects: oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
+    /// Exact hand facts from the existing committed equipment owner.
+    pub(super) wheel_equipment: Option<WheelEquipment>,
+    pub(super) wheel_proficiency_weapon: Option<String>,
+    /// Runtime-only source window; expires in five seconds and never survives logout.
+    pub(super) wheel_sanctuary: Option<(u64, u8)>,
+    pub(super) wheel_focus_until: Option<u64>,
     /// ARMOR-MITIGATION-1: the worn armor the last committed equipment read installed.
     pub(super) equipped_armor: u32,
     /// ENERGY-RING-1: the active equipment form from the last fenced equipment read.
@@ -195,6 +204,7 @@ impl PlayerSpellState {
                 soul: facts.max_soul,
                 soul_window: None,
                 cooldowns: Cooldowns::default(),
+                wheel_gift: Default::default(),
                 revision: 1,
                 monk,
                 conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore::new(
@@ -204,6 +214,11 @@ impl PlayerSpellState {
                 stance_key: None,
                 pending_stance: None,
                 owned_skills: None,
+                wheel_effects: Default::default(),
+                wheel_equipment: None,
+                wheel_proficiency_weapon: None,
+                wheel_sanctuary: None,
+                wheel_focus_until: None,
                 virtue_party: Default::default(),
                 equipped_mantra: 0,
                 equipped_armor: 0,
@@ -231,6 +246,9 @@ mod live_skill;
 mod prepare;
 mod state;
 mod vocationless_vitals;
+mod wheel;
+mod wheel_attack;
+pub use wheel_attack::{PreparedWheelAttackHit, WheelAttackActor, WheelAttackComponents};
 
 pub use gate::{
     CastContext, admit_condition_gates, cast, condition_gate, disposition, store_condition_gate,
@@ -245,7 +263,12 @@ pub use prepare::{
     prepare_native_callback_owner_cast_with_carried_item,
     prepare_native_callback_owner_cast_with_caster, prepare_native_owner_cast,
     prepare_native_owner_cast_with_caster, prepare_ordinary_owner_cast_with_caster,
-    prepare_source_self_cast_with_caster, resolve_ordinary_due_effects,
+    prepare_ordinary_owner_cast_with_wheel, prepare_source_self_cast_with_caster,
+    resolve_ordinary_due_effects, resolve_ordinary_due_effects_with_wheel,
+};
+pub use wheel::{
+    WheelEquipment, WheelHand, wheel_adjacent_monsters, wheel_adjacent_monsters_at,
+    wheel_adjacent_target,
 };
 
 #[cfg(test)]

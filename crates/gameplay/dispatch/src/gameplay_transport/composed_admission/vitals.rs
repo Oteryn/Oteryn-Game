@@ -6,6 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.load_wheel_gift(actor, game_session_id).await;
         if self
             .runtime
             .lock()
@@ -62,7 +63,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return None;
         }
+        self.load_wheel_gift(actor, game_session_id).await;
         self.drain_monster_melee().await;
+        let _ = self.save_wheel_gift(actor, game_session_id, false).await;
         self.refresh_attack_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
@@ -103,6 +106,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.refresh_level_up_vitals(actor, game_session_id).await;
         self.refresh_marked_titles(actor, game_session_id).await;
+        self.load_wheel_gift(actor, game_session_id).await;
         self.refresh_wheel_vitals(actor, game_session_id).await;
         if self
             .active_generation

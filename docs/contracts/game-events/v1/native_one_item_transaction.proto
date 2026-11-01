@@ -408,6 +408,7 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 gem_switch_domain = 10;
     OneItemNpcPurchaseV1 gem_grade_up = 11;
     OneItemNpcPurchaseV1 prey_list_reroll = 12; // service key fixes slot 1..3; level * 200 gold
+    OneItemNpcPurchaseV1 task_board_talisman = 13; // oteryn:taskboard.talisman, exactly 5000 gold; Task Board receipt
     // Closed named-House Hireling food purchase through the existing fee owner.
     OneItemNpcPurchaseV1 hireling_service = 472;
   }

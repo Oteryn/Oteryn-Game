@@ -18,13 +18,20 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         | FeeBurnCauseV1::BlessingPurchase(cause)
         | FeeBurnCauseV1::NpcTravel(cause)
         | FeeBurnCauseV1::GemSwitchDomain(cause)
-        | FeeBurnCauseV1::PreyListReroll(cause),
+        | FeeBurnCauseV1::PreyListReroll(cause)
+        | FeeBurnCauseV1::TaskBoardTalisman(cause),
     ) = value.cause.as_ref().and_then(|v| v.cause.as_ref())
         && !cause.atelier_proof.is_empty()
     {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::TaskBoardTalisman(cause))
+            if cause.service_key == "oteryn:taskboard.talisman"
+                && value.fee_gold_units == oteryn_gameplay_quests::quest::task_board::full::TALISMAN_PURCHASE_GOLD =>
+        {
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::HirelingService(cause)) if cause.service_key.starts_with("oteryn:service.hireling.") && value.fee_gold_units > 0 => { check_content_key(&cause.service_key)?; check_uuid_v7(&cause.occurrence) },
         Some(FeeBurnCauseV1::PreyListReroll(cause)) if ["oteryn:prey.list_reroll.1","oteryn:prey.list_reroll.2","oteryn:prey.list_reroll.3"].contains(&cause.service_key.as_str()) && value.fee_gold_units>0 && value.fee_gold_units.is_multiple_of(200) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::MarketFee(cause))
@@ -163,5 +170,52 @@ pub(super) fn atelier_usage(cause: &OneItemNpcPurchaseV1) -> TransactionResource
         participants: count,
         effect_work_units: 3 * count,
         events: 0,
+    }
+}
+
+#[cfg(test)]
+mod task_board_tests {
+    use super::*;
+
+    #[test]
+    fn task_board_fee_accepts_only_the_donor_talisman_price_and_closed_cause() {
+        let mut id = vec![1; 16];
+        id[6] = 0x71;
+        id[8] = 0x81;
+        let cause = OneItemNpcPurchaseV1 {
+            service_key: "oteryn:taskboard.talisman".into(),
+            occurrence: id,
+            atelier_proof: Vec::new(),
+        };
+        let value = |cause, price| OneItemFeeBurnV1 {
+            cause: Some(OneItemFeeBurnCauseV1 {
+                cause: Some(FeeBurnCauseV1::TaskBoardTalisman(cause)),
+            }),
+            fee_gold_units: price,
+            ..Default::default()
+        };
+        assert_eq!(check(&value(cause.clone(), 5_000)), Ok(()));
+        for price in [0, 4_999, 5_001, 50_000] {
+            assert_eq!(
+                check(&value(cause.clone(), price)),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        for broken in [
+            OneItemNpcPurchaseV1 {
+                service_key: "oteryn:taskboard.expansion".into(),
+                ..cause.clone()
+            },
+            OneItemNpcPurchaseV1 {
+                occurrence: vec![0; 16],
+                ..cause.clone()
+            },
+            OneItemNpcPurchaseV1 {
+                atelier_proof: vec![1],
+                ..cause
+            },
+        ] {
+            assert_eq!(check(&value(broken, 5_000)), Err(AuditError::InvalidInput));
+        }
     }
 }

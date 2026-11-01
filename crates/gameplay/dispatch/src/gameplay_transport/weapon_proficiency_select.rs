@@ -179,8 +179,7 @@ fn replayed(
         && receipt.lines.len() == 1
         && receipt.lines.first().is_some_and(|line| {
             line.after().item_key() == item_key
-                && line.after().selections().get(usize::from(request.level))
-                    == Some(&request.perk)
+                && line.after().selections().get(usize::from(request.level)) == Some(&request.perk)
         });
     if same {
         SelectPerkResult::Accepted
@@ -372,6 +371,9 @@ pub(super) async fn execute(
             .or_default()
             .install_selections(committed.state.item_key(), track);
     }
+    owner
+        .refresh_equipped_proficiency_defense(actor, session, committed.state.item_key())
+        .await?;
     reply(SelectPerkResult::Accepted, committed.state.selections())
 }
 
@@ -423,13 +425,16 @@ mod tests {
         CommittedProficiencyChange {
             character_id: crate::domain::CharacterId::from_bytes(uuid_v7(1)).expect("id"),
             occurrence_id: [2; 16],
-            original_character_revision: crate::domain::CharacterRevision::new(1).expect("revision"),
+            original_character_revision: crate::domain::CharacterRevision::new(1)
+                .expect("revision"),
             committed_character_revision: crate::domain::CharacterRevision::new(2)
                 .expect("revision"),
             cause,
             command_binding: Vec::new(),
             policy_digest: [0; 32],
-            lines: vec![ProficiencyLineCandidate::new(cause, before, state(1_000, after)).expect("line")],
+            lines: vec![
+                ProficiencyLineCandidate::new(cause, before, state(1_000, after)).expect("line"),
+            ],
         }
     }
 

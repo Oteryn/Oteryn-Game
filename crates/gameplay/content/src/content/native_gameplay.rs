@@ -63,6 +63,10 @@ pub fn is_envelope(bytes: &[u8]) -> bool {
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
+/// The item-profile section alone: the production file passed 8 MiB once the Soulpit
+/// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
+/// MAX_RECORDS still bounds the record count.
+const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
@@ -727,7 +731,7 @@ impl NativeGameplayInput {
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
             item_profiles: manifest
                 .item_profiles
-                .map(|pin| load(pin, MAX_PROFILES))
+                .map(|pin| load(pin, MAX_ITEM_PROFILES))
                 .transpose()?,
             spell_appearances: manifest
                 .spell_appearances
@@ -792,7 +796,7 @@ pub fn compile_native_gameplay(
         base.expectation(),
     )?;
     if let Some(items) = &input.item_profiles {
-        qualify(items, MAX_PROFILES)?;
+        qualify(items, MAX_ITEM_PROFILES)?;
     }
     if let Some(appearances) = &input.spell_appearances {
         if input.item_profiles.is_none() {
@@ -1007,7 +1011,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     });
     for limit in LIMITS
         .into_iter()
-        .chain(is_v2.then_some(MAX_PROFILES))
+        .chain(is_v2.then_some(MAX_ITEM_PROFILES))
         .chain(is_v3.then_some(MAX_PROFILES))
         .chain(is_v4.then_some(MAX_PROFILES))
         .chain(is_v5.then_some(128 * 1024))
@@ -1405,7 +1409,8 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         .transpose()?;
     let reward_table = Arc::new(
         super::creature_reward::CreatureRewardTable::from_pin(&creatures, loot.as_ref())
-            .with_daily_boss_equipment(items.as_ref()),
+            .with_daily_boss_equipment(items.as_ref())
+            .with_encounter_items(items.as_ref()),
     );
     let cosmetics = if is_v9 {
         let mut cosmetics = native_cosmetics::decode(sections[12])?

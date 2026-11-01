@@ -22,6 +22,15 @@ SHARED_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i23721": (150, 0, 47233),
 }
 
+# Package merge: main 149bf364f owns the rounded weights of these Task Board
+# items. Preserve its exact known values; the raw Hireling capture stays unchanged.
+MERGED_MAIN_NATIVE_WEIGHTS = {
+    "oteryn:item.tibia.i10317": (113, 112, 26957),
+    "oteryn:item.tibia.i10454": (115, 114, 27704),
+    "oteryn:item.tibia.i18924": (510, 509, 38605),
+    "oteryn:item.tibia.i27598": (230, 229, 52453),
+}
+
 # ANSWER Q15A (PR2783 comment6549542080): this one virtual Hireling
 # operand keeps the existing shared GoldPouch owner and Inventory destination.
 SHARED_NATIVE_MOVABLE = {
@@ -33,7 +42,7 @@ def qualified_source_values(existing, source):
     """Closed approved leaf pairs; neither identity nor admission changes."""
     key = source["production_definition"]["production_key"]
     qualified = source
-    for leaf, decisions, label in (("weight", SHARED_NATIVE_WEIGHTS, "WEIGHT"),
+    for leaf, decisions, label in (("weight", SHARED_NATIVE_WEIGHTS | MERGED_MAIN_NATIVE_WEIGHTS, "WEIGHT"),
                                    ("movable", SHARED_NATIVE_MOVABLE, "MOVABLE")):
         decision = decisions.get(key)
         if decision is None:
@@ -111,7 +120,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or hashlib.sha256((root / "imports/crystalserver/bindings/items.json").read_bytes()).hexdigest()
                 != overlay["binding_table_sha256"]):
         raise ValueError("HIRELING_NATIVE_ITEM_PROFILE_SET_OR_PIN")
-    for key, (_, _, line) in SHARED_NATIVE_WEIGHTS.items():
+    for key, (_, _, line) in (SHARED_NATIVE_WEIGHTS | MERGED_MAIN_NATIVE_WEIGHTS).items():
         number = key.removeprefix("oteryn:item.tibia.i")
         if overlay["source_lines"].get(number) != f"data/items/items.xml:{line}":
             raise ValueError(f"HIRELING_SHARED_WEIGHT_SOURCE_LINE:{key}")

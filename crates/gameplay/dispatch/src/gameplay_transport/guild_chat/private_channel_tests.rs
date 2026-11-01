@@ -28,8 +28,8 @@ fn intent(
     session: GameSessionId,
     intent: PrivateChannelIntent,
 ) -> ChatDisposition {
-    // The connection path: every intent but a create is answered by the gate.
-    chat.pre_gate(session, &ChatIntent::PrivateChannel(intent), BASE)
+    // The retained historical rule fixture: every intent but create is answered here.
+    chat.private_channel_test_gate(session, &intent, BASE)
         .expect("answered by the gate")
         .disposition
 }
@@ -76,12 +76,8 @@ fn a_private_channel_lives_from_create_to_its_owner_leaving() {
         assert_eq!(chat.take_channel_list(session), None);
     }
     assert!(
-        chat.pre_gate(
-            aela,
-            &ChatIntent::PrivateChannel(PrivateChannelIntent::Create),
-            BASE
-        )
-        .is_none()
+        chat.private_channel_test_gate(aela, &PrivateChannelIntent::Create, BASE)
+            .is_none()
     );
     assert_eq!(
         chat.create_private_channel(bryn, false).disposition,

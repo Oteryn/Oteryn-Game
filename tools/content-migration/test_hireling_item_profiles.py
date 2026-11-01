@@ -43,7 +43,7 @@ class HirelingItemProfiles(unittest.TestCase):
             self.assertEqual(row["admission"]["stack_class"], source["admission"]["stack_class"])
             qualified = hireling.qualified_source_values(row, source)
             for group in hireling.VALUE_GROUPS:
-                # Known facts agree except the five asserted Q14A weights and
+                # Known facts agree except Q14A and merged main weights and
                 # the one virtual GoldPouch movable pair approved in Q15A.
                 self.assertEqual(hireling.merge_fact(row["semantics"][group],
                     qualified["semantics"][group], f"{key}:{group}"), row["semantics"][group])
@@ -112,9 +112,21 @@ class HirelingItemProfiles(unittest.TestCase):
             self.assertIn(number, self.overlay["nonportable_ids"])
 
     def test_answer_q14_preserves_only_the_five_asserted_shared_weights(self):
-        sources = {row["production_definition"]["production_key"]: row for row in self.overlay["records"]}
         self.assertEqual(len(hireling.SHARED_NATIVE_WEIGHTS), 5)
-        for key, (native_weight, donor_weight, line) in hireling.SHARED_NATIVE_WEIGHTS.items():
+        self.check_shared_weights(hireling.SHARED_NATIVE_WEIGHTS)
+
+    def test_package_merge_preserves_exactly_main_task_board_weights(self):
+        self.assertEqual(hireling.MERGED_MAIN_NATIVE_WEIGHTS, {
+            "oteryn:item.tibia.i10317": (113, 112, 26957),
+            "oteryn:item.tibia.i10454": (115, 114, 27704),
+            "oteryn:item.tibia.i18924": (510, 509, 38605),
+            "oteryn:item.tibia.i27598": (230, 229, 52453),
+        })
+        self.check_shared_weights(hireling.MERGED_MAIN_NATIVE_WEIGHTS)
+
+    def check_shared_weights(self, decisions):
+        sources = {row["production_definition"]["production_key"]: row for row in self.overlay["records"]}
+        for key, (native_weight, donor_weight, line) in decisions.items():
             source, active = sources[key], self.profiles[key]
             path = lambda row: row["semantics"]["physical"]["value"]["weight"]
             self.assertEqual(path(source), {"state": "KNOWN", "value": donor_weight})

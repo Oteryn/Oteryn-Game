@@ -23,6 +23,12 @@ pub fn project_wheel_stages(
     for target in rules.augment_targets.values().flatten() {
         value.insert(target.clone(), stages.spell_augment_stage(target));
     }
+    refresh_wheel_aliases(&mut value);
+    Some(value)
+}
+
+/// Refresh the existing closed ABI aliases after a current gem projection replaces stages.
+pub fn refresh_wheel_aliases(value: &mut BTreeMap<String, u8>) {
     // Closed aliases from the existing Wheel spell ABI and admitted native profile labels.
     // No case folding or inferred key authorizes an arbitrary perk.
     for (label, key) in [
@@ -55,7 +61,6 @@ pub fn project_wheel_stages(
             value.insert(label.to_owned(), stage);
         }
     }
-    Some(value)
 }
 
 /// Map the four revelation keys to the source profile's domain colours.

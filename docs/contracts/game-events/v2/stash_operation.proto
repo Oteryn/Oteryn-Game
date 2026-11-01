@@ -2,7 +2,9 @@ syntax = "proto3";
 package oteryn.events.v2;
 
 // Event type 9; ECONOMY_LEDGER_RETENTION_V1 (P30D). Success only.
-// All item/value lines are CONVERSION (class=1); no BURN or MINT.
+// Schema1 remains unchanged: item/value lines are CONVERSION (class=1).
+// Schema2 adds Task Board consumption only: zero item lines and one BURN
+// value line (class=2). No replacement ItemInstance or generic debit is admitted.
 message StashItemLineV1 {
  bytes item = 1;
  string definition_key = 2;
@@ -16,16 +18,18 @@ message StashValueLineV1 {
  string asset = 2; // stash:<definition_key>@<definition_revision>
  bytes character = 3;
  bytes world = 4;
- uint32 kind = 5; // 1 stow, 2 withdraw
- uint32 class = 6; // 1 CONVERSION
+ uint32 kind = 5; // schema1: 1 stow, 2 withdraw; schema2: 3 Task Board consumption
+ uint32 class = 6; // schema1: 1 CONVERSION; schema2: 2 BURN, only kind3
  uint32 amount = 7;
  uint64 quantity_before = 8;
  uint64 quantity_after = 9;
 }
 message StashOperationV1 {
- uint32 interpretation_revision = 1; // 1
- uint32 conversion_kind = 2; // 1 stow, 2 withdraw; closed
- bytes intent = 3; // canonical original native stash intent, <=48 bytes
- repeated StashItemLineV1 items = 4; // one input OR 1..20 outputs
+ uint32 interpretation_revision = 1; // schema1: 1; schema2: 2
+ uint32 conversion_kind = 2; // schema1: 1 stow or 2 withdraw; schema2: 3 Task Board consumption; closed per schema
+ bytes intent = 3; // schema1: canonical native stash intent <=48 bytes; schema2: original Task Board Deliver command <=192 bytes
+ repeated StashItemLineV1 items = 4; // schema1: one input OR 1..20 outputs; schema2: empty
  StashValueLineV1 value = 5; // exactly one, same definition/revision as every item
+ optional string house_key = 6; // named House stow/withdraw only; both House fields present together
+ optional uint64 house_scope_ownership_generation = 7; // positive current House generation; absent for Task Board
 }

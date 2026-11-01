@@ -266,7 +266,7 @@ async fn purchase(
     let request_state=if let Some(action)=hireling_action {
         let current=gameplay_fence(owner,admitted).await?;
         let weights=if matches!(&action,HirelingStoreAction::Hire {..}) {
-            owner.active_generation.and_then(|g|g.native_gameplay()).map(super::item_ref_admission::NativeInboxItemWeights)
+            owner.active_generation.and_then(|g|g.native_gameplay()).map(|native|super::item_ref_admission::NativeInboxItemWeights(native,owner.premium_coordinator))
         } else {None};
         let Some(state)=owner.root.reserve_hireling_store_purchase(owner.character,owner.holder,journal.clone(),action,current,*admitted.channel_id.as_bytes(),weights.as_ref().map(|w|w as &dyn crate::durability::item_transfer::ItemWeightLookup)).await.ok()? else {
             return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));

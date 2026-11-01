@@ -204,7 +204,7 @@ GRANT SELECT ON game_hireling_package_catalogue TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_hireling_package_receipts,game_hireling_package_lines TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION game_hireling_package_current(UUID) TO oteryn_game_runtime;
 
--- Append to 0702_hireling_services.sql (reserved migration block 0700..0703).
+-- Append to 0721_hireling_services.sql (reserved migration block 0719..0722).
 -- ANSWER Q8, PR2783: native physical SELL payout, maximum executable Crystal price
 -- item43963=5,400,000. Six crystal stacks plus two residual denominations are bounded
 -- by the existing 23 participant /66 work-unit /34,816-byte SELL_ALL resource rows.
@@ -240,7 +240,7 @@ ALTER TABLE game_npc_trades
  END);
 
 -- Amend only denomination ordering and the new bounded current-Hireling precondition.
--- The original native consistency function, including 0702 package proofs, stays intact.
+-- The original native consistency function, including 0721 package proofs, stays intact.
 DO $$ DECLARE body TEXT; needle TEXT; BEGIN
  SELECT pg_get_functiondef('game_npc_trade_consistency_guard()'::regprocedure) INTO STRICT body;
  needle:='p.coin_worth <= l.coin_worth';
@@ -313,7 +313,7 @@ ALTER TABLE game_account_bank_audit_outbox
  ADD CONSTRAINT game_account_bank_audit_outbox_envelope_check
  CHECK(octet_length(envelope) BETWEEN 1 AND 26255);
 
--- Append to 0702_hireling_services.sql, after the NPCSELL extension.
+-- Append to 0721_hireling_services.sql, after the NPCSELL extension.
 -- Named-House attribution for the existing NPC trade, native fee and stash owners.
 -- World + canonical House key determines game_house_scope_instance_id; Channel columns
 -- remain origin provenance. Original Channel events and their gates remain unchanged.

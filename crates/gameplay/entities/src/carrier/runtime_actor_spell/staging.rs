@@ -110,7 +110,9 @@ impl ChannelRuntimeV1 {
             replacements,
             companion_touch_indices: vec![],
             relocation: None,
-            player_preflight_bound: player_effects.is_empty() && batch.anchor.is_none(),
+            player_preflight_bound: player_effects.is_empty()
+                && batch.anchor.is_none()
+                && !batch.effects.is_empty(),
             player_effects,
             receipt,
         })

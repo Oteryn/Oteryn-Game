@@ -139,6 +139,164 @@ impl ActorConditionState {
     }
 }
 
+pub(super) struct SoulpitConditionApplication<'a> {
+    pub source: ExactActorRef,
+    pub target: ExactActorRef,
+    pub session: GameSessionId,
+    pub definitions: &'a [ConditionDefinition],
+    pub root: &'a oteryn_simulation_determinism::GameplayDecisionRoot,
+    pub occurrence: DecisionOccurrenceId,
+    pub now: u64,
+    pub external_damage_delta: i32,
+}
+
+pub(super) struct SoulpitConditionMutation {
+    index: usize,
+    successor: ActorConditionState,
+}
+
+impl ChannelActorCarrier {
+    /// The shared Instance runtime reads the same canonical store as Channel spell owners.
+    /// This API accepts current continuity; it does not infer or create activity authority.
+    pub fn scoped_actor_conditions(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+    ) -> Result<&ConditionStore<ExactActorRef>, CarrierError> {
+        let index = self.validate_ref(continuity, actor.0)?;
+        if !matches!(&self.slots[index], Slot::Occupied { generation, .. } | Slot::CreatureOccupied { generation, .. }
+            if *generation == actor.0.actor_local_generation.0)
+        {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        match (&self.slots[index], session) {
+            (
+                Slot::Occupied {
+                    lifecycle,
+                    game_session_id: Some(current),
+                    committed: true,
+                    ..
+                },
+                Some(session),
+            ) if *current == session => Ok(&lifecycle.conditions.store),
+            (Slot::CreatureOccupied { committed, .. }, None) => Ok(&committed.conditions.store),
+            _ => Err(CarrierError::PlayerReservationMismatch),
+        }
+    }
+
+    pub(super) fn prepare_soulpit_conditions(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        application: SoulpitConditionApplication<'_>,
+    ) -> Result<SoulpitConditionMutation, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        let SoulpitConditionApplication {
+            source,
+            target,
+            session,
+            definitions,
+            root,
+            occurrence,
+            now,
+            external_damage_delta,
+        } = application;
+        let source_index = self.validate_summon_actor(continuity, source)?;
+        if !matches!(&self.slots[source_index], Slot::CreatureOccupied { health: 1.., spell_combat, .. }
+            if spell_combat.soulpit.and_then(|tag| tag.boss).is_some_and(|boss| boss.ability == oteryn_gameplay_domain::domain::soulpit::BossAbility::Oppressor))
+        {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        let index = self.player_slot_index(continuity, target.0, session)?;
+        self.assert_slot_spell_unreserved(index)?;
+        let Slot::Occupied {
+            lifecycle,
+            spell_combat,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::PlayerReservationMismatch);
+        };
+        if lifecycle.control_loss.is_some() || now < lifecycle.conditions.at {
+            return Err(CarrierError::PlanConflict);
+        }
+        let source = ConditionSource {
+            actor: source,
+            session: None,
+            kind: ConditionSourceKind::Creature,
+        };
+        let mut successor = lifecycle.conditions.clone();
+        successor.store.expire_non_ticking(now);
+        for definition in definitions {
+            let valid = matches!(
+                definition.values(),
+                ConditionValues::TimedStatus {
+                    kind: StatusKind::Rooted | StatusKind::Feared,
+                    duration_ms: 3000,
+                } | ConditionValues::Gate {
+                    gate: oteryn_gameplay_domain::domain::condition::ConditionGate::Powerless,
+                    duration_ms: 3000,
+                } | ConditionValues::IntenseHex {
+                    duration_ms: 3000,
+                    damage_dealt_percent: 50,
+                    healing_received_percent: 50,
+                }
+            );
+            if !valid {
+                return Err(CarrierError::InvalidCommitBinding);
+            }
+            match successor.store.apply_with_external_damage_buff(
+                definition,
+                Some(source.actor),
+                source.kind,
+                &[],
+                &ApplicationFacts {
+                    now,
+                    base_speed: 0,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: spell_combat
+                        .reentry
+                        .is_some_and(|(_, until)| now < until),
+                    source_reentry_protected: false,
+                    target_is_player: true,
+                    decision_root: root,
+                    occurrence,
+                },
+                external_damage_delta,
+            ) {
+                Ok(_)
+                | Err(
+                    ConditionRefusal::Immune
+                    | ConditionRefusal::ReentryProtected
+                    | ConditionRefusal::KeptCurrent
+                    | ConditionRefusal::InstanceLimit,
+                ) => {}
+                Err(_) => return Err(CarrierError::InvalidCommitBinding),
+            }
+        }
+        successor.revision = successor
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        successor.at = now;
+        successor.receipt = Some(ConditionReceipt {
+            occurrence,
+            revision: lifecycle.conditions.revision,
+            at: now,
+            source: Some(source),
+        });
+        Ok(SoulpitConditionMutation { index, successor })
+    }
+
+    pub(super) fn publish_soulpit_conditions(&mut self, changes: Vec<SoulpitConditionMutation>) {
+        for change in changes {
+            if let Slot::Occupied { lifecycle, .. } = &mut self.slots[change.index] {
+                lifecycle.conditions = change.successor;
+            }
+        }
+    }
+}
+
 impl ChannelRuntimeV1 {
     fn condition_index(
         &self,

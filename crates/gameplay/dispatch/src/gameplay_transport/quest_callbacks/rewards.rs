@@ -101,7 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence.item_fence(),
                     &callback.key,
                     request,
-                    &NativeItemWeights(native),
+                    &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 )
                 .await
             {

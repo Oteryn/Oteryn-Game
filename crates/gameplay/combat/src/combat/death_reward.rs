@@ -822,6 +822,8 @@ pub struct CreatureDeathBestiaryInput {
     /// a creature is never counted.
     pub race: Option<BestiaryRace>,
     pub boss: Option<crate::domain::bosstiary::BosstiaryBoss>,
+    /// Current owner-qualified eligibility, retained with the unresolved death.
+    pub talisman: Option<crate::durability::bestiary_progress::CapturedBountyTalismanKill>,
 }
 
 /// Global Animus Mastery: +2% raw species XP, plus 0.1% per ten completed
@@ -1030,7 +1032,7 @@ async fn settle_bestiary(
     // repeated composition call replays this kill instead of adding one.
     let occurrence = BestiaryKillOccurrence::from_bytes(facts.occurrence)
         .map_err(|_| CombatDeathRewardBestiaryError::InvalidOccurrence)?;
-    slot.commit_bestiary(
+    slot.commit_bestiary_with_talisman(
         session.root,
         session.authority,
         session.node,
@@ -1042,6 +1044,7 @@ async fn settle_bestiary(
             policy_revision: binding.policy_revision.clone(),
             reward_revision: binding.reward_revision.clone(),
         },
+        input.talisman,
     )
     .await
     .map(CombatBestiaryOutcome::Recorded)

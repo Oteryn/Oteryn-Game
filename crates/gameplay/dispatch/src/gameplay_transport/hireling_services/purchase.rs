@@ -226,7 +226,7 @@ pub(super) async fn cook(
             fence,
             admission.channel_id,
             request,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await;
     drop(runtime);
@@ -363,7 +363,7 @@ pub(super) async fn package(
             fence,
             request,
             selection,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await;
     drop(runtime);

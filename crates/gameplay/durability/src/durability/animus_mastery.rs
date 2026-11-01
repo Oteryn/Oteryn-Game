@@ -43,35 +43,25 @@ impl DurabilityRoot {
         let node = node.clone();
         let species_key = species_key.to_owned();
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_admission_relations(&mut tx).await?;
-                if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                    return Ok(Err(error));
-                }
-                let count: i64 = sqlx::query_scalar(
-                    "SELECT count(*) FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid",
-                )
-                .bind(fence.character_id.as_bytes().as_slice())
-                .fetch_one(&mut *tx)
-                .await?;
-                if usize::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?
-                    >= MAX_ANIMUS_MASTERIES
-                {
-                    return Ok(Err(CharacterProgressionError::InvalidInput));
-                }
-                let inserted = sqlx::query(
-                    "INSERT INTO game_character_animus_masteries(character_id,species_key) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT DO NOTHING",
-                )
-                .bind(fence.character_id.as_bytes().as_slice())
-                .bind(species_key)
-                .execute(&mut *tx)
-                .await?
-                .rows_affected() == 1;
-                commit_semantic_transaction(tx, deadline).await?;
-                Ok(Ok(inserted))
-            }))
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let inserted =
+                        match complete_in_transaction(&mut tx, fence.character_id, &species_key)
+                            .await
+                        {
+                            Ok(inserted) => inserted,
+                            Err(error) => return Ok(Err(error)),
+                        };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(inserted))
+                })
+            })
             .await?
     }
 
@@ -104,6 +94,34 @@ impl DurabilityRoot {
             }))
             .await?
     }
+}
+
+/// The existing monotonic owner, composed in Soulpit's completion transaction. The caller
+/// has already proved the current gameplay fence and holds the character root lock.
+pub(super) async fn complete_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    species: &str,
+) -> Result<bool, CharacterProgressionError> {
+    if !valid_species_key(species) {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid AND species_key=$2)")
+        .bind(character.as_bytes().as_slice()).bind(species).fetch_one(&mut **tx).await
+        .map_err(DurabilityError::from)?;
+    if exists {
+        return Ok(false);
+    }
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT 1 FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid LIMIT $2) bounded")
+        .bind(character.as_bytes().as_slice()).bind(MAX_ANIMUS_MASTERIES_SQL)
+        .fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
+    if count >= MAX_ANIMUS_MASTERIES_SQL {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let inserted = sqlx::query("INSERT INTO game_character_animus_masteries(character_id,species_key) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT DO NOTHING")
+        .bind(character.as_bytes().as_slice()).bind(species).execute(&mut **tx).await
+        .map_err(DurabilityError::from)?.rows_affected() == 1;
+    Ok(inserted)
 }
 
 #[cfg(test)]

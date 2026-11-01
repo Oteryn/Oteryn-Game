@@ -101,6 +101,8 @@ pub enum FeeBurnCauseV1 {
     GemGradeUp(OneItemNpcPurchaseV1),
     #[prost(message, tag = "12")]
     PreyListReroll(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "13")]
+    TaskBoardTalisman(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
@@ -131,6 +133,7 @@ pub struct OneItemFeeBurnCauseV1 {
             10, // GemSwitchDomain
             11, // GemGradeUp
             12, // PreyListReroll
+            13, // TaskBoardTalisman: Crystal NPC purchase, 5000 gold
             472, // HirelingService
         )
     )]

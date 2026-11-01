@@ -185,7 +185,7 @@ async fn return_to_lamp_input(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Exac
         transaction_id:command_identity(reference,b"lamp-return"),source_binding:input.binding(hireling),item_instance_ids:vec![command_identity(reference,b"lamp-return-item")]};
     let mint=RewardClaimInboxMintRequest{claim:definition,content_revision:inventory.content_revision,ruleset_revision:inventory.ruleset_revision,
         sim_revision:crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),outputs:vec![RewardClaimInboxMintOutput{source_line:0,item,quantity:1,key_number:None}]};
-    let reply=owner.root.return_hireling_to_lamp(owner.character,owner.holder,fence,HirelingLampReturn{hireling,input,source,mint},&super::item_ref_admission::NativeInboxItemWeights(native)).await.ok()?;
+    let reply=owner.root.return_hireling_to_lamp(owner.character,owner.holder,fence,HirelingLampReturn{hireling,input,source,mint},&super::item_ref_admission::NativeInboxItemWeights(native,owner.premium_coordinator)).await.ok()?;
     refresh(owner,actor,command).await?;Some(reply)
 }
 

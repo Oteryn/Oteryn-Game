@@ -347,7 +347,7 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     assert!(policy_of(state, 7644).is_none(), "item 7644");
 }
 
-/// I03: Crystal `data/scripts/actions/items/spellbook.lua:25` registers these spellbook ids; using
+/// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
 /// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
 /// requirement, grouped and sorted by level. Oteryn exposes the same server-authored content on
 /// the existing text-bearing LOOK result for the admitted source spellbook.
@@ -374,7 +374,8 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
             admitted.push(id);
         }
     }
-    // E12 adds exactly the five source Trader spellbooks: Crystal hireling.lua:667-670
+    // E12 admits the five source Trader spellbooks (including Task Board 8074 and 25699):
+    // Crystal hireling.lua:667-670
     // and 501,1776. The basic spellbook 3059 and the remaining source ids stay absent.
     assert_eq!(admitted, vec![6120, 8072, 8073, 8074, 8075, 25699]);
     let text = crate::gameplay_transport::item_look::spellbook_text(

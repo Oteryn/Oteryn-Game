@@ -190,6 +190,9 @@ pub(super) async fn observe_item_target(
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
 pub(super) struct NativeItemWeights<'a>(pub(super) &'a NativeGameplayState);
 
+#[path = "item_ref_admission/wheel_capacity.rs"]
+mod wheel_capacity;
+
 impl ItemWeightLookup for NativeItemWeights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
         self.0.source_digest()
@@ -207,7 +210,10 @@ impl ItemWeightLookup for NativeItemWeights<'_> {
 
 /// Inbox custody admits the pinned immovable Hireling lamp without widening
 /// ordinary carried-item admission. Existing carried definitions keep their facts.
-pub(super) struct NativeInboxItemWeights<'a>(pub(super) &'a NativeGameplayState);
+pub(super) struct NativeInboxItemWeights<'a>(
+    pub(super) &'a NativeGameplayState,
+    pub(super) Option<&'a super::spell_premium_coordinator::SpellPremiumCoordinator>,
+);
 
 impl ItemWeightLookup for NativeInboxItemWeights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
@@ -221,6 +227,11 @@ impl ItemWeightLookup for NativeInboxItemWeights<'_> {
             return Err(ItemWeightRefused::DefinitionMismatch);
         }
         facts.weight.ok_or(ItemWeightRefused::Unknown)
+    }
+
+    fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
+        self.1
+            .is_some_and(|owner| owner.view(account).premium_gate().premium_current())
     }
 }
 
@@ -312,7 +323,9 @@ pub(super) async fn take_corpse_entry(
     let request = ItemTransferRequest {
         command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
         source_item_instance_id: entry_id,
-        weight_generation_digest: NativeItemWeights(native).generation_digest(),
+        weight_generation_digest: NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator)
+            .generation_digest(),
         destination: ItemTransferDestination::MainBackpack,
         item,
         backpack,
@@ -327,7 +340,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             request,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await?;
     Ok(admission
@@ -338,7 +351,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             &mut candidate,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await?)
 }

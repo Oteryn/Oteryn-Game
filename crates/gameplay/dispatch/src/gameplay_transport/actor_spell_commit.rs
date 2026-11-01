@@ -24,6 +24,8 @@ struct Replacement {
 pub struct PlayerBatchPreflight {
     batch: OwnerCombatBatch,
     replacements: Vec<Replacement>,
+    wheel_shielding: Vec<(ExactActorRef, u32)>,
+    preprocessed_caster: Option<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     health_receipts: Vec<crate::foundation::runtime_actor_spell_types::EffectReceipt>,
     pub(in crate::gameplay_transport) deaths:
         Vec<(ExactActorRef, GameSessionId, super::PlayerDeath)>,
@@ -148,15 +150,20 @@ impl PlayerBatchPreflight {
         &mut self,
         physical: &StagedSpellBatch,
         rates: (u32, u32),
+        bounty: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
-        if rates == (0, 0) {
+        if rates == (0, 0) && bounty.is_empty() {
             return Ok(());
         }
         let damage = self
             .batch
             .effects
             .iter()
-            .filter(|effect| matches!(effect.change, OwnerCombatChange::Damage { .. }))
+            .filter(|effect| {
+                crate::gameplay_transport::task_board::bounty_talisman::damage_effect(
+                    &effect.change,
+                )
+            })
             .collect::<Vec<_>>();
         let affected = damage.len();
         if affected == 0 {
@@ -189,7 +196,16 @@ impl PlayerBatchPreflight {
                     .round()
                     .clamp(0.0, real as f64) as u32
             };
-            gains.0 = gains.0.saturating_add(amount(rates.0));
+            let bonus = bounty
+                .iter()
+                .find(|(target, ordinal, _)| {
+                    *target == effect.target && *ordinal == effect.sub_ordinal
+                })
+                .map_or(0, |(_, _, rate)| u32::from(*rate));
+            // Canary's combat callback adds its rate before the shared round/AoE cap.
+            gains.0 = gains
+                .0
+                .saturating_add(amount(rates.0.saturating_add(bonus)));
             gains.1 = gains.1.saturating_add(amount(rates.1));
         }
         let caster = self
@@ -209,8 +225,34 @@ impl PlayerBatchPreflight {
         let caster = runtime
             .player_control_facts(self.batch.caster, self.batch.command.game_session_id())
             .map_err(|_| SpellCastDisposition::Rejected)?;
-        if caster.control_loss.is_some() {
+        if caster.control_loss.is_some() && !runtime.qualified_deferred_batch(&self.batch) {
             return Err(SpellCastDisposition::Rejected);
+        }
+        if let Some((actor, session, before)) = &self.preprocessed_caster
+            && states.get(runtime, *actor, *session) != Some(before)
+        {
+            return Err(SpellCastDisposition::Rejected);
+        }
+        for (actor, shielding) in &self.wheel_shielding {
+            let replacement = self
+                .replacements
+                .iter()
+                .find(|r| r.actor == *actor)
+                .ok_or(SpellCastDisposition::Rejected)?;
+            let now = self
+                .batch
+                .now_us
+                .map(|time| time.get())
+                .or_else(|| self.batch.now_ms.checked_mul(1_000))
+                .ok_or(SpellCastDisposition::Rejected)?;
+            if replacement
+                .before
+                .wheel_battle_instinct(runtime, *actor, now)
+                .map(|bonus| bonus.shielding)
+                != Some(*shielding)
+            {
+                return Err(SpellCastDisposition::Rejected);
+            }
         }
         for replacement in &self.replacements {
             let Some((actor, session, actual)) = states.actors.get(replacement.index) else {
@@ -258,12 +300,127 @@ pub fn stage_player_batch(
     batch: &OwnerCombatBatch,
     caster_successor: Option<PlayerSpellState>,
 ) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    stage_player_batch_with_magnitude(runtime, states, batch, caster_successor, None)
+}
+
+/// The unchanged final player-vitals owner accepts a preprocessed magnitude only after
+/// the same numerical owner proves every result against current physical/player state.
+pub fn stage_player_batch_with_magnitude(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    batch: &OwnerCombatBatch,
+    caster_successor: Option<PlayerSpellState>,
+    magnitude: Option<&crate::spell::magnitude_owner::PreparedMagnitudeOwner>,
+) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    if let Some(magnitude) = magnitude {
+        magnitude
+            .qualify_preprocessed_player_batch(runtime, batch, &|actor| {
+                states
+                    .actors
+                    .iter()
+                    .find(|(held, session, state)| {
+                        *held == actor && states.get(runtime, *held, *session) == Some(state)
+                    })
+                    .map(|(_, _, state)| state)
+            })
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
+    stage_player_batch_inner(
+        runtime,
+        states,
+        batch,
+        caster_successor,
+        magnitude.is_some(),
+        None,
+    )
+}
+
+pub fn stage_player_batch_with_attack(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    batch: &OwnerCombatBatch,
+    attack: &crate::spell::cast::PreparedWheelAttackHit,
+) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    if !attack.qualify_batch(runtime, batch, &|actor, session| {
+        states.get(runtime, actor, session)
+    }) {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    stage_player_batch_inner(runtime, states, batch, None, true, Some(attack))
+}
+
+/// A due Combat has no new resource payment, but consumes its current Focus window.
+/// Its scheduler token and numerical predecessor remain independent required proofs.
+pub(super) fn stage_due_player_batch(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    batch: &OwnerCombatBatch,
+    magnitude: &crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    if batch.anchor.is_some() || !runtime.qualified_deferred_batch(batch) {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    let mut preflight =
+        stage_player_batch_with_magnitude(runtime, states, batch, None, Some(magnitude))?;
+    let session = batch.command.game_session_id();
+    let index = states
+        .index(batch.caster, session)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    if let Some(replacement) = preflight.replacements.iter_mut().find(|r| r.index == index) {
+        magnitude
+            .apply_wheel_cast_state(&mut replacement.next)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    } else {
+        let before = states
+            .get(runtime, batch.caster, session)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        let mut next = before.clone();
+        magnitude
+            .apply_wheel_cast_state(&mut next)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        if next != *before {
+            next.advance_batch_revision()?;
+            preflight.replacements.push(Replacement {
+                index,
+                actor: batch.caster,
+                session,
+                before: before.clone(),
+                next,
+            });
+        }
+    }
+    preflight.validate_current(runtime, states)?;
+    Ok(preflight)
+}
+
+fn stage_player_batch_inner(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    batch: &OwnerCombatBatch,
+    caster_successor: Option<PlayerSpellState>,
+    preprocessed: bool,
+    attack: Option<&crate::spell::cast::PreparedWheelAttackHit>,
+) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    let preprocessed_caster = if preprocessed {
+        let session = batch.command.game_session_id();
+        Some((
+            batch.caster,
+            session,
+            states
+                .get(runtime, batch.caster, session)
+                .ok_or(SpellCastDisposition::Rejected)?
+                .clone(),
+        ))
+    } else {
+        None
+    };
     let mut deaths = Vec::new();
     let mut health_receipts = Vec::new();
     health_receipts
         .try_reserve(batch.effects.len())
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let mut replacements: Vec<Replacement> = Vec::new();
+    let mut wheel_shielding = Vec::new();
     replacements
         .try_reserve(batch.effects.len().saturating_add(1))
         .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -330,14 +487,34 @@ pub fn stage_player_batch(
                 let magnitude =
                     u32::try_from(*magnitude).map_err(|_| SpellCastDisposition::Rejected)?;
                 let health_before = replacement.next.vitals().health;
-                let (next, damage) = crate::spell::actor_conditions::stage_creature_hit(
-                    &replacement.next,
-                    magnitude,
-                    batch
-                        .now_ms
-                        .checked_mul(1000)
-                        .ok_or(SpellCastDisposition::Rejected)?,
-                )?;
+                let now = batch
+                    .now_us
+                    .map(|time| time.get())
+                    .or_else(|| batch.now_ms.checked_mul(1_000))
+                    .ok_or(SpellCastDisposition::Rejected)?;
+                let shielding = replacement
+                    .next
+                    .wheel_battle_instinct(runtime, *actor, now)
+                    .ok_or(SpellCastDisposition::Rejected)?
+                    .shielding;
+                wheel_shielding.push((*actor, shielding));
+                let (next, damage) = if let Some(attack) = attack {
+                    attack.stage_target_hit(&replacement.next, now)
+                } else if preprocessed {
+                    crate::spell::actor_conditions::stage_preprocessed_player_hit(
+                        &replacement.next,
+                        magnitude,
+                        now,
+                    )
+                } else {
+                    crate::spell::actor_conditions::stage_creature_hit_in_world(
+                        runtime,
+                        *actor,
+                        &replacement.next,
+                        magnitude,
+                        now,
+                    )
+                }?;
                 replacement.next = next;
                 health_receipts.push(
                     crate::foundation::runtime_actor_spell_types::EffectReceipt {
@@ -404,6 +581,8 @@ pub fn stage_player_batch(
     let preflight = PlayerBatchPreflight {
         batch: batch.clone(),
         replacements,
+        wheel_shielding,
+        preprocessed_caster,
         health_receipts,
         deaths,
         pvp_locks: Vec::new(),

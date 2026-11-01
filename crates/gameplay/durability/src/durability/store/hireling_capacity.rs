@@ -27,6 +27,6 @@ pub(super) async fn can_reserve_lamp(
         Err(LoopError::Database(error))=>return Err(error.into()),
         Err(_)=>return Ok(false),
     };
-    let capacity=read_derived_transfer_capacity_centi_oz(tx,fence.character_id).await?;
+    let capacity=read_derived_transfer_capacity_centi_oz(tx,fence.character_id,weights).await?;
     Ok(carried.checked_add(u64::from(unit)).is_some_and(|total|total<=capacity))
 }

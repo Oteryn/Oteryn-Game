@@ -82,7 +82,7 @@ impl DurabilityRoot {
                 if count>STORE_INBOX_CAPACITY {state.1=Reply::Refused(Refusal::InventoryFull);return Err(RewardClaimInboxError::SourceRefused)}
                 let carried=super::super::item_loop_move::carried_weight(tx,current.character_id,h.world,state.0).await
                     .map_err(|_|RewardClaimInboxError::SourceRefused)?;
-                let capacity=read_derived_transfer_capacity_centi_oz(tx,current.character_id).await
+                let capacity=read_derived_transfer_capacity_centi_oz(tx,current.character_id,state.0).await
                     .map_err(|_|RewardClaimInboxError::SourceRefused)?;
                 let weight=state.0.weight_of(&request.mint.outputs[0].item.definition).map_err(|_|RewardClaimInboxError::SourceRefused)?;
                 if carried.checked_add(u64::from(weight)).is_none_or(|total|total>capacity){state.1=Reply::Refused(Refusal::Capacity);return Err(RewardClaimInboxError::SourceRefused)}

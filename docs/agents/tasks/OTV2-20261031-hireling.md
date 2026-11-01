@@ -21,10 +21,10 @@ execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/
   - crates/protocol-oteryn/
-  - apps/game-server/migrations/0700_hireling_identity.sql
-  - apps/game-server/migrations/0701_store_hireling_delivery.sql
-  - apps/game-server/migrations/0702_hireling_services.sql
-  - apps/game-server/migrations/0703_hireling_lamp.sql
+  - apps/game-server/migrations/0719_hireling_identity.sql
+  - apps/game-server/migrations/0720_store_hireling_delivery.sql
+  - apps/game-server/migrations/0721_hireling_services.sql
+  - apps/game-server/migrations/0722_hireling_lamp.sql
   - content/
   - imports/
   - rulesets/economy/store/hirelings.json
@@ -134,7 +134,7 @@ Q18 access is restored; interrupted PG21 remains UNKNOWN. No merge/rebase, revie
 
 ## Implementation / findings
 
-Migrations 0700–0703; capability 250 (requires 165), command 470/order 610. Capability 251, commands 471–473 and orders 611–613 are unused. Audit causes 470/471/472 are separate; no new resource IDs.
+Migrations 0719–0722 (merge repair: draft 0700–0703 moved above main 0718); capability 250 (requires 165), command 470/order 610. Capability 251, commands 471–473 and orders 611–613 are unused. Audit causes 470/471/472 are separate; no new resource IDs.
 
 Closure: 1675 rows/1409 IDs, 23 packages/69 ingredients, 1425 captured/2104 active profiles; 4,712,466-byte JSON < 8MiB. Preserve old Channel encodings.
 

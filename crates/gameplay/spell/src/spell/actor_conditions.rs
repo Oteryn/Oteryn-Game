@@ -661,9 +661,154 @@ pub fn stage_creature_hit(
     ),
     SpellCastDisposition,
 > {
-    let reduction = state.virtue_party_bonuses(now).damage_reduction.min(100);
-    let magnitude = (u64::from(magnitude) * u64::from(100 - reduction) / 100) as u32;
-    stage_hit(state, magnitude, now, true)
+    let magnitude = state
+        .after_player_mitigation(magnitude, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    stage_incoming_hit(state, magnitude, now)
+}
+
+/// The live physical owner supplies Battle Instinct's shielding to the baseline formula.
+pub fn stage_creature_hit_in_world(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_typed_hit_in_world(
+        runtime,
+        actor,
+        state,
+        magnitude,
+        crate::player_lethal::PlayerHitKind::Mitigated,
+        now,
+    )
+}
+
+/// The real source's element remains bound to its native occurrence/receipt. Generic
+/// magnitudes cannot manufacture a resistance type or bypass baseline mitigation.
+pub fn stage_typed_hit_in_world(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let bonus = state
+        .wheel_battle_instinct(runtime, actor, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = state
+        .after_player_block(magnitude, kind, bonus.shielding, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    stage_preprocessed_player_hit(state, magnitude, now)
+}
+
+/// Same source block/final pipeline, at the destination already qualified by the
+/// existing movement proof. It does not change position or mint movement authority.
+pub fn stage_typed_hit_at_position(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    position: crate::foundation::MovementLocalPosition,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let bonus = state
+        .wheel_battle_instinct_at(runtime, actor, position, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = state
+        .after_player_block(magnitude, kind, bonus.shielding, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    stage_preprocessed_player_hit(state, magnitude, now)
+}
+
+/// Numerical final HP stage for an independently qualified preprocessed hit. Dispatch
+/// accepts this only beside the magnitude owner's sealed result/state observations.
+pub fn stage_preprocessed_player_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, true, true, None)
+}
+
+pub(crate) fn stage_preprocessed_player_components(
+    state: &PlayerSpellState,
+    primary: u32,
+    secondary: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let total = primary
+        .checked_add(secondary)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    stage_hit(state, total, now, true, true, Some((primary, secondary)))
+}
+
+/// Crystal creature.cpp:842-845 excludes life drain from base mitigation while keeping
+/// the subsequent incoming reductions, mana shield and lethal-health owner intact.
+pub fn stage_life_drain_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let magnitude = state.after_wheel_resistance(
+        magnitude,
+        crate::player_lethal::PlayerHitKind::LifeDrain,
+        now,
+    );
+    stage_incoming_hit(state, magnitude, now)
+}
+
+fn stage_incoming_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, true, false, None)
 }
 
 /// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
@@ -680,7 +825,7 @@ pub fn stage_agony_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, false)
+    stage_hit(state, magnitude, now, false, false, None)
 }
 
 fn stage_hit(
@@ -688,6 +833,8 @@ fn stage_hit(
     magnitude: u32,
     now: u64,
     mitigated: bool,
+    preprocessed: bool,
+    components: Option<(u32, u32)>,
 ) -> Result<
     (
         PlayerSpellState,
@@ -706,6 +853,7 @@ fn stage_hit(
     let mut next = state.clone();
     let mut remaining = magnitude;
     if mitigated
+        && !preprocessed
         && let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
         && let ConditionValues::Attributes {
             incoming_reduction_percent,
@@ -722,6 +870,20 @@ fn stage_hit(
             .ok_or(SpellCastDisposition::Rejected)?;
     }
     if mitigated {
+        // Crystal game.cpp:8045-8060 truncates Combat Mastery and Virtue independently
+        // for each component, before the single shield/health/Gift occurrence.
+        let reduction = state.virtue_party_bonuses(now).damage_reduction.min(100);
+        let reduce = |value| {
+            let value = state.combat_mastery_damage_reduction(value, now);
+            (u64::from(value) * u64::from(100 - reduction) / 100) as u32
+        };
+        remaining = if let Some((primary, secondary)) = components {
+            reduce(primary)
+                .checked_add(reduce(secondary))
+                .ok_or(SpellCastDisposition::Rejected)?
+        } else {
+            reduce(remaining)
+        };
         let capacity = next
             .conditions
             .mana_shield_at(now)
@@ -745,6 +907,9 @@ fn stage_hit(
         if next.mana == 0 {
             next.conditions.remove_type(ConditionType::ManaShield);
         }
+    }
+    if mitigated {
+        next.apply_wheel_gift(remaining, now)?;
     }
     let damage = crate::ability::creature_bite::floor_creature_damage(next.health, remaining);
     next.health = damage.health_after;
@@ -1316,7 +1481,12 @@ impl PlayerSpellState {
             .conditions
             .skill_adjustments(now_us)
             .ok_or(SpellCastDisposition::Rejected)?;
+        let wheel = self.wheel_effects_at(now_us);
         Ok(OwnedSkillAdjustments {
+            wheel_skills: std::array::from_fn(|index| {
+                wheel.map_or(0, |effects| effects.skill_bonus(index))
+            }),
+            wheel_magic: wheel.map_or(0, |effects| effects.magic_skill_bonus()),
             native,
             source: self.conditions.effective_attributes(now_us),
             justice_percent: if self.stance
@@ -1376,11 +1546,24 @@ impl PlayerSpellState {
 /// Every percent delta is computed from the independently provided immutable base.
 #[derive(Debug, Clone, Copy)]
 pub struct OwnedSkillAdjustments {
+    wheel_skills: [u32; 7],
+    wheel_magic: u32,
     native: oteryn_gameplay_foundation::foundation::condition::SkillAdjustments,
     justice_percent: u32,
     source: oteryn_gameplay_domain::domain::condition::attributes::AttributeModifiers,
 }
 impl OwnedSkillAdjustments {
+    /// Casts replace the actor cache with their same-transaction Wheel/Atelier projection.
+    pub fn with_wheel(
+        mut self,
+        wheel: Option<&oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects>,
+    ) -> Self {
+        self.wheel_skills =
+            std::array::from_fn(|index| wheel.map_or(0, |effects| effects.skill_bonus(index)));
+        self.wheel_magic = wheel.map_or(0, |effects| effects.magic_skill_bonus());
+        self
+    }
+
     fn adjust(
         base: u32,
         native: i32,
@@ -1400,10 +1583,12 @@ impl OwnedSkillAdjustments {
         u32::try_from((i128::from(base) + i128::from(native) + source).max(0)).ok()
     }
     pub fn adjust_magic_level(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.magic_level, self.source.magic_points)
+        Self::adjust(base, self.native.magic_level, self.source.magic_points)?
+            .checked_add(self.wheel_magic)
     }
     pub fn adjust_shielding(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.shielding, self.source.shielding)
+        Self::adjust(base, self.native.shielding, self.source.shielding)?
+            .checked_add(self.wheel_skills[5])
     }
     pub fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
         let (native, modifier) = match index {
@@ -1414,7 +1599,8 @@ impl OwnedSkillAdjustments {
             6 => (0, self.source.fishing),
             _ => return None,
         };
-        let value = Self::adjust(base, native, modifier)?;
+        let value =
+            Self::adjust(base, native, modifier)?.checked_add(*self.wheel_skills.get(index)?)?;
         if index == 0 {
             value.checked_add(base.checked_mul(self.justice_percent)? / 100)
         } else {
@@ -1503,6 +1689,25 @@ mod source_attribute_projection_tests {
         assert_eq!(read.adjust_shielding(53), Some(53));
         assert_eq!(read.adjust_skill(53, 7), None);
     }
+    #[test]
+    fn shielding_combines_source_modifier_with_wheel_bonus_and_expires_source() {
+        let mut state = actor(53);
+        apply(
+            &mut state,
+            AttributeModifiers {
+                shielding: Some(M::Add(7)),
+                ..Default::default()
+            },
+        );
+        let mut read = state.owned_skill_adjustments(0).unwrap();
+        read.wheel_skills[5] = 3;
+        assert_eq!(read.adjust_shielding(53), Some(63));
+        assert_eq!(read.adjust_skill(53, 5), Some(63));
+        let mut expired = state.owned_skill_adjustments(1_000_000).unwrap();
+        expired.wheel_skills[5] = 3;
+        assert_eq!(expired.adjust_shielding(53), Some(56));
+    }
+
     #[test]
     fn current_skills_require_loaded_matching_build_and_apply_live_modifiers() {
         use crate::durability::character_build::DurableBuildState;

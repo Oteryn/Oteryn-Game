@@ -367,6 +367,10 @@ impl PlayerSpellState {
             && self.premium_current == before.premium_current
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
+            && self.wheel_effects == before.wheel_effects
+            && self.wheel_gift == before.wheel_gift
+            && self.wheel_equipment == before.wheel_equipment
+            && self.wheel_proficiency_weapon == before.wheel_proficiency_weapon
             && self.virtue_party == before.virtue_party
             && self.equipped_mantra == before.equipped_mantra
             && self.equipped_armor == before.equipped_armor
@@ -529,9 +533,15 @@ impl PlayerSpellState {
             return Err(SpellCastDisposition::Rejected);
         }
         let maximum = crate::domain::premium::soul_maximum(promoted, current);
+        let wheel_disabled = !promoted
+            || !current
+            || self.facts.level <= oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET;
+        let clear_wheel_windows =
+            wheel_disabled && (self.wheel_sanctuary.is_some() || self.wheel_focus_until.is_some());
         let changed = self.premium_current != current
             || self.stored_promotion != promoted
-            || self.facts.max_soul != maximum;
+            || self.facts.max_soul != maximum
+            || clear_wheel_windows;
         let revision = if changed {
             self.revision
                 .checked_add(1)
@@ -543,6 +553,12 @@ impl PlayerSpellState {
         self.premium_valid_until_micros = if current { valid_until_micros } else { None };
         self.facts.max_soul = maximum;
         self.stored_promotion = promoted;
+        // Crystal wheel:3641-3650 clears both timers when their perks are disabled.
+        // Losing eligibility must not leave a window that reappears on later renewal.
+        if clear_wheel_windows {
+            self.wheel_sanctuary = None;
+            self.wheel_focus_until = None;
+        }
         self.revision = revision;
         Ok(changed)
     }
@@ -591,16 +607,10 @@ impl PlayerSpellState {
     pub fn equipped_mantra(&self) -> u32 {
         self.equipped_mantra
     }
-    pub fn ascetic_attack_bonus_at(&self, stage: u8, now: u64) -> u32 {
-        if self.monk.is_none() || stage > 3 {
-            return 0;
-        }
-        let mantra = if self.equipped_mantra > 0 {
-            self.equipped_mantra
-        } else {
-            self.virtue_party_bonuses(now).mantra
-        };
-        mantra.saturating_mul(u32::from(stage))
+    /// Crystal 201189f player_wheel.cpp:4194-4210 uses only getMantraTotal,
+    /// whose six positive own-equipment slots are player.cpp:12772-12784.
+    pub fn ascetic_attack_bonus_at(&self, stage: u8, _now: u64) -> u32 {
+        self.ascetic_attack_bonus(stage)
     }
     pub fn sustain_healing_percent(&self) -> u32 {
         if self.stance

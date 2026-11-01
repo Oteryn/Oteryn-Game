@@ -115,7 +115,7 @@ impl Extra {
         }
         let carried=super::super::item_loop_move::carried_weight(tx,fence.character_id,*fence.runtime_scope.world_id().as_bytes(),weights)
             .await.map_err(|_|NpcTradeError::CapacityExceeded)?;
-        let capacity=super::super::item_transfer::read_derived_transfer_capacity_centi_oz(tx,fence.character_id).await?;
+        let capacity=super::super::item_transfer::read_derived_transfer_capacity_centi_oz(tx,fence.character_id,weights).await?;
         if carried.checked_add(required).is_none_or(|total|total>capacity) {return Err(NpcTradeError::DoesNotFit)}
         let ids:Vec<String>=selection.child_ids.iter().map(|id|id.iter().map(|b|format!("{b:02x}")).collect()).collect();
         let used:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=ANY($1::text[]::uuid[]))")

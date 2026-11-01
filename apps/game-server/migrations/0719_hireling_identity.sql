@@ -85,7 +85,7 @@ ALTER TABLE game_house_hireling_receipts
  ADD COLUMN created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id();
 CREATE INDEX game_hireling_receipt_character ON game_house_hireling_receipts(character_id);
 CREATE INDEX game_hireling_receipt_identity ON game_house_hireling_receipts(hireling_id);
--- Insert after the 0700 receipt columns exist and before receipt immutability.
+-- Insert after the 0719 receipt columns exist and before receipt immutability.
 -- The source CommandRef was matched to its authentic session/owner/world above.
 -- Preserve that identity link in the immutable receipt so pruning or moving the
 -- original reconnect session cannot revoke an otherwise valid legacy recall.
