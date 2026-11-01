@@ -160,6 +160,26 @@ pub mod items;
 pub mod promotion;
 mod settlement;
 
+/// P20 consumes the admission's exact respawn in the citizenship/position transaction.
+pub(super) async fn consume_relocated_respawn(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    occurrence: PlayerDeathOccurrence,
+) -> std::result::Result<bool, DurabilityError> {
+    if !items::completed(tx, occurrence).await? {
+        return Ok(false);
+    }
+    let deleted = sqlx::query(
+        "DELETE FROM game_character_pending_respawns \
+         WHERE character_id=encode($1,'hex')::uuid AND death_occurrence_id=encode($2,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(occurrence.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
 impl DurabilityRoot {
     /// Commit one player death.  Exact occurrence replay returns the first
     /// receipt without reacquiring session authority; changed semantic reuse

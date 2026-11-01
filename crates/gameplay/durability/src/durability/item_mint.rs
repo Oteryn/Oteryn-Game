@@ -199,6 +199,9 @@ pub struct CorpseContainerPlacement {
     /// `1..=CORPSE_CONTAINER_ENTRIES_MAX`; the caller assigns it so the
     /// frozen audit event and the replayed cause always agree on it.
     pub placement_ordinal: u32,
+    /// W22a: the fluid the loot entry is minted with (`1..=255`, Crystal `item.type`); `None`
+    /// is no fluid row, the empty container. Part of the intent binding when present.
+    pub fluid_subtype: Option<u8>,
 }
 
 /// Complete semantic input of one loot MINT into a corpse container (D3-2).
@@ -1410,6 +1413,12 @@ fn intent_binding(
         ],
         Some(entry) => {
             semantic.extend_from_slice(&entry.placement_ordinal.to_be_bytes());
+            // W22a: a fluid joins the binding only when present, so every existing corpse-entry
+            // reservation keeps its byte layout.
+            if let Some(fluid) = entry.fluid_subtype {
+                semantic.extend_from_slice(b"fluid");
+                semantic.push(fluid);
+            }
             vec![
                 b"corpse-container-entry".as_slice(),
                 entry.corpse_item_instance_id.as_slice(),
@@ -1790,6 +1799,7 @@ async fn insert_corpse_loot_mint(
     .execute(&mut **tx)
     .await?;
     insert_receipt(tx, frozen, None, Some(placement)).await?;
+    insert_loot_fluid(tx, frozen, placement).await?;
     insert_audit_outbox(tx, frozen, tuple).await
 }
 
@@ -1814,7 +1824,41 @@ async fn insert_nested_loot_mint(
     .execute(&mut **tx)
     .await?;
     insert_receipt(tx, frozen, None, Some(placement)).await?;
+    insert_loot_fluid(tx, frozen, placement).await?;
     insert_audit_outbox(tx, frozen, tuple).await
+}
+
+/// W22a: a loot entry with a fluid subtype carries it as the item's fluid state, proven by its
+/// own loot-mint row in the same transaction (migration 0597).
+async fn insert_loot_fluid(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    placement: &CorpseContainerPlacement,
+) -> std::result::Result<(), DurabilityError> {
+    let Some(fluid) = placement.fluid_subtype.filter(|fluid| *fluid != 0) else {
+        return Ok(());
+    };
+    sqlx::query(
+        "INSERT INTO game_item_fluid_loot_mints(item_instance_id, transaction_id, fluid_subtype) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)",
+    )
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(frozen.transaction_id.as_slice())
+    .bind(i16::from(fluid))
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_item_fluid_states(item_instance_id, world_id, fluid_subtype, \
+           last_transaction_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid)",
+    )
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(frozen.request.cause.death.world_id.as_bytes().as_slice())
+    .bind(i16::from(fluid))
+    .bind(frozen.transaction_id.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 async fn insert_item_instance(
@@ -2187,6 +2231,7 @@ mod tests {
         CorpseContainerPlacement {
             corpse_item_instance_id: id(8),
             placement_ordinal: ordinal,
+            fluid_subtype: None,
         }
     }
 
@@ -2204,12 +2249,29 @@ mod tests {
         let other_parent = CorpseContainerPlacement {
             corpse_item_instance_id: id(9),
             placement_ordinal: 1,
+            fluid_subtype: None,
         };
         assert_ne!(
             intent_binding(&request(), Some(&other_parent)).expect("binding"),
             base
         );
         assert_ne!(intent_binding(&request(), None).expect("binding"), base);
+    }
+
+    /// W22a: the loot fluid is part of the corpse-entry intent; no fluid keeps the old layout.
+    #[test]
+    fn corpse_loot_binding_covers_the_fluid_subtype() {
+        let base = intent_binding(&request(), Some(&placement(1))).expect("binding");
+        let fluid = |subtype| CorpseContainerPlacement {
+            fluid_subtype: Some(subtype),
+            ..placement(1)
+        };
+        let five = intent_binding(&request(), Some(&fluid(5))).expect("binding");
+        assert_ne!(five, base);
+        assert_ne!(
+            intent_binding(&request(), Some(&fluid(6))).expect("binding"),
+            five
+        );
     }
 
     #[test]
@@ -2232,6 +2294,7 @@ mod tests {
         let bad_parent = CorpseContainerPlacement {
             corpse_item_instance_id: [0; 16],
             placement_ordinal: 1,
+            fluid_subtype: None,
         };
         assert!(matches!(
             validate_request(&request(), Some(&bad_parent)),

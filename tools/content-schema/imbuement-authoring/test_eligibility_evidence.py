@@ -196,9 +196,12 @@ class EligibilityEvidenceTests(unittest.TestCase):
             self.assertEqual(native["allowed_types"][key], tier)
 
     def test_canonical_existence_and_revisioned_names_guard_reference_namespace(self):
-        for item_id in (49160, 53192):
-            self.assertIsNone(self.items[item_id]["item_ref"])
-            self.assertEqual(self.items[item_id]["binding_status"], "CANONICAL_ITEM_ABSENT")
+        # E06 minted i49160 from the pinned client; i53192 still has no canonical Item.
+        self.assertEqual(self.items[49160]["item_ref"], {"family": "Item",
+            "key": "oteryn:item.tibia.i49160", "revision": "definition-r1"})
+        self.assertEqual(self.items[49160]["binding_status"], "CLIENT_AND_CANONICAL_NAME")
+        self.assertIsNone(self.items[53192]["item_ref"])
+        self.assertEqual(self.items[53192]["binding_status"], "CANONICAL_ITEM_ABSENT")
         for row in self.items.values():
             if row["binding_status"] == "CANONICAL_CLIENT_NAME_DISPUTE":
                 self.assertIsNone(row["item_ref"])
@@ -223,7 +226,8 @@ class EligibilityEvidenceTests(unittest.TestCase):
         self.assertEqual(row["target_time_evidence"]["date"], "2026-08-04")
         self.assertEqual(self.packet["summary"]["typed_items"], 629)
         self.assertEqual(self.packet["summary"]["target_candidate_typed_items"], 629)
-        self.assertEqual(self.packet["summary"]["target_candidate_bound_items"], 627)
+        # E06 adds the canonical i49160 identity without inventing i53192.
+        self.assertEqual(self.packet["summary"]["target_candidate_bound_items"], 628)
         self.assertNotIn("POST_TARGET_RELEASE_EXCLUDED", self.packet["summary"]["target_time_status_counts"])
         packet = copy.deepcopy(self.packet)
         packet["normalized_sources"]["release_dates"]["15.32.fc9100"]["date"] = "2026-07-01"

@@ -146,6 +146,7 @@ def build() -> dict:
     admitted = canonical_items()
     dependencies = {"definitions": [], "assets": [], "presentations": [], "proficiency_crosswalks": []}
     proposals = []
+    retired = []
     for source in facts["records"]:
         validate_source_provenance(source)
         item_id, name = source["client_id"], source["source_name"]
@@ -153,8 +154,6 @@ def build() -> dict:
         if client["name"].casefold() != name.casefold():
             raise ValueError(f"{item_id}: named source/client identity disagrees")
         key = f"oteryn:item.tibia.i{item_id}"
-        if key in admitted:
-            raise ValueError(f"{key}: Item already admitted; proposal needs owning-lane reconciliation")
         flags, observed = appearance["flags"], source["facts"]
         if not flags.get("flags.container") or not flags.get("flags.take") or flags.get("clothes.slot") != 3:
             raise ValueError(f"{item_id}: primary client does not corroborate portable back-slot container")
@@ -164,6 +163,20 @@ def build() -> dict:
             raise ValueError(f"{item_id}: source marketability disagrees with primary market flag")
         if observed["stackable"] is not bool(flags.get("flags.cumulative")):
             raise ValueError(f"{item_id}: source stackability disagrees with primary cumulative flag")
+        # E06 admitted this identity from the pinned client. Retire its identity proposal;
+        # the source's extra container/equipment/weight facts gain no canonical authority.
+        if item_id == 49160:
+            if key not in admitted:
+                raise ValueError(f"{key}: E06 canonical identity is missing")
+            retired.append({
+                "source_client_id": item_id,
+                "item_ref": {"family": "Item", **admitted[key]["definition"]["identity"]},
+                "identity_state": "RETIRED_CANONICAL_IDENTITY",
+                "reason": "E06 admitted the identity only; proposal gameplay facts remain unadmitted.",
+            })
+            continue
+        if key in admitted:
+            raise ValueError(f"{key}: Item already admitted; proposal needs owning-lane reconciliation")
         if not source["sources"]["wiki_br"]["revision_id"]:
             raise ValueError(f"{item_id}: missing revisioned public item evidence")
         authoring = {
@@ -236,7 +249,7 @@ def build() -> dict:
             "owning_item_schema_sha256": hashlib.sha256((ITEM_TOOL / "item.schema.json").read_bytes()).hexdigest(),
             "test_wiki_facts_sha256": hashlib.sha256(wiki_path.read_bytes()).hexdigest(),
         },
-        "proposals": proposals, "test_item_evidence": tests,
+        "proposals": proposals, "retired_proposals": retired, "test_item_evidence": tests,
     }
 
 
@@ -250,7 +263,7 @@ def main() -> None:
             raise SystemExit("missing Item proposals are stale; run missing_item_proposals.py")
     else:
         OUTPUT.write_bytes(raw)
-    print("Both missing Item proposals pass the owning Item validator; canonical content unchanged.")
+    print("Active missing Item proposals pass the owning Item validator; canonical content unchanged.")
 
 
 if __name__ == "__main__":

@@ -111,6 +111,7 @@ fn roll(
             subtype: entry.details.subtype,
             charges: entry.details.charges,
             unique: entry.details.unique,
+            stackable: entry.details.stackable,
         });
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());

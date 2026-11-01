@@ -188,7 +188,12 @@ fn equipment_effects_timed_speed_and_suppression_only_contribute_in_own_slot()
         effects.suppressions,
         [AbilitySuppression::Drown].into_iter().collect()
     );
-    assert!(effects.skills.is_empty());
+    // I05 widened the timed admission to skills (Crystal 201189f8 items.xml:7339-7457, the
+    // worn skill rings), so the timed head item's +3 axe now counts; stats and protection stay out.
+    assert_eq!(
+        effects.skills,
+        [(AbilitySkill::Axe, 3)].into_iter().collect()
+    );
     assert!(effects.stat_flats.is_empty());
     assert!(effects.protections.is_empty());
     assert_eq!(effects.light, Some((7, 3)));

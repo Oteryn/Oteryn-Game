@@ -1,5 +1,8 @@
 # Allowlist of `impl <seal>::Sealed for T` and `impl PremiumGateOwner for T` sites (file | trait | type).
 # Seals must stay inside the owning crate. Add entries only with CP review.
+# 60f2542a5 (Wheel): the due-combat compositor owns ChannelSpellStates in dispatch;
+# its delayed-execution fixture exercises the same spell-owned commit boundary.
+crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs | due_commit_seal::Sealed | ChannelSpellStates
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | player_proof_seal::Sealed | PlayerBatchPreflight
 crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
 crates/gameplay/dispatch/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
@@ -11,6 +14,7 @@ crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs | P
 crates/gameplay/dispatch/src/gameplay_transport/spell_strike_callbacks.rs | due_read_seal::Sealed | StrikeEvidence<'_>
 crates/gameplay/dispatch/src/gameplay_transport/spell_timer_callbacks.rs | due_read_seal::Sealed | DueEvidence<'_>
 crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs | fresh_source_sealed::Sealed | Source
+crates/gameplay/dispatch/src/lifted_tests/spell_delayed_execution_tests.rs | due_commit_seal::Sealed | Context
 # Test-only native-map TEXT fixture in the seal-owning durability crate; no reusable
 # map initialization fixture exists there, and the production proof lives in spell.
 crates/gameplay/durability/src/durability/item_text/tests/carried_tests/native_ground_tests.rs | map_initializer_seal::Sealed | MapFixture

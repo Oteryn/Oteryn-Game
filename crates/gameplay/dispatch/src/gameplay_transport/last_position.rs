@@ -567,6 +567,28 @@ pub(super) enum AdmissionPosition {
     Stored(StoredLastPosition),
     /// No row: a first login, step 4.
     FirstLogin,
+    /// P20: a stored row or a first login moved to this temple cell because the account's
+    /// Premium ended in the premium area; the row's vitals and rest of this World still apply.
+    /// The actual placed cell is persisted with citizenship before admission completes.
+    Relocated(MovementLocalPosition, Option<LastVitals>, Option<[u32; 4]>),
+}
+
+impl AdmissionPosition {
+    /// P20 overrides pending premium-area respawns and arrivals too; their obligations are
+    /// consumed with the actual placement and citizenship after the first-entry owner step.
+    pub(super) fn relocated(&self, cell: MovementLocalPosition, world_id: WorldId) -> Self {
+        match self {
+            Self::Stored(row) if row.record.world_id == world_id => {
+                Self::Relocated(cell, row.record.vitals, row.record.rest)
+            }
+            Self::Stored(_) | Self::FirstLogin | Self::Respawn(_) => {
+                Self::Relocated(cell, None, None)
+            }
+            Self::Arrival(_, vitals, rest) | Self::Relocated(_, vitals, rest) => {
+                Self::Relocated(cell, *vitals, *rest)
+            }
+        }
+    }
 }
 
 /// §3.3: the input that replaces `entry_start` in the first-entry owner step.
@@ -593,7 +615,7 @@ pub(super) fn admitted_vitals(
             .record
             .vitals
             .map(|vitals| (vitals.health(), vitals.mana())),
-        AdmissionPosition::Arrival(_, vitals, _) => {
+        AdmissionPosition::Arrival(_, vitals, _) | AdmissionPosition::Relocated(_, vitals, _) => {
             vitals.map(|vitals| (vitals.health(), vitals.mana()))
         }
         AdmissionPosition::Stored(_)
@@ -618,6 +640,7 @@ fn first_entry_input(
         AdmissionPosition::Arrival(pending, _, _) => {
             FirstEntryInput::Recorded(Some(position_of(pending.destination)))
         }
+        AdmissionPosition::Relocated(cell, _, _) => FirstEntryInput::Recorded(Some(*cell)),
         AdmissionPosition::Stored(stored)
             if stored_position_applies(stored, world_id, frame_digest)
                 && !house(position_of(stored.record.cell)) =>
@@ -970,7 +993,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let written = match decided {
             AdmissionPosition::Stored(stored) => Some(Saved::of(&stored.record)),
-            AdmissionPosition::FirstLogin => None,
+            AdmissionPosition::FirstLogin | AdmissionPosition::Relocated(_, _, _) => None,
             AdmissionPosition::Respawn(_) | AdmissionPosition::Arrival(_, _, _) => {
                 operator_event("admitted_respawn_no_longer_pending");
                 return false;
@@ -1480,6 +1503,78 @@ mod tests {
             .read_actor_position(actor)
             .expect("positioned")
             .position()
+    }
+
+    /// P20: a relocated login enters at the temple, keeps the row's vitals and rest of this
+    /// World only; the admission commits the actual placement with citizenship.
+    #[test]
+    fn a_relocated_login_enters_at_the_temple_and_writes_it() {
+        let temple = at(2, 11);
+        let mut row = stored(world(1), [3; 32]);
+        row.record.vitals = LastVitals::new(40, 3);
+        row.record.rest = Some([1, 2, 3, 4]);
+        let relocated = AdmissionPosition::Stored(row).relocated(temple, world(1));
+        assert_eq!(
+            first_entry_input(&relocated, world(1), [9; 32], |_| true),
+            FirstEntryInput::Recorded(Some(temple))
+        );
+        assert_eq!(admitted_vitals(&relocated, world(1)), Some((40, 3)));
+        assert_eq!(
+            super::super::bed_regen::admitted_rest(&relocated, world(1)),
+            Some([1, 2, 3, 4])
+        );
+        let mut other = stored(world(2), [3; 32]);
+        other.record.vitals = LastVitals::new(40, 3);
+        let other = AdmissionPosition::Stored(other).relocated(temple, world(1));
+        assert_eq!(admitted_vitals(&other, world(1)), None);
+        let first = AdmissionPosition::FirstLogin.relocated(temple, world(1));
+        assert_eq!(
+            first_entry_input(&first, world(1), [3; 32], |_| false),
+            FirstEntryInput::Recorded(Some(temple))
+        );
+        let (mut runtime, player, session) = admitted();
+        let input = first_entry_input(&relocated, world(1), [3; 32], |_| false);
+        initialize_first_entry_at(&mut runtime, player, session, input, |_| true)
+            .expect("first entry");
+        assert_eq!(position(&runtime, player), temple);
+    }
+
+    #[test]
+    fn relocation_overrides_pending_respawn_and_arrival_cells() {
+        let temple = at(2, 11);
+        let respawn = AdmissionPosition::Respawn(ConsumedRespawn {
+            occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(v7(
+                0x31,
+            ))
+            .expect("death occurrence"),
+            respawn_position: vec![1, 2, 3],
+        });
+        let vitals = LastVitals::new(40, 3);
+        let rest = Some([1, 2, 3, 4]);
+        let arrival = AdmissionPosition::Arrival(
+            crate::durability::npc_travel::PendingArrival {
+                occurrence: crate::durability::npc_travel::TravelOccurrence::from_bytes(v7(0x32))
+                    .expect("travel occurrence"),
+                world_id: world(1),
+                destination: cell_of(at(14, 11)),
+            },
+            vitals,
+            rest,
+        );
+        for (decided, expected_vitals, expected_rest) in
+            [(respawn, None, None), (arrival, Some((40, 3)), rest)]
+        {
+            let relocated = decided.relocated(temple, world(1));
+            assert_eq!(
+                first_entry_input(&relocated, world(1), [3; 32], |_| false),
+                FirstEntryInput::Recorded(Some(temple))
+            );
+            assert_eq!(admitted_vitals(&relocated, world(1)), expected_vitals);
+            assert_eq!(
+                super::super::bed_regen::admitted_rest(&relocated, world(1)),
+                expected_rest
+            );
+        }
     }
 
     /// Codex 4249667405, §3.3 "it replaces `entry_start` as the input to

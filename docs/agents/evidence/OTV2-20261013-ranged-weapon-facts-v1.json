@@ -4237,10 +4237,10 @@
     "weapon_metadata_proof": {
       "path": "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json",
       "schema": "OTERYN_ITEM_WEAPON_METADATA_SOURCE_QUALIFICATION/v2",
-      "sha256": "aa5eb84d2107fa9577ff8a9fdd741e4f4bbbd01a283483f8a817627d193d4ede"
+      "sha256": "008be6df58af24e0ec21cb01d8c4d456657bfa23e3e6f582eea63b61f683cddb"
     },
     "wiki_snapshot": "imports/tibiawiki/facts/items-stats.json",
-    "wiki_snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91"
+    "wiki_snapshot_sha256": "513c4cfd9c9d5723677fb479458dfb48b88414ea5f7c51d5ab58a2b116ee01ef"
   },
   "task_id": "OTV2-20261013-ranged-content-1"
 }

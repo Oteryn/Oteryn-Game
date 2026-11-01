@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "6edcee04dc8dacbb34f735570e32545ff20793f8da37bd1168f94e941fca8622",
+  "digest": "3b19e14f2167ba7ef897c820d363d7c4caae4321eba9834a1e16cb75e062d2a0",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "par-m10-drown-protection-20261028-r1",
+  "content_revision": "e06-market-crystal-parity-20261031-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

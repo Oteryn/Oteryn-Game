@@ -4461,26 +4461,6 @@
         }
       ]
     },
-    "42085": {
-      "item_id": 42085,
-      "observations": [
-        {
-          "content_sha256": "9befae51f59d3682d65616d4b857fe728c115b90281b638c98e40dd6f9a2cd62",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Floor Decorations",
-            "stackable": "yes",
-            "weight": "0.10"
-          },
-          "page_id": 101186,
-          "revision_id": 1042116,
-          "revision_sha1": "29b55e82500fd49e6ee58b109df39f8ee376f4dd",
-          "revision_timestamp": "2023-10-19T17:34:50Z",
-          "url": "https://tibia.fandom.com/wiki/Folded_Artefact_Carpet_VII",
-          "wiki_title": "Folded Artefact Carpet VII"
-        }
-      ]
-    },
     "42086": {
       "item_id": 42086,
       "observations": [
@@ -4586,26 +4566,6 @@
           "revision_timestamp": "2023-07-07T21:22:44Z",
           "url": "https://tibia.fandom.com/wiki/Cauldron",
           "wiki_title": "Cauldron"
-        }
-      ]
-    },
-    "42175": {
-      "item_id": 42175,
-      "observations": [
-        {
-          "content_sha256": "a82017effda150561734f8298a190ca2a6c38282c34b4250ff7d7044a8dae131",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "secondarytype": "Dolls and Bears",
-            "weight": "6.00"
-          },
-          "page_id": 101187,
-          "revision_id": 1162764,
-          "revision_sha1": "5689274f4fd3ca18a184b96aa56dea3156fd6e3c",
-          "revision_timestamp": "2026-02-14T18:46:42Z",
-          "url": "https://tibia.fandom.com/wiki/Santa_Ahau",
-          "wiki_title": "Santa Ahau"
         }
       ]
     },
@@ -9718,46 +9678,6 @@
         }
       ]
     },
-    "43892": {
-      "item_id": 43892,
-      "observations": [
-        {
-          "content_sha256": "db51a621ab8b3e813b8d8109377e0e0c3519f14f7e9416bde90462eed998be4d",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Food",
-            "stackable": "yes",
-            "weight": "1.50"
-          },
-          "page_id": 103019,
-          "revision_id": 1019826,
-          "revision_sha1": "a9b702da819b4e0de0be4c67208ebd231a98785b",
-          "revision_timestamp": "2023-07-19T14:40:32Z",
-          "url": "https://tibia.fandom.com/wiki/Dewberries",
-          "wiki_title": "Dewberries"
-        }
-      ]
-    },
-    "43893": {
-      "item_id": 43893,
-      "observations": [
-        {
-          "content_sha256": "f4528997618cb12983468c8d1e9070c5f1e34a6e3f35ada0ffd2e22514c89f3f",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Food",
-            "stackable": "yes",
-            "weight": "2.50"
-          },
-          "page_id": 103020,
-          "revision_id": 1089871,
-          "revision_sha1": "075a5756e528bd89df9dd86d510e5c772911d894",
-          "revision_timestamp": "2025-02-01T09:56:42Z",
-          "url": "https://tibia.fandom.com/wiki/Moon-Touched_Dewberries",
-          "wiki_title": "Moon-Touched Dewberries"
-        }
-      ]
-    },
     "43894": {
       "item_id": 43894,
       "observations": [
@@ -9921,63 +9841,6 @@
           "revision_timestamp": "2023-07-25T20:00:49Z",
           "url": "https://tibia.fandom.com/wiki/Bluish_Dewberry_Palm",
           "wiki_title": "Bluish Dewberry Palm"
-        }
-      ]
-    },
-    "43948": {
-      "item_id": 43948,
-      "observations": [
-        {
-          "content_sha256": "5461825f99368baca8de738374ba0e6dad0aba01e56f7dfebb240db32c967c3f",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "1.20"
-          },
-          "page_id": 103030,
-          "revision_id": 1057247,
-          "revision_sha1": "95391a5d18b6695e544463ad3c199c097fd5018e",
-          "revision_timestamp": "2024-04-06T10:23:24Z",
-          "url": "https://tibia.fandom.com/wiki/Revised_Promotion_Scroll",
-          "wiki_title": "Revised Promotion Scroll"
-        }
-      ]
-    },
-    "43949": {
-      "item_id": 43949,
-      "observations": [
-        {
-          "content_sha256": "77d1ab8bcae31301ca845aefcad303caad3754c9f73cec9df2f2ca22b244bbbf",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "1.20"
-          },
-          "page_id": 103031,
-          "revision_id": 1057248,
-          "revision_sha1": "dba34b936ce55a1f44ffba67e44816f548ebb3d8",
-          "revision_timestamp": "2024-04-06T10:23:43Z",
-          "url": "https://tibia.fandom.com/wiki/Extended_Promotion_Scroll",
-          "wiki_title": "Extended Promotion Scroll"
-        }
-      ]
-    },
-    "43950": {
-      "item_id": 43950,
-      "observations": [
-        {
-          "content_sha256": "6eaa0e7486405b6266d0b5178f4d89395172339bccab461ce08fb953166e834c",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "weight": "1.20"
-          },
-          "page_id": 103032,
-          "revision_id": 1057249,
-          "revision_sha1": "34d1875364065ab4335a962a824d6d8c7465bc72",
-          "revision_timestamp": "2024-04-06T10:23:57Z",
-          "url": "https://tibia.fandom.com/wiki/Advanced_Promotion_Scroll",
-          "wiki_title": "Advanced Promotion Scroll"
         }
       ]
     },
@@ -11311,46 +11174,6 @@
         }
       ]
     },
-    "44157": {
-      "item_id": 44157,
-      "observations": [
-        {
-          "content_sha256": "7f04c172656542e9c24042a23ded35e397b4509f3b45467e01ff5c66bc46f79a",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Creature Products",
-            "stackable": "yes",
-            "weight": "0.60"
-          },
-          "page_id": 103949,
-          "revision_id": 1080892,
-          "revision_sha1": "58ee13933c6455d0735394b2ac076a348468a485",
-          "revision_timestamp": "2024-11-01T22:48:09Z",
-          "url": "https://tibia.fandom.com/wiki/Albino_Dragon_Leather",
-          "wiki_title": "Albino Dragon Leather"
-        }
-      ]
-    },
-    "44179": {
-      "item_id": 44179,
-      "observations": [
-        {
-          "content_sha256": "eb5189ea4ef782741a3b67bd2794c5e5e72f2f6ed7bc86ad553cba1ccd9ac929",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Creature Products",
-            "secondarytype": "Light Sources",
-            "weight": "0.60"
-          },
-          "page_id": 103946,
-          "revision_id": 1041565,
-          "revision_sha1": "858fc649c63d6294cfd3b1d75ee51698e372399a",
-          "revision_timestamp": "2023-10-16T09:27:50Z",
-          "url": "https://tibia.fandom.com/wiki/Bottled_Dragon_Breath",
-          "wiki_title": "Bottled Dragon Breath"
-        }
-      ]
-    },
     "44180": {
       "item_id": 44180,
       "observations": [
@@ -12658,25 +12481,6 @@
           "revision_timestamp": "2023-12-04T09:28:28Z",
           "url": "https://tibia.fandom.com/wiki/Monumental_Gate",
           "wiki_title": "Monumental Gate"
-        }
-      ]
-    },
-    "44755": {
-      "item_id": 44755,
-      "observations": [
-        {
-          "content_sha256": "19438d648d4a33e2e75744b8dfe2b3a569d610d6bd2261997fcd4e308de68d87",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "weight": "6.50"
-          },
-          "page_id": 104350,
-          "revision_id": 1046708,
-          "revision_sha1": "7032f1942b808282af87bd8fbf1eb1e53b991493",
-          "revision_timestamp": "2023-12-04T09:27:47Z",
-          "url": "https://tibia.fandom.com/wiki/Draccoon_Santa",
-          "wiki_title": "Draccoon Santa"
         }
       ]
     },
@@ -14018,26 +13822,6 @@
         }
       ]
     },
-    "47899": {
-      "item_id": 47899,
-      "observations": [
-        {
-          "content_sha256": "b589847e407001cace10e9ae89c7c2b9b1fc7c7434387cdadfded92fdc69e804",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 106168,
-          "revision_id": 1176532,
-          "revision_sha1": "64cd5df366ce5e5ba7dc22b0ccd29d6e79ae92db",
-          "revision_timestamp": "2026-04-21T16:17:06Z",
-          "url": "https://tibia.fandom.com/wiki/Falcon_Knight_Soul_Core",
-          "wiki_title": "Falcon Knight Soul Core"
-        }
-      ]
-    },
     "48102": {
       "item_id": 48102,
       "observations": [
@@ -14054,26 +13838,6 @@
           "revision_timestamp": "2026-07-04T18:25:13Z",
           "url": "https://tibia.fandom.com/wiki/Gingerbread_Key_Recipe",
           "wiki_title": "Gingerbread Key Recipe"
-        }
-      ]
-    },
-    "48115": {
-      "item_id": 48115,
-      "observations": [
-        {
-          "content_sha256": "ac773542f4308547b0a6863f648cfae3399df5232f848bf8b819463df97c786d",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Food",
-            "stackable": "yes",
-            "weight": "8.00"
-          },
-          "page_id": 106502,
-          "revision_id": 1066957,
-          "revision_sha1": "3fcc48f83c3d58173b1bf8e790cc61f375817883",
-          "revision_timestamp": "2024-07-01T09:36:28Z",
-          "url": "https://tibia.fandom.com/wiki/Taiyaki",
-          "wiki_title": "Taiyaki"
         }
       ]
     },
@@ -14989,27 +14753,6 @@
         }
       ]
     },
-    "48179": {
-      "item_id": 48179,
-      "observations": [
-        {
-          "content_sha256": "9cefbce3c843f0d398a0b886469d75ce549e5fa1abca6a8c2feb6e9fd2874936",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Food",
-            "secondarytype": "Creature Products",
-            "stackable": "yes",
-            "weight": "0.30"
-          },
-          "page_id": 106506,
-          "revision_id": 1066693,
-          "revision_sha1": "629ee24d235a2e2ae4e154b903864c71d3007704",
-          "revision_timestamp": "2024-07-01T09:31:11Z",
-          "url": "https://tibia.fandom.com/wiki/Moon_Melon_Slice",
-          "wiki_title": "Moon Melon Slice"
-        }
-      ]
-    },
     "48190": {
       "item_id": 48190,
       "observations": [
@@ -15123,27 +14866,6 @@
           "revision_timestamp": "2024-07-02T17:54:45Z",
           "url": "https://tibia.fandom.com/wiki/Flask_with_Lemon_Sirup",
           "wiki_title": "Flask with Lemon Sirup"
-        }
-      ]
-    },
-    "48197": {
-      "item_id": 48197,
-      "observations": [
-        {
-          "content_sha256": "89654bd43d1338e4f5ab7d8d017eddda5c329499ac4ffec742f903a0a633167a",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Food",
-            "secondarytype": "Fruit",
-            "stackable": "yes",
-            "weight": "9.50"
-          },
-          "page_id": 106512,
-          "revision_id": 1171907,
-          "revision_sha1": "65c7edaa10b8c241b67ea42e616370fe7fe19ec1",
-          "revision_timestamp": "2026-04-02T18:09:20Z",
-          "url": "https://tibia.fandom.com/wiki/Moon_Melon",
-          "wiki_title": "Moon Melon"
         }
       ]
     },
@@ -15837,86 +15559,6 @@
         }
       ]
     },
-    "48480": {
-      "item_id": 48480,
-      "observations": [
-        {
-          "content_sha256": "8d6e339092e255b3f023f9d4ecd387ba2b8fc7856b57c5ccb54c07f7c4957421",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "secondarytype": "Decorations",
-            "weight": "1.00"
-          },
-          "page_id": 106555,
-          "revision_id": 1068187,
-          "revision_sha1": "ed92b5430f93c59e495bdc35feeec856b202bab3",
-          "revision_timestamp": "2024-07-05T05:41:19Z",
-          "url": "https://tibia.fandom.com/wiki/Rose_Milk_Cake_Recipe",
-          "wiki_title": "Rose Milk Cake Recipe"
-        }
-      ]
-    },
-    "48481": {
-      "item_id": 48481,
-      "observations": [
-        {
-          "content_sha256": "9fb4f1a2c373f6c340ef42c9e66c48a5a2eb6ac3fcfeca1253c95f640606c10d",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "secondarytype": "Decorations",
-            "weight": "1.00"
-          },
-          "page_id": 106557,
-          "revision_id": 1068190,
-          "revision_sha1": "ec705809b50dc16fbe559c80e49dcf48a03edf24",
-          "revision_timestamp": "2024-07-05T05:41:57Z",
-          "url": "https://tibia.fandom.com/wiki/Matcha_Turtle_Recipe",
-          "wiki_title": "Matcha Turtle Recipe"
-        }
-      ]
-    },
-    "48482": {
-      "item_id": 48482,
-      "observations": [
-        {
-          "content_sha256": "929a2828995b8bd7edc67f1bc58ee13a49cf6048ffd10d28de4f7f22c71b37d7",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "secondarytype": "Decorations",
-            "weight": "1.00"
-          },
-          "page_id": 106559,
-          "revision_id": 1068189,
-          "revision_sha1": "df2c74240f03de729e724981496293b935217883",
-          "revision_timestamp": "2024-07-05T05:41:43Z",
-          "url": "https://tibia.fandom.com/wiki/Nightsky_Cupcake_Recipe",
-          "wiki_title": "Nightsky Cupcake Recipe"
-        }
-      ]
-    },
-    "48483": {
-      "item_id": 48483,
-      "observations": [
-        {
-          "content_sha256": "05d9ec57164caf0eb58599ed73278c6a0ff95646079155b93459be85a1d7fb2e",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "secondarytype": "Decorations",
-            "weight": "1.00"
-          },
-          "page_id": 106561,
-          "revision_id": 1068188,
-          "revision_sha1": "9287cd00b7853257c8c28ac8e3bcc680ea4f7cff",
-          "revision_timestamp": "2024-07-05T05:41:33Z",
-          "url": "https://tibia.fandom.com/wiki/Rainbow_Waffles_Recipe",
-          "wiki_title": "Rainbow Waffles Recipe"
-        }
-      ]
-    },
     "48486": {
       "item_id": 48486,
       "observations": [
@@ -15993,44 +15635,6 @@
         }
       ]
     },
-    "48582": {
-      "item_id": 48582,
-      "observations": [
-        {
-          "content_sha256": "7e185a67f5625fa54b9193c5d28a8bfb38e42a460b2dbcbe12afdb9181afdac5",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.60"
-          },
-          "page_id": 106587,
-          "revision_id": 1070215,
-          "revision_sha1": "5d6d352974c0c6924848bb33534ed786df7cee3a",
-          "revision_timestamp": "2024-07-13T09:57:42Z",
-          "url": "https://tibia.fandom.com/wiki/Handful_of_Marzipan_Carrots",
-          "wiki_title": "Handful of Marzipan Carrots"
-        }
-      ]
-    },
-    "48586": {
-      "item_id": 48586,
-      "observations": [
-        {
-          "content_sha256": "9289a06a0510e075a35739de16ee7255e829c4306766a1dce9bee88d0f1b024c",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "1.60"
-          },
-          "page_id": 106589,
-          "revision_id": 1070214,
-          "revision_sha1": "2e31a43b7b2106a04b4ed9fceb2cfa6a7ca02beb",
-          "revision_timestamp": "2024-07-13T09:57:32Z",
-          "url": "https://tibia.fandom.com/wiki/Marzipan_Carrot",
-          "wiki_title": "Marzipan Carrot"
-        }
-      ]
-    },
     "49156": {
       "item_id": 49156,
       "observations": [
@@ -16045,29 +15649,6 @@
           "revision_timestamp": "2024-07-01T09:34:39Z",
           "url": "https://tibia.fandom.com/wiki/Sand_Toys",
           "wiki_title": "Sand Toys"
-        }
-      ]
-    },
-    "49160": {
-      "item_id": 49160,
-      "observations": [
-        {
-          "content_sha256": "2c56cef85a5d63c1fd7d511672607e1ff6fffe3bd92bde7e9d3e9a8332fd3feb",
-          "fields": {
-            "imbueslots": "1",
-            "objectclass": "Household Items",
-            "primarytype": "Containers",
-            "secondarytype": "Valuables",
-            "slot": "Container",
-            "volume": "1",
-            "weight": "1.50"
-          },
-          "page_id": 107222,
-          "revision_id": 1190989,
-          "revision_sha1": "74873e9c5429df22678a43c50d314b83cf86e90d",
-          "revision_timestamp": "2026-06-22T19:10:49Z",
-          "url": "https://tibia.fandom.com/wiki/Bursa_Obscura",
-          "wiki_title": "Bursa Obscura"
         }
       ]
     },
@@ -16124,29 +15705,6 @@
           "revision_timestamp": "2024-10-22T12:52:20Z",
           "url": "https://tibia.fandom.com/wiki/Large_Obelisk_(Lit)",
           "wiki_title": "Large Obelisk (Lit)"
-        }
-      ]
-    },
-    "49176": {
-      "item_id": 49176,
-      "observations": [
-        {
-          "content_sha256": "deb2bc84269fe7594f21cf4bdc12933e487329a41a91e3ccd05a46e5479fd2bf",
-          "fields": {
-            "attrib": "speed +25",
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "secondarytype": "Light Sources",
-            "slot": "Extra Slot",
-            "stackable": "no",
-            "weight": "18.00"
-          },
-          "page_id": 107220,
-          "revision_id": 1148593,
-          "revision_sha1": "bae20137f30bf858abb167f9a593d08845fd4f0a",
-          "revision_timestamp": "2025-12-08T18:09:36Z",
-          "url": "https://tibia.fandom.com/wiki/Celestial_Torch",
-          "wiki_title": "Celestial Torch"
         }
       ]
     },
@@ -17030,46 +16588,6 @@
         }
       ]
     },
-    "49272": {
-      "item_id": 49272,
-      "observations": [
-        {
-          "content_sha256": "3238b56f3c4c798cc38614e1fed43e80e1af5fe9b6ada32ea78aed2c92206c5f",
-          "fields": {
-            "objectclass": "Body Equipment",
-            "primarytype": "Armors",
-            "secondarytype": "Replicas",
-            "weight": "13.50"
-          },
-          "page_id": 107498,
-          "revision_id": 1082691,
-          "revision_sha1": "9e54b0829b229c4f7e7910c4081695e348212612",
-          "revision_timestamp": "2024-11-20T15:07:06Z",
-          "url": "https://tibia.fandom.com/wiki/Love_Elixir_(Replica)",
-          "wiki_title": "Love Elixir (Replica)"
-        }
-      ]
-    },
-    "49273": {
-      "item_id": 49273,
-      "observations": [
-        {
-          "content_sha256": "ccde9b7ff50b91911358f4bc82632f616594ea4d55ab940b4de7519a22888419",
-          "fields": {
-            "objectclass": "Body Equipment",
-            "primarytype": "Armors",
-            "secondarytype": "Replicas",
-            "weight": "0.40"
-          },
-          "page_id": 107499,
-          "revision_id": 1082690,
-          "revision_sha1": "12efa72db1416ce815ee87aacd27c811ed1ea1f6",
-          "revision_timestamp": "2024-11-20T15:06:23Z",
-          "url": "https://tibia.fandom.com/wiki/Chaos_Critical_Dice_(Replica)",
-          "wiki_title": "Chaos Critical Dice (Replica)"
-        }
-      ]
-    },
     "49888": {
       "item_id": 49888,
       "observations": [
@@ -17141,25 +16659,6 @@
         }
       ]
     },
-    "50051": {
-      "item_id": 50051,
-      "observations": [
-        {
-          "content_sha256": "eeb2a0080c4b629ad8a68f98b2a26fdb289cde4d749dfd8d68631442d751e4b8",
-          "fields": {
-            "objectclass": "Weapons",
-            "stackable": "no",
-            "weight": "12.00"
-          },
-          "page_id": 107902,
-          "revision_id": 1104560,
-          "revision_sha1": "08c6b8ee1a0859e6da71531ad2638727d4e970f8",
-          "revision_timestamp": "2025-06-07T23:38:58Z",
-          "url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre",
-          "wiki_title": "Rotrender's Sceptre"
-        }
-      ]
-    },
     "50052": {
       "item_id": 50052,
       "observations": [
@@ -17176,68 +16675,6 @@
           "revision_timestamp": "2025-06-07T23:38:58Z",
           "url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre",
           "wiki_title": "Rotrender's Sceptre"
-        }
-      ]
-    },
-    "50053": {
-      "item_id": 50053,
-      "observations": [
-        {
-          "content_sha256": "0ee632c8b3699375f253fc5bfe8d800a26350654635efb8af1462fc1bbe4d42a",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Valuables",
-            "stackable": "yes",
-            "weight": "0.10"
-          },
-          "page_id": 107916,
-          "revision_id": 1104541,
-          "revision_sha1": "092f8bfe0a9f710872c0d90c5c3c035097fa72fa",
-          "revision_timestamp": "2025-06-07T22:30:36Z",
-          "url": "https://tibia.fandom.com/wiki/Blood_Coin",
-          "wiki_title": "Blood Coin"
-        }
-      ]
-    },
-    "50062": {
-      "item_id": 50062,
-      "observations": [
-        {
-          "content_sha256": "100ca35c33dbc37779874f6e79e1193f2c9f17247d8d3fda0169044c7388572e",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Taming Items",
-            "secondarytype": "Valuables",
-            "stackable": "yes",
-            "weight": "2.00"
-          },
-          "page_id": 107912,
-          "revision_id": 1197858,
-          "revision_sha1": "5c8272fa373439f52e9ae1dc335ca2cae2c14389",
-          "revision_timestamp": "2026-07-27T04:59:46Z",
-          "url": "https://tibia.fandom.com/wiki/Demon_in_a_Red_Box",
-          "wiki_title": "Demon in a Red Box"
-        }
-      ]
-    },
-    "50063": {
-      "item_id": 50063,
-      "observations": [
-        {
-          "content_sha256": "4e0d954e7cef47768a02a9905f5fa56d0df0fbf0d1929b23eb4d5c1c43660d42",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Taming Items",
-            "secondarytype": "Valuables",
-            "stackable": "yes",
-            "weight": "2.00"
-          },
-          "page_id": 107913,
-          "revision_id": 1197857,
-          "revision_sha1": "94f079d719673e7eee14fce664a31601f107c93c",
-          "revision_timestamp": "2026-07-27T04:52:40Z",
-          "url": "https://tibia.fandom.com/wiki/Demon_in_a_Golden_Box",
-          "wiki_title": "Demon in a Golden Box"
         }
       ]
     },
@@ -17458,102 +16895,6 @@
           "revision_timestamp": "2025-02-22T15:53:33Z",
           "url": "https://tibia.fandom.com/wiki/Volatile_Rift",
           "wiki_title": "Volatile Rift"
-        }
-      ]
-    },
-    "50312": {
-      "item_id": 50312,
-      "observations": [
-        {
-          "content_sha256": "94559df9de984d59bb507f28b3a88db0ff35e669c701b8e3e25492492fd3b84b",
-          "fields": {
-            "objectclass": "Plants, Animal Products, Food and Drink",
-            "primarytype": "Creature Products",
-            "stackable": "yes",
-            "weight": "1.90"
-          },
-          "page_id": 108043,
-          "revision_id": 1194781,
-          "revision_sha1": "963d175821032a114fc6ef060727bded86e81f0c",
-          "revision_timestamp": "2026-07-07T03:39:02Z",
-          "url": "https://tibia.fandom.com/wiki/Mighty_Demonic_Core_Essence",
-          "wiki_title": "Mighty Demonic Core Essence"
-        }
-      ]
-    },
-    "50335": {
-      "item_id": 50335,
-      "observations": [
-        {
-          "content_sha256": "e3c0497b4683ae56e2b2d940ade9bfb0b497e693bdd941be18469a6736c69467",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "9.00"
-          },
-          "page_id": 107865,
-          "revision_id": 1143035,
-          "revision_sha1": "2e70d778261b3c2096e970721ac8703959c043b9",
-          "revision_timestamp": "2025-11-19T13:14:59Z",
-          "url": "https://tibia.fandom.com/wiki/Guardian_Statue_(Quest)",
-          "wiki_title": "Guardian Statue (Quest)"
-        }
-      ]
-    },
-    "50336": {
-      "item_id": 50336,
-      "observations": [
-        {
-          "content_sha256": "05c715017b616e43f3e82214b651abd7dcf0f49023bcf7d81dc9cc69b4a0650d",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "3.00"
-          },
-          "page_id": 107860,
-          "revision_id": 1143038,
-          "revision_sha1": "6622e59efb4eb38d8f26c1d6f251ce880b763b41",
-          "revision_timestamp": "2025-11-19T13:15:54Z",
-          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(1st)",
-          "wiki_title": "Fragment of a Statue (1st)"
-        }
-      ]
-    },
-    "50337": {
-      "item_id": 50337,
-      "observations": [
-        {
-          "content_sha256": "c539f0588af4c093b8a6f75688fe060e84772019907f677f4adb003d12fad694",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "3.00"
-          },
-          "page_id": 107862,
-          "revision_id": 1143037,
-          "revision_sha1": "578398742b3b374c8de2314aeb670b5ec7ba656b",
-          "revision_timestamp": "2025-11-19T13:15:41Z",
-          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(2nd)",
-          "wiki_title": "Fragment of a Statue (2nd)"
-        }
-      ]
-    },
-    "50338": {
-      "item_id": 50338,
-      "observations": [
-        {
-          "content_sha256": "2982b3a6bc475ccec98487effc8819bf79247ff761ec169ecc2970131094b72a",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Quest Items",
-            "weight": "3.00"
-          },
-          "page_id": 107864,
-          "revision_id": 1143036,
-          "revision_sha1": "461d14d657e31e6a3d479fb26d13c24825b8f1a4",
-          "revision_timestamp": "2025-11-19T13:15:22Z",
-          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(3rd)",
-          "wiki_title": "Fragment of a Statue (3rd)"
         }
       ]
     },
@@ -17813,127 +17154,6 @@
           "revision_timestamp": "2025-12-08T18:12:02Z",
           "url": "https://tibia.fandom.com/wiki/Painted_Torch",
           "wiki_title": "Painted Torch"
-        }
-      ]
-    },
-    "51314": {
-      "item_id": 51314,
-      "observations": [
-        {
-          "content_sha256": "6986a6ab9dc29a9b4fdbe997c8284263bf362a3eea5fe7c2e9e7c6729e85af2c",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "weight": "6.30"
-          },
-          "page_id": 108542,
-          "revision_id": 1106008,
-          "revision_sha1": "599dda7058e8ec98713d2d7cb4eacb3daa61456a",
-          "revision_timestamp": "2025-06-18T23:14:32Z",
-          "url": "https://tibia.fandom.com/wiki/Magic_Hat_(Replica)",
-          "wiki_title": "Magic Hat (Replica)"
-        }
-      ]
-    },
-    "51315": {
-      "item_id": 51315,
-      "observations": [
-        {
-          "content_sha256": "3dc49591f630be270290d8c5f8f819a4bebf55b38c2c7e3c70d7a1b23ca41480",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "weight": "38.00"
-          },
-          "page_id": 108540,
-          "revision_id": 1106009,
-          "revision_sha1": "c3336cc1699fe13ce96dc5a39d66c398c94e5869",
-          "revision_timestamp": "2025-06-18T23:14:35Z",
-          "url": "https://tibia.fandom.com/wiki/Banor_Doll_(Replica)",
-          "wiki_title": "Banor Doll (Replica)"
-        }
-      ]
-    },
-    "51316": {
-      "item_id": 51316,
-      "observations": [
-        {
-          "content_sha256": "abe45df18be2157a1550b68d2e230af3e2dadd3262a1421802e59df2cb0ee1a1",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "weight": "8.50"
-          },
-          "page_id": 108538,
-          "revision_id": 1106010,
-          "revision_sha1": "f0c113d2714b0d9d8ebe8cfce898dced69a920e3",
-          "revision_timestamp": "2025-06-18T23:14:38Z",
-          "url": "https://tibia.fandom.com/wiki/Bard_Doll_(Replica)",
-          "wiki_title": "Bard Doll (Replica)"
-        }
-      ]
-    },
-    "51317": {
-      "item_id": 51317,
-      "observations": [
-        {
-          "content_sha256": "f66336abf3c076f4f0de394fdf899e0739e85514efe72a7acbdd73471cff333f",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "weight": "12.06"
-          },
-          "page_id": 108536,
-          "revision_id": 1106011,
-          "revision_sha1": "2a02cbc51ea1c128a08324161872c919769d28a4",
-          "revision_timestamp": "2025-06-18T23:14:40Z",
-          "url": "https://tibia.fandom.com/wiki/Aylie_(Replica)",
-          "wiki_title": "Aylie (Replica)"
-        }
-      ]
-    },
-    "51318": {
-      "item_id": 51318,
-      "observations": [
-        {
-          "content_sha256": "f80c58dae417232d9f9aec1800c61abb56e79dea71ced0d01bd4b9d773fc941f",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "slot": "Extra Slot",
-            "weight": "7.09"
-          },
-          "page_id": 108534,
-          "revision_id": 1148723,
-          "revision_sha1": "94174d3272af2d0890dce7b09bf36bd2eb9d1113",
-          "revision_timestamp": "2025-12-08T18:12:24Z",
-          "url": "https://tibia.fandom.com/wiki/Aurora's_Collection_(Replica)",
-          "wiki_title": "Aurora's Collection (Replica)"
-        }
-      ]
-    },
-    "51319": {
-      "item_id": 51319,
-      "observations": [
-        {
-          "content_sha256": "47be0670d833d54b8a708bc9d7e75b4a3e05b1027fef25589d2d9ee45f0d7462",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Dolls and Bears",
-            "secondarytype": "Replicas",
-            "weight": "26.02"
-          },
-          "page_id": 108532,
-          "revision_id": 1106015,
-          "revision_sha1": "f38c251fc879b026e2f017dd3910732c75a20155",
-          "revision_timestamp": "2025-06-18T23:16:30Z",
-          "url": "https://tibia.fandom.com/wiki/The_Dragon_Spirit_(Replica)",
-          "wiki_title": "The Dragon Spirit (Replica)"
         }
       ]
     },
@@ -18227,106 +17447,6 @@
         }
       ]
     },
-    "51751": {
-      "item_id": 51751,
-      "observations": [
-        {
-          "content_sha256": "1c42e9fc6c036c3043f7dceb3852b0a65896e00484e5c3eb3f5312da12ac7797",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "stackable": "no",
-            "weight": "6.50"
-          },
-          "page_id": 109025,
-          "revision_id": 1111929,
-          "revision_sha1": "03b6c5156bf2f3310cbcb9f037aee7446fb1f8e7",
-          "revision_timestamp": "2025-07-21T08:32:11Z",
-          "url": "https://tibia.fandom.com/wiki/Skullfrost_Figurine",
-          "wiki_title": "Skullfrost Figurine"
-        }
-      ]
-    },
-    "51752": {
-      "item_id": 51752,
-      "observations": [
-        {
-          "content_sha256": "17a5aa7312fa4527a09d17787d02cc049f0c65863df2a2aa6a7af376f718cd76",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "stackable": "no",
-            "weight": "6.50"
-          },
-          "page_id": 109027,
-          "revision_id": 1111800,
-          "revision_sha1": "16fc2ec7ba11bb1b35954c7d713254dc8f190e0f",
-          "revision_timestamp": "2025-07-21T08:29:13Z",
-          "url": "https://tibia.fandom.com/wiki/Emberwing_Figurine",
-          "wiki_title": "Emberwing Figurine"
-        }
-      ]
-    },
-    "51753": {
-      "item_id": 51753,
-      "observations": [
-        {
-          "content_sha256": "407bd365d3ae17a2e4634981f40f598d8a3fd801f0e1de5c726df16b8b72d332",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "stackable": "no",
-            "weight": "6.50"
-          },
-          "page_id": 109026,
-          "revision_id": 1111939,
-          "revision_sha1": "dc99dead54565e967e5c891a690d075f2c7b4995",
-          "revision_timestamp": "2025-07-21T08:32:27Z",
-          "url": "https://tibia.fandom.com/wiki/Thundergiant_Figurine",
-          "wiki_title": "Thundergiant Figurine"
-        }
-      ]
-    },
-    "51754": {
-      "item_id": 51754,
-      "observations": [
-        {
-          "content_sha256": "952e2d42ab067942969a79691318aa33806dc1ec3924d02ecba27066b4052667",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "stackable": "no",
-            "weight": "6.50"
-          },
-          "page_id": 109029,
-          "revision_id": 1111808,
-          "revision_sha1": "eae9973d9ae70d94f6ddeb058f629aaed9874d9b",
-          "revision_timestamp": "2025-07-21T08:29:24Z",
-          "url": "https://tibia.fandom.com/wiki/Grovebeast_Figurine",
-          "wiki_title": "Grovebeast Figurine"
-        }
-      ]
-    },
-    "51755": {
-      "item_id": 51755,
-      "observations": [
-        {
-          "content_sha256": "fa08fddae3f3cf786b3ec48ef5a3f19e4501fadb2ff38546025846f4a6cf9f58",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Decorations",
-            "stackable": "no",
-            "weight": "6.50"
-          },
-          "page_id": 109028,
-          "revision_id": 1111878,
-          "revision_sha1": "856bf999a5eb57c9f84656d7b1589dc029b5aaa5",
-          "revision_timestamp": "2025-07-21T08:30:59Z",
-          "url": "https://tibia.fandom.com/wiki/Omniphant_Figurine",
-          "wiki_title": "Omniphant Figurine"
-        }
-      ]
-    },
     "52339": {
       "item_id": 52339,
       "observations": [
@@ -18598,286 +17718,6 @@
           "revision_timestamp": "2026-08-16T19:34:28Z",
           "url": "https://tibia.fandom.com/wiki/Pear_Tree_(Fruiting)",
           "wiki_title": "Pear Tree (Fruiting)"
-        }
-      ]
-    },
-    "53142": {
-      "item_id": 53142,
-      "observations": [
-        {
-          "content_sha256": "353e7b8c3b23986466b2158010f7d38f0f90e279b928e11b81c072f837e26619",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110095,
-          "revision_id": 1176849,
-          "revision_sha1": "0c98f47c3ce23a9d41a6de11b2afa2b01d36b05b",
-          "revision_timestamp": "2026-04-21T16:24:38Z",
-          "url": "https://tibia.fandom.com/wiki/Pirate_Navigator_Soul_Core",
-          "wiki_title": "Pirate Navigator Soul Core"
-        }
-      ]
-    },
-    "53143": {
-      "item_id": 53143,
-      "observations": [
-        {
-          "content_sha256": "3dd3c9246499e36f8aad22fff55d44fa98542b7d58f32fb4f77417dcdc59093d",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110096,
-          "revision_id": 1176847,
-          "revision_sha1": "4955acb0bb9d5f3bdef5da0c66812c5af8aa574b",
-          "revision_timestamp": "2026-04-21T16:24:35Z",
-          "url": "https://tibia.fandom.com/wiki/Pirate_Gunner_Soul_Core",
-          "wiki_title": "Pirate Gunner Soul Core"
-        }
-      ]
-    },
-    "53144": {
-      "item_id": 53144,
-      "observations": [
-        {
-          "content_sha256": "b5025d2ba7923630a29eac0dab965d7a0cb6b2e6b18b954e72fb4c93e90ef392",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110097,
-          "revision_id": 1176843,
-          "revision_sha1": "3ef1b633de83c9a79d4d63ab9f6f811d53347b3f",
-          "revision_timestamp": "2026-04-21T16:24:29Z",
-          "url": "https://tibia.fandom.com/wiki/Pirate_Cook_Soul_Core",
-          "wiki_title": "Pirate Cook Soul Core"
-        }
-      ]
-    },
-    "53145": {
-      "item_id": 53145,
-      "observations": [
-        {
-          "content_sha256": "a49f9eac735bba2b26de9f39f7a3d8d6ab500229c934898b4cac727936d95d0a",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110098,
-          "revision_id": 1176850,
-          "revision_sha1": "172c5c65b05e96a43d297dc35bf45375cf002f4a",
-          "revision_timestamp": "2026-04-21T16:24:42Z",
-          "url": "https://tibia.fandom.com/wiki/Pirate_Quartermaster_Soul_Core",
-          "wiki_title": "Pirate Quartermaster Soul Core"
-        }
-      ]
-    },
-    "53146": {
-      "item_id": 53146,
-      "observations": [
-        {
-          "content_sha256": "c7c65dd13d305d3b33c6bcb84b7ea10b90ae300aa641fd26b8c53d9101f56206",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110099,
-          "revision_id": 1176916,
-          "revision_sha1": "05d6b459fdba8b1942f8fb7922e621b61c2fb975",
-          "revision_timestamp": "2026-04-21T16:26:21Z",
-          "url": "https://tibia.fandom.com/wiki/Sea_Captain_Soul_Core",
-          "wiki_title": "Sea Captain Soul Core"
-        }
-      ]
-    },
-    "53147": {
-      "item_id": 53147,
-      "observations": [
-        {
-          "content_sha256": "a67cb92bdf20124d6bc34f036e3af191b71934efed4106be6e88ea1482b96910",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110100,
-          "revision_id": 1176702,
-          "revision_sha1": "619a08c8aeae06e1ba501b826518ea580993a018",
-          "revision_timestamp": "2026-04-21T16:21:03Z",
-          "url": "https://tibia.fandom.com/wiki/Lizard_Henchman_Soul_Core",
-          "wiki_title": "Lizard Henchman Soul Core"
-        }
-      ]
-    },
-    "53148": {
-      "item_id": 53148,
-      "observations": [
-        {
-          "content_sha256": "0e7c5161e6432a1093760c06e7caf8773d144653ebf2ffe0f6be2c0c4bcae5d1",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110101,
-          "revision_id": 1176705,
-          "revision_sha1": "618434c500877af02e669a334edb11e034a577b3",
-          "revision_timestamp": "2026-04-21T16:21:09Z",
-          "url": "https://tibia.fandom.com/wiki/Lizard_Magician_Soul_Core",
-          "wiki_title": "Lizard Magician Soul Core"
-        }
-      ]
-    },
-    "53149": {
-      "item_id": 53149,
-      "observations": [
-        {
-          "content_sha256": "a7855ab1138f1679b3d2b14b578568962fa41d5e1099960680214df6ba65d0fa",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110102,
-          "revision_id": 1176710,
-          "revision_sha1": "bc1a3c226070383436a406a502b1abbfb3c6a759",
-          "revision_timestamp": "2026-04-21T16:21:16Z",
-          "url": "https://tibia.fandom.com/wiki/Lizard_Swordmaster_Soul_Core",
-          "wiki_title": "Lizard Swordmaster Soul Core"
-        }
-      ]
-    },
-    "53150": {
-      "item_id": 53150,
-      "observations": [
-        {
-          "content_sha256": "fe82224efe97411d95fb71c48e6f207a4b3d71add9206941172beb2162052ae5",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110103,
-          "revision_id": 1176701,
-          "revision_sha1": "89244ae253cfefed774abafe7377904be898b35b",
-          "revision_timestamp": "2026-04-21T16:21:02Z",
-          "url": "https://tibia.fandom.com/wiki/Lizard_Executioner_Soul_Core",
-          "wiki_title": "Lizard Executioner Soul Core"
-        }
-      ]
-    },
-    "53151": {
-      "item_id": 53151,
-      "observations": [
-        {
-          "content_sha256": "2f8ee9bdc7b52d19034e5fbf5f31c6ef590676028e0a216b70b4e90d5dffcd84",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110104,
-          "revision_id": 1176699,
-          "revision_sha1": "c3a8c8af294a7bc63434b0ed0497ee00992714f1",
-          "revision_timestamp": "2026-04-21T16:20:59Z",
-          "url": "https://tibia.fandom.com/wiki/Lizard_Commander_Soul_Core",
-          "wiki_title": "Lizard Commander Soul Core"
-        }
-      ]
-    },
-    "53152": {
-      "item_id": 53152,
-      "observations": [
-        {
-          "content_sha256": "1c010b60999dd28272fc88af27920391ec39ab1b1300ac81dac8e0148c3975ca",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110105,
-          "revision_id": 1176656,
-          "revision_sha1": "ebfb6c3021f04d0c519ee03e1a90c810a1fce168",
-          "revision_timestamp": "2026-04-21T16:20:00Z",
-          "url": "https://tibia.fandom.com/wiki/Infernoid_Blob_Soul_Core",
-          "wiki_title": "Infernoid Blob Soul Core"
-        }
-      ]
-    },
-    "53153": {
-      "item_id": 53153,
-      "observations": [
-        {
-          "content_sha256": "6dd3fb2e8af2c85a8c60f1b918c3958b41ac591629572951f20830a1009af889",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110106,
-          "revision_id": 1176657,
-          "revision_sha1": "b031445c802fd61104a82e4912730bd3a7e50d8f",
-          "revision_timestamp": "2026-04-21T16:20:01Z",
-          "url": "https://tibia.fandom.com/wiki/Infernoid_Hound_Soul_Core",
-          "wiki_title": "Infernoid Hound Soul Core"
-        }
-      ]
-    },
-    "53154": {
-      "item_id": 53154,
-      "observations": [
-        {
-          "content_sha256": "35c907d626a4961cec7865e86480c4ce9e4762b9b255529bdb949b04a46032c4",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110107,
-          "revision_id": 1176658,
-          "revision_sha1": "b804af1e4a78321953bcf968d75506774c695f15",
-          "revision_timestamp": "2026-04-21T16:20:03Z",
-          "url": "https://tibia.fandom.com/wiki/Infernoid_Soul_Soul_Core",
-          "wiki_title": "Infernoid Soul Soul Core"
-        }
-      ]
-    },
-    "53155": {
-      "item_id": 53155,
-      "observations": [
-        {
-          "content_sha256": "c0c9142968c83a114611ecbc69bbc3816a923b7a82d6d442d8ee7a225dea0c65",
-          "fields": {
-            "objectclass": "Other Items",
-            "primarytype": "Soul Cores",
-            "stackable": "yes",
-            "weight": "10.00"
-          },
-          "page_id": 110108,
-          "revision_id": 1176659,
-          "revision_sha1": "fec3391f74751df803955257a01096310c140d21",
-          "revision_timestamp": "2026-04-21T16:20:05Z",
-          "url": "https://tibia.fandom.com/wiki/Infernoid_Spiritual_Soul_Core",
-          "wiki_title": "Infernoid Spiritual Soul Core"
         }
       ]
     },
@@ -19404,106 +18244,6 @@
         }
       ]
     },
-    "53633": {
-      "item_id": 53633,
-      "observations": [
-        {
-          "content_sha256": "d0d49fdedaf607b59ef365561031b9d54fdc49c2896a5813d2ea94da6becb593",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Valuables",
-            "secondarytype": "Replicas",
-            "weight": "6.00"
-          },
-          "page_id": 110274,
-          "revision_id": 1175181,
-          "revision_sha1": "92798cc523edc95ce83b9530b671f4f6c94a1850",
-          "revision_timestamp": "2026-04-16T18:48:02Z",
-          "url": "https://tibia.fandom.com/wiki/Beaver_of_Wisdom_(Replica)",
-          "wiki_title": "Beaver of Wisdom (Replica)"
-        }
-      ]
-    },
-    "53634": {
-      "item_id": 53634,
-      "observations": [
-        {
-          "content_sha256": "3aba99c09084119526cb18564708fd36f6846c2b25ac01aa8934a1ca76360387",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Valuables",
-            "secondarytype": "Replicas",
-            "weight": "18.00"
-          },
-          "page_id": 110280,
-          "revision_id": 1175187,
-          "revision_sha1": "8ead1e5c6228b56e7d578e58540b60682c59a88f",
-          "revision_timestamp": "2026-04-16T18:54:37Z",
-          "url": "https://tibia.fandom.com/wiki/War_Backpack_(Replica)",
-          "wiki_title": "War Backpack (Replica)"
-        }
-      ]
-    },
-    "53635": {
-      "item_id": 53635,
-      "observations": [
-        {
-          "content_sha256": "c1d92b3851b3c8e55ba107f8b3f0f7cf930280f7ae970e23996086782efed4b0",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Valuables",
-            "secondarytype": "Replicas",
-            "weight": "46.90"
-          },
-          "page_id": 110279,
-          "revision_id": 1175186,
-          "revision_sha1": "fba82ec5ab4987540a9b9276a184bb0365a83579",
-          "revision_timestamp": "2026-04-16T18:53:08Z",
-          "url": "https://tibia.fandom.com/wiki/Bonelord_Tome_(Replica)",
-          "wiki_title": "Bonelord Tome (Replica)"
-        }
-      ]
-    },
-    "53636": {
-      "item_id": 53636,
-      "observations": [
-        {
-          "content_sha256": "f5f4068662a24049619c27fe0fffe18eeb3fcb16da21d8ddb023271b63b284c9",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Valuables",
-            "secondarytype": "Replicas",
-            "weight": "19.90"
-          },
-          "page_id": 110281,
-          "revision_id": 1175189,
-          "revision_sha1": "fa7401ccaee5a2ca7cd06a0796084bb6cd3345f4",
-          "revision_timestamp": "2026-04-16T18:56:27Z",
-          "url": "https://tibia.fandom.com/wiki/Wicked_Witch_(Replica)",
-          "wiki_title": "Wicked Witch (Replica)"
-        }
-      ]
-    },
-    "53637": {
-      "item_id": 53637,
-      "observations": [
-        {
-          "content_sha256": "05c2c2fb252d4e9f2d2f3e5fa99e3cd867429670208f56aa8cb946ed5a8b50b0",
-          "fields": {
-            "objectclass": "Household Items",
-            "primarytype": "Valuables",
-            "secondarytype": "Replicas",
-            "weight": "2.50"
-          },
-          "page_id": 110282,
-          "revision_id": 1175191,
-          "revision_sha1": "60c7cbcfcd59c7fe528e39dc773ce31600cc663f",
-          "revision_timestamp": "2026-04-16T19:03:00Z",
-          "url": "https://tibia.fandom.com/wiki/Tibiapedia_(Replica)",
-          "wiki_title": "Tibiapedia (Replica)"
-        }
-      ]
-    },
     "53682": {
       "item_id": 53682,
       "observations": [
@@ -19519,116 +18259,6 @@
           "revision_timestamp": "2026-07-26T17:46:27Z",
           "url": "https://tibia.fandom.com/wiki/Sanctified_Draining_Rift",
           "wiki_title": "Sanctified Draining Rift"
-        }
-      ]
-    },
-    "54510": {
-      "item_id": 54510,
-      "observations": [
-        {
-          "content_sha256": "9d5a8a121188a9c3e737b4ce79730be68706955a164c988928ec25f0b22dadf7",
-          "fields": {
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "slot": "Neck",
-            "vocrequired": "knights",
-            "weight": "5.10"
-          },
-          "page_id": 110864,
-          "revision_id": 1205261,
-          "revision_sha1": "7e58bdeac0aed8a01f2112cda4fa5ce798706880",
-          "revision_timestamp": "2026-09-06T23:37:00Z",
-          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Valor",
-          "wiki_title": "Flamingo Amulet of Valor"
-        }
-      ]
-    },
-    "54511": {
-      "item_id": 54511,
-      "observations": [
-        {
-          "content_sha256": "1bbc89d037d4710d4e37d3b1b566af417569df61e16cd8a1182703d719bd6bc7",
-          "fields": {
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "slot": "Neck",
-            "vocrequired": "paladins",
-            "weight": "4.60"
-          },
-          "page_id": 110866,
-          "revision_id": 1205260,
-          "revision_sha1": "60cd254728ad1c5c8130b494256485c7938f71cc",
-          "revision_timestamp": "2026-09-06T23:36:58Z",
-          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Precision",
-          "wiki_title": "Flamingo Amulet of Precision"
-        }
-      ]
-    },
-    "54512": {
-      "item_id": 54512,
-      "observations": [
-        {
-          "content_sha256": "569a895d503f6dbc0b92f9142bed8370985083036509cda8243630793eb58913",
-          "fields": {
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "slot": "Neck",
-            "vocrequired": "sorcerers",
-            "weight": "4.70"
-          },
-          "page_id": 110868,
-          "revision_id": 1205258,
-          "revision_sha1": "22478842a27043a6bb616680aa1b31cf0d91c176",
-          "revision_timestamp": "2026-09-06T23:36:41Z",
-          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Destruction",
-          "wiki_title": "Flamingo Amulet of Destruction"
-        }
-      ]
-    },
-    "54513": {
-      "item_id": 54513,
-      "observations": [
-        {
-          "content_sha256": "2c1b4642f5af7aeaf9a63f9e95c7d50df15238eb77df2c59de6a93dff7046780",
-          "fields": {
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "slot": "Neck",
-            "vocrequired": "druids",
-            "weight": "4.30"
-          },
-          "page_id": 110870,
-          "revision_id": 1205259,
-          "revision_sha1": "cdf633292c8ffa1b3e0c00d900d49036ce121eec",
-          "revision_timestamp": "2026-09-06T23:36:47Z",
-          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Nature",
-          "wiki_title": "Flamingo Amulet of Nature"
-        }
-      ]
-    },
-    "54514": {
-      "item_id": 54514,
-      "observations": [
-        {
-          "content_sha256": "96d0a6c58d61cd9ae4ffade277d41235c92e763cc1297aad65af322a2809800f",
-          "fields": {
-            "levelrequired": "270",
-            "objectclass": "Body Equipment",
-            "primarytype": "Amulets and Necklaces",
-            "slot": "Neck",
-            "vocrequired": "monks",
-            "weight": "5.30"
-          },
-          "page_id": 110872,
-          "revision_id": 1205262,
-          "revision_sha1": "f30fdf642342194e61963325088c51bdbeb593e5",
-          "revision_timestamp": "2026-09-06T23:37:03Z",
-          "url": "https://tibia.fandom.com/wiki/Swan_Amulet_of_Balance",
-          "wiki_title": "Swan Amulet of Balance"
         }
       ]
     },
@@ -195510,6 +194140,46 @@
         }
       ]
     },
+    "oteryn:item.tibia.i42085": {
+      "item_id": 42085,
+      "observations": [
+        {
+          "content_sha256": "9befae51f59d3682d65616d4b857fe728c115b90281b638c98e40dd6f9a2cd62",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Floor Decorations",
+            "stackable": "yes",
+            "weight": "0.10"
+          },
+          "page_id": 101186,
+          "revision_id": 1042116,
+          "revision_sha1": "29b55e82500fd49e6ee58b109df39f8ee376f4dd",
+          "revision_timestamp": "2023-10-19T17:34:50Z",
+          "url": "https://tibia.fandom.com/wiki/Folded_Artefact_Carpet_VII",
+          "wiki_title": "Folded Artefact Carpet VII"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i42175": {
+      "item_id": 42175,
+      "observations": [
+        {
+          "content_sha256": "a82017effda150561734f8298a190ca2a6c38282c34b4250ff7d7044a8dae131",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "secondarytype": "Dolls and Bears",
+            "weight": "6.00"
+          },
+          "page_id": 101187,
+          "revision_id": 1162764,
+          "revision_sha1": "5689274f4fd3ca18a184b96aa56dea3156fd6e3c",
+          "revision_timestamp": "2026-02-14T18:46:42Z",
+          "url": "https://tibia.fandom.com/wiki/Santa_Ahau",
+          "wiki_title": "Santa Ahau"
+        }
+      ]
+    },
     "oteryn:item.tibia.i42267": {
       "item_id": 42267,
       "observations": [
@@ -199276,6 +197946,46 @@
         }
       ]
     },
+    "oteryn:item.tibia.i43892": {
+      "item_id": 43892,
+      "observations": [
+        {
+          "content_sha256": "db51a621ab8b3e813b8d8109377e0e0c3519f14f7e9416bde90462eed998be4d",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "stackable": "yes",
+            "weight": "1.50"
+          },
+          "page_id": 103019,
+          "revision_id": 1019826,
+          "revision_sha1": "a9b702da819b4e0de0be4c67208ebd231a98785b",
+          "revision_timestamp": "2023-07-19T14:40:32Z",
+          "url": "https://tibia.fandom.com/wiki/Dewberries",
+          "wiki_title": "Dewberries"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43893": {
+      "item_id": 43893,
+      "observations": [
+        {
+          "content_sha256": "f4528997618cb12983468c8d1e9070c5f1e34a6e3f35ada0ffd2e22514c89f3f",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "stackable": "yes",
+            "weight": "2.50"
+          },
+          "page_id": 103020,
+          "revision_id": 1089871,
+          "revision_sha1": "075a5756e528bd89df9dd86d510e5c772911d894",
+          "revision_timestamp": "2025-02-01T09:56:42Z",
+          "url": "https://tibia.fandom.com/wiki/Moon-Touched_Dewberries",
+          "wiki_title": "Moon-Touched Dewberries"
+        }
+      ]
+    },
     "oteryn:item.tibia.i43895": {
       "item_id": 43895,
       "observations": [
@@ -199445,6 +198155,63 @@
           "revision_timestamp": "2024-04-06T10:23:10Z",
           "url": "https://tibia.fandom.com/wiki/Basic_Promotion_Scroll",
           "wiki_title": "Basic Promotion Scroll"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43948": {
+      "item_id": 43948,
+      "observations": [
+        {
+          "content_sha256": "5461825f99368baca8de738374ba0e6dad0aba01e56f7dfebb240db32c967c3f",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "1.20"
+          },
+          "page_id": 103030,
+          "revision_id": 1057247,
+          "revision_sha1": "95391a5d18b6695e544463ad3c199c097fd5018e",
+          "revision_timestamp": "2024-04-06T10:23:24Z",
+          "url": "https://tibia.fandom.com/wiki/Revised_Promotion_Scroll",
+          "wiki_title": "Revised Promotion Scroll"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43949": {
+      "item_id": 43949,
+      "observations": [
+        {
+          "content_sha256": "77d1ab8bcae31301ca845aefcad303caad3754c9f73cec9df2f2ca22b244bbbf",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "1.20"
+          },
+          "page_id": 103031,
+          "revision_id": 1057248,
+          "revision_sha1": "dba34b936ce55a1f44ffba67e44816f548ebb3d8",
+          "revision_timestamp": "2024-04-06T10:23:43Z",
+          "url": "https://tibia.fandom.com/wiki/Extended_Promotion_Scroll",
+          "wiki_title": "Extended Promotion Scroll"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i43950": {
+      "item_id": 43950,
+      "observations": [
+        {
+          "content_sha256": "6eaa0e7486405b6266d0b5178f4d89395172339bccab461ce08fb953166e834c",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "weight": "1.20"
+          },
+          "page_id": 103032,
+          "revision_id": 1057249,
+          "revision_sha1": "34d1875364065ab4335a962a824d6d8c7465bc72",
+          "revision_timestamp": "2024-04-06T10:23:57Z",
+          "url": "https://tibia.fandom.com/wiki/Advanced_Promotion_Scroll",
+          "wiki_title": "Advanced Promotion Scroll"
         }
       ]
     },
@@ -200245,6 +199012,26 @@
         }
       ]
     },
+    "oteryn:item.tibia.i44157": {
+      "item_id": 44157,
+      "observations": [
+        {
+          "content_sha256": "7f04c172656542e9c24042a23ded35e397b4509f3b45467e01ff5c66bc46f79a",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Creature Products",
+            "stackable": "yes",
+            "weight": "0.60"
+          },
+          "page_id": 103949,
+          "revision_id": 1080892,
+          "revision_sha1": "58ee13933c6455d0735394b2ac076a348468a485",
+          "revision_timestamp": "2024-11-01T22:48:09Z",
+          "url": "https://tibia.fandom.com/wiki/Albino_Dragon_Leather",
+          "wiki_title": "Albino Dragon Leather"
+        }
+      ]
+    },
     "oteryn:item.tibia.i44158": {
       "item_id": 44158,
       "observations": [
@@ -200263,6 +199050,26 @@
           "revision_timestamp": "2023-10-10T14:02:01Z",
           "url": "https://tibia.fandom.com/wiki/Dragon_Trophy",
           "wiki_title": "Dragon Trophy"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44179": {
+      "item_id": 44179,
+      "observations": [
+        {
+          "content_sha256": "eb5189ea4ef782741a3b67bd2794c5e5e72f2f6ed7bc86ad553cba1ccd9ac929",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Creature Products",
+            "secondarytype": "Light Sources",
+            "weight": "0.60"
+          },
+          "page_id": 103946,
+          "revision_id": 1041565,
+          "revision_sha1": "858fc649c63d6294cfd3b1d75ee51698e372399a",
+          "revision_timestamp": "2023-10-16T09:27:50Z",
+          "url": "https://tibia.fandom.com/wiki/Bottled_Dragon_Breath",
+          "wiki_title": "Bottled Dragon Breath"
         }
       ]
     },
@@ -201787,6 +200594,25 @@
           "revision_timestamp": "2025-03-18T06:16:09Z",
           "url": "https://tibia.fandom.com/wiki/Heralds_Wings",
           "wiki_title": "Heralds Wings"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i44755": {
+      "item_id": 44755,
+      "observations": [
+        {
+          "content_sha256": "19438d648d4a33e2e75744b8dfe2b3a569d610d6bd2261997fcd4e308de68d87",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "weight": "6.50"
+          },
+          "page_id": 104350,
+          "revision_id": 1046708,
+          "revision_sha1": "7032f1942b808282af87bd8fbf1eb1e53b991493",
+          "revision_timestamp": "2023-12-04T09:27:47Z",
+          "url": "https://tibia.fandom.com/wiki/Draccoon_Santa",
+          "wiki_title": "Draccoon Santa"
         }
       ]
     },
@@ -213344,6 +212170,26 @@
         }
       ]
     },
+    "oteryn:item.tibia.i47899": {
+      "item_id": 47899,
+      "observations": [
+        {
+          "content_sha256": "b589847e407001cace10e9ae89c7c2b9b1fc7c7434387cdadfded92fdc69e804",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 106168,
+          "revision_id": 1176532,
+          "revision_sha1": "64cd5df366ce5e5ba7dc22b0ccd29d6e79ae92db",
+          "revision_timestamp": "2026-04-21T16:17:06Z",
+          "url": "https://tibia.fandom.com/wiki/Falcon_Knight_Soul_Core",
+          "wiki_title": "Falcon Knight Soul Core"
+        }
+      ]
+    },
     "oteryn:item.tibia.i47900": {
       "item_id": 47900,
       "observations": [
@@ -216667,6 +215513,26 @@
         }
       ]
     },
+    "oteryn:item.tibia.i48115": {
+      "item_id": 48115,
+      "observations": [
+        {
+          "content_sha256": "ac773542f4308547b0a6863f648cfae3399df5232f848bf8b819463df97c786d",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "stackable": "yes",
+            "weight": "8.00"
+          },
+          "page_id": 106502,
+          "revision_id": 1066957,
+          "revision_sha1": "3fcc48f83c3d58173b1bf8e790cc61f375817883",
+          "revision_timestamp": "2024-07-01T09:36:28Z",
+          "url": "https://tibia.fandom.com/wiki/Taiyaki",
+          "wiki_title": "Taiyaki"
+        }
+      ]
+    },
     "oteryn:item.tibia.i48116": {
       "item_id": 48116,
       "observations": [
@@ -216685,6 +215551,48 @@
           "revision_timestamp": "2024-07-22T09:59:18Z",
           "url": "https://tibia.fandom.com/wiki/Gummy_Rotworm",
           "wiki_title": "Gummy Rotworm"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48179": {
+      "item_id": 48179,
+      "observations": [
+        {
+          "content_sha256": "9cefbce3c843f0d398a0b886469d75ce549e5fa1abca6a8c2feb6e9fd2874936",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "secondarytype": "Creature Products",
+            "stackable": "yes",
+            "weight": "0.30"
+          },
+          "page_id": 106506,
+          "revision_id": 1066693,
+          "revision_sha1": "629ee24d235a2e2ae4e154b903864c71d3007704",
+          "revision_timestamp": "2024-07-01T09:31:11Z",
+          "url": "https://tibia.fandom.com/wiki/Moon_Melon_Slice",
+          "wiki_title": "Moon Melon Slice"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48197": {
+      "item_id": 48197,
+      "observations": [
+        {
+          "content_sha256": "89654bd43d1338e4f5ab7d8d017eddda5c329499ac4ffec742f903a0a633167a",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "secondarytype": "Fruit",
+            "stackable": "yes",
+            "weight": "9.50"
+          },
+          "page_id": 106512,
+          "revision_id": 1171907,
+          "revision_sha1": "65c7edaa10b8c241b67ea42e616370fe7fe19ec1",
+          "revision_timestamp": "2026-04-02T18:09:20Z",
+          "url": "https://tibia.fandom.com/wiki/Moon_Melon",
+          "wiki_title": "Moon Melon"
         }
       ]
     },
@@ -217547,6 +216455,86 @@
         }
       ]
     },
+    "oteryn:item.tibia.i48480": {
+      "item_id": 48480,
+      "observations": [
+        {
+          "content_sha256": "8d6e339092e255b3f023f9d4ecd387ba2b8fc7856b57c5ccb54c07f7c4957421",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "secondarytype": "Decorations",
+            "weight": "1.00"
+          },
+          "page_id": 106555,
+          "revision_id": 1068187,
+          "revision_sha1": "ed92b5430f93c59e495bdc35feeec856b202bab3",
+          "revision_timestamp": "2024-07-05T05:41:19Z",
+          "url": "https://tibia.fandom.com/wiki/Rose_Milk_Cake_Recipe",
+          "wiki_title": "Rose Milk Cake Recipe"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48481": {
+      "item_id": 48481,
+      "observations": [
+        {
+          "content_sha256": "9fb4f1a2c373f6c340ef42c9e66c48a5a2eb6ac3fcfeca1253c95f640606c10d",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "secondarytype": "Decorations",
+            "weight": "1.00"
+          },
+          "page_id": 106557,
+          "revision_id": 1068190,
+          "revision_sha1": "ec705809b50dc16fbe559c80e49dcf48a03edf24",
+          "revision_timestamp": "2024-07-05T05:41:57Z",
+          "url": "https://tibia.fandom.com/wiki/Matcha_Turtle_Recipe",
+          "wiki_title": "Matcha Turtle Recipe"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48482": {
+      "item_id": 48482,
+      "observations": [
+        {
+          "content_sha256": "929a2828995b8bd7edc67f1bc58ee13a49cf6048ffd10d28de4f7f22c71b37d7",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "secondarytype": "Decorations",
+            "weight": "1.00"
+          },
+          "page_id": 106559,
+          "revision_id": 1068189,
+          "revision_sha1": "df2c74240f03de729e724981496293b935217883",
+          "revision_timestamp": "2024-07-05T05:41:43Z",
+          "url": "https://tibia.fandom.com/wiki/Nightsky_Cupcake_Recipe",
+          "wiki_title": "Nightsky Cupcake Recipe"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48483": {
+      "item_id": 48483,
+      "observations": [
+        {
+          "content_sha256": "05d9ec57164caf0eb58599ed73278c6a0ff95646079155b93459be85a1d7fb2e",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "secondarytype": "Decorations",
+            "weight": "1.00"
+          },
+          "page_id": 106561,
+          "revision_id": 1068188,
+          "revision_sha1": "9287cd00b7853257c8c28ac8e3bcc680ea4f7cff",
+          "revision_timestamp": "2024-07-05T05:41:33Z",
+          "url": "https://tibia.fandom.com/wiki/Rainbow_Waffles_Recipe",
+          "wiki_title": "Rainbow Waffles Recipe"
+        }
+      ]
+    },
     "oteryn:item.tibia.i48493": {
       "item_id": 48493,
       "observations": [
@@ -217937,6 +216925,44 @@
           "revision_timestamp": "2024-09-16T08:58:19Z",
           "url": "https://tibia.fandom.com/wiki/Beehive",
           "wiki_title": "Beehive"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48582": {
+      "item_id": 48582,
+      "observations": [
+        {
+          "content_sha256": "7e185a67f5625fa54b9193c5d28a8bfb38e42a460b2dbcbe12afdb9181afdac5",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.60"
+          },
+          "page_id": 106587,
+          "revision_id": 1070215,
+          "revision_sha1": "5d6d352974c0c6924848bb33534ed786df7cee3a",
+          "revision_timestamp": "2024-07-13T09:57:42Z",
+          "url": "https://tibia.fandom.com/wiki/Handful_of_Marzipan_Carrots",
+          "wiki_title": "Handful of Marzipan Carrots"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i48586": {
+      "item_id": 48586,
+      "observations": [
+        {
+          "content_sha256": "9289a06a0510e075a35739de16ee7255e829c4306766a1dce9bee88d0f1b024c",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "1.60"
+          },
+          "page_id": 106589,
+          "revision_id": 1070214,
+          "revision_sha1": "2e31a43b7b2106a04b4ed9fceb2cfa6a7ca02beb",
+          "revision_timestamp": "2024-07-13T09:57:32Z",
+          "url": "https://tibia.fandom.com/wiki/Marzipan_Carrot",
+          "wiki_title": "Marzipan Carrot"
         }
       ]
     },
@@ -220945,6 +219971,29 @@
         }
       ]
     },
+    "oteryn:item.tibia.i49160": {
+      "item_id": 49160,
+      "observations": [
+        {
+          "content_sha256": "2c56cef85a5d63c1fd7d511672607e1ff6fffe3bd92bde7e9d3e9a8332fd3feb",
+          "fields": {
+            "imbueslots": "1",
+            "objectclass": "Household Items",
+            "primarytype": "Containers",
+            "secondarytype": "Valuables",
+            "slot": "Container",
+            "volume": "1",
+            "weight": "1.50"
+          },
+          "page_id": 107222,
+          "revision_id": 1190989,
+          "revision_sha1": "74873e9c5429df22678a43c50d314b83cf86e90d",
+          "revision_timestamp": "2026-06-22T19:10:49Z",
+          "url": "https://tibia.fandom.com/wiki/Bursa_Obscura",
+          "wiki_title": "Bursa Obscura"
+        }
+      ]
+    },
     "oteryn:item.tibia.i49162": {
       "item_id": 49162,
       "observations": [
@@ -221000,6 +220049,29 @@
           "revision_timestamp": "2024-08-01T09:28:54Z",
           "url": "https://tibia.fandom.com/wiki/Soul_Prism",
           "wiki_title": "Soul Prism"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49176": {
+      "item_id": 49176,
+      "observations": [
+        {
+          "content_sha256": "deb2bc84269fe7594f21cf4bdc12933e487329a41a91e3ccd05a46e5479fd2bf",
+          "fields": {
+            "attrib": "speed +25",
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "secondarytype": "Light Sources",
+            "slot": "Extra Slot",
+            "stackable": "no",
+            "weight": "18.00"
+          },
+          "page_id": 107220,
+          "revision_id": 1148593,
+          "revision_sha1": "bae20137f30bf858abb167f9a593d08845fd4f0a",
+          "revision_timestamp": "2025-12-08T18:09:36Z",
+          "url": "https://tibia.fandom.com/wiki/Celestial_Torch",
+          "wiki_title": "Celestial Torch"
         }
       ]
     },
@@ -221523,6 +220595,46 @@
           "revision_timestamp": "2026-05-07T20:55:15Z",
           "url": "https://tibia.fandom.com/wiki/Transcendence_Potion",
           "wiki_title": "Transcendence Potion"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49272": {
+      "item_id": 49272,
+      "observations": [
+        {
+          "content_sha256": "3238b56f3c4c798cc38614e1fed43e80e1af5fe9b6ada32ea78aed2c92206c5f",
+          "fields": {
+            "objectclass": "Body Equipment",
+            "primarytype": "Armors",
+            "secondarytype": "Replicas",
+            "weight": "13.50"
+          },
+          "page_id": 107498,
+          "revision_id": 1082691,
+          "revision_sha1": "9e54b0829b229c4f7e7910c4081695e348212612",
+          "revision_timestamp": "2024-11-20T15:07:06Z",
+          "url": "https://tibia.fandom.com/wiki/Love_Elixir_(Replica)",
+          "wiki_title": "Love Elixir (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i49273": {
+      "item_id": 49273,
+      "observations": [
+        {
+          "content_sha256": "ccde9b7ff50b91911358f4bc82632f616594ea4d55ab940b4de7519a22888419",
+          "fields": {
+            "objectclass": "Body Equipment",
+            "primarytype": "Armors",
+            "secondarytype": "Replicas",
+            "weight": "0.40"
+          },
+          "page_id": 107499,
+          "revision_id": 1082690,
+          "revision_sha1": "12efa72db1416ce815ee87aacd27c811ed1ea1f6",
+          "revision_timestamp": "2024-11-20T15:06:23Z",
+          "url": "https://tibia.fandom.com/wiki/Chaos_Critical_Dice_(Replica)",
+          "wiki_title": "Chaos Critical Dice (Replica)"
         }
       ]
     },
@@ -223589,6 +222701,45 @@
         }
       ]
     },
+    "oteryn:item.tibia.i50051": {
+      "item_id": 50051,
+      "observations": [
+        {
+          "content_sha256": "eeb2a0080c4b629ad8a68f98b2a26fdb289cde4d749dfd8d68631442d751e4b8",
+          "fields": {
+            "objectclass": "Weapons",
+            "stackable": "no",
+            "weight": "12.00"
+          },
+          "page_id": 107902,
+          "revision_id": 1104560,
+          "revision_sha1": "08c6b8ee1a0859e6da71531ad2638727d4e970f8",
+          "revision_timestamp": "2025-06-07T23:38:58Z",
+          "url": "https://tibia.fandom.com/wiki/Rotrender's_Sceptre",
+          "wiki_title": "Rotrender's Sceptre"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50053": {
+      "item_id": 50053,
+      "observations": [
+        {
+          "content_sha256": "0ee632c8b3699375f253fc5bfe8d800a26350654635efb8af1462fc1bbe4d42a",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Valuables",
+            "stackable": "yes",
+            "weight": "0.10"
+          },
+          "page_id": 107916,
+          "revision_id": 1104541,
+          "revision_sha1": "092f8bfe0a9f710872c0d90c5c3c035097fa72fa",
+          "revision_timestamp": "2025-06-07T22:30:36Z",
+          "url": "https://tibia.fandom.com/wiki/Blood_Coin",
+          "wiki_title": "Blood Coin"
+        }
+      ]
+    },
     "oteryn:item.tibia.i50054": {
       "item_id": 50054,
       "observations": [
@@ -223746,6 +222897,48 @@
           "revision_timestamp": "2025-09-16T12:11:07Z",
           "url": "https://tibia.fandom.com/wiki/Demon_Skull",
           "wiki_title": "Demon Skull"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50062": {
+      "item_id": 50062,
+      "observations": [
+        {
+          "content_sha256": "100ca35c33dbc37779874f6e79e1193f2c9f17247d8d3fda0169044c7388572e",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Taming Items",
+            "secondarytype": "Valuables",
+            "stackable": "yes",
+            "weight": "2.00"
+          },
+          "page_id": 107912,
+          "revision_id": 1197858,
+          "revision_sha1": "5c8272fa373439f52e9ae1dc335ca2cae2c14389",
+          "revision_timestamp": "2026-07-27T04:59:46Z",
+          "url": "https://tibia.fandom.com/wiki/Demon_in_a_Red_Box",
+          "wiki_title": "Demon in a Red Box"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50063": {
+      "item_id": 50063,
+      "observations": [
+        {
+          "content_sha256": "4e0d954e7cef47768a02a9905f5fa56d0df0fbf0d1929b23eb4d5c1c43660d42",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Taming Items",
+            "secondarytype": "Valuables",
+            "stackable": "yes",
+            "weight": "2.00"
+          },
+          "page_id": 107913,
+          "revision_id": 1197857,
+          "revision_sha1": "94f079d719673e7eee14fce664a31601f107c93c",
+          "revision_timestamp": "2026-07-27T04:52:40Z",
+          "url": "https://tibia.fandom.com/wiki/Demon_in_a_Golden_Box",
+          "wiki_title": "Demon in a Golden Box"
         }
       ]
     },
@@ -226692,6 +225885,26 @@
         }
       ]
     },
+    "oteryn:item.tibia.i50312": {
+      "item_id": 50312,
+      "observations": [
+        {
+          "content_sha256": "94559df9de984d59bb507f28b3a88db0ff35e669c701b8e3e25492492fd3b84b",
+          "fields": {
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Creature Products",
+            "stackable": "yes",
+            "weight": "1.90"
+          },
+          "page_id": 108043,
+          "revision_id": 1194781,
+          "revision_sha1": "963d175821032a114fc6ef060727bded86e81f0c",
+          "revision_timestamp": "2026-07-07T03:39:02Z",
+          "url": "https://tibia.fandom.com/wiki/Mighty_Demonic_Core_Essence",
+          "wiki_title": "Mighty Demonic Core Essence"
+        }
+      ]
+    },
     "oteryn:item.tibia.i50313": {
       "item_id": 50313,
       "observations": [
@@ -226803,6 +226016,82 @@
           "revision_timestamp": "2025-08-27T11:11:51Z",
           "url": "https://tibia.fandom.com/wiki/Zaoan_Sauce",
           "wiki_title": "Zaoan Sauce"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50335": {
+      "item_id": 50335,
+      "observations": [
+        {
+          "content_sha256": "e3c0497b4683ae56e2b2d940ade9bfb0b497e693bdd941be18469a6736c69467",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "9.00"
+          },
+          "page_id": 107865,
+          "revision_id": 1143035,
+          "revision_sha1": "2e70d778261b3c2096e970721ac8703959c043b9",
+          "revision_timestamp": "2025-11-19T13:14:59Z",
+          "url": "https://tibia.fandom.com/wiki/Guardian_Statue_(Quest)",
+          "wiki_title": "Guardian Statue (Quest)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50336": {
+      "item_id": 50336,
+      "observations": [
+        {
+          "content_sha256": "05c715017b616e43f3e82214b651abd7dcf0f49023bcf7d81dc9cc69b4a0650d",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "3.00"
+          },
+          "page_id": 107860,
+          "revision_id": 1143038,
+          "revision_sha1": "6622e59efb4eb38d8f26c1d6f251ce880b763b41",
+          "revision_timestamp": "2025-11-19T13:15:54Z",
+          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(1st)",
+          "wiki_title": "Fragment of a Statue (1st)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50337": {
+      "item_id": 50337,
+      "observations": [
+        {
+          "content_sha256": "c539f0588af4c093b8a6f75688fe060e84772019907f677f4adb003d12fad694",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "3.00"
+          },
+          "page_id": 107862,
+          "revision_id": 1143037,
+          "revision_sha1": "578398742b3b374c8de2314aeb670b5ec7ba656b",
+          "revision_timestamp": "2025-11-19T13:15:41Z",
+          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(2nd)",
+          "wiki_title": "Fragment of a Statue (2nd)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i50338": {
+      "item_id": 50338,
+      "observations": [
+        {
+          "content_sha256": "2982b3a6bc475ccec98487effc8819bf79247ff761ec169ecc2970131094b72a",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Quest Items",
+            "weight": "3.00"
+          },
+          "page_id": 107864,
+          "revision_id": 1143036,
+          "revision_sha1": "461d14d657e31e6a3d479fb26d13c24825b8f1a4",
+          "revision_timestamp": "2025-11-19T13:15:22Z",
+          "url": "https://tibia.fandom.com/wiki/Fragment_of_a_Statue_(3rd)",
+          "wiki_title": "Fragment of a Statue (3rd)"
         }
       ]
     },
@@ -228494,6 +227783,127 @@
           "revision_timestamp": "2023-11-05T00:44:43Z",
           "url": "https://tibia.fandom.com/wiki/Door_(Sealed)",
           "wiki_title": "Door (Sealed)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51314": {
+      "item_id": 51314,
+      "observations": [
+        {
+          "content_sha256": "6986a6ab9dc29a9b4fdbe997c8284263bf362a3eea5fe7c2e9e7c6729e85af2c",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "weight": "6.30"
+          },
+          "page_id": 108542,
+          "revision_id": 1106008,
+          "revision_sha1": "599dda7058e8ec98713d2d7cb4eacb3daa61456a",
+          "revision_timestamp": "2025-06-18T23:14:32Z",
+          "url": "https://tibia.fandom.com/wiki/Magic_Hat_(Replica)",
+          "wiki_title": "Magic Hat (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51315": {
+      "item_id": 51315,
+      "observations": [
+        {
+          "content_sha256": "3dc49591f630be270290d8c5f8f819a4bebf55b38c2c7e3c70d7a1b23ca41480",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "weight": "38.00"
+          },
+          "page_id": 108540,
+          "revision_id": 1106009,
+          "revision_sha1": "c3336cc1699fe13ce96dc5a39d66c398c94e5869",
+          "revision_timestamp": "2025-06-18T23:14:35Z",
+          "url": "https://tibia.fandom.com/wiki/Banor_Doll_(Replica)",
+          "wiki_title": "Banor Doll (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51316": {
+      "item_id": 51316,
+      "observations": [
+        {
+          "content_sha256": "abe45df18be2157a1550b68d2e230af3e2dadd3262a1421802e59df2cb0ee1a1",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "weight": "8.50"
+          },
+          "page_id": 108538,
+          "revision_id": 1106010,
+          "revision_sha1": "f0c113d2714b0d9d8ebe8cfce898dced69a920e3",
+          "revision_timestamp": "2025-06-18T23:14:38Z",
+          "url": "https://tibia.fandom.com/wiki/Bard_Doll_(Replica)",
+          "wiki_title": "Bard Doll (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51317": {
+      "item_id": 51317,
+      "observations": [
+        {
+          "content_sha256": "f66336abf3c076f4f0de394fdf899e0739e85514efe72a7acbdd73471cff333f",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "weight": "12.06"
+          },
+          "page_id": 108536,
+          "revision_id": 1106011,
+          "revision_sha1": "2a02cbc51ea1c128a08324161872c919769d28a4",
+          "revision_timestamp": "2025-06-18T23:14:40Z",
+          "url": "https://tibia.fandom.com/wiki/Aylie_(Replica)",
+          "wiki_title": "Aylie (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51318": {
+      "item_id": 51318,
+      "observations": [
+        {
+          "content_sha256": "f80c58dae417232d9f9aec1800c61abb56e79dea71ced0d01bd4b9d773fc941f",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "slot": "Extra Slot",
+            "weight": "7.09"
+          },
+          "page_id": 108534,
+          "revision_id": 1148723,
+          "revision_sha1": "94174d3272af2d0890dce7b09bf36bd2eb9d1113",
+          "revision_timestamp": "2025-12-08T18:12:24Z",
+          "url": "https://tibia.fandom.com/wiki/Aurora's_Collection_(Replica)",
+          "wiki_title": "Aurora's Collection (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51319": {
+      "item_id": 51319,
+      "observations": [
+        {
+          "content_sha256": "47be0670d833d54b8a708bc9d7e75b4a3e05b1027fef25589d2d9ee45f0d7462",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Dolls and Bears",
+            "secondarytype": "Replicas",
+            "weight": "26.02"
+          },
+          "page_id": 108532,
+          "revision_id": 1106015,
+          "revision_sha1": "f38c251fc879b026e2f017dd3910732c75a20155",
+          "revision_timestamp": "2025-06-18T23:16:30Z",
+          "url": "https://tibia.fandom.com/wiki/The_Dragon_Spirit_(Replica)",
+          "wiki_title": "The Dragon Spirit (Replica)"
         }
       ]
     },
@@ -230793,6 +230203,106 @@
           "revision_timestamp": "2026-07-06T21:54:09Z",
           "url": "https://tibia.fandom.com/wiki/Intricate_Void_Scroll",
           "wiki_title": "Intricate Void Scroll"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51751": {
+      "item_id": 51751,
+      "observations": [
+        {
+          "content_sha256": "1c42e9fc6c036c3043f7dceb3852b0a65896e00484e5c3eb3f5312da12ac7797",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "stackable": "no",
+            "weight": "6.50"
+          },
+          "page_id": 109025,
+          "revision_id": 1111929,
+          "revision_sha1": "03b6c5156bf2f3310cbcb9f037aee7446fb1f8e7",
+          "revision_timestamp": "2025-07-21T08:32:11Z",
+          "url": "https://tibia.fandom.com/wiki/Skullfrost_Figurine",
+          "wiki_title": "Skullfrost Figurine"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51752": {
+      "item_id": 51752,
+      "observations": [
+        {
+          "content_sha256": "17a5aa7312fa4527a09d17787d02cc049f0c65863df2a2aa6a7af376f718cd76",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "stackable": "no",
+            "weight": "6.50"
+          },
+          "page_id": 109027,
+          "revision_id": 1111800,
+          "revision_sha1": "16fc2ec7ba11bb1b35954c7d713254dc8f190e0f",
+          "revision_timestamp": "2025-07-21T08:29:13Z",
+          "url": "https://tibia.fandom.com/wiki/Emberwing_Figurine",
+          "wiki_title": "Emberwing Figurine"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51753": {
+      "item_id": 51753,
+      "observations": [
+        {
+          "content_sha256": "407bd365d3ae17a2e4634981f40f598d8a3fd801f0e1de5c726df16b8b72d332",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "stackable": "no",
+            "weight": "6.50"
+          },
+          "page_id": 109026,
+          "revision_id": 1111939,
+          "revision_sha1": "dc99dead54565e967e5c891a690d075f2c7b4995",
+          "revision_timestamp": "2025-07-21T08:32:27Z",
+          "url": "https://tibia.fandom.com/wiki/Thundergiant_Figurine",
+          "wiki_title": "Thundergiant Figurine"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51754": {
+      "item_id": 51754,
+      "observations": [
+        {
+          "content_sha256": "952e2d42ab067942969a79691318aa33806dc1ec3924d02ecba27066b4052667",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "stackable": "no",
+            "weight": "6.50"
+          },
+          "page_id": 109029,
+          "revision_id": 1111808,
+          "revision_sha1": "eae9973d9ae70d94f6ddeb058f629aaed9874d9b",
+          "revision_timestamp": "2025-07-21T08:29:24Z",
+          "url": "https://tibia.fandom.com/wiki/Grovebeast_Figurine",
+          "wiki_title": "Grovebeast Figurine"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i51755": {
+      "item_id": 51755,
+      "observations": [
+        {
+          "content_sha256": "fa08fddae3f3cf786b3ec48ef5a3f19e4501fadb2ff38546025846f4a6cf9f58",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Decorations",
+            "stackable": "no",
+            "weight": "6.50"
+          },
+          "page_id": 109028,
+          "revision_id": 1111878,
+          "revision_sha1": "856bf999a5eb57c9f84656d7b1589dc029b5aaa5",
+          "revision_timestamp": "2025-07-21T08:30:59Z",
+          "url": "https://tibia.fandom.com/wiki/Omniphant_Figurine",
+          "wiki_title": "Omniphant Figurine"
         }
       ]
     },
@@ -233661,6 +233171,166 @@
         }
       ]
     },
+    "oteryn:item.tibia.i53142": {
+      "item_id": 53142,
+      "observations": [
+        {
+          "content_sha256": "353e7b8c3b23986466b2158010f7d38f0f90e279b928e11b81c072f837e26619",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110095,
+          "revision_id": 1176849,
+          "revision_sha1": "0c98f47c3ce23a9d41a6de11b2afa2b01d36b05b",
+          "revision_timestamp": "2026-04-21T16:24:38Z",
+          "url": "https://tibia.fandom.com/wiki/Pirate_Navigator_Soul_Core",
+          "wiki_title": "Pirate Navigator Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53143": {
+      "item_id": 53143,
+      "observations": [
+        {
+          "content_sha256": "3dd3c9246499e36f8aad22fff55d44fa98542b7d58f32fb4f77417dcdc59093d",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110096,
+          "revision_id": 1176847,
+          "revision_sha1": "4955acb0bb9d5f3bdef5da0c66812c5af8aa574b",
+          "revision_timestamp": "2026-04-21T16:24:35Z",
+          "url": "https://tibia.fandom.com/wiki/Pirate_Gunner_Soul_Core",
+          "wiki_title": "Pirate Gunner Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53144": {
+      "item_id": 53144,
+      "observations": [
+        {
+          "content_sha256": "b5025d2ba7923630a29eac0dab965d7a0cb6b2e6b18b954e72fb4c93e90ef392",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110097,
+          "revision_id": 1176843,
+          "revision_sha1": "3ef1b633de83c9a79d4d63ab9f6f811d53347b3f",
+          "revision_timestamp": "2026-04-21T16:24:29Z",
+          "url": "https://tibia.fandom.com/wiki/Pirate_Cook_Soul_Core",
+          "wiki_title": "Pirate Cook Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53145": {
+      "item_id": 53145,
+      "observations": [
+        {
+          "content_sha256": "a49f9eac735bba2b26de9f39f7a3d8d6ab500229c934898b4cac727936d95d0a",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110098,
+          "revision_id": 1176850,
+          "revision_sha1": "172c5c65b05e96a43d297dc35bf45375cf002f4a",
+          "revision_timestamp": "2026-04-21T16:24:42Z",
+          "url": "https://tibia.fandom.com/wiki/Pirate_Quartermaster_Soul_Core",
+          "wiki_title": "Pirate Quartermaster Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53146": {
+      "item_id": 53146,
+      "observations": [
+        {
+          "content_sha256": "c7c65dd13d305d3b33c6bcb84b7ea10b90ae300aa641fd26b8c53d9101f56206",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110099,
+          "revision_id": 1176916,
+          "revision_sha1": "05d6b459fdba8b1942f8fb7922e621b61c2fb975",
+          "revision_timestamp": "2026-04-21T16:26:21Z",
+          "url": "https://tibia.fandom.com/wiki/Sea_Captain_Soul_Core",
+          "wiki_title": "Sea Captain Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53147": {
+      "item_id": 53147,
+      "observations": [
+        {
+          "content_sha256": "a67cb92bdf20124d6bc34f036e3af191b71934efed4106be6e88ea1482b96910",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110100,
+          "revision_id": 1176702,
+          "revision_sha1": "619a08c8aeae06e1ba501b826518ea580993a018",
+          "revision_timestamp": "2026-04-21T16:21:03Z",
+          "url": "https://tibia.fandom.com/wiki/Lizard_Henchman_Soul_Core",
+          "wiki_title": "Lizard Henchman Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53148": {
+      "item_id": 53148,
+      "observations": [
+        {
+          "content_sha256": "0e7c5161e6432a1093760c06e7caf8773d144653ebf2ffe0f6be2c0c4bcae5d1",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110101,
+          "revision_id": 1176705,
+          "revision_sha1": "618434c500877af02e669a334edb11e034a577b3",
+          "revision_timestamp": "2026-04-21T16:21:09Z",
+          "url": "https://tibia.fandom.com/wiki/Lizard_Magician_Soul_Core",
+          "wiki_title": "Lizard Magician Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53149": {
+      "item_id": 53149,
+      "observations": [
+        {
+          "content_sha256": "a7855ab1138f1679b3d2b14b578568962fa41d5e1099960680214df6ba65d0fa",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110102,
+          "revision_id": 1176710,
+          "revision_sha1": "bc1a3c226070383436a406a502b1abbfb3c6a759",
+          "revision_timestamp": "2026-04-21T16:21:16Z",
+          "url": "https://tibia.fandom.com/wiki/Lizard_Swordmaster_Soul_Core",
+          "wiki_title": "Lizard Swordmaster Soul Core"
+        }
+      ]
+    },
     "oteryn:item.tibia.i5315": {
       "item_id": 5315,
       "observations": [
@@ -233676,6 +233346,126 @@
           "revision_timestamp": "2023-10-22T12:31:51Z",
           "url": "https://tibia.fandom.com/wiki/Wooden_Railing_(Docks)",
           "wiki_title": "Wooden Railing (Docks)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53150": {
+      "item_id": 53150,
+      "observations": [
+        {
+          "content_sha256": "fe82224efe97411d95fb71c48e6f207a4b3d71add9206941172beb2162052ae5",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110103,
+          "revision_id": 1176701,
+          "revision_sha1": "89244ae253cfefed774abafe7377904be898b35b",
+          "revision_timestamp": "2026-04-21T16:21:02Z",
+          "url": "https://tibia.fandom.com/wiki/Lizard_Executioner_Soul_Core",
+          "wiki_title": "Lizard Executioner Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53151": {
+      "item_id": 53151,
+      "observations": [
+        {
+          "content_sha256": "2f8ee9bdc7b52d19034e5fbf5f31c6ef590676028e0a216b70b4e90d5dffcd84",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110104,
+          "revision_id": 1176699,
+          "revision_sha1": "c3a8c8af294a7bc63434b0ed0497ee00992714f1",
+          "revision_timestamp": "2026-04-21T16:20:59Z",
+          "url": "https://tibia.fandom.com/wiki/Lizard_Commander_Soul_Core",
+          "wiki_title": "Lizard Commander Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53152": {
+      "item_id": 53152,
+      "observations": [
+        {
+          "content_sha256": "1c010b60999dd28272fc88af27920391ec39ab1b1300ac81dac8e0148c3975ca",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110105,
+          "revision_id": 1176656,
+          "revision_sha1": "ebfb6c3021f04d0c519ee03e1a90c810a1fce168",
+          "revision_timestamp": "2026-04-21T16:20:00Z",
+          "url": "https://tibia.fandom.com/wiki/Infernoid_Blob_Soul_Core",
+          "wiki_title": "Infernoid Blob Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53153": {
+      "item_id": 53153,
+      "observations": [
+        {
+          "content_sha256": "6dd3fb2e8af2c85a8c60f1b918c3958b41ac591629572951f20830a1009af889",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110106,
+          "revision_id": 1176657,
+          "revision_sha1": "b031445c802fd61104a82e4912730bd3a7e50d8f",
+          "revision_timestamp": "2026-04-21T16:20:01Z",
+          "url": "https://tibia.fandom.com/wiki/Infernoid_Hound_Soul_Core",
+          "wiki_title": "Infernoid Hound Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53154": {
+      "item_id": 53154,
+      "observations": [
+        {
+          "content_sha256": "35c907d626a4961cec7865e86480c4ce9e4762b9b255529bdb949b04a46032c4",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110107,
+          "revision_id": 1176658,
+          "revision_sha1": "b804af1e4a78321953bcf968d75506774c695f15",
+          "revision_timestamp": "2026-04-21T16:20:03Z",
+          "url": "https://tibia.fandom.com/wiki/Infernoid_Soul_Soul_Core",
+          "wiki_title": "Infernoid Soul Soul Core"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53155": {
+      "item_id": 53155,
+      "observations": [
+        {
+          "content_sha256": "c0c9142968c83a114611ecbc69bbc3816a923b7a82d6d442d8ee7a225dea0c65",
+          "fields": {
+            "objectclass": "Other Items",
+            "primarytype": "Soul Cores",
+            "stackable": "yes",
+            "weight": "10.00"
+          },
+          "page_id": 110108,
+          "revision_id": 1176659,
+          "revision_sha1": "fec3391f74751df803955257a01096310c140d21",
+          "revision_timestamp": "2026-04-21T16:20:05Z",
+          "url": "https://tibia.fandom.com/wiki/Infernoid_Spiritual_Soul_Core",
+          "wiki_title": "Infernoid Spiritual Soul Core"
         }
       ]
     },
@@ -235118,6 +234908,106 @@
           "revision_timestamp": "2026-04-21T17:04:39Z",
           "url": "https://tibia.fandom.com/wiki/Bamboo_Room_Divider",
           "wiki_title": "Bamboo Room Divider"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53633": {
+      "item_id": 53633,
+      "observations": [
+        {
+          "content_sha256": "d0d49fdedaf607b59ef365561031b9d54fdc49c2896a5813d2ea94da6becb593",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Valuables",
+            "secondarytype": "Replicas",
+            "weight": "6.00"
+          },
+          "page_id": 110274,
+          "revision_id": 1175181,
+          "revision_sha1": "92798cc523edc95ce83b9530b671f4f6c94a1850",
+          "revision_timestamp": "2026-04-16T18:48:02Z",
+          "url": "https://tibia.fandom.com/wiki/Beaver_of_Wisdom_(Replica)",
+          "wiki_title": "Beaver of Wisdom (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53634": {
+      "item_id": 53634,
+      "observations": [
+        {
+          "content_sha256": "3aba99c09084119526cb18564708fd36f6846c2b25ac01aa8934a1ca76360387",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Valuables",
+            "secondarytype": "Replicas",
+            "weight": "18.00"
+          },
+          "page_id": 110280,
+          "revision_id": 1175187,
+          "revision_sha1": "8ead1e5c6228b56e7d578e58540b60682c59a88f",
+          "revision_timestamp": "2026-04-16T18:54:37Z",
+          "url": "https://tibia.fandom.com/wiki/War_Backpack_(Replica)",
+          "wiki_title": "War Backpack (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53635": {
+      "item_id": 53635,
+      "observations": [
+        {
+          "content_sha256": "c1d92b3851b3c8e55ba107f8b3f0f7cf930280f7ae970e23996086782efed4b0",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Valuables",
+            "secondarytype": "Replicas",
+            "weight": "46.90"
+          },
+          "page_id": 110279,
+          "revision_id": 1175186,
+          "revision_sha1": "fba82ec5ab4987540a9b9276a184bb0365a83579",
+          "revision_timestamp": "2026-04-16T18:53:08Z",
+          "url": "https://tibia.fandom.com/wiki/Bonelord_Tome_(Replica)",
+          "wiki_title": "Bonelord Tome (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53636": {
+      "item_id": 53636,
+      "observations": [
+        {
+          "content_sha256": "f5f4068662a24049619c27fe0fffe18eeb3fcb16da21d8ddb023271b63b284c9",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Valuables",
+            "secondarytype": "Replicas",
+            "weight": "19.90"
+          },
+          "page_id": 110281,
+          "revision_id": 1175189,
+          "revision_sha1": "fa7401ccaee5a2ca7cd06a0796084bb6cd3345f4",
+          "revision_timestamp": "2026-04-16T18:56:27Z",
+          "url": "https://tibia.fandom.com/wiki/Wicked_Witch_(Replica)",
+          "wiki_title": "Wicked Witch (Replica)"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i53637": {
+      "item_id": 53637,
+      "observations": [
+        {
+          "content_sha256": "05c2c2fb252d4e9f2d2f3e5fa99e3cd867429670208f56aa8cb946ed5a8b50b0",
+          "fields": {
+            "objectclass": "Household Items",
+            "primarytype": "Valuables",
+            "secondarytype": "Replicas",
+            "weight": "2.50"
+          },
+          "page_id": 110282,
+          "revision_id": 1175191,
+          "revision_sha1": "60c7cbcfcd59c7fe528e39dc773ce31600cc663f",
+          "revision_timestamp": "2026-04-16T19:03:00Z",
+          "url": "https://tibia.fandom.com/wiki/Tibiapedia_(Replica)",
+          "wiki_title": "Tibiapedia (Replica)"
         }
       ]
     },
@@ -236566,6 +236456,116 @@
           "revision_timestamp": "2023-10-22T12:20:30Z",
           "url": "https://tibia.fandom.com/wiki/Wrecked_Ship_Cabin_Wall",
           "wiki_title": "Wrecked Ship Cabin Wall"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i54510": {
+      "item_id": 54510,
+      "observations": [
+        {
+          "content_sha256": "9d5a8a121188a9c3e737b4ce79730be68706955a164c988928ec25f0b22dadf7",
+          "fields": {
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "slot": "Neck",
+            "vocrequired": "knights",
+            "weight": "5.10"
+          },
+          "page_id": 110864,
+          "revision_id": 1205261,
+          "revision_sha1": "7e58bdeac0aed8a01f2112cda4fa5ce798706880",
+          "revision_timestamp": "2026-09-06T23:37:00Z",
+          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Valor",
+          "wiki_title": "Flamingo Amulet of Valor"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i54511": {
+      "item_id": 54511,
+      "observations": [
+        {
+          "content_sha256": "1bbc89d037d4710d4e37d3b1b566af417569df61e16cd8a1182703d719bd6bc7",
+          "fields": {
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "slot": "Neck",
+            "vocrequired": "paladins",
+            "weight": "4.60"
+          },
+          "page_id": 110866,
+          "revision_id": 1205260,
+          "revision_sha1": "60cd254728ad1c5c8130b494256485c7938f71cc",
+          "revision_timestamp": "2026-09-06T23:36:58Z",
+          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Precision",
+          "wiki_title": "Flamingo Amulet of Precision"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i54512": {
+      "item_id": 54512,
+      "observations": [
+        {
+          "content_sha256": "569a895d503f6dbc0b92f9142bed8370985083036509cda8243630793eb58913",
+          "fields": {
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "slot": "Neck",
+            "vocrequired": "sorcerers",
+            "weight": "4.70"
+          },
+          "page_id": 110868,
+          "revision_id": 1205258,
+          "revision_sha1": "22478842a27043a6bb616680aa1b31cf0d91c176",
+          "revision_timestamp": "2026-09-06T23:36:41Z",
+          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Destruction",
+          "wiki_title": "Flamingo Amulet of Destruction"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i54513": {
+      "item_id": 54513,
+      "observations": [
+        {
+          "content_sha256": "2c1b4642f5af7aeaf9a63f9e95c7d50df15238eb77df2c59de6a93dff7046780",
+          "fields": {
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "slot": "Neck",
+            "vocrequired": "druids",
+            "weight": "4.30"
+          },
+          "page_id": 110870,
+          "revision_id": 1205259,
+          "revision_sha1": "cdf633292c8ffa1b3e0c00d900d49036ce121eec",
+          "revision_timestamp": "2026-09-06T23:36:47Z",
+          "url": "https://tibia.fandom.com/wiki/Flamingo_Amulet_of_Nature",
+          "wiki_title": "Flamingo Amulet of Nature"
+        }
+      ]
+    },
+    "oteryn:item.tibia.i54514": {
+      "item_id": 54514,
+      "observations": [
+        {
+          "content_sha256": "96d0a6c58d61cd9ae4ffade277d41235c92e763cc1297aad65af322a2809800f",
+          "fields": {
+            "levelrequired": "270",
+            "objectclass": "Body Equipment",
+            "primarytype": "Amulets and Necklaces",
+            "slot": "Neck",
+            "vocrequired": "monks",
+            "weight": "5.30"
+          },
+          "page_id": 110872,
+          "revision_id": 1205262,
+          "revision_sha1": "f30fdf642342194e61963325088c51bdbeb593e5",
+          "revision_timestamp": "2026-09-06T23:37:03Z",
+          "url": "https://tibia.fandom.com/wiki/Swan_Amulet_of_Balance",
+          "wiki_title": "Swan Amulet of Balance"
         }
       ]
     },
@@ -278547,7 +278547,7 @@
     }
   },
   "schema": "OTERYN_ITEM_WIKI_STATS_SNAPSHOT/v1",
-  "snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91",
+  "snapshot_sha256": "513c4cfd9c9d5723677fb479458dfb48b88414ea5f7c51d5ab58a2b116ee01ef",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "attribution": {

@@ -14,7 +14,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_client_market_packet.py"
 PROOF = (
     "docs/agents/evidence/OTV2-20261001-item-market-true-source-qualification-v1.json"
 )
-PROOF_SHA = "c350cc14ac8d78c4725a28b28e7124e92f7ec9c5ad3e1919c96396ddd5f26a6e"
+PROOF_SHA = "3fba308e18a88003bfb3069fa25123a5d6de40adc782d1af1171b278b8a7cf51"
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 BINDINGS = "imports/crystalserver/bindings/items.json"

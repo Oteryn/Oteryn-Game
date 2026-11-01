@@ -289,12 +289,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             break (request, reservation);
         };
-        let actor = self
-            .runtime
-            .lock()
-            .await
-            .commit_fresh_session(reservation)
-            .map_err(|_| Unavailable)?;
+        let actor = self.commit_runtime_player(reservation).await?;
         // Q16: a recorded House is restored through a genuine native admission
         // handoff before any Channel first-entry participant can replace its cell.
         // Unknown completion stays fail-closed and recovers through that receipt.
@@ -559,6 +554,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(Rejected);
         }
         Ok(())
+    }
+
+    /// Commit the reserved actor of a fresh admission. S15a: the commit starts Crystal's login
+    /// protection on the owner clock (`protocolgame.cpp:834` sets `lastLoad` on login), so
+    /// monsters skip the new player for `loginProtectionPeriod` (10 s, `config.lua.dist:61`).
+    pub(in crate::gameplay_transport) async fn commit_runtime_player(
+        &self,
+        reservation: PlayerActorReservation,
+    ) -> Result<ExactActorRef, AdmissionRefusal> {
+        let now = self.owner_now().get();
+        self.runtime
+            .lock()
+            .await
+            .commit_fresh_session_at(reservation, now)
+            .map_err(|_| AdmissionRefusal::Unavailable)
     }
 
     pub(in crate::gameplay_transport) async fn rollback_runtime_player(

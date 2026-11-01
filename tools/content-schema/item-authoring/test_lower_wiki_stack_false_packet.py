@@ -104,7 +104,10 @@ class StackFalseQualification(unittest.TestCase):
 
     def test_packet_reproduces(self):
         packet = lower.build()
-        self.assertEqual(packet["counts"], {"promotions": 2392, "holds": 13})
+        # 20 holds: the E06 marketable item re-key bound seven more item
+        # keys (i49176, i50051, i51751-i51755) whose wiki pages have no
+        # exact source binding, so they are held (NO_EXACT_SOURCE_BINDING).
+        self.assertEqual(packet["counts"], {"promotions": 2392, "holds": 20})
         self.assertEqual(
             (
                 json.dumps(

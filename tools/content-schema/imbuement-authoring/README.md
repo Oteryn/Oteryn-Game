@@ -35,7 +35,7 @@ The ruleset destination from the full-game tree remains
 | `samples/global-observation-plan.json` | Supplemental prospective behavioral capture procedures; the date-snapshot question is resolved by the owner's current-data scope. Current engine-answer references are delivered in `current-behavior-answers.json`; no controlled gameplay observations are claimed by this prospective plan. |
 | `samples/imbuement-combat.json` | Sourced Vibrancy sequence, bounded AoE leech formula, engine hypotheses and rejected test-server generalizations. |
 | `samples/crystal-imbuements-evidence.json` | Additional owner-supplied `imbuements` branch: 72 XML records, 13 pinned source files, execution facts and nine token exchanges. |
-| `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | Two concrete Item authoring proposals with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; owning Item validation passes. |
+| `samples/missing-item-definitions.json`, `samples/missing-item-source-facts.json` | One active Item authoring proposal with primary flags, capacity, weight, slots, acquisition, source revisions and target dates; the E06 i49160 identity proposal is retired without admitting its extra gameplay facts. |
 | `samples/imbuement-source-comparison.json` | Reproducible engine differences plus the Global fee correction. |
 | `binding_evidence.py`, `eligibility_evidence.py` | Rebuild/check identity and eligibility evidence from pinned repository inputs; never manufacture an identity from a number alone. |
 | `capture_bounds.py` | Shared check that every packet keeps third-party captures, quotes and code anchors as bounded excerpts (at most 450 characters per passage and 1,000 per source or anchor) with digest provenance. |
@@ -146,10 +146,11 @@ a versioned client file do not establish every hidden Global server rule.
 
 The eligibility census records all 663 client slot items. Types and maximum tiers
 are filled for 629 current items: 607 direct Tibiopedia tables and 22 explicit
-Wiki BR fallbacks. Of these, 627 bind to canonical Item definitions; Bursa Obscura
-(49160) and Sailor's Backpack (53192) have no canonical definition. Both now have
-concrete, source-filled proposals that pass the owning Item schema and validator
-with zero errors and warnings. They remain explicitly proposed references.
+Wiki BR fallbacks. Of these, 628 bind to canonical Item definitions. E06 admitted the Bursa Obscura
+(49160) identity; its old identity proposal is retired, and its extra container,
+weight and equipment facts remain unadmitted. Sailor's Backpack (53192) remains
+a source-filled proposal that passes the owning Item schema and validator with
+zero errors and warnings, with an explicitly proposed reference.
 Thirty legacy
 Mayhem/Remedy/Carving items are explicitly documented as withdrawn in version
 11.50; four TEST objects lack eligibility evidence and remain excluded.
@@ -169,9 +170,9 @@ The packet records zero officially verified per-item allow lists. Exact counts,
 affected names and per-source claims live in its `summary` and `items` records.
 
 Sailor's Backpack was introduced on **2026-08-04** and is included in the current
-target. The current target therefore has **629 typed candidates**, **627 existing
-canonical references**, and two source-filled, unregistered proposals: Bursa
-Obscura and Sailor's Backpack. The 30 legacy
+target. The current target therefore has **629 typed candidates**, **628 existing
+canonical references**, and one source-filled, unregistered proposal: Sailor's
+Backpack. The 30 legacy
 items were withdrawn on 2017-12-05. Client presence alone proves neither live
 release nor availability. A dated 2024-01-23 patch also corrects Stoic Iks Casque's
 Epiphany maximum from tier 1 to **tier 2**, preserving the old helper value.

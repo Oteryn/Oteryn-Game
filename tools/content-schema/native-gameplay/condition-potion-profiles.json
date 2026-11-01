@@ -10,11 +10,11 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-27000-27499.json",
-      "sha256": "9a7f892c3f6a3314afa5014e39895ff386cdbca97e9d77bb50135b73e3a8ac11"
+      "sha256": "afcc5ebe9e3e0b88bf932e18c8673f99d9af6dab473e941c6072735a30ddfe07"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "67328fb1d0a666758a16da1c902391f28219574dc7757d47b8b9c0b338240c75"
+      "sha256": "f3fca5c5d8d67861740bb947f120530949a9138eb254dc76efbf32d4a2fca309"
     }
   ],
   "sources": [

@@ -218,6 +218,7 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                         placement: CorpseContainerPlacement {
                             corpse_item_instance_id: corpse_id,
                             placement_ordinal: ordinal,
+                            fluid_subtype: None,
                         },
                         content_revision: "content-1".into(),
                         ruleset_revision: "ruleset-1".into(),

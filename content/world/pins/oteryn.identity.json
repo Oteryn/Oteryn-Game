@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "par-m10-drown-protection-20261028-r1",
-  "content_lock_digest": "a1322d2db427abda1034a35e77d2785c934c44112e418e75ebfb40ec2f6a877e",
+  "content_revision": "e06-market-crystal-parity-20261031-r1",
+  "content_lock_digest": "3a72ea074d601d169c01e8ea039b6f442baefa4bac1c7bc637084866d786f6c8",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:par-m10-drown-protection-20261028-r1/13e01f54839774a68a17617392808143f7b632c59fac2fb3e896225f1528be33"
+  "provenance_summary": "lock:e06-market-crystal-parity-20261031-r1/1cf161a98ef8e7bb740d46b9cd5479d487709a1d22d858303f776ccb54876676"
 }

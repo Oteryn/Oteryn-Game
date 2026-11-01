@@ -70,6 +70,37 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn party_selected(&self) -> bool {
+        false
+    }
+    fn party(
+        &mut self,
+        _request: &oteryn_client_runtime::party::PartyCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::party::PartyResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 42 }) }
+    }
+    fn hireling_selected(&self) -> bool {
+        false
+    }
+    fn hireling(
+        &mut self,
+        _request: &oteryn_client_runtime::hireling::HirelingCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 165 }) }
+    }
+    fn market_selected(&self) -> bool {
+        false
+    }
+    fn market(
+        &mut self,
+        _request: &oteryn_client_runtime::market::MarketCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::market::MarketResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 63 }) }
+    }
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
@@ -130,6 +161,33 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn party_selected(&self) -> bool {
+        self.is_selected(oteryn_client_runtime::party::party::CAPABILITY_PARTY_V1)
+    }
+    async fn party(
+        &mut self,
+        request: &oteryn_client_runtime::party::PartyCommand,
+    ) -> Result<oteryn_client_runtime::party::PartyResponse, SessionError> {
+        oteryn_client_runtime::party::send(self, request).await
+    }
+    fn hireling_selected(&self) -> bool {
+        self.is_selected(oteryn_client_runtime::hireling::hireling::CAPABILITY_HIRELING_V1)
+    }
+    async fn hireling(
+        &mut self,
+        request: &oteryn_client_runtime::hireling::HirelingCommand,
+    ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
+        oteryn_client_runtime::hireling::send(self, request).await
+    }
+    fn market_selected(&self) -> bool {
+        self.is_selected(oteryn_client_runtime::market::market::CAPABILITY_MARKET_V1)
+    }
+    async fn market(
+        &mut self,
+        request: &oteryn_client_runtime::market::MarketCommand,
+    ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
+        oteryn_client_runtime::market::send(self, request).await
+    }
 }
 
 /// Hands the shell what the session pushed, and the visible entities when they changed.
@@ -152,6 +210,9 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.party_initialize(session.party_selected());
+    outbox.hireling_initialize(session.hireling_selected());
+    outbox.market_initialize(session.market_selected());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
@@ -225,6 +286,22 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::Party(request)) => match session.party(&request).await {
+                Ok(response) => {
+                    outbox.party_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Hireling(request)) => match session.hireling(&request).await {
+                Ok(response) => {
+                    outbox.hireling_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
                 match session.serve(IDLE_SLICE).await {
                     Ok(()) => {
@@ -235,6 +312,14 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => return,
+            Ok(PlayCommand::Market(request)) => match session.market(&request).await {
+                Ok(response) => {
+                    outbox.market_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
         };
         outbox.end(public_class(&ended));
         return;

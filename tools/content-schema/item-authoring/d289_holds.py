@@ -16,7 +16,8 @@ DOCUMENT_HOLDS = {
 }
 
 # i901 keeps main's native_core_hold (accepted NonStackable against a StackCapable source);
-# no market, movable, physical or description enrichment is applied to it.
+# no market, movable, physical or description enrichment is applied to it by these packets.
+# E06 (owner decision 2026-10-31) re-sealed the hold and promotes its marketability instead.
 NATIVE_CORE_HOLD = "D289_ACCEPTED_NATIVE_CORE_HOLD"
 NATIVE_CORE_HOLD_KEYS = frozenset({"oteryn:item.tibia.i901"})
 
@@ -34,5 +35,6 @@ SEALED_STATE_DECISION = "D310"
 SEALED_STATE_HOLD = "D310_MAIN_SEALED_NATIVE_STATE"
 SEALED_STATE_DESCRIPTION_KEYS = frozenset({"oteryn:item.tibia.i36586"})
 # i3450: main's sealed tools/content-schema/reward-claim-authoring/reward_stack_normalization.json
-# pins its definition with trade restrictions unknown.
+# pinned its definition with trade restrictions unknown; E06 (owner decision 2026-10-31) re-sealed
+# that proof and promotes its marketability, so only these packets still hold it.
 SEALED_STATE_MARKET_KEYS = frozenset({"oteryn:item.tibia.i3450"})

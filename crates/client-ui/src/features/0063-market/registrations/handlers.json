@@ -1,17 +1,13 @@
 {
   "mechanic": "0063-market",
   "kind": "handlers",
-  "id": "0063-market-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
-  "commands": [
-    80
-  ],
+  "id": "0063-market-actions",
+  "status": "supported",
+  "commands": [80],
+  "direction": "client_to_server",
+  "capability": 63,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Market state and offers are server-owned; no local authority settings."
   }
 }

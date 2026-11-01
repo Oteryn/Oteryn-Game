@@ -34,6 +34,8 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
+    // a1069ea0d (W07): Soul Core ground delivery uses the craft caller's lane permit.
+    ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),

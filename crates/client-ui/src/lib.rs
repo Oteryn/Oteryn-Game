@@ -38,6 +38,17 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Server-confirmed party membership controls.
+#[path = "features/0042-party/mod.rs"]
+pub mod party;
 /// Wheel allocation, vessels and Gem Atelier controls.
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
+
+/// House banker hireling status and controls.
+#[path = "features/0165-hireling/mod.rs"]
+pub mod hireling;
+
+/// Market offer browsing and settlement controls.
+#[path = "features/0063-market/mod.rs"]
+pub mod market;

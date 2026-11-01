@@ -15,7 +15,7 @@ from lower_client_market_packet import WORLD_FLAGS
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_use_observation_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json"
-PROOF_SHA = "e667646320bed43ecc5256612cb8dfd11e5334aee0ae20c4940ddfb7b151f2f6"
+PROOF_SHA = "b4bf2c87cc5c3b81c66521023775ac499dcd7d64fb1f10f4210fb682935dbd8a"
 OUTPUT = (
     ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
 )

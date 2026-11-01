@@ -78,7 +78,10 @@ class Qualification(unittest.TestCase):
             + "\n"
         ).encode()
         self.assertEqual(data, lower.OUTPUT.read_bytes())
-        self.assertEqual(packet["counts"], {"promotions": 18, "holds": 33})
+        # 34 holds: the E06 marketable item re-key bound Bursa Obscura
+        # (oteryn:item.tibia.i49160) as an item key with a wiki volume but
+        # no capacity source binding, so it is held (NO_SOURCE_BINDING).
+        self.assertEqual(packet["counts"], {"promotions": 18, "holds": 34})
 
 
 if __name__ == "__main__":

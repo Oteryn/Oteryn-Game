@@ -11,7 +11,7 @@ from engine_items import load_appearance_objects
 ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_wiki_movable_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json"
-PROOF_SHA = "39a5ced0cdf57ccb81db5edd429bb41be5da744bcf673a44169aafd6d149d7bb"
+PROOF_SHA = "97f9a0e10b4ed9ae8203820bb53d1efec60270ef550f225ca12669f1c02e9c04"
 BASE_SHA = "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-movable-promotion-v1.json"
 COORDS = ("page_id", "revision_id", "revision_timestamp", "content_sha256")

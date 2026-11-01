@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "6edcee04dc8dacbb34f735570e32545ff20793f8da37bd1168f94e941fca8622"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "3b19e14f2167ba7ef897c820d363d7c4caae4321eba9834a1e16cb75e062d2a0"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,10 +55,10 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "6edcee04dc8dacbb34f735570e32545ff20793f8da37bd1168f94e941fca8622"
+digest = "3b19e14f2167ba7ef897c820d363d7c4caae4321eba9834a1e16cb75e062d2a0"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
-content_revision = "par-m10-drown-protection-20261028-r1"
+content_revision = "e06-market-crystal-parity-20261031-r1"
 production = false
 start_x = 32534
 start_y = 32513

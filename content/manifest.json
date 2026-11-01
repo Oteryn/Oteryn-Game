@@ -44,7 +44,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34043
+      "records": 34111
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -579,7 +579,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34042.json"
+      "path": "content/items/definitions/items-34000-34110.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -823,11 +823,11 @@
   "rulesets": {
     "Imbuements": {
       "counts": {
-        "bound_equipment_profiles": 627,
+        "bound_equipment_profiles": 628,
         "families": 24,
-        "held_equipment_observations": 36,
+        "held_equipment_observations": 35,
         "tiers": 72,
-        "unregistered_equipment_items": 2
+        "unregistered_equipment_items": 1
       },
       "index": "rulesets/items/imbuements/index.json",
       "runtime_admission": "BLOCKED"
@@ -902,7 +902,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "e202915fadb4407d575e1052fd709c59328bdb704ad1fc1c3127ea9f0e545895"
+          "sha256": "dc34e6773c41f1bbdccf7d80ced52f9eb77dde65ab5c3dbc764febcbba09c359"
         },
         {
           "creates_canonical_identities": false,
@@ -973,7 +973,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3437,
+          "record_count": 3441,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -981,7 +981,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f7fa468f3feac88ea2aa50e94fb12cbef505f553346135d5360f1ea1bebe0d0f"
+          "sha256": "a3c09eacee5801cb4a6470b7b583c8da8465c30c42cc483b5e8351c892ab97d0"
         }
       ],
       "Presentation": [

@@ -24,7 +24,7 @@
     "Effect": 5797,
     "Encounter": 108,
     "Formula": 6126,
-    "Item": 34043,
+    "Item": 34111,
     "Loot": 1290,
     "Mount": 252,
     "NPC": 1282,
@@ -48,18 +48,18 @@
   "legacy_blobs": {
     "declarations": "64dbc962d8e20470c6441aa04b11c21fbbd74a38",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "9fea953451ce40799df0588c33d98dc68b3c336d",
-    "reference": "00bfffa1183b0c1df974bba21f1929493209c3f0",
+    "imports": "0ca8a77668c7523e267741b701116794c82b5d8a",
+    "reference": "8b2ff5864b1b81b75febf0d06bc089e933c4933c",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
     "Imbuements": {
-      "bound_equipment_profiles": 627,
+      "bound_equipment_profiles": 628,
       "families": 24,
-      "held_equipment_observations": 36,
+      "held_equipment_observations": 35,
       "tiers": 72,
-      "unregistered_equipment_items": 2
+      "unregistered_equipment_items": 1
     }
   },
   "ruleset_files": {
@@ -70,15 +70,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "c4713b12e6620d5f92b07e3c0f3be4dd75ea6b288a5afb139d0a817b95cc748d"
+        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "c07f2e412a13866968536e7f23333331727376150fd0429b4291ee5a07ed9b3f"
+        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "811cf23842c2f6e8350eafc11a0e12aaccc540fd6a438e9d8ff199d444dac55b"
+        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -162,7 +162,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "e202915fadb4407d575e1052fd709c59328bdb704ad1fc1c3127ea9f0e545895"
+          "sha256": "dc34e6773c41f1bbdccf7d80ced52f9eb77dde65ab5c3dbc764febcbba09c359"
         },
         {
           "creates_canonical_identities": false,
@@ -233,7 +233,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3437,
+          "record_count": 3441,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -241,7 +241,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f7fa468f3feac88ea2aa50e94fb12cbef505f553346135d5360f1ea1bebe0d0f"
+          "sha256": "a3c09eacee5801cb4a6470b7b583c8da8465c30c42cc483b5e8351c892ab97d0"
         }
       ],
       "Presentation": [
