@@ -56185,7 +56185,16 @@
       "identity_evidence": {
         "canonical_definition_sha256": "74053395bbe8101aede6ff192885995f3a6f55ec635868fb941f8e9e477797e6",
         "canonical_name": "bursa obscura",
-        "canonical_path": "content/items/definitions/items-27000-27499.json"
+        "canonical_path": "content/items/definitions/items-27000-27499.json",
+        "wiki_observations": [
+          {
+            "content_sha256": "2c56cef85a5d63c1fd7d511672607e1ff6fffe3bd92bde7e9d3e9a8332fd3feb",
+            "page_id": 107222,
+            "revision_id": 1190989,
+            "revision_timestamp": "2026-06-22T19:10:49Z",
+            "wiki_title": "Bursa Obscura"
+          }
+        ]
       },
       "independent_field_corroborations": [],
       "item_ref": {

@@ -30,7 +30,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-bindings.json",
-      "sha256": "7cade4a724e26f53436099591b82078e3038f791d149a34fc73ecdf34e088bb4"
+      "sha256": "229fe773bdda944a3fb42bdf1fd997b110cf39c078a636d7b678a0760c27c6a9"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-combat.json",
@@ -38,7 +38,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-eligibility.json",
-      "sha256": "5105ed179c0b994b663a88527046ebb02cdc8ab567a624e515098b1bdd47f1c6"
+      "sha256": "29fd2fee49c7ba1c2c4323ede735cfe5deba8e30ba4349a1e285f6a262b00bc5"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-sources-2026-10-01.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json",
-      "sha256": "95da6763573ed484d052627aedf3dac7fc526605a613fb92b9f3c62d15c06f6f"
+      "sha256": "4bd39d475edadecd22c5323edbeacbbf9e11004ecef628e49883cb289c7c62c0"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/missing-item-definitions.json",
-      "sha256": "50ff6913e158c56b0ef9d91bb5a5317515bd7b5e94dec978b4211768ebb189a3"
+      "sha256": "df1156c0df62353527d9c3bba94bba537c39929e85831273f40826946715b113"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/missing-item-source-facts.json",
@@ -80,11 +80,11 @@
     },
     {
       "path": "rulesets/items/imbuements/catalogue.json",
-      "sha256": "16f3e474e8ec21c6f97c8cc7df93232ea1a5fa6e19db1175f24bbb9b3ce0a297"
+      "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
     },
     {
       "path": "rulesets/items/imbuements/equipment.json",
-      "sha256": "5716bf54116b7949f17572c6164600183a9ded7f4654a629b1fa64ceea62c691"
+      "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
     },
     {
       "path": "rulesets/items/imbuements/owner-policy.json",

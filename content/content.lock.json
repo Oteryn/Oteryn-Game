@@ -70,15 +70,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "16f3e474e8ec21c6f97c8cc7df93232ea1a5fa6e19db1175f24bbb9b3ce0a297"
+        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "5716bf54116b7949f17572c6164600183a9ded7f4654a629b1fa64ceea62c691"
+        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "4e3d6201166c4d21baa0724b1a08315d0e82914e03e6a3b0b52536c0be33d8c4"
+        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",

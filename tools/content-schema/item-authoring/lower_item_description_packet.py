@@ -14,7 +14,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_item_description_packet.py
 PROOF = (
     "docs/agents/evidence/OTV2-20261002-item-description-source-qualification-v1.json"
 )
-PROOF_SHA = "fa29b9e4702e81ee8e7365ed6f46b6cd3818b0dfebe6983504c86e3dc19c4727"
+PROOF_SHA = "9a6687b8bd0df4c4f63f8859b188e82b3dcc13824f5f97fee91c50a0cd48fbf4"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json"
 HEADERS = ("kind", "client_projection", "materializable", "stack_class")
 # ITEM-SEM-USE-2: the v3 consumable admission runs after this promotion in the Rust chain, so

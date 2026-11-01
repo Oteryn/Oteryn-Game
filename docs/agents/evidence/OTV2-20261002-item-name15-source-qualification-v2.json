@@ -14,7 +14,7 @@
   },
   "global_own_id_frame": {
     "path": "docs/agents/evidence/OTV2-20261001-item-movable-source-qualification-v1.json",
-    "sha256": "39a5ced0cdf57ccb81db5edd429bb41be5da744bcf673a44169aafd6d149d7bb"
+    "sha256": "97f9a0e10b4ed9ae8203820bb53d1efec60270ef550f225ca12669f1c02e9c04"
   },
   "historical_source": {
     "native_definition_digests_historical_only": true,
@@ -27,17 +27,17 @@
   },
   "input_digests": {
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "crates/gameplay/content/src/content/item_name_promotion.rs": "8a292afee44209b0d3409f3c64d49e2db9dcc9193ce3ca547d74c154cc670006",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "041def9c2807378138d96640262ee122c4ddea9eca8f40efd9ccbc87085eae77",
-    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7334bd60fb715130f32341dcb2cf6b7c591a0d5ab52dab5c2fe2bcacc6037dfd",
+    "crates/gameplay/content/src/content/item_name_promotion.rs": "b3c56de1ea301bfb2a6660094ad37570979827ace220c047af5d0ae9d5867c5c",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "e0121878d94eede5477d0737f2ce5924e0ada2056365c492b673b4cf5bbfea11",
+    "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7b5ef171482f6db3cf654ff81d66a7c689224df5f5fcf506276b1c01929be75e",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
     "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
     "tools/content-schema/item-authoring/appearance_membership.py": "0746bb0e350fb04503919295a718907afc87866b0299fa277b914c74e85cfc09",
     "tools/content-schema/item-authoring/engine_items.py": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
-    "tools/content-schema/item-authoring/lower_client_market_packet.py": "adb64e5012dc7b1a26a49aebdcdca8cd8b6cdb91008ae7e843f748af9d50e79a",
-    "tools/content-schema/item-authoring/lower_item_name_packet.py": "8cc141b1ae4599927efa8e53dc4115be71fd85fbd3289780337ba94d49a418b9",
-    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199",
+    "tools/content-schema/item-authoring/lower_client_market_packet.py": "f00fa5306f1bcf7c84d0f316a325410dee7b8340f26563e8c789c6255564a9b2",
+    "tools/content-schema/item-authoring/lower_item_name_packet.py": "9a5553910c9f0796094a6ffb611bf65a0d4f9d7256eca72085dc70a5b7a4f61b",
+    "tools/content-schema/item-authoring/lower_wiki_movable_packet.py": "ee76296626184ba6dff90755cd0fc7c64bfb758ecb075961db6746468dae5923",
     "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py": "5969b009ed326991e6db310b3e3c48640ae5a5ac361c9c34f5619740bff8ce2e",
     "tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json": "69d5c1ff24b979658fc24a310d6715c131cfca6abe759ff1fa29479da0ecffe2"
   },

@@ -131,6 +131,6 @@
     "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
     "client_version": "15.30",
     "snapshot_path": "imports/tibiawiki/facts/items-stats.json",
-    "snapshot_sha256": "2e6e083d041f7d0901556bcdcee1b1975a1bcb961828bbfbd782ecb0a3dfee91"
+    "snapshot_sha256": "513c4cfd9c9d5723677fb479458dfb48b88414ea5f7c51d5ab58a2b116ee01ef"
   }
 }

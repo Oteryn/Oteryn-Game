@@ -14,7 +14,7 @@ from lower_wiki_stack_default_packet import checked, exact_bindings, raw_paramet
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_item_document_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261001-item-document-source-qualification-v1.json"
-PROOF_SHA = "a4399548f320a23086c03a21388f24f5479c15e35310c3d017bae69efbc43e4a"
+PROOF_SHA = "a494fbbe444a86235dc827fdd7525711af963e6798cae52d337ead636a4c4b97"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-document-promotion-v1.json"
 FIELDS = {"writable": "writeable", "writechars": "max_text_length"}
 

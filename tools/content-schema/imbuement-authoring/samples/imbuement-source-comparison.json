@@ -398,10 +398,10 @@
     "global-research-closure.json": "0ccab4e6907570413f74e5c5a05d3a390900af4b92b7516ea7dcdbd15c73050a",
     "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
-    "imbuement-bindings.json": "7cade4a724e26f53436099591b82078e3038f791d149a34fc73ecdf34e088bb4",
+    "imbuement-bindings.json": "229fe773bdda944a3fb42bdf1fd997b110cf39c078a636d7b678a0760c27c6a9",
     "imbuement-combat.json": "5f14f4d9748e956fe36d779dbebcd6daeb90ff27ff0eb6abadbe7237cc7d57e7",
-    "imbuement-eligibility.json": "5105ed179c0b994b663a88527046ebb02cdc8ab567a624e515098b1bdd47f1c6",
-    "missing-item-definitions.json": "50ff6913e158c56b0ef9d91bb5a5317515bd7b5e94dec978b4211768ebb189a3",
+    "imbuement-eligibility.json": "29fd2fee49c7ba1c2c4323ede735cfe5deba8e30ba4349a1e285f6a262b00bc5",
+    "missing-item-definitions.json": "df1156c0df62353527d9c3bba94bba537c39929e85831273f40826946715b113",
     "missing-item-source-facts.json": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
     "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079"
   },

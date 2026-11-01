@@ -23,8 +23,12 @@ CREATE TRIGGER game_character_session_ends_no_truncate
 CREATE FUNCTION game_character_session_ended() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN
+ -- Only a rooted Character can hold a concoction effect; a session row without a root (the
+ -- durability harness admits bare session identities) leaves no stamp instead of failing its
+ -- terminal transition.
  INSERT INTO public.game_character_session_ends(game_session_id,character_id,ended_at_us)
- VALUES(NEW.game_session_id,NEW.character_id,floor(extract(epoch FROM clock_timestamp())*1000000)::bigint)
+ SELECT NEW.game_session_id,NEW.character_id,floor(extract(epoch FROM clock_timestamp())*1000000)::bigint
+  WHERE EXISTS (SELECT 1 FROM public.game_character_roots r WHERE r.character_id=NEW.character_id)
  ON CONFLICT (game_session_id) DO NOTHING;
  RETURN NULL;
 END $$;
