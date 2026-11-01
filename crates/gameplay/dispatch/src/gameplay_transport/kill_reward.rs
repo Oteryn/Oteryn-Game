@@ -100,6 +100,9 @@ pub struct PendingKillSettlement {
     pub activity_at_death:
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
+    /// PREY-DIFF: freeze selection and access on the lethal turn; retries must not
+    /// re-evaluate a later Premium state or attribute this kill to a successor.
+    pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
@@ -156,6 +159,7 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
+            prey_checkpoint: None,
             forge: None,
             echo: None,
             callback_loot: Vec::new(),
@@ -1193,6 +1197,15 @@ pub fn record_creature_kill(
         return;
     };
     let source = sink.rewards.encounter_facts(&creature);
+    let prey_checkpoint = sink.prey.and_then(|states| {
+        states.prey_kill_checkpoint(
+            runtime,
+            principal.actor,
+            principal.session,
+            &creature,
+            observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
+        )
+    });
     let echo_effect =
         super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000)
             .and_then(|draw| {
@@ -1227,7 +1240,9 @@ pub fn record_creature_kill(
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the
                 // donor. Missing a native corpse row must not lose these points.
-                if echo.is_some() {
+                // A missing native corpse cannot erase the independently frozen
+                // Prey kill counter. Its actual settled loot value remains zero.
+                if echo.is_some() || prey_checkpoint.is_some() {
                     accept_kill(
                         runtime,
                         sink.queue,
@@ -1241,6 +1256,7 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
+                            prey_checkpoint,
                             forge: None,
                             echo,
                             callback_loot: Vec::new(),
@@ -1263,6 +1279,7 @@ pub fn record_creature_kill(
             );
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
+            entry.prey_checkpoint = prey_checkpoint;
             accept_kill(runtime, sink.queue, entry);
             return;
         }
@@ -1558,6 +1575,7 @@ pub fn record_creature_kill(
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
+        prey_checkpoint,
         facts,
         creature,
         row: Some(row),
@@ -2274,6 +2292,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     entry.creature
                 ));
             }
+            if !admission
+                .credit_prey_kill(entry, None, &mut slot, self.fence)
+                .await
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -2391,6 +2418,21 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         let mut entry = entry.clone();
         let Some(mut row) = entry.row.take() else {
+            if entry.prey_checkpoint.is_some() {
+                let mut slot = admission
+                    .revision_sequencer
+                    .acquire(self.fence.character_id)
+                    .await;
+                if !admission
+                    .credit_prey_kill(&entry, None, &mut slot, self.fence)
+                    .await
+                {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            }
             release_settled_corpse(
                 &mut *admission.runtime.lock().await,
                 &entry,
@@ -2620,12 +2662,22 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 marks.mark(self.fence.character_id, TrackerKind::Bosstiary, &boss.key);
             }
         }
+        let mut report = classify(&entry.creature, &outcome);
+        // PREY-DIFF (2026-11-01): keep the kill queued until its idempotent
+        // measurement is committed against this exact live selection.
+        if report.verdict == SettleVerdict::Final
+            && let Ok(committed) = &outcome
+            && !admission
+                .credit_prey_kill(&entry, Some(&committed.rewards.loot), &mut slot, fence)
+                .await
+        {
+            report.verdict = SettleVerdict::Retry;
+        }
         // No leaf notification lock survives this point. Release revisions and
         // lane before descendants that take the native runtime or reenter a lane.
         drop(slot);
         drop(other_slots);
         drop(permit);
-        let mut report = classify(&entry.creature, &outcome);
         // Never complete the bounty while this death's Bestiary/loot receipt is unresolved.
         // Crystal creature.cpp:536-590 credits every contributor and enabled shared-XP party.
         if report.verdict == SettleVerdict::Final

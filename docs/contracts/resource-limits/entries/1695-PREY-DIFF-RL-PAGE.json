@@ -1,0 +1,21 @@
+{
+  "id": "PREY-DIFF-RL-PAGE",
+  "owner_contract": "protocol-oteryn/v1/prey_v1.proto",
+  "resource": "Prey page transport bound",
+  "unit": "creature quotes per offered-today page",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded native Prey codec; list sizes remain server configuration (9/12 by default).",
+  "client_visible": true,
+  "boundary_tests": [
+    "offered_page_rejects_duplicate_unknown_noncanonical_and_oversize_rows"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/prey.rs MAX_OFFERED_PAGE"
+  ],
+  "notes": "OWNER-DEVIATION PREY-DIFF 2026-11-01; extends capability140/command160 without adding a new capability."
+}

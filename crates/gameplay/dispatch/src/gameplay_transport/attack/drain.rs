@@ -792,7 +792,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && snapshot.state.master.is_none()
                     && !snapshot.state.policy.is_familiar
                 {
-                    states.hunting_activity(&runtime, entry.actor, entry.session, now.get());
+                    states.prey_activity(&runtime, entry.actor, entry.session, super::super::prey::PreyActivity {
+                        creature: &race_key,
+                        kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::DealtDamage,
+                        now: now.get(),
+                    });
                 }
                 record_hit_activity(
                     entry,

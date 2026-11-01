@@ -77,3 +77,36 @@ fn store_retained_answer_keeps_every_platform_result() {
         assert_eq!(answer.code(), Some(code));
     }
 }
+
+#[test]
+fn prey_expansion_placeholder_is_hidden_until_it_has_an_approved_price() {
+    let embedded = include_bytes!("../../../../../../rulesets/economy/store/catalogue.json");
+    let mut document: serde_json::Value = serde_json::from_slice(embedded).expect("catalogue");
+    let expansion = document["offers"].as_array_mut().expect("offers").iter_mut()
+        .find(|offer| offer["key"] == "store:prey-list-expansion").expect("placeholder");
+    assert_eq!(expansion["price"], serde_json::Value::Null);
+    assert_eq!(expansion["enabled"], false);
+    assert!(CATALOGUE.as_ref().expect("catalogue").rules.offer("store:prey-list-expansion").is_none());
+    expansion["enabled"] = serde_json::json!(true);
+    assert!(RuntimeCatalogue::from_json(&serde_json::to_vec(&document).expect("encode")).is_none());
+}
+
+#[test]
+fn prey_expansion_store_offer_has_one_per_character_unlock_and_no_item_delivery() {
+    let embedded = include_bytes!("../../../../../../rulesets/economy/store/catalogue.json");
+    let mut document: serde_json::Value = serde_json::from_slice(embedded).expect("catalogue");
+    let expansion = document["offers"].as_array_mut().expect("offers").iter_mut()
+        .find(|offer| offer["key"] == "store:prey-list-expansion").expect("placeholder");
+    // A fixture price exercises admission; the production offer remains owner-priced and disabled.
+    expansion["enabled"] = serde_json::json!(true);
+    expansion["price"] = serde_json::json!(17);
+    let catalogue = RuntimeCatalogue::from_json(&serde_json::to_vec(&document).expect("encode")).expect("priced catalogue");
+    let offer = catalogue.rules.offer("store:prey-list-expansion").expect("offer");
+    assert_eq!(offer.delivery, rules::DeliveryKind::Unlock { unlock_key: "prey-list-expansion".into() });
+    assert_eq!(offer.eligibility.per_character_limit, Some(1));
+    assert_eq!(catalogue.item_revision(&offer.key), None);
+    let mut character = rules::CharacterStoreView::default();
+    assert_eq!(rules::build_quote(&catalogue.rules, &offer.key, &character).expect("new").price, 17);
+    character.owned_unlocks.insert("prey-list-expansion".into());
+    assert_eq!(rules::build_quote(&catalogue.rules, &offer.key, &character), Err(rules::QuoteRefusal::UnlockAlreadyOwned));
+}

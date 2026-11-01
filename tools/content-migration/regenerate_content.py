@@ -55,7 +55,10 @@ REGISTRY = (
     "content/content.lock.json",
 )
 # Written by the authoring tools but not listed in the content manifest.
-EXTRA_DERIVED = ("content/interactions/index.json",)
+EXTRA_DERIVED = (
+    "content/interactions/index.json",
+    "tools/content-schema/native-gameplay/prey-model-results.json",
+)
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
 # sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
 # the hand-written fields of the interactions index. A conflict here needs a person.
@@ -76,6 +79,9 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
+    ["python3", "tools/content-migration/test_prey_difficulty.py"],
+    ["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--check"],
     ["python3", "tools/content-migration/imbuement_catalogue.py", "--check"],
     ["python3", "tools/content-migration/register_spell_families.py", "--check"],
     ["python3", "tools/content-migration/test_import_spell_families.py"],
@@ -133,6 +139,18 @@ def show(stage: str, path: str) -> str | None:
     return git("show", f"{stage}{path}") if present else None
 
 
+def prey_report_paths() -> set[str]:
+    """Only the active authoring date's reports are rewritten by regeneration."""
+    try:
+        date = json.loads((ROOT / "rulesets/prey/difficulty.json").read_text(encoding="utf-8"))["model"]["date"]
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date) is None:
+            return set()
+    except (OSError, ValueError, KeyError, TypeError):
+        # A conflicting or invalid authoring file remains a human-owned input.
+        return set()
+    return {f"docs/balance/PREY-TIME-SIM-{date}.md", f"docs/balance/PREY-SLOT-VALUE-{date}.md"}
+
+
 def derived_paths() -> set[str]:
     """Every path the steps below write: the managed files of both merge sides, and the rest."""
     managed = set()
@@ -152,7 +170,7 @@ def derived_paths() -> set[str]:
         f"content/world/{locator}"
         for locator in document_locators(git("show", f"HEAD:{PIN_PATH}"))
     }
-    return managed | world | set(REGISTRY) | set(EXTRA_DERIVED)
+    return managed | world | set(REGISTRY) | set(EXTRA_DERIVED) | prey_report_paths()
 
 
 def is_world_pin(path: str) -> bool:
@@ -407,6 +425,7 @@ def main() -> int:
     conflicted = resolve_conflicts() if args.resolve else []
     materialize_world()
     repin_rust_inventory()
+    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():

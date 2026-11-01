@@ -1,6 +1,6 @@
 use super::super::DurabilityError;
 use oteryn_gameplay_progression::prey::{
-    BonusType, CREATURE_KEY_BYTES, HUNTING_SECONDS, LIST_SIZE, PreyBonus, PreyOption, SLOT_COUNT,
+    BonusType, CREATURE_KEY_BYTES, HUNTING_SECONDS, PreyBonus, PreyOption, SLOT_COUNT,
 };
 use sqlx::{Row, postgres::PgRow};
 
@@ -31,7 +31,7 @@ pub(in crate::durability) fn decode_xp_slot(
         || creature.is_empty()
         || creature.len() > CREATURE_KEY_BYTES
         || deadline < 0
-        || list.len() > LIST_SIZE
+        || list.len() > oteryn_gameplay_progression::prey::difficulty::MAX_LIST_SIZE
         || list.iter().enumerate().any(|(index, key)| {
             key.is_empty() || key.len() > CREATURE_KEY_BYTES || list[..index].contains(key)
         })

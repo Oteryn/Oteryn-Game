@@ -1,0 +1,9 @@
+{
+  "mechanic": "0140-prey",
+  "kind": "keybindings",
+  "id": "0140-prey-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+P",
+  "entry": "input.rs::open_key"
+}

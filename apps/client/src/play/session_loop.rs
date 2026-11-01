@@ -17,6 +17,16 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn prey_selected(&self) -> bool {
+        false
+    }
+    fn prey(
+        &mut self,
+        _request: &oteryn_client_runtime::prey::prey::Request,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
+    }
     fn wheel_selected(&self) -> bool {
         false
     }
@@ -73,6 +83,15 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn prey_selected(&self) -> bool {
+        self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
+    }
+    async fn prey(
+        &mut self,
+        request: &oteryn_client_runtime::prey::prey::Request,
+    ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
+        oteryn_client_runtime::prey::send(self, request).await
+    }
     fn wheel_selected(&self) -> bool {
         self.is_selected(oteryn_session::wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
     }
@@ -149,12 +168,21 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.prey_initialize(session.prey_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::Prey(request)) => match session.prey(&request).await {
+                Ok(response) => {
+                    outbox.prey_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Wheel(request)) => match session.wheel(&request).await {
                 Ok(response) => {
                     outbox.wheel_result(&response);

@@ -121,6 +121,10 @@ pub mod quest_log;
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
 
+/// Prey commands and current server-confirmed slot state.
+#[path = "features/0140-prey/protocol.rs"]
+pub mod prey;
+
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 

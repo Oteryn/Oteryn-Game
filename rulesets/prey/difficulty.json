@@ -1,0 +1,94 @@
+{
+  "schema": "OTERYN_PREY_DIFFICULTY_AUTHORING/v1",
+  "decision": "OWNER-DEVIATION PREY-DIFF 2026-11-01",
+  "proposal_status": "awaiting_owner_approval",
+  "experience_thresholds": [
+    100,
+    1000,
+    5000,
+    20000
+  ],
+  "minimum_levels": [
+    1,
+    50,
+    100,
+    250,
+    500
+  ],
+  "list_size": 9,
+  "expanded_list_size": 12,
+  "pick_again_list_multiplier_ppm": 2000000,
+  "pick_again_value_factor_ppm": 300000,
+  "defense_mode": "dealt_or_attacked",
+  "npc_price_policy": "maximum_catalogue_offer",
+  "model": {
+    "seed": 20261101,
+    "date": "2026-11-01",
+    "horizon_hours": 24,
+    "duel_samples": 32,
+    "presets": [
+      {
+        "tier": 1,
+        "level": 8,
+        "skill": 10,
+        "weapon": "oteryn:item.tibia.i3274",
+        "equipment": [
+          "oteryn:item.tibia.i3351",
+          "oteryn:item.tibia.i3357",
+          "oteryn:item.tibia.i3557"
+        ],
+        "shield_item": "oteryn:item.tibia.i3426"
+      },
+      {
+        "tier": 2,
+        "level": 50,
+        "skill": 50,
+        "weapon": "oteryn:item.tibia.i3344",
+        "equipment": [
+          "oteryn:item.tibia.i3351",
+          "oteryn:item.tibia.i3357",
+          "oteryn:item.tibia.i3557"
+        ],
+        "shield_item": "oteryn:item.tibia.i3419"
+      },
+      {
+        "tier": 3,
+        "level": 100,
+        "skill": 100,
+        "weapon": "oteryn:item.tibia.i11693",
+        "equipment": [
+          "oteryn:item.tibia.i3351",
+          "oteryn:item.tibia.i3357",
+          "oteryn:item.tibia.i3557"
+        ],
+        "shield_item": "oteryn:item.tibia.i3419"
+      },
+      {
+        "tier": 4,
+        "level": 300,
+        "skill": 100,
+        "weapon": "oteryn:item.tibia.i30398",
+        "equipment": [
+          "oteryn:item.tibia.i3351",
+          "oteryn:item.tibia.i3357",
+          "oteryn:item.tibia.i3557"
+        ],
+        "shield_item": "oteryn:item.tibia.i3419"
+      },
+      {
+        "tier": 5,
+        "level": 600,
+        "skill": 120,
+        "weapon": "oteryn:item.tibia.i27451",
+        "equipment": [
+          "oteryn:item.tibia.i3351",
+          "oteryn:item.tibia.i3357",
+          "oteryn:item.tibia.i3557"
+        ],
+        "shield_item": "oteryn:item.tibia.i3419"
+      }
+    ],
+    "duel_horizon_seconds": 3600,
+    "preset_status": "source_benchmark_pending_owner_approval"
+  }
+}

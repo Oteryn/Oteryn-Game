@@ -7,7 +7,7 @@ impl FeeBurnCause {
         match self {
             Self::TaskBoardTalisman { .. } => 13,
             Self::Forge { .. } => 14,
-            Self::PreyListReroll { .. } => 12,
+            Self::PreyListReroll { .. } | Self::PreyPickAgain { .. } => 12,
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
             Self::GemGradeUp { .. } => 11,
@@ -26,6 +26,7 @@ impl FeeBurnCause {
             Self::TaskBoardTalisman { occurrence } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
             Self::PreyListReroll { occurrence, .. }
+            | Self::PreyPickAgain { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
             | Self::GemSwitchDomain { occurrence }
             | Self::GemGradeUp { occurrence, .. } => occurrence,
@@ -42,6 +43,11 @@ impl FeeBurnCause {
     pub(super) fn key(&self) -> &str {
         match self {
             Self::TaskBoardTalisman { .. } => "oteryn:taskboard.talisman",
+            Self::PreyPickAgain { slot, .. } => match slot {
+                1 => "oteryn:prey.pick_again.1",
+                2 => "oteryn:prey.pick_again.2",
+                _ => "oteryn:prey.pick_again.3",
+            },
             Self::Forge { .. } => "oteryn:service.forge",
             Self::PreyListReroll { slot, .. } => match slot {
                 1 => "oteryn:prey.list_reroll.1",
@@ -79,7 +85,7 @@ impl FeeBurnCause {
                 }
                 Ok(())
             }
-            Self::PreyListReroll { slot: 1..=3, .. } => Ok(()),
+            Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
                 Ok(())
             }
@@ -131,7 +137,7 @@ impl FeeBurnCause {
                     proof: proof.clone(),
                 })
             }
-            Self::PreyListReroll { occurrence, .. } => {
+            Self::PreyListReroll { occurrence, .. } | Self::PreyPickAgain { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),
                     occurrence: occurrence.to_vec(),

@@ -29,6 +29,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
+    oteryn_protocol_oteryn::prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
 ];
@@ -37,6 +38,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+    oteryn_protocol_oteryn::prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,

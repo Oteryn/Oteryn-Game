@@ -2,18 +2,32 @@
   {
     "mechanic": "0140-prey",
     "kind": "handlers",
-    "id": "0140-prey-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0140-prey-command",
+    "status": "supported",
     "commands": [
       160
     ],
+    "direction": "client_to_server",
+    "capability": 140,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Difficulty, entitlements and prices are server-owned state; no local authority settings."
     }
+  },
+  {
+    "mechanic": "0140-prey",
+    "kind": "keybindings",
+    "id": "0140-prey-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+P",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0140-prey",
+    "kind": "panels",
+    "id": "0140-prey-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

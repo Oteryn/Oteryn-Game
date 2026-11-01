@@ -1,5 +1,6 @@
 //! Existing CREATURE-AI-0 proposal → current Channel HP/condition owner. No new schedule/RNG owner.
 use std::collections::BTreeMap;
+mod activity_time;
 pub mod composed;
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityEffect,

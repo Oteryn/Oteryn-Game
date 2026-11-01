@@ -746,6 +746,7 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_familiar_receipts",
     "game_character_monk_state_receipts",
     "game_character_premium_revision_chain",
+    "game_character_prey_receipts",
     "game_character_proficiency_receipts",
     "game_character_quest_receipts",
     "game_character_stance_receipts",

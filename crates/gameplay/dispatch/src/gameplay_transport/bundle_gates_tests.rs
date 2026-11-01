@@ -760,6 +760,12 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
+    // PREY-DIFF (2026-11-01): the loot fixture supplies combat only;
+    // its qualified room remains None.
+    (
+        "gameplay_transport/postgres_tests/prey_loot_measurement.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
