@@ -2,6 +2,10 @@
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+
+import event_item_profiles
+import hireling_item_profiles
 
 import register_spell_families
 
@@ -10,6 +14,29 @@ PROFILE = 'content/items/definitions/spell-native-profiles.json'
 
 
 class EventItemProfilePrecedence(unittest.TestCase):
+    def test_event_admission_preserves_hireling_and_ranged_profiles(self):
+        admit = event_item_profiles.admit
+
+        def checked_admit(root, generated, profile_path, *args):
+            before = {row['production_definition']['production_key']: row
+                      for row in json.loads(generated[profile_path])['records']}
+            hireling = json.loads((root / hireling_item_profiles.PATH).read_bytes())
+            for row in hireling['records']:
+                self.assertIn(row['production_definition']['production_key'], before)
+            self.assertIn('ranged', before['oteryn:item.tibia.i3447']['authoring'])
+            admit(root, generated, profile_path, *args)
+            after = {row['production_definition']['production_key']: row
+                     for row in json.loads(generated[profile_path])['records']}
+            for key, row in before.items():
+                self.assertEqual(after[key], row, key)
+            events = json.loads((root / event_item_profiles.PATH).read_bytes())
+            for row in events['records']:
+                self.assertIn(row['production_definition']['production_key'], after)
+
+        with patch.object(event_item_profiles, 'admit', side_effect=checked_admit) as admission:
+            register_spell_families.outputs(ROOT)
+        admission.assert_called_once()
+
     def test_task_board_weapon_semantics_survive_event_registration(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/task-board-item-profiles.json').read_bytes())
         expected = {row['production_definition']['production_key']: row
@@ -17,8 +44,12 @@ class EventItemProfilePrecedence(unittest.TestCase):
         generated = register_spell_families.outputs(ROOT)
         actual = {row['production_definition']['production_key']: row
                   for row in json.loads(generated[PROFILE])['records']}
+        taxonomy = {row['target']['key']: row['source_taxonomy'] for row in
+                    json.loads((ROOT / 'content/items/taxonomy/items.json').read_bytes())['records']}
         for item in (21178, 21179, 21180):
             key = f'oteryn:item.tibia.i{item}'
+            # The hireling owner installs source taxonomy before event admission.
+            expected[key]['authoring']['taxonomy'] = taxonomy[key]
             self.assertEqual(actual[key], expected[key], key)
 
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):

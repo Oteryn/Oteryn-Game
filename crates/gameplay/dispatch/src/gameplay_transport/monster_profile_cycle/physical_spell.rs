@@ -197,6 +197,16 @@ pub(super) async fn execute(
             Ok(None) => &parent_source,
             Err(_) => continue,
         };
+        let phosphorus_curse = source.ability.key == "oteryn:ability.spell.phosphorus_curse";
+        // Keep the event's exact source qualification even though the current cycle
+        // also supports ordinary conditions and composed monster attacks.
+        if phosphorus_curse
+            && !native.creature_profiles().records.iter().any(|record| {
+                oteryn_gameplay_encounters::bosses::summer_2026::is_phosphorus_curse(record, source)
+            })
+        {
+            continue;
+        }
         let Ok(stamp) = runtime.issue_owner_work() else {
             return;
         };
@@ -243,7 +253,13 @@ pub(super) async fn execute(
             }
         } else {
             let mut spells = std::mem::take(&mut states.monster_spells);
-            let result = spells.execute_current(
+            let execute = if phosphorus_curse {
+                crate::creature_damage_spell::DamageSpellOwner::execute_current_target_condition
+            } else {
+                crate::creature_damage_spell::DamageSpellOwner::execute_current
+            };
+            let result = execute(
+                &mut spells,
                 runtime,
                 stamp,
                 states,

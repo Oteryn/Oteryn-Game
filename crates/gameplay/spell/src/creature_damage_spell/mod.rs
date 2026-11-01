@@ -1310,6 +1310,43 @@ impl DamageSpellOwner {
         self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
     }
 
+    /// A zero-primary, target-only condition uses the same cast receipt and canonical
+    /// condition store. Its caller must qualify the source body and current condition policy.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "current runtime, exact source/proposal and independent world/vitals owners remain explicit"
+    )]
+    pub fn execute_current_target_condition(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        if source.list != ScheduleList::Attack
+            || !source.needs_target
+            || source.needs_direction
+            || source.minimum != 0
+            || source.maximum != 0
+            || source.conditions.is_empty()
+            || source.conditions.len() > 16
+            || source.area.is_some()
+            || source.chain.is_some()
+            || source.windup.is_some()
+            || !source.variants.is_empty()
+            || !source.appearances.is_empty()
+            || source.dispel_invisible
+            || source.appearance_cast
+            || source.source_none_correction
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
+        self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
+    }
+
     /// Execute a source-bound ice, fire or energy circle spell under the runtime's own current fence.
     /// The restricted shape needs no external condition authority or timer installation.
     #[allow(clippy::too_many_arguments)]

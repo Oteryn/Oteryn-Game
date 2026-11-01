@@ -314,6 +314,9 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     # is present, including the weapons sold by the source Hireling catalogue.
     import ranged_item_profiles
     ranged_item_profiles.apply_native(root, generated)
+    # Event action facts must not replace any established owner's Item semantics.
+    import event_item_profiles
+    event_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
