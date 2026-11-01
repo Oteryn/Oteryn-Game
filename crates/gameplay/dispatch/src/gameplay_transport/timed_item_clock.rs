@@ -55,6 +55,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
         self.drain_corpse_deadlines().await;
         self.refresh_terrain_tools().await;
+        // PAR-M10: transformed map entries whose items.xml duration ran out decay back, under the
+        // Channel owner guard that serializes every map transform.
+        if let Some(map) = self.bundle_map() {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_ok() {
+                map.facts.expire_entry_decays(self.owner_now().get());
+            }
+        }
 
         let sessions = {
             let runtime = self.runtime.lock().await;

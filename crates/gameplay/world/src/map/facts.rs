@@ -34,6 +34,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod entry_decay;
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
 
@@ -105,6 +106,8 @@ pub struct BundleFacts {
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
     callbacks: Mutex<Arc<CallbackStates>>,
+    /// Timed reverts of transformed base entries (PAR-M10); never part of a snapshot.
+    entry_decays: Mutex<entry_decay::EntryDecays>,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -142,6 +145,7 @@ impl BundleFacts {
             doors: DoorBook::default(),
             rotations: Mutex::default(),
             callbacks: Mutex::default(),
+            entry_decays: Mutex::default(),
         })
     }
 

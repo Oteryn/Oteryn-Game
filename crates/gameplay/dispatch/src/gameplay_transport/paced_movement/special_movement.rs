@@ -89,6 +89,22 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
     })
 }
 
+/// Crystal `constants.lua:5-6`.
+const BATHTUB_FILLED: u16 = 26077;
+const BATHTUB_FILLED_NOTMOVABLE: u16 = 26100;
+/// `items.xml:18277,18283`: every snow footprint 6594..=6608 lasts 10 s.
+const SNOW_FOOTPRINT_DECAY_US: u64 = 10_000_000;
+
+/// `snow.lua:11-15,23`: 799 leaves 6594 and 6580..=6593 leave `id + 15`; each decays back to the
+/// snow it came from (`items.xml:18278,18284-18362`).
+fn snow_footprint(id: u16) -> Option<u16> {
+    match id {
+        799 => Some(6594),
+        6580..=6593 => Some(id + 15),
+        _ => None,
+    }
+}
+
 fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: position.x.try_into().ok()?,
@@ -252,6 +268,8 @@ impl ChannelSpellStates {
                 563 => Some(564),
                 549 => Some(562),
                 10145 => Some(10146),
+                // bath_tub.lua:3-14: the filled bath tub becomes its not-movable form.
+                BATHTUB_FILLED => Some(BATHTUB_FILLED_NOTMOVABLE),
                 _ => None,
             };
             if let Some(transformed) = transformed {
@@ -333,6 +351,24 @@ impl ChannelSpellStates {
                 };
                 if let Some(open) = pressure {
                     changed |= transform(map, key, open);
+                }
+                // bath_tub.lua:25-31: leaving the not-movable bath tub restores the filled one.
+                if entry.appearance_id == BATHTUB_FILLED_NOTMOVABLE {
+                    changed |= transform(map, key, BATHTUB_FILLED);
+                }
+                // snow.lua:3-21: stepping off snow leaves a footprint that decays back after its
+                // items.xml duration (:18274-18363). Oteryn has no ghost mode, so the ghost check
+                // (snow.lua:9) never returns early; the "Snowbunny" achievement (:19) is not kept.
+                if let Some(footprint) = snow_footprint(entry.appearance_id)
+                    && transform(map, key, footprint)
+                {
+                    changed = true;
+                    map.facts.schedule_entry_decay(
+                        key,
+                        map.facts.object_revision(key),
+                        now.saturating_add(SNOW_FOOTPRINT_DECAY_US),
+                        entry.appearance_id,
+                    );
                 }
                 if !origin_protection_zone
                     && matches!(entry.appearance_id, 2146 | 2148 | 3945 | 44530)
@@ -425,13 +461,21 @@ mod tests {
     use super::*;
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
 
-    // Exercise the same bundle projection and actor owner as committed paced movement.
-    fn movement_case(
+    type CaseResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    /// A bundle row whose tile at x 6 holds `before` (and `after` in the palette), and a player.
+    fn movement_map(
         before: u16,
         after: u16,
         protection_zone: bool,
-        reverses: bool,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        check: impl FnOnce(
+            &mut ChannelSpellStates,
+            &ChannelRuntimeV1,
+            &BundleMap,
+            ExactActorRef,
+            GameSessionId,
+        ) -> CaseResult,
+    ) -> CaseResult {
         use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
         use crate::map::boot::{self, BundleCollisionIndexExt};
         use std::num::NonZeroU32;
@@ -506,59 +550,75 @@ mod tests {
         else {
             return Err("bundle collision".into());
         };
-        let map = collision.map();
-        let at = MovementLocalPosition {
-            x: 6,
-            y: 0,
-            floor: 7,
-        };
-        let away = MovementLocalPosition { x: 1, ..at };
-        let key = placement_key(pos, 1).ok_or("placement")?;
-        let current = || map.facts.base_entry(pos, 1, 0).map(|e| e.appearance_id);
-        let health = states
-            .get(&runtime, actor, session)
-            .ok_or("player")?
-            .vitals()
-            .health;
-        let revision = map.facts.object_revision(key);
-        assert_eq!(current(), Some(before));
-        assert_eq!(
-            states.stage_special_movement_step(
-                &runtime,
-                map,
-                actor,
-                session,
-                1,
-                Some(away),
-                at,
-                Some(false)
-            ),
-            before != after
-        );
-        assert_eq!(current(), Some(after));
-        assert_eq!(
-            states
-                .get(&runtime, actor, session)
-                .ok_or("player")?
-                .vitals()
-                .health,
-            health
-        );
-        if before == after {
-            assert_eq!(map.facts.object_revision(key), revision);
-        }
-        states.stage_special_movement_step(
-            &runtime,
-            map,
-            actor,
-            session,
-            2,
-            Some(at),
-            away,
-            Some(false),
-        );
-        assert_eq!(current(), Some(if reverses { before } else { after }));
-        Ok(())
+        check(&mut states, &runtime, collision.map(), actor, session)
+    }
+
+    // Exercise the same bundle projection and actor owner as committed paced movement.
+    fn movement_case(before: u16, after: u16, protection_zone: bool, reverses: bool) -> CaseResult {
+        movement_map(
+            before,
+            after,
+            protection_zone,
+            |states, runtime, map, actor, session| {
+                let pos = TilePos {
+                    x: 6,
+                    y: 0,
+                    floor: -7,
+                };
+                let at = MovementLocalPosition {
+                    x: 6,
+                    y: 0,
+                    floor: 7,
+                };
+                let away = MovementLocalPosition { x: 1, ..at };
+                let key = placement_key(pos, 1).ok_or("placement")?;
+                let current = || map.facts.base_entry(pos, 1, 0).map(|e| e.appearance_id);
+                let health = states
+                    .get(runtime, actor, session)
+                    .ok_or("player")?
+                    .vitals()
+                    .health;
+                let revision = map.facts.object_revision(key);
+                assert_eq!(current(), Some(before));
+                assert_eq!(
+                    states.stage_special_movement_step(
+                        runtime,
+                        map,
+                        actor,
+                        session,
+                        1,
+                        Some(away),
+                        at,
+                        Some(false)
+                    ),
+                    before != after
+                );
+                assert_eq!(current(), Some(after));
+                assert_eq!(
+                    states
+                        .get(runtime, actor, session)
+                        .ok_or("player")?
+                        .vitals()
+                        .health,
+                    health
+                );
+                if before == after {
+                    assert_eq!(map.facts.object_revision(key), revision);
+                }
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    2,
+                    Some(at),
+                    away,
+                    Some(false),
+                );
+                assert_eq!(current(), Some(if reverses { before } else { after }));
+                Ok(())
+            },
+        )
     }
 
     #[test]
@@ -596,6 +656,75 @@ mod tests {
                 }
                 Ok(())
             })?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
+    /// Crystal snow.lua:3-21 and items.xml:18274-18363: a step off snow leaves its footprint,
+    /// which decays back to that snow after 10 s; a step onto snow changes nothing.
+    #[test]
+    fn m10_snow_step_out_leaves_a_footprint_that_decays_after_ten_seconds() -> CaseResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                for (snow, footprint) in [(799, 6594), (6580, 6595), (6593, 6608)] {
+                    movement_map(
+                        snow,
+                        footprint,
+                        false,
+                        |states, runtime, map, actor, session| {
+                            let pos = TilePos {
+                                x: 6,
+                                y: 0,
+                                floor: -7,
+                            };
+                            let at = MovementLocalPosition {
+                                x: 6,
+                                y: 0,
+                                floor: 7,
+                            };
+                            let away = MovementLocalPosition { x: 1, ..at };
+                            let current =
+                                || map.facts.base_entry(pos, 1, 0).map(|e| e.appearance_id);
+                            let step = |states: &mut ChannelSpellStates, now, from, to| {
+                                states.stage_special_movement_step(
+                                    runtime,
+                                    map,
+                                    actor,
+                                    session,
+                                    now,
+                                    Some(from),
+                                    to,
+                                    Some(false),
+                                )
+                            };
+                            step(states, 1_000_000, away, at);
+                            assert_eq!(current(), Some(snow));
+                            assert!(step(states, 2_000_000, at, away));
+                            assert_eq!(current(), Some(footprint));
+                            assert_eq!(map.facts.pending_entry_decays(), 1);
+                            assert!(!map.facts.expire_entry_decays(11_999_999));
+                            assert_eq!(current(), Some(footprint));
+                            assert!(map.facts.expire_entry_decays(12_000_000));
+                            assert_eq!(current(), Some(snow));
+                            assert_eq!(map.facts.pending_entry_decays(), 0);
+                            Ok(())
+                        },
+                    )?;
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
+    /// Crystal bath_tub.lua:3-14,25-31 with constants.lua:5-6: entering the filled bath tub
+    /// 26077 turns it into 26100, and leaving 26100 turns it back.
+    #[test]
+    fn m10_bath_tub_step_in_and_out_transform() -> CaseResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| movement_case(26077, 26100, false, true))?
             .join()
             .map_err(|_| "movement test thread")?
     }
