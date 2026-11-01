@@ -23,7 +23,10 @@ use super::character_equipment::{EquipmentError, assert_current_equipment_in_tra
 use super::ground_cell_limit::{
     GroundCellAdmissionError, GroundCellLimitError, check_ground_cell_root_insert_with_recovery,
 };
-use super::item_mint::{GroundItemInstance, GroundPlacement, TypedDefinitionRef, uuid_text};
+use super::item_mint::{
+    GroundItemInstance, GroundPlacement, TypedDefinitionRef, decode_ground_scope,
+    ground_scope_columns, uuid_text,
+};
 use super::item_transfer::{
     BackpackEntry, CurrentCharacterItemFence, GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem,
     ItemDefinitionFacts, ItemWeightLookup, ItemWeightRefused, load_entries, load_slot,
@@ -34,7 +37,7 @@ use super::spell_item_transaction::SpellItemError;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
-use crate::foundation::{ChannelId, CommandRef, WorldId};
+use crate::foundation::{ChannelId, CommandRef, RuntimeScopeRefV1, WorldId};
 use oteryn_gameplay_items::item_capacity::{
     CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity,
 };
@@ -816,10 +819,10 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             (if matches!(
                 source,
                 SourceKind::Ground
-                | SourceKind::Depot
-                | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. }
+                    | SourceKind::Depot
+                    | SourceKind::Corpse
+                    | SourceKind::Inbox
+                    | SourceKind::CustodyNested { .. }
             ) {
                 size
             } else {
@@ -844,10 +847,10 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     if matches!(
         source,
         SourceKind::Ground
-                | SourceKind::Depot
-                | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. }
+            | SourceKind::Depot
+            | SourceKind::Corpse
+            | SourceKind::Inbox
+            | SourceKind::CustodyNested { .. }
     ) {
         let unit = match content.weight_of(definition) {
             Ok(unit) => unit,
@@ -855,7 +858,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
         };
         let carried = carried_weight(tx, character, world, content).await?;
-        let capacity = read_derived_transfer_capacity_centi_oz(tx, character).await?;
+        let capacity = read_derived_transfer_capacity_centi_oz(tx, character, content).await?;
         let incoming_item = InventoryItem {
             // A preflight has no durable identity yet. The pure weight planner needs only
             // one unique incoming root; this sentinel is never stored or used as a source.
@@ -902,12 +905,25 @@ async fn apply_loop_move<C: ItemLoopContent>(
     search: Option<i16>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
-    let (world_id, channel_id) =
-        scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
-    let world = *world_id.as_bytes();
-    let channel = *channel_id.as_bytes();
+    let scope = fence.runtime_scope;
+    let world = *scope.world_id().as_bytes();
+    let (scope_kind, channel, instance) = ground_scope_columns(scope);
     let digest = content.loop_content_digest();
-    assert_current_equipment_in_transaction(tx, record, node, fence, Some(command), digest).await?;
+    match scope {
+        RuntimeScopeRefV1::Channel { .. } => {
+            assert_current_equipment_in_transaction(tx, record, node, fence, Some(command), digest)
+                .await?;
+        }
+        RuntimeScopeRefV1::Instance { .. } => {
+            assert_recovery_fence(tx, record).await?;
+            super::db::lock_admission_relations(tx).await?;
+            if !super::item_transfer::assert_activity_item_content(tx, node, fence, command, digest)
+                .await?
+            {
+                return refuse(LoopMoveRefusal::Rejected);
+            }
+        }
+    }
 
     // The source: locked first, then read in its own statement so the location is current.
     let Some((definition, quantity, revision)) = lock_live_item(tx, request.item, world).await?
@@ -919,7 +935,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
-                g.channel_id::text AS ground_channel, g.spatial_position AS ground_cell, \
+                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) AS loop_pickup \
            FROM game_item_instances i \
@@ -936,9 +952,12 @@ async fn apply_loop_move<C: ItemLoopContent>(
     let entry_character = optional_uuid(row.try_get("entry_character")?)?;
     let nested_parent = optional_uuid(row.try_get("nested_parent")?)?;
     let ground_channel = optional_uuid(row.try_get("ground_channel")?)?;
+    let ground_instance = optional_uuid(row.try_get("ground_instance")?)?;
+    let ground_kind: Option<i16> = row.try_get("ground_scope_kind")?;
+    let has_ground = ground_kind.is_some();
     let ground_cell: Option<Vec<u8>> = row.try_get("ground_cell")?;
-    if ground_channel.is_some() != request.pickup_cell.is_some()
-        || (ground_channel.is_some() && ground_cell != request.pickup_cell)
+    if has_ground != request.pickup_cell.is_some()
+        || (has_ground && ground_cell != request.pickup_cell)
     {
         return refuse(LoopMoveRefusal::Stale);
     }
@@ -982,8 +1001,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
             }
             _ => return refuse(LoopMoveRefusal::Stale),
         }
-    } else if let Some(ground) = ground_channel {
-        if ground != channel {
+    } else if has_ground {
+        if ground_kind != Some(scope_kind)
+            || ground_channel != channel
+            || ground_instance != instance
+        {
             return refuse(LoopMoveRefusal::Stale);
         }
         if !row.try_get::<bool, _>("loop_pickup")? {
@@ -1079,22 +1101,28 @@ async fn apply_loop_move<C: ItemLoopContent>(
         Target::Ground(mut ground) => {
             // ITEMMOVE1-RL-02: the channel's row lock serializes its drops, so the count read
             // after it is exact; a drop over the cap is BLOCKED.
-            sqlx::query(
-                "INSERT INTO game_item_loop_drop_channels (world_id, channel_id) \
-                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid) \
-                 ON CONFLICT (world_id, channel_id) DO UPDATE SET world_id = EXCLUDED.world_id",
-            )
-            .bind(world.as_slice())
-            .bind(channel.as_slice())
-            .execute(&mut **tx)
-            .await?;
+            let counter = match scope {
+                RuntimeScopeRefV1::Channel { .. } => {
+                    "INSERT INTO game_item_loop_drop_channels(world_id,channel_id,scope_kind,instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid) ON CONFLICT(world_id,channel_id) DO UPDATE SET world_id=EXCLUDED.world_id"
+                }
+                RuntimeScopeRefV1::Instance { .. } => {
+                    "INSERT INTO game_item_loop_drop_channels(world_id,channel_id,scope_kind,instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid) ON CONFLICT(world_id,instance_id) DO UPDATE SET world_id=EXCLUDED.world_id"
+                }
+            };
+            sqlx::query(counter)
+                .bind(world.as_slice())
+                .bind(channel.map(|id| id.to_vec()))
+                .bind(scope_kind)
+                .bind(instance.map(|id| id.to_vec()))
+                .execute(&mut **tx)
+                .await?;
             let dropped: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_item_ground_locations \
-                  WHERE world_id = encode($1,'hex')::uuid AND channel_id = encode($2,'hex')::uuid \
+                  WHERE world_id = encode($1,'hex')::uuid AND scope_kind=$3 AND channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND instance_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
                     AND game_item_loop_drop_ref(corpse_ref)",
             )
             .bind(world.as_slice())
-            .bind(channel.as_slice())
+            .bind(channel.map(|id| id.to_vec())).bind(scope_kind).bind(instance.map(|id| id.to_vec()))
             .fetch_one(&mut **tx)
             .await?;
             if dropped + 1 > ITEM_LOOP_CHANNEL_DROPS_MAX {
@@ -1197,11 +1225,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         "INSERT INTO game_item_loop_move_receipts (transaction_id, event_id, character_id, \
                 game_session_id, command_id, connection_generation, lease_generation, world_id, \
                 channel_id, scope_generation, content_digest, operation, line_count, intent, \
-                intent_sha256, depot_town, depot_box, quick_loot_ordinal) \
+                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, $5::text::numeric(20,0), $6::text::numeric(20,0), \
                  $7::text::numeric(20,0), encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
-                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17)",
+                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid)",
     )
     .bind(transaction_id.as_slice())
     .bind(event_id.as_slice())
@@ -1211,7 +1239,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(fence.connection_generation.get().to_string())
     .bind(fence.character_lease_generation.to_string())
     .bind(world.as_slice())
-    .bind(channel.as_slice())
+    .bind(channel.map(|id| id.to_vec()))
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(digest.as_slice())
     .bind(operation)
@@ -1220,6 +1248,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
     .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
+    .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
     for (index, line) in lines.iter().enumerate() {
@@ -1260,9 +1289,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 "DELETE FROM game_item_nested_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid"
             }
-            SourceKind::Inbox => {
-                "SELECT game_depot_search_inbox_remove(encode($1,'hex')::uuid)"
-            }
+            SourceKind::Inbox => "SELECT game_depot_search_inbox_remove(encode($1,'hex')::uuid)",
             SourceKind::Corpse => {
                 "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id = encode($1,'hex')::uuid"
             }
@@ -1360,19 +1387,20 @@ async fn apply_loop_move<C: ItemLoopContent>(
                     "INSERT INTO game_item_ground_locations (item_instance_id, world_id, \
                             channel_id, runtime_scope_ownership_generation, spatial_position, \
                             corpse_ref, map_revision, content_revision, \
-                            native_room_placement_context) \
+                            native_room_placement_context, scope_kind, instance_id) \
                      VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
-                             encode($3,'hex')::uuid, $4::text::numeric(20,0), $5, $6, $7, $8, $9)",
+                             encode($3,'hex')::uuid, $4::text::numeric(20,0), $5, $6, $7, $8, $9, $10, encode($11,'hex')::uuid)",
                 )
                 .bind(placed_item.as_slice())
                 .bind(world.as_slice())
-                .bind(channel.as_slice())
+                .bind(channel.map(|id| id.to_vec()))
                 .bind(fence.scope_ownership_generation.get().to_string())
                 .bind(ground.spatial_position.as_slice())
                 .bind(ground.corpse_ref.as_slice())
                 .bind(&ground.map_revision)
                 .bind(&ground.content_revision)
                 .bind(ground.native_room_placement_context.as_slice())
+                .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
                 .execute(&mut **tx)
                 .await?;
             }
@@ -1449,8 +1477,7 @@ impl DurabilityRoot {
                             content.loop_content_digest(),
                         )
                         .await?;
-                        let (world, _) = scope_of(&fence)
-                            .map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                        let world = fence.runtime_scope.world_id();
                         if matches!(destination, LoopDestination::Ground(_))
                             || mint.item.container_capacity.is_some()
                             || content.loop_facts(&mint.item.definition).as_ref()
@@ -1720,18 +1747,23 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         container: [u8; 16],
     ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
-        let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
-            Box::pin(async move {
-                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &record).await?;
-                let root = ground_container_path(&mut tx, world, container).await?
-                    .and_then(|path| path.last().copied());
-                super::db::commit_semantic_transaction(tx, deadline).await?;
-                Ok(root)
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let world = fence.runtime_scope.world_id();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let root = ground_container_path(&mut tx, world, container)
+                        .await?
+                        .and_then(|path| path.last().copied());
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(root)
+                })
             })
-        }).await
+            .await
     }
 
     /// Container below a proven Ground root at the exact owner-observed placement. This
@@ -1747,8 +1779,11 @@ impl DurabilityRoot {
         root: [u8; 16],
         ground: LoopGround,
     ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
-        let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let world = fence.runtime_scope.world_id();
+        let (scope_kind, channel, instance) = ground_scope_columns(fence.runtime_scope);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
                 let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
@@ -1769,9 +1804,30 @@ impl DurabilityRoot {
                 }
                 // Ground rows have no runtime UPDATE grant: retain the existing
                 // location-owner lock rather than FOR SHARE on the Ground table.
-                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
-                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-                    .execute(&mut *tx).await?;
+                // Keep the key-33 acquisition in this inventoried read-only owner.
+                // Channel bytes stay unchanged; Instance uses its tagged assignment key.
+                let mut key = Vec::with_capacity(33);
+                match fence.runtime_scope {
+                    crate::foundation::RuntimeScopeRefV1::Channel {
+                        world_id,
+                        channel_id,
+                    } => {
+                        key.extend_from_slice(world_id.as_bytes());
+                        key.extend_from_slice(channel_id.as_bytes());
+                    }
+                    crate::foundation::RuntimeScopeRefV1::Instance {
+                        world_id,
+                        instance_id,
+                    } => {
+                        key.push(super::runtime_scope_assignment::assignment_scope_key(fence.runtime_scope)[0]);
+                        key.extend_from_slice(world_id.as_bytes());
+                        key.extend_from_slice(&instance_id);
+                    }
+                }
+                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),33))")
+                    .bind(key)
+                    .execute(&mut *tx)
+                    .await?;
                 if ground_container_path(&mut tx, world, container).await?.as_ref() != Some(&path) {
                     return Ok(None);
                 }
@@ -1782,7 +1838,7 @@ impl DurabilityRoot {
                          USING (item_instance_id, world_id) \
                        JOIN game_item_instances target ON target.item_instance_id=encode($9,'hex')::uuid \
                       WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
-                        AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
+                        AND i.world_id=encode($2,'hex')::uuid AND g.scope_kind=$10 AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($11,'hex')::uuid \
                         AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
                         AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
                             = ($5,$6,$7,$8) \
@@ -1791,9 +1847,10 @@ impl DurabilityRoot {
                       FOR SHARE OF i, target",
                 )
                 .bind(root.as_slice()).bind(world.as_bytes().as_slice())
-                .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(channel.map(|id| id.to_vec())).bind(fence.scope_ownership_generation.get().to_string())
                 .bind(&ground.spatial_position).bind(&ground.map_revision)
                 .bind(&ground.content_revision).bind(&ground.placement_context).bind(container.as_slice())
+                .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
                 .fetch_optional(&mut *tx).await?;
                 let read = match row {
                     None => None,
@@ -1830,12 +1887,24 @@ impl DurabilityRoot {
         world: WorldId,
         channel: ChannelId,
     ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
+        self.read_item_loop_ground_for_scope(RuntimeScopeRefV1::channel(world, channel))
+            .await
+    }
+
+    /// Complete Ground read of one exact runtime namespace. Private Instance
+    /// rows cannot enter the origin Channel's overlay or pickup catalogue.
+    pub async fn read_item_loop_ground_for_scope(
+        &self,
+        scope: RuntimeScopeRefV1,
+    ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
+        let world = scope.world_id();
+        let (scope_kind, channel, instance) = ground_scope_columns(scope);
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let rows = sqlx::query(
-                        "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, \
+                        "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                                 i.definition_family, i.definition_production_key, \
                                 i.definition_revision_ref, i.quantity, \
                                 i.minted_transaction_id::text, \
@@ -1849,7 +1918,7 @@ impl DurabilityRoot {
                            LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
                            LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
-                            AND g.channel_id = encode($2,'hex')::uuid AND i.lifecycle = 1 \
+                            AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                             AND (game_item_loop_drop_ref(g.corpse_ref) \
                                  OR game_item_loop_map_mint_source(i.item_instance_id) \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
@@ -1857,8 +1926,9 @@ impl DurabilityRoot {
                           LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
-                    .bind(channel.as_bytes().as_slice())
+                    .bind(channel.map(|id| id.to_vec()))
                     .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + 1)
+                    .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
                     .fetch_all(&mut *tx)
                     .await?;
                     // Keep the bounded Ground read fail-closed, including pending map pickups.
@@ -1883,10 +1953,7 @@ impl DurabilityRoot {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                                 world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
                                     .map_err(invalid)?,
-                                channel_id: ChannelId::decode(&uuid_text(
-                                    row.try_get("channel_id")?,
-                                )?)
-                                .map_err(invalid)?,
+                                runtime_scope: decode_ground_scope(row)?,
                                 definition: TypedDefinitionRef {
                                     family: row.try_get("definition_family")?,
                                     production_key: row.try_get("definition_production_key")?,

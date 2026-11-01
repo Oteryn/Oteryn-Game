@@ -66,7 +66,7 @@ pub(super) fn encode(
     event: &str,
     occurred: i64,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let stow = matches!(request.intent.action, StashAction::Stow(_));
     let items = plan
         .lines
@@ -119,13 +119,83 @@ pub(super) fn encode(
         items,
         value: Some(value),
     };
+    encode_operation(
+        fence,
+        request.command,
+        operation,
+        transaction,
+        event,
+        occurred,
+        1,
+    )
+}
+
+/// Schema2 adds the Task Board sink while the legacy stow/withdraw writer keeps
+/// schema1 byte-for-byte. This debit creates no replacement ItemInstances.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn encode_task_board_consumption(
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: &[u8],
+    definition: &TypedDefinitionRef,
+    entry: &str,
+    amount: u32,
+    before: i64,
+    transaction: &str,
+    event: &str,
+    occurred: i64,
+) -> Result<Vec<u8>, DurabilityError> {
+    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let after = before
+        .checked_sub(i64::from(amount))
+        .filter(|value| *value >= 0)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if amount == 0 || intent.len() > oteryn_protocol_oteryn::task_board::full::MAX_REQUEST_BYTES {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let operation = StashOperationV1 {
+        interpretation_revision: 2,
+        conversion_kind: 3,
+        intent: intent.to_vec(),
+        items: Vec::new(),
+        value: Some(StashValueLineV1 {
+            entry: uuid_text(entry)?.to_vec(),
+            asset: format!(
+                "stash:{}@{}",
+                definition.production_key, definition.revision_ref
+            ),
+            character: fence.character_id.as_bytes().to_vec(),
+            world: world.as_bytes().to_vec(),
+            kind: 3,
+            class: 2,
+            amount,
+            quantity_before: u64::try_from(before)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            quantity_after: u64::try_from(after)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        }),
+    };
+    encode_operation(fence, command, operation, transaction, event, occurred, 2)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_operation(
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    operation: StashOperationV1,
+    transaction: &str,
+    event: &str,
+    occurred: i64,
+    schema_revision: u32,
+) -> Result<Vec<u8>, DurabilityError> {
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let payload = envelope::encode_bounded(&operation, 34_000)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let value = EventEnvelopeV1 {
         envelope_revision: 1,
         event_id: uuid_text(event)?.to_vec(),
         event_type_id: 9,
-        event_schema_revision: 1,
+        event_schema_revision: schema_revision,
         durability_class: envelope::DURABLE_AUDIT,
         privacy_class: envelope::RESTRICTED_PLAYER_LINKED,
         retention_profile_id: "ECONOMY_LEDGER_RETENTION_V1".into(),
@@ -134,7 +204,7 @@ pub(super) fn encode(
         channel_id: Some(channel.as_bytes().to_vec()),
         game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
         connection_generation: Some(fence.connection_generation.get()),
-        command_id: Some(request.command.command_id().get()),
+        command_id: Some(command.command_id().get()),
         transaction_event: Some(TransactionEventRefV1 {
             transaction_id: uuid_text(transaction)?.to_vec(),
             ordinal: 1,
@@ -143,7 +213,7 @@ pub(super) fn encode(
         causation: Some(CausationRefV1 {
             cause: Some(CausationV1::Command(EnvelopeCommandRefV1 {
                 game_session_id: fence.game_session_id.as_bytes().to_vec(),
-                command_id: request.command.command_id().get(),
+                command_id: command.command_id().get(),
             })),
         }),
         server_build_id: super::super::character_authority::SERVER_BUILD_ID.into(),

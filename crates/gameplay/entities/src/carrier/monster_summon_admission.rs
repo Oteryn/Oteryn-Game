@@ -10,13 +10,8 @@ impl ChannelRuntimeV1 {
         at: MovementLocalPosition,
     ) -> Result<ExactActorRef, CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }
@@ -128,6 +123,16 @@ impl ChannelRuntimeV1 {
             self.carrier.occupied = occupied;
             return Err(e);
         }
+        if let Err(error) = self
+            .carrier
+            .inherit_soulpit_summon(&self.continuity, parent, child)
+        {
+            self.carrier.native_summons.remove_child(child);
+            self.carrier.slots = slots;
+            self.carrier.free_head = free;
+            self.carrier.occupied = occupied;
+            return Err(error);
+        }
         Ok(child)
     }
     pub fn retire_native_summons(
@@ -136,13 +141,8 @@ impl ChannelRuntimeV1 {
         stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     ) -> Result<usize, CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }
@@ -195,13 +195,8 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
     ) -> Result<(), CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }

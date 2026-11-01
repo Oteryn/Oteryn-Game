@@ -116,6 +116,169 @@ fn pass(
         crate::foundation::owner_timer::SemanticTimeMicros::from_micros(t),
     )
 }
+fn wheel_resistant_condition_state(valid_until: u64) -> Result<PlayerSpellState, String> {
+    let mut state = PlayerSpellState::new(
+        crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Knight,
+            level: 500,
+            magic_level: 10,
+            max_health: 1_000,
+            max_mana: 500,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .ok_or_else(|| "Wheel condition fixture".to_owned())?;
+    state
+        .apply_owner_promotion_transition(true, true, Some(valid_until))
+        .map_err(|error| format!("{error:?}"))?;
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .sockets
+        .gem_values_milli
+        .insert(("Earth Resistance".to_owned(), String::new()), 25_000);
+    state.install_wheel_effects(effects);
+    Ok(state)
+}
+
+#[test]
+fn periodic_preparation_binds_current_element_and_premium_without_consuming_refused_ticks()
+-> Result<(), String> {
+    let (mut runtime, _, actor, session) = ready(0xb7);
+    let root = GameplayDecisionRoot::from_bytes([114; 32]);
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 220,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([114; 16]),
+    };
+    for (element, valid_until, expected) in [
+        (DotElement::Poison, 2_000_000, 30),
+        (DotElement::Fire, 2_000_000, 40),
+        (DotElement::Poison, 1_000_000, 40),
+    ] {
+        let state = wheel_resistant_condition_state(valid_until)?
+            .stage_owned_test_conditions(&[damage_schedule(element, 40)], &facts)
+            .ok_or_else(|| "install periodic condition".to_owned())?;
+        let before = state.clone();
+        let stamp = runtime
+            .issue_owner_work()
+            .map_err(|error| format!("{error:?}"))?;
+        let now = SemanticTimeMicros::from_micros(1_000_000);
+        let refused = crate::spell::periodic_execution::stage_player_periodic_turn(
+            &runtime,
+            &state,
+            actor,
+            session,
+            stamp,
+            now,
+            TickFacts::default(),
+            |_| false,
+        );
+        assert_eq!(refused.err(), Some(SpellCastDisposition::TargetIllegal));
+        assert_eq!(
+            state, before,
+            "refusal preserves the condition cursor and vitals"
+        );
+        let prepared = crate::spell::periodic_execution::stage_player_periodic_turn(
+            &runtime,
+            &state,
+            actor,
+            session,
+            stamp,
+            now,
+            TickFacts::default(),
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?
+        .ok_or_else(|| "due periodic occurrence".to_owned())?;
+        assert_eq!(prepared.predecessor(), &before);
+        assert_eq!(prepared.ticks().len(), 1);
+        let (next, publish) = prepared.into_successor();
+        assert!(publish);
+        assert_eq!(next.vitals().health, 1_000 - expected, "{element:?}");
+        assert_eq!(next.revision(), state.revision() + 1);
+        assert_eq!(state, before, "preparation does not publish a successor");
+    }
+    Ok(())
+}
+
+#[test]
+fn creature_field_entry_uses_the_issued_element_and_preserves_state_if_hit_is_refused()
+-> Result<(), String> {
+    let (runtime, _, actor, _) = ready(0xb6);
+    let root = GameplayDecisionRoot::from_bytes([115; 32]);
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 220,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([115; 16]),
+    };
+    for (element, expected) in [(DotElement::Poison, 30), (DotElement::Fire, 40)] {
+        let state = wheel_resistant_condition_state(2_000_000)?;
+        let before = state.clone();
+        let definition = ConditionDefinition::new_damage_schedule(
+            "test.wheel.field.entry",
+            1,
+            element,
+            DamageSchedule::Fixed {
+                delayed: false,
+                segments: vec![DamageSegment {
+                    count: 3,
+                    interval_ms: 1_000,
+                    amount: 40,
+                }],
+            },
+        )
+        .ok_or_else(|| "initial field condition".to_owned())?;
+        let refused = state.stage_creature_field_contact(
+            "creature:field:test-wheel".to_owned(),
+            &definition,
+            &facts,
+            element,
+            |_, _, _, _| None,
+        );
+        assert!(refused.is_none());
+        assert_eq!(state, before);
+        let mut observed = Vec::new();
+        let (next, damage) = state
+            .stage_creature_field_contact(
+                "creature:field:test-wheel".to_owned(),
+                &definition,
+                &facts,
+                element,
+                |state, amount, hit_element, now| {
+                    observed.push((hit_element, amount, now));
+                    crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        &runtime,
+                        actor,
+                        state,
+                        amount,
+                        crate::player_lethal::PlayerHitKind::from_dot(hit_element),
+                        now,
+                    )
+                    .ok()
+                },
+            )
+            .ok_or_else(|| "typed field entry".to_owned())?;
+        assert_eq!(observed, vec![(element, 40, 0)]);
+        assert_eq!(damage, expected);
+        assert_eq!(next.vitals().health, 1_000 - expected);
+        assert_eq!(next.revision(), state.revision() + 1);
+        assert_eq!(state, before);
+    }
+    Ok(())
+}
+
 #[test]
 fn owned_source_damage_and_food_clock_commit_once_at_the_same_now() {
     for fed in [false, true] {
@@ -276,6 +439,17 @@ fn actual_malformed_creature_field_origin_refuses_without_hp_or_cursor_write() {
         &poison(10),
         &facts,
         DotElement::Poison,
+        |state, amount, element, now| {
+            crate::spell::actor_conditions::stage_typed_hit_in_world(
+                &runtime,
+                actor,
+                state,
+                amount,
+                crate::player_lethal::PlayerHitKind::from_dot(element),
+                now,
+            )
+            .ok()
+        },
     ) else {
         panic!("TEST_PARAMETERS malformed historical source in actual canonical store");
     };
@@ -519,7 +693,10 @@ fn environment_tick_on_qualified_pz_tile_respects_elements_and_records_lethal_da
 
     let (template, _, session) = super::tests::runtime_with_player(0xbd);
     let world = template.binding().world_id();
-    let channel = template.binding().channel_id();
+    // W02: preserve the existing Channel-only environment fixture.
+    let Some(channel) = template.binding().channel_id() else {
+        panic!("W02: pinned Channel fixture");
+    };
     let Ok(room) = crate::content::qualify_native_entry_room(world) else {
         panic!("qualified entry content");
     };

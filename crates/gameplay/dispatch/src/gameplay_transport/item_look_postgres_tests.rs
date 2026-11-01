@@ -485,7 +485,7 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
         };
         let runtime = Mutex::new(runtime);
         let mut owner = dependencies.owner(&harness, &authority);
-        owner.runtime = &runtime;
+        owner.runtime = (&runtime).into();
         owner.movement_cells = &cells;
         owner.active_generation = Some(active);
         dependencies.initialize(&owner).await;

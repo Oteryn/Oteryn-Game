@@ -9,7 +9,7 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::item_fee_burn::FeeChangeFacts;
 use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::npc_purchase::{NpcPurchaseGate, PurchaseService};
-use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::cyclopedia as wire;
 use sha2::{Digest, Sha256};
 
@@ -130,9 +130,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut runtime = self.runtime.lock().await;
         let binding = runtime.binding();
         if admitted.world_id != binding.world_id()
-            || admitted.channel_id != binding.channel_id()
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+            || Some(admitted.channel_id) != binding.channel_id()
+            || fence.runtime_scope != binding.runtime_scope()
             || fence.scope_ownership_generation != binding.scope_generation()
             || runtime.owner_fence().is_err()
             || !runtime

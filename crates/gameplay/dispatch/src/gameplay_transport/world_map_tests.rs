@@ -563,7 +563,7 @@ fn a_ground_item_is_in_its_tile_and_not_in_domain_1() {
         .add_ground(GroundItemInstance {
             item_instance_id: id,
             world_id: world(),
-            channel_id: channel(),
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world(), channel()),
             definition: TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: "item:coin".into(),
@@ -1794,7 +1794,7 @@ fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
         .add_ground(GroundItemInstance {
             item_instance_id: ground,
             world_id: world(),
-            channel_id: channel(),
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world(), channel()),
             definition: expected.0.clone(),
             quantity: 1,
             runtime_scope_ownership_generation: 1,
@@ -1877,7 +1877,7 @@ fn item_look_far_ground_stack_top_is_visible_and_out_of_view_is_typed() {
         .add_ground(GroundItemInstance {
             item_instance_id: ground,
             world_id: world(),
-            channel_id: channel(),
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world(), channel()),
             definition: definition.clone(),
             quantity: 3,
             runtime_scope_ownership_generation: 1,

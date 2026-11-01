@@ -2170,14 +2170,11 @@ fn transfer_audit_event_must_start_pending() -> TestResult {
     })
 }
 
-/// The lane a stale-fence commit runs under: the stale Channel's own lane, or the fenced
-/// Channel's lane when the stale scope is no Channel (the writer refuses that fence first).
+/// W02 admits real Instance custody, so every negative runs under its claimed
+/// scope's own lane. The durable session/assignment fence must still reject the
+/// borrowed Instance identity; a Channel lane mismatch must not mask that check.
 async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellLanePermit> {
-    let scope = match stale.runtime_scope {
-        RuntimeScopeRefV1::Channel { .. } => stale.runtime_scope,
-        _ => fence()?.runtime_scope,
-    };
-    Ok(SpellLanePermit::of_fresh_scope(scope)
+    Ok(SpellLanePermit::of_fresh_scope(stale.runtime_scope)
         .await
         .map_err(debug)?)
 }
@@ -2608,8 +2605,11 @@ fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult 
                     policy: death_policy.policy,
                     held_blessings: Vec::new(),
                     death_cell: DeathCell {
-                        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-                        channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                        // W02 typed-scope extension preserves this pinned Channel fixture.
+                        runtime_scope: RuntimeScopeRefV1::Channel {
+                            world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+                            channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                        },
                         spatial_position: vec![1, 2, 3, 7],
                         map_revision: "map-1".into(),
                     },

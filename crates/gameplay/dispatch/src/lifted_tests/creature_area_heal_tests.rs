@@ -7,7 +7,7 @@ use crate::creature_area_heal::*;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::foundation::{
     ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
-    RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
+    RuntimeWorkStamp, WorldId,
 };
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
@@ -197,11 +197,9 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
         )
         .expect("qualified fixture");
     let bind = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
-        bind.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(bind.runtime_scope(), bind.scope_generation())
+            .expect("qualified fixture");
     let pa = proposal_fixture(a, &source);
     let pb = proposal_fixture(b, &source);
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
@@ -288,11 +286,9 @@ fn independent_missing_area_policy_refuses_before_hp_then_source_retry_can_execu
         )
         .expect("qualified fixture");
     let bind = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
-        bind.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(bind.runtime_scope(), bind.scope_generation())
+            .expect("qualified fixture");
     let p = proposal_fixture(a, &source);
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
     let mut owner = AreaHealOwner::default();
@@ -480,7 +476,7 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
         .expect("qualified fixture");
     let binding = r.binding();
     let (mut fence, _) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.runtime_scope(),
         binding.scope_generation(),
     )
     .expect("qualified fixture");
@@ -771,11 +767,9 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
         )
         .expect("qualified fixture");
     let bind = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
-        bind.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(bind.runtime_scope(), bind.scope_generation())
+            .expect("qualified fixture");
     let proposal = proposal_fixture(a, &source);
     let mut owner = AreaHealOwner::default();
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();

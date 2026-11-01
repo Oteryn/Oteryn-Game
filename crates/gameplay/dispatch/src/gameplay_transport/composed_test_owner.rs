@@ -40,9 +40,9 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             channel_id: self.channel_id,
             premium_only: false,
             required_capabilities: self.required_capabilities,
-            runtime: self.runtime,
+            runtime: (self.runtime).into(),
             movement_cells: self.room.movement_cells(),
-            door: self.door,
+            door: (self.door).into(),
             chest: self.room.door(),
             spells: self.spells,
             active_generation: None,
@@ -50,10 +50,11 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             rooms: SeamRooms::new(None, None),
             achievements: self.achievements,
             imported_charms: self.imported_charms,
-            states: ChannelSessionStates::default(),
+            states: (ChannelSessionStates::default()).into(),
             clock_origin: std::time::Instant::now(),
             revision_sequencer:
-                crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
+                (crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new())
+                    .into(),
             quest_catalogue: None,
             quest_log_content: None,
             wheel_ruleset: None,
@@ -67,6 +68,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
                 self.channel_id,
             ),
             store: None,
+            activity_runtimes: Default::default(),
         }
     }
 }

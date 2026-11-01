@@ -2,20 +2,77 @@
   {
     "mechanic": "0148-wheel-allocation",
     "kind": "handlers",
-    "id": "0148-wheel-allocation-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0148-wheel-allocation-atelier-lock",
+    "status": "supported",
     "commands": [
-      161,
-      308,
       309
     ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-atelier-mutate",
+    "status": "supported",
+    "commands": [
+      424
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-atelier-query",
+    "status": "supported",
+    "commands": [
+      308
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "keybindings",
+    "id": "0148-wheel-allocation-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+W",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "panels",
+    "id": "0148-wheel-allocation-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-save",
+    "status": "supported",
+    "commands": [
+      161
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
     }
   }
 ]

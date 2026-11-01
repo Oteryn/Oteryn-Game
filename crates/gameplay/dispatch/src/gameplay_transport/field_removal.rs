@@ -136,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if replay {tx.rollback().await?;return Ok(true)}
             let wanted = if let Some(ItemKey::Instance(item))=target {
                 let bytes:Option<Vec<u8>>=sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid")
-                    .bind(item.as_slice()).bind(runtime.binding().world_id().as_bytes().as_slice()).bind(runtime.binding().channel_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                    .bind(item.as_slice()).bind(runtime.binding().world_id().as_bytes().as_slice()).bind(runtime.binding().channel_id().ok_or(crate::durability::DurabilityError::Unavailable)?.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                 let decoded=crate::durability::spell_items_abi::decode_ground_cell(bytes.as_deref().ok_or(crate::durability::DurabilityError::Unavailable)?)
                     .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 crate::foundation::MovementLocalPosition{x:decoded.x,y:decoded.y,floor:i16::try_from(decoded.z).map_err(|_|crate::durability::DurabilityError::Unavailable)?}

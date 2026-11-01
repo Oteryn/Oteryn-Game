@@ -1,5 +1,5 @@
-//! Kernel qualification only. Synthetic scoped grants do not admit activity
-//! sessions, compose an InstanceRuntime or authorize durable Channel custody.
+//! Scope-kernel qualification. Sealed Instance deaths and XP occurrence identities
+//! retain their exact scope; synthetic grants never authorize durable Item custody.
 use super::encounter_access::{EncounterHealProjection, EncounterHooks};
 use super::*;
 
@@ -231,7 +231,7 @@ fn boss_activity_carrier_isolates_slots_positions_and_damage_by_typed_scope() {
                         .death_key()
                         .expect("Channel key")
                         .channel_id(),
-                    channel_id
+                    Some(channel_id)
                 );
             }
             RuntimeScopeRefV1::Instance { .. } => {
@@ -242,10 +242,13 @@ fn boss_activity_carrier_isolates_slots_positions_and_damage_by_typed_scope() {
                     receipt.projection.occurrence.actor().runtime_scope(),
                     actor.runtime_scope
                 );
-                assert_eq!(
-                    receipt.projection.occurrence.death_key(),
-                    Err(CarrierError::WrongScope)
-                );
+                let key = receipt
+                    .projection
+                    .occurrence
+                    .death_key()
+                    .expect("sealed Instance death");
+                assert_eq!(key.runtime_scope(), actor.runtime_scope);
+                assert_eq!(key.channel_id(), None);
                 assert!(carrier.corpse_projections.is_empty());
                 assert!(carrier.death_reward_occurrences.is_empty());
             }
@@ -378,17 +381,10 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
         }
     }
     for (owner, carrier, actor, receipt) in &mut kernels {
-        if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
-            carrier.encounter_hooks = Some(Box::new(ChannelKeyHook));
-            let before = carrier.clone();
-            assert_eq!(
-                carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, false),
-                Err(CarrierError::WrongScope),
-                "a Channel-key hook refuses before retaining or cascading a death"
-            );
-            assert_eq!(*carrier, before);
-            carrier.encounter_hooks = None;
-        }
+        carrier.encounter_hooks = Some(Box::new(ScopedKeyHook {
+            death: None,
+            calls: 0,
+        }));
         let before = carrier.clone();
         let mut corrupt = copy_receipt(receipt);
         corrupt.projection.occurrence.damage += 1;
@@ -437,16 +433,41 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             Err(CarrierError::CorpseProjectionConflict)
         );
         assert_eq!(carrier.corpse_projections, vec![projected.clone()]);
+        let key = projected
+            .occurrence
+            .death_key()
+            .expect("sealed scope death key");
+        assert_eq!(key.runtime_scope(), owner.runtime_scope);
+        assert_eq!(key.world_id(), owner.runtime_scope.world_id());
+        assert_eq!(key.channel_id(), ExactActorRef(*actor).channel_id());
+        let hook = carrier
+            .encounter_hooks
+            .as_ref()
+            .expect("installed hook")
+            .as_any()
+            .downcast_ref::<ScopedKeyHook>()
+            .expect("scoped hook");
+        assert_eq!(hook.death, Some(key));
+        assert_eq!(
+            hook.calls, 1,
+            "lost response/replay cannot repeat encounter death"
+        );
+        let (occurrence, minted) = carrier
+            .reward_occurrence_inner(owner, *actor, id(9))
+            .expect("scope-owned reward occurrence");
+        assert!(minted);
+        assert_eq!(occurrence[6] >> 4, 7);
+        assert_eq!(occurrence[8] >> 6, 2);
+        assert_eq!(
+            carrier.reward_occurrence_inner(owner, *actor, id(9)),
+            Ok((occurrence, false))
+        );
+        assert_eq!(
+            carrier.reward_occurrence_inner(owner, *actor, id(8)),
+            Err(CarrierError::RewardPrincipalConflict)
+        );
         if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
             let before = carrier.clone();
-            assert_eq!(
-                projected.occurrence.death_key(),
-                Err(CarrierError::WrongScope)
-            );
-            assert_eq!(
-                carrier.reward_occurrence_inner(owner, *actor, id(9)),
-                Err(CarrierError::WrongScope)
-            );
             assert_eq!(
                 carrier.bind_corpse_item_inner(
                     ExactActorRef(*actor),
@@ -454,26 +475,14 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
                         item_instance_id: id(10),
                         family: "Item".into(),
                         production_key: "fixture:corpse".into(),
-                        revision_ref: "r1".into(),
+                        revision_ref: "r1".into()
                     }
                 ),
                 Err(CarrierError::WrongScope)
             );
             assert_eq!(
                 *carrier, before,
-                "runtime death cannot mint Channel reward or custody"
-            );
-        } else {
-            let key = projected.occurrence.death_key().expect("Channel death key");
-            assert_eq!(key.world_id(), owner.runtime_scope.world_id());
-            assert_eq!(Some(key.channel_id()), ExactActorRef(*actor).channel_id());
-            let (occurrence, minted) = carrier
-                .reward_occurrence_inner(owner, *actor, id(9))
-                .expect("Channel reward occurrence");
-            assert!(minted);
-            assert_eq!(
-                carrier.reward_occurrence_inner(owner, *actor, id(9)),
-                Ok((occurrence, false))
+                "Instance death does not authorize Channel Ground custody"
             );
         }
         // Reusing the slot cannot let an old receipt address its successor.
@@ -501,17 +510,22 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
     }
 }
 
-// Tests only the existing Channel-key hook boundary; it never simulates an
-// Instance encounter or supplies admission/participant evidence.
+// Observe the real carrier-issued key; this hook supplies no admission evidence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ChannelKeyHook;
+struct ScopedKeyHook {
+    death: Option<CreatureDeathOccurrenceKey>,
+    calls: usize,
+}
 
-impl EncounterHooks for ChannelKeyHook {
+impl EncounterHooks for ScopedKeyHook {
     fn clone_hooks(&self) -> Box<dyn EncounterHooks> {
         Box::new(*self)
     }
     fn eq_hooks(&self, other: &dyn EncounterHooks) -> bool {
-        other.as_any().is::<Self>()
+        other
+            .as_any()
+            .downcast_ref::<Self>()
+            .is_some_and(|other| other == self)
     }
     fn as_any(&self) -> &dyn std::any::Any {
         self
@@ -536,8 +550,10 @@ impl EncounterHooks for ChannelKeyHook {
     ) -> Option<Result<OwnerDamageResult, CarrierError>> {
         None
     }
-    fn projected_death(&mut self, _: ExactActorRef, _: CreatureDeathOccurrenceKey) {
-        unreachable!("Instance projection must refuse before a Channel-key callback");
+    fn projected_death(&mut self, actor: ExactActorRef, death: CreatureDeathOccurrenceKey) {
+        assert_eq!(actor.runtime_scope(), death.runtime_scope());
+        self.death = Some(death);
+        self.calls += 1;
     }
     fn expand_heals(
         &self,

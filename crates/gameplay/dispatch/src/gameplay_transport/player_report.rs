@@ -2,7 +2,7 @@
 //! The reporter identity and position are server facts; the client supplies only the report.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::player_report::PlayerReportPosition;
-use crate::foundation::{CommandId, RuntimeScopeRefV1};
+use crate::foundation::CommandId;
 use oteryn_protocol_oteryn::player_report as wire;
 
 #[derive(Debug)]
@@ -23,9 +23,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(request) = wire::decode_player_report_request(payload) else {
             return PlayerReportOutcome::Rejected;
         };
-        let (Some(fence), Some(actor), Ok(_)) =
-            (admitted.item_fence, admitted.runtime_actor, CommandId::new(id))
-        else {
+        let (Some(fence), Some(actor), Ok(_)) = (
+            admitted.item_fence,
+            admitted.runtime_actor,
+            CommandId::new(id),
+        ) else {
             return PlayerReportOutcome::Rejected;
         };
         let position = {
@@ -39,9 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || fence.game_session_id != admitted.game_session_id
                 || fence.connection_generation.get() != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !runtime
@@ -69,8 +70,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .submit_player_report(self.character, self.holder, fence, id, &request, position)
             .await
         {
-            Ok(Some(reply)) => wire::encode_player_report_reply(&reply)
-                .map_or(PlayerReportOutcome::Unavailable, PlayerReportOutcome::Payload),
+            Ok(Some(reply)) => wire::encode_player_report_reply(&reply).map_or(
+                PlayerReportOutcome::Unavailable,
+                PlayerReportOutcome::Payload,
+            ),
             Ok(None) => PlayerReportOutcome::Rejected,
             Err(_) => PlayerReportOutcome::Unavailable,
         }

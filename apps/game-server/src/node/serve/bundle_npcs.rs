@@ -634,7 +634,8 @@ mod tests {
     /// NPC-LOAD-1: a synthetic bundle with two NPCs boots two NPC actors bound to the Channel's
     /// own scope, in frame order, on the bundle's cells, and the join snapshot sees both.
     #[test]
-    fn a_bundle_with_two_npcs_boots_two_npc_actors_bound_to_the_channel_scope() {
+    fn a_bundle_with_two_npcs_boots_two_npc_actors_bound_to_the_channel_scope() -> Result<(), String>
+    {
         let catalogue = digest("v1");
         let frame = read(&bundle_with_npcs(&two_npcs(), &catalogue)).expect("frame");
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
@@ -643,6 +644,8 @@ mod tests {
         assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 2);
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
+        // W02: the scoped binding now returns Option; this fixture still requires Channel.
+        let channel = binding.channel_id().ok_or("pinned Channel NPC fixture")?;
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 2);
         let keys: Vec<_> = visible
@@ -650,7 +653,7 @@ mod tests {
             .iter()
             .map(|entry| {
                 assert_eq!(entry.actor.world_id(), binding.world_id());
-                assert_eq!(entry.actor.channel_id(), Some(binding.channel_id()));
+                assert_eq!(entry.actor.channel_id(), Some(channel));
                 assert_eq!(entry.actor.scope_generation(), binding.scope_generation());
                 (
                     runtime.npc_key(entry.actor).expect("npc key").to_owned(),
@@ -671,6 +674,7 @@ mod tests {
             place(&mut runtime, Some(&boot)),
             Err(BootError::Readiness("NPC actor placement"))
         ));
+        Ok(())
     }
 
     fn timed_boot(keys: &[&str]) -> NpcBoot {

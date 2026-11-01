@@ -395,10 +395,16 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     // Rebuild the production owner and all connection-local handles. SQL remains authority.
     // The Channel keeps each GameSession's command stream (SESSION-INGRESS-1), so the
     // sessions continue on their ended continuity while the party caches start empty.
-    let commands = std::mem::take(&mut owner.states.command_ingress);
+    let commands = std::mem::take(
+        &mut std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .command_ingress,
+    );
     drop(owner);
     owner = make_owner();
-    owner.states.command_ingress = commands;
+    std::sync::Arc::get_mut(&mut owner.states)
+        .expect("W02: isolated fixture state")
+        .command_ingress = commands;
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
     assert_eq!(result[0].members.len(), 2);
     assert!(

@@ -42,10 +42,7 @@ pub fn facts(generation: u64, lease: u64, scope: u64) -> TargetFacts {
             commit.character_id(),
             commit.world_id(),
         )),
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-            commit.world_id(),
-            commit.channel_id(),
-        ),
+        crate::foundation::RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()),
         ScopeOwnershipGeneration::new(scope).expect("scope"),
     )
     .expect("current native facts");

@@ -2,7 +2,7 @@
 fn creature_damage_preserves_actual_logical_stance_reservation() {
     use crate::domain::{CharacterId, CharacterRevision};
     use crate::durability::character_progression::CurrentCharacterGameplayFence;
-    use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1};
+    use crate::foundation::ConnectionGeneration;
     use crate::spell::stance_execution::PreparedStance;
     let (mut runtime, actor, session) = runtime_with_player(0x35);
     let mut states = ChannelSpellStates::default();
@@ -82,7 +82,7 @@ fn creature_damage_preserves_actual_logical_stance_reservation() {
             game_session_id: session,
             connection_generation: ConnectionGeneration::new(1).expect("connection"),
             character_lease_generation: 1,
-            runtime_scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            runtime_scope: binding.runtime_scope(),
             scope_ownership_generation: binding.scope_generation(),
             expected_character_revision: CharacterRevision::new(1).expect("revision"),
         },

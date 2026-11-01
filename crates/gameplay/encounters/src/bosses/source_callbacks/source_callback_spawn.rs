@@ -488,7 +488,7 @@ pub struct CallbackSpawnOwner {
 impl CallbackSpawnOwner {
     pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = r.binding();
-        let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        let scope = b.runtime_scope();
         let generation = b.scope_generation();
         if !f.is_current_for_scope(scope, generation) {
             return Err(AttackError::StaleOwner);
@@ -533,7 +533,7 @@ impl CallbackSpawnOwner {
         stamp: RuntimeWorkStamp,
     ) -> bool {
         let b = r.binding();
-        self.scope == RuntimeScopeRefV1::channel(b.world_id(), b.channel_id())
+        self.scope == b.runtime_scope()
             && self.generation == b.scope_generation()
             && f.is_current_for_scope(self.scope, self.generation)
             && f.accepts_stamp(stamp)

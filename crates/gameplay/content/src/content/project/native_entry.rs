@@ -726,6 +726,38 @@ pub struct NativeEntryStart {
 }
 
 impl QualifiedNativeEntryRoom {
+    /// Activity-local cells remain in the original qualified map/frame. Unlike
+    /// a bundle view, this view cannot substitute a different coordinate source.
+    pub(in crate::content) fn activity_view(
+        &self,
+        source: super::native_spell_world::QualifiedNativeSpellWorld,
+        start: NativeEntryStart,
+    ) -> Option<Self> {
+        let cell = crate::content::LogicalCell {
+            x: start.x,
+            y: start.y,
+            z: i32::from(start.floor),
+        };
+        if source.scope() != self.movement_cells.scope()
+            || source.lookup(source.scope(), cell).ok()
+                != Some(crate::content::CollisionClass::Walkable)
+        {
+            return None;
+        }
+        let mut view = self.clone();
+        view.entry_start = start;
+        view.movement_cells = NativeEntryMovementCells {
+            spell_tiles: source.spell_tiles(),
+            house_tiles: self.movement_cells.house_tiles.clone(),
+            scope: self.movement_cells.scope.clone(),
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(source),
+        };
+        // BossLever creates a single encounter boss. The origin's ordinary
+        // creature respawn schedule is never copied into the private activity.
+        view.spawn_source = None;
+        Some(view)
+    }
+
     /// BUNDLE-COMBAT-ENABLE-1: the qualified room as a bundle World's Channel serves it. The
     /// compiled Content (and so the server and client digests) and the door content stay this
     /// room's own; the cells, frame binding, map revision and start are the bundle's, the same

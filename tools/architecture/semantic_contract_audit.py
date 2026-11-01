@@ -499,7 +499,9 @@ def compact(doc: str) -> str:
 
 
 def compact_rust(doc: str) -> str:
-    return re.sub(r"\s+", "", doc)
+    # The audited bodies use calls and struct literals, not tuple expressions;
+    # rustfmt may add trailing commas at their closing delimiters.
+    return re.sub(r",(?=[)}])", "", re.sub(r"\s+", "", doc))
 
 
 def rust_without_comments(doc: str) -> str:
@@ -737,12 +739,12 @@ def foundation_reconnect_documents(
     )
     need_re(
         implementation,
-        r"Prepared \| ReconnectPrepareDispositionV1::ExistingPrepared.*?any\(\|\(other, entry\)\| other != index && entry\.state == ReconnectAttemptStateV1::Prepared\).*?ConcurrentPrepared",
+        r"Prepared\s*\|\s*ReconnectPrepareDispositionV1::ExistingPrepared.*?any\(\|\(other, entry\)\|\s*(?:other != index && entry\.state == ReconnectAttemptStateV1::Prepared|\{\s*other != index && entry\.state == ReconnectAttemptStateV1::Prepared\s*\})\s*\).*?ConcurrentPrepared",
         "second live PREPARED fails closed",
     )
     need_re(
         implementation,
-        r"replacement_allowed_after_collision.*?entries\.len\(\) < RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1.*?!self\.entries\.iter\(\)\.any\(\|entry\| entry\.state == ReconnectAttemptStateV1::Prepared\).*?CollisionTerminal",
+        r"replacement_allowed_after_collision.*?entries\.len\(\) < RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1.*?!self\s*\.entries\s*\.iter\(\)\s*\.any\(\|entry\| entry\.state == ReconnectAttemptStateV1::Prepared\).*?CollisionTerminal",
         "collision replacement requires capacity, no PREPARED and terminal collision",
     )
 
@@ -762,7 +764,7 @@ def foundation_reconnect_documents(
 
     need_re(
         implementation,
-        r"ReconnectPrepareDispositionV1::Unavailable\s*=>\s*Ok\(ReconnectPrepareActionV1::RetrySameRequest\(self\.prepare_request\.clone\(\)\)\)",
+        r"ReconnectPrepareDispositionV1::Unavailable\s*=>\s*Ok\(\s*ReconnectPrepareActionV1::RetrySameRequest\(self\.prepare_request\.clone\(\)\),?\s*\)",
         "PREPARE unavailable retries the same request",
     )
     need_re(
@@ -772,7 +774,7 @@ def foundation_reconnect_documents(
     )
     need_re(
         implementation,
-        r"ReconnectCommitDispositionV1::Unavailable\s*=>\s*Ok\(ReconnectCommitActionV1::RetrySameRequest\(completion\.request\)\)",
+        r"ReconnectCommitDispositionV1::Unavailable\s*=>\s*Ok\(\s*ReconnectCommitActionV1::RetrySameRequest\(completion\.request\),?\s*\)",
         "COMMIT unavailable retries the same request",
     )
     need_re(

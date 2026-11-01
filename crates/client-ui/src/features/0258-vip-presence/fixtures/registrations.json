@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0258-vip-presence",
+    "kind": "handlers",
+    "id": "0258-vip-presence-unsupported",
+    "status": "unsupported",
+    "reason": "The server and oteryn-session expose negotiated, expiring VIP presence; the native VIP panel is pending.",
+    "commands": [],
+    "not_applicable": {
+      "state": "Native VIP panel migration is pending.",
+      "protocol": "Native VIP panel migration is pending.",
+      "view": "Native VIP panel migration is pending.",
+      "input": "Native VIP panel migration is pending.",
+      "settings": "Native VIP panel migration is pending."
+    }
+  }
+]

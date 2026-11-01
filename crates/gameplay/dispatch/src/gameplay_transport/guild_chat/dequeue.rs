@@ -11,6 +11,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<ChatLine> {
         while *remaining > 0 {
             let candidate = self.states.chat.peek_line(admitted.game_session_id)?;
+            if let ChatLine::Room { .. } = &candidate {
+                *remaining -= 1;
+                if let Some(line) = self
+                    .states
+                    .chat
+                    .accept_public_room_line(&admitted, &candidate)
+                {
+                    return Some(line);
+                }
+                continue;
+            }
+            if let ChatLine::PrivateChannel(_) = &candidate {
+                let destination = self
+                    .states
+                    .chat
+                    .private_channel_destination(admitted.game_session_id)?;
+                *remaining -= 1;
+                if let Some(line) = self
+                    .private_channel_accept(admitted, &candidate, destination)
+                    .await
+                {
+                    return Some(line);
+                }
+                continue;
+            }
             if let ChatLine::Party { .. } = &candidate {
                 let destination = self
                     .states

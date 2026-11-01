@@ -1,0 +1,15 @@
+{
+  "id": 225,
+  "name": "BOSS_DIFFICULTY_V1",
+  "owner_decision": "W21; PR #2769 ANSWER 6542714759 (sourced selection slice)",
+  "owner": "Admitted character, shared boss catalogue and session-fenced durability owner",
+  "requires": [
+    117
+  ],
+  "command_types": [
+    431
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Command 431 opens a server-issued context, persists the draft selection, cancels, or returns a typed no-accepted-profile refusal for Start. No difficulty scaling or Phosphorus activation is offered."
+}

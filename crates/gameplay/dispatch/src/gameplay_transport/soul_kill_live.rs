@@ -20,6 +20,25 @@ use crate::spell::soul_window::SoulWindowChange;
 pub struct SoulKills(Mutex<BTreeMap<CharacterId, SoulKillHook>>);
 
 impl SoulKills {
+    /// The current owner's last unapplied hook follows its Character. Publishing
+    /// kill effects and transferring them are serialized by the same scope lane
+    /// and Character revision; retry with no source hook leaves newer target work.
+    pub(super) fn transfer_activity(
+        &self,
+        destination: &Self,
+        character: CharacterId,
+    ) -> Result<(), ()> {
+        if std::ptr::eq(self, destination) {
+            return Ok(());
+        }
+        let mut source = self.0.lock().map_err(|_| ())?;
+        let mut target = destination.0.lock().map_err(|_| ())?;
+        if let Some(hook) = source.remove(&character) {
+            target.insert(character, hook);
+        }
+        Ok(())
+    }
+
     /// A `NoHook` award leaves an earlier hook in place.
     pub(super) fn mark(&self, hooks: impl IntoIterator<Item = (CharacterId, SoulKillHook)>) {
         if let Ok(mut marked) = self.0.lock() {
@@ -111,5 +130,31 @@ mod tests {
         assert_eq!(kills.take(id(1)), Some(open));
         assert_eq!(kills.take(id(2)), Some(SoulKillHook::CloseWindow));
         assert_eq!(kills.take(id(1)), None);
+    }
+
+    #[test]
+    fn activity_soul_hook_moves_once_and_retry_cannot_reapply_an_older_award() -> Result<(), String>
+    {
+        let source = SoulKills::default();
+        let destination = SoulKills::default();
+        let open = SoulKillHook::OpenWindow { seconds: 240 };
+        source.mark([(id(1), open), (id(2), SoulKillHook::CloseWindow)]);
+        destination.mark([(id(1), SoulKillHook::CloseWindow)]);
+        source
+            .transfer_activity(&destination, id(1))
+            .map_err(|_| "move soul hook")?;
+        assert_eq!(source.take(id(1)), None);
+        assert_eq!(source.take(id(2)), Some(SoulKillHook::CloseWindow));
+        assert_eq!(destination.take(id(1)), Some(open));
+        source
+            .transfer_activity(&destination, id(1))
+            .map_err(|_| "retry consumed hook")?;
+        assert_eq!(destination.take(id(1)), None);
+        destination.mark([(id(1), SoulKillHook::CloseWindow)]);
+        source
+            .transfer_activity(&destination, id(1))
+            .map_err(|_| "retry after newer award")?;
+        assert_eq!(destination.take(id(1)), Some(SoulKillHook::CloseWindow));
+        Ok(())
     }
 }

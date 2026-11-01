@@ -36,7 +36,9 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     check_uuid_v7(&cause.item_instance_id)?;
     let ground = scope_ground(value)?;
     check_ground(ground)?;
-    if value.cause.is_some()
+    if value.activity_retirement.is_some()
+        || ground.instance_id.is_some()
+        || value.cause.is_some()
         || value.corpse_entry.is_some()
         || before.item_instance_id != after.item_instance_id
         || before.world_id != after.world_id

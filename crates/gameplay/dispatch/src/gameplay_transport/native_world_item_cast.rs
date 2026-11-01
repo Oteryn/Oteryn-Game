@@ -164,8 +164,7 @@ pub(super) async fn prepare(
         || b.session != command.game_session_id()
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
     {
         return reject();
@@ -558,8 +557,7 @@ async fn prepare_barrier(
         || b.session != command.game_session_id()
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
     {
         return reject();
@@ -933,8 +931,7 @@ async fn prepare_carried(
         || b.session != command.game_session_id()
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
     {
         return reject();

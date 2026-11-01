@@ -10,6 +10,17 @@ PROFILE = 'content/items/definitions/spell-native-profiles.json'
 
 
 class EventItemProfilePrecedence(unittest.TestCase):
+    def test_task_board_weapon_semantics_survive_event_registration(self):
+        source = json.loads((ROOT / 'tools/content-schema/native-gameplay/task-board-item-profiles.json').read_bytes())
+        expected = {row['production_definition']['production_key']: row
+                    for row in source['records']}
+        generated = register_spell_families.outputs(ROOT)
+        actual = {row['production_definition']['production_key']: row
+                  for row in json.loads(generated[PROFILE])['records']}
+        for item in (21178, 21179, 21180):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertEqual(actual[key], expected[key], key)
+
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         families = source['world_door_families']

@@ -60,9 +60,8 @@ impl BorethCarrierExt for ChannelRuntimeV1 {
                 && (32936..=32944).contains(&p.position.x)
                 && (31474..=31482).contains(&p.position.y)
             {
-                removed.push(ExactActorRef(ActorRef::from_owner_parts(
-                    self.binding().world_id(),
-                    self.binding().channel_id(),
+                removed.push(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                    self.binding().runtime_scope(),
                     self.binding().scope_generation(),
                     ActorLocalId(
                         u32::try_from(i + 1)

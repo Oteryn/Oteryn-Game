@@ -120,10 +120,13 @@ fn death(policy: &FiniteProgressionPolicy<String, 2>) -> TestResult<CharacterDea
         policy: policy.clone(),
         held_blessings: Vec::new(),
         death_cell: DeathCell {
-            world_id: crate::foundation::WorldId::decode(&id(42))
-                .map_err(|error| format!("{error:?}"))?,
-            channel_id: crate::foundation::ChannelId::decode(&id(43))
-                .map_err(|error| format!("{error:?}"))?,
+            // W02 typed-scope extension preserves this pinned Channel fixture.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id: crate::foundation::WorldId::decode(&id(42))
+                    .map_err(|error| format!("{error:?}"))?,
+                channel_id: crate::foundation::ChannelId::decode(&id(43))
+                    .map_err(|error| format!("{error:?}"))?,
+            },
             spatial_position: vec![1, 2, 3, 7],
             map_revision: "map-1".into(),
         },

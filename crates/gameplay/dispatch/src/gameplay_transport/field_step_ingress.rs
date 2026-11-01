@@ -8,7 +8,7 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
-    MovementPositionSnapshot, RuntimeScopeRefV1,
+    MovementPositionSnapshot,
 };
 use crate::movement::{CardinalStep, MovementError};
 use crate::spell::cast::PlayerSpellState;
@@ -79,11 +79,7 @@ impl StepIngressRead<'_, '_> {
                 .player_control_facts(actor, session)
                 .is_ok_and(|f| f.control_loss.is_none())
             || fence.game_session_id != session
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
             || self.read.content_digest() != runtime.content_pin().server_artifact_digest()
             || source.source_digest() != self.read.content_digest()
@@ -289,7 +285,7 @@ impl StepIngressRead<'_, '_> {
     }
 }
 #[allow(clippy::too_many_arguments)]
-fn destination(
+pub(super) fn destination(
     runtime: &ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,

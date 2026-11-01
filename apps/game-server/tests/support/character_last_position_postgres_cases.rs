@@ -291,8 +291,11 @@ fn death(tag: u8) -> TestResult<CharacterDeathRequest<10>> {
         },
         held_blessings: Vec::new(),
         death_cell: DeathCell {
-            world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-            channel_id: crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+            // W02 typed-scope extension preserves this pinned Channel fixture.
+            runtime_scope: RuntimeScopeRefV1::Channel {
+                world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+                channel_id: crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+            },
             spatial_position: vec![1, 2, 3, 7],
             map_revision: "map-1".into(),
         },

@@ -89,9 +89,8 @@ impl RumBarrelCarrierExt for ChannelRuntimeV1 {
                         } = slot
                             && target_identity.as_ref() == b"oteryn:creature.weak_spot"
                         {
-                            target = Some(ExactActorRef(ActorRef::from_owner_parts(
-                                self.binding().world_id(),
-                                self.binding().channel_id(),
+                            target = Some(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                                self.binding().runtime_scope(),
                                 self.binding().scope_generation(),
                                 ActorLocalId(
                                     u32::try_from(i + 1)

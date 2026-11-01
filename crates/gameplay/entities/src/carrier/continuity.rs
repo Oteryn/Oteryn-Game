@@ -102,13 +102,28 @@ impl NamespaceContinuityGuard {
     }
 }
 
-impl ChannelRuntimeAssignmentBinding {
+impl ScopeRuntimeAssignmentBinding {
     pub const fn world_id(self) -> WorldId {
         self.world_id
     }
 
-    pub const fn channel_id(self) -> ChannelId {
-        self.channel_id
+    pub const fn runtime_scope(self) -> RuntimeScopeRefV1 {
+        self.runtime_scope
+    }
+
+    pub const fn channel_id(self) -> Option<ChannelId> {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => Some(channel_id),
+            RuntimeScopeRefV1::Instance { .. } => None,
+        }
+    }
+
+    pub const fn node_id(self) -> NodeId {
+        self.node_id
+    }
+
+    pub const fn node_registration_revision(self) -> u64 {
+        self.node_registration_revision
     }
 
     pub const fn scope_generation(self) -> ScopeOwnershipGeneration {
@@ -135,7 +150,7 @@ impl ChannelRuntimeAssignmentBinding {
             .strip_prefix("runtime-scope-assignment:")
             .and_then(|value| value.parse::<u64>().ok());
         self.world_id == world_id
-            && self.channel_id == channel_id
+            && self.channel_id() == Some(channel_id)
             && self.node_id == node_id
             && self.node_registration_revision == node_registration_revision
             && self.scope_generation.get() == ownership_generation
@@ -151,10 +166,7 @@ impl oteryn_gameplay_foundation::foundation::owner_cycle_grant_seal::Sealed
 
 impl oteryn_gameplay_foundation::foundation::OwnerCycleGrant for CommittedAssignmentOwnerCycle {
     fn owner_scope(&self) -> oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1 {
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-            self.world_id,
-            self.channel_id,
-        )
+        self.runtime_scope
     }
 
     fn owner_generation(&self) -> ScopeOwnershipGeneration {
