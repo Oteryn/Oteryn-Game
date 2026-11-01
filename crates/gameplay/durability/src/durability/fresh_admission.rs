@@ -320,8 +320,11 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
-    departed_activity: Option<super::activity_handoff::DepartedActivityRelease>,
-    offline_activity_mismatch: Option<super::activity_handoff::OfflineActivityMismatchRelease>,
+    // Rare Activity release proofs must not enlarge every ordinary admission
+    // and reconnect future. Clones retain the same immutable, revalidated proof.
+    departed_activity: Option<std::sync::Arc<super::activity_handoff::DepartedActivityRelease>>,
+    offline_activity_mismatch:
+        Option<std::sync::Arc<super::activity_handoff::OfflineActivityMismatchRelease>>,
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
@@ -421,7 +424,7 @@ impl FreshAdmissionStore {
         proof: super::activity_handoff::OfflineActivityMismatchRelease,
     ) -> Self {
         Self {
-            offline_activity_mismatch: Some(proof),
+            offline_activity_mismatch: Some(std::sync::Arc::new(proof)),
             ..self.clone()
         }
     }
@@ -434,7 +437,7 @@ impl FreshAdmissionStore {
         proof: super::activity_handoff::DepartedActivityRelease,
     ) -> Self {
         Self {
-            departed_activity: Some(proof),
+            departed_activity: Some(std::sync::Arc::new(proof)),
             ..self.clone()
         }
     }

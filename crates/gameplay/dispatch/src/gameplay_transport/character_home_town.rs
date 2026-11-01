@@ -152,13 +152,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let mut fence = self.current_quest_fence(session).await.ok()??;
-        // An activity may read its existing World citizenship, but cannot claim
-        // a World citizen tile through a private copy of a map region.
-        if citizenship.is_some()
-            && matches!(
-                fence.runtime_scope,
-                crate::foundation::RuntimeScopeRefV1::Instance { .. }
-            )
+        // A Channel must match this composed owner. An activity may read its
+        // existing World citizenship, but cannot claim a private citizen tile.
+        if fence.runtime_scope.world_id() != self.world_id
+            || match fence.runtime_scope {
+                crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                    channel_id != self.channel_id
+                }
+                crate::foundation::RuntimeScopeRefV1::Instance { .. } => citizenship.is_some(),
+            }
         {
             return None;
         }

@@ -1023,7 +1023,7 @@ pub async fn assert_spell_item_scope_with_recovery(
     if !super::character_progression::assert_runtime_scope_fence(tx, scope, ownership, node).await?
     {
         return Err(SpellItemError::Rejected(
-            "current timer scope/node/history authority",
+            "current timer scope/node authority",
         ));
     }
     lock_runtime_items(tx, permit, scope).await?;
