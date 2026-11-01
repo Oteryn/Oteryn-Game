@@ -261,7 +261,9 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
         match item {
             AddedItem::Ground(ground) => self.ground.get(&ground.item_instance_id).copied(),
-            AddedItem::Volatile { .. } => self.inner.added_entry(item),
+            AddedItem::Volatile { .. } => {
+                super::echo_warden::portal_entry(item).or_else(|| self.inner.added_entry(item))
+            }
         }
     }
 
@@ -417,6 +419,15 @@ pub async fn loop_ground(
         .copied()
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &pending).ok()?;
+    {
+        let runtime = admission.runtime.lock().await;
+        super::echo_warden::append_portals(
+            &mut built.overlay,
+            &runtime,
+            Some(index),
+            admission.owner_now().get() / 1000,
+        );
+    }
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
     Some(built)
@@ -604,7 +615,7 @@ pub(super) async fn move_loop_item(
             admission.holder,
             &fence,
             CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
             LoopMoveRequest {
                 item,
                 count: request.count,

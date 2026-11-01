@@ -82,6 +82,9 @@ pub struct PendingKillSettlement {
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
     pub(super) forge: Option<ForgeDeath>,
+    /// Frozen callback facts survive corpse replay and actor-slot reuse.
+    pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
+    pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -105,6 +108,8 @@ impl PendingKillSettlement {
             activity_at_death: None,
             damage_shares: Vec::new(),
             forge: None,
+            echo: None,
+            callback_loot: Vec::new(),
             no_progression_logged: false,
         }
     }
@@ -166,7 +171,12 @@ struct KillQueueState {
     prey_loot: Vec<(ExactActorRef, u8)>,
     queued: VecDeque<PendingKillSettlement>,
     /// Each in-flight entry's death, principal and killed actor.
-    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
+    in_flight: Vec<(
+        CreatureDeathOccurrenceKey,
+        Principal,
+        ExactActorRef,
+        Vec<GameSessionId>,
+    )>,
     reserved_loot_mints: usize,
     /// W22c: MINTs an in-flight settle reserved on top of its take (a Wealth Duplex roll).
     extra_loot_mints: Vec<(CreatureDeathOccurrenceKey, usize)>,
@@ -177,7 +187,7 @@ struct KillQueueState {
 
 impl KillQueueState {
     fn holds(&self, death: CreatureDeathOccurrenceKey) -> bool {
-        self.in_flight.iter().any(|(held, _, _)| *held == death)
+        self.in_flight.iter().any(|(held, _, _, _)| *held == death)
             || self.queued.iter().any(|e| e.facts.death == death)
             || self
                 .releasing
@@ -290,8 +300,9 @@ impl KillSettlementQueue {
             })
             .map(|entry| entry.facts.principal.session)
             .collect();
-        for (_, principal, target) in &state.in_flight {
+        for (_, principal, target, contributors) in &state.in_flight {
             if principal.0 == session
+                || contributors.contains(&session)
                 || state.proficiency_deaths.iter().any(|death| {
                     death.target == *target
                         && death
@@ -466,7 +477,7 @@ impl KillSettlementQueue {
         if state
             .in_flight
             .iter()
-            .any(|(_, held, _)| *held == principal)
+            .any(|(_, held, _, _)| *held == principal)
         {
             return Seal::InFlight;
         }
@@ -631,7 +642,7 @@ impl KillSettlementQueue {
         state
             .in_flight
             .iter()
-            .map(|(_, _, target)| *target)
+            .map(|(_, _, target, _)| *target)
             .chain(state.queued.iter().map(|e| e.target))
             .chain(
                 state
@@ -669,6 +680,7 @@ impl KillSettlementQueue {
             )
             // The flattened plan counts descendants as well as direct corpse entries.
             .map_or(0, |plan| plan.entries.len())
+                + entry.callback_loot.len()
                 + if entry.creature == "oteryn:creature.the_corruptor" {
                     3
                 } else {
@@ -690,9 +702,17 @@ impl KillSettlementQueue {
             return TakeOutcome::Empty;
         };
         state.reserved_loot_mints = inflight_before + loot_mints;
-        state
-            .in_flight
-            .push((entry.facts.death, principal_of(&entry), entry.target));
+        state.in_flight.push((
+            entry.facts.death,
+            principal_of(&entry),
+            entry.target,
+            entry.echo.as_ref().map_or_else(Vec::new, |echo| {
+                echo.recipients
+                    .iter()
+                    .map(|recipient| recipient.session)
+                    .collect()
+            }),
+        ));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
             death: entry.facts.death,
@@ -710,7 +730,7 @@ impl KillSettlementQueue {
         extra: usize,
     ) -> bool {
         let mut state = self.state();
-        if !state.in_flight.iter().any(|(held, _, _)| *held == death)
+        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death)
             || check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err()
         {
             return false;
@@ -809,7 +829,9 @@ impl Drop for TakenKillSettlement {
             .sum();
         state.extra_loot_mints.retain(|(held, _)| *held != death);
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(extra);
-        state.in_flight.retain(|(death, _, _)| *death != self.death);
+        state
+            .in_flight
+            .retain(|(death, _, _, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
         }
@@ -863,6 +885,11 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
+    // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
+    if runtime.soulpit_variant(target).is_some() {
+        return;
+    }
     let snapshot = runtime.companion_snapshot_including_dead(target);
     let forge_kind = snapshot
         .as_ref()
@@ -924,11 +951,66 @@ pub fn record_creature_kill(
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
     }
+    let Ok(damage_shares) = owner.reward_damage_shares(target) else {
+        refuse("damage_shares_unavailable", &creature);
+        return;
+    };
+    let source = sink.rewards.encounter_facts(&creature);
+    let echo_effect =
+        super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000)
+            .and_then(|draw| {
+                runtime
+                    .record_echo_death(
+                        oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
+                            death: facts.death,
+                            occurrence: facts.occurrence,
+                            bestiary_stars: source.and_then(|source| source.bestiary_stars),
+                            has_boss_race: source.is_some_and(|source| source.has_boss_race),
+                            draw,
+                            now_ms,
+                        },
+                    )
+                    .ok()
+            });
+    let echo = (echo_effect
+        == Some(crate::domain::echo_warden::EchoDeathEffect::FirstSpeciesReward))
+    .then(|| {
+        super::echo_warden::rewards::capture_recipients(
+            runtime,
+            source
+                .and_then(|source| source.bestiary_stars)
+                .unwrap_or(u8::MAX),
+            &damage_shares,
+        )
+    });
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
             let Some(boss) = sink.rewards.boss(&creature) else {
                 refuse(reason.as_str(), &creature);
+                // Echo's first-species callback precedes ordinary loot admission in the
+                // donor. Missing a native corpse row must not lose these points.
+                if echo.is_some() {
+                    accept_kill(
+                        runtime,
+                        sink.queue,
+                        PendingKillSettlement {
+                            facts,
+                            creature,
+                            row: None,
+                            bosstiary_only: None,
+                            ground,
+                            target,
+                            activity_observed_at: observed_at,
+                            activity_at_death: None,
+                            damage_shares,
+                            forge: None,
+                            echo,
+                            callback_loot: Vec::new(),
+                            no_progression_logged: false,
+                        },
+                    );
+                }
                 return;
             };
             let entry = PendingKillSettlement::for_bosstiary(
@@ -1038,10 +1120,6 @@ pub fn record_creature_kill(
         };
         Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(amount);
     }
-    let Ok(damage_shares) = owner.reward_damage_shares(target) else {
-        refuse("damage_shares_unavailable", &creature);
-        return;
-    };
     sink.queue.freeze_proficiency(
         runtime,
         target,
@@ -1181,8 +1259,39 @@ pub fn record_creature_kill(
         // A proficiency-only entry reserves no loot MINT capacity.
         Arc::make_mut(&mut row).loot_table.entries.clear();
     }
+    let mut callback_loot = Vec::new();
+    if !top.is_gone() {
+        if echo.is_some() {
+            if let Some(scroll) =
+                super::echo_warden::drops::warden_scroll(runtime, sink.rewards, facts.occurrence)
+            {
+                callback_loot.push(scroll);
+            } else {
+                refuse("echo_warden_scroll_inadmissible", &creature);
+            }
+        }
+        let can_receive_loot = sink
+            .prey
+            .and_then(|states| states.live_stamina(principal.actor, principal.session))
+            .is_none_or(oteryn_gameplay_characters::stamina::hunting_loot_allowed);
+        if let Some(items) = super::echo_warden::drops::soul_core_drops(
+            runtime,
+            sink.rewards,
+            &creature,
+            facts.occurrence,
+            matches!(
+                forge_kind,
+                Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _))
+            ),
+            can_receive_loot,
+        ) {
+            callback_loot.extend(items);
+        }
+    }
     let entry = PendingKillSettlement {
         forge,
+        echo,
+        callback_loot,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1743,6 +1852,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let count = |table| {
             plan_creature_loot(seed, &row.loot_table_ref, table)
                 .map_or(0, |plan| plan.entries.len())
+                + entry.callback_loot.len()
         };
         let (before, after) = (count(loot_table), count(&extended));
         let extra = after.saturating_sub(before);
@@ -1775,6 +1885,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        if !admission.credit_echo_warden_death(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if let Some(boss) = &entry.bosstiary_only {
             let Some(_permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -1862,6 +1978,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 });
         let mut entry = entry.clone();
         let Some(mut row) = entry.row.take() else {
+            release_settled_corpse(
+                &mut *admission.runtime.lock().await,
+                &entry,
+                SettleVerdict::Final,
+            );
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -2003,6 +2124,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
+        super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
@@ -2270,6 +2392,46 @@ fn credit_proficiency(
         },
     })
 }
+
+/// Crystal player.cpp:6584-6607,12932-12936: only the non-summon stack-40 kill
+/// awards 1500 weapon points. It uses this existing proficiency owner and its normal
+/// contributor window, current equipment, daily bonus, duplicate and checkpoint rules.
+pub(super) fn credit_soulpit_weapon_proficiency(
+    owner: &mut super::weapon_proficiency::WeaponProficiencyDispatch,
+    reward: &super::soulpit::runtime::SoulpitBossReward,
+    session: GameSessionId,
+    contributor: crate::domain::weapon_proficiency::ProficiencyKillContributor<'_>,
+    daily_streak: u32,
+) -> Option<u32> {
+    if reward.death.tag.stack != crate::domain::soulpit::SoulpitStack::Boss
+        || reward.death.tag.is_summon
+        || !reward.death.damage_shares.iter().any(|share| {
+            share.session == Some(session)
+                && share.total > 0
+                && share.last_damage_at_ms == Some(contributor.last_damage_at_ms)
+        })
+    {
+        return None;
+    }
+    use sha2::{Digest, Sha256};
+    let roll = Sha256::new()
+        .chain_update(b"oteryn:daily-proficiency:v2\0")
+        .chain_update(reward.occurrence)
+        .chain_update(session.as_bytes())
+        .finalize();
+    let roll = (u16::from_be_bytes([roll[0], roll[1]]) % 100) as u8;
+    owner.dispatch_kill(super::weapon_proficiency::KillDispatch {
+        death_occurrence: reward.occurrence,
+        death_at_ms: reward.death_at_ms,
+        creature_is_summon: false,
+        points: daily_proficiency_points(Some(1500), daily_streak, roll),
+        contributor,
+    })
+}
+
+#[cfg(test)]
+#[path = "kill_reward/soulpit_tests.rs"]
+mod soulpit_proficiency_tests;
 
 /// Spoils increases every independent loot chance by its hundredths-of-percent bonus. The
 /// multiplication rounds up, matching Global's combat bonus rounding, and guaranteed drops cap

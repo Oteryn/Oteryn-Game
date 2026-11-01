@@ -103,6 +103,9 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     .expect("facts");
     PendingKillSettlement {
         forge: None,
+        // W06 callbacks are absent for this ordinary-kill fixture.
+        echo: None,
+        callback_loot: Vec::new(),
         damage_shares: Vec::new(),
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),

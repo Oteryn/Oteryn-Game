@@ -95,6 +95,7 @@ where
     A: FreshAdmissionAuthority,
 {
     channel_list(stream, authority, session).await?;
+    typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
@@ -127,6 +128,47 @@ where
             authority
                 .chat_delivered(session.admitted.game_session_id)
                 .await;
+        }
+    }
+    Ok(())
+}
+
+/// S19: queued typing changes share the CHAT cadence and revision stream.
+async fn typing<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::player_typing;
+    if !session
+        .selected_capabilities
+        .contains(player_typing::CAPABILITY_PLAYER_TYPING_V1)
+    {
+        return Ok(());
+    }
+    for _ in 0..EGRESS_MAX_LINES {
+        let Some(update) = authority.player_typing_next(session.admitted).await else {
+            break;
+        };
+        let payload = player_typing::encode_update(update);
+        let Some((sequence, frame, revision)) = chat_delta(
+            session.generation,
+            session.sequence,
+            session.admitted.continuity.chat_revision,
+            player_typing::DELTA_TYPE_PLAYER_TYPING_V1,
+            &payload,
+        ) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.admitted.continuity.chat_revision = revision;
+        if write_frame(stream, &frame).await.is_err() {
+            return Err(ServeEnd::Disconnected);
         }
     }
     Ok(())

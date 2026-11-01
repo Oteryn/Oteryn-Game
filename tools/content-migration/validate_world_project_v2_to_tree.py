@@ -729,6 +729,9 @@ def main() -> int:
     apply_summer_item_admissions(legacy_items, ROOT)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(legacy_items, ROOT)
+    # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.
+    from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+    apply_enchanting_admissions(legacy_items)
     require(migrated_items == legacy_items and expected_start == 34043, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

@@ -10,6 +10,8 @@ use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use std::sync::OnceLock;
 
+pub mod enchanting;
+
 #[derive(Debug)]
 pub struct CookingConversion {
     pub recipe: String,

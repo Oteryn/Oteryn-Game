@@ -111,6 +111,66 @@ pub struct SourceAppearanceTarget<'a> {
     pub facts: crate::foundation::ApplicationFacts<'a>,
     pub immunities: Vec<crate::foundation::ConditionType>,
 }
+/// Crystal creature.cpp:842-845 excludes life drain from baseline mitigation.
+/// Mana drain has its own mana owner and agony has its own staged condition path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayerHitKind {
+    /// Existing source without a qualified element; grants no elemental resistance.
+    Mitigated,
+    Physical,
+    Energy,
+    Fire,
+    Earth,
+    Ice,
+    Holy,
+    Death,
+    LifeDrain,
+    ManaDrain,
+}
+impl PlayerHitKind {
+    pub fn from_element(element: Option<&str>) -> Self {
+        match element {
+            Some("physical") => Self::Physical,
+            Some("energy") => Self::Energy,
+            Some("fire") => Self::Fire,
+            Some("earth") => Self::Earth,
+            Some("ice") => Self::Ice,
+            Some("holy") => Self::Holy,
+            Some("death") => Self::Death,
+            Some("life_drain") => Self::LifeDrain,
+            Some("mana_drain") => Self::ManaDrain,
+            _ => Self::Mitigated,
+        }
+    }
+    pub fn from_dot(element: oteryn_gameplay_domain::domain::condition::DotElement) -> Self {
+        use oteryn_gameplay_domain::domain::condition::DotElement;
+        match element {
+            DotElement::Poison => Self::Earth,
+            DotElement::Fire => Self::Fire,
+            DotElement::Energy => Self::Energy,
+            DotElement::Bleeding => Self::Physical,
+            DotElement::Freezing => Self::Ice,
+            DotElement::Dazzled => Self::Holy,
+            DotElement::Cursed => Self::Death,
+            DotElement::Drown => Self::Mitigated,
+        }
+    }
+    pub const fn resistance_key(self) -> Option<&'static str> {
+        match self {
+            Self::Physical => Some("Physical Resistance"),
+            Self::Energy => Some("Energy Resistance"),
+            Self::Fire => Some("Fire Resistance"),
+            Self::Earth => Some("Earth Resistance"),
+            Self::Ice => Some("Ice Resistance"),
+            Self::Holy => Some("Holy Resistance"),
+            Self::Death => Some("Death Resistance"),
+            Self::LifeDrain => Some("Life Drain Resistance"),
+            Self::ManaDrain => Some("Mana Drain Resistance"),
+            Self::Mitigated => None,
+        }
+    }
+}
+
 pub trait PlayerLethalVitals {
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
@@ -255,6 +315,52 @@ pub trait PlayerLethalVitals {
         } else {
             None
         }
+    }
+
+    /// Element-aware forwarding through the same damage/receipt owner.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_attack_damage(runtime, target, session, magnitude, occurrence, now)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_composite_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_composite_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            fence,
+            stamp,
+        )
     }
 
     fn apply_attack_damage(

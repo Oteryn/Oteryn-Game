@@ -118,6 +118,11 @@ pub use crate::domain::item_definition::ItemStackClass;
 /// Same admitted Content generation, resolved by the real producer, never a client revision.
 pub trait ItemWeightLookup: Send + Sync {
     fn generation_digest(&self) -> [u8; 32];
+    /// Live Premium authority for the account read from the locked Character root.
+    /// Content-only callers have no authority to activate Wheel capacity.
+    fn wheel_premium_current(&self, _account: [u8; 16]) -> bool {
+        false
+    }
     fn weight_of(
         &self,
         definition: &TypedDefinitionRef,
@@ -1128,7 +1133,7 @@ pub(super) async fn check_incoming_capacity(
             ItemTransferRefusal::WeightDefinitionMismatch
         }));
     }
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, character).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, character, weights).await?;
     // UNION ALL with an explicit path reports corrupt cycles instead of hiding them.
     // Every location is retained for duplicate/world validation; every actual instance
     // is locked, including non-container equipment and all backpack descendants.
@@ -1220,24 +1225,25 @@ fn weight_refusal(error: ItemWeightRefused) -> ItemTransferRefusal {
     }
 }
 
-/// D1199 base capacity from the actual locked progression/build, never a client capacity.
-/// Called only after the native current item fence in admit.
+/// Capacity from the actual locked progression/build and current Wheel/Atelier allocation.
+/// Called only after the native current item fence; Premium is read from the live owner.
 pub(super) async fn read_derived_transfer_capacity_centi_oz(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
+    weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<u64, DurabilityError> {
     // The native transfer fence already holds this live root. Reacquire that same row before
     // taking progression/build locks, retaining the native per-Character serialization order.
-    let live: Option<i32> = sqlx::query_scalar(
-        "SELECT 1 FROM game_character_roots \
+    let account: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(account_id) FROM game_character_roots \
          WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
     )
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    if live.is_none() {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    let account: [u8; 16] = account
+        .and_then(|bytes| bytes.try_into().ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
     let level: Option<i64> = sqlx::query_scalar(
         "SELECT level FROM game_character_progression_state \
          WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
@@ -1262,8 +1268,15 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
-        .map_err(|_| DurabilityError::InvalidStoredState)
+    let base = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let wheel = if weights.wheel_premium_current(account) {
+        super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
+            .await?
+    } else {
+        0
+    };
+    base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(

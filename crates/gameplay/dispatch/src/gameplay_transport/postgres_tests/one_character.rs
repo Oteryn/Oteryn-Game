@@ -187,7 +187,7 @@ fn one_character_postgres_different_accounts_admit_independently() -> TestResult
 
 #[test]
 fn one_character_postgres_dispatch_logout_frees_account() -> TestResult {
-    run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "onechar_logout", true, false).await?;
         eprintln!("POSTGRES_STARTED ONE-CHAR-1 logout");
         prepare_current_session(&h).await?;

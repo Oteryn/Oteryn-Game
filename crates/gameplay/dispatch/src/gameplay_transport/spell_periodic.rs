@@ -280,6 +280,7 @@ impl ChannelSpellStates {
         let stamp = runtime.issue_owner_work().ok()?;
         let before = self.get(runtime, actor, session)?;
         let prepared_result = crate::spell::periodic_execution::stage_player_periodic_turn(
+            runtime,
             before,
             actor,
             session,

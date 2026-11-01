@@ -80,6 +80,7 @@ pub struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
     pub(super) party: super::guild_chat::GuildChatRuntime,
+    pub(super) typing: super::player_typing::TypingRuntime,
     pub(super) vip: super::vip_presence::VipPresenceRuntime,
     pub(super) private_world: super::private_channel_world::PrivateChannelRuntime,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
@@ -109,6 +110,7 @@ impl ChatRuntime {
     ) {
         self.guild.forget(session);
         self.party.forget(session);
+        // Typing admission owns its generation-aware reset after this generic chat snapshot.
         self.vip.forget(session);
         self.private_world.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
@@ -435,6 +437,7 @@ impl ChatRuntime {
     pub fn forget(&self, session: GameSessionId) {
         self.guild.forget(session);
         self.party.forget(session);
+        self.typing.forget(session);
         self.vip.forget(session);
         self.private_world.forget(session);
         #[cfg(test)]

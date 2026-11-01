@@ -162,6 +162,7 @@ pub fn project(
         fatal_chance_permyriad: None,
         armor_penetration_permyriad: None,
         elemental_pierce_permyriad: None,
+        wheel_effects: None,
         wheel_flat_damage: wheel_flat.map(|value| value.0),
         wheel_flat_healing: wheel_flat.map(|value| value.1),
         source_damage_multiplier_percent: None,

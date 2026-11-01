@@ -201,6 +201,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
     Ranged(Box<super::super::attack::ranged::PendingShot>),
@@ -348,6 +349,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::Enchanting(pending) => {
+                drop(states);
+                self.resolve_enchanting(&mut permit, *pending).await;
+                return permit;
+            }
             UnresolvedSpellCommit::PlayerField(pending) => {
                 drop(states);
                 self.resolve_player_field(&mut permit, *pending).await;
@@ -641,8 +647,14 @@ impl PreparedNativeCombatCast {
                 .map_err(|_| Error::SnapshotChanged)?;
         }
         let mut physical = runtime.stage_spell_batch(&self.batch)?;
-        let mut player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
-            .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
+        let mut player = super::stage_player_batch_with_magnitude(
+            runtime,
+            states,
+            &self.batch,
+            Some(self.paid.clone()),
+            self.magnitude.as_deref(),
+        )
+        .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
         player.stage_item_spell_leech(&physical, self.item_spell_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.

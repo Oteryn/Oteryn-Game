@@ -149,20 +149,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .magic_level
                     .saturating_add(perks.skills[7]);
             }
-            if selected.character_facts.vocation == crate::spell::Vocation::EliteKnight
-                && self
-                    .wheel_stages(
-                        entry.session,
-                        "elite_knight",
-                        selected.character_facts.level,
-                        true,
-                    )
-                    .conviction_count("battle_instinct")
-                    > 0
-                && let Some(bonuses) = battle_instinct_for_actor(&mut runtime, entry.actor)
+            if selected.weapon.ranged.is_none()
+                && matches!(selected.weapon.weapon, SwingWeapon::Melee { skill, .. } if (1..=3).contains(&skill.index()))
+                && states
+                    .get(&runtime, entry.actor, entry.session)
+                    .and_then(|state| state.wheel_effects_at(now.get()))
+                    .is_some_and(|effects| effects.active_unique_perks.contains("battle_instinct"))
+                && let Some(bonuses) = battle_instinct_for_actor(&runtime, entry.actor)
             {
-                // Re-read the live census for every due swing. No equipment transition is
-                // needed to replace the previous adjacent-creature result (news 9024).
                 selected.skills.attack = selected.skills.attack.saturating_add(bonuses.melee);
                 selected.skills.shielding =
                     selected.skills.shielding.saturating_add(bonuses.shielding);
@@ -228,37 +222,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Conviction leech is part of the same primary-hit projection as equipment leech.
             // Recompute it for every due swing from the session's latest committed allocation;
             // the live spell-state Premium deadline prevents expired Premium from retaining it.
-            if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
-                let vocation = match selected.character_facts.vocation {
-                    crate::spell::Vocation::None => "none",
-                    crate::spell::Vocation::Druid => "druid",
-                    crate::spell::Vocation::ElderDruid => "elder_druid",
-                    crate::spell::Vocation::Sorcerer => "sorcerer",
-                    crate::spell::Vocation::MasterSorcerer => "master_sorcerer",
-                    crate::spell::Vocation::Knight => "knight",
-                    crate::spell::Vocation::EliteKnight => "elite_knight",
-                    crate::spell::Vocation::Paladin => "paladin",
-                    crate::spell::Vocation::RoyalPaladin => "royal_paladin",
-                    crate::spell::Vocation::Monk => "monk",
-                    crate::spell::Vocation::ExaltedMonk => "exalted_monk",
+            if let Some(state) = states.get(&runtime, entry.actor, entry.session)
+                && let Some(effects) = state.wheel_effects_at(now.get())
+            {
+                apply_wheel_leech(&mut offence, effects);
+                let global_critical =
+                    effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage") / 10;
+                let Ok(global_critical) = u16::try_from(global_critical) else {
+                    continue;
                 };
-                let promoted = !matches!(
-                    selected.character_facts.vocation,
-                    crate::spell::Vocation::None
-                        | crate::spell::Vocation::Druid
-                        | crate::spell::Vocation::Sorcerer
-                        | crate::spell::Vocation::Knight
-                        | crate::spell::Vocation::Paladin
-                        | crate::spell::Vocation::Monk
-                );
-                if let Some(wheel) = self.wheel_stat_bonuses(
-                    entry.session,
-                    vocation,
-                    selected.character_facts.level,
-                    promoted,
-                    state.hunting_premium_current(now.get()),
-                ) {
-                    apply_wheel_leech(&mut offence, &wheel);
+                offence.critical_damage = offence.critical_damage.saturating_add(global_critical);
+                if effects.active_unique_perks.contains("ballistic_mastery")
+                    && state.wheel_equipment().and_then(|hands| hands.ammunition())
+                        == Some(crate::content::ReferenceAmmoType::Bolt)
+                {
+                    offence.critical_damage = offence.critical_damage.saturating_add(1_000);
                 }
             }
             let cleaves = if offence.cleave > 0 {
@@ -363,19 +341,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if damage >= 0
                     && let Some(state) = states.get(&runtime, entry.actor, entry.session)
                 {
-                    if state.monk.is_some() && state.hunting_premium_current(now.get()) {
-                        let stage = self
-                            .wheel_stages(
-                                entry.session,
-                                "monk",
-                                selected.character_facts.level,
-                                state.wheel_promoted(),
-                            )
-                            .revelation_stage("ascetic");
-                        damage = damage.saturating_add(i64::from(
-                            state.ascetic_attack_bonus_at(stage, now.get()),
-                        ));
-                    }
                     damage = damage.saturating_mul(i64::from(
                         100 + state.virtue_party_bonuses(now.get()).auto_attack,
                     )) / 100;
@@ -429,6 +394,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     damage,
                     (swing.lineage.command_id().get(), ordinal),
                 );
+                // Soulpit Intense Hex reads the actual canonical condition slot. The raw
+                // melee/distance/wand request is reduced before armor and PvP splitting.
+                let Ok(conditions) =
+                    runtime.actor_conditions_at(entry.actor, Some(entry.session), now.get())
+                else {
+                    continue;
+                };
+                let Some(player) = states.get(&runtime, entry.actor, entry.session) else {
+                    continue;
+                };
+                let Some(retained) = player.conditions.damage_dealt_percent_with_hex_at(
+                    now.get(),
+                    conditions.intense_hex_delta_at(now.get()),
+                ) else {
+                    continue;
+                };
+                let Some(damage) = damage
+                    .checked_mul(i64::from(retained))
+                    .map(|value| value / 100)
+                else {
+                    continue;
+                };
+                if damage < 0 {
+                    continue;
+                }
                 if !runtime.contains_live_creature(target) {
                     let black = if extension {
                         self.pvp_target_legal(
@@ -525,6 +515,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &snapshot.state.policy,
                         damage,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
+                        states
+                            .get(&runtime, entry.actor, entry.session)
+                            .and_then(|state| {
+                                Some((
+                                    state,
+                                    now.get(),
+                                    u64::try_from(snapshot.health).ok()?,
+                                    u64::try_from(snapshot.maximum_health).ok()?,
+                                    crate::spell::cast::wheel_adjacent_target(
+                                        &runtime,
+                                        entry.actor,
+                                        target,
+                                    )?,
+                                ))
+                            }),
                     )
                 } else {
                     None
@@ -573,6 +578,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     landed
                 } else {
                     magnitude
+                };
+                let landed = if selected.weapon.ranged.is_none() {
+                    if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
+                        let Some((primary, _)) = state.finish_wheel_attack_components(
+                            landed,
+                            0,
+                            u64::try_from(snapshot.health).unwrap_or(0),
+                            u64::try_from(snapshot.maximum_health).unwrap_or(0),
+                            now.get(),
+                            match crate::spell::cast::wheel_adjacent_target(
+                                &runtime,
+                                entry.actor,
+                                target,
+                            ) {
+                                Some(adjacent) => adjacent,
+                                None => continue,
+                            },
+                        ) else {
+                            continue;
+                        };
+                        primary
+                    } else {
+                        landed
+                    }
+                } else {
+                    landed
                 };
                 let landed =
                     if !extension
@@ -866,28 +897,10 @@ mod wheel_leech_tests {
 }
 
 fn battle_instinct_for_actor(
-    runtime: &mut ChannelRuntimeV1,
+    runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
 ) -> Option<oteryn_gameplay_progression::wheel_effects::BattleInstinctBonuses> {
-    let at = runtime
-        .borrow_movement_position()
-        .read(actor)
-        .ok()?
-        .position();
-    let adjacent = runtime
-        .positioned_actor_census()
-        .ok()?
-        .into_iter()
-        .filter(|(candidate, position, session)| {
-            let position = position.position();
-            session.is_none()
-                && *candidate != actor
-                && position.floor == at.floor
-                && position.x.abs_diff(at.x) <= 1
-                && position.y.abs_diff(at.y) <= 1
-        })
-        .count();
-    let adjacent = u32::try_from(adjacent).ok()?;
+    let adjacent = crate::spell::cast::wheel_adjacent_monsters(runtime, actor)?;
     let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
     oteryn_gameplay_progression::wheel_effects::battle_instinct_bonuses(data.wheel(), adjacent)
 }
@@ -966,6 +979,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
+                .as_ref()
+                .and_then(|read| {
+                    read.components
+                        .primary
+                        .0
+                        .checked_add(read.components.secondary.0)
+                })
+                .map(i64::from)
         } else {
             swing_mitigated(
                 root,
@@ -983,31 +1004,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }) else {
             return;
         };
-        // EQUIP-PROTECTION-1 (`Player::blockHit`): what defence and armor left meets the
-        // target's worn physical protection, summed and applied once (EQUIP-0 §3.3).
-        let magnitude = match protection {
-            Some(sum) if mitigated > 0 && hit.weapon.ranged.is_none() => {
-                apply_protection(mitigated, sum).unwrap_or(mitigated)
-            }
-            _ => mitigated,
-        };
-        let magnitude = if hit.weapon.ranged.is_none() {
-            let Some(state) = states.get(runtime, hit.target, target_session) else {
-                return;
-            };
-            let Some(reduced) = super::monk_shrines::taken(
-                &self.states.quest_sessions,
-                target_session,
-                state.character_facts().vocation,
-                magnitude,
-            ) else {
-                return;
-            };
-            reduced
-        } else {
-            magnitude
-        };
-        let magnitude = if !hit.extension
+        let perfect_damage = if !hit.extension
             && hit
                 .weapon
                 .ranged
@@ -1016,18 +1013,90 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let offence =
                 equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
-            let bonus = runtime
+            let Some((from, to)) = runtime
                 .read_actor_position(hit.actor)
                 .ok()
                 .zip(runtime.read_actor_position(hit.target).ok())
-                .map_or(0, |(from, to)| {
-                    let (from, to) = (from.position(), to.position());
-                    offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
-                });
-            magnitude.saturating_add(bonus).max(0)
+            else {
+                return;
+            };
+            let (from, to) = (from.position(), to.position());
+            offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
         } else {
-            magnitude
+            0
         };
+        let parts = if hit.weapon.ranged.is_some() {
+            let Some(read) = &ranged_damage else {
+                return;
+            };
+            read.components
+        } else {
+            let Ok(primary) = u32::try_from(mitigated) else {
+                return;
+            };
+            crate::spell::cast::WheelAttackComponents {
+                primary: (primary, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (0, crate::player_lethal::PlayerHitKind::Physical),
+            }
+        };
+        let Some(attacker) = states.get(runtime, hit.actor, hit.session) else {
+            return;
+        };
+        let Some(target) = states.get(runtime, hit.target, target_session) else {
+            return;
+        };
+        let mut after_equipment = |magnitude: u32, kind: crate::player_lethal::PlayerHitKind| {
+            use crate::content::ReferenceResistanceKind as Kind;
+            use crate::player_lethal::PlayerHitKind;
+            let kind = match kind {
+                PlayerHitKind::Physical => Kind::Physical,
+                PlayerHitKind::Death => Kind::Death,
+                PlayerHitKind::Earth => Kind::Earth,
+                PlayerHitKind::Energy => Kind::Energy,
+                PlayerHitKind::Fire => Kind::Fire,
+                PlayerHitKind::Ice => Kind::Ice,
+                _ => return None,
+            };
+            let sum = ranged_damage
+                .as_ref()
+                .and_then(|read| read.protections.get(&kind).copied())
+                .or_else(|| hit.weapon.ranged.is_none().then_some(protection).flatten());
+            let magnitude = match sum {
+                Some(sum) => apply_protection(i64::from(magnitude), sum)?,
+                None => i64::from(magnitude),
+            };
+            let magnitude = if hit.weapon.ranged.is_none() {
+                super::monk_shrines::taken(
+                    &self.states.quest_sessions,
+                    target_session,
+                    target.character_facts().vocation,
+                    magnitude,
+                )?
+            } else {
+                magnitude
+            };
+            u32::try_from(magnitude).ok()
+        };
+        let Some(damage) = crate::spell::cast::PreparedWheelAttackHit::prepare(
+            runtime,
+            crate::spell::cast::WheelAttackActor {
+                actor: hit.actor,
+                session: hit.session,
+                state: attacker,
+            },
+            crate::spell::cast::WheelAttackActor {
+                actor: hit.target,
+                session: target_session,
+                state: target,
+            },
+            parts,
+            perfect_damage,
+            now.get(),
+            &mut after_equipment,
+        ) else {
+            return;
+        };
+        let magnitude = i64::from(damage.magnitude());
         if magnitude <= 0 {
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
             return;
@@ -1075,6 +1144,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 hit.ordinal,
                 hit.modes,
                 hit.black,
+                damage,
             )
             .await
         {
@@ -1217,7 +1287,8 @@ pub(super) fn select_swing(
                     .is_ok_and(|age| age <= constants.attack_interval_micros())
         })
         .cloned()?;
-    let character_facts = player.character_facts();
+    let mut character_facts = player.character_facts();
+    character_facts.magic_level = player.owned_effective_magic_level(now.get()).ok()?;
     // MELEE-SKILL-1: the swing reads the attacker's live skill of the swung weapon (fist for
     // fists) and live shielding, before the swing is taken, so an unresolved skill takes none.
     let attack_index = if weapon.ranged.is_some() {
@@ -1228,12 +1299,21 @@ pub(super) fn select_swing(
             SwingWeapon::Melee { skill, .. } => skill.index(),
         }
     };
-    let skills = player
+    let mut skills = player
         .swing_skills(attack_index, now.get())?
         .unwrap_or(SwingSkills {
             attack: constants.starting_skill,
             shielding: constants.starting_skill,
         });
+    if attack_index == 4
+        && player
+            .wheel_effects_at(now.get())
+            .is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
+        && crate::spell::cast::wheel_adjacent_monsters(runtime, entry.actor)? == 0
+    {
+        // Crystal player_wheel.cpp:3009-3017: the no-adjacent-monster branch adds 3 distance.
+        skills.attack = skills.attack.checked_add(3)?;
+    }
     let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
     // Vanished/dead/nonattackable targets still reach the original clearing rules, even
     // when ammunition is missing. Cost/range gates may only stall a valid held target.
@@ -1460,6 +1540,14 @@ fn settle_kill(
     }
 }
 
+struct RangedPlayerDamage {
+    components: crate::spell::cast::WheelAttackComponents,
+    protections: std::collections::BTreeMap<
+        crate::content::ReferenceResistanceKind,
+        crate::content::ReferenceRationalPercent,
+    >,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     async fn ranged_player_damage(
@@ -1473,10 +1561,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         constants: &AttackConstants,
         root: &GameplayDecisionRoot,
         armor: u32,
-    ) -> Option<i64> {
-        use crate::content::{ProjectV2RangedElement as Element, ReferenceResistanceKind as Kind};
+    ) -> Option<RangedPlayerDamage> {
+        use crate::content::ProjectV2RangedElement as Element;
         use crate::durability::character_equipment as equipment;
-        use oteryn_gameplay_items::equipment_effects::apply_protection;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_at(session)
@@ -1496,7 +1583,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })).await.ok()?;
         let (physical, elemental, element) = ranged.split(hit.magnitude)?;
         let physical = if physical > 0 {
-            let damage = oteryn_gameplay_combat_rules::resolution::swing_mitigated(
+            oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,
                 constants,
                 hit.actor.placement_identity(),
@@ -1508,28 +1595,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 physical,
                 None,
                 armor,
-            )?;
-            match effects.protections.get(&Kind::Physical) {
-                Some(sum) => apply_protection(damage, *sum)?,
-                None => damage,
-            }
+            )?
         } else {
             0
         };
-        let kind = match element {
-            Element::Physical => Kind::Physical,
-            Element::Death => Kind::Death,
-            Element::Earth => Kind::Earth,
-            Element::Energy => Kind::Energy,
-            Element::Fire => Kind::Fire,
-            Element::Ice => Kind::Ice,
-        };
-        let elemental = match effects.protections.get(&kind) {
-            Some(sum) => apply_protection(elemental, *sum)?,
-            None => elemental,
-        };
         runtime.player_control_facts(hit.target, session).ok()?;
-        physical.checked_add(elemental)
+        let element = match element {
+            Element::Physical => crate::player_lethal::PlayerHitKind::Physical,
+            Element::Death => crate::player_lethal::PlayerHitKind::Death,
+            Element::Earth => crate::player_lethal::PlayerHitKind::Earth,
+            Element::Energy => crate::player_lethal::PlayerHitKind::Energy,
+            Element::Fire => crate::player_lethal::PlayerHitKind::Fire,
+            Element::Ice => crate::player_lethal::PlayerHitKind::Ice,
+        };
+        let physical = u32::try_from(physical).ok()?;
+        let elemental = u32::try_from(elemental).ok()?;
+        let components = if matches!(ranged.damage, ranged::RangedDamage::Magic { .. }) {
+            crate::spell::cast::WheelAttackComponents {
+                primary: (elemental, element),
+                secondary: (0, element),
+            }
+        } else {
+            crate::spell::cast::WheelAttackComponents {
+                primary: (physical, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (elemental, element),
+            }
+        };
+        Some(RangedPlayerDamage {
+            components,
+            protections: effects.protections,
+        })
     }
 }
 

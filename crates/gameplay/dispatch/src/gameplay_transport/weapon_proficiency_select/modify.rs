@@ -6,13 +6,13 @@
 //! backpack entries, then nested containers breadth first; an orb is never equipped) and the
 //! writer burns it in the receipt's transaction (1C §5).
 use super::*;
-use crate::durability::item_use::proficiency_orb::LUNAR_ASCENSION_ORB;
-use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::durability::character_proficiency_modification::{
     ProficiencyModificationBoundRevisions, ProficiencyModificationCommand,
     ProficiencyModificationContext, ProficiencyModificationOutcome, ProficiencyShapingSource,
     proficiency_shaping_key,
 };
+use crate::durability::item_use::proficiency_orb::LUNAR_ASCENSION_ORB;
+use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::gameplay_transport::weapon_proficiency::{
     ProductionProficiencyCatalogue, ProductionProficiencyShaping, ProficiencyAttackEffects,
 };
@@ -21,13 +21,14 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
     ProficiencyModificationCommandKind, ProficiencyModificationResult,
 };
 use oteryn_protocol_oteryn::weapon_proficiency::{
-    ModificationOperation, ModificationReply, ModificationRequest, ModificationResult,
-    ModifiedSlot,
+    ModificationOperation, ModificationReply, ModificationRequest, ModificationResult, ModifiedSlot,
 };
 
 const fn kind(operation: ModificationOperation) -> ProficiencyModificationCommandKind {
     match operation {
-        ModificationOperation::Modify { level } => ProficiencyModificationCommandKind::Modify { level },
+        ModificationOperation::Modify { level } => {
+            ProficiencyModificationCommandKind::Modify { level }
+        }
         ModificationOperation::RankUp => ProficiencyModificationCommandKind::RankUp,
         ModificationOperation::OrbRank => ProficiencyModificationCommandKind::OrbRank,
         ModificationOperation::ReshapeOffer => ProficiencyModificationCommandKind::ReshapeOffer,
@@ -86,12 +87,13 @@ fn reply(outcome: &ProficiencyModificationOutcome) -> ModificationReply {
 
 /// PROF-EFFECT-0 applies a committed row at once: the session's live track takes the slot's
 /// row and recomputes its attack effects. A row without a known value grants no effect.
-fn refresh_live(
+async fn refresh_live(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     catalogue: &ProductionProficiencyCatalogue,
+    actor: ExactActorRef,
     session: GameSessionId,
     outcome: &ProficiencyModificationOutcome,
-) {
+) -> Option<()> {
     if let ProficiencyModificationOutcome::Committed(committed)
     | ProficiencyModificationOutcome::AlreadyCommitted(committed) = outcome
         && let Ok(mut states) = owner.states.proficiencies.lock()
@@ -113,6 +115,14 @@ fn refresh_live(
             };
         }
     }
+    if let ProficiencyModificationOutcome::Committed(committed)
+    | ProficiencyModificationOutcome::AlreadyCommitted(committed) = outcome
+    {
+        owner
+            .refresh_equipped_proficiency_defense(actor, session, &committed.item_key)
+            .await?;
+    }
+    Some(())
 }
 
 const fn refused(result: ModificationResult) -> Option<ModificationReply> {
@@ -120,7 +130,12 @@ const fn refused(result: ModificationResult) -> Option<ModificationReply> {
 }
 
 /// A UUIDv7-shaped identity of one modification, bound to its CommandRef and actor (1B §6.1).
-fn derived(label: &[u8], actor: ExactActorRef, session: GameSessionId, command_id: u64) -> [u8; 16] {
+fn derived(
+    label: &[u8],
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command_id: u64,
+) -> [u8; 16] {
     let digest = Sha256::new()
         .chain_update(label)
         .chain_update(actor.placement_identity())
@@ -262,7 +277,10 @@ pub(in crate::gameplay_transport) async fn execute(
         )
         .await
     {
-        Ok(Some(outcome)) => return Some(reply(&outcome)),
+        Ok(Some(outcome)) => {
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
+            return Some(reply(&outcome));
+        }
         Ok(None) => {}
         Err(CharacterProgressionError::ConflictingOccurrence) => {
             return refused(ModificationResult::Conflict);
@@ -339,7 +357,7 @@ pub(in crate::gameplay_transport) async fn execute(
     drop(slot);
     match outcome {
         Ok(outcome) => {
-            refresh_live(owner, catalogue, session, &outcome);
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
             Some(reply(&outcome))
         }
         Err(CharacterProgressionError::ConflictingOccurrence) => {
@@ -350,19 +368,19 @@ pub(in crate::gameplay_transport) async fn execute(
             refused(ModificationResult::StaleRevision)
         }
         // An unknown outcome is reconciled by the occurrence; still unknown disconnects.
-        Err(_) => owner
-            .root
-            .reconcile_character_proficiency_modification(
-                owner.character,
-                fence.character_id,
-                modification,
-            )
-            .await
-            .ok()?
-            .map(|outcome| {
-                refresh_live(owner, catalogue, session, &outcome);
-                reply(&outcome)
-            }),
+        Err(_) => {
+            let outcome = owner
+                .root
+                .reconcile_character_proficiency_modification(
+                    owner.character,
+                    fence.character_id,
+                    modification,
+                )
+                .await
+                .ok()??;
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
+            Some(reply(&outcome))
+        }
     }
 }
 

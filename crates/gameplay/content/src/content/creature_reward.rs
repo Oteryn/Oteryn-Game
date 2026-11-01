@@ -3,7 +3,7 @@
 //! without a settleable row fails closed: its kill settles nothing and logs one
 //! `kill_reward_refused` line with the reason.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, LazyLock};
 
 use oteryn_simulation_determinism::ExactI64;
@@ -36,6 +36,19 @@ pub struct CreatureRewardRow {
     pub loot_table: LootTableDefinition,
     pub race: Option<BestiaryRace>,
     pub boss: Option<BosstiaryBoss>,
+}
+
+/// Facts of admitted native profiles used by Soulpit and Echo Warden. Conversion draws use
+/// the separate pinned source roster, which does not admit additional native identities.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreatureEncounterFacts {
+    pub display_name: String,
+    pub bestiary_stars: Option<u8>,
+    pub has_boss_race: bool,
+    pub maximum_health: Option<u64>,
+    pub experience: Option<u64>,
+    pub soul_core: Option<LootDefinitionRef>,
+    source_soul_core: Option<(u32, LootDefinitionRef)>,
 }
 
 /// Why a creature's kill settles nothing.
@@ -76,9 +89,66 @@ pub struct CreatureRewardTable {
     bosses: HashMap<String, BosstiaryBoss>,
     forge_sliver: Option<LootDefinitionRef>,
     daily_boss_equipment: HashSet<String>,
+    encounter_facts: BTreeMap<String, CreatureEncounterFacts>,
+    admitted_source_items: HashMap<u32, LootDefinitionRef>,
 }
 
 impl CreatureRewardTable {
+    /// Native encounter facts, independent of ordinary corpse loot admission.
+    pub fn encounter_facts(&self, creature: &str) -> Option<&CreatureEncounterFacts> {
+        self.encounter_facts.get(creature)
+    }
+
+    /// Mintable Item references already admitted by this generation's existing loot owner.
+    pub fn admitted_source_item(&self, source_id: u32) -> Option<&LootDefinitionRef> {
+        self.admitted_source_items.get(&source_id)
+    }
+
+    /// Additional callback Items are admitted by the same validated native Item profiles as
+    /// carried equipment and use. Regular monster loot tables are not the complete Item set.
+    pub(crate) fn with_encounter_items(
+        mut self,
+        items: Option<&super::native_gameplay::ItemProfilesDocument>,
+    ) -> Self {
+        if let Some(items) = items {
+            for record in &items.records {
+                if !record.admission.materializable {
+                    continue;
+                }
+                let definition = &record.production_definition;
+                if definition.family != "Item"
+                    || definition.production_key != record.production_binding.target.key
+                    || definition.revision_ref != record.production_binding.target.revision
+                {
+                    continue;
+                }
+                let Ok(source_id) = record.production_binding.external_id.parse::<u32>() else {
+                    continue;
+                };
+                if source_id == 0 {
+                    continue;
+                }
+                self.admitted_source_items.insert(
+                    source_id,
+                    LootDefinitionRef::new(
+                        &definition.family,
+                        &definition.production_key,
+                        &definition.revision_ref,
+                    ),
+                );
+            }
+        }
+        for facts in self.encounter_facts.values_mut() {
+            facts.soul_core = facts.source_soul_core.as_ref().and_then(|(id, expected)| {
+                self.admitted_source_items
+                    .get(id)
+                    .filter(|actual| *actual == expected)
+                    .cloned()
+            });
+        }
+        self
+    }
+
     /// Boss credit is independent of corpse and loot materialization admission.
     pub fn boss(&self, creature: &str) -> Option<&BosstiaryBoss> {
         self.bosses.get(creature)
@@ -444,13 +514,80 @@ impl CreatureRewardTable {
             .iter()
             .find(|facts| facts.item.key == "oteryn:item.tibia.i37109" && facts.materializable)
             .map(|facts| facts.item.lower());
+        let admitted_source_items = section
+            .items
+            .iter()
+            .filter(|facts| facts.materializable)
+            .filter_map(|facts| {
+                let source_id = facts
+                    .item
+                    .key
+                    .strip_prefix("oteryn:item.tibia.i")?
+                    .parse()
+                    .ok()?;
+                Some((source_id, facts.item.lower()))
+            })
+            .collect::<HashMap<u32, LootDefinitionRef>>();
+        let encounter_facts = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                let details = profile.details.as_ref()?;
+                let source_soul_core = details.soul_core_item.as_ref().and_then(|core| {
+                    let source_id = core.key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+                    (core.family == super::ProjectV2Family::Item).then(|| {
+                        (
+                            source_id,
+                            LootDefinitionRef::new("Item", &core.key, &core.revision),
+                        )
+                    })
+                });
+                let soul_core = source_soul_core.as_ref().and_then(|(id, expected)| {
+                    admitted_source_items
+                        .get(id)
+                        .filter(|actual| *actual == expected)
+                        .cloned()
+                });
+                Some((
+                    record.profile.target.key.clone(),
+                    CreatureEncounterFacts {
+                        display_name: details.display_name.clone(),
+                        bestiary_stars: source_bestiary_stars(profile),
+                        has_boss_race: details
+                            .bosstiary
+                            .as_ref()
+                            .is_some_and(|boss| !boss.category.is_empty())
+                            || profile
+                                .bosstiary
+                                .as_ref()
+                                .is_some_and(|boss| !boss.category.is_empty()),
+                        maximum_health: profile.health,
+                        experience: profile.experience,
+                        soul_core,
+                        source_soul_core,
+                    },
+                ))
+            })
+            .collect();
         Self {
             rows,
             bosses,
             forge_sliver,
             daily_boss_equipment: HashSet::new(),
+            encounter_facts,
+            admitted_source_items,
         }
     }
+}
+
+/// W07/Echo rules read exact Crystal 201189f stars. Native Bestiary progression is
+/// separately authored and intentionally remains unchanged by this encounter metadata.
+fn source_bestiary_stars(profile: &ProjectV2CreatureAuthoring) -> Option<u8> {
+    let name = &profile.details.as_ref()?.display_name;
+    oteryn_gameplay_domain::domain::soulpit::source_monster(name).map(|monster| monster.stars)
 }
 
 fn row(
@@ -538,4 +675,40 @@ fn boss_metadata(profile: &ProjectV2CreatureAuthoring, key: &str) -> Option<Boss
         key: key.to_owned(),
         category: category.to_owned(),
     })
+}
+
+#[cfg(test)]
+mod encounter_source_tests {
+    use super::*;
+
+    #[test]
+    fn encounter_stars_follow_pinned_source_without_rewriting_native_bestiary()
+    -> Result<(), serde_json::Error> {
+        for (name, native, expected) in [
+            ("Chocolate Blob", 0, Some(1)),
+            ("Corrupted Skeleton", 1, Some(2)),
+            ("fixture:unknown-source", 5, None),
+        ] {
+            let profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
+                "details": {
+                    "display_name": name, "inspection": "", "defense": 0, "critical_chance_ppm": 0,
+                    "flags": {"attackable": true, "illusionable": false, "health_hidden": false},
+                    "summoning": {"summonable": false, "convinceable": false, "is_familiar": false},
+                    "system_eligibility": {"prey": false, "exclusive_prey": false, "forge": false, "reward_boss": false},
+                    "spawn_eligibility": {"period": "All", "ignore_period_underground": false, "blocked_by_nearby_players": false},
+                    "bestiary": {"class": "fixture", "taxonomy": "fixture", "stars": native}
+                }
+            }))?;
+            assert_eq!(source_bestiary_stars(&profile), expected, "{name}");
+            assert_eq!(
+                profile
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.bestiary.as_ref())
+                    .and_then(|bestiary| bestiary.stars),
+                Some(native)
+            );
+        }
+        Ok(())
+    }
 }

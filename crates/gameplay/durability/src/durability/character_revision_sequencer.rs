@@ -574,12 +574,30 @@ impl RevisionSlot {
         facts: WheelChangeFacts,
         gate: &G,
     ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
+        self.commit_wheel_with_admission(root, authority, node, fence, request, ruleset, facts, gate, &|| true)
+            .await
+    }
+
+    /// A caller-owned decision is retained across the existing revision retry.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_wheel_with_admission<G: super::character_wheel::WheelPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: WheelChangeRequest,
+        ruleset: std::sync::Arc<WheelRuleset>,
+        facts: WheelChangeFacts,
+        gate: &G,
+        admit: &(impl Fn() -> bool + Sync),
+    ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
             fence,
             Expect::Cursor(OnMismatch::RetryOnce),
             |fence| {
-                root.commit_character_wheel(
+                root.commit_character_wheel_with_admission(
                     authority,
                     node,
                     fence,
@@ -587,6 +605,7 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&ruleset),
                     facts,
                     gate,
+                    admit,
                 )
             },
         )
