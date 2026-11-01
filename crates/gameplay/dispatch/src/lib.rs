@@ -185,6 +185,10 @@ mod creature_damage_spell_appearance_execution_tests;
 mod creature_damage_spell_composed_tests;
 
 #[cfg(test)]
+#[path = "lifted_tests/creature_encounter_refusals_tests.rs"]
+mod creature_encounter_refusals_tests;
+
+#[cfg(test)]
 #[path = "lifted_tests/spell_house_execution_tests.rs"]
 mod spell_house_execution_tests;
 

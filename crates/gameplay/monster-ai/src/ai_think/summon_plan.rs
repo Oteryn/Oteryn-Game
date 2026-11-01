@@ -1,6 +1,6 @@
 //! One targeting pass followed by the native attack/defence/summon schedule.
 pub mod summon_path;
-use super::profile_schedule::{MonsterSummonFacts, ProfileScheduleInput};
+use super::profile_schedule::{MonsterSummonFacts, NativeAttackFacts, ProfileScheduleInput};
 use super::*;
 use crate::foundation::ChannelRuntimeV1;
 
@@ -22,9 +22,22 @@ pub(super) struct PreparedCreatureThink {
     forced_target: Option<(ExactActorRef, u64)>,
     forced_distance: Option<u64>,
     change_ticks_ms: u64,
+    target_disappeared: bool,
 }
 
 impl CreatureAiState {
+    pub(super) fn current_flee_health(&self, runtime: &ChannelRuntimeV1) -> u64 {
+        let base_flee = self.profile.behavior().targeting.flee_health;
+        if runtime.echo_variant(self.actor)
+            == Some(oteryn_gameplay_domain::domain::echo_warden::EchoVariant::Warden)
+        {
+            // Crystal's applyEchoWarden scales the absolute flee threshold with HP.
+            base_flee.saturating_mul(4)
+        } else {
+            base_flee
+        }
+    }
+
     pub(super) fn select_think(
         &self,
         sequence: u64,
@@ -61,6 +74,7 @@ impl CreatureAiState {
                 forced_target: self.forced_target,
                 forced_distance: self.forced_distance,
                 change_ticks_ms: self.change_ticks_ms,
+                target_disappeared: false,
             });
         }
         let position = facts.position;
@@ -91,6 +105,7 @@ impl CreatureAiState {
                 forced_target: self.forced_target,
                 forced_distance: self.forced_distance,
                 change_ticks_ms: self.change_ticks_ms,
+                target_disappeared: false,
             });
         }
 
@@ -105,17 +120,22 @@ impl CreatureAiState {
         };
         let find =
             |actor: ExactActorRef| eligible.iter().find(|candidate| candidate.actor == actor);
+        // Crystal monster.cpp:306-308 resets the attack clock and grants an extra melee
+        // when the attacked creature disappears, including replacement in this same think.
+        let target_disappeared = self.target.is_some_and(|actor| find(actor).is_none());
         let strategy_search = |index: u64| -> Result<Option<ExactActorRef>, ThinkError> {
-            let strategy = targeting::pick_strategy(
-                targeting.strategy_weights,
-                draw(PURPOSE_TARGET_SEARCH, index)?,
-            );
-            Ok(targeting::select(
-                strategy,
-                position,
-                &eligible,
-                draw(PURPOSE_TARGET_SEARCH, index + 1)?,
-            ))
+            let strategy_draw = draw(PURPOSE_TARGET_SEARCH, index)?;
+            let strategy = if self.profile.is_native() {
+                targeting::pick_native_strategy(targeting.strategy_weights, strategy_draw)
+            } else {
+                targeting::pick_strategy(targeting.strategy_weights, strategy_draw)
+            };
+            let draw = draw(PURPOSE_TARGET_SEARCH, index + 1)?;
+            Ok(if self.profile.is_native() {
+                targeting::select_native(strategy, position, &eligible, draw)
+            } else {
+                targeting::select(strategy, position, &eligible, draw)
+            })
         };
 
         // Overrides expire at their deadline; a forced target holds only while eligible.
@@ -161,6 +181,7 @@ impl CreatureAiState {
             && change.interval_ms > 0
             && target.is_some()
             && !override_holds
+            && !self.is_summon
         {
             change_ticks_ms = change_ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
             if change_ticks_ms >= change.interval_ms {
@@ -185,7 +206,7 @@ impl CreatureAiState {
         }
         // §2.1 item 6: flee while hurt and no override holds; the strategy draw picks whom
         // to flee from when the target cannot be attacked from here.
-        let fleeing = !override_holds && facts.health <= flee_health;
+        let fleeing = !self.is_summon && !override_holds && facts.health <= flee_health;
         if fleeing
             && target.is_none_or(|actor| !in_range(actor))
             && let Some(found) = strategy_search(4)?
@@ -233,6 +254,7 @@ impl CreatureAiState {
                 .filter(|(_, until)| facts.now_us < *until)),
             forced_distance,
             change_ticks_ms,
+            target_disappeared,
         })
     }
 
@@ -252,22 +274,41 @@ impl CreatureAiState {
             actor: self.actor,
             sequence: selected.report.sequence,
         };
-        match self.schedule.prepare_with_summons(
-            ProfileScheduleInput {
-                occurrence,
-                behavior: self.profile.behavior(),
-                abilities: self.profile.abilities(),
-                target: selected.attack_target,
-                revisions: facts.revisions,
-                root: facts.root,
-            },
-            summons,
-        ) {
+        let input = ProfileScheduleInput {
+            occurrence,
+            behavior: self.profile.behavior(),
+            abilities: self.profile.abilities(),
+            target: selected.attack_target,
+            revisions: facts.revisions,
+            root: facts.root,
+        };
+        let prepared = if self.profile.is_native() {
+            self.schedule.prepare_native_with_summons(
+                input,
+                summons,
+                NativeAttackFacts {
+                    now_us: facts.now_us,
+                    fleeing: selected.report.fleeing,
+                    target_disappeared: selected.target_disappeared,
+                },
+            )
+        } else {
+            self.schedule.prepare_with_summons(input, summons)
+        };
+        match prepared {
             Ok(plan) => {
                 selected.report.proposals = plan.proposals;
                 selected.report.summon_proposals = plan.summon_proposals;
             }
             Err(error) => selected.report.refusal = Some(error),
+        }
+        if let Some(target) = selected.report.target
+            && let Some(candidate) = facts
+                .players
+                .iter()
+                .find(|candidate| candidate.actor == target)
+        {
+            self.update_attack_facing(facts.position, candidate.position);
         }
         self.target = selected.report.target;
         self.unreachable = false;
@@ -286,15 +327,7 @@ impl CreatureAiState {
         reader: &mut impl MonsterThinkReader,
         route_hint: Option<(ExactActorRef, Vec<MovementLocalPosition>)>,
     ) -> Result<ThinkReport, ThinkError> {
-        let base_flee = self.profile.behavior().targeting.flee_health;
-        let flee_health = if runtime.echo_variant(self.actor)
-            == Some(oteryn_gameplay_domain::domain::echo_warden::EchoVariant::Warden)
-        {
-            // Crystal's applyEchoWarden scales the absolute flee threshold with HP.
-            base_flee.saturating_mul(4)
-        } else {
-            base_flee
-        };
+        let flee_health = self.current_flee_health(runtime);
         let selected = self.select_think(sequence, facts, flee_health)?;
         let summons = if self.profile.behavior().summons.is_some() && !selected.report.over_budget {
             reader
@@ -355,6 +388,20 @@ impl CreatureAiTable {
         if runtime.owner_fence().is_err() {
             return Vec::new();
         }
+        // The current pass may have committed player chase before starting these thinks.
+        // Preserve the owner's eligibility/vitals facts, refresh only its positioned census.
+        let players = players
+            .iter()
+            .filter_map(|candidate| {
+                let position = runtime.read_actor_position(candidate.actor).ok()?;
+                (position.context() == runtime.pinned_movement_context()).then_some(
+                    TargetCandidate {
+                        position: position.position(),
+                        ..*candidate
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
         let (taken, _) = self.take_due_bounded(now_us);
         let mut reports = Vec::new();
         for actor in taken {
@@ -381,6 +428,11 @@ impl CreatureAiTable {
                 );
             }
             let route = self.retained_summon_route(runtime, actor);
+            let Some(players) =
+                targeting::with_current_damage(runtime, actor, position.position(), &players)
+            else {
+                continue;
+            };
             let Some(entry) = self.entry_mut(actor) else {
                 continue;
             };
@@ -390,7 +442,7 @@ impl CreatureAiTable {
                 has_active_condition: runtime
                     .actor_conditions(actor, None)
                     .is_ok_and(|store| !store.instances().is_empty()),
-                players,
+                players: &players,
                 now_us,
                 root,
                 revisions,
@@ -404,6 +456,7 @@ impl CreatureAiTable {
                 entry.sequence = sequence;
                 entry.due_us = (!report.idle)
                     .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));
+                self.record_native_attack_positions(actor, runtime);
                 consume(runtime, self, actor, &report, reader);
                 reports.push((actor, report));
             }

@@ -182,10 +182,22 @@ impl ChannelRuntimeV1 {
         &mut self,
         position: MovementLocalPosition,
     ) -> Result<ExactActorRef, CarrierError> {
+        self.admit_pinned_monster_lab_creature(position, "test:creature", 20)
+    }
+    /// Test-only native creature admission under the active pin's position context.
+    /// Unlike the legacy laboratory helper, this may participate in current-context
+    /// occupancy and movement observations without inventing a foreign Content binding.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn admit_pinned_monster_lab_creature(
+        &mut self,
+        position: MovementLocalPosition,
+        creature_key: &str,
+        health: i64,
+    ) -> Result<ExactActorRef, CarrierError> {
         let context = self.pinned_position_context();
         let actor =
             self.carrier
-                .admit_creature(&self.continuity, ActorState(0), "test:creature", 20)?;
+                .admit_creature(&self.continuity, ActorState(0), creature_key, health)?;
         self.carrier.initialize_position(
             &self.continuity,
             actor,

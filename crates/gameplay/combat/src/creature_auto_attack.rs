@@ -236,8 +236,36 @@ pub struct MeleeSource {
     shield: bool,
     fingerprint: [u8; 32],
     pub content_digest: [u8; 32],
+    bite_definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
 }
 impl MeleeSource {
+    /// Revalidate the private native source closure against this owner's current issuer and
+    /// the exact schedule/bounds consumed by the existing bite adapter. A public boolean or
+    /// arbitrary cooldown value cannot opt an unqualified bite into source scheduling.
+    pub fn admits_bite_definition(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+    ) -> bool {
+        runtime.contains_live_creature(issuer)
+            && definition == self.bite_definition
+            && runtime.matches_live_creature_identity(issuer, self.creature_key.as_bytes())
+            && runtime.content_pin().server_artifact_digest() == self.content_digest
+            && definition.content_digest == self.content_digest
+            && usize::from(definition.entry_index) == self.entry_index
+            && definition.interval_us == self.interval_micros
+            && definition.chance_ppm == self.chance_ppm
+            && definition.minimum == self.minimum
+            && definition.maximum == self.maximum
+    }
+
+    /// Native secondary damage conditions, already qualified with this source closure.
+    /// The current player condition owner still decides immunity and atomic admission.
+    pub fn conditions(&self) -> &[ConditionDefinition] {
+        &self.conditions
+    }
+
     /// All profiles/records must come from the owner's currently pinned native artifact.
     /// The complete source closure is fingerprinted; unsupported multi-effect attacks refuse.
     pub fn from_native(
@@ -390,6 +418,16 @@ impl MeleeSource {
         }
         let minimum = u32::try_from(minimum).map_err(|_| AttackError::NumericOverflow)?;
         let maximum = u32::try_from(maximum).map_err(|_| AttackError::NumericOverflow)?;
+        let bite_definition =
+            oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition::new_native(
+                content_digest,
+                e.interval_ms,
+                e.chance_ppm,
+                minimum,
+                maximum,
+            )
+            .ok_or(AttackError::InvalidSource)?
+            .with_entry_index(u16::try_from(index).map_err(|_| AttackError::InvalidSource)?);
         let fingerprint = if let Some(policy) = critical {
             Sha256::digest(
                 serde_json::to_vec(&(
@@ -437,6 +475,7 @@ impl MeleeSource {
             shield: ep.mitigated_by.contains(&ProjectV2Mitigation::Shield),
             fingerprint,
             content_digest,
+            bite_definition,
         })
     }
 }

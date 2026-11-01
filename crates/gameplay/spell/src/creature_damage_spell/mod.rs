@@ -60,7 +60,148 @@ pub struct SpellSource {
     pub needs_target: bool,
     pub needs_direction: bool,
 }
+fn source_cast_center(
+    area: Option<&ProjectV2AbilityArea>,
+    needs_target: bool,
+    needs_direction: bool,
+    from: crate::foundation::MovementLocalPosition,
+    to: crate::foundation::MovementLocalPosition,
+    facing: Option<Facing>,
+) -> Result<crate::foundation::MovementLocalPosition, AttackError> {
+    if from.floor != to.floor {
+        return Err(AttackError::OutOfRange);
+    }
+    if area.is_none() || needs_target {
+        return Ok(to);
+    }
+    if needs_direction {
+        let (x, y) = geometry::step(facing.ok_or(AttackError::MissingCombatFacts)?);
+        return Ok(crate::foundation::MovementLocalPosition {
+            x: from.x.checked_add(x).ok_or(AttackError::NumericOverflow)?,
+            y: from.y.checked_add(y).ok_or(AttackError::NumericOverflow)?,
+            floor: from.floor,
+        });
+    }
+    Ok(from)
+}
+fn source_target_tiles(
+    area: Option<&ProjectV2AbilityArea>,
+    needs_target: bool,
+    needs_direction: bool,
+    from: crate::foundation::MovementLocalPosition,
+    to: crate::foundation::MovementLocalPosition,
+    facing: Option<Facing>,
+) -> Result<Vec<(i32, i32, i16)>, AttackError> {
+    let center = source_cast_center(area, needs_target, needs_direction, from, to, facing)?;
+    let Some(area) = area else {
+        return Ok(vec![(center.x, center.y, center.floor)]);
+    };
+    let diagonal =
+        matches!(area,ProjectV2AbilityArea::Matrix { diagonal,.. } if !diagonal.is_empty());
+    let direction = geometry::direction(
+        i64::from(center.x) - i64::from(from.x),
+        i64::from(center.y) - i64::from(from.y),
+        diagonal,
+    );
+    geometry::offsets(area, direction)
+        .map_err(|_| AttackError::UnsupportedShape)?
+        .into_iter()
+        .map(|(x, y)| {
+            Ok((
+                center
+                    .x
+                    .checked_add(x)
+                    .ok_or(AttackError::NumericOverflow)?,
+                center
+                    .y
+                    .checked_add(y)
+                    .ok_or(AttackError::NumericOverflow)?,
+                center.floor,
+            ))
+        })
+        .collect()
+}
 impl SpellSource {
+    /// Source cast center shared by tile admission and the damage owner.
+    /// Crystal CombatSpell::castSpell selects the target, next facing tile, or caster.
+    pub fn cast_center(
+        &self,
+        from: crate::foundation::MovementLocalPosition,
+        to: crate::foundation::MovementLocalPosition,
+        facing: Option<Facing>,
+    ) -> Result<crate::foundation::MovementLocalPosition, AttackError> {
+        source_cast_center(
+            self.area.as_ref(),
+            self.needs_target,
+            self.needs_direction,
+            from,
+            to,
+            facing,
+        )
+    }
+    /// Authored tiles before independently current collision, sight and PZ admission.
+    /// Reuses the existing area geometry owner for every admitted creature.
+    pub fn target_tiles(
+        &self,
+        from: crate::foundation::MovementLocalPosition,
+        to: crate::foundation::MovementLocalPosition,
+        facing: Option<Facing>,
+    ) -> Result<Vec<(i32, i32, i16)>, AttackError> {
+        source_target_tiles(
+            self.area.as_ref(),
+            self.needs_target,
+            self.needs_direction,
+            from,
+            to,
+            facing,
+        )
+    }
+
+    /// Select the existing source variant once for this parent occurrence. The same
+    /// child supplies dispatch geometry and the effect owner; this is not a new draw stream.
+    pub fn selected_variant(
+        &self,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<Option<(usize, &Self)>, AttackError> {
+        if self.variants.is_empty() {
+            return Ok(None);
+        }
+        if proposal.ability != self.ability
+            || proposal.entry_index != self.entry_index
+            || proposal.list != self.list
+        {
+            return Err(AttackError::InvalidSource);
+        }
+        let root = GameplayDecisionRoot::from_bytes(self.content_digest);
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:creature-source-variant:v1")
+            .chain_update(proposal.occurrence.id().as_str().as_bytes())
+            .finalize();
+        let mut id = [0; 16];
+        id.copy_from_slice(&digest[..16]);
+        let decision = deterministic_decision_u64(
+            &root,
+            DecisionOccurrenceId::from_bytes(id),
+            "source_variant_once_per_cast",
+            self.entry_index as u64,
+        )
+        .map_err(|_| AttackError::InvalidPlan)?;
+        let selected = usize::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+            decision,
+            0,
+            (self.variants.len() - 1) as i64,
+        ))
+        .map_err(|_| AttackError::InvalidPlan)?;
+        match self
+            .variants
+            .get(selected)
+            .ok_or(AttackError::InvalidPlan)?
+        {
+            Ok(child) => Ok(Some((selected, child))),
+            Err(error) => Err(*error),
+        }
+    }
+
     pub fn from_native(
         creature: &Ref,
         index: usize,
@@ -894,6 +1035,17 @@ impl crate::creature_chain_attack::ChainDamage<SpellSource> for DamageSpellOwner
     ) -> Result<SpellOutcome, AttackError> {
         self.consume_chain_pulse(runtime, fence, stamp, vitals, pulse, world, now)
     }
+    fn consume_chain_pulse_current(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: crate::creature_chain_attack::ChainPulse<SpellSource>,
+        world: &mut Self::World<'_>,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        self.consume_chain_pulse_current(runtime, stamp, vitals, pulse, world, now)
+    }
 }
 
 /// Independent current Combat owner snapshot, never inferred from the source artifact.
@@ -1102,6 +1254,26 @@ impl DamageSpellOwner {
         )
     }
 
+    /// Execute a source-bound attack using the runtime's current owner fence.
+    /// Scheduling remains with ProfileScheduleState; this owner retains source,
+    /// replay, geometry, protections and the current player HP/MP/condition paths.
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        if source.list != ScheduleList::Attack || source.chain.is_some() {
+            return Err(AttackError::UnsupportedShape);
+        }
+        self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
+    }
+
     /// Execute a source-bound physical, holy, earth or death target spell under the current fence.
     /// The restricted shape needs no external condition authority or timer installation.
     #[allow(clippy::too_many_arguments)]
@@ -1289,56 +1461,43 @@ impl DamageSpellOwner {
                 .try_reserve(1)
                 .map_err(|_| AttackError::LedgerFull)?;
         }
-        let result = match fence {
-            Some(fence) => {
-                if source.windup.is_some() {
-                    self.schedule_windup(runtime, fence, stamp, source, proposal, reader, now)
-                } else if source.variants.is_empty() {
-                    self.apply(runtime, vitals, source, proposal, reader, stamp, now, fence)
-                } else {
-                    let root = GameplayDecisionRoot::from_bytes(source.content_digest);
-                    let digest = Sha256::new()
-                        .chain_update(b"oteryn:creature-source-variant:v1")
-                        .chain_update(proposal.occurrence.id().as_str().as_bytes())
-                        .finalize();
-                    let mut id = [0; 16];
-                    id.copy_from_slice(&digest[..16]);
-                    let decision = deterministic_decision_u64(
-                        &root,
-                        DecisionOccurrenceId::from_bytes(id),
-                        "source_variant_once_per_cast",
-                        source.entry_index as u64,
-                    )
-                    .map_err(|_| AttackError::InvalidPlan)?;
-                    let selected = usize::try_from(
-                        oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
-                            decision,
-                            0,
-                            (source.variants.len() - 1) as i64,
-                        ),
-                    )
-                    .map_err(|_| AttackError::InvalidPlan)?;
-                    match &source.variants[selected] {
-                        Err(error) => Err(*error),
-                        Ok(child) => {
-                            let selected_child = child
-                                .variant_child
-                                .clone()
-                                .ok_or(AttackError::InvalidSource)?;
-                            self.apply(runtime,vitals,child,proposal,reader,stamp,now, fence).map(|mut result|{
-     result.source_variant=Some(SourceVariantReceipt{parent:source.ability.clone(),child:selected_child,index:selected,qualification:"SOURCE_UNIFORM_SELECTOR_PROJECT_DETERMINISTIC_RNG_GLOBAL_UNVERIFIED"});result
-    })
-                        }
-                    }
-                }
-            }
-            None => self
-                .prepare_target(runtime, source, proposal, reader, stamp, None)
-                .and_then(|prepared| {
-                    self.commit_prepared(
-                        runtime, vitals, source, proposal, prepared, now, None, stamp,
-                    )
-                }),
+        let result = if source.windup.is_some() {
+            let current = fence
+                .or_else(|| runtime.owner_fence().ok())
+                .ok_or(AttackError::StaleOwner)?;
+            self.schedule_windup(runtime, current, stamp, source, proposal, reader, now)
+        } else {
+            source.selected_variant(proposal).and_then(|selected| {
+                let (cast_source, receipt) = match selected {
+                    Some((index, child)) => (
+                        child,
+                        Some(SourceVariantReceipt {
+                            parent: source.ability.clone(),
+                            child: child.variant_child.clone().ok_or(AttackError::InvalidSource)?,
+                            index,
+                            qualification: "SOURCE_UNIFORM_SELECTOR_PROJECT_DETERMINISTIC_RNG_GLOBAL_UNVERIFIED",
+                        }),
+                    ),
+                    None => (source, None),
+                };
+                let mut result = match fence {
+                    Some(fence) => self.apply(
+                        runtime, vitals, cast_source, proposal, reader, stamp, now, fence,
+                    ),
+                    None if cast_source.appearance_cast => self.apply_appearance_cast(
+                        runtime, vitals, cast_source, proposal, reader, stamp, now, None,
+                    ),
+                    None => self
+                        .prepare_target(runtime, cast_source, proposal, reader, stamp, None)
+                        .and_then(|prepared| {
+                            self.commit_prepared(
+                                runtime, vitals, cast_source, proposal, prepared, now, None, stamp,
+                            )
+                        }),
+                }?;
+                result.source_variant = receipt;
+                Ok(result)
+            })
         };
         let memo = CastMemo {
             issuer: proposal.issuer,
@@ -1461,49 +1620,165 @@ impl DamageSpellOwner {
             targets: Vec::new(),
         })
     }
+    /// Actual pending deadline metadata; it carries no authority to execute a cast.
+    pub fn next_windup_due_time(&self) -> Option<SemanticTimeMicros> {
+        self.delayed
+            .as_ref()
+            .and_then(delayed::DelayedOwner::next_due_time)
+    }
+    /// Source/session snapshots for independently resolving facts at the next owner turn.
+    pub fn pending_windups(
+        &self,
+    ) -> Vec<(
+        SpellSource,
+        ProfileAbilityProposal,
+        GameSessionId,
+        SemanticTimeMicros,
+    )> {
+        self.delayed
+            .as_ref()
+            .map_or_else(Vec::new, delayed::DelayedOwner::pending_sources)
+    }
     pub fn run_windup_due(
         &mut self,
-        r: &mut ChannelRuntimeV1,
-        f: &mut ScopeRuntimeFence,
+        runtime: &mut ChannelRuntimeV1,
+        fence: &mut ScopeRuntimeFence,
         vitals: &mut dyn PlayerLethalVitals,
         reader: &mut dyn SpellWorldReader,
         clock: &impl crate::foundation::owner_timer::OwnerClock,
     ) -> WindupCastResults {
+        self.run_windup_due_inner(
+            runtime,
+            Some(fence),
+            None,
+            clock,
+            |owner, runtime, fence, pulse, now| {
+                owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
+            },
+        )
+    }
+    /// Use caller-issued work so the prepared reader is bound to this exact current turn.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn run_windup_due_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        reader: &mut dyn SpellWorldReader,
+        clock: &impl crate::foundation::owner_timer::OwnerClock,
+    ) -> WindupCastResults {
+        self.run_windup_due_inner(
+            runtime,
+            None,
+            Some(stamp),
+            clock,
+            |owner, runtime, fence, pulse, now| {
+                owner.commit_windup_pulse(runtime, fence, vitals, reader, pulse, now)
+            },
+        )
+    }
+    /// Select an owned source-specific reader for each sealed due pulse.
+    pub fn run_windup_due_current_with<'a, F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        clock: &impl crate::foundation::owner_timer::OwnerClock,
+        mut reader_for: F,
+    ) -> WindupCastResults
+    where
+        F: FnMut(
+            &SpellSource,
+            &ProfileAbilityProposal,
+            GameSessionId,
+            RuntimeWorkStamp,
+        ) -> Option<Box<dyn SpellWorldReader + 'a>>,
+    {
+        self.run_windup_due_inner(
+            runtime,
+            None,
+            Some(stamp),
+            clock,
+            |owner, runtime, fence, pulse, now| {
+                let (source, proposal, session, stamp) = pulse.context();
+                let mut reader = reader_for(source, proposal, session, stamp)
+                    .ok_or(AttackError::MissingCombatFacts)?;
+                owner.commit_windup_pulse(runtime, fence, vitals, reader.as_mut(), pulse, now)
+            },
+        )
+    }
+    fn run_windup_due_inner<F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        mut fence: Option<&mut ScopeRuntimeFence>,
+        supplied_stamp: Option<RuntimeWorkStamp>,
+        clock: &impl crate::foundation::owner_timer::OwnerClock,
+        mut apply: F,
+    ) -> WindupCastResults
+    where
+        F: FnMut(
+            &Self,
+            &mut ChannelRuntimeV1,
+            Option<&ScopeRuntimeFence>,
+            delayed::Pulse,
+            SemanticTimeMicros,
+        ) -> Result<SpellOutcome, AttackError>,
+    {
         let mut out = Vec::new();
         out.try_reserve(64).map_err(|_| AttackError::LedgerFull)?;
         let Some(owner) = &mut self.delayed else {
             return Ok(out);
         };
-        let (pulses, cancellations) = owner.drain(r, f, clock)?;
+        let (pulses, cancellations) = match fence.as_deref_mut() {
+            Some(fence) => owner.drain(runtime, fence, clock)?,
+            None => owner.drain_current(
+                runtime,
+                supplied_stamp.ok_or(AttackError::StaleOwner)?,
+                clock,
+            )?,
+        };
         for (ability, error) in cancellations {
             out.push((ability, Err(error)));
         }
         for pulse in pulses {
-            let (source, proposal, session, stamp) = pulse.into_parts();
-            let result = if !f.accepts_stamp(stamp) {
-                Err(AttackError::StaleOwner)
-            } else if r.content_pin().server_artifact_digest() != source.content_digest {
-                Err(AttackError::ContentChanged)
-            } else if !r
-                .matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
-            {
-                Err(AttackError::StaleIssuer)
-            } else {
-                self.apply_target(
-                    r,
-                    vitals,
-                    &source,
-                    &proposal,
-                    reader,
-                    stamp,
-                    clock.now(),
-                    Some((proposal.target, session)),
-                    f,
-                )
-            };
-            out.push((source.ability, result));
+            let ability = pulse.context().0.ability.clone();
+            let result = apply(self, runtime, fence.as_deref(), pulse, clock.now());
+            out.push((ability, result));
         }
         Ok(out)
+    }
+    fn commit_windup_pulse(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        vitals: &mut dyn PlayerLethalVitals,
+        reader: &mut dyn SpellWorldReader,
+        pulse: delayed::Pulse,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        let (source, proposal, session, stamp) = pulse.into_parts();
+        let current = fence.or_else(|| runtime.owner_fence().ok());
+        if current.is_none_or(|fence| !fence.accepts_stamp(stamp)) {
+            return Err(AttackError::StaleOwner);
+        }
+        if runtime.content_pin().server_artifact_digest() != source.content_digest {
+            return Err(AttackError::ContentChanged);
+        }
+        if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
+        {
+            return Err(AttackError::StaleIssuer);
+        }
+        let prepared = self.prepare_target(
+            runtime,
+            &source,
+            &proposal,
+            reader,
+            stamp,
+            Some((proposal.target, session)),
+        )?;
+        self.commit_prepared(
+            runtime, vitals, &source, &proposal, prepared, now, fence, stamp,
+        )
     }
 
     // Keep consume_chain_pulse ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -1518,10 +1793,39 @@ impl DamageSpellOwner {
         reader: &mut dyn SpellWorldReader,
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
+        self.consume_chain_pulse_inner(runtime, Some(fence), stamp, vitals, pulse, reader, now)
+    }
+    /// Consume only the existing chain owner's sealed, one-use due pulse.
+    #[allow(clippy::too_many_arguments)]
+    pub fn consume_chain_pulse_current(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: crate::creature_chain_attack::ChainPulse<SpellSource>,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        self.consume_chain_pulse_inner(runtime, None, stamp, vitals, pulse, reader, now)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn consume_chain_pulse_inner(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: crate::creature_chain_attack::ChainPulse<SpellSource>,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
         let (source, proposal, session) = pulse.into_owned_parts();
         let b = runtime.binding();
-        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
-            || !fence.accepts_stamp(stamp)
+        let current = fence
+            .or_else(|| runtime.owner_fence().ok())
+            .ok_or(AttackError::StaleOwner)?;
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -1532,16 +1836,16 @@ impl DamageSpellOwner {
         {
             return Err(AttackError::StaleIssuer);
         }
-        self.apply_target(
+        let prepared = self.prepare_target(
             runtime,
-            vitals,
             &source,
             &proposal,
             reader,
             stamp,
-            now,
             Some((proposal.target, session)),
-            fence,
+        )?;
+        self.commit_prepared(
+            runtime, vitals, &source, &proposal, prepared, now, fence, stamp,
         )
     }
 
@@ -1560,7 +1864,14 @@ impl DamageSpellOwner {
     ) -> Result<SpellOutcome, AttackError> {
         if source.appearance_cast {
             return self.apply_appearance_cast(
-                runtime, vitals, source, proposal, reader, stamp, now, fence,
+                runtime,
+                vitals,
+                source,
+                proposal,
+                reader,
+                stamp,
+                now,
+                Some(fence),
             );
         }
         self.apply_target(
@@ -1578,7 +1889,7 @@ impl DamageSpellOwner {
         reader: &mut dyn SpellWorldReader,
         stamp: RuntimeWorkStamp,
         now: SemanticTimeMicros,
-        fence: &ScopeRuntimeFence,
+        fence: Option<&ScopeRuntimeFence>,
     ) -> Result<SpellOutcome, AttackError> {
         let content = reader
             .native_gameplay(runtime)
@@ -1608,52 +1919,30 @@ impl DamageSpellOwner {
         {
             return Err(AttackError::OutOfRange);
         }
-        let mut tiles = Vec::new();
-        if let Some(area) = &source.area {
-            let center = if source.needs_target {
-                (tp.x, tp.y)
-            } else {
-                (fp.x, fp.y)
-            };
-            let facing = geometry::direction(
-                i64::from(center.0) - i64::from(fp.x),
-                i64::from(center.1) - i64::from(fp.y),
-                false,
-            );
-            for (x, y) in
-                geometry::offsets(area, facing).map_err(|_| AttackError::UnsupportedShape)?
-            {
-                tiles.push((
-                    center
-                        .0
-                        .checked_add(x)
-                        .ok_or(AttackError::NumericOverflow)?,
-                    center
-                        .1
-                        .checked_add(y)
-                        .ok_or(AttackError::NumericOverflow)?,
-                ));
-            }
+        let facing = if source.area.is_some() && source.needs_direction {
+            Some(
+                reader
+                    .current_facing(runtime, proposal.issuer, stamp)
+                    .ok_or(AttackError::MissingCombatFacts)?,
+            )
         } else {
-            tiles.push((tp.x, tp.y));
-        }
+            None
+        };
+        let tiles = source.target_tiles(fp, tp, facing)?;
         let census = runtime
             .positioned_actor_census()
             .map_err(|_| AttackError::StaleTarget)?;
-        if census.len() > 64 {
-            return Err(AttackError::LedgerFull);
-        }
         let root = GameplayDecisionRoot::from_bytes(source.content_digest);
         let mut targets = Vec::new();
         targets
-            .try_reserve(census.len())
+            .try_reserve(census.len().min(64))
             .map_err(|_| AttackError::LedgerFull)?;
         let mut shown = Vec::new();
         shown
             .try_reserve(tiles.len())
             .map_err(|_| AttackError::LedgerFull)?;
         // Resolve every tile and actor's policy before the existing owners stage any state.
-        for (x, y) in tiles {
+        for (x, y, _) in tiles {
             match reader.tile_allowed(runtime, proposal.issuer, x, y, fp.floor, stamp) {
                 None => return Err(AttackError::MissingCombatFacts),
                 Some(false) => continue,
@@ -1680,7 +1969,9 @@ impl DamageSpellOwner {
                     {
                         return Err(AttackError::InvalidPlan);
                     }
-                    if !a.visible
+                    // Crystal 201189f combat.cpp:1626-1658,1757-1759 applies
+                    // area conditions to occupants independently of AI visibility.
+                    if (source.area.is_none() && !a.visible)
                         || a.issuer_pz
                         || a.target_pz
                         || a.issuer_protected
@@ -1741,6 +2032,11 @@ impl DamageSpellOwner {
                 let bytes = digest.finalize();
                 let mut id = [0; 16];
                 id.copy_from_slice(&bytes[..16]);
+                // Keep the existing recipient bound after current geometry and
+                // protection selection, independent of distant Channel actors.
+                if targets.len() >= 64 {
+                    return Err(AttackError::LedgerFull);
+                }
                 targets.push(crate::player_lethal::SourceAppearanceTarget {
                     actor: *actor,
                     session: *session,
@@ -1763,16 +2059,24 @@ impl DamageSpellOwner {
         let receipts = if targets.is_empty() {
             Vec::new()
         } else {
-            vitals
-                .apply_source_appearance_batch(
+            match fence {
+                Some(fence) => vitals.apply_source_appearance_batch(
                     runtime,
                     fence,
                     stamp,
                     proposal.issuer,
                     &source.conditions,
                     &targets,
-                )
-                .ok_or(AttackError::MissingVitals)?
+                ),
+                None => vitals.apply_source_appearance_batch_current(
+                    runtime,
+                    stamp,
+                    proposal.issuer,
+                    &source.conditions,
+                    &targets,
+                ),
+            }
+            .ok_or(AttackError::MissingVitals)?
         };
         let outcomes = targets
             .iter()
@@ -1880,49 +2184,19 @@ impl DamageSpellOwner {
         {
             return Err(AttackError::InvalidPlan);
         }
-        let mut tiles = Vec::new();
-        if let Some(area) = &source.area {
-            let center = if source.needs_target {
-                (tp.x, tp.y)
-            } else if source.needs_direction {
-                let f = reader
+        let facing = if source.area.is_some() && source.needs_direction {
+            Some(
+                reader
                     .current_facing(runtime, proposal.issuer, stamp)
-                    .ok_or(AttackError::MissingCombatFacts)?;
-                let (sx, sy) = geometry::step(f);
-                (
-                    fp.x.checked_add(sx).ok_or(AttackError::NumericOverflow)?,
-                    fp.y.checked_add(sy).ok_or(AttackError::NumericOverflow)?,
-                )
-            } else {
-                (fp.x, fp.y)
-            };
-            let diagonal =
-                matches!(area,ProjectV2AbilityArea::Matrix{diagonal,..} if !diagonal.is_empty());
-            let facing = geometry::direction(
-                i64::from(center.0) - i64::from(fp.x),
-                i64::from(center.1) - i64::from(fp.y),
-                diagonal,
-            );
-            for (x, y) in
-                geometry::offsets(area, facing).map_err(|_| AttackError::UnsupportedShape)?
-            {
-                tiles.push((
-                    center
-                        .0
-                        .checked_add(x)
-                        .ok_or(AttackError::NumericOverflow)?,
-                    center
-                        .1
-                        .checked_add(y)
-                        .ok_or(AttackError::NumericOverflow)?,
-                ));
-            }
+                    .ok_or(AttackError::MissingCombatFacts)?,
+            )
         } else {
-            tiles.push((tp.x, tp.y));
-        }
+            None
+        };
+        let tiles = source.target_tiles(fp, tp, facing)?;
         let mut presentation_tiles = Vec::new();
         let mut admitted = Vec::new();
-        for (x, y) in tiles {
+        for (x, y, _) in tiles {
             match reader.tile_allowed(runtime, proposal.issuer, x, y, fp.floor, stamp) {
                 None => return Err(AttackError::MissingCombatFacts),
                 Some(false) => continue,
@@ -1968,7 +2242,14 @@ impl DamageSpellOwner {
                 {
                     return Err(AttackError::InvalidPlan);
                 }
-                if (!a.visible && !source.dispel_invisible)
+                // Crystal 201189f combat.cpp:1626-1658,1980-1984 does not
+                // reapply target-acquisition visibility to area or chain recipients.
+                // A forced windup target alone is not a chain-recipient grant.
+                let chain_recipient = forced.is_some() && source.chain.is_some();
+                if (!a.visible
+                    && source.area.is_none()
+                    && !chain_recipient
+                    && !source.dispel_invisible)
                     || a.issuer_pz
                     || a.target_pz
                     || a.issuer_protected
@@ -2176,15 +2457,25 @@ impl DamageSpellOwner {
                 continue;
             }
             if source.dispel_invisible {
-                let applied = vitals.remove_attack_invisibility(
-                    runtime,
-                    target,
-                    session,
-                    proposal.issuer,
-                    now.get(),
-                    fence.ok_or(AttackError::StaleOwner)?,
-                    stamp,
-                );
+                let applied = match fence {
+                    Some(fence) => vitals.remove_attack_invisibility(
+                        runtime,
+                        target,
+                        session,
+                        proposal.issuer,
+                        now.get(),
+                        fence,
+                        stamp,
+                    ),
+                    None => vitals.remove_attack_invisibility_current(
+                        runtime,
+                        target,
+                        session,
+                        proposal.issuer,
+                        now.get(),
+                        stamp,
+                    ),
+                };
                 result.targets.push((
                     target,
                     applied
@@ -2219,8 +2510,8 @@ impl DamageSpellOwner {
                         decision_root: &root,
                         occurrence: child_id,
                     };
-                    vitals
-                        .apply_attack_conditions(
+                    let applied = match fence {
+                        Some(fence) => vitals.apply_attack_conditions(
                             runtime,
                             target,
                             session,
@@ -2229,9 +2520,22 @@ impl DamageSpellOwner {
                             &source.conditions,
                             &af,
                             &policy.immunities,
-                            fence.ok_or(AttackError::StaleOwner)?,
+                            fence,
                             stamp,
-                        )
+                        ),
+                        None => vitals.apply_attack_conditions_current(
+                            runtime,
+                            target,
+                            session,
+                            &occurrence,
+                            proposal.issuer,
+                            &source.conditions,
+                            &af,
+                            &policy.immunities,
+                            stamp,
+                        ),
+                    };
+                    applied
                         .then_some(SpellTargetOutcome {
                             damage: None,
                             mana: None,
@@ -2279,20 +2583,39 @@ impl DamageSpellOwner {
                     decision_root: &root,
                     occurrence: child_id,
                 };
-                vitals.apply_typed_composite_attack_damage(
-                    runtime,
-                    target,
-                    session,
-                    amount,
-                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
-                    &occurrence,
-                    proposal.issuer,
-                    &source.conditions,
-                    &af,
-                    &policy.immunities,
-                    fence.ok_or(AttackError::StaleOwner)?,
-                    stamp,
-                )
+                match fence {
+                    Some(fence) => vitals.apply_typed_composite_attack_damage(
+                        runtime,
+                        target,
+                        session,
+                        amount,
+                        crate::player_lethal::PlayerHitKind::from_element(
+                            source.element.as_deref(),
+                        ),
+                        &occurrence,
+                        proposal.issuer,
+                        &source.conditions,
+                        &af,
+                        &policy.immunities,
+                        fence,
+                        stamp,
+                    ),
+                    None => vitals.apply_typed_composite_attack_damage_current(
+                        runtime,
+                        target,
+                        session,
+                        amount,
+                        crate::player_lethal::PlayerHitKind::from_element(
+                            source.element.as_deref(),
+                        ),
+                        &occurrence,
+                        proposal.issuer,
+                        &source.conditions,
+                        &af,
+                        &policy.immunities,
+                        stamp,
+                    ),
+                }
             };
             // A missing target vital is reported per target; do not throw away earlier real receipts.
             result.targets.push((

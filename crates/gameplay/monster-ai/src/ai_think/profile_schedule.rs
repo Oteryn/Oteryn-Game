@@ -37,6 +37,15 @@ pub struct ProfileScheduleInput<'a> {
     pub root: &'a GameplayDecisionRoot,
 }
 
+/// Current owner facts for Crystal's shared attack clock. The clock is semantic owner time,
+/// never the wall clock or a second melee cooldown. A retry retains its first evaluation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeAttackFacts {
+    pub now_us: u64,
+    pub fleeing: bool,
+    pub target_disappeared: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObservedSummonCount {
     pub creature: ProjectV2DefinitionRef,
@@ -89,6 +98,11 @@ pub struct SchedulePlan {
     pub attack_ticks_after_ms: u64,
     pub defence_ticks_after_ms: u64,
     pub melee_delegated: usize,
+    /// Source indices whose due/range/chance checks passed in this exact native think.
+    /// The melee owner still revalidates source, actors, session, reach and protection.
+    pub native_melee_selected: Vec<usize>,
+    extra_melee_after: bool,
+    last_extra_melee_us_after: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,8 +122,11 @@ pub enum ScheduleError {
 
 struct PreparedThink {
     sequence: u64,
+    native: bool,
+    movement_retry: bool,
     snapshot: [u8; 32],
     root: GameplayDecisionRoot,
+    revisions: RevisionSet,
     summon_facts: Option<MonsterSummonFacts>,
     result: Result<SchedulePlan, ScheduleError>,
 }
@@ -119,6 +136,8 @@ pub struct ProfileScheduleState {
     actor: ExactActorRef,
     attack_ticks_ms: u64,
     defence_ticks_ms: u64,
+    extra_melee_attack: bool,
+    last_extra_melee_us: Option<u64>,
     last: Option<PreparedThink>,
 }
 
@@ -128,6 +147,8 @@ impl ProfileScheduleState {
             actor,
             attack_ticks_ms: 0,
             defence_ticks_ms: 0,
+            extra_melee_attack: false,
+            last_extra_melee_us: None,
             last: None,
         }
     }
@@ -163,6 +184,83 @@ impl ProfileScheduleState {
         input: ProfileScheduleInput<'_>,
         summon_facts: Option<&MonsterSummonFacts>,
     ) -> Result<SchedulePlan, ScheduleError> {
+        self.prepare_checked(input, summon_facts, None, false)
+    }
+
+    /// Native content may retain source callbacks without an executable Ability profile.
+    /// Skip only those entries, preserving authored indices and all resolved schedules.
+    /// Strict caller-authored profiles continue through prepare_with_summons.
+    pub fn prepare_native_with_summons(
+        &mut self,
+        input: ProfileScheduleInput<'_>,
+        summon_facts: Option<&MonsterSummonFacts>,
+        attack_facts: NativeAttackFacts,
+    ) -> Result<SchedulePlan, ScheduleError> {
+        self.prepare_checked(input, summon_facts, Some(attack_facts), false)
+    }
+
+    pub(super) const fn extra_melee_pending(&self) -> bool {
+        self.extra_melee_attack
+    }
+
+    /// Crystal creature.cpp:488-495 / game.cpp:6996-7000: movement retries the same
+    /// attack owner with interval zero. No full think, defence or summon clock runs here.
+    pub(super) fn prepare_movement_melee_retry(
+        &mut self,
+        occurrence: ThinkOccurrence,
+        behavior: &ProjectV2BehaviorAuthoring,
+        abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+        target: AttackTarget,
+        attack_facts: NativeAttackFacts,
+    ) -> Result<SchedulePlan, ScheduleError> {
+        let previous = self
+            .last
+            .as_ref()
+            .filter(|last| last.native && last.result.is_ok())
+            .ok_or(ScheduleError::InvalidProposal)?;
+        let root = previous.root.clone();
+        let revisions = previous.revisions.clone();
+        self.prepare_checked(
+            ProfileScheduleInput {
+                occurrence,
+                behavior,
+                abilities,
+                target: Some(target),
+                root: &root,
+                revisions: &revisions,
+            },
+            None,
+            Some(attack_facts),
+            true,
+        )
+    }
+
+    pub(super) fn native_target_disappeared(&mut self) {
+        self.attack_ticks_ms = 0;
+        self.extra_melee_attack = true;
+    }
+
+    /// Only the committed current think may authorize its selected source index. An old
+    /// plan cannot be reused after a refused or budget-deferred think advances the owner.
+    pub(super) fn native_melee_selected(&self, sequence: u64, entry_index: usize) -> bool {
+        self.last.as_ref().is_some_and(|last| {
+            last.native
+                && last.sequence == sequence
+                && last
+                    .result
+                    .as_ref()
+                    .is_ok_and(|plan| plan.native_melee_selected.contains(&entry_index))
+        })
+    }
+
+    fn prepare_checked(
+        &mut self,
+        input: ProfileScheduleInput<'_>,
+        summon_facts: Option<&MonsterSummonFacts>,
+        attack_facts: Option<NativeAttackFacts>,
+        movement_retry: bool,
+    ) -> Result<SchedulePlan, ScheduleError> {
+        let native = attack_facts.is_some();
         let ProfileScheduleInput {
             occurrence,
             behavior,
@@ -195,6 +293,8 @@ impl ProfileScheduleState {
             && occurrence.sequence == previous.sequence
         {
             return if snapshot == previous.snapshot
+                && native == previous.native
+                && movement_retry == previous.movement_retry
                 && root == &previous.root
                 && summon_facts == previous.summon_facts.as_ref()
             {
@@ -203,15 +303,20 @@ impl ProfileScheduleState {
                 Err(ScheduleError::OccurrenceConflict)
             };
         }
-        let result = self.plan(input, summon_facts);
+        let result = self.plan(input, summon_facts, attack_facts, movement_retry);
         if let Ok(plan) = &result {
             self.attack_ticks_ms = plan.attack_ticks_after_ms;
             self.defence_ticks_ms = plan.defence_ticks_after_ms;
+            self.extra_melee_attack = plan.extra_melee_after;
+            self.last_extra_melee_us = plan.last_extra_melee_us_after;
         }
         self.last = Some(PreparedThink {
             sequence: occurrence.sequence,
+            native,
+            movement_retry,
             snapshot,
             root: root.clone(),
+            revisions: revisions.clone(),
             summon_facts: summon_facts.cloned(),
             result: result.clone(),
         });
@@ -222,7 +327,10 @@ impl ProfileScheduleState {
         &self,
         input: ProfileScheduleInput<'_>,
         summon_facts: Option<&MonsterSummonFacts>,
+        attack_facts: Option<NativeAttackFacts>,
+        movement_retry: bool,
     ) -> Result<SchedulePlan, ScheduleError> {
+        let native = attack_facts.is_some();
         let ProfileScheduleInput {
             occurrence,
             behavior,
@@ -231,49 +339,107 @@ impl ProfileScheduleState {
             revisions,
             root,
         } = input;
-        if behavior.summons.is_some() && summon_facts.is_none() {
+        if !movement_retry && behavior.summons.is_some() && summon_facts.is_none() {
             return Err(ScheduleError::SummonClockDependency);
         }
         if let Some(facts) = summon_facts {
             validate_summon_facts(input, facts)?;
         }
-        let attack_ticks = self
-            .attack_ticks_ms
+        // Crystal monster.cpp:1189-1196 does not advance attacks without a target;
+        // onAttackedCreatureDisappear resets the attack clock. Defenses keep thinking.
+        let interval_ms = if movement_retry {
+            0
+        } else {
+            CREATURE_THINK_INTERVAL_MILLIS
+        };
+        let attack_ticks = if movement_retry {
+            self.attack_ticks_ms
+        } else if native && target.is_none() {
+            0
+        } else {
+            if attack_facts.is_some_and(|facts| facts.target_disappeared) {
+                0_u64
+            } else {
+                self.attack_ticks_ms
+            }
             .checked_add(CREATURE_THINK_INTERVAL_MILLIS)
-            .ok_or(ScheduleError::TickOverflow)?;
+            .ok_or(ScheduleError::TickOverflow)?
+        };
         let defence_ticks = self
             .defence_ticks_ms
-            .checked_add(CREATURE_THINK_INTERVAL_MILLIS)
+            .checked_add(interval_ms)
             .ok_or(ScheduleError::TickOverflow)?;
         let mut plan = SchedulePlan {
             proposals: Vec::new(),
             summon_proposals: Vec::new(),
             evaluated_attack_ticks_ms: attack_ticks,
             evaluated_defence_ticks_ms: defence_ticks,
-            attack_ticks_after_ms: 0,
-            defence_ticks_after_ms: 0,
+            attack_ticks_after_ms: if movement_retry { attack_ticks } else { 0 },
+            defence_ticks_after_ms: if movement_retry { defence_ticks } else { 0 },
             melee_delegated: 0,
+            native_melee_selected: Vec::new(),
+            extra_melee_after: self.extra_melee_attack
+                || attack_facts.is_some_and(|facts| facts.target_disappeared),
+            last_extra_melee_us_after: self.last_extra_melee_us,
         };
         for (list, entries, ticks) in [
             (ScheduleList::Attack, &behavior.attacks, attack_ticks),
             (ScheduleList::Defence, &behavior.defenses, defence_ticks),
         ] {
+            if movement_retry && list == ScheduleList::Defence {
+                continue;
+            }
             let mut waits = false;
             for (index, entry) in entries.iter().enumerate() {
-                let details = validate_entry(entry, abilities)?;
-                if details.kind == ProjectV2AbilityKind::Melee {
-                    if list == ScheduleList::Defence {
-                        return Err(ScheduleError::InvalidDefenceMelee);
-                    }
+                let details = match validate_entry(entry, abilities) {
+                    Ok(details) => details,
+                    Err(ScheduleError::MissingAbilityProfile) if native => continue,
+                    Err(error) => return Err(error),
+                };
+                if native && list == ScheduleList::Attack && target.is_none() {
+                    continue;
+                }
+                // Crystal Seacrest Serpent authors zero-damage melee in defenses.
+                // Native defence entries follow that list's ordinary schedule/proposal;
+                // they cannot disable its valid attacks or enter the attack melee owner.
+                if !native
+                    && list == ScheduleList::Defence
+                    && details.kind == ProjectV2AbilityKind::Melee
+                {
+                    return Err(ScheduleError::InvalidDefenceMelee);
+                }
+                let is_melee =
+                    list == ScheduleList::Attack && details.kind == ProjectV2AbilityKind::Melee;
+                if is_melee {
                     plan.melee_delegated += 1;
-                    continue;
+                    if !native || attack_facts.is_some_and(|facts| facts.fleeing) {
+                        continue;
+                    }
                 }
-                if ticks < entry.interval_ms {
-                    waits = true;
-                    continue;
+                if let Some(facts) = attack_facts.filter(|_| list == ScheduleList::Attack) {
+                    // Crystal 201189f monster.cpp:1270-1274 updates this timestamp only
+                    // while an extra swing is pending, including intervening spell entries.
+                    // The 1500 ms guard is not a cooldown after each regular melee cast.
+                    if plan.extra_melee_after {
+                        plan.last_extra_melee_us_after = Some(facts.now_us);
+                    } else if is_melee
+                        && plan
+                            .last_extra_melee_us_after
+                            .is_some_and(|last| facts.now_us.saturating_sub(last) < 1_500_000)
+                    {
+                        continue;
+                    }
                 }
-                if ticks % entry.interval_ms >= CREATURE_THINK_INTERVAL_MILLIS {
-                    continue;
+                // Crystal monster.cpp:1276-1285: an extra melee bypasses the shared
+                // interval window. Every regular melee participates in its reset decision.
+                if !(native && is_melee && plan.extra_melee_after) {
+                    if ticks < entry.interval_ms {
+                        waits = true;
+                        continue;
+                    }
+                    if ticks % entry.interval_ms >= interval_ms {
+                        continue;
+                    }
                 }
                 let range = entry.range_tiles.unwrap_or(details.range_tiles);
                 let recipient = match list {
@@ -290,6 +456,11 @@ impl ProfileScheduleState {
                         };
                         // Native source range 0 is uncapped, not an invented default radius.
                         if range != 0 && distance > range {
+                            if native && is_melee {
+                                // monster.cpp:1230-1232: only a due out-of-reach melee
+                                // grants an extra swing; a waiting interval does not.
+                                plan.extra_melee_after = true;
+                            }
                             continue;
                         }
                         target.actor
@@ -303,6 +474,13 @@ impl ProfileScheduleState {
                 )
                 .map_err(|_| ScheduleError::InvalidProposal)?;
                 if decision % 1_000_000 >= u64::from(entry.chance_ppm) {
+                    continue;
+                }
+                if native && is_melee {
+                    plan.native_melee_selected.push(index);
+                    // monster.cpp:1222-1225 clears the extra after selecting a cast,
+                    // regardless of the effect owner's later damage/protection result.
+                    plan.extra_melee_after = false;
                     continue;
                 }
                 let issuer = actor_atom(self.actor);
@@ -334,7 +512,7 @@ impl ProfileScheduleState {
                 }
             }
         }
-        if let Some(facts) = summon_facts {
+        if let Some(facts) = summon_facts.filter(|_| !movement_retry) {
             prepare_summons(input, facts, defence_ticks, &mut plan)?;
         }
         Ok(plan)

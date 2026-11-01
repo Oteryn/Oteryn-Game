@@ -19,6 +19,7 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
@@ -50,17 +51,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let mut states = self.states.spell_states.lock().await;
-        if now.get() < states.next_monster_ai_pass_us {
+        let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
+        if !periodic_pass
+            && !states
+                .monster_melee
+                .creature_ai
+                .has_movement_melee_retry(&runtime)
+        {
             return;
         }
-        let Some(due) = now
-            .get()
-            .checked_add(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000)
-        else {
-            return;
-        };
-        let Some(sequence) = states.monster_ai_sequence.checked_add(1) else {
-            return;
+        let (due, sequence) = if periodic_pass {
+            let Some(due) = now
+                .get()
+                .checked_add(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000)
+            else {
+                return;
+            };
+            let Some(sequence) = states.monster_ai_sequence.checked_add(1) else {
+                return;
+            };
+            (due, sequence)
+        } else {
+            (states.next_monster_ai_pass_us, states.monster_ai_sequence)
         };
         // SPAWN-CEILINGS-1 (Codex 4242381774): no Channel-wide actor gate. The census holds at
         // most the carrier's slots, and the work below is budgeted per pass instead, so a Channel
@@ -69,7 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // admits, forgets and wakes creatures. A pass between them only runs thinks left due by
         // `CREATUREAI0-RL-05`, against the last swing pass's players at their current positions,
         // so a think backlog costs each window its thinks, not a census of every actor.
-        let swing_pass = now.get() >= states.monster_melee.next_swing_pass_us;
+        let swing_pass = periodic_pass && now.get() >= states.monster_melee.next_swing_pass_us;
         let census = if swing_pass {
             let Ok(census) = runtime.positioned_melee_census() else {
                 return;
@@ -152,53 +164,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .creature_ai
                     .wake_for_players(&runtime, &players, now.get());
         }
-        // §2.1 item 3: protected players are ineligible, and invisible ones to a creature that
-        // does not sense invisibility. The native artifact carries no player vitals or damage
-        // contributors yet, so the strategies that read them see equal candidates.
-        let candidates = targets
-            .iter()
-            .map(
-                |(actor, position, _, invisible, protected)| TargetCandidate {
-                    actor: *actor,
-                    position: *position,
-                    eligible: !*protected,
-                    invisible: *invisible,
-                    health: 0,
-                    damage: 0,
-                },
-            )
-            .collect::<Vec<_>>();
-        let next_think = match self
-            .drive_monster_profiles(
-                &mut runtime,
-                &mut states,
-                &mut attack,
-                room,
-                content,
-                &permit,
-                &revisions,
-                &candidates,
-                now.get(),
-            )
-            .await
-        {
-            Ok(next) => next,
-            Err(()) => return,
+        // Crystal monster.cpp searchTarget reads current player health. The admitted content
+        // describes the strategy; the held player-state owner supplies its live input.
+        let candidates = think_candidates(&runtime, &states, &targets);
+        let (next_think, thought_actors) = if periodic_pass {
+            match self
+                .drive_monster_profiles(
+                    &mut runtime,
+                    &mut states,
+                    &mut attack,
+                    room,
+                    content,
+                    &permit,
+                    &revisions,
+                    &candidates,
+                    now.get(),
+                )
+                .await
+            {
+                Ok(next) => next,
+                Err(()) => return,
+            }
+        } else {
+            (None, Vec::new())
         };
-        states.next_monster_ai_pass_us = due;
-        states.monster_ai_sequence = sequence;
+        if periodic_pass {
+            states.next_monster_ai_pass_us = due;
+            states.monster_ai_sequence = sequence;
+        }
         // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
         // due before the next interval pass, run in a pass of their own as soon as the budget
-        // allows, not one think interval later. Such a pass only thinks: swings keep their one
-        // pass per think interval.
+        // allows, not one think interval later. Native selected melee follows those actual
+        // thinks; the compatibility swing pass keeps its original interval deadline.
         if swing_pass {
             states.monster_melee.next_swing_pass_us = due;
         }
-        let next_pass = next_monster_ai_pass_us(
-            now.get(),
-            states.monster_melee.next_swing_pass_us,
-            next_think,
-        );
+        let next_pass = if periodic_pass {
+            next_monster_ai_pass_us(
+                now.get(),
+                states.monster_melee.next_swing_pass_us,
+                next_think,
+            )
+        } else {
+            states.next_monster_ai_pass_us
+        };
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
         let mut trained = super::attack::skill_training::TrainingDue::new();
         // §2.1: only a monster whose think holds a target swings, in census order from the
@@ -221,177 +230,295 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             })
             .collect::<Vec<_>>();
+        // Native selections belong to the actual full thinks, including a budget-draining
+        // pass between legacy swing deadlines. Consume N before preparing movement N+1:
+        // an earlier selected source entry must not disappear when another grants extra.
+        let mut ordinary = thought_actors
+            .into_iter()
+            .filter_map(|actor| {
+                let state = melee_owner.creature_ai.state(actor)?;
+                let selected = (0..state.profile().behavior().attacks.len()).any(|index| {
+                    melee_owner
+                        .creature_ai
+                        .native_melee_selection(actor, index)
+                        .is_some_and(|selection| selection.target.is_some())
+                });
+                if !selected {
+                    return None;
+                }
+                runtime
+                    .read_actor_position(actor)
+                    .ok()
+                    .map(|position| (actor, position))
+            })
+            .collect::<Vec<_>>();
+        let mut ordinary_ids = ordinary
+            .iter()
+            .map(|(actor, _)| actor.placement_identity())
+            .collect::<std::collections::BTreeSet<_>>();
         let (cursor, count) = swing_window(swinging.len(), states.monster_ai_cursor);
+        let count = count
+            .min(crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW.saturating_sub(ordinary.len()));
         for offset in 0..count {
-            let (actor, position) = &swinging[(cursor + offset) % swinging.len()];
-            let Some(monster) = qualified_melee(&runtime, content, *actor) else {
-                continue;
-            };
-            let p = position.position();
-            let Ok(tile) = room.movement_cells().spell_tiles().lookup(
-                room.movement_cells().scope(),
-                LogicalCell {
-                    x: p.x,
-                    y: p.y,
-                    z: i32::from(p.floor),
-                },
-            ) else {
-                continue;
-            };
-            if tile.flags().protection_zone {
-                continue;
+            let pair = swinging[(cursor + offset) % swinging.len()];
+            if ordinary_ids.insert(pair.0.placement_identity()) {
+                ordinary.push(pair);
             }
-            // Perception's limit applies to this monster's eligible local
-            // candidates, not every player elsewhere in the Channel. Protected
-            // players cannot occupy the nearest-candidate slot.
-            let Some(indices) = local_target_indices(
-                p,
-                monster.behavior.targeting.sense_invisible,
-                targets
-                    .iter()
-                    .map(|(_, p, _, invisible, protected)| (*p, *invisible, *protected)),
-            ) else {
-                continue;
-            };
-            // CREATURE-AI-1 §2.1: the swing goes only at the target the think decided.
-            attack.kills().boss_targets(
-                &runtime,
-                *actor,
-                indices
-                    .iter()
-                    .map(|index| (targets[*index].0, targets[*index].2)),
-            );
-            let perceived = think_target_only(
+        }
+        for movement_retry in [false, true] {
+            // Re-read current player positions and vitals after profile movement and after
+            // the first melee batch. No all-actor census is needed for a movement-only pass.
+            let player_census = think_player_census(&runtime, &melee_owner.think_players);
+            let targets =
+                melee_targets(room, &runtime, &states, &attack, &player_census, now.get());
+            let batch = if movement_retry {
+                let candidates = think_candidates(&runtime, &states, &targets);
                 melee_owner
                     .creature_ai
-                    .state(*actor)
-                    .and_then(|state| state.target()),
-                indices.iter().map(|index| {
-                    (
-                        targets[*index].0,
-                        PerceivedPlayer {
-                            id: PerceivedPlayerId::new(*index as u64 + 1),
-                            position: targets[*index].1,
-                            legal_attack_target: true,
-                        },
-                    )
-                }),
-            );
-            let mut root = content.source_digest();
-            let placement = actor.placement_identity();
-            for (byte, actor_byte) in root.iter_mut().zip(placement) {
-                *byte ^= actor_byte;
-            }
-            let mut occurrence = placement;
-            for (byte, seq_byte) in occurrence.iter_mut().zip(sequence.to_be_bytes()) {
-                *byte ^= seq_byte;
-            }
-            // Numeric provenance markers hash actual opaque identities/revisions;
-            // they are local deterministic snapshot keys, never canonical IDs or grants.
-            let marker = |bytes: &[u8]| {
-                let mut value = [0; 8];
-                value.copy_from_slice(&bytes[..8]);
-                u64::from_be_bytes(value)
+                    .prepare_movement_melee_retries(&runtime, &candidates, now.get())
+                    .into_iter()
+                    .filter_map(|actor| {
+                        runtime
+                            .read_actor_position(actor)
+                            .ok()
+                            .map(|position| (actor, position))
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                std::mem::take(&mut ordinary)
             };
-            let input = CreatureThinkInput {
-                provenance: AiProvenance::new(AiProvenanceInput {
-                    scope_id: match runtime.binding().runtime_scope() {
-                        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
-                            marker(channel_id.as_bytes())
-                        }
-                        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
-                            marker(&instance_id)
-                        }
-                    },
-                    scope_generation: runtime.binding().scope_generation().get(),
-                    actor_generation: marker(&placement),
-                    behavior_revision: marker(&content.source_digest()),
-                    content_revision: marker(&content.source_digest()),
-                    navigation_revision: marker(&room.map_revision_digest()),
-                    ruleset_revision: 1,
-                    determinism_profile_revision: 1,
-                }),
-                decision_root: GameplayDecisionRoot::from_bytes(root),
-                occurrence: DecisionOccurrenceId::from_bytes(occurrence),
-                path_work_id: sequence,
-                position: p,
-                home: p,
-                attack: AttackReadiness {
-                    off_cooldown: false,
-                    chance_percent: 0,
-                },
-            };
-            let decision_root = GameplayDecisionRoot::from_bytes(root);
-            let decision_occurrence = DecisionOccurrenceId::from_bytes(occurrence);
-            let race_key = &monster.race_key;
-            // ATTACK-1b: the player this think resolved, for the incoming hooks below.
-            let attacked = std::cell::Cell::new(None);
-            let dispatch = melee_owner.think(
-                &mut runtime,
-                &mut super::attack::player_block::PlayerBiteVitals {
-                    quest_sessions: Some(&self.states.quest_sessions),
-                    charm: Some(super::attack::player_block::IncomingCharm {
-                        catalogue: self.imported_charms,
-                        root: decision_root,
-                        occurrence: decision_occurrence,
-                        sequence,
-                        race: race_key,
-                        base_damage: 0,
-                    }),
-                    states: &mut states,
-                    attack: &mut attack,
-                    formula: content.training_formula(),
-                    trained: &mut trained,
-                },
-                *actor,
-                sequence,
-                monster.definition,
-                input,
-                &perceived,
-                |id| {
-                    let index = usize::try_from(id.get().checked_sub(1)?).ok()?;
-                    let (actor, _, session, _, protected) = *targets.get(index)?;
-                    if protected {
-                        return None;
+            for (actor, position) in &batch {
+                let Some(entries) = qualified_melee(&runtime, content, *actor) else {
+                    continue;
+                };
+                for monster in entries {
+                    if monster.source.is_none() && (movement_retry || !swing_pass) {
+                        continue;
                     }
-                    attacked.set(Some((actor, session)));
-                    // The held runtime owner and exact current protection
-                    // read above remain live through the synchronous bite commit.
-                    Some((
-                        actor,
-                        session,
-                        ReentryProtection {
-                            protected_until: None,
-                        },
-                    ))
-                },
-                revisions.clone(),
-                SemanticTimeMicros::from_micros(now.get()),
-            );
-            // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
-            // landed attack starts the player's in-fight deadline. A replayed think returns its
-            // recorded dispatch without resolving a target again, so nothing runs twice.
-            let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
-                continue;
-            };
-            match dispatch {
-                Dispatch::Bite(Ok(applied)) => {
-                    if applied.damage.applied > 0 {
-                        attack.kills().boss_damage_received(
-                            &runtime,
+                    let native_selection = if monster.source.is_some() {
+                        let Some(selected) = melee_owner.creature_ai.native_melee_selection(
                             *actor,
-                            player,
-                            session,
-                            u64::from(applied.damage.applied),
-                            applied.vitals_revision,
-                        );
-                        states.hunting_activity(&runtime, player, session, now.get());
+                            usize::from(monster.definition.entry_index),
+                        ) else {
+                            continue;
+                        };
+                        if selected.target.is_none() {
+                            continue;
+                        }
+                        Some(selected)
+                    } else {
+                        None
+                    };
+                    let sequence =
+                        native_selection.map_or(sequence, |selected| selected.occurrence.sequence);
+                    let p = position.position();
+                    let Ok(tile) = room.movement_cells().spell_tiles().lookup(
+                        room.movement_cells().scope(),
+                        LogicalCell {
+                            x: p.x,
+                            y: p.y,
+                            z: i32::from(p.floor),
+                        },
+                    ) else {
+                        continue;
+                    };
+                    if tile.flags().protection_zone {
+                        continue;
                     }
+                    // Perception's limit applies to this monster's eligible local
+                    // candidates, not every player elsewhere in the Channel. Protected
+                    // players cannot occupy the nearest-candidate slot.
+                    let Some(indices) = local_target_indices(
+                        p,
+                        monster.behavior.targeting.sense_invisible,
+                        targets
+                            .iter()
+                            .map(|(_, p, _, invisible, protected)| (*p, *invisible, *protected)),
+                    ) else {
+                        continue;
+                    };
+                    attack.kills().boss_targets(
+                        &runtime,
+                        *actor,
+                        indices
+                            .iter()
+                            .map(|index| (targets[*index].0, targets[*index].2)),
+                    );
+                    // CREATURE-AI-1 §2.1: the swing goes only at the target the think decided.
+                    let perceived = think_target_only(
+                        melee_owner
+                            .creature_ai
+                            .state(*actor)
+                            .and_then(|state| state.target()),
+                        indices.iter().map(|index| {
+                            (
+                                targets[*index].0,
+                                PerceivedPlayer {
+                                    id: PerceivedPlayerId::new(*index as u64 + 1),
+                                    position: targets[*index].1,
+                                    legal_attack_target: true,
+                                },
+                            )
+                        }),
+                    );
+                    let mut root = content.source_digest();
+                    let placement = actor.placement_identity();
+                    for (byte, actor_byte) in root.iter_mut().zip(placement) {
+                        *byte ^= actor_byte;
+                    }
+                    let mut occurrence = placement;
+                    for (byte, seq_byte) in occurrence.iter_mut().zip(sequence.to_be_bytes()) {
+                        *byte ^= seq_byte;
+                    }
+                    if native_selection.is_some() {
+                        let digest = Sha256::new()
+                            .chain_update(b"oteryn:native-melee-entry:v1")
+                            .chain_update(placement)
+                            .chain_update(sequence.to_be_bytes())
+                            .chain_update(monster.definition.entry_index.to_be_bytes())
+                            .finalize();
+                        occurrence.copy_from_slice(&digest[..16]);
+                    }
+                    // Numeric provenance markers hash actual opaque identities/revisions;
+                    // they are local deterministic snapshot keys, never canonical IDs or grants.
+                    let marker = |bytes: &[u8]| {
+                        let mut value = [0; 8];
+                        value.copy_from_slice(&bytes[..8]);
+                        u64::from_be_bytes(value)
+                    };
+                    let input = CreatureThinkInput {
+                        provenance: AiProvenance::new(AiProvenanceInput {
+                            scope_id: match runtime.binding().runtime_scope() {
+                                crate::foundation::RuntimeScopeRefV1::Channel {
+                                    channel_id,
+                                    ..
+                                } => marker(channel_id.as_bytes()),
+                                crate::foundation::RuntimeScopeRefV1::Instance {
+                                    instance_id,
+                                    ..
+                                } => marker(&instance_id),
+                            },
+                            scope_generation: runtime.binding().scope_generation().get(),
+                            actor_generation: marker(&placement),
+                            behavior_revision: marker(&content.source_digest()),
+                            content_revision: marker(&content.source_digest()),
+                            navigation_revision: marker(&room.map_revision_digest()),
+                            ruleset_revision: 1,
+                            determinism_profile_revision: 1,
+                        }),
+                        decision_root: GameplayDecisionRoot::from_bytes(root),
+                        occurrence: DecisionOccurrenceId::from_bytes(occurrence),
+                        path_work_id: sequence,
+                        position: p,
+                        home: p,
+                        attack: AttackReadiness {
+                            off_cooldown: false,
+                            chance_percent: 0,
+                        },
+                    };
+                    let decision_root = GameplayDecisionRoot::from_bytes(root);
+                    let decision_occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+                    let conditions = if monster.conditions.is_empty() {
+                        None
+                    } else {
+                        let Ok(stamp) = runtime.issue_owner_work() else {
+                            continue;
+                        };
+                        Some(super::attack::player_block::IncomingMeleeConditions {
+                            source: *actor,
+                            definitions: monster.conditions,
+                            root: decision_root.clone(),
+                            occurrence: decision_occurrence,
+                            occurrence_text: {
+                                let mut text = format!(
+                                    "ai-bite:{}:{}",
+                                    placement
+                                        .iter()
+                                        .map(|byte| format!("{byte:02x}"))
+                                        .collect::<String>(),
+                                    sequence
+                                );
+                                if native_selection.is_some() {
+                                    text.push_str(&format!(":{}", monster.definition.entry_index));
+                                }
+                                text
+                            },
+                            stamp,
+                        })
+                    };
+                    let race_key = &monster.race_key;
+                    // ATTACK-1b: the player this think resolved, for the incoming hooks below.
+                    let attacked = std::cell::Cell::new(None);
+                    let dispatch = melee_owner.think_with_native_source(
+                        &mut runtime,
+                        &mut super::attack::player_block::PlayerBiteVitals {
+                            quest_sessions: Some(&self.states.quest_sessions),
+                            charm: Some(super::attack::player_block::IncomingCharm {
+                                catalogue: self.imported_charms,
+                                root: decision_root,
+                                occurrence: decision_occurrence,
+                                sequence,
+                                race: race_key,
+                                base_damage: 0,
+                            }),
+                            conditions,
+                            states: &mut states,
+                            attack: &mut attack,
+                            formula: content.training_formula(),
+                            trained: &mut trained,
+                        },
+                        *actor,
+                        sequence,
+                        monster.definition,
+                        input,
+                        &perceived,
+                        |id| {
+                            let index = usize::try_from(id.get().checked_sub(1)?).ok()?;
+                            let (actor, _, session, _, protected) = *targets.get(index)?;
+                            if protected {
+                                return None;
+                            }
+                            attacked.set(Some((actor, session)));
+                            // The held runtime owner and exact current protection
+                            // read above remain live through the synchronous bite commit.
+                            Some((
+                                actor,
+                                session,
+                                ReentryProtection {
+                                    protected_until: None,
+                                },
+                            ))
+                        },
+                        revisions.clone(),
+                        SemanticTimeMicros::from_micros(now.get()),
+                        monster.source.as_ref(),
+                    );
+                    // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
+                    // landed attack starts the player's in-fight deadline. A replayed think returns its
+                    // recorded dispatch without resolving a target again, so nothing runs twice.
+                    let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
+                        continue;
+                    };
+                    match dispatch {
+                        Dispatch::Bite(Ok(applied)) => {
+                            if applied.damage.applied > 0 {
+                                attack.kills().boss_damage_received(
+                                    &runtime,
+                                    *actor,
+                                    player,
+                                    session,
+                                    u64::from(applied.damage.applied),
+                                    applied.vitals_revision,
+                                );
+                                states.hunting_activity(&runtime, player, session, now.get());
+                            }
+                        }
+                        Dispatch::ZeroDamage => {}
+                        Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
+                    }
+                    attack.record_hit_taken(&runtime, player, session, semantic_now);
                 }
-                Dispatch::ZeroDamage => {}
-                Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
             }
-            attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
         states.next_monster_ai_pass_us = next_pass;
@@ -505,6 +632,34 @@ fn current_player_target<'a>(
     (state.vitals().health > 0).then_some(state)
 }
 
+fn think_candidates(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    targets: &[(
+        ExactActorRef,
+        MovementLocalPosition,
+        GameSessionId,
+        bool,
+        bool,
+    )],
+) -> Vec<TargetCandidate> {
+    targets
+        .iter()
+        .filter_map(|(actor, position, session, invisible, protected)| {
+            let state = current_player_target(runtime, states, *actor, *session)?;
+            Some(TargetCandidate {
+                actor: *actor,
+                position: *position,
+                eligible: !*protected,
+                invisible: *invisible,
+                health: u64::from(state.vitals().health),
+                // The per-creature think fills this from its generation-owned damage ledger.
+                damage: 0,
+            })
+        })
+        .collect()
+}
+
 /// SPAWN-1a (CREATURE-AI-0 §6.3): runs the respawn occurrences due at `now` with the MOVE-RL-11
 /// reference view. It needs no melee content. A refusal leaves the occurrences pending.
 pub fn drive_owner_spawns(runtime: &mut ChannelRuntimeV1, now: u64) {
@@ -517,52 +672,94 @@ struct QualifiedMelee<'a> {
     behavior: &'a ProjectV2BehaviorAuthoring,
     definition: MeleeDefinition,
     race_key: String,
+    conditions: Vec<crate::foundation::ConditionDefinition>,
+    source: Option<crate::creature_auto_attack::MeleeSource>,
 }
 
 fn qualified_melee<'a>(
     runtime: &ChannelRuntimeV1,
     content: &'a crate::content::native_gameplay::NativeGameplayState,
     actor: ExactActorRef,
-) -> Option<QualifiedMelee<'a>> {
+) -> Option<Vec<QualifiedMelee<'a>>> {
     let snapshot = runtime.companion_snapshot(actor).ok()?;
-    if snapshot.state.master.is_some() || snapshot.state.policy.is_familiar {
+    let role = crate::monster_summon::current_source_creature_role(runtime, actor).ok()?;
+    if !matches!(
+        role,
+        crate::monster_summon::CurrentSourceCreatureRole::Ordinary
+            | crate::monster_summon::CurrentSourceCreatureRole::IntrinsicMonsterSummon(_)
+    ) {
         return None;
     }
     let record = content.creature_profiles().records.iter().find(|record| {
         record.profile.target.key == snapshot.state.policy.definition_key
             && record.profile.target.revision == snapshot.state.policy.definition_revision
     })?;
-    let melee = record.monster_melee.as_ref()?;
     let ProjectV2AuthoringProfileData::Behavior(behavior) = &record.behavior.as_ref()?.data else {
         return None;
     };
     if !behavior.targeting.hostile || !behavior.targeting.can_target {
         return None;
     }
-    // CREATURE-AI-1 §1.5: the swing's `AI_ATTACK` draw index is the melee entry's index in the
-    // profile's `attacks[]`.
-    let entry_index = behavior
-        .attacks
-        .iter()
-        .position(|a| {
-            a.ability == melee.ability
-                && a.interval_ms == melee.interval_ms
-                && a.chance_ppm == melee.chance_ppm
-        })
-        .and_then(|index| u16::try_from(index).ok())?;
-    let definition = MeleeDefinition::new(
-        content.source_digest(),
-        melee.interval_ms,
-        melee.chance_ppm,
-        melee.minimum,
-        melee.maximum,
-    )?
-    .with_entry_index(entry_index);
-    Some(QualifiedMelee {
-        behavior,
-        definition,
-        race_key: snapshot.state.policy.definition_key.clone(),
-    })
+    let source_at = |index| {
+        let definitions = record.attack_definitions.as_ref()?;
+        crate::creature_auto_attack::MeleeSource::from_native(
+            &record.profile.target,
+            index,
+            &definitions.records,
+            &definitions.profiles,
+            content.source_digest(),
+        )
+        .ok()
+    };
+    // Retain every qualified melee source in authored order. The legacy balance binding
+    // applies only to its matching slot; it cannot erase the remaining native entries.
+    let mut entries = Vec::new();
+    for (index, schedule) in behavior.attacks.iter().enumerate() {
+        let source = source_at(index);
+        let legacy = record.monster_melee.as_ref().filter(|melee| {
+            schedule.ability == melee.ability
+                && schedule.interval_ms == melee.interval_ms
+                && schedule.chance_ppm == melee.chance_ppm
+        });
+        let (minimum, maximum) = if let Some(melee) = legacy {
+            (melee.minimum, melee.maximum)
+        } else if let Some(source) = &source {
+            (source.minimum, source.maximum)
+        } else {
+            continue;
+        };
+        let make_definition = if legacy.is_some() {
+            MeleeDefinition::new
+        } else {
+            MeleeDefinition::new_native
+        };
+        let Some(definition) = make_definition(
+            content.source_digest(),
+            schedule.interval_ms,
+            schedule.chance_ppm,
+            minimum,
+            maximum,
+        ) else {
+            continue;
+        };
+        let definition = definition.with_entry_index(u16::try_from(index).ok()?);
+        let conditions = source
+            .as_ref()
+            .map_or_else(Vec::new, |source| source.conditions().to_vec());
+        let source =
+            source.filter(|source| source.admits_bite_definition(runtime, actor, definition));
+        if source.is_none() && legacy.is_none() {
+            continue;
+        }
+        entries.push(QualifiedMelee {
+            behavior,
+            definition,
+            race_key: snapshot.state.policy.definition_key.clone(),
+            conditions,
+            source,
+        });
+    }
+    (!entries.is_empty()).then_some(entries)
 }
 
 /// One melee pass's player candidates from the melee census, sorted by placement: each with its
@@ -1062,6 +1259,67 @@ mod tests {
             local_target_indices(position(0, 7), true, targets),
             Some(vec![1, 3])
         );
+    }
+
+    /// W01a: production selection observes the current player owner, including a hit between
+    /// censuses; dead or stale sessions never become zero-health winning candidates.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn monster_candidates_read_live_health_and_refuse_dead_or_stale_players() {
+        use crate::ability::creature_bite::CreatureBiteVitals;
+        use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests as player};
+        let (mut runtime, actor, session) = player::runtime_with_player(85);
+        runtime
+            .initialize_movement_test_position(actor, position(1, 7))
+            .expect("position");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                player::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("current player state");
+        let targets = [(actor, position(1, 7), session, false, false)];
+        assert_eq!(
+            think_candidates(&runtime, &states, &targets)[0].health,
+            u64::from(player::FACTS.max_health)
+        );
+        states
+            .apply_creature_damage(
+                &mut runtime,
+                actor,
+                session,
+                1,
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("current damage owner");
+        assert_eq!(
+            think_candidates(&runtime, &states, &targets)[0].health,
+            u64::from(player::FACTS.max_health - 1)
+        );
+        let stale_session = player::runtime_with_player(84).2;
+        assert!(
+            think_candidates(
+                &runtime,
+                &states,
+                &[(actor, position(1, 7), stale_session, false, false)],
+            )
+            .is_empty()
+        );
+        states
+            .apply_creature_damage(
+                &mut runtime,
+                actor,
+                session,
+                player::FACTS.max_health,
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("lethal damage owner");
+        assert!(think_candidates(&runtime, &states, &targets).is_empty());
     }
 
     #[test]

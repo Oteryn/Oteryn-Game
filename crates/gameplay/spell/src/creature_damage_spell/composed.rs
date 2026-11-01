@@ -33,6 +33,22 @@ impl ComposedSource {
         index: usize,
         content: [u8; 32],
     ) -> Result<Self, AttackError> {
+        Self::from_native_parts(
+            caster,
+            index,
+            &draft.core.records,
+            &draft.state.authoring_profiles,
+            content,
+        )
+    }
+    /// Qualify the same exact source bodies from the loaded creature's admitted closure.
+    pub fn from_native_parts(
+        caster: &Ref,
+        index: usize,
+        records: &[ProjectReferenceRecord],
+        profiles: &[ProjectV2AuthoringProfile],
+        content: [u8; 32],
+    ) -> Result<Self, AttackError> {
         let expected: serde_json::Value =
             serde_json::from_str(SOURCE_BODIES).map_err(|_| AttackError::InvalidSource)?;
         let case = expected["cases"]
@@ -44,8 +60,6 @@ impl ComposedSource {
         if caster.family != ProjectV2Family::Creature || caster.revision != "definition-r1" {
             return Err(AttackError::InvalidSource);
         }
-        let records = &draft.core.records;
-        let profiles = &draft.state.authoring_profiles;
         let mut map = BTreeMap::new();
         for p in profiles {
             if map.insert(p.target.clone(), &p.data).is_some() {
@@ -176,6 +190,29 @@ pub trait ComposedWorldReader: SpellWorldReader {
     ) -> Option<CreatureCombatFacts> {
         None
     }
+    /// Apply the current creature response to the actual post-armor magnitude.
+    /// Existing snapshot readers retain their admitted multiplier arithmetic;
+    /// production readers may delegate to the creature combat-rule owner directly.
+    #[allow(clippy::too_many_arguments)]
+    fn creature_damage_response(
+        &mut self,
+        _r: &ChannelRuntimeV1,
+        _issuer: ExactActorRef,
+        _target: ExactActorRef,
+        _element: Option<&str>,
+        amount: u32,
+        facts: CreatureCombatFacts,
+        _stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        if facts.multiplier_ppm > 10_000_000 {
+            return None;
+        }
+        if facts.immune {
+            Some(0)
+        } else {
+            u32::try_from(u64::from(amount) * u64::from(facts.multiplier_ppm) / 1_000_000).ok()
+        }
+    }
     fn callback_allowed(
         &mut self,
         _r: &ChannelRuntimeV1,
@@ -236,6 +273,14 @@ pub struct Memo {
 pub struct ComposedOwner {
     pub memos: Vec<Memo>,
 }
+impl std::fmt::Debug for ComposedOwner {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ComposedOwner")
+            .field("memos", &self.memos.len())
+            .finish()
+    }
+}
 enum Request {
     CreatureDamage {
         key: String,
@@ -273,9 +318,53 @@ impl ComposedOwner {
         reader: &mut dyn ComposedWorldReader,
         now: SemanticTimeMicros,
     ) -> Result<ComposedOutcome, AttackError> {
+        self.execute_inner(
+            r,
+            Some(fence),
+            stamp,
+            vitals,
+            catalog,
+            source,
+            proposal,
+            reader,
+            now,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        catalog: &CreatureHealCatalog,
+        source: &ComposedSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn ComposedWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<ComposedOutcome, AttackError> {
+        self.execute_inner(
+            r, None, stamp, vitals, catalog, source, proposal, reader, now,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn execute_inner(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        catalog: &CreatureHealCatalog,
+        source: &ComposedSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn ComposedWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<ComposedOutcome, AttackError> {
         let binding = r.binding();
-        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
-            || !fence.accepts_stamp(stamp)
+        let current = fence
+            .or_else(|| r.owner_fence().ok())
+            .ok_or(AttackError::StaleOwner)?;
+        if !current.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -359,9 +448,25 @@ impl ComposedOwner {
             }
         }
         let tiles = source.tiles(r, proposal, reader, stamp)?;
-        let candidates = r
-            .current_live_creature_candidates(64)
-            .map_err(|_| AttackError::InvalidPlan)?;
+        // Bound the actual cast area, not the entire Channel's creature population.
+        // The current census remains complete; never silently truncate recipients.
+        let mut candidates = Vec::new();
+        for (actor, position, session) in r
+            .positioned_actor_census()
+            .map_err(|_| AttackError::InvalidPlan)?
+        {
+            let at = position.position();
+            if session.is_some() || !tiles.contains(&(at.x, at.y, at.floor)) {
+                continue;
+            }
+            if candidates.len() >= 64 {
+                return Err(AttackError::LedgerFull);
+            }
+            candidates
+                .try_reserve(1)
+                .map_err(|_| AttackError::LedgerFull)?;
+            candidates.push(actor);
+        }
         let players = reader
             .current_players(r, stamp)
             .ok_or(AttackError::MissingCombatFacts)?;
@@ -431,15 +536,17 @@ impl ComposedOwner {
                 } else {
                     0
                 };
-                let amount = if facts.immune {
-                    0
-                } else {
-                    u32::try_from(
-                        u64::from(raw.saturating_sub(armor)) * u64::from(facts.multiplier_ppm)
-                            / 1_000_000,
+                let amount = reader
+                    .creature_damage_response(
+                        r,
+                        proposal.issuer,
+                        *target,
+                        primary.element.as_deref(),
+                        raw.saturating_sub(armor),
+                        facts,
+                        stamp,
                     )
-                    .map_err(|_| AttackError::NumericOverflow)?
-                };
+                    .ok_or(AttackError::MissingCombatFacts)?;
                 let occurrence = format!(
                     "{}:primary:{}",
                     proposal.occurrence.id().as_str(),
@@ -554,12 +661,10 @@ impl ComposedOwner {
                     {
                         return Err(AttackError::InvalidPlan);
                     }
-                    if !a.visible
-                        || a.issuer_pz
-                        || a.target_pz
-                        || a.issuer_protected
-                        || a.target_protected
-                    {
+                    // Source callbacks operate on area occupants, without an AI
+                    // visibility check: frozen_minion_wave.lua:16-30 and
+                    // source_of_corruption_wave.lua:11-24 (Crystal 201189f).
+                    if a.issuer_pz || a.target_pz || a.issuer_protected || a.target_protected {
                         continue;
                     }
                     vitals
@@ -603,16 +708,8 @@ impl ComposedOwner {
                 .map_err(|_| AttackError::LedgerFull)?;
         }
         if let (Some(primary), Some(prepared)) = (&source.primary, prepared) {
-            let hit = generic.commit_prepared(
-                r,
-                vitals,
-                primary,
-                proposal,
-                prepared,
-                now,
-                Some(fence),
-                stamp,
-            )?;
+            let hit = generic
+                .commit_prepared(r, vitals, primary, proposal, prepared, now, fence, stamp)?;
             if let Some(m) = &mut primary_memo {
                 m.targets.extend(hit.targets.iter().cloned());
             }
@@ -700,6 +797,49 @@ impl ComposedOwner {
     }
 }
 impl ComposedSource {
+    pub fn creature_key(&self) -> &str {
+        &self.caster.key
+    }
+    pub fn primary_source(&self) -> Option<&SpellSource> {
+        self.primary.as_ref()
+    }
+    pub fn details(&self) -> &crate::content::ProjectV2AbilityDetails {
+        &self.details
+    }
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn source_fingerprint(&self) -> [u8; 32] {
+        self.fingerprint
+    }
+    pub fn cast_center(
+        &self,
+        from: crate::foundation::MovementLocalPosition,
+        to: crate::foundation::MovementLocalPosition,
+        facing: Option<Facing>,
+    ) -> Result<crate::foundation::MovementLocalPosition, AttackError> {
+        source_cast_center(
+            self.details.area.as_ref(),
+            self.details.needs_target,
+            self.details.needs_direction,
+            from,
+            to,
+            facing,
+        )
+    }
+    pub fn target_tiles(
+        &self,
+        from: crate::foundation::MovementLocalPosition,
+        to: crate::foundation::MovementLocalPosition,
+        facing: Option<Facing>,
+    ) -> Result<Vec<(i32, i32, i16)>, AttackError> {
+        source_target_tiles(
+            self.details.area.as_ref(),
+            self.details.needs_target,
+            self.details.needs_direction,
+            from,
+            to,
+            facing,
+        )
+    }
     fn contains(
         &self,
         r: &ChannelRuntimeV1,
@@ -742,52 +882,34 @@ impl ComposedSource {
         {
             return Err(AttackError::OutOfRange);
         }
-        let center = if self.details.needs_target {
-            (tp.x, tp.y)
-        } else if self.details.needs_direction {
-            let f = reader
-                .current_facing(r, p.issuer, stamp)
-                .ok_or(AttackError::MissingCombatFacts)?;
-            let (x, y) = geometry::step(f);
-            (
-                fp.x.checked_add(x).ok_or(AttackError::NumericOverflow)?,
-                fp.y.checked_add(y).ok_or(AttackError::NumericOverflow)?,
+        let facing = if self.details.needs_direction {
+            Some(
+                reader
+                    .current_facing(r, p.issuer, stamp)
+                    .ok_or(AttackError::MissingCombatFacts)?,
             )
         } else {
-            (fp.x, fp.y)
+            None
         };
-        let area = self
-            .details
-            .area
-            .as_ref()
-            .ok_or(AttackError::UnsupportedShape)?;
-        let diagonal =
-            matches!(area,ProjectV2AbilityArea::Matrix{diagonal,..}if !diagonal.is_empty());
-        let f = geometry::direction(
-            i64::from(center.0) - i64::from(fp.x),
-            i64::from(center.1) - i64::from(fp.y),
-            diagonal,
-        );
+        if self.details.area.is_none() {
+            return Err(AttackError::UnsupportedShape);
+        }
+        let authored = self.target_tiles(fp, tp, facing)?;
         let mut tiles = Vec::new();
-        for (dx, dy) in geometry::offsets(area, f).map_err(|_| AttackError::UnsupportedShape)? {
-            let x = center
-                .0
-                .checked_add(dx)
-                .ok_or(AttackError::NumericOverflow)?;
-            let y = center
-                .1
-                .checked_add(dy)
-                .ok_or(AttackError::NumericOverflow)?;
-            match reader.tile_allowed(r, p.issuer, x, y, fp.floor, stamp) {
+        for (x, y, floor) in authored {
+            match reader.tile_allowed(r, p.issuer, x, y, floor, stamp) {
                 None => return Err(AttackError::MissingCombatFacts),
                 Some(false) => continue,
-                Some(true) => tiles.push((x, y, fp.floor)),
+                Some(true) => tiles.push((x, y, floor)),
             }
         }
         Ok(tiles)
     }
 }
 impl Callback {
+    pub fn filter(&self) -> &ProjectV2EffectAffects {
+        &self.filter
+    }
     fn draw(
         &self,
         root: &GameplayDecisionRoot,

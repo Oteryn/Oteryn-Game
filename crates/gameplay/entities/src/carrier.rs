@@ -730,14 +730,34 @@ impl std::fmt::Debug for PreProductionPositionContext {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct VersionedPosition {
     actor_local_id: ActorLocalId,
     actor_local_generation: ActorLocalGeneration,
     pub context: PreProductionPositionContext,
     pub position: LocalPosition,
     pub revision: u64,
+    /// The existing position revision of the last coordinate/floor change. Zero at
+    /// admission; turns and same-cell writes retain it. This is derived owner state,
+    /// not a second revision counter or a movement authority.
+    last_translation_revision: u64,
     facing: Option<MovementFacing>,
+}
+
+// Existing spell and relocation bindings use these Debug bytes. The derived
+// translation marker is already bound by the position revision; preserve the
+// established representation while exact snapshot equality includes the marker.
+impl std::fmt::Debug for VersionedPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VersionedPosition")
+            .field("actor_local_id", &self.actor_local_id)
+            .field("actor_local_generation", &self.actor_local_generation)
+            .field("context", &self.context)
+            .field("position", &self.position)
+            .field("revision", &self.revision)
+            .field("facing", &self.facing)
+            .finish()
+    }
 }
 
 /// A value snapshot, never an authority token. Compare-commit revalidates

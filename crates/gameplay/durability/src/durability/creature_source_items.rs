@@ -643,10 +643,11 @@ async fn prepare_creature_source_fields_in_transaction<
         return Err(SpellItemError::Rejected("Creature field create body"));
     };
     if proposal.range_tiles != details.range_tiles
-        || i64::from(fp.x)
-            .abs_diff(i64::from(tp.x))
-            .max(i64::from(fp.y).abs_diff(i64::from(tp.y)))
-            > u64::from(details.range_tiles)
+        || (details.range_tiles != 0
+            && i64::from(fp.x)
+                .abs_diff(i64::from(tp.x))
+                .max(i64::from(fp.y).abs_diff(i64::from(tp.y)))
+                > u64::from(details.range_tiles))
     {
         return Err(SpellItemError::Rejected("Creature field range"));
     }
@@ -834,7 +835,10 @@ async fn prepare_creature_source_fields_in_transaction<
             item_instance_id: identity,
             definition: definition.clone(),
             quantity: 1,
-            placement: address.placement(Vec::new()),
+            // Ground stores a bounded source reference even for noncorpse Items.
+            // Reuse the canonical occurrence already validated by the current
+            // Creature cause; it grants no Player drop or inventory authority.
+            placement: address.placement(cause.occurrence.as_bytes().to_vec()),
             lifetime_millis: None,
             blocks_movement: movement,
             blocks_projectile: projectile,

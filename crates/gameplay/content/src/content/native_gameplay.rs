@@ -67,12 +67,15 @@ const MAX_PROFILES: usize = 8 * 1024 * 1024;
 /// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
 /// MAX_RECORDS still bounds the record count.
 const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
+// W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
+// serving Creature provider. Keep this bound separate from all other profiles.
+const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
     MAX_SELECTION,
-    MAX_PROFILES,
+    MAX_CREATURE_PROFILES,
     MAX_PROFILES,
 ];
 
@@ -725,7 +728,7 @@ impl NativeGameplayInput {
                 .transpose()?,
             catalog: load(manifest.catalog, MAX_CATALOG)?,
             source_selection: load(manifest.source_selection, MAX_SELECTION)?,
-            creature_profiles: load(manifest.creature_profiles, MAX_PROFILES)?,
+            creature_profiles: load(manifest.creature_profiles, MAX_CREATURE_PROFILES)?,
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
             item_profiles: manifest
                 .item_profiles

@@ -100,6 +100,13 @@ impl MovementPositionSnapshot {
         self.0.version.revision
     }
 
+    /// The position revision of this actor's latest coordinate or floor change,
+    /// or zero if it has not moved since admission. Turns and same-cell commits
+    /// do not change it. Compare only within the same exact actor and context.
+    pub const fn last_translation_revision(self) -> u64 {
+        self.0.version.last_translation_revision
+    }
+
     pub const fn world_id(self) -> WorldId {
         self.0.actor_ref.runtime_scope.world_id()
     }
@@ -668,12 +675,14 @@ impl ChannelActorCarrier {
                 (true, Some(0), Some(-1)) => MovementFacing::North,
                 _ => return Err(CarrierError::MovementNonCardinal),
             };
+            let revision = position
+                .revision
+                .checked_add(1)
+                .ok_or(CarrierError::PositionRevisionExhausted)?;
             let version = VersionedPosition {
                 position: next,
-                revision: position
-                    .revision
-                    .checked_add(1)
-                    .ok_or(CarrierError::PositionRevisionExhausted)?,
+                revision,
+                last_translation_revision: revision,
                 facing: Some(facing),
                 ..*position
             };
@@ -743,6 +752,7 @@ impl ChannelActorCarrier {
                     context,
                     position,
                     revision: 1,
+                    last_translation_revision: 0,
                     facing: None,
                 };
                 *stored = Some(version);
@@ -907,6 +917,11 @@ impl ChannelActorCarrier {
             context: next_context,
             position: next_position,
             revision,
+            last_translation_revision: if next_position != current.position {
+                revision
+            } else {
+                current.last_translation_revision
+            },
             facing: match (
                 next_position.floor == current.position.floor,
                 next_position.x.checked_sub(current.position.x),

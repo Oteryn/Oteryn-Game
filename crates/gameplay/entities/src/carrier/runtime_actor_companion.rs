@@ -362,6 +362,7 @@ impl ChannelRuntimeV1 {
                     floor: position.floor,
                 },
                 revision: 1,
+                last_translation_revision: 0,
                 facing: None,
             }),
             target_identity,
@@ -1035,6 +1036,7 @@ impl ChannelRuntimeV1 {
                     floor: position.floor,
                 },
                 revision: 1,
+                last_translation_revision: 0,
                 facing: None,
             });
             *companion = Some(state);

@@ -39,6 +39,18 @@ pub const CREATURE_BITE_LEDGER_MAX: usize = 262_144;
 pub struct CreatureBiteDefinition {
     interval_micros: u64,
     magnitude: u32,
+    native_schedule: Option<NativeBiteBinding>,
+}
+
+/// Made only from a resolved native source, and bound to the exact commit occurrence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NativeBiteBinding {
+    issuer: ExactActorRef,
+    sequence: u64,
+    target: ExactActorRef,
+    session: GameSessionId,
+    source_index: u16,
+    content_digest: [u8; 32],
 }
 
 impl CreatureBiteDefinition {
@@ -48,7 +60,37 @@ impl CreatureBiteDefinition {
         (interval_micros > 0 && magnitude > 0).then_some(Self {
             interval_micros,
             magnitude,
+            native_schedule: None,
         })
+    }
+
+    /// The native AI owner has already selected this source in its shared attack window.
+    /// Requiring the privately resolved MeleeSource prevents an arbitrary definition from
+    /// disabling the legacy cooldown. This still grants no actor/session/effect authority.
+    pub fn from_native_source(
+        source: &crate::creature_auto_attack::MeleeSource,
+        runtime: &ChannelRuntimeV1,
+        intent: AiBiteIntent,
+        definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+        magnitude: u32,
+    ) -> Option<Self> {
+        if intent.think_sequence == 0
+            || !source.admits_bite_definition(runtime, intent.issuer, definition)
+            || magnitude < source.minimum
+            || magnitude > source.maximum
+        {
+            return None;
+        }
+        let mut result = Self::new(definition.interval_us, magnitude)?;
+        result.native_schedule = Some(NativeBiteBinding {
+            issuer: intent.issuer,
+            sequence: intent.think_sequence,
+            target: intent.target,
+            session: intent.target_session,
+            source_index: definition.entry_index,
+            content_digest: definition.content_digest,
+        });
+        Some(result)
     }
 }
 
@@ -263,12 +305,21 @@ struct BiteEntry {
     last: Option<(u64, ExactActorRef, Result<AppliedBite, BiteRejection>)>,
 }
 
+#[derive(Debug)]
+struct ActorBites {
+    issuer: ExactActorRef,
+    legacy: BiteEntry,
+    /// Same existing receipt owner, separated by the source-qualified authored index.
+    /// MeleeSource admission bounds this map to the profile's 16 attack entries.
+    native: BTreeMap<u16, BiteEntry>,
+}
+
 /// The Channel owner's bite cooldowns and occurrence results, beside `ChannelRuntimeV1` and used
 /// only under its lock. Keyed by the issuer's exact generation (`placement_identity`), so a newer
 /// generation in a reused slot never reads a dead one's cooldown or occurrence result.
 #[derive(Debug, Default)]
 pub struct CreatureBiteLedger {
-    entries: BTreeMap<[u8; 16], BiteEntry>,
+    entries: BTreeMap<[u8; 16], ActorBites>,
 }
 
 impl CreatureBiteLedger {
@@ -294,6 +345,7 @@ impl CreatureBiteLedger {
         &mut self,
         runtime: &ChannelRuntimeV1,
         issuer: ExactActorRef,
+        source_index: Option<u16>,
     ) -> Result<&mut BiteEntry, BiteRejection> {
         let key = issuer.placement_identity();
         if !self.entries.contains_key(&key) && self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
@@ -303,11 +355,20 @@ impl CreatureBiteLedger {
                 return Err(BiteRejection::LedgerFull);
             }
         }
-        Ok(self.entries.entry(key).or_insert(BiteEntry {
+        let fresh = BiteEntry {
             issuer,
             ready_at: SemanticTimeMicros::from_micros(0),
             last: None,
-        }))
+        };
+        let actor = self.entries.entry(key).or_insert_with(|| ActorBites {
+            issuer,
+            legacy: fresh,
+            native: BTreeMap::new(),
+        });
+        Ok(match source_index {
+            Some(index) => actor.native.entry(index).or_insert(fresh),
+            None => &mut actor.legacy,
+        })
     }
 }
 
@@ -328,7 +389,19 @@ pub fn commit_ai_bite(
     if !runtime.contains_live_creature(intent.issuer) {
         return Err(BiteRejection::StaleIssuer);
     }
-    let entry = *ledger.entry(runtime, intent.issuer)?;
+    if let Some(binding) = definition.native_schedule
+        && (binding.issuer != intent.issuer
+            || binding.sequence != intent.think_sequence
+            || binding.target != intent.target
+            || binding.session != intent.target_session
+            || binding.content_digest != runtime.content_pin().server_artifact_digest())
+    {
+        return Err(BiteRejection::InvalidPlan);
+    }
+    let source_index = definition
+        .native_schedule
+        .map(|binding| binding.source_index);
+    let entry = *ledger.entry(runtime, intent.issuer, source_index)?;
     if let Some((sequence, target, result)) = entry.last {
         if intent.think_sequence < sequence {
             return Err(BiteRejection::OccurrenceSuperseded);
@@ -344,8 +417,8 @@ pub fn commit_ai_bite(
     let result = resolve_and_apply(
         runtime, vitals, &entry, intent, definition, revisions, protection, now,
     );
-    let entry = ledger.entry(runtime, intent.issuer)?;
-    if result.is_ok() {
+    let entry = ledger.entry(runtime, intent.issuer, source_index)?;
+    if result.is_ok() && definition.native_schedule.is_none() {
         entry.ready_at = now.saturating_add_micros(definition.interval_micros);
     }
     entry.last = Some((intent.think_sequence, intent.target, result));
@@ -364,7 +437,7 @@ fn resolve_and_apply(
     now: SemanticTimeMicros,
 ) -> Result<AppliedBite, BiteRejection> {
     bite_reaches(runtime, intent, protection, now)?;
-    if now < entry.ready_at {
+    if definition.native_schedule.is_none() && now < entry.ready_at {
         return Err(BiteRejection::CoolingDown);
     }
     let plan = bite_plan(intent, definition, revisions).ok_or(BiteRejection::InvalidPlan)?;
@@ -511,11 +584,14 @@ fn bite_plan(
 ) -> Option<EffectPlan> {
     let issuer = format!("actor:{}", hex(&intent.issuer.placement_identity()));
     let target = format!("actor:{}", hex(&intent.target.placement_identity()));
-    let occurrence_id = format!(
+    let mut occurrence_id = format!(
         "ai-bite:{}:{}",
         hex(&intent.issuer.placement_identity()),
         intent.think_sequence
     );
+    if let Some(binding) = definition.native_schedule {
+        occurrence_id.push_str(&format!(":{}", binding.source_index));
+    }
     let occurrence = AbilityOccurrence::new(&occurrence_id, revisions).ok()?;
     let proposal =
         AbilityIntent::resolve(ProposalSource::Ai, &issuer, &[&target], &[&target]).ok()?;

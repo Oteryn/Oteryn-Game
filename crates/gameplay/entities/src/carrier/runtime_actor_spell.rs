@@ -1004,11 +1004,15 @@ impl ChannelRuntimeV1 {
             .revision
             .checked_add(1)
             .ok_or(Error::InvalidBatch)?;
-        position.position = LocalPosition {
+        let destination = LocalPosition {
             x: relocation.destination.x,
             y: relocation.destination.y,
             floor: relocation.destination.floor,
         };
+        if position.position != destination {
+            position.last_translation_revision = position.revision;
+        }
+        position.position = destination;
         // Facing is the genuine current facing; vertical/rope casts do not invent a turn.
         staged.relocation = Some(relocation.clone());
         Ok(staged)
