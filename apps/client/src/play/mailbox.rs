@@ -73,6 +73,8 @@ pub(super) struct Mailbox {
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
+    pub(super) prey: oteryn_client_ui::prey::PreyPanel,
+    pub(super) prey_shutdown: bool,
     pub(super) imbue: oteryn_client_ui::imbue::ImbuePanel,
     pub(super) imbue_shutdown: bool,
     pub(super) player_trade: oteryn_client_ui::player_trade::PlayerTradePanel,
@@ -206,6 +208,7 @@ impl Drop for PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
+        mailbox.prey_shutdown = true;
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
     }

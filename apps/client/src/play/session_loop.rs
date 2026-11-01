@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn prey_selected(&self) -> bool {
+        false
+    }
+    fn prey(
+        &mut self,
+        _command: &oteryn_client_runtime::prey::PreyCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
+    }
     fn imbue_selected(&self) -> bool {
         false
     }
@@ -205,6 +215,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn prey_selected(&self) -> bool {
+        self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
+    }
+    async fn prey(
+        &mut self,
+        command: &oteryn_client_runtime::prey::PreyCommand,
+    ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
+        oteryn_client_runtime::prey::send(self, command).await
+    }
     fn imbue_selected(&self) -> bool {
         self.is_selected(oteryn_session::imbuement::CAPABILITY_IMBUE_V1)
     }
@@ -294,6 +313,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.prey_initialize(session.prey_selected());
     outbox.imbue_initialize(session.imbue_selected());
     outbox.player_trade_initialize(
         session.player_trade_selected(),
@@ -372,6 +392,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Prey(command)) => match session.prey(&command).await {
+                Ok(response) => {
+                    outbox.prey_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

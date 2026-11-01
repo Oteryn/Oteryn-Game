@@ -13,6 +13,7 @@ pub enum PlayCommand {
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,
+    Prey(oteryn_client_runtime::prey::PreyCommand),
     Imbue(oteryn_client_runtime::imbue::ImbueCommand),
     /// Capability-60 direct player-trade intent.
     PlayerTrade(oteryn_client_runtime::player_trade::PlayerTradeCommand),

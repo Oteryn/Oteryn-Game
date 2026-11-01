@@ -83,6 +83,8 @@ pub use oteryn_protocol_oteryn::exiva;
 pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// Prey slot wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::prey;
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
     Status as VipPresenceStatus,

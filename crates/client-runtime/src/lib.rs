@@ -124,6 +124,9 @@ pub mod spell;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Prey command execution through the admitted session.
+#[path = "features/0140-prey/protocol.rs"]
+pub mod prey;
 /// Player-trade command execution through the admitted session.
 #[path = "features/0060-player-trade/protocol.rs"]
 pub mod player_trade;

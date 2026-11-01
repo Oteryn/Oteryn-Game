@@ -38,6 +38,9 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Prey slots, candidate selection, bonuses, and automatic reroll controls.
+#[path = "features/0140-prey/mod.rs"]
+pub mod prey;
 /// Direct player-trade panel state and controls.
 #[path = "features/0060-player-trade/mod.rs"]
 pub mod player_trade;
