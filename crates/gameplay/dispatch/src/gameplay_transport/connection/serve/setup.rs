@@ -221,6 +221,7 @@ async fn live<A: FreshAdmissionAuthority>(
             .gameplay_idle
             .training(authority.gameplay_idle_now(), training);
     }
+    authority.observe_gameplay_idle(*admitted);
     let Some(commands) = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
         authority.session_commands(),
         admitted,

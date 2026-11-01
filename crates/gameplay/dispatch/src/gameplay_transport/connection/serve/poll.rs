@@ -8,6 +8,7 @@ pub(super) enum Next {
     Held(Vec<u8>, bool),
     StepDue,
     Probe,
+    ServerMessage,
     Serene,
     QuestLog,
     Chat,
@@ -18,8 +19,9 @@ pub(super) enum Next {
     Npc,
 }
 
-pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin>(
+pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
+    authority: &A,
     session: &mut ServeState,
 ) -> Next {
     // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
@@ -43,6 +45,8 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin>(
         });
         let mut read = std::pin::pin!(session.frames.next(stream));
         let mut tick = std::pin::pin!(session.cadence.tick());
+        let mut server_message =
+            std::pin::pin!(authority.server_messages_changed(session.admitted));
         let mut serene_tick = std::pin::pin!(async {
             match session.serene.as_mut() {
                 Some(timer) => timer.tick().await,
@@ -94,6 +98,9 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin>(
         std::future::poll_fn(|context| {
             if tick.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::Probe);
+            }
+            if server_message.as_mut().poll(context).is_ready() {
+                return std::task::Poll::Ready(Next::ServerMessage);
             }
             if serene_tick.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::Serene);

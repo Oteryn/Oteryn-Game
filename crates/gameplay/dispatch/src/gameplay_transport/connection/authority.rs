@@ -117,6 +117,10 @@ pub trait FreshAdmissionAuthority {
         tokio::time::Instant::now()
     }
 
+    /// Copy the authoritative idle state after its existing owner changes it.
+    /// This hook does not classify input or maintain another activity clock.
+    fn observe_gameplay_idle(&self, _admitted: AdmittedSession) {}
+
     /// `(training, no_logout_tile)` from the existing owners. Unknown facts defer idle removal.
     fn gameplay_idle_exemptions(
         &self,
@@ -385,6 +389,23 @@ pub trait FreshAdmissionAuthority {
     /// World-configured login text; empty means no message.
     fn server_motd(&self) -> &str {
         ""
+    }
+
+    fn server_messages_joined(&self, _admitted: AdmittedSession) -> bool {
+        true
+    }
+
+    fn server_messages_left(&self, _admitted: AdmittedSession) {}
+
+    fn take_server_notice(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+        None
+    }
+
+    fn server_messages_changed(&self, _admitted: AdmittedSession) -> impl Future<Output = ()> {
+        std::future::pending()
     }
 
     fn take_tutorial_notice(

@@ -18,6 +18,23 @@ use oteryn_protocol_oteryn::house_transfer::{self as wire, HouseTransferAck};
 /// None is an uncertain outcome: close, preserving the durable destination for recovery.
 pub(super) type TransferResult = Option<(Option<AdmittedSession>, Vec<u8>)>;
 
+/// A new command stream does not make the same physical player active again
+/// or replay its already delivered server messages.
+pub(super) fn handoff_continuity(
+    previous: SessionContinuity,
+    selected_capabilities: SelectedCapabilities,
+    connection_generation: u64,
+) -> SessionContinuity {
+    SessionContinuity {
+        gameplay_idle: previous.gameplay_idle,
+        server_message_revision: previous.server_message_revision,
+        server_motd_sent: previous.server_motd_sent,
+        selected_capabilities,
+        connection_generation,
+        ..SessionContinuity::FRESH
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn transfer_house(
         &self,
@@ -301,19 +318,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         next.game_session_id = destination;
         next.first_entry = FirstEntryOutcome::Positioned;
         next.item_fence = super::item_fence_of(current);
-        next.continuity = SessionContinuity {
-            selected_capabilities: SelectedCapabilities::select(
-                self.offered_capabilities(),
-                &ack.selection,
-            )?,
-            ..SessionContinuity::FRESH
-        };
+        next.continuity = handoff_continuity(
+            admitted.continuity,
+            SelectedCapabilities::select(self.offered_capabilities(), &ack.selection)?,
+            ack.connection_generation,
+        );
         if intent.exit {
             self.initialize_transferred_channel(&next, &saved_position)
                 .await?;
             self.admit_progression_session(&mut next).await;
             self.admit_quest_session(&next).await;
         }
+        self.states.gameplay_idle_presence.observe(next);
+        self.states
+            .gameplay_idle_presence
+            .forget(admitted.game_session_id);
+        // The physical connection's original guard owns this recipient across
+        // handoffs, including cancellation before its result reaches the wire.
+        self.states
+            .server_messages
+            .transfer_connection(admitted, next)
+            .ok()?;
         Some((Some(next), payload))
     }
 
@@ -577,6 +602,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .restore_transfer_actor(recovered.source, destination, lease, position, house)
             .map_err(|_| Unavailable)?;
         drop(runtime);
+        let retained_idle = self
+            .states
+            .gameplay_idle_presence
+            .retained_idle(destination, actor)
+            .or_else(|| {
+                self.states
+                    .gameplay_idle_presence
+                    .retained_idle(recovered.source, actor)
+            });
         let account = recovered.account;
         let mut admitted = AdmittedSession {
             game_session_id: destination,
@@ -595,6 +629,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             item_fence: Some(fence),
         };
+        if let Some(idle) = retained_idle {
+            admitted.continuity.gameplay_idle = idle;
+        }
         if recovered.ack.house.is_none() {
             self.initialize_transferred_channel(&admitted, &recovered.placement.record)
                 .await
@@ -603,6 +640,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.admit_quest_session(&admitted).await;
         }
         self.states.command_ingress.admit(destination);
+        self.states.gameplay_idle_presence.observe(admitted);
+        self.states.gameplay_idle_presence.forget(recovered.source);
         Ok(Some(admitted))
     }
 }
