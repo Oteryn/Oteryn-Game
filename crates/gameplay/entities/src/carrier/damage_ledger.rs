@@ -648,8 +648,20 @@ impl ChannelActorCarrier {
         let next_ordinal = ordinal
             .checked_add(1)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
+        // The receipt retains the original request: retrying at a new HP fraction cannot
+        // change the already committed hit or its damage attribution.
+        let effective_damage = match &self.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
+                Some(tag) => {
+                    tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
+                }
+                None => damage,
+            },
+            _ => return Err(CarrierError::NotCreature),
+        };
         let next = health
-            .checked_sub(damage)
+            .checked_sub(effective_damage)
             .ok_or(CarrierError::DamageOverflow)?
             .max(0);
         let result = OwnerDamageResult {

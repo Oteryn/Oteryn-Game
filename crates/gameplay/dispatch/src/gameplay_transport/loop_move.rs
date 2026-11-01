@@ -277,7 +277,9 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
         match item {
             AddedItem::Ground(ground) => self.ground.get(&ground.item_instance_id).copied(),
-            AddedItem::Volatile { .. } => self.inner.added_entry(item),
+            AddedItem::Volatile { .. } => {
+                super::echo_warden::portal_entry(item).or_else(|| self.inner.added_entry(item))
+            }
         }
     }
 
@@ -443,6 +445,15 @@ pub async fn loop_ground(
         .copied()
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &pending).ok()?;
+    {
+        let runtime = admission.runtime.lock().await;
+        super::echo_warden::append_portals(
+            &mut built.overlay,
+            &runtime,
+            Some(index),
+            admission.owner_now().get() / 1000,
+        );
+    }
     let built = Arc::new(built);
     admission.states.loop_ground.store(epoch, &built);
     Some(built)
@@ -519,7 +530,14 @@ pub(super) async fn move_loop_item(
         return refused(LoopMoveRefusal::Rejected);
     }
     if matches!(request.item, ItemKey::MapBase { .. }) {
-        return map_pickup::move_map_item(admission, actor, command, request, &permit).await;
+        let result = map_pickup::move_map_item(admission, actor, command, request, &permit).await;
+        if result == LoopMoveResult::Committed {
+            admission
+                .states
+                .browse_fields
+                .committed_move(request.item, None);
+        }
+        return result;
     }
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
@@ -623,7 +641,7 @@ pub(super) async fn move_loop_item(
             admission.holder,
             &fence,
             CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
             LoopMoveRequest {
                 item,
                 count: request.count,
@@ -632,10 +650,22 @@ pub(super) async fn move_loop_item(
             },
         )
         .await;
-    drop(permit);
+    // Publish the tile-order event while the same Channel lane still excludes
+    // observers. Even pickup + re-drop between two view polls must append the item.
+    if touches_ground && matches!(committed, Ok(Ok(_))) {
+        let destination = match request.target {
+            LoopTarget::Ground(to) => Some(to),
+            _ => None,
+        };
+        admission
+            .states
+            .browse_fields
+            .committed_move(request.item, destination);
+    }
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
     }
+    drop(permit);
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
     admission
@@ -684,6 +714,9 @@ pub(super) async fn observe_container(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
+    if matches!(target, ItemKey::BrowseField { .. }) {
+        return super::browse_field::observe(admission, actor, fence, target).await;
+    }
     let ItemKey::Instance(container) = target else {
         return None;
     };
@@ -711,6 +744,7 @@ pub(super) async fn observe_container(
         .await
         .ok()?;
     let is_carried = carried.is_some();
+    let mut browse_parent = None;
     let (read, reachable) = if let Some(read) = carried {
         (read, true)
     } else {
@@ -752,6 +786,11 @@ pub(super) async fn observe_container(
         let Some((cell, _)) = overlay.ground_entry(&root) else {
             return Some(ContainerObservation::Gone);
         };
+        browse_parent = Some(ItemKey::BrowseField {
+            x: i32::from(cell.x),
+            y: i32::from(cell.y),
+            floor: i16::from(cell.floor),
+        });
         let reachable = in_reach(
             at,
             (i32::from(cell.x), i32::from(cell.y), i16::from(cell.floor)),
@@ -838,7 +877,7 @@ pub(super) async fn observe_container(
         })
         .collect::<Option<Vec<_>>>()?;
     Some(ContainerObservation::Container {
-        parent: read.parent.map(ItemKey::Instance),
+        parent: read.parent.map(ItemKey::Instance).or(browse_parent),
         capacity,
         entries,
     })

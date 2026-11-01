@@ -858,7 +858,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
         };
         let carried = carried_weight(tx, character, world, content).await?;
-        let capacity = read_derived_transfer_capacity_centi_oz(tx, character).await?;
+        let capacity = read_derived_transfer_capacity_centi_oz(tx, character, content).await?;
         let incoming_item = InventoryItem {
             // A preflight has no durable identity yet. The pure weight planner needs only
             // one unique incoming root; this sentinel is never stored or used as a source.

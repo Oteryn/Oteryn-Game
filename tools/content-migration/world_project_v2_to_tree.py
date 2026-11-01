@@ -184,6 +184,8 @@ def main() -> int:
     apply_summer_item_admissions(item_records)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(item_records, ROOT)
+    from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+    apply_enchanting_admissions(item_records)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

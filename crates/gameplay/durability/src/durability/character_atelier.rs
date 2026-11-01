@@ -114,6 +114,24 @@ impl DurabilityRoot {
         ruleset: std::sync::Arc<WheelRuleset>,
         gate: &G,
     ) -> Result<AtelierOutcome> {
+        self.commit_character_atelier_with_admission(
+            authority, node, fence, request, ruleset, gate, &|| true,
+        ).await
+    }
+
+    /// A fresh client mutation may be refused by the Channel's existing owner.
+    /// Historical receipts precede this hook; initialization never starts a UI clock.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_atelier_with_admission<G: WheelPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: AtelierRequest<'_>,
+        ruleset: std::sync::Arc<WheelRuleset>,
+        gate: &G,
+        admit: &(impl Fn() -> bool + Sync),
+    ) -> Result<AtelierOutcome> {
         let initialize = request.mutation == AtelierMutation::Initialize;
         if initialize {
             if request.occurrence != initial_occurrence(fence.character_id.as_bytes())
@@ -138,8 +156,9 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let mut gate = gate;
-        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| {
+        let mut context = (gate, admit);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| {
+            let (gate, admit) = *context;
             Box::pin(async move {
                 let mut tx = begin_type2_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
@@ -157,6 +176,9 @@ impl DurabilityRoot {
                     let state = decode_state(row.try_get("outcome_json")?)?;
                     tx.commit(deadline).await?;
                     return Ok(Ok(AtelierOutcome::AlreadyCommitted { revision, state }));
+                }
+                if !initialize && !admit() {
+                    return Ok(Ok(AtelierOutcome::Refused));
                 }
                 // Premium latch precedes the Character root, matching the Wheel writer.
                 let Some(account) = sqlx::query_scalar::<_, String>("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")

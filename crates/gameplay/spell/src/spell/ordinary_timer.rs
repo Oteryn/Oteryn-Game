@@ -64,6 +64,8 @@ impl OrdinaryCastBinding {
 #[derive(Debug, Clone)]
 pub struct ResolvedOrdinaryCombat {
     pub batch: OwnerCombatBatch,
+    /// Retained beside the numeric batch so retry cannot draw or requalify the bonus.
+    pub bounty_leech: Vec<(ExactActorRef, u16, u16)>,
     pub presentation: Arc<super::spell_presentations::PreparedPresentation>,
     pub magnitude: Arc<super::magnitude_owner::PreparedMagnitudeOwner>,
     pub owned: super::owned_cast_facts::OwnedCastFacts,

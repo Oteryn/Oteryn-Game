@@ -217,15 +217,17 @@ impl QualifiedNativeSpellWorld {
         Some(view)
     }
 
-    /// The retained town's temple in this qualified map's native frame. Unknown tiles and
-    /// other floors never supply the protection-zone fact required for Wheel removal.
-    pub fn permits_wheel_removal(&self, cell: LogicalCell, radius: u32) -> bool {
-        cell.z == self.temple.z
-            && cell
-                .x
-                .abs_diff(self.temple.x)
-                .max(cell.y.abs_diff(self.temple.y))
-                <= radius
+    /// Crystal player_wheel.cpp:2148-2153 uses the two-dimensional range overload
+    /// (position.hpp:41-44): the temple's floor does not restrict a qualified PZ tile.
+    /// Unknown tiles never supply the protection-zone fact required for removal.
+    pub fn permits_wheel_removal(
+        &self,
+        cell: LogicalCell,
+        horizontal_range: u32,
+        vertical_range: u32,
+    ) -> bool {
+        cell.x.abs_diff(self.temple.x) <= horizontal_range
+            && cell.y.abs_diff(self.temple.y) <= vertical_range
             && self
                 .immutable_tiles
                 .get(&cell)
@@ -696,6 +698,57 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn wheel_removal_uses_the_source_rectangle_and_a_current_qualified_pz_tile() {
+        let mut map = qualify(SOURCE, scope()).expect("source map");
+        let cell = LogicalCell { x: 0, y: 0, z: -5 };
+        assert!(
+            map.immutable_tiles
+                .get(&cell)
+                .expect("entry tile")
+                .flags()
+                .protection_zone
+        );
+        // Keep a genuine qualified PZ tile and vary only its relation to the temple.
+        // This covers both rectangle edges, both signs and the source's omitted Z bound.
+        for (x, y, z, permitted) in [
+            (0, 0, 0, true),
+            (1, 10, 0, true),
+            (-1, -10, 0, true),
+            (2, 0, 0, false),
+            (-2, 0, 0, false),
+            (1, 11, 0, false),
+            (0, -11, 0, false),
+            (0, 0, 1, true),
+            (0, 0, -1, true),
+        ] {
+            map.temple = LogicalCell {
+                x: cell.x + x,
+                y: cell.y + y,
+                z: cell.z + z,
+            };
+            assert_eq!(
+                map.permits_wheel_removal(cell, 1, 10),
+                permitted,
+                "offset ({x}, {y}, {z})"
+            );
+        }
+        let non_pz = *map
+            .immutable_tiles
+            .iter()
+            .find(|(_, tile)| !tile.flags().protection_zone)
+            .expect("ordinary tile")
+            .0;
+        map.temple = non_pz;
+        assert!(!map.permits_wheel_removal(non_pz, 1, 10));
+        let unknown = LogicalCell {
+            x: i32::MAX,
+            y: i32::MAX,
+            z: -5,
+        };
+        map.temple = unknown;
+        assert!(!map.permits_wheel_removal(unknown, 1, 10));
+    }
     #[test]
     fn nologout_source_flags_survive_immutable_tile_qualification() {
         let scope = scope();

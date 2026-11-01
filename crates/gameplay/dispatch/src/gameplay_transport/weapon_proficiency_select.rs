@@ -367,6 +367,9 @@ pub(super) async fn execute(
             .or_default()
             .install_selections(committed.state.item_key(), track);
     }
+    owner
+        .refresh_equipped_proficiency_defense(actor, session, committed.state.item_key())
+        .await?;
     reply(SelectPerkResult::Accepted, committed.state.selections())
 }
 

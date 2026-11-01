@@ -594,6 +594,20 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// W07 reuses USE for carried Soul Core targets and the fixed obelisk. An unknown
+    /// item returns None so existing tool owners can handle it; uncertain writes close
+    /// the command through Err instead of falling through to a second mutation owner.
+    fn use_soulpit_items(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
     fn use_craft(
         &self,

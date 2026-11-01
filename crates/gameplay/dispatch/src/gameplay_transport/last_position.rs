@@ -161,6 +161,7 @@ impl LastPositionFlush {
         authority.states.input_gate.quiesce().await;
         let mut monks_settled = std::collections::HashSet::new();
         let mut training_settled = std::collections::HashSet::new();
+        let mut wheel_gifts_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
             // OPS-SAVE-1: the monk values of the live actors go with the positions.
             // Input is already quiesced through the shared node gate. Keep a
@@ -168,6 +169,7 @@ impl LastPositionFlush {
             // all checkpoints below remain the existing exact-scope writers.
             let transition = authority.activity_runtimes.transitions.lock().await;
             let mut failed = authority.write_due_last_positions(true).await
+                + authority.flush_wheel_gifts(&mut wheel_gifts_settled).await
                 + authority.flush_monk_states(&mut monks_settled).await
                 + authority.flush_spell_training(&mut training_settled).await;
             match authority.activity_runtimes.activity_owners() {
@@ -643,6 +645,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (vitals, rest) = {
             let states = self.states.spell_states.lock().await;
+            if states.enchanting_pending.contains(&(actor, session)) {
+                return Captured::Held;
+            }
             if states.is_dead(actor) {
                 return Captured::Dead;
             }

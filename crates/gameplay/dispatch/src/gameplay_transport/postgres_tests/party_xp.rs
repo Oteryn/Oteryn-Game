@@ -47,6 +47,12 @@ pub(super) enum Case {
     ForgeRollback,
     ForgeFar,
     ForgeForeign,
+    TaskBoardParty,
+    TaskBoardForeign,
+    TaskBoardTalisman,
+    TaskBoardUnbound,
+    TaskBoardPrechange,
+    TaskBoardOrdered,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -133,6 +139,37 @@ fn party_xp_real_dispatch_contended_absent_pz_row_defers_without_awards() -> Tes
     run(Case::PzContention)
 }
 
+#[test]
+fn task_board_real_dispatch_shared_member_without_damage_and_replay() -> TestResult {
+    run(Case::TaskBoardParty)
+}
+
+#[test]
+fn task_board_real_dispatch_all_damage_contributors_and_replay() -> TestResult {
+    run(Case::TaskBoardForeign)
+}
+
+#[test]
+fn bounty_talisman_real_dispatch_damage_life_and_equipped_active_bounty_gates() -> TestResult {
+    run(Case::TaskBoardTalisman)
+}
+
+#[test]
+fn task_board_real_dispatch_party_credit_without_progression_binding() -> TestResult {
+    run(Case::TaskBoardUnbound)
+}
+
+#[test]
+fn task_board_real_dispatch_shared_member_selects_after_prior_leader_death_settles() -> TestResult {
+    run(Case::TaskBoardPrechange)
+}
+
+#[test]
+fn task_board_real_dispatch_interleaved_principals_keep_death_order_and_final_bonus() -> TestResult
+{
+    run(Case::TaskBoardOrdered)
+}
+
 pub(super) fn run(case: Case) -> TestResult {
     // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
     if fixture::configured_admin().is_none() {
@@ -168,6 +205,16 @@ pub(super) fn run(case: Case) -> TestResult {
         .map_err(Into::into)
 }
 async fn scenario(h: &Harness, case: Case) -> TestResult {
+    let task_board_case = case;
+    let case = match case {
+        Case::TaskBoardParty
+        | Case::TaskBoardUnbound
+        | Case::TaskBoardPrechange
+        | Case::TaskBoardOrdered => Case::OneHit,
+        Case::TaskBoardForeign => Case::Foreign,
+        Case::TaskBoardTalisman => Case::Offence,
+        other => other,
+    };
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -245,16 +292,29 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
-    for (key, y) in [
-        ("oteryn:creature.rat", 11),
-        ("oteryn:creature.cave_rat", 12),
+    // Thalom (1,10,-7) is a protection-zone stair; (2,12,-7) is an open combat cell.
+    for (key, x, y) in [
+        ("oteryn:creature.rat", 1, 11),
+        ("oteryn:creature.cave_rat", 1, 12),
+        ("oteryn:creature.rat", 2, 12),
     ] {
-        if y == 12 && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2) {
+        if x == 2 && !matches!(task_board_case, Case::TaskBoardOrdered) {
+            continue;
+        }
+        let key = if matches!(task_board_case, Case::TaskBoardOrdered) {
+            "oteryn:creature.rat"
+        } else {
+            key
+        };
+        if y == 12
+            && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2)
+            && !matches!(task_board_case, Case::TaskBoardTalisman)
+        {
             continue;
         }
         let policy = runtime.companion_policy(key).map_err(debug)?;
         sources.push((
-            vec![(1, y, -7)],
+            vec![(x, y, -7)],
             60_000,
             5_000,
             key.to_owned(),
@@ -482,6 +542,23 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
     }
+    if matches!(
+        task_board_case,
+        Case::TaskBoardParty
+            | Case::TaskBoardForeign
+            | Case::TaskBoardTalisman
+            | Case::TaskBoardUnbound
+            | Case::TaskBoardPrechange
+            | Case::TaskBoardOrdered
+    ) {
+        task_board::install_boards(&mut owner, h, &players, &pin).await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardPrechange) {
+        task_board::prepare_selection(&owner, h, players[1].1).await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardTalisman) {
+        return task_board::qualify_talisman(&mut owner, h, &players).await;
+    }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
     }
@@ -569,6 +646,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         matches!(owner.states.chat.next(players[0].1),Some(oteryn_protocol_oteryn::chat::ChatLine::Private{speaker_name,text})
         if speaker_name=="Game" && text.starts_with("Party spell"))
     );
+    if matches!(task_board_case, Case::TaskBoardOrdered) {
+        return task_board::qualify_ordered_deaths(&mut owner, h, &players).await;
+    }
     if case.forge() {
         super::forge_creature::prepare(&owner, h, &players, case).await?;
     }
@@ -749,7 +829,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
         let initial_health = {
             let runtime = owner.runtime.lock().await;
-            runtime.companion_snapshot(creature.actor).map_err(debug)?.health
+            runtime
+                .companion_snapshot(creature.actor)
+                .map_err(debug)?
+                .health
         };
         for pass in 0..REAL_SWING_PASSES {
             owner.refresh_attack_weapon(actor, session).await;
@@ -802,7 +885,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .current_character_lease()
             .character_id();
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
             .map_err(debug)?;
@@ -833,7 +919,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         // first landed swing kills before content-seeded misses make that activity stale.
         // Lab damage has no character and does not enter reward_damage_shares.
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-concurrent-fixture", health - 1)
             .map_err(debug)?;
@@ -842,7 +931,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         // The ally's activity is recent; leave one HP so the leader's next landed swing is
         // lethal well inside the shared-experience activity window.
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-staged-ally-fixture", health - 1)
             .map_err(debug)?;
@@ -1142,6 +1234,50 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
     }
+    let task_board_entry = if matches!(
+        task_board_case,
+        Case::TaskBoardParty
+            | Case::TaskBoardForeign
+            | Case::TaskBoardUnbound
+            | Case::TaskBoardPrechange
+    ) {
+        Some(task_board::capture_pending(&owner, &players).await?)
+    } else {
+        None
+    };
+    if matches!(task_board_case, Case::TaskBoardPrechange) {
+        return task_board::select_after_shared_death(
+            &mut owner,
+            h,
+            &players,
+            task_board_entry.ok_or("queued shared death")?,
+        )
+        .await;
+    }
+    if matches!(task_board_case, Case::TaskBoardParty) {
+        task_board::seal_shared_member_after_death(
+            &owner,
+            h,
+            &players,
+            task_board_entry.as_ref().ok_or("queued shared death")?,
+        )
+        .await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardUnbound) {
+        let session = task_board_entry
+            .as_ref()
+            .ok_or("task-board pending death")?
+            .facts
+            .principal
+            .session;
+        owner
+            .states
+            .progression_sessions
+            .lock()
+            .map_err(|_| "progression sessions")?
+            .remove(&session);
+        assert!(owner.progression_binding(session).is_none());
+    }
     let mut forge_replay = None;
     if matches!(case, Case::Replay) || (case.forge() && !matches!(case, Case::ForgeRollback)) {
         let taken = {
@@ -1263,6 +1399,30 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 DrainOutcome::Drained
             );
         }
+    }
+    if let Some(entry) = task_board_entry {
+        task_board::assert_replay(
+            &mut owner,
+            h,
+            &players,
+            entry,
+            matches!(
+                task_board_case,
+                Case::TaskBoardParty | Case::TaskBoardUnbound
+            ),
+        )
+        .await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardUnbound) {
+        let counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_bestiary_kill_receipts)")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            counts,
+            (0, 0),
+            "task credit does not manufacture a progression binding"
+        );
+        println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: party_credit_without_progression_binding");
+        return Ok(());
     }
     if case.forge() {
         if let Some(entry) = forge_replay {
@@ -1392,3 +1552,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
 #[path = "party_xp/support.rs"]
 mod support;
 use support::{initialize_build, join_two};
+
+#[path = "party_xp/task_board.rs"]
+mod task_board;

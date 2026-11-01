@@ -244,6 +244,7 @@ pub(super) fn paid(
     reason = "same timer reservation as the parent combat phase"
 )]
 pub(super) fn requests(
+    runtime: &ChannelRuntimeV1,
     lowered: &crate::spell::combat_batch::LoweredNativeCombat,
     plan: Option<&NativeDelayedPlan>,
     facts: Option<&NativeDelayedFacts>,
@@ -261,26 +262,23 @@ pub(super) fn requests(
         return Ok(Vec::new());
     };
     let batch = &lowered.batch;
+    let attributes = owned.magnitude().ok_or(SpellCastDisposition::Rejected)?;
+    let canonical_hex = runtime
+        .soulpit_hex_delta(attributes.binding.actor, now.get())
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     let cast_modifiers = crate::spell::magnitude_owner::StrikeCastModifiers::capture(
-        owned.magnitude().ok_or(SpellCastDisposition::Rejected)?,
+        attributes,
         before,
         profile.spell()["name"]
             .as_str()
             .ok_or(SpellCastDisposition::Rejected)?,
         now.get() / 1000,
+        canonical_hex,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    let mut scheduled = scheduled.clone();
-    if let Some((lo, hi)) = scheduled.captured_raw_bounds.as_mut() {
-        *lo = lo
-            .checked_add(i64::from(cast_modifiers.flat_damage))
-            .ok_or(SpellCastDisposition::Rejected)?
-            .max(0);
-        *hi = hi
-            .checked_add(i64::from(cast_modifiers.flat_damage))
-            .ok_or(SpellCastDisposition::Rejected)?
-            .max(0);
-    }
+    // Preserve the source raw formula snapshot. Crystal computes current Wheel
+    // flat/gem/Focus bonuses in the new due Combat, never inside planted bounds.
+    let scheduled = scheduled.clone();
     Ok(vec![ScheduleRequest {
         occurrence: SpellTimerOccurrence {
             command: batch.command,

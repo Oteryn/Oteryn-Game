@@ -1,8 +1,11 @@
 # Team Finder leader v1
 
 Capability 200 (`TEAM_FINDER_LEADER_V1`), owner decision S14a. Only bundle-world nodes offer
-it. The leader edits one listing keyed by their character; it is kept across logout and
-relog. Browse/join (S14b) and accept/deny (S14c) are separate later capabilities.
+it. The leader edits one durable template keyed by their character. The template is kept
+across logout and relog; the active advertisement and its requests end at logout.
+After relog a new upsert is required to advertise again. This extends S14a according to
+[owner answer Q3B](https://github.com/Oteryn/Oteryn-Game/pull/2767#issuecomment-6542716908).
+Browse/join (S14b) and applicant decisions (S14c) use [capability 232](team-finder-members-v1.md).
 
 Source: Crystal 201189f8 `src/server/network/protocol/protocolgame.cpp:2973-3036`
 (`createLeaderTeamFinder`) and `:3060-3121` (`parseLeaderFinderWindow`).
@@ -25,11 +28,14 @@ Command 390. At most 64 bytes of varint fields (wire type 0), each exactly once:
 | 10 | hunt area | u16; present only for type 2 |
 
 Any other field, a repeated or missing field, or a value outside its bound is a refusal.
-The upsert replaces the whole listing.
+The upsert replaces the whole template and advertises it in the current fenced session.
+When the party flag is set, it also imports existing party members as accepted, using
+the established party owner. Replaying an old upsert cannot reactivate a closed advertisement.
 
 ## Remove
 
-Command 391. The payload is empty. Removing when no listing exists succeeds.
+Command 391. The payload is empty. Removing deletes the template, its active
+advertisement and its requests. Removing when no listing exists succeeds.
 
 ## Reply
 

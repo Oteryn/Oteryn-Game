@@ -1,22 +1,25 @@
 {
   "id": "TASKBOARD1-RL-02",
-  "owner_contract": "../architecture/reviews/OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md",
+  "owner_contract": "protocol-oteryn/v1/task_board_v1.md",
   "resource": "Task Board reply payload",
   "unit": "bytes",
-  "hard_maximum": 1024,
+  "hard_maximum": 16384,
   "configurable_range": {
-    "minimum": 1024,
-    "maximum": 1024
+    "minimum": 16384,
+    "maximum": 16384
   },
   "failure_category": "INVALID_INPUT",
-  "allocation_impact": "The reply is built from at most RL-03 tasks with race keys of at most 128 bytes; an encoding over the bound is refused, never truncated.",
+  "allocation_impact": "Strict length and collection bounds are checked before mutation; encoding never truncates a board.",
   "client_visible": true,
   "boundary_tests": [
-    "task_board_reply_strict_codec"
+    "task_board_reply_strict_codec",
+    "full_task_board_reply_preserves_progress_rewards_lists_shop_and_talisman",
+    "full_task_board_expanded_board_is_bounded_without_truncation"
   ],
   "consumers": [
     "crates/protocol-oteryn/src/task_board.rs",
+    "crates/protocol-oteryn/src/task_board_full.rs",
     "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs"
   ],
-  "notes": "TASKBOARD-1 command 89 reply: the whole board."
+  "notes": "Full actions 4..18 replace the TASKBOARD-1 fixed slice. Legacy actions 0..3 retain their 32-byte request and 1024-byte reply codecs. Full board bounds: 9 kill rows, 9 delivery rows, 3 bounty offers, 5 list slots and 32 shop rows."
 }

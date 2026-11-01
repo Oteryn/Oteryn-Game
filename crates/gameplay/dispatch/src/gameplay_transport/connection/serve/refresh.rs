@@ -95,6 +95,7 @@ where
     A: FreshAdmissionAuthority,
 {
     channel_list(stream, authority, session).await?;
+    typing(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -126,6 +127,47 @@ where
             authority
                 .chat_delivered(session.admitted.game_session_id)
                 .await;
+        }
+    }
+    Ok(())
+}
+
+/// S19: queued typing changes share the CHAT cadence and revision stream.
+async fn typing<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::player_typing;
+    if !session
+        .selected_capabilities
+        .contains(player_typing::CAPABILITY_PLAYER_TYPING_V1)
+    {
+        return Ok(());
+    }
+    for _ in 0..EGRESS_MAX_LINES {
+        let Some(update) = authority.player_typing_next(session.admitted).await else {
+            break;
+        };
+        let payload = player_typing::encode_update(update);
+        let Some((sequence, frame, revision)) = chat_delta(
+            session.generation,
+            session.sequence,
+            session.admitted.continuity.chat_revision,
+            player_typing::DELTA_TYPE_PLAYER_TYPING_V1,
+            &payload,
+        ) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.admitted.continuity.chat_revision = revision;
+        if write_frame(stream, &frame).await.is_err() {
+            return Err(ServeEnd::Disconnected);
         }
     }
     Ok(())
@@ -344,6 +386,34 @@ where
 {
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
+    // Crystal's tile notifications refresh every observer, including an idle one.
+    // Use the same bounded connection refresh already used after local item commits.
+    if session
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+        && let (Some(views), Some(view)) =
+            (session.container_views.as_mut(), session.item_view.as_mut())
+    {
+        let refreshed = crate::gameplay_transport::container_view::refresh::refresh(
+            authority,
+            session.actor,
+            session.admitted.item_fence,
+            views,
+            view,
+        )
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+        session.admitted.continuity.item_view = view.continuity();
+        if let Some(delta) = refreshed {
+            let (sequence, frame) = item_view_delta(session.generation, session.sequence, &delta)
+                .ok_or(ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+        }
+    }
     // VIS-3: entities that moved, entered or left without this actor's step.
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());

@@ -87,12 +87,13 @@ fn reply(outcome: &ProficiencyModificationOutcome) -> ModificationReply {
 
 /// PROF-EFFECT-0 applies a committed row at once: the session's live track takes the slot's
 /// row and recomputes its attack effects. A row without a known value grants no effect.
-fn refresh_live(
+async fn refresh_live(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     catalogue: &ProductionProficiencyCatalogue,
+    actor: ExactActorRef,
     session: GameSessionId,
     outcome: &ProficiencyModificationOutcome,
-) {
+) -> Option<()> {
     if let ProficiencyModificationOutcome::Committed(committed)
     | ProficiencyModificationOutcome::AlreadyCommitted(committed) = outcome
         && let Ok(mut states) = owner.states.proficiencies.lock()
@@ -114,6 +115,14 @@ fn refresh_live(
             };
         }
     }
+    if let ProficiencyModificationOutcome::Committed(committed)
+    | ProficiencyModificationOutcome::AlreadyCommitted(committed) = outcome
+    {
+        owner
+            .refresh_equipped_proficiency_defense(actor, session, &committed.item_key)
+            .await?;
+    }
+    Some(())
 }
 
 const fn refused(result: ModificationResult) -> Option<ModificationReply> {
@@ -268,7 +277,10 @@ pub(in crate::gameplay_transport) async fn execute(
         )
         .await
     {
-        Ok(Some(outcome)) => return Some(reply(&outcome)),
+        Ok(Some(outcome)) => {
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
+            return Some(reply(&outcome));
+        }
         Ok(None) => {}
         Err(CharacterProgressionError::ConflictingOccurrence) => {
             return refused(ModificationResult::Conflict);
@@ -341,7 +353,7 @@ pub(in crate::gameplay_transport) async fn execute(
     drop(slot);
     match outcome {
         Ok(outcome) => {
-            refresh_live(owner, catalogue, session, &outcome);
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
             Some(reply(&outcome))
         }
         Err(CharacterProgressionError::ConflictingOccurrence) => {
@@ -352,19 +364,19 @@ pub(in crate::gameplay_transport) async fn execute(
             refused(ModificationResult::StaleRevision)
         }
         // An unknown outcome is reconciled by the occurrence; still unknown disconnects.
-        Err(_) => owner
-            .root
-            .reconcile_character_proficiency_modification(
-                owner.character,
-                fence.character_id,
-                modification,
-            )
-            .await
-            .ok()?
-            .map(|outcome| {
-                refresh_live(owner, catalogue, session, &outcome);
-                reply(&outcome)
-            }),
+        Err(_) => {
+            let outcome = owner
+                .root
+                .reconcile_character_proficiency_modification(
+                    owner.character,
+                    fence.character_id,
+                    modification,
+                )
+                .await
+                .ok()??;
+            refresh_live(owner, catalogue, actor, session, &outcome).await?;
+            Some(reply(&outcome))
+        }
     }
 }
 

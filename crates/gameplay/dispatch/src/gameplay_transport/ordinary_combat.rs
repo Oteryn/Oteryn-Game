@@ -6,7 +6,7 @@ use crate::gameplay_transport::spell_presentations::{
     CueTarget, LocatedCueRequest, QualifiedCueTile,
 };
 use crate::spell::ResolvedEffect;
-use crate::spell::cast::{PaidOrdinaryCast, prepare_ordinary_owner_cast_with_caster};
+use crate::spell::cast::PaidOrdinaryCast;
 use crate::spell::chain::{ChainCreature, ChainStart, ChainWorld};
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect, TimedCombatEffect};
 use crate::spell::executable_catalog::{AbilityProfile, DefinitionRef};
@@ -581,7 +581,7 @@ fn lower(
     let mut delayed = Vec::new();
     let mut ordinal = 0u16;
     if has_magnitude {
-        let lowered = lower_native(
+        let mut lowered = lower_native(
             runtime,
             batch,
             world.caster.id,
@@ -596,6 +596,11 @@ fn lower(
             },
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+        if let Some(owner) = magnitude.as_mut() {
+            owner
+                .append_wheel_healing_echo(&mut lowered)
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+        }
         batch = lowered.batch;
         delayed = lowered.delayed;
         ordinal = lowered.next_sub_ordinal;
@@ -1061,6 +1066,7 @@ mod tests {
     #![allow(clippy::panic)]
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
+    use crate::spell::cast::prepare_ordinary_owner_cast_with_caster;
     fn source(key: &str) -> SpellDefinition {
         let catalog: Value = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
@@ -2444,11 +2450,19 @@ pub(in crate::gameplay_transport) async fn prepare_due(
                 resolve_critical_and_fatal_once: false,
             }))
         };
-    let preview = numerical_plan(crate::spell::cast::resolve_ordinary_due_effects(
+    let wheel = crate::spell::wheel_formula::WheelFormulaMagic::from_position(
+        owned,
+        runtime,
+        before,
+        now.get(),
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    let preview = numerical_plan(crate::spell::cast::resolve_ordinary_due_effects_with_wheel(
         spell,
         &caster,
         step,
         &mut |minimum, _| minimum,
+        wheel,
     )?)?;
     let players = [(b.actor, before)];
     let qualify = |plan: &NativeCombatPlan| {
@@ -2483,8 +2497,8 @@ pub(in crate::gameplay_transport) async fn prepare_due(
             &mut |minimum, _| minimum,
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let plan = numerical_plan(crate::spell::cast::resolve_ordinary_due_effects(
-        spell, &caster, step, draw,
+    let plan = numerical_plan(crate::spell::cast::resolve_ordinary_due_effects_with_wheel(
+        spell, &caster, step, draw, wheel,
     )?)?;
     let mut magnitude = qualify(&plan)?;
     let NativeCombatPlan::Combat(combat) = &plan else {

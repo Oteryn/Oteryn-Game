@@ -336,7 +336,20 @@ async fn move_equipment_inner(
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
-    let Some(_permit) = admission.spell_lane_permit().await else {
+    // EXTRA can qualify a death's talisman reward. Settle earlier deaths before
+    // changing that slot, then retain the lane returned by the queue recheck.
+    let changes_extra = match &request {
+        MoveRequest::Exact(
+            EquipmentMove::Equip { to: slot, .. } | EquipmentMove::Unequip { from: slot, .. },
+        ) => durable_slot(*slot) == Some(10),
+        MoveRequest::Hotkey { slot, .. } => *slot == 10,
+    };
+    let permit = if changes_extra {
+        admission.task_board_lane_after_kills().await
+    } else {
+        admission.spell_lane_permit().await
+    };
+    let Some(_permit) = permit else {
         return EquipmentMoveResult::Unknown;
     };
     let trade_ready = match &request {

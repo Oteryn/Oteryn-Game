@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0230-browse-field",
+    "kind": "handlers",
+    "id": "0230-browse-field-unsupported",
+    "status": "unsupported",
+    "reason": "Browse-field server command and container-view extension are registered; the native container UI is not yet migrated.",
+    "commands": [
+      440
+    ],
+    "not_applicable": {
+      "state": "The owning native container UI migration will consume domain 14 browse metadata.",
+      "protocol": "The shared protocol crate implements the selected codecs.",
+      "view": "The owning native container UI migration will render browse pages.",
+      "input": "The owning native container UI migration will bind browse and seek actions.",
+      "settings": "Browse field adds no independent settings."
+    }
+  }
+]

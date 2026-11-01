@@ -432,6 +432,7 @@ impl ChannelSpellStates {
         facts: &ApplicationFacts<'_>,
         immunities: &[ConditionType],
         magnitude: Option<u32>,
+        kind: crate::player_lethal::PlayerHitKind,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
     ) -> Option<Option<crate::player_lethal::PlayerDamageReceipt>> {
@@ -463,7 +464,7 @@ impl ChannelSpellStates {
                     facts.occurrence
                 ),
                 immunities,
-                magnitude
+                (magnitude, kind)
             )
             .as_bytes(),
         )
@@ -510,9 +511,10 @@ impl ChannelSpellStates {
         let mut next = before.clone();
         let mut primary = None;
         if let Some(amount) = magnitude {
-            let (successor, damage) =
-                crate::spell::actor_conditions::stage_creature_hit(&next, amount, facts.now)
-                    .ok()?;
+            let (successor, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                runtime, target, &next, amount, kind, facts.now,
+            )
+            .ok()?;
             next = successor;
             primary = Some(damage);
         }
@@ -566,6 +568,7 @@ impl ChannelSpellStates {
                 session,
                 occurrence: damage_text,
                 magnitude,
+                kind: Some(kind),
                 receipt,
             };
             if let Some(i) = damage_old {
@@ -799,6 +802,163 @@ mod native_composite_tests {
         );
         assert_eq!(s.deaths.len(), 1);
     }
+    #[test]
+    fn zero_resolved_mana_drain_keeps_native_receipt_after_resources_change()
+    -> Result<(), &'static str> {
+        for (tag, empty_mana) in [(0x7e, true), (0x7f, false)] {
+            let (mut runtime, _, actor, session, _, _, _) = ready(tag);
+            let now = SemanticTimeMicros::from_micros(0);
+            let owner_now =
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());
+            let mut states = ChannelSpellStates::default();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    crate::spell::cast::CharacterCastFacts {
+                        level: 500,
+                        ..super::super::tests::FACTS
+                    },
+                    (0, 0),
+                    now,
+                )
+                .unwrap();
+            let state = states.get_mut(&runtime, actor, session).unwrap();
+            state
+                .apply_owner_promotion_transition(true, true, Some(100_000))
+                .unwrap();
+            let mut effects =
+                oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+            effects
+                .sockets
+                .gem_values_milli
+                .insert(("Mana Drain Resistance".into(), "".into()), 1_010);
+            state.install_wheel_effects(effects);
+            if empty_mana {
+                *state = state.after_creature_mana_drain(u32::MAX).unwrap().0;
+                assert_eq!(state.vitals().mana, 0);
+            } else {
+                assert!(state.vitals().mana > 0);
+            }
+            let magnitude = if empty_mana { 10 } else { 1 };
+            let before = states.get(&runtime, actor, session).unwrap().clone();
+            assert_eq!(before.after_wheel_mana_drain(magnitude, now.get()), Some(0));
+
+            let first = states
+                .apply_attack_mana_drain(
+                    &mut runtime,
+                    actor,
+                    session,
+                    magnitude,
+                    "mana-drain:zero",
+                    owner_now,
+                )
+                .ok_or("an admitted zero result still owns a receipt")?;
+            assert_eq!(first.applied, 0);
+            assert_eq!(first.mana_before, before.vitals().mana);
+            assert_eq!(first.mana_after, before.vitals().mana);
+            assert_eq!(first.vitals_revision, before.revision());
+            assert_eq!(states.get(&runtime, actor, session), Some(&before));
+            assert_eq!(states.source_mana.len(), 1);
+
+            // The exact occurrence remains zero even when a new drain would apply.
+            let current = states.get_mut(&runtime, actor, session).unwrap();
+            current.install_wheel_effects(Default::default());
+            if empty_mana {
+                *current = current.after_mana_gain(10).unwrap().0;
+            }
+            let changed = states.get(&runtime, actor, session).unwrap().clone();
+            assert_eq!(
+                states.apply_attack_mana_drain(
+                    &mut runtime,
+                    actor,
+                    session,
+                    magnitude,
+                    "mana-drain:zero",
+                    owner_now,
+                ),
+                Some(first)
+            );
+            assert!(
+                states
+                    .apply_attack_mana_drain(
+                        &mut runtime,
+                        actor,
+                        session,
+                        magnitude + 1,
+                        "mana-drain:zero",
+                        owner_now,
+                    )
+                    .is_none(),
+                "an occurrence cannot change its requested magnitude"
+            );
+            assert_eq!(states.get(&runtime, actor, session), Some(&changed));
+            assert_eq!(states.source_mana.len(), 1);
+
+            let fresh = states
+                .apply_attack_mana_drain(
+                    &mut runtime,
+                    actor,
+                    session,
+                    magnitude,
+                    "mana-drain:fresh",
+                    owner_now,
+                )
+                .ok_or("a new occurrence uses current mana and resistance")?;
+            assert!(fresh.applied > 0);
+            assert!(fresh.mana_after < fresh.mana_before);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn typed_life_drain_receipt_replays_once_and_refuses_a_changed_hit_kind()
+    -> Result<(), &'static str> {
+        use crate::player_lethal::PlayerHitKind;
+        let (mut runtime, mut states, actor, session, _, _, _) = ready(0x7d);
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0);
+        let first = states
+            .apply_typed_attack_damage(
+                &mut runtime,
+                actor,
+                session,
+                10,
+                PlayerHitKind::LifeDrain,
+                "life-drain:one",
+                now,
+            )
+            .ok_or("actual owner damage")?;
+        let after = states.get(&runtime, actor, session).cloned();
+        assert_eq!(
+            states.apply_typed_attack_damage(
+                &mut runtime,
+                actor,
+                session,
+                10,
+                PlayerHitKind::LifeDrain,
+                "life-drain:one",
+                now
+            ),
+            Some(first)
+        );
+        assert!(
+            states
+                .apply_typed_attack_damage(
+                    &mut runtime,
+                    actor,
+                    session,
+                    10,
+                    PlayerHitKind::Mitigated,
+                    "life-drain:one",
+                    now
+                )
+                .is_none()
+        );
+        assert_eq!(states.get(&runtime, actor, session).cloned(), after);
+        Ok(())
+    }
+
     #[test]
     fn secondary_only_has_no_hp_receipt_and_current_external_fence_blocks_reentry() {
         let (mut r, mut s, a, g, c, mut fence, stamp) = ready(0x7d);

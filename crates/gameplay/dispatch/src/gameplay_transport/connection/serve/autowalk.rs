@@ -4,6 +4,8 @@ use crate::gameplay_transport::AutoWalkTarget;
 use oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT;
 use std::time::Duration;
 
+const BROWSE_RETRY_DELAY: Duration = Duration::from_millis(400);
+
 pub(super) enum WalkOutcome {
     Arrived,
     Cancelled,
@@ -18,6 +20,10 @@ pub(super) fn too_far(dispatch: &Dispatch) -> bool {
             ..
         }) | Dispatch::UseItem(OpenDecision::TooFar, _)
             | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _, _)
+            | Dispatch::ContainerView(
+                oteryn_protocol_oteryn::container_tree::ContainerViewOutcome::TooFar,
+                _
+            )
     )
 }
 
@@ -26,6 +32,20 @@ pub(super) fn target(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Option<AutoWalkTarget> {
     let items = session.item_view.as_ref();
+    if command.command_type
+        == oteryn_protocol_oteryn::browse_field::COMMAND_TYPE_BROWSE_FIELD_INTENT
+    {
+        return match oteryn_protocol_oteryn::browse_field::decode_browse_field_intent(
+            command.payload,
+        )
+        .ok()?
+        {
+            oteryn_protocol_oteryn::browse_field::BrowseFieldIntent::Open { position } => {
+                Some(AutoWalkTarget::AdjacentCell(position))
+            }
+            oteryn_protocol_oteryn::browse_field::BrowseFieldIntent::Seek { .. } => None,
+        };
+    }
     if command.command_type == COMMAND_TYPE_USE_INTENT {
         use oteryn_protocol_oteryn::world_object::MapUseTarget;
         let intent =
@@ -92,6 +112,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    // Crystal game.cpp:5036-5044 stores a 400 ms next-walk-action task;
+    // player.cpp:6190-6192 schedules it only after the walk completes.
+    let browse_retry = matches!(&target, AutoWalkTarget::AdjacentCell(_));
     let Some(input) = authority
         .enter_input(session.admitted.game_session_id)
         .await
@@ -184,15 +207,29 @@ where
         };
         queue.expected = current;
     }
+    if !wait(stream, authority, session, command_id).await? {
+        return Ok(WalkOutcome::Cancelled);
+    }
+    if browse_retry
+        && !wait_until(
+            stream,
+            authority,
+            session,
+            command_id,
+            tokio::time::Instant::now() + BROWSE_RETRY_DELAY,
+        )
+        .await?
+    {
+        return Ok(WalkOutcome::Cancelled);
+    }
     Ok(
-        if wait(stream, authority, session, command_id).await?
-            && authority
-                .item_walk_valid(
-                    session.actor,
-                    session.admitted.game_session_id,
-                    queue.expected,
-                )
-                .await
+        if authority
+            .item_walk_valid(
+                session.actor,
+                session.admitted.game_session_id,
+                queue.expected,
+            )
+            .await
         {
             WalkOutcome::Arrived
         } else {
@@ -215,26 +252,42 @@ where
         .pacer
         .wait_until(tokio::time::Instant::now())
         .unwrap_or_else(tokio::time::Instant::now);
-    let mut yielded_to_client = false;
+    wait_until(stream, authority, session, command_id, due).await
+}
+
+async fn wait_until<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    command_id: u64,
+    due: tokio::time::Instant,
+) -> Result<bool, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let mut deadline = WaitDeadline::new(due);
     loop {
-        let event = {
-            let mut next = std::pin::pin!(poll::next(stream, session));
-            let mut timer = std::pin::pin!(tokio::time::sleep_until(due));
-            std::future::poll_fn(|context| {
-                // Like chase pacing, give ready input one turn ahead of a due step.
-                // Retransmissions or ACK traffic cannot postpone that step indefinitely.
-                if yielded_to_client && timer.as_mut().poll(context).is_ready() {
-                    return std::task::Poll::Ready(None);
-                }
-                if let std::task::Poll::Ready(event) = next.as_mut().poll(context) {
-                    return std::task::Poll::Ready(Some(event));
-                }
-                timer.as_mut().poll(context).map(|()| None)
-            })
-            .await
-        };
-        let Some(event) = event else {
-            return Ok(true);
+        let event = deadline.next(poll::next(stream, session)).await;
+        let reached_deadline = event.is_none();
+        let event = match event {
+            Some(event) => event,
+            None => {
+                // A slow owner refresh must not starve the due action. Still give one
+                // already complete client frame its cancellation/ACK/retransmit handling,
+                // without polling another owner cadence or waiting for partial input.
+                let Some(event) = ready_input(
+                    stream,
+                    &mut session.frames,
+                    &mut session.held,
+                    session.buffered.is_some(),
+                )
+                .await
+                else {
+                    return Ok(true);
+                };
+                event
+            }
         };
         if let poll::Next::Frame(Err(_)) = event {
             return Ok(false);
@@ -252,7 +305,9 @@ where
                 if let Err(error) = ack {
                     return Err(close(stream, session.admitted, error).await);
                 }
-                yielded_to_client = true;
+                if reached_deadline {
+                    return Ok(true);
+                }
                 continue;
             }
             // FND-02: a retransmission remains the same pending operation, even when its
@@ -262,7 +317,9 @@ where
                 && let Ok(command) = envelope.client_command(session.generation)
                 && command.command_id == command_id
             {
-                yielded_to_client = true;
+                if reached_deadline {
+                    return Ok(true);
+                }
                 continue;
             }
             session
@@ -274,3 +331,62 @@ where
         session.chase_due = None;
     }
 }
+
+/// Give one ready event priority; once due, even a continuously ready owner cadence yields.
+struct WaitDeadline {
+    due: tokio::time::Instant,
+    yielded: bool,
+}
+
+impl WaitDeadline {
+    fn new(due: tokio::time::Instant) -> Self {
+        Self {
+            due,
+            yielded: false,
+        }
+    }
+
+    async fn next<F: std::future::Future>(&mut self, next: F) -> Option<F::Output> {
+        let mut next = std::pin::pin!(next);
+        let mut timer = std::pin::pin!(tokio::time::sleep_until(self.due));
+        let event = std::future::poll_fn(|context| {
+            if self.yielded && timer.as_mut().poll(context).is_ready() {
+                return std::task::Poll::Ready(None);
+            }
+            if let std::task::Poll::Ready(event) = next.as_mut().poll(context) {
+                return std::task::Poll::Ready(Some(event));
+            }
+            timer.as_mut().poll(context).map(|()| None)
+        })
+        .await;
+        self.yielded = true;
+        event
+    }
+}
+
+async fn ready_input<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    frames: &mut FrameReader,
+    held: &mut std::collections::VecDeque<(Vec<u8>, bool)>,
+    buffered: bool,
+) -> Option<poll::Next> {
+    if !buffered && let Some((frame, behind_step)) = held.pop_front() {
+        return Some(poll::Next::Held(frame, behind_step));
+    }
+    if held.len() >= MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP {
+        return None;
+    }
+    let mut read = std::pin::pin!(frames.next(stream));
+    // FrameReader retains every partial prefix/body byte when this one poll is cancelled.
+    std::future::poll_fn(|context| {
+        std::task::Poll::Ready(match read.as_mut().poll(context) {
+            std::task::Poll::Ready(frame) => Some(poll::Next::Frame(frame)),
+            std::task::Poll::Pending => None,
+        })
+    })
+    .await
+}
+
+#[cfg(test)]
+#[path = "autowalk_tests.rs"]
+mod tests;

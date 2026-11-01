@@ -237,7 +237,12 @@ async fn attempt(
     .map_err(|_| ItemUseError::InvalidInput)?;
     let facts: Vec<_> = facts
         .into_iter()
-        .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming"))
+        .filter(|fact| {
+            matches!(
+                fact.source_kind.as_str(),
+                "quest" | "npc" | "mount_taming" | "task_board"
+            )
+        })
         .map(|fact| (fact.unlock_key, fact.content_revision))
         .collect();
     if (EarnedCosmetics {
@@ -253,9 +258,7 @@ async fn attempt(
     let (consume, remove, _) = rule.effects(outcome).ok_or(ItemUseError::InvalidInput)?;
     if outcome == 0 {
         let authored = rule.achievement_key.iter().map(String::as_str);
-        let expected = authored.chain(std::iter::once(
-            "oteryn:achievement/natural_born_cowboy",
-        ));
+        let expected = authored.chain(std::iter::once("oteryn:achievement/natural_born_cowboy"));
         if !request
             .achievements
             .iter()

@@ -658,7 +658,33 @@ impl ChannelRuntimeV1 {
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if *health <= 0 || spell_combat.maximum_health != policy.maximum_health {
+        // Native profile registration can follow physical encounter admission. Rebinding
+        // the same policy preserves a variant's source-scaled HP and existing conditions.
+        if (spell_combat.echo.is_some() || spell_combat.soulpit.is_some())
+            && let Some(existing) = companion
+        {
+            return if existing.policy.as_ref() == policy.as_ref()
+                && *health > 0
+                && *health <= spell_combat.maximum_health
+            {
+                Ok(())
+            } else {
+                Err(CarrierError::InvalidCreatureHealth)
+            };
+        }
+        let expected_maximum = match spell_combat.soulpit {
+            Some(tag) => tag
+                .stack
+                .scaled_health(
+                    u64::try_from(policy.maximum_health)
+                        .map_err(|_| CarrierError::InvalidCreatureHealth)?,
+                )
+                .ok()
+                .and_then(|maximum| i64::try_from(maximum).ok())
+                .ok_or(CarrierError::DamageOverflow)?,
+            None => policy.maximum_health,
+        };
+        if *health <= 0 || spell_combat.maximum_health != expected_maximum {
             return Err(
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::InvalidCreatureHealth,
             );

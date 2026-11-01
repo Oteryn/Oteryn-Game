@@ -99,7 +99,7 @@ pub(super) async fn deliver<C: ItemLoopContent>(
         Ok(value) => value,
         Err(_) => return Ok(refuse(BossRewardCollectionStatus::ContentUnavailable)),
     };
-    let limit = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let limit = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     let lines = rows
         .iter()
         .map(|row| {

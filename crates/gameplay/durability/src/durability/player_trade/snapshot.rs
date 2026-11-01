@@ -258,7 +258,7 @@ pub(super) async fn destinations<C: PlayerTradeContent>(
             entry_limit: limit,
             highest_ordinal: entries.first().map_or(0, |e| e.placement_ordinal),
             carried_weight: weight,
-            capacity: read_derived_transfer_capacity_centi_oz(tx, target.character_id).await?,
+            capacity: read_derived_transfer_capacity_centi_oz(tx, target.character_id, content).await?,
             incoming_unit_weight: unit,
             incoming_quantity: quantity,
         };

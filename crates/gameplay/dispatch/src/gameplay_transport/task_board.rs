@@ -1,16 +1,24 @@
-//! TASKBOARD-1 weekly Task Board composed from the admitted actor and current Channel owner
-//! (`OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md` §2). Every write is one quest
-//! transition of the code-built board quest in the Character's revision slot.
+//! Full weekly/bounty Task Board. All actions share one fenced durable owner.
 use std::sync::Arc;
 
-use super::{ComposedFreshAdmission, GameSessionId, connection::AdmittedSession, operator_event};
+use super::{
+    ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession,
+    operator_event,
+};
 use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceRewardOccurrence,
 };
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::durability::quest_state::QuestCause;
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::durability::task_board::{TaskBoardCatalogue, TaskBoardCommand, TaskBoardCommit};
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::task_board;
+use oteryn_gameplay_quests::quest::task_board::full::TaskBoardAction;
 use oteryn_protocol_oteryn::task_board as wire;
+
+#[path = "bounty_talisman.rs"]
+pub(super) mod bounty_talisman;
+#[path = "task_board_projection.rs"]
+mod projection;
 
 #[derive(Debug)]
 pub enum TaskBoardReply {
@@ -19,7 +27,69 @@ pub enum TaskBoardReply {
     Unavailable,
 }
 
+/// Preserve the bundle-world rollout gate from the capability fragment.
+pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
+    base.iter()
+        .copied()
+        .filter(|capability| available || capability.id != wire::CAPABILITY_TASK_BOARD_V1)
+        .collect()
+}
+
+fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
+    if let Ok(request) = wire::full::decode_request(payload) {
+        let slot = u8::try_from(request.selection).ok()?;
+        let action = match request.action {
+            4 => TaskBoardAction::Query,
+            5 => TaskBoardAction::StartWeekly { difficulty: slot },
+            6 => TaskBoardAction::Deliver { slot },
+            7 => TaskBoardAction::OpenBounty,
+            8 => TaskBoardAction::SelectBounty { slot },
+            9 => TaskBoardAction::ClaimBounty,
+            10 => TaskBoardAction::ChangeBountyDifficulty { difficulty: slot },
+            11 => TaskBoardAction::RerollBounty,
+            12 => TaskBoardAction::ClaimDailyReroll,
+            13 => TaskBoardAction::SetPreferred {
+                slot,
+                race: (!request.race.is_empty()).then_some(request.race),
+            },
+            14 => TaskBoardAction::SetUnwanted {
+                slot,
+                race: (!request.race.is_empty()).then_some(request.race),
+            },
+            15 => TaskBoardAction::UnlockList,
+            16 => TaskBoardAction::BuyShop {
+                offer: request.selection,
+            },
+            17 => TaskBoardAction::BuyTalisman,
+            18 => TaskBoardAction::UpgradeTalisman { path: slot },
+            _ => return None,
+        };
+        return Some((action, false));
+    }
+    let request = wire::decode_task_board_request(payload).ok()?;
+    let action = match request.action {
+        0 => TaskBoardAction::Query,
+        1 | 2 => TaskBoardAction::RefuseLegacy {
+            action: request.action,
+            task: request.task,
+        },
+        3 => TaskBoardAction::UpgradeTalisman {
+            path: request.task.checked_sub(1)?,
+        },
+        _ => return None,
+    };
+    Some((action, true))
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn task_board_catalogue(&self) -> Option<TaskBoardCatalogue> {
+        let mut catalogue =
+            TaskBoardCatalogue::try_from(self.active_generation?.native_gameplay()?).ok()?;
+        catalogue.gameplay_content_revision =
+            self.quest_catalogue.as_ref()?.content_revision().to_owned();
+        Some(catalogue)
+    }
+
     pub(super) async fn task_board_wire(
         &self,
         admitted: AdmittedSession,
@@ -27,12 +97,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> TaskBoardReply {
-        let Ok(request) = wire::decode_task_board_request(payload) else {
+        let Some((action, legacy)) = decode_action(payload) else {
             return TaskBoardReply::Rejected;
         };
-        if kind != wire::COMMAND_TYPE_TASK_BOARD
-            || wire::encode_task_board_request(&request).is_err()
-        {
+        if kind != wire::COMMAND_TYPE_TASK_BOARD {
             return TaskBoardReply::Rejected;
         }
         let Some(item_fence) = admitted.item_fence else {
@@ -41,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command) = CommandId::new(id) else {
             return TaskBoardReply::Rejected;
         };
-        if self.quest_catalogue.is_none() {
+        if self.quest_catalogue.is_none() || self.task_board_catalogue().is_none() {
             return TaskBoardReply::Rejected;
         }
         {
@@ -67,78 +135,110 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return TaskBoardReply::Rejected;
             }
-        } // No runtime mutex is held across the revision slot or the durable write.
-        let session = admitted.game_session_id;
-        let transition_key = match request.action {
-            0 => None,
-            1 => Some(task_board::select_transition(request.task)),
-            2 => Some(task_board::claim_transition(request.task)),
-            3 => {
-                let Some(tracks) = self.task_board_tracks(session) else {
-                    return TaskBoardReply::Rejected;
-                };
-                let state = task_board::state(&tracks);
-                let Some(path) = usize::from(request.task).checked_sub(1) else {
-                    return TaskBoardReply::Rejected;
-                };
-                task_board::talisman_upgrade_transition(path, state.talisman_levels[path])
-            }
-            _ => return TaskBoardReply::Rejected,
-        };
-        let mut refused = request.action == 3 && transition_key.is_none();
-        if let Some(transition_key) = transition_key {
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                return TaskBoardReply::Rejected;
-            };
-            if fence.character_id.as_bytes() != item_fence.character_id.as_bytes()
-                || fence.connection_generation != item_fence.connection_generation
-                || fence.character_lease_generation != item_fence.character_lease_generation
-                || fence.runtime_scope != item_fence.runtime_scope
-                || fence.scope_ownership_generation != item_fence.scope_ownership_generation
-            {
-                return TaskBoardReply::Rejected;
-            }
-            let cause = QuestCause::Command(CommandRef::new(session, command));
-            match self.commit_task_board(fence, transition_key, cause).await {
-                Some(QuestTransitionOutcome::Refused(_)) => refused = true,
-                Some(_) => {}
-                None => return TaskBoardReply::Rejected,
-            }
-            self.refresh_quest_session(session, false).await;
         }
-        let Some(tracks) = self.task_board_tracks(session) else {
+        // Every contributor and shared-XP member can own task credit from another
+        // principal's queue. Drain it before changing the board, then retain the
+        // lane only after checking that no intervening death remains unresolved.
+        let Some(permit) = self.task_board_lane_after_kills().await else {
+            return TaskBoardReply::Unavailable;
+        };
+        let Ok(Some(fence)) = self.current_quest_fence(admitted.game_session_id).await else {
             return TaskBoardReply::Rejected;
         };
-        wire::encode_task_board_reply(&board_reply(refused, &tracks))
-            .map_or(TaskBoardReply::Unavailable, TaskBoardReply::Payload)
+        if fence.character_id.as_bytes() != item_fence.character_id.as_bytes()
+            || fence.connection_generation != item_fence.connection_generation
+            || fence.character_lease_generation != item_fence.character_lease_generation
+            || fence.runtime_scope != item_fence.runtime_scope
+            || fence.scope_ownership_generation != item_fence.scope_ownership_generation
+        {
+            return TaskBoardReply::Rejected;
+        }
+        let fee_change = if action == TaskBoardAction::BuyTalisman {
+            let backpack = match self
+                .root
+                .read_character_backpack(self.character, fence.character_id)
+                .await
+            {
+                Ok(backpack) => backpack,
+                Err(_) => return TaskBoardReply::Unavailable,
+            };
+            let runtime = self.runtime.lock().await;
+            super::charm_progression::fee_change(
+                self,
+                &runtime,
+                backpack.as_ref(),
+                [
+                    super::npc_trade_command::derived(
+                        b"taskboard:change:platinum",
+                        admitted.game_session_id,
+                        id,
+                    ),
+                    super::npc_trade_command::derived(
+                        b"taskboard:change:gold",
+                        admitted.game_session_id,
+                        id,
+                    ),
+                ],
+            )
+        } else {
+            None
+        };
+        let request = TaskBoardCommand {
+            fee_change,
+            cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, command)),
+            action,
+            payload_binding: payload.to_vec(),
+        };
+        let Some(result) = self.commit_task_board(fence, request, Some(&permit)).await else {
+            return TaskBoardReply::Unavailable;
+        };
+        drop(permit);
+        self.refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        // Encode the immutable receipt view, not a new read that could change the replay response.
+        let encoded = if legacy {
+            projection::legacy(&result).and_then(|reply| wire::encode_task_board_reply(&reply).ok())
+        } else {
+            projection::full(&result).and_then(|reply| wire::full::encode_reply(&reply).ok())
+        };
+        encoded.map_or(TaskBoardReply::Unavailable, TaskBoardReply::Payload)
     }
 
-    /// One board transition in the Character's revision slot; `None` when the write failed
-    /// without an outcome.
     async fn commit_task_board(
         &self,
         fence: CurrentCharacterGameplayFence,
-        transition_key: String,
-        cause: QuestCause,
-    ) -> Option<QuestTransitionOutcome> {
-        let catalogue = self.quest_catalogue.as_ref()?;
+        request: TaskBoardCommand,
+        permit: Option<&SpellLanePermit>,
+    ) -> Option<TaskBoardCommit> {
+        let catalogue = Arc::new(match self.task_board_catalogue() {
+            Some(catalogue) => catalogue,
+            None if matches!(request.action, TaskBoardAction::CreditKill { .. }) => {
+                TaskBoardCatalogue {
+                    creatures: Vec::new(),
+                    content_revision: String::new(),
+                    items: std::collections::BTreeMap::new(),
+                    cosmetics: None,
+                    gameplay_content_revision: String::new(),
+                    progression: None,
+                }
+            }
+            None => return None,
+        });
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
-            .commit_quest_transition(
+        let result = slot
+            .commit_task_board(
                 self.root,
                 self.character,
                 self.holder,
                 fence,
-                QuestTransitionRequest {
-                    transition_key,
-                    cause,
-                },
-                Arc::clone(catalogue),
+                request,
+                catalogue,
+                permit,
             )
             .await;
         drop(slot);
-        match outcome {
-            Ok(outcome) => Some(outcome),
+        match result {
+            Ok(result) => Some(result),
             Err(error) => {
                 operator_event(&format!("task_board_write_failed reason={error:?}"));
                 None
@@ -146,94 +246,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// The board tracks of the session's current quest copy; `None` while the copy is unusable.
-    pub(super) fn task_board_tracks(
-        &self,
-        session: GameSessionId,
-    ) -> Option<std::collections::BTreeMap<String, i64>> {
-        let sessions = self.states.quest_sessions.lock().ok()?;
-        let copy = sessions.get(&session)?.copy.as_ref()?;
-        Some(
-            copy.tracks()
-                .range("oteryn:taskboard/".to_owned()..)
-                .take_while(|(key, _)| key.starts_with("oteryn:taskboard/"))
-                .map(|(key, value)| (key.clone(), *value))
-                .collect(),
-        )
-    }
-
-    /// §2.4: one kill of `race` settled for the death's reward principal credits that
-    /// Character's active task of the race, keyed by the same memoized (death, Character)
-    /// occurrence as the XP award, so a settle retry never counts twice.
+    /// Credit every eligible recipient with the already memoized per-Character death occurrence.
+    /// A failed write retains the kill-settle work for retry under the same occurrence.
     pub(super) async fn credit_task_board_kill(
         &self,
         fence: CurrentCharacterGameplayFence,
         race: &str,
         occurrence: [u8; 16],
-    ) {
-        let session = fence.game_session_id;
-        let Some(transition_key) = self
-            .task_board_tracks(session)
-            .and_then(|tracks| task_board::kill_credit(&tracks, race))
-        else {
-            return;
-        };
+    ) -> bool {
         let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(occurrence) else {
-            return;
+            return false;
         };
-        match self
-            .commit_task_board(fence, transition_key, QuestCause::CreatureDeath(occurrence))
-            .await
-        {
-            Some(QuestTransitionOutcome::Committed(_)) => {
-                self.refresh_quest_session(session, false).await;
-            }
-            Some(_) => {}
-            None => self.schedule_quest_refresh(session),
+        let session = fence.game_session_id;
+        let request = TaskBoardCommand {
+            cause: QuestCause::CreatureDeath(occurrence),
+            action: TaskBoardAction::CreditKill {
+                race: race.to_owned(),
+            },
+            payload_binding: Vec::new(),
+            fee_change: None,
+        };
+        if self.commit_task_board(fence, request, None).await.is_some() {
+            self.refresh_quest_session(session, false).await;
+            true
+        } else {
+            self.schedule_quest_refresh(session);
+            false
         }
-    }
-}
-
-fn board_reply(
-    refused: bool,
-    tracks: &std::collections::BTreeMap<String, i64>,
-) -> wire::TaskBoardReply {
-    let state = task_board::state(tracks);
-    wire::TaskBoardReply {
-        refused,
-        selected: state.selected,
-        kills: state.kills,
-        points: state.points,
-        bounty_points: state.bounty_points,
-        talisman_levels: state.talisman_levels,
-        talisman_bonuses: std::array::from_fn(|path| {
-            task_board::talisman_bonus(path, state.talisman_levels[path])
-        }),
-        talisman_next_costs: state
-            .talisman_levels
-            .map(|level| task_board::talisman_upgrade_cost(level).unwrap_or(0)),
-        tasks: task_board::TASKS
-            .iter()
-            .zip(state.claimed_at)
-            .map(|(task, claimed_at_unix)| wire::TaskBoardTask {
-                race: task.race.to_owned(),
-                required: task.required,
-                claimed_at_unix,
-            })
-            .collect(),
     }
 }
 
 macro_rules! authority_methods {
     () => {
-        fn task_board_command(
-            &self,
-            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
-            _id: u64,
-            _kind: u32,
-            _payload: &[u8],
-        ) -> impl std::future::Future<Output = $crate::gameplay_transport::task_board::TaskBoardReply>
-        {
+        fn task_board_available(&self) -> bool { false }
+        fn task_board_command(&self, _admitted: $crate::gameplay_transport::connection::AdmittedSession, _id:u64, _kind:u32, _payload:&[u8]) -> impl std::future::Future<Output=$crate::gameplay_transport::task_board::TaskBoardReply> {
             async { $crate::gameplay_transport::task_board::TaskBoardReply::Rejected }
         }
     };
@@ -241,6 +287,9 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        fn task_board_available(&self) -> bool {
+            self.task_board_catalogue().is_some()
+        }
         async fn task_board_command(
             &self,
             admitted: connection::AdmittedSession,

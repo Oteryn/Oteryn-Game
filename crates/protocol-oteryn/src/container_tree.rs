@@ -12,12 +12,13 @@
 //! unknown action, zero or unknown enums, unknown or repeated fields and any count or byte size
 //! over its bound all fail closed.
 
-// The client-side codecs (view decode, intent encode) are exercised by the tests; the server
-// composes its own direction in `gameplay_transport::container_view`.
-#![cfg_attr(not(test), allow(dead_code))]
+use std::collections::{BTreeMap, BTreeSet};
 
-use std::collections::BTreeSet;
-
+use crate::browse_field::{
+    BROWSE_FIELD_CAPACITY, BrowseFieldPage, MAX_BROWSE_FIELD_PAGE_ENTRIES,
+    MAX_BROWSE_FIELD_VIEW_BYTES, MAX_BROWSE_FIELD_VIEWS_BYTES, decode_page, encode_page,
+    validate_browse_position,
+};
 use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
     read_result_enum, read_uint32, read_uint32_fields, read_varint, set_once,
@@ -78,10 +79,12 @@ pub struct ContainerView {
     pub container_handle: ItemHandle,
     /// The container's parent when it is visible, for `UP`.
     pub parent_handle: Option<ItemHandle>,
-    /// `1..=20`.
+    /// `1..=20` for an ordinary container, exactly 30 for a selected browse field.
     pub capacity: u8,
     /// The direct entries in display order, at most `capacity`.
     pub entries: Vec<ItemEntry>,
+    /// The selected capability 230 extension; absent for an ordinary durable container.
+    pub browse: Option<BrowseFieldPage>,
 }
 
 /// `ContainerViewsV1`: every open view in ascending view id; the default means none is open.
@@ -136,15 +139,38 @@ fn view_id(value: u32) -> WireResult<u8> {
         .ok_or(ItemViewWireError::LimitExceeded)
 }
 
-fn validate_view(view: &ContainerView) -> WireResult<()> {
+fn validate_view(view: &ContainerView, browse_field: bool) -> WireResult<()> {
+    if view.browse.is_some() && !browse_field {
+        return malformed();
+    }
+    let maximum = if view.browse.is_some() {
+        MAX_BROWSE_FIELD_PAGE_ENTRIES
+    } else {
+        MAX_CONTAINER_VIEW_ENTRIES
+    };
     if view.view_id > MAX_CONTAINER_VIEW_ID
-        || usize::from(view.capacity) > MAX_CONTAINER_VIEW_ENTRIES
-        || view.entries.len() > MAX_CONTAINER_VIEW_ENTRIES
+        || usize::from(view.capacity) > maximum
+        || view.entries.len() > maximum
     {
         return Err(ItemViewWireError::LimitExceeded);
     }
     if view.capacity == 0 || view.entries.len() > usize::from(view.capacity) {
         return malformed();
+    }
+    if let Some(page) = view.browse {
+        validate_browse_position(page.position)?;
+        // Crystal sends a complete page, has no parent and permits an empty initial view.
+        let capacity = u16::from(BROWSE_FIELD_CAPACITY);
+        if view.parent_handle.is_some()
+            || view.capacity != BROWSE_FIELD_CAPACITY
+            || !page.index.is_multiple_of(capacity)
+            || (page.total != 0 && page.index >= page.total)
+            || (page.total == 0 && page.index != 0)
+            || view.entries.len()
+                != usize::from(page.total.saturating_sub(page.index).min(capacity))
+        {
+            return malformed();
+        }
     }
     // The container, its parent and its entries are distinct items.
     let mut seen = BTreeSet::new();
@@ -159,24 +185,32 @@ fn validate_view(view: &ContainerView) -> WireResult<()> {
     Ok(())
 }
 
-fn validate_container_views(views: &ContainerViews) -> WireResult<()> {
+fn validate_container_views(views: &ContainerViews, browse_field: bool) -> WireResult<()> {
     if views.views.len() > MAX_CONTAINER_VIEWS {
         return Err(ItemViewWireError::LimitExceeded);
     }
-    let (mut containers, mut entries) = (BTreeSet::new(), BTreeSet::new());
+    let (mut containers, mut entries) = (BTreeMap::new(), BTreeMap::new());
     for (index, view) in views.views.iter().enumerate() {
-        validate_view(view)?;
+        validate_view(view, browse_field)?;
         if index > 0 && views.views[index - 1].view_id >= view.view_id {
             return malformed();
         }
-        // One view per container, and an item is the entry of one container only.
-        if !containers.insert(view.container_handle)
-            || view
-                .entries
-                .iter()
-                .any(|entry| !entries.insert(entry.handle))
+        // Ordinary containers have one view. Crystal can expose the same browse
+        // container through multiple view ids, each with an independent page index.
+        if let Some(previous) = containers.insert(view.container_handle, view.browse)
+            && !matches!((previous, view.browse), (Some(previous), Some(current))
+                if previous.position == current.position && previous.total == current.total)
         {
             return malformed();
+        }
+        // A repeated browse page may expose the same item again, but an item still
+        // belongs to exactly one container across all ordinary and browse views.
+        for entry in &view.entries {
+            if let Some(owner) = entries.insert(entry.handle, view.container_handle)
+                && (owner != view.container_handle || view.browse.is_none())
+            {
+                return malformed();
+            }
         }
     }
     Ok(())
@@ -193,16 +227,30 @@ fn encode_view(output: &mut Vec<u8>, view: &ContainerView) {
     for entry in &view.entries {
         encode_entry(&mut body, 5, entry);
     }
+    if let Some(page) = view.browse {
+        push_message_field(&mut body, 6, &encode_page(page));
+    }
     push_message_field(output, 1, &body);
 }
 
-fn decode_view(input: &[u8]) -> WireResult<ContainerView> {
-    if input.len() > MAX_CONTAINER_VIEW_BYTES {
+fn decode_view(input: &[u8], browse_field: bool) -> WireResult<ContainerView> {
+    let maximum_bytes = if browse_field {
+        MAX_BROWSE_FIELD_VIEW_BYTES
+    } else {
+        MAX_CONTAINER_VIEW_BYTES
+    };
+    let maximum_entries = if browse_field {
+        MAX_BROWSE_FIELD_PAGE_ENTRIES
+    } else {
+        MAX_CONTAINER_VIEW_ENTRIES
+    };
+    if input.len() > maximum_bytes {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
     let (mut id, mut container, mut parent, mut capacity) = (None, None, None, None);
     let mut entries = Vec::new();
+    let mut browse = None;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => set_once(&mut id, read_uint32(input, &mut cursor)?)?,
@@ -210,16 +258,23 @@ fn decode_view(input: &[u8]) -> WireResult<ContainerView> {
             0x18 => set_once(&mut parent, read_varint(input, &mut cursor)?)?,
             0x20 => set_once(&mut capacity, read_uint32(input, &mut cursor)?)?,
             0x2a => {
-                if entries.len() == MAX_CONTAINER_VIEW_ENTRIES {
+                if entries.len() == maximum_entries {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
                 entries.push(decode_entry(read_bytes(input, &mut cursor)?)?);
             }
+            0x32 if browse_field => {
+                set_once(&mut browse, decode_page(read_bytes(input, &mut cursor)?)?)?;
+            }
             _ => return malformed(),
         }
     }
+    // Selection permits the extension, but an ordinary view keeps its original byte bound.
+    if browse.is_none() && input.len() > MAX_CONTAINER_VIEW_BYTES {
+        return Err(ItemViewWireError::LimitExceeded);
+    }
     let capacity = capacity.unwrap_or(0);
-    if capacity as usize > MAX_CONTAINER_VIEW_ENTRIES {
+    if capacity as usize > maximum_entries {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let view = ContainerView {
@@ -229,14 +284,23 @@ fn decode_view(input: &[u8]) -> WireResult<ContainerView> {
         parent_handle: parent.and_then(ItemHandle::new),
         capacity: capacity as u8,
         entries,
+        browse,
     };
-    validate_view(&view)?;
+    validate_view(&view, browse_field)?;
     Ok(view)
 }
 
 /// Domain 14, snapshot type 1 and delta type 1 (every open view).
 pub fn encode_container_views(views: &ContainerViews) -> WireResult<Vec<u8>> {
-    validate_container_views(views)?;
+    encode_container_views_for(views, false)
+}
+
+/// Domain 14 with the browse-field extension only when capability 230 is selected.
+pub fn encode_container_views_for(
+    views: &ContainerViews,
+    browse_field: bool,
+) -> WireResult<Vec<u8>> {
+    validate_container_views(views, browse_field)?;
     let mut output = Vec::new();
     for view in &views.views {
         encode_view(&mut output, view);
@@ -245,7 +309,19 @@ pub fn encode_container_views(views: &ContainerViews) -> WireResult<Vec<u8>> {
 }
 
 pub fn decode_container_views(payload: &[u8]) -> WireResult<ContainerViews> {
-    if payload.len() > MAX_CONTAINER_VIEWS_BYTES {
+    decode_container_views_for(payload, false)
+}
+
+pub fn decode_container_views_for(
+    payload: &[u8],
+    browse_field: bool,
+) -> WireResult<ContainerViews> {
+    let maximum = if browse_field {
+        MAX_BROWSE_FIELD_VIEWS_BYTES
+    } else {
+        MAX_CONTAINER_VIEWS_BYTES
+    };
+    if payload.len() > maximum {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -256,14 +332,15 @@ pub fn decode_container_views(payload: &[u8]) -> WireResult<ContainerViews> {
                 if views.views.len() == MAX_CONTAINER_VIEWS {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
-                views
-                    .views
-                    .push(decode_view(read_bytes(payload, &mut cursor)?)?);
+                views.views.push(decode_view(
+                    read_bytes(payload, &mut cursor)?,
+                    browse_field,
+                )?);
             }
             _ => return malformed(),
         }
     }
-    validate_container_views(&views)?;
+    validate_container_views(&views, browse_field)?;
     Ok(views)
 }
 

@@ -295,7 +295,7 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
 
 #[test]
 fn boundary_release_retries_not_expired_and_saves_new_remaining_serene() -> TestResult {
-    run(async |admin| {
+    kill_reward_e2e::scenario_thread::run_async(async |admin| {
         reset();
         let harness =
             Harness::create_with_admission_seed(admin, "release_monk_retry", true, false).await?;
@@ -410,7 +410,7 @@ async fn drive_until<F: std::future::Future>(
 
 #[test]
 fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
-    run(async |admin| {
+    kill_reward_e2e::scenario_thread::run_async(async |admin| {
         reset();
         let harness =
             Harness::create_with_admission_seed(admin, "release_monk_unknown", true, false).await?;
