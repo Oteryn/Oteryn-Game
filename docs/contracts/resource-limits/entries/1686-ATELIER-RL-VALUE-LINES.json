@@ -1,0 +1,26 @@
+{
+  "id": "ATELIER-RL-VALUE-LINES",
+  "owner_contract": "protocol-oteryn/v1/atelier-v1.md",
+  "resource": "Bank and Supply Stash value debits in one Atelier transaction",
+  "unit": "value lines per logical transaction",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "At most one account-bank debit and one existing Character/World/revision stash-ledger debit. Reveal never consumes stash.",
+  "client_visible": false,
+  "boundary_tests": [
+    "2 admitted",
+    "3 rejected with INVALID_INPUT",
+    "stash-only and mixed carried/stash upgrade replay once"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit/atelier_cause.rs",
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/outputs.rs"
+  ],
+  "notes": "P07 Gem Atelier: Crystal 201189f player.cpp:5304-5356,5821-5844, player_wheel.cpp:1514-1568 and game.cpp:2862-2969. Existing native carried-tree, depth, definition and ledger authority limits remain in force. Dismantle may split at most ten fragments across ordinary carried stacks/containers under the same bounds."
+}

@@ -489,8 +489,27 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
                'game_item_placement_proven()'::regprocedure,
                'game_item_mint_consistency_guard()'::regprocedure,
                'game_atelier_item_admit()'::regprocedure,
-               'game_atelier_assets_guard()'::regprocedure)
-             ORDER BY p.proname LIMIT 7",
+               'game_atelier_assets_guard()'::regprocedure,
+               'game_atelier_item_complete(uuid)'::regprocedure,
+               'game_atelier_carried_parent(uuid,uuid,uuid)'::regprocedure,
+               'game_atelier_input_present(uuid,uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_supplement_complete(uuid)'::regprocedure,
+               'game_stash_admit()'::regprocedure,
+               'game_stash_balance_guard()'::regprocedure,
+               'game_stash_consistent()'::regprocedure,
+               'game_item_nested_entry_proven()'::regprocedure,
+               'game_equipment_slot_proven()'::regprocedure,
+               'game_equipment_state_proven()'::regprocedure,
+               'game_atelier_carried_coin_sources(uuid,uuid)'::regprocedure,
+               'game_atelier_coin_source_present(uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_coin_admit()'::regprocedure,
+               'game_atelier_coin_complete(uuid)'::regprocedure,
+               'game_atelier_coin_consistent()'::regprocedure,
+               'game_atelier_carried_tree_valid(uuid,uuid)'::regprocedure,
+               'game_atelier_output_admit(uuid,uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_outputs_complete(uuid)'::regprocedure,
+               'game_item_audit_envelope_size_proven()'::regprocedure)
+             ORDER BY p.proname LIMIT 26",
         )
         .fetch_all(&pool)
         .await
@@ -510,8 +529,9 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
         "fixture history must fit the bounded read"
     );
     let before = definitions(h.pool.clone()).await?;
-    // Include both quality-yield guards advanced by 0624 in the idempotence proof.
-    assert_eq!(before.len(), 7);
+    // Reapplication preserves quality yields and every carried, stash and coin
+    // guard added by the Atelier extensions, including their existing owners.
+    assert_eq!(before.len(), 26);
     let mut tx = h.pool.begin().await?;
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -522,6 +542,30 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../apps/game-server/migrations/0624_character_atelier_crystal_fragment_yields.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0744_character_atelier_carried_stash.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0745_character_atelier_carried_coins.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0746_character_atelier_carried_outputs.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0747_character_atelier_audit_bounds.sql"
     )))
     .execute(&mut *tx)
     .await?;

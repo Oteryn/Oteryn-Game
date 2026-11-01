@@ -167,7 +167,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     Some(expected),
                 )
                 .await;
-            drop(permit);
             match result {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Refused,
@@ -181,6 +180,37 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
                 _ => return AtelierWireReply::Unavailable,
             }
+            if kind == wire::COMMAND_TYPE_ATELIER_MUTATE
+                && !refused
+                && let Some(actor) = admitted.runtime_actor
+            {
+                // Carried payment may consume an equipped leaf. Keep the spell lane
+                // until the current equipment owner has replaced cached combat facts;
+                // receipt replay reads today's equipment, never the old payment proof.
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .forget_weapon(actor, admitted.game_session_id);
+                let Ok(effects) = self.read_admission_effects(admitted.game_session_id).await
+                else {
+                    return AtelierWireReply::Unavailable;
+                };
+                let runtime = self.runtime.lock().await;
+                if self
+                    .install_admission_suppressions(
+                        &runtime,
+                        actor,
+                        admitted.game_session_id,
+                        effects,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return AtelierWireReply::Unavailable;
+                }
+            }
+            drop(permit);
             if let Some(actor) = admitted.runtime_actor {
                 self.refresh_wheel_vitals(actor, admitted.game_session_id)
                     .await;

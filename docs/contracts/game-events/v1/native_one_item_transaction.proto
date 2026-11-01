@@ -441,7 +441,11 @@ message OneItemMarketFeeV1 {
 message OneItemNpcPurchaseV1 {
   string service_key = 1;
   bytes occurrence = 2;
-  bytes atelier_proof = 3; // only GemReveal / GemGradeUp; same transaction's item BURN proof
+  // Same-transaction source proof for GemReveal, GemSwitchDomain and GemGradeUp.
+  // New carried-source proofs include coin_inputs. Reveal and grade also bind
+  // material BURNs; grade may debit the matching Supply Stash remainder.
+  // Historical material-only proofs and an empty domain-switch proof remain valid.
+  bytes atelier_proof = 3;
 }
 
 // Shrine apply or clear, combined with its item-only fee in one transaction.

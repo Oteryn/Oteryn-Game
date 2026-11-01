@@ -48,6 +48,38 @@ create initial gems; initialization remains owned by the existing admission path
 Storage-read failure still returns unavailable. An existing empty Atelier row is
 a valid normal projection and is distinct from an absent row.
 
+## Paid resource scope
+
+Reveal selects a matching live gem from the Character's carried inventory,
+including nested containers. Supply Stash gems are not reveal inputs. Grade
+upgrades consume matching carried fragments first, then debit only the missing
+quantity from that Character's Supply Stash in the same World. Fragment kind and
+native definition revision must match the server-owned catalogue. The server
+selects these sources automatically; commands and client controls are unchanged.
+
+The stash debit extends the existing Supply Stash balance and immutable ledger.
+It does not withdraw a temporary item or create an Atelier fragment balance.
+The stash entry, material custody evidence, gold fee, Character revision and
+Atelier occurrence receipt commit in one transaction. A shortage or refused
+transition leaves every quantity and revision unchanged. Replaying a committed
+occurrence reads its recorded result without selecting or debiting resources
+again, including after relog or when current native content is unavailable.
+
+Paid actions select carried coins recursively before using the bank remainder.
+A stash-and-bank grade upgrade does not require a backpack when it needs no
+physical output. Coin change retains the existing main-backpack destination and
+capacity checks. Dismantling uses compatible partial fragment stacks and free
+slots in ordinary carried containers, visiting containers in breadth-first order.
+Both operations refuse atomically when their required output has no valid
+destination. Only items whose carried ancestry is owned by the current Character
+in the current World qualify; disconnected, foreign and depot items are not
+carried payment sources.
+
+Crystal `201189f` `player_wheel.cpp:1224-1236,1548-1560` distinguishes reveal
+(`useStash=false`) from fragment upgrades (`useStash=true`). The shared selection
+rule is `player.cpp:5304-5356,5821-5844`: carried items, recursively, precede the
+stash remainder. `game.cpp:2862-2969` supplies carried coin and bank payment.
+
 Vessels use the existing Wheel allocation/save command 161 and Wheel receipts.
 They are not a second Atelier storage owner.
 

@@ -1,10 +1,16 @@
-//! Atelier BURN/MINT lines use the ordinary ItemInstance and main backpack owners.
+//! Atelier BURN/MINT lines use the existing carried custody and Supply Stash owners.
 use super::super::item_loop_move::carried_weight;
 use super::super::item_mint::TypedDefinitionRef;
 use super::super::item_mint_audit::{self as audit, Type2Transaction};
 use super::*;
 use prost::Message;
 use serde_json::{Value, json};
+
+#[path = "materials.rs"]
+mod materials;
+#[path = "outputs.rs"]
+mod outputs;
+use super::super::item_fee_burn_audit::atelier_cause as atelier_audit;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemAtelierV1 {
@@ -50,114 +56,29 @@ pub(super) async fn apply(
     let cause = GemAtelierCause::from_mutation(&request.mutation)?;
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
-    let Some(bag)=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots b JOIN game_item_instances i USING(item_instance_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF b,i")
-        .bind(character).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await? else { return Ok(None); };
-    let parent: String = bag.try_get("item_instance_id")?;
-    let bag_definition = TypedDefinitionRef {
-        family: bag.try_get("definition_family")?,
-        production_key: bag.try_get("definition_production_key")?,
-        revision_ref: bag.try_get("definition_revision_ref")?,
+    let bag=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots b JOIN game_item_instances i USING(item_instance_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF b,i")
+        .bind(character).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let parent: Option<String> = bag.as_ref().map(|row| row.try_get("item_instance_id")).transpose()?;
+    let planned = if let Some((key, needed)) = burn {
+        let Some(plan) = materials::plan(tx, fence, request, resources, key, needed).await? else { return Ok(None); };
+        plan
+    } else {
+        materials::MaterialPlan { inputs: Vec::new(), stash: None, equipment: None, burned_weight: 0 }
     };
-    let Some(bag_facts) = resources.content.loop_facts(&bag_definition) else {
-        return Ok(None);
-    };
-    let capacity = bag_facts.container_capacity.unwrap_or(0).min(20);
-    let mut inputs = Vec::new();
-    let mut burned_weight = 0_u64;
-    if let Some((key, mut needed)) = burn {
-        // B3 display order; all selected leaves are locked before the first write.
-        let rows=sqlx::query("SELECT to_jsonb(i) AS before,i.item_instance_id::text,i.quantity,i.definition_family,i.definition_production_key,i.definition_revision_ref,e.placement_ordinal::text FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id,world_id) WHERE e.character_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=$2::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$4 AND i.quantity BETWEEN 1 AND 100 AND NOT EXISTS(SELECT 1 FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_imbuements b WHERE b.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_container_entries c WHERE c.parent_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.parent_item_instance_id=i.item_instance_id) ORDER BY e.placement_ordinal DESC LIMIT 20 FOR UPDATE OF e,i")
-            .bind(character).bind(&parent).bind(world.as_bytes().as_slice()).bind(key).fetch_all(&mut ***tx).await?;
-        for row in rows {
-            if needed == 0 {
-                break;
-            }
-            let definition = TypedDefinitionRef {
-                family: row.try_get("definition_family")?,
-                production_key: row.try_get("definition_production_key")?,
-                revision_ref: row.try_get("definition_revision_ref")?,
-            };
-            let Some(facts) = resources.content.loop_facts(&definition) else {
-                return Ok(None);
-            };
-            let Some(weight) = facts.weight else {
-                return Ok(None);
-            };
-            if super::super::item_transfer::stack_maximum(facts.stack).map(|(n, _)| n) != Ok(100) {
-                return Ok(None);
-            }
-            let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-            let count = needed.min(quantity);
-            needed -= count;
-            burned_weight += u64::from(weight) * u64::from(count);
-            inputs.push(json!({"item":row.try_get::<String,_>("item_instance_id")?,"ordinal":row.try_get::<String,_>("placement_ordinal")?,"before":row.try_get::<Value,_>("before")?,"count":count}));
-        }
-        if needed != 0 {
-            return Ok(None);
-        }
-    }
+    let materials::MaterialPlan { inputs, stash, equipment, burned_weight } = planned;
     let transaction = &identity.transaction;
     let event = &identity.event;
     let now = identity.now;
-    let mut outputs = Vec::new();
-    if let Some((key, count)) = mint {
-        if resources.fragment.family != "Item"
-            || resources.fragment.production_key != key
-            // Crystal 201189f player_wheel.cpp:1308-1318 permits ten regular fragments;
-            // the progression owner and deferred SQL guard enforce the quality-specific range.
-            || !(1..=10).contains(&count)
-        {
-            return Ok(None);
-        }
-        let Some(facts) = resources.content.loop_facts(&resources.fragment) else {
+    let outputs = if let Some((key, count)) = mint {
+        let Some(outputs) = outputs::plan(tx, fence, resources, key, count, burned_weight).await? else {
             return Ok(None);
         };
-        let Some(weight) = facts.weight else {
-            return Ok(None);
-        };
-        if super::super::item_transfer::stack_maximum(facts.stack).map(|(n, _)| n) != Ok(100) {
-            return Ok(None);
-        }
-        let occupied:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
-        let receiver=sqlx::query("SELECT to_jsonb(i) AS before,i.item_instance_id::text,e.placement_ordinal::text FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id,world_id) WHERE e.character_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=$2::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$4 AND i.definition_revision_ref=$5 AND i.quantity BETWEEN 1 AND 100-$6 AND NOT EXISTS(SELECT 1 FROM game_item_keys k WHERE k.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_texts t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_imbuements b WHERE b.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_container_entries c WHERE c.parent_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.parent_item_instance_id=i.item_instance_id) ORDER BY e.placement_ordinal DESC LIMIT 1 FOR UPDATE OF e,i")
-            .bind(character).bind(&parent).bind(world.as_bytes().as_slice()).bind(key).bind(&resources.fragment.revision_ref).bind(i64::from(count)).fetch_optional(&mut ***tx).await?;
-        if receiver.is_none() && occupied >= i64::from(capacity) {
-            return Ok(None);
-        }
-        let carried = match carried_weight(
-            tx,
-            fence.character_id,
-            *world.as_bytes(),
-            resources.content,
-        )
-        .await
-        {
-            Ok(value) => value,
-            Err(_) => return Ok(None),
-        };
-        let limit = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
-            tx,
-            fence.character_id,
-            resources.content,
-        )
-        .await?;
-        if carried
-            .checked_sub(burned_weight)
-            .and_then(|v| v.checked_add(u64::from(weight) * u64::from(count)))
-            .is_none_or(|v| v > limit)
-        {
-            return Ok(None);
-        }
-        if let Some(row) = receiver {
-            outputs.push(json!({"item":row.try_get::<String,_>("item_instance_id")?,"ordinal":row.try_get::<String,_>("placement_ordinal")?,"key":key,"revision":resources.fragment.revision_ref,"count":count,"before":row.try_get::<Value,_>("before")?}));
-        } else {
-            let (item,ordinal):(String,String)=sqlx::query_as("SELECT game_character_uuid_v7()::text,(coalesce(max(placement_ordinal),0)+1)::text FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
-            outputs.push(json!({"item":item,"ordinal":ordinal,"key":key,"revision":resources.fragment.revision_ref,"count":count}));
-        }
-    }
+        outputs
+    } else {
+        Vec::new()
+    };
     if !identity.paid {
-        audit::TransactionResourceUsage {
+        atelier_audit::check_usage(&audit::TransactionResourceUsage {
             touched_item_instances: (inputs.len() + outputs.len()) as u64,
             location_custody_lines: (inputs.len() + outputs.len()) as u64,
             value_lines: 0,
@@ -166,24 +87,24 @@ pub(super) async fn apply(
             participants: (inputs.len() + outputs.len()) as u64,
             effect_work_units: ((inputs.len() + outputs.len()) * 2) as u64,
             events: 1,
-        }
-        .check()
+        })
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     // SQL retains the full locked snapshot. Audit carries the plain leaf's bounded semantic
-    // state, so twenty fragment inputs still fit the existing fee envelope ceiling.
+    // state; paid proofs use the fee envelope instead of the one-item mint ceiling.
     let audit_inputs:Vec<Value>=inputs.iter().map(|line| {
         let before=&line["before"];
         let quantity=before["quantity"].as_u64().ok_or(DurabilityError::InvalidStoredState)?;
         let count=line["count"].as_u64().ok_or(DurabilityError::InvalidStoredState)?;
         let after=quantity.checked_sub(count).ok_or(DurabilityError::InvalidStoredState)?;
-        Ok(json!({"item":line["item"],"ordinal":line["ordinal"],"count":line["count"],
+        Ok(json!({"item":line["item"],"ordinal":line["ordinal"],"parent":line["parent"],"location":line["location"],"slot":line["slot"],"count":line["count"],
             "before":{"family":before["definition_family"],"key":before["definition_production_key"],"revision":before["definition_revision_ref"],"quantity":before["quantity"],"state_revision":before["state_revision"]},
             "quantity_after":after}))
     }).collect::<std::result::Result<_,DurabilityError>>()?;
-    let proof = json!({"character":fence.character_id.as_bytes(),"occurrence":request.occurrence,"mutation":request.mutation,"character_lease_generation":fence.character_lease_generation,"scope_ownership_generation":fence.scope_ownership_generation.get(),"content_digest":resources.content.loop_content_digest(),"inputs":audit_inputs,"outputs":outputs,"parent":parent});
+    let proof = json!({"character":fence.character_id.as_bytes(),"occurrence":request.occurrence,"mutation":request.mutation,"character_lease_generation":fence.character_lease_generation,"scope_ownership_generation":fence.scope_ownership_generation.get(),"content_digest":resources.content.loop_content_digest(),"inputs":audit_inputs,"outputs":outputs,"parent":parent,"stash":stash});
     let proof = serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)?;
     let tuple = tx.tuple();
+    let wire = if identity.paid { None } else {
     let payload = audit::encode_bounded(
         &audit::OneItemTransactionV1 {
             interpretation_revision: audit::INTERPRETATION_REVISION,
@@ -191,7 +112,7 @@ pub(super) async fn apply(
                 proof: proof.clone(),
             })),
         },
-        audit::RL07_PAYLOAD_BYTES_MAX,
+        atelier_audit::PAYLOAD_BYTES_MAX,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     let envelope = audit::EventEnvelopeV1 {
@@ -225,22 +146,35 @@ pub(super) async fn apply(
         payload,
         ..Default::default()
     };
-    let wire = audit::encode_bounded(&envelope, audit::RL07_ENVELOPE_BYTES_MAX)
+    let wire = audit::encode_bounded(&envelope, atelier_audit::ENVELOPE_BYTES_MAX)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    audit::decode_common_envelope(&wire).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_atelier_item_records(transaction_id,event_id,character_id,world_id,occurrence,cause,parent_item_instance_id,inputs,outputs,occurred_at,envelope_sha256) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7::uuid,$8,$9,$10,sha256($11))")
-        .bind(transaction).bind(event).bind(character).bind(world.as_bytes().as_slice()).bind(request.occurrence.as_slice()).bind(cause.as_str()).bind(&parent).bind(json!(inputs)).bind(json!(outputs)).bind(now).bind(if identity.paid {None} else {Some(wire.as_slice())}).execute(&mut ***tx).await?;
+    audit::decode_common_envelope_within(&wire, atelier_audit::ENVELOPE_BYTES_MAX).map_err(|_| DurabilityError::InvalidStoredState)?;
+    Some(wire)
+    };
+    sqlx::query("INSERT INTO game_atelier_item_records(transaction_id,event_id,character_id,world_id,occurrence,cause,parent_item_instance_id,inputs,outputs,occurred_at,envelope_sha256,stash_input,equipment_before) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7::uuid,$8,$9,$10,sha256($11),$12,$13)")
+        .bind(transaction).bind(event).bind(character).bind(world.as_bytes().as_slice()).bind(request.occurrence.as_slice()).bind(cause.as_str()).bind(&parent).bind(json!(inputs)).bind(json!(outputs)).bind(now).bind(wire.as_deref()).bind(stash.as_ref()).bind(equipment.as_ref()).execute(&mut ***tx).await?;
     for input in &inputs {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-($1->>'count')::bigint,lifecycle=CASE WHEN quantity=($1->>'count')::bigint THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=($1->>'item')::uuid").bind(input).bind(transaction).execute(&mut ***tx).await?;
         sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=($1->>'item')::uuid AND ($1->'before'->>'quantity')::bigint=($1->>'count')::bigint").bind(input).execute(&mut ***tx).await?;
+        sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=($1->>'item')::uuid AND ($1->'before'->>'quantity')::bigint=($1->>'count')::bigint").bind(input).execute(&mut ***tx).await?;
+        sqlx::query("DELETE FROM game_character_equipment_slots WHERE item_instance_id=($1->>'item')::uuid AND ($1->'before'->>'quantity')::bigint=($1->>'count')::bigint").bind(input).execute(&mut ***tx).await?;
     }
+    if let Some(before) = &equipment {
+        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=$2::uuid WHERE character_id=encode($1,'hex')::uuid AND revision=($3->>'revision')::numeric")
+            .bind(character).bind(transaction).bind(before).execute(&mut ***tx).await?;
+    }
+    if let Some(stash) = &stash { materials::apply_stash(tx, fence, transaction, stash).await?; }
     for output in &outputs {
         if output.get("before").is_some() {
             sqlx::query("UPDATE game_item_instances SET quantity=quantity+($1->>'count')::bigint,last_transaction_id=$2::uuid WHERE item_instance_id=($1->>'item')::uuid").bind(output).bind(transaction).execute(&mut ***tx).await?;
             continue;
         }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)").bind(output).bind(world.as_bytes().as_slice()).bind(transaction).execute(&mut ***tx).await?;
-        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::uuid,($1->>'ordinal')::numeric,$5::uuid)").bind(output).bind(world.as_bytes().as_slice()).bind(character).bind(&parent).bind(transaction).execute(&mut ***tx).await?;
+        if output["location"] == "main" {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,($1->>'parent')::uuid,($1->>'ordinal')::numeric,$4::uuid)").bind(output).bind(world.as_bytes().as_slice()).bind(character).bind(transaction).execute(&mut ***tx).await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($1->>'parent')::uuid,($1->>'ordinal')::numeric,$3::uuid)").bind(output).bind(world.as_bytes().as_slice()).bind(transaction).execute(&mut ***tx).await?;
+        }
     }
     if !identity.paid {
         let anchor = inputs

@@ -1,0 +1,28 @@
+{
+  "id": "ATELIER-RL-AUDIT-BYTES",
+  "owner_contract": "protocol-oteryn/v1/atelier-v1.md",
+  "resource": "Atelier durable-audit envelope bytes",
+  "unit": "bytes per event envelope",
+  "hard_maximum": 262144,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 262144
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The three Atelier fee causes and standalone dismantle use this existing global envelope ceiling; payloads remain bounded at the existing global 196608 bytes. Actual encoded size is checked before publication; no claim that every maximum-length definition fits. Other fees retain their measured 25712-byte envelope and 25398-byte payload ceilings.",
+  "client_visible": false,
+  "boundary_tests": [
+    "262144 envelope bytes is the hard ceiling",
+    "262145 bytes rejected before decode",
+    "196609 payload bytes rejected before decode",
+    "non-Atelier fees keep their original byte gates"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit/atelier_cause.rs",
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/outputs.rs",
+    "apps/game-server/migrations/0747_character_atelier_audit_bounds.sql"
+  ],
+  "notes": "P07 Gem Atelier: Crystal 201189f player.cpp:5304-5356,5821-5844, player_wheel.cpp:1514-1568 and game.cpp:2862-2969. Existing native carried-tree, depth, definition and ledger authority limits remain in force. Dismantle may split at most ten fragments across ordinary carried stacks/containers under the same bounds."
+}
