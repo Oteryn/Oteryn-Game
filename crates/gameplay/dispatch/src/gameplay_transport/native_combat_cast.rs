@@ -2888,10 +2888,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // retained original batch supplies event time; a retry never renews it.
             attack.record_committed_shared_experience_batch(&runtime,content,
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
-            if let Some(at) = attempt.prepared.batch().now_us
-                && batch.applied && batch.effects.iter().any(|effect| effect.health.is_some_and(|h| h.applied && h.health_after < h.health_before)
-                    && runtime.companion_snapshot_including_dead(effect.target).is_ok_and(|snapshot| snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar)) {
-                    states.hunting_activity(&runtime, actor, session, at.get());
+            if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
+                for effect in &batch.effects {
+                    if effect.health.is_some_and(|h| h.applied && h.health_after < h.health_before)
+                        && let Ok(snapshot) = runtime.companion_snapshot_including_dead(effect.target)
+                        && snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar {
+                        states.prey_activity(&runtime, actor, session, super::super::prey::PreyActivity {
+                            creature: &snapshot.state.policy.definition_key,
+                            kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::DealtDamage,
+                            now: at.get(),
+                        });
+                    }
+                }
             }
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
             owner.record_spell_kills_locked(&attack,&states,&mut runtime,std::iter::once(&batch));

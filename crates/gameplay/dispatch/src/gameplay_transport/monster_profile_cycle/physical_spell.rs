@@ -445,23 +445,37 @@ pub(super) async fn execute(
             &mut reader,
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
         );
+        let activity_time =
+            spells.retained_activity_time(proposal.issuer, proposal.list, proposal.entry_index);
         states.monster_spells = spells;
-        if let Ok(outcome) = result {
+        if let (Ok(outcome), Some(activity_time)) = (result, activity_time) {
             for (target, hit) in outcome.targets {
                 if let Ok(hit) = hit
-                    && let Some(damage) = hit.damage.filter(|damage| damage.applied > 0)
                     && let Some((_, session)) =
                         reader.players.iter().find(|(actor, _)| *actor == target)
                 {
-                    attack.kills().boss_damage_received(
-                        runtime,
-                        proposal.issuer,
-                        target,
-                        *session,
-                        u64::from(damage.applied),
-                        damage.vitals_revision,
-                    );
-                    attack.record_hit_taken(runtime, target, *session, semantic_now);
+                    if let Ok(snapshot) = runtime.companion_snapshot(proposal.issuer) {
+                        states.prey_activity(runtime, target, *session, super::super::prey::PreyActivity {
+                            creature: &snapshot.state.policy.definition_key,
+                            kind: if hit.damage.is_some_and(|damage| damage.applied > 0) {
+                                oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage
+                            } else {
+                                oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::Attacked
+                            },
+                            now: activity_time.get(),
+                        });
+                    }
+                    if let Some(damage) = hit.damage.filter(|damage| damage.applied > 0) {
+                        attack.kills().boss_damage_received(
+                            runtime,
+                            proposal.issuer,
+                            target,
+                            *session,
+                            u64::from(damage.applied),
+                            damage.vitals_revision,
+                        );
+                        attack.record_hit_taken(runtime, target, *session, semantic_now);
+                    }
                 }
             }
         }

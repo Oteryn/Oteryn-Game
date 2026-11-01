@@ -374,7 +374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                 continue;
             };
-            match dispatch {
+            let received_damage = match dispatch {
                 Dispatch::Bite(Ok(applied)) => {
                     if applied.damage.applied > 0 {
                         attack.kills().boss_damage_received(
@@ -385,12 +385,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             u64::from(applied.damage.applied),
                             applied.vitals_revision,
                         );
-                        states.hunting_activity(&runtime, player, session, now.get());
                     }
+                    applied.damage.applied > 0
                 }
-                Dispatch::ZeroDamage => {}
+                Dispatch::ZeroDamage => false,
                 Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
-            }
+            };
+            states.prey_activity(&runtime, player, session, super::prey::PreyActivity {
+                creature: race_key,
+                kind: if received_damage {
+                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage
+                } else {
+                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::Attacked
+                },
+                now: now.get(),
+            });
             attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
