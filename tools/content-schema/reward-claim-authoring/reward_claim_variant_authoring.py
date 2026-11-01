@@ -1,9 +1,14 @@
-"""Canonical variant DATA authoring under D277; native execution stays blocked."""
+"""Canonical D277 source facts plus independently checked native projections.
+
+Historical variant dispositions remain intact. Only a complete, pinned
+`native_contents` projection is admitted by the existing W15b claim owner.
+"""
 import copy
 import hashlib
 import json
 from pathlib import Path
 
+import container_native
 import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
@@ -37,9 +42,37 @@ def canonical_schema(root):
                     'achievement_grant': {'$ref': 'oteryn:schema/reward-claim-source-migration-packet/v1#/properties/records/items/properties/achievement_grants/items/properties/grant_request'}}}},
         'data_holds': {'type': 'array', 'items': {'type': 'object'}},
         'source_variant': {'$ref': 'oteryn:schema/reward-claim-source-migration-packet/v1#/properties/records/items'}}
+    props['native_contents'] = {
+        'type': 'object', 'additionalProperties': False,
+        'required': ['schema', 'revision', 'source_sha256', 'placements'],
+        'properties': {
+            'schema': {'const': 'OTERYN_NATIVE_CONTAINER_REWARD/v1'},
+            'revision': {'const': container_native.REVISION},
+            'source_sha256': {'const': container_native.SOURCE_SHA256},
+            'placements': {'type': 'array', 'minItems': 1, 'items': {
+                'type': 'object', 'additionalProperties': False,
+                'required': ['unique_id', 'line', 'root', 'capacity', 'contents', 'completion'],
+                'properties': {
+                    'unique_id': {'type': 'integer', 'minimum': 1, 'maximum': 65535},
+                    'line': {'type': 'integer', 'minimum': 1},
+                    'root': {'$ref': '#/$defs/ref'},
+                    'capacity': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 65535},
+                    'achievement': {'$ref': '#/$defs/ref'},
+                    'root_text': {'type': 'string', 'minLength': 1, 'maxLength': 4000},
+                    'completion': {'type': 'object', 'additionalProperties': False,
+                        'required': ['kind', 'key'], 'properties': {
+                            'kind': {'enum': ['storage', 'quest_kv']}, 'key': {'type': 'string', 'minLength': 1}}},
+                    'contents': {'type': 'array', 'minItems': 0, 'maxItems': 20, 'items': {
+                        'type': 'object', 'additionalProperties': False, 'required': ['item', 'count'],
+                        'properties': {'item': {'$ref': '#/$defs/ref'},
+                            'count': {'type': 'integer', 'minimum': 1, 'maximum': 100},
+                            'key_number': {'type': 'integer', 'minimum': 1, 'maximum': 65535},
+                            'text': {'type': 'string', 'minLength': 1, 'maxLength': 4000}}}}
+                }}}
+        }}
     return {'$schema': vocabulary['$schema'], '$id': 'oteryn:schema/canonical-reward-claim-variant/v1',
         '$defs': defs, 'type': 'object', 'additionalProperties': False,
-        'required': sorted(set(props) - {'quest'}), 'properties': props}
+        'required': sorted(set(props) - {'quest', 'native_contents'}), 'properties': props}
 
 
 
@@ -47,7 +80,8 @@ def serialized_item_stacks(reward, items, stack_problem):
     """Serialize authored totals into known admitted stacks; never change random odds.
 
     Original raw arguments and donor execution remain in source_variant. This
-    DATA representation stays blocked at the existing native variant boundary.
+    DATA representation alone does not admit a native reward. The separately
+    proved native_contents projection controls container execution.
     """
     serialized = []
     for quantity in reward.get('items', []):
@@ -170,6 +204,9 @@ def derive_definitions(packet, items, stack_problem):
             'source_variant': copy.deepcopy(row)}
         if source.get('quest'):
             definition['quest'] = copy.deepcopy(source['quest'])
+        native_contents = container_native.derive(definition, items, stack_problem)
+        if native_contents is not None:
+            definition['native_contents'] = native_contents
         key = definition['identity']['key']
         if key in identities:
             raise ValueError('canonical variant identity collision')
@@ -212,7 +249,8 @@ def native_lowering_errors(records):
     """A compiler can use this boundary before attempting the plain native model."""
     return [{'claim': r['definition']['identity']['key'], 'code': 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED',
              'pending': r['definition']['source_variant']['native_lowering']['pending_implementation']}
-            for r in records if r['definition'].get('definition_profile') == PROFILE]
+            for r in records if r['definition'].get('definition_profile') == PROFILE
+            and 'native_contents' not in r['definition']]
 
 
 def extend_outputs(root, outputs, records, compact, content_dir):
@@ -236,4 +274,7 @@ def extend_outputs(root, outputs, records, compact, content_dir):
     index['readiness'].update({status: sum(r['definition']['readiness'] == status for r in records)
                                for status in ('waiting_implementation', 'waiting_data')})
     index['native_admission'] = {'plain': 'EXISTING_ADMISSION', 'variants': 'WAITING_IMPLEMENTATION'}
+    # Source DATA readiness remains historical; this separate exact projection
+    # now reaches W15b's real, atomic container USE writer.
+    index['native_container_records'] = sum('native_contents' in r['definition'] for r in records)
     outputs[index_path] = compact(index)

@@ -93,10 +93,21 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             "script_only" => QuestLogKind::ScriptOnly,
             _ => return Err("unknown journal quest kind".into()),
         };
-        let start = quest
-            .start
-            .as_ref()
-            .and_then(|start| track(lowered, &start.progress).map(|key| (key, start.at_least)));
+        let start = if key == super::super::grizzly_adams::QUEST {
+            // The generic source export left this quest's start unbound. Crystal
+            // grizzly_adams.lua:412-416 explicitly opens QuestLogEntry at zero on join.
+            Some((
+                super::super::grizzly_adams::storage_track(
+                    super::super::grizzly_adams::QUEST_LOG_STORAGE,
+                ),
+                0,
+            ))
+        } else {
+            quest
+                .start
+                .as_ref()
+                .and_then(|start| track(lowered, &start.progress).map(|key| (key, start.at_least)))
+        };
         if lowered.catalogue().definition_hash(&key).is_none()
             || (quest.start.is_some() && start.is_none())
         {
@@ -109,6 +120,17 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
         }
         let mut missions = Vec::new();
         for mission in quest.missions {
+            if key == super::super::grizzly_adams::QUEST
+                && let Some(native) = super::super::grizzly_adams::journal(
+                    &mission.name,
+                    &mission.progress,
+                    mission.start_value,
+                    mission.end_value,
+                )
+            {
+                missions.push(native);
+                continue;
+            }
             let binding = track(lowered, &mission.progress);
             let journal = mission.journal.lower(lowered, &texts)?;
             let (Some(track), Some(journal)) = (binding, journal) else {

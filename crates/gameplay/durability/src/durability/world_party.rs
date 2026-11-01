@@ -336,6 +336,55 @@ async fn observe_world_party(
         observed_database_micros: observed,
     })
 }
+
+/// A quest kill already holds its independently current recipient gameplay/root
+/// fence. The captured death roster remains fixed; a changed party refuses that
+/// occurrence (PR2770 ANSWER Q8=B), never chooses new recipients at settlement.
+pub(super) async fn frozen_kill_membership(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &super::character_progression::CurrentCharacterGameplayFence,
+    expected: &PartySnapshot,
+) -> Result<bool> {
+    let world = *fence.runtime_scope.world_id().as_bytes();
+    let recipient = *fence.character_id.as_bytes();
+    if expected.world != world || !expected.is_well_formed() {
+        return Ok(false);
+    }
+    // Native party commands hold their acting root before this World lock and
+    // may then lock an invitation target. Do not wait with the recipient root
+    // held: a busy World owner is a retry, never an immutable quest refusal.
+    let acquired: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(45,hashtext($1))")
+        .bind(
+            world
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+        )
+        .fetch_one(&mut **tx)
+        .await?;
+    if !acquired {
+        return Err(SpellItemError::Durability(
+            super::DurabilityError::Unavailable,
+        ));
+    }
+    // The existing batch reader observes a single statement snapshot under the
+    // World owner, without taking an additional source Character row lock.
+    let current = observe_world_party_batch(tx, world, vec![expected.character])
+        .await?
+        .pop()
+        .ok_or(reject("frozen party source unavailable"))?;
+    Ok(current.party_id == expected.party_id
+        && current.revision == expected.revision
+        && current.leader == expected.leader
+        && current.shared_xp_enabled == expected.shared_xp_enabled
+        // Presence can change without advancing the membership revision (for
+        // example, a Channel move). The death already froze eligible recipients;
+        // only membership identity and invitation order belong to this gate.
+        && current.members.iter().map(|member| (member.character, member.invitation_order))
+            .eq(expected.members.iter().map(|member| (member.character, member.invitation_order)))
+        && if expected.party_id.is_none() { recipient == expected.character }
+            else { expected.members.iter().any(|member| member.character == recipient) })
+}
 #[derive(Debug)]
 pub struct PreparedWorldPartyReceipt {
     pub receipt_id: [u8; 16],

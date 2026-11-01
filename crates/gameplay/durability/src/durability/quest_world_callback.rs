@@ -47,6 +47,45 @@ pub(super) async fn consume(
     else {
         return Ok(false);
     };
+    if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if let Some(minimum) = callback.minimum_level {
+        let level: Option<i64> = sqlx::query_scalar(
+            "SELECT level FROM game_character_progression_state \
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        if level.is_none_or(|level| level < i64::from(minimum)) {
+            return Ok(false);
+        }
+    }
+    if callback.offerings.is_empty() && callback.item_on_target.is_none() {
+        return Ok(true);
+    }
+    consume_inputs(
+        tx, permit, fence, request, callback, context, command, world_id, channel_id,
+    )
+    .await
+}
+
+/// Shared current map/content/reset proof for source-qualified quest world actions.
+pub(super) async fn context_is_current(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    context: &QuestWorldContext,
+) -> Result<bool, DurabilityError> {
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
+    permit.check_channel(world_id, channel_id)?;
     let epoch: String = sqlx::query_scalar(
         "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active \
          WHERE world_id=encode($1,'hex')::uuid),0)::text",
@@ -69,25 +108,21 @@ pub(super) async fn consume(
     .bind(&context.placement_context)
     .fetch_one(&mut **tx)
     .await?;
-    if !pinned {
-        return Ok(false);
-    }
-    if let Some(minimum) = callback.minimum_level {
-        let level: Option<i64> = sqlx::query_scalar(
-            "SELECT level FROM game_character_progression_state \
-             WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(fence.character_id.as_bytes().as_slice())
-        .fetch_optional(&mut **tx)
-        .await?;
-        if level.is_none_or(|level| level < i64::from(minimum)) {
-            return Ok(false);
-        }
-    }
-    if callback.offerings.is_empty() && callback.item_on_target.is_none() {
-        return Ok(true);
-    }
-    permit.check_channel(world_id, channel_id)?;
+    Ok(pinned)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn consume_inputs(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    callback: &Callback,
+    context: &QuestWorldContext,
+    command: crate::foundation::CommandRef,
+    world_id: crate::foundation::WorldId,
+    channel_id: crate::foundation::ChannelId,
+) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
     if let Some(required) = &callback.item_on_target {

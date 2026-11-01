@@ -886,6 +886,103 @@
       ],
       "quest": "canary:quest/bear_room_quest"
     },
+    "oteryn:reward-claim.kv.behemothquest1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3028",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 4,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3029",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3007",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3052",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3055",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 33294,
+              "y": 31658,
+              "z": 13
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6075
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6075
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:851",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6075
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1150",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6075
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/behemoth_quest"
+    },
     "oteryn:reward-claim.kv.behemothquest2": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -1286,7 +1383,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3115",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3124",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6336
@@ -1756,8 +1853,9 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3106",
-              "reward_matches_current_source": true,
+              "accepted_override": "PR2770 Q6/A: retain Item9238 at32994,32405,12 over donor9237 at32629,32446,10",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3115",
+              "reward_matches_current_source": false,
               "server": "crystalserver",
               "unique_id": 6335
             }
@@ -1825,6 +1923,95 @@
         }
       ],
       "quest": "canary:quest/dark_armor_quest"
+    },
+    "oteryn:reward-claim.kv.deadarcher": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3350",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3448",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i268",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i266",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4240,
+            "position": {
+              "x": 32514,
+              "y": 32303,
+              "z": 10
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6169
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6169
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1620",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6169
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1905",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6169
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dead_archer_quest"
     },
     "oteryn:reward-claim.kv.deep_crystal": {
       "current_inventory_status": "supported_unqualified",
@@ -2656,6 +2843,152 @@
       ],
       "quest": "canary:quest/doublet_quest"
     },
+    "oteryn:reward-claim.kv.draconia2": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3081",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3051",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32804,
+              "y": 31582,
+              "z": 2
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6024
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6024
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:458",
+              "reward_matches_current_source": false,
+              "server": "canary",
+              "unique_id": 6024
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:757",
+              "reward_matches_current_source": false,
+              "server": "crystalserver",
+              "unique_id": 6024
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/draconia_quest"
+    },
+    "oteryn:reward-claim.kv.dragoncorpse": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3374",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3430",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4025,
+            "position": {
+              "x": 32179,
+              "y": 32224,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6161
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6161
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1556",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6161
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1841",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6161
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dragon_corpse_quest"
+    },
     "oteryn:reward-claim.kv.edrongoblin2": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -2896,6 +3229,87 @@
       ],
       "quest": "canary:quest/fire_axe_quest"
     },
+    "oteryn:reward-claim.kv.geomancer": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3029",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3028",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3097",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 32456,
+              "y": 32008,
+              "z": 13
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6134
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6134
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1333",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6134
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1618",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6134
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/geomancer_quest"
+    },
     "oteryn:reward-claim.kv.ghostsilver_lantern_quest": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -3016,6 +3430,87 @@
       ],
       "quest": "canary:quest/ghoul_room_quest"
     },
+    "oteryn:reward-claim.kv.goblintemple": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3551",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i1781",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 50,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 31973,
+              "y": 32209,
+              "z": 12
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6118
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6118
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1198",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6118
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1490",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6118
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/goblin_temple_quest"
+    },
     "oteryn:reward-claim.kv.golem_blueprint": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -3106,7 +3601,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3133",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3142",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6338
@@ -3156,7 +3651,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3141",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3150",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6339
@@ -3585,6 +4080,111 @@
         }
       ],
       "quest": "canary:quest/iron_hammer_quest"
+    },
+    "oteryn:reward-claim.kv.ironhelmet": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2854",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3123",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3155",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3361",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3353",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3285",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3506",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4240,
+            "position": {
+              "x": 32769,
+              "y": 32225,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6168
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6168
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1610",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6168
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1895",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6168
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/iron_helmet_quest"
     },
     "oteryn:reward-claim.kv.ironore": {
       "current_inventory_status": "supported_unqualified",
@@ -4126,6 +4726,95 @@
       ],
       "quest": "canary:quest/longsword_quest"
     },
+    "oteryn:reward-claim.kv.longsword3": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2989",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 76,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3463",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32651,
+              "y": 31969,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6148
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6148
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1442",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6148
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1727",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6148
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/longsword_quest"
+    },
     "oteryn:reward-claim.kv.madmageroom1": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -4300,6 +4989,79 @@
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6120
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/minotaur_hell_quest"
+    },
+    "oteryn:reward-claim.kv.minohell2": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3447",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 4,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3448",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2473,
+            "position": {
+              "x": 32127,
+              "y": 32065,
+              "z": 12
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6121
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6121
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1233",
+              "reward_matches_current_source": false,
+              "server": "canary",
+              "unique_id": 6121
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1516",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6121
             }
           ]
         }
@@ -4956,6 +5718,87 @@
       ],
       "quest": "canary:quest/orc_fortress_quest"
     },
+    "oteryn:reward-claim.kv.orcshaman": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3046",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3092",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33089,
+              "y": 32030,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6150
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6150
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1460",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6150
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1745",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6150
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/orc_shaman_quest"
+    },
     "oteryn:reward-claim.kv.painting_of_agirl_quest": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -5015,6 +5858,87 @@
         }
       ],
       "quest": "canary:quest/forgotten_knowledge_quest"
+    },
+    "oteryn:reward-claim.kv.panpipe": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3033",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3050",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2953",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32644,
+              "y": 32131,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6065
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6065
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:762",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6065
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1061",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6065
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/panpipe_quest"
     },
     "oteryn:reward-claim.kv.petrified_scream_quest": {
       "current_inventory_status": "supported_unqualified",
@@ -5135,6 +6059,152 @@
         }
       ],
       "quest": "canary:quest/plate_armor_quest"
+    },
+    "oteryn:reward-claim.kv.poisondaggers": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2854",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 30,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3448",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3299",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2473,
+            "position": {
+              "x": 33155,
+              "y": 31880,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6068
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6068
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:790",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6068
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1089",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6068
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/poison_daggers_quest"
+    },
+    "oteryn:reward-claim.kv.powerbolt1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3450",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 12,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3449",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4240,
+            "position": {
+              "x": 32816,
+              "y": 32279,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6170
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6170
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1630",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6170
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1915",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6170
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/power_bolts_quest"
     },
     "oteryn:reward-claim.kv.powerring1": {
       "current_inventory_status": "supported_unqualified",
@@ -5556,6 +6626,71 @@
       ],
       "quest": "unlinked"
     },
+    "oteryn:reward-claim.kv.scalearmor": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3377",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32357,
+              "y": 32130,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6153
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6153
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1485",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6153
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1770",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6153
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/scale_armor_quest"
+    },
     "oteryn:reward-claim.kv.shadow_orb": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -5605,6 +6740,224 @@
         }
       ],
       "quest": "canary:quest/shadows_of_yalahar_quest"
+    },
+    "oteryn:reward-claim.kv.shamantreasure": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4024,
+            "position": {
+              "x": 33127,
+              "y": 31885,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6069
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6069
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:800",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6069
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1099",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6069
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/shaman_treasure_quest"
+    },
+    "oteryn:reward-claim.kv.shortswordbook": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2821",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2821",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 115,
+                "placeholders": [],
+                "sha256": "bdeaf6e287079dc867ef991a0d8b2afefae3ffaac3e5c12f189b943581f80263"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32171,
+              "y": 32197,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6013
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6013
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:377",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6013
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:676",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6013
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/short_sword_quest"
+    },
+    "oteryn:reward-claim.kv.silverbrooch": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3017",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3030",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3028",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2476,
+            "position": {
+              "x": 32775,
+              "y": 32006,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6155
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6155
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1503",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6155
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1788",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6155
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/silver_brooch_quest"
     },
     "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": {
       "current_inventory_status": "supported_unqualified",
@@ -6016,6 +7369,78 @@
       ],
       "quest": "canary:quest/steel_helmet_quest"
     },
+    "oteryn:reward-claim.kv.steelhelmet4": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2815",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2815",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 70,
+                "placeholders": [],
+                "sha256": "3d95b7c96da6a14a36118fbbd5a8397239e7e3cc9931c5f60f65d136bd72ff27"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32467,
+              "y": 31962,
+              "z": 4
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6179
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6179
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1700",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6179
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1985",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6179
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/steel_helmet_quest"
+    },
     "oteryn:reward-claim.kv.throwingstar": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -6195,6 +7620,87 @@
         }
       ],
       "quest": "canary:quest/time_ring_quest"
+    },
+    "oteryn:reward-claim.kv.vampireshield1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3058",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3027",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3078",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33188,
+              "y": 31682,
+              "z": 14
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6071
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6071
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:820",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6071
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1119",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6071
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/vampire_shield_quest"
     },
     "oteryn:reward-claim.kv.vampireshield2": {
       "current_inventory_status": "supported_unqualified",
@@ -6376,6 +7882,87 @@
       ],
       "quest": "canary:quest/wedding_ring_quest"
     },
+    "oteryn:reward-claim.kv.witch_house_quest": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3027",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3008",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32867,
+              "y": 31909,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6188
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6188
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1772",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6188
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2057",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6188
+            }
+          ]
+        }
+      ],
+      "quest": "unlinked"
+    },
     "oteryn:reward-claim.kv.worm_queen_tooth": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -6416,7 +8003,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3124",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3133",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6337
@@ -7524,6 +9111,104 @@
       ],
       "quest": "canary:quest/panpipe_quest"
     },
+    "oteryn:reward-claim.quest.key.id4502": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2970",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 23,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 4,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3298",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3384",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "key_binding": "canary:door-key/4502"
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32201,
+              "y": 31571,
+              "z": 10
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 5008
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 5008
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:153",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 5008
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:435",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 5008
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/alawar_s_vault_quest"
+    },
     "oteryn:reward-claim.quest.key.id4601": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -7753,6 +9438,152 @@
         }
       ],
       "quest": "canary:quest/black_knight_quest"
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21203",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21333",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2478,
+            "position": {
+              "x": 33468,
+              "y": 32083,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6304
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6303
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2591",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6304
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2861",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6303
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dark_trails_quest"
+    },
+    "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21203",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i21334",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2478,
+            "position": {
+              "x": 33487,
+              "y": 32085,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6305
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6304
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2599",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6305
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2869",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6304
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dark_trails_quest"
     },
     "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook": {
       "current_inventory_status": "supported_unqualified",
@@ -9414,7 +11245,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3481",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3497",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 14092
@@ -9423,6 +11254,87 @@
         }
       ],
       "quest": "crystalserver:quest/targuna_quest"
+    },
+    "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 98,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 77,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3026",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33199,
+              "y": 31923,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6066
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6066
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:771",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6066
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1070",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6066
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/berserker_treasure_quest"
     },
     "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": {
       "current_inventory_status": "supported_unqualified",
@@ -9603,6 +11515,266 @@
         }
       ],
       "quest": "canary:quest/demon_helmet_quest"
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2854",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i268",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i266",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 30,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3449",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 60,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3448",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33072,
+              "y": 32169,
+              "z": 2
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6073
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6073
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:832",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6073
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1131",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6073
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dragon_tower_quest"
+    },
+    "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2854",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3350",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3029",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33078,
+              "y": 32169,
+              "z": 2
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6074
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6074
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:841",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6074
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1140",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6074
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dragon_tower_quest"
+    },
+    "oteryn:reward-claim.quest.u7_2.parchment_room.bag": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2972",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3114",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3034",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3049",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3115",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "key_binding": "canary:door-key/6010"
+          },
+          "selector": {
+            "appearance_tibia_id": 2474,
+            "position": {
+              "x": 33063,
+              "y": 31624,
+              "z": 15
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6076
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6076
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:862",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6076
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1161",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6076
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/parchment_room_quest"
     },
     "oteryn:reward-claim.quest.u7_2.the_queen_of_the_banshees.reward.boots_of_haste": {
       "current_inventory_status": "supported_unqualified",
@@ -10384,6 +12556,78 @@
       ],
       "quest": "canary:quest/the_explorer_society_quest"
     },
+    "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2821",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2821",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 430,
+                "placeholders": [],
+                "sha256": "53dec5b27efa9bdef83a186a77b25230554dbade9ae2ce10cf1858d6a328bff1"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2523,
+            "position": {
+              "x": 32786,
+              "y": 32254,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6187
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6187
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1764",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6187
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2049",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6187
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_explorer_society_quest"
+    },
     "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -10494,8 +12738,9 @@
               "unique_id": 6078
             },
             {
+              "accepted_override": "PR2770 Q5/A: retain accepted Item12510 over donor3208",
               "citation": "crystal:data-global/startup/tables/chest.lua:1179",
-              "reward_matches_current_source": true,
+              "reward_matches_current_source": false,
               "server": "crystalserver",
               "unique_id": 6078
             }
@@ -10558,6 +12803,152 @@
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6077
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_explorer_society_quest"
+    },
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3026",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3207",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 32845,
+              "y": 31917,
+              "z": 6
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6083
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6083
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:917",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6083
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1216",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6083
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_explorer_society_quest"
+    },
+    "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3012",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3097",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 32847,
+              "y": 31917,
+              "z": 6
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6084
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6084
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:926",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6084
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1225",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6084
             }
           ]
         }
@@ -10984,6 +13375,78 @@
       ],
       "quest": "canary:quest/the_shattered_isles_quest"
     },
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2821",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2821",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 41,
+                "placeholders": [],
+                "sha256": "50918d1f490444e7ecc11a36c2a48b6e1c6ee9229931abb59c69b1042df50b9f"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32850,
+              "y": 32285,
+              "z": 14
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6196
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6196
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1839",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6196
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2124",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6196
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
     "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -11043,6 +13506,384 @@
         }
       ],
       "quest": "canary:quest/dreamer_s_challenge_quest"
+    },
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2836",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2836",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 155,
+                "placeholders": [],
+                "sha256": "cd5d63f500cf56283e976d96162ed57678dd8544fd2a174d32744747fe607e11"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32828,
+              "y": 32340,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6202
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6202
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1886",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6202
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2171",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6202
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2816",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2816",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 249,
+                "placeholders": [],
+                "sha256": "d066a264757f85fdf15d081a61e5554426884420ac6e67dcb8c4ddc82821c70d"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 5972,
+            "position": {
+              "x": 32854,
+              "y": 32325,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6203
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6203
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1893",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6203
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2178",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6203
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i5926",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6561",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6299",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3052",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5021",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3026",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 11,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3035",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5944",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3160",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3155",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i238",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 5972,
+            "position": {
+              "x": 32832,
+              "y": 32277,
+              "z": 10
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6204
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6204
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1900",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6204
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2185",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6204
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_pits_of_inferno_quest"
+    },
+    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3253",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11605",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11607",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11609",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11603",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32826,
+              "y": 32232,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6205
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6205
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1908",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6205
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2193",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6205
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_pits_of_inferno_quest"
     },
     "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight": {
       "current_inventory_status": "supported_unqualified",
@@ -11436,6 +14277,176 @@
       ],
       "quest": "canary:quest/the_pits_of_inferno_quest"
     },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7342",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7364",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7365",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2480,
+            "position": {
+              "x": 32231,
+              "y": 31068,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6221
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6221
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2031",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6221
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2316",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6221
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2856",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2995",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6570",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6574",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6569",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7377",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32231,
+              "y": 31065,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6220
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6220
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2023",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6220
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2308",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6220
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
     "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -11582,6 +14593,193 @@
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6222
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7342",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7365",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3450",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3450",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11605",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11615",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2480,
+            "position": {
+              "x": 32231,
+              "y": 31061,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6226
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6226
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2069",
+              "reward_matches_current_source": false,
+              "server": "canary",
+              "unique_id": 6226
+            },
+            {
+              "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+              "citation": "crystal:data-global/startup/tables/chest.lua:2354",
+              "reward_matches_current_source": false,
+              "server": "crystalserver",
+              "unique_id": 6226
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2856",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6569",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7375",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6574",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7183",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32231,
+              "y": 31058,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6225
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6225
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2061",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6225
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2346",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6225
             }
           ]
         }
@@ -11740,6 +14938,192 @@
       ],
       "quest": "canary:quest/barbarian_arena_quest"
     },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7342",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11603",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11609",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7443",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7440",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6528",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2480,
+            "position": {
+              "x": 32231,
+              "y": 31054,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6231
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6231
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2107",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6231
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2392",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6231
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2856",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6569",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6574",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7372",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5080",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32231,
+              "y": 31051,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6230
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6230
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2099",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6230
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2384",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6230
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/barbarian_arena_quest"
+    },
     "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -11891,6 +15275,678 @@
         }
       ],
       "quest": "canary:quest/barbarian_arena_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.fishing_box": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3035",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7158",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7159",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2473,
+            "position": {
+              "x": 32015,
+              "y": 31409,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6235
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6235
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2137",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6235
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2422",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6235
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/fishing_box_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7400",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3035",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32154,
+              "y": 31116,
+              "z": 9
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6219
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6219
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2014",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6219
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2299",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6219
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/lion_trophy_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7439",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6499",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4024,
+            "position": {
+              "x": 32490,
+              "y": 31192,
+              "z": 10
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6218
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6218
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2006",
+              "reward_matches_current_source": false,
+              "server": "canary",
+              "unique_id": 6218
+            },
+            {
+              "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+              "citation": "crystal:data-global/startup/tables/chest.lua:2291",
+              "reward_matches_current_source": false,
+              "server": "crystalserver",
+              "unique_id": 6218
+            }
+          ]
+        }
+      ],
+      "quest": "crystalserver:quest/berserk_potion_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7343",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7158",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 48,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2523,
+            "position": {
+              "x": 32483,
+              "y": 31110,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6215
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6215
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1982",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6215
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2267",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6215
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/inukaya_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7443",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3035",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2473,
+            "position": {
+              "x": 32146,
+              "y": 31430,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6217
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6217
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1998",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6217
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2283",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6217
+            }
+          ]
+        }
+      ],
+      "quest": "crystalserver:quest/frost_dragon_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.tyrsung": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6525",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 89,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2523,
+            "position": {
+              "x": 32431,
+              "y": 31235,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6216
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6216
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1990",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6216
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2275",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6216
+            }
+          ]
+        }
+      ],
+      "quest": "crystalserver:quest/skeleton_decoration_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2820",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2820",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 255,
+                "placeholders": [],
+                "sha256": "41bc61280d076bacf1f1af4d5566c0fecec27a1ef58224a87c1b1e13050bbaf7"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32027,
+              "y": 31104,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6214
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6214
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1974",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6214
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2259",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6214
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_ice_islands_quest"
+    },
+    "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 20,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3450",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3349",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7443",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7290",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 4024,
+            "position": {
+              "x": 32121,
+              "y": 31106,
+              "z": 12
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6213
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6213
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1966",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6213
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2251",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6213
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_ice_islands_quest"
     },
     "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
       "current_inventory_status": "supported_unqualified",
@@ -12612,6 +16668,78 @@
       ],
       "quest": "canary:quest/secret_service_quest"
     },
+    "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5956",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5956",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 127,
+                "placeholders": [],
+                "sha256": "dd0900f6022f0c8f804fa153ab0c101015fd1d6d5c34b5d39cbc5c510b1c4328"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 32872,
+              "y": 31958,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6250
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6250
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2245",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6250
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2530",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6250
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/secret_service_quest"
+    },
     "oteryn:reward-claim.quest.u8_1.secret_service.magic_spellbook": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -12852,6 +16980,225 @@
       ],
       "quest": "canary:quest/secret_service_quest"
     },
+    "oteryn:reward-claim.quest.u8_1.strong_potions.reward": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2857",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i237",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33163,
+              "y": 31603,
+              "z": 15
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6070
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6070
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:811",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6070
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1110",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6070
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/strong_potions_quest"
+    },
+    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i237",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3059",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2434,
+            "position": {
+              "x": 32588,
+              "y": 31645,
+              "z": 3
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6255
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6255
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2281",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6255
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2566",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6255
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/to_blind_the_enemy_quest"
+    },
+    "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3028",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 100,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2434,
+            "position": {
+              "x": 32588,
+              "y": 31644,
+              "z": 3
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6256
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6256
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2289",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6256
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2574",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6256
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/to_blind_the_enemy_quest"
+    },
     "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -13032,6 +17379,152 @@
       ],
       "quest": "canary:quest/to_outfox_a_fox_quest"
     },
+    "oteryn:reward-claim.quest.u8_1.waterfall_quest": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i5926",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i6096",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3097",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32970,
+              "y": 32646,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6258
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6258
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2306",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6258
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2591",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6258
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/waterfall_quest"
+    },
+    "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3469",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2821",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32661,
+              "y": 31855,
+              "z": 13
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6269
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6269
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2322",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6269
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2607",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6269
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/what_a_foolish_quest"
+    },
     "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -13091,6 +17584,68 @@
         }
       ],
       "quest": "canary:quest/what_a_foolish_quest"
+    },
+    "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.reward_room_text": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2821",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2821",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 2042,
+                "placeholders": [],
+                "sha256": "96ac3309e4bc4f53b6d1d45e86b907e5a7ad05475e823960e666e1916a9b4ec0"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 32316,
+              "y": 32260,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "crystalserver",
+                "unique_id": 6500
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:3167",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6500
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_inquisition_quest"
     },
     "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire": {
       "current_inventory_status": "supported_unqualified",
@@ -13266,6 +17821,78 @@
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6273
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_thieves_guild_quest"
+    },
+    "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i8117",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i8117",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 1431,
+                "placeholders": [],
+                "sha256": "28974209eb9e879c26e4f9c92c6ea10918ebaef9d7dcb4a783c15a2bb69824c2"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2473,
+            "position": {
+              "x": 32367,
+              "y": 31781,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6272
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6272
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2346",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6272
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2630",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6272
             }
           ]
         }
@@ -13543,6 +18170,103 @@
         }
       ],
       "quest": "canary:quest/vampire_hunter_quest"
+    },
+    "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2867",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 13,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3035",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3003",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3457",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i268",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 2,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i239",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 1983,
+            "position": {
+              "x": 32546,
+              "y": 31522,
+              "z": 11
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6283
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6283
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2425",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6283
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2709",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6283
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_hidden_city_of_beregar_quest"
     },
     "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot": {
       "current_inventory_status": "supported_unqualified",
@@ -14384,6 +19108,87 @@
       ],
       "quest": "canary:quest/the_new_frontier_quest"
     },
+    "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2854",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7439",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7440",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i7443",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 33057,
+              "y": 31029,
+              "z": 7
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6097
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6097
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1024",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6097
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:1324",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6097
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/the_new_frontier_quest"
+    },
     "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge1": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -14684,6 +19489,78 @@
       ],
       "quest": "canary:quest/tomes_of_knowledge_quest"
     },
+    "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11699",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "written_text": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11699",
+                "revision": "definition-r1"
+              },
+              "text_ref": {
+                "length": 998,
+                "placeholders": [],
+                "sha256": "ab5fcc7f25cc5e5039b1cdd1cf3dca12fc6e55bcfb9fa43ac0c6d79fc8e06cc4"
+              }
+            }
+          },
+          "selector": {
+            "appearance_tibia_id": 2469,
+            "position": {
+              "x": 33004,
+              "y": 31530,
+              "z": 10
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6296
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6296
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2523",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6296
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2807",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6296
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/an_interest_in_botany_quest"
+    },
     "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest100_platinum_coins": {
       "current_inventory_status": "supported_unqualified",
       "dependency": "QUEST-QUAL-1",
@@ -14738,6 +19615,127 @@
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 6297
+            }
+          ]
+        }
+      ],
+      "quest": "canary:quest/wrath_of_the_emperor_quest"
+    },
+    "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_bag": {
+      "current_inventory_status": "supported_unqualified",
+      "dependency": "QUEST-QUAL-1",
+      "disposition": "blocked",
+      "evidence": {
+        "blocked_on": "QUEST-QUAL-1",
+        "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+        "kind": "blocked",
+        "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+      },
+      "placements": [
+        {
+          "expected_reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i11695",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i10326",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5801",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3041",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3027",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 5,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i9058",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i5882",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 10,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3043",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "selector": {
+            "appearance_tibia_id": 2472,
+            "position": {
+              "x": 33074,
+              "y": 31169,
+              "z": 8
+            },
+            "source_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6298
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6298
+              }
+            ]
+          },
+          "source_witnesses": [
+            {
+              "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2538",
+              "reward_matches_current_source": true,
+              "server": "canary",
+              "unique_id": 6298
+            },
+            {
+              "citation": "crystal:data-global/startup/tables/chest.lua:2822",
+              "reward_matches_current_source": true,
+              "server": "crystalserver",
+              "unique_id": 6298
             }
           ]
         }
@@ -14912,7 +19910,7 @@
           },
           "source_witnesses": [
             {
-              "citation": "crystal:data-global/startup/tables/chest.lua:3158",
+              "citation": "crystal:data-global/startup/tables/chest.lua:3174",
               "reward_matches_current_source": true,
               "server": "crystalserver",
               "unique_id": 7825
@@ -14969,10 +19967,10 @@
       "quest": "canary:quest/wrath_of_the_emperor_quest"
     }
   },
-  "denominator": 239,
+  "denominator": 300,
   "disposition_totals": {
     "blocked": {
-      "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": 239
+      "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": 300
     },
     "scenario": 0,
     "test": 0
@@ -14980,11 +19978,11 @@
   "schema_version": 1,
   "source_revisions": {
     "canary": "47dfd51f",
-    "crystalserver": "ff7ede59"
+    "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8"
   },
   "source_sha256": {
     "canary": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
-    "crystalserver": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+    "crystalserver": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
   },
   "task": "QUEST-QUAL-1"
 }

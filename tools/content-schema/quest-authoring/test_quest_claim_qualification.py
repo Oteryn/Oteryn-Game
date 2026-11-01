@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location(
     "qualification", HERE / "check_quest_claim_qualification.py"
@@ -29,7 +28,9 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        self.assertEqual(sum(counts.values()), 239)
+        # W15b adds50 still-unqualified container records; three new exact
+        # source selectors have named production USE/PostgreSQL cases.
+        self.assertEqual(sum(counts.values()), 300)
 
     def test_missing_row_is_rejected(self):
         del self.ledger["claims"][next(iter(self.ledger["claims"]))]
