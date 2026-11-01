@@ -1306,8 +1306,12 @@ mod tests {
             operation: Some(OneItemOperationV1::FeeBurn(worst_case(FEE_INPUTS_MAX))),
         }
         .encode_to_vec();
-        // A well-formed unknown protobuf field must not change the legacy size-first error.
-        legacy_payload.extend_from_slice(&[0xa0, 0x06, 0]);
+        // Hireling house scope enlarged the registered payload ceiling by 900 bytes. Repeat a
+        // well-formed unknown protobuf field past that new ceiling so this remains a size-first
+        // legacy-category fixture rather than accidentally becoming a valid in-bound payload.
+        while legacy_payload.len() <= FEE_RL07_PAYLOAD_BYTES_MAX {
+            legacy_payload.extend_from_slice(&[0xa0, 0x06, 0]);
+        }
         assert!(legacy_payload.len() > FEE_RL07_PAYLOAD_BYTES_MAX);
         assert_eq!(
             decode_fee_burn_payload(&legacy_payload),

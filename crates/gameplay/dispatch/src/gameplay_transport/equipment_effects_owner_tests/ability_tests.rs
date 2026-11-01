@@ -29,6 +29,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The native importer preserves shared attributes/richer ability facts;
     // every raw speed and the exact unknown-speed set remain checked below.
     ("HIRELING-E12", 909),
+    // Package 2's monster-AI/hireling/primal-hazard derived-content regeneration
+    // (ab265074) was unioned with main's newer item overlay during the port. That intended
+    // union contributes 288 additional raw profiles; their attributes are checked below.
+    ("PKG2-CONTENT-UNION", 288),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I05 skill rings: the inactive and active power 3050/3087, sword 3091/3094, axe 3092/3095
