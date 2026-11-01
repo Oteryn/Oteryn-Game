@@ -13,11 +13,21 @@
 //!
 //! The causes are closed and reserved: `SPEND` for PROF-SHAPE-1b's `ProficiencyCause`, `GAIN`
 //! for FORGE-CREATURE-1's dust on kill. The creature kill owner composes GAIN with its XP settlement. The material-free
-//! D1230 `LIMIT_RAISE` owner below reserves and commits its own closed receipt. `CONVERT` and
-//! the remaining Forge causes still require their separate native admission.
+//! D1230 `LIMIT_RAISE` owner below reserves and commits its own closed receipt. P18 composes
+//! `CONVERT` and Forge `SPEND` with native item custody, the fee owner and the same receipt owner.
 
 #[path = "item_forge_live.rs"]
-mod live;
+pub(crate) mod live;
+
+pub(crate) use live::audit::OneItemForgeV1;
+
+/// Server-resolved operands from the existing session ItemHandle owner. The wire intent
+/// retains handles; these native identities are frozen privately with the occurrence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForgeResolvedItems {
+    pub first: [u8; 16],
+    pub second: [u8; 16],
+}
 
 use super::DurabilityError;
 use super::character_progression::{CurrentCharacterGameplayFence, uuid_text};
@@ -29,6 +39,7 @@ use sqlx::postgres::{PgConnection, PgRow};
 
 pub(super) const KIND_GAIN: &str = "GAIN";
 pub(super) const KIND_SPEND: &str = "SPEND";
+pub(super) const KIND_CONVERT: &str = "CONVERT";
 pub(super) const KIND_LIMIT_RAISE: &str = "LIMIT_RAISE";
 pub(super) const CAUSE_DUST_LIMIT: &str = "forge_dust_limit";
 const CAUSE_CREATURE_KILL: &str = "creature_kill";
@@ -60,6 +71,8 @@ pub struct ForgeDustWriteIds {
 pub enum ForgeDustEntryKind {
     Gain,
     Spend,
+    /// Native Forge dust-to-sliver conversion, composed with its item outputs.
+    Convert,
     /// D1230: one debit and one +20 transition; only the native Forge receipt owner writes it.
     LimitRaise,
 }
@@ -254,7 +267,10 @@ async fn write_entry(
 
     let mut row = lock_balance_row(connection, character).await?;
     if row.is_none() {
-        if write.kind == ForgeDustEntryKind::Spend {
+        if matches!(
+            write.kind,
+            ForgeDustEntryKind::Spend | ForgeDustEntryKind::Convert
+        ) {
             // No row is balance 0: refused before any write.
             return Err(ForgeDustWriteError::InsufficientDust);
         }
@@ -274,7 +290,9 @@ async fn write_entry(
             let gain = before.gain(write.amount).map_err(plan_error)?;
             (gain.after, gain.lost)
         }
-        ForgeDustEntryKind::Spend => (before.spend(write.amount).map_err(plan_error)?.after, 0),
+        ForgeDustEntryKind::Spend | ForgeDustEntryKind::Convert => {
+            (before.spend(write.amount).map_err(plan_error)?.after, 0)
+        }
         // The general source API never admits this closed Forge kind. Its dedicated owner
         // below couples the ledger, exact terminal receipt, history and type-2 audit.
         ForgeDustEntryKind::LimitRaise => return Err(ForgeDustWriteError::InvalidInput),
@@ -391,6 +409,7 @@ fn kind_text(kind: ForgeDustEntryKind) -> &'static str {
     match kind {
         ForgeDustEntryKind::Gain => KIND_GAIN,
         ForgeDustEntryKind::Spend => KIND_SPEND,
+        ForgeDustEntryKind::Convert => KIND_CONVERT,
         ForgeDustEntryKind::LimitRaise => KIND_LIMIT_RAISE,
     }
 }
@@ -419,6 +438,7 @@ pub(super) fn entry_from_row(row: &PgRow) -> std::result::Result<ForgeDustEntry,
     let kind = match row.try_get::<String, _>("kind")?.as_str() {
         KIND_GAIN => ForgeDustEntryKind::Gain,
         KIND_SPEND => ForgeDustEntryKind::Spend,
+        KIND_CONVERT => ForgeDustEntryKind::Convert,
         KIND_LIMIT_RAISE => ForgeDustEntryKind::LimitRaise,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
@@ -767,10 +787,10 @@ impl DurabilityRoot {
                     return Ok(Err(ForgeDustLimitError::ConflictingOccurrence));
                 }
                 if load_dust_limit_receipt(&mut tx, &frozen).await?.is_none() {
-                    let changed = sqlx::query("UPDATE game_forge_dust_limit_reservations SET work_units_used=work_units_used+1 WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND work_units_used<$3")
+                    let charged: bool = sqlx::query_scalar("SELECT game_forge_charge_attempt(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                         .bind(frozen.character_id.as_bytes().as_slice()).bind(frozen.request.occurrence_id.as_slice())
-                        .bind(i16::from(mint_audit::RL08_RETRY_WORK_UNITS_MAX)).execute(&mut *tx).await?;
-                    if changed.rows_affected() != 1 { return Ok(Err(ForgeDustLimitError::CapacityExceeded)); }
+                        .fetch_one(&mut *tx).await?;
+                    if !charged { return Ok(Err(ForgeDustLimitError::CapacityExceeded)); }
                 }
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(Ok(()))

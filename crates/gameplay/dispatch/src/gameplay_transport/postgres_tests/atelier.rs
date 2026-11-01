@@ -51,6 +51,17 @@ async fn send_atelier(
     kind: u32,
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
+    let (status, bytes) = send_atelier_status(owner, admitted, kind, payload).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    Ok(bytes)
+}
+
+async fn send_atelier_status(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
     let command_id = admitted.continuity.next_command_id;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         admitted.continuity.connection_generation,
@@ -95,11 +106,7 @@ async fn send_atelier(
             let result =
                 oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, command_id);
-            assert_eq!(
-                result.status,
-                oteryn_protocol_oteryn::CommandStatus::Accepted
-            );
-            return Ok(result.payload.to_vec());
+            return Ok((result.status, result.payload.to_vec()));
         }
     }
     Err(format!("Atelier command {kind} result missing: {end:?}").into())
@@ -110,7 +117,8 @@ async fn send_atelier(
 fn advance_ex_action(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult {
-    owner.clock_origin = owner.clock_origin
+    owner.clock_origin = owner
+        .clock_origin
         .checked_sub(std::time::Duration::from_millis(490))
         .ok_or("Atelier fixture clock")?;
     Ok(())
@@ -152,22 +160,41 @@ fn scenario() -> TestResult {
         // Capability 148 is offered before Character eligibility. Opening the panel
         // must be a normal refusal, not Unavailable (which closes the connection).
         let mut query_admitted = dependencies.admitted;
-        query_admitted.item_fence = Some(owner.current_quest_fence(session).await
-            .map_err(|_| "query fence")?.ok_or("query fence")?.item_fence());
+        query_admitted.item_fence = Some(
+            owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| "query fence")?
+                .ok_or("query fence")?
+                .item_fence(),
+        );
         query_admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
                 &[oteryn_protocol_oteryn::atelier::CAPABILITY_WHEEL_ALLOCATION_V1],
-            ).ok_or("Wheel query capability")?;
-        let crate::gameplay_transport::atelier::AtelierWireReply::Payload(query) = owner.atelier_wire(
-            query_admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY, &[],
-        ).await else { return Err("ineligible Atelier query must not close play".into()); };
+            )
+            .ok_or("Wheel query capability")?;
+        let crate::gameplay_transport::atelier::AtelierWireReply::Payload(query) = owner
+            .atelier_wire(
+                query_admitted,
+                oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY,
+                &[],
+            )
+            .await
+        else {
+            return Err("ineligible Atelier query must not close play".into());
+        };
         let query = oteryn_protocol_oteryn::atelier::decode_reply(&query).map_err(debug)?;
         assert!(query.refused);
         assert_eq!(query.revision, 0);
         assert!(query.gems.is_empty() && query.grades.is_empty());
-        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_atelier_state")
-            .fetch_one(&h.pool).await?, 0, "query does not own initialization");
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_atelier_state")
+                .fetch_one(&h.pool)
+                .await?,
+            0,
+            "query does not own initialization"
+        );
         fixture::eligible(&h.pool).await?;
         let request = fixture::prepare(&h).await?;
         let fence = owner

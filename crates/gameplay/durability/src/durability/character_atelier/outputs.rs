@@ -1,4 +1,5 @@
-//! Crystal 201189f player.cpp:4932-5047: ordinary carried destinations, breadth first.
+//! Crystal 201189f game.cpp:2782-2805,3454-3500: managed obtain destination first;
+//! player.cpp:4932-5047 supplies the ordinary carried breadth-first fallback.
 //! The Character fence owns the graph; current item rows are locked before planning.
 use super::*;
 use std::collections::BTreeSet;
@@ -13,6 +14,77 @@ struct CarriedItem {
     quantity: u32,
     before: Value,
     plain: bool,
+}
+
+fn append_subtree(index: usize, items: &[CarriedItem], order: &mut Vec<usize>) {
+    if order.contains(&index) {
+        return;
+    }
+    order.push(index);
+    for (child, item) in items.iter().enumerate() {
+        if item.parent.as_ref() == Some(&items[index].id) {
+            append_subtree(child, items, order);
+        }
+    }
+}
+
+fn destination_order(
+    items: &[CarriedItem],
+    settings: &super::super::super::character_quick_loot::DurableQuickLootSettings,
+    category: oteryn_gameplay_items::quick_loot::LootCategory,
+    key: &str,
+) -> Vec<usize> {
+    use oteryn_gameplay_items::quick_loot::Recipient;
+    let mut order = Vec::with_capacity(items.len());
+    // Crystal applies the active list only to managed collection, and an empty
+    // accepted list does not filter. Ordinary insertion still follows a refusal.
+    let allowed = if settings.accept_only {
+        settings.accepted_items.is_empty() || settings.accepted_items.contains(key)
+    } else {
+        !settings.skipped_items.contains(key)
+    };
+    if allowed {
+        let locate = |recipient| match recipient {
+            Recipient::Container(target) => items
+                .iter()
+                .position(|item| uuid_text(&item.id).ok() == Some(target)),
+            Recipient::MainContainer => items.iter().position(|item| item.surface == 0),
+            Recipient::GoldPouch(_) => None,
+        };
+        // Native hotkey obtain routing already shares this Character preference
+        // owner. Resolve every target against the current, locked carried graph;
+        // a stale/foreign preference cannot grant custody of another container.
+        let preferred = settings
+            .category_targets
+            .get(&category)
+            .copied()
+            .and_then(locate)
+            .or_else(|| locate(settings.unassigned_target))
+            .or_else(|| {
+                settings
+                    .fallback_to_main
+                    .then(|| locate(Recipient::MainContainer))
+                    .flatten()
+            });
+        if let Some(index) = preferred {
+            append_subtree(index, items, &mut order);
+        }
+        // Crystal's enabled managed fallback exhausts the main bag's depth-first
+        // subtree before the final ordinary breadth-first insertion attempt.
+        if settings.fallback_to_main
+            && let Some(index) = locate(Recipient::MainContainer)
+        {
+            append_subtree(index, items, &mut order);
+        }
+    }
+    // Do not visit a preferred receiver twice after a partial-stack addition.
+    // The rest retains the donor's ordinary breadth-first carried order.
+    for index in 0..items.len() {
+        if !order.contains(&index) {
+            order.push(index);
+        }
+    }
+    order
 }
 
 pub(super) async fn plan(
@@ -35,9 +107,7 @@ pub(super) async fn plan(
     let Some(weight) = facts.weight else {
         return Ok(None);
     };
-    if super::super::super::item_transfer::stack_maximum(facts.stack).map(|(n, _)| n)
-        != Ok(100)
-    {
+    if super::super::super::item_transfer::stack_maximum(facts.stack).map(|(n, _)| n) != Ok(100) {
         return Ok(None);
     }
     let carried = match carried_weight(
@@ -121,7 +191,10 @@ pub(super) async fn plan(
         items.push(CarriedItem {
             id,
             parent: row.try_get("parent_item_instance_id")?,
-            ordinal: row.try_get::<String, _>("placement_ordinal")?.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
+            ordinal: row
+                .try_get::<String, _>("placement_ordinal")?
+                .parse()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
             surface,
             depth,
             definition: TypedDefinitionRef {
@@ -129,7 +202,8 @@ pub(super) async fn plan(
                 production_key: row.try_get("definition_production_key")?,
                 revision_ref: row.try_get("definition_revision_ref")?,
             },
-            quantity: u32::try_from(row.try_get::<i64, _>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+            quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
             before: row.try_get("before")?,
             plain: row.try_get("plain")?,
         });
@@ -139,9 +213,18 @@ pub(super) async fn plan(
     }
     let mut remaining = count;
     let mut outputs = Vec::new();
+    let settings =
+        super::super::super::character_quick_loot::load(tx, fence.character_id.as_bytes()).await?;
+    let order = destination_order(
+        &items,
+        &settings,
+        resources.content.loot_category(&resources.fragment),
+        key,
+    );
     // Fragments have no native equipment slot. Containers in equipped slots still take
     // their donor inventory order as roots of the ordinary breadth-first destination walk.
-    for container in &items {
+    for index in order {
+        let container = &items[index];
         let Some(facts) = resources.content.loop_facts(&container.definition) else {
             return Ok(None);
         };
@@ -151,13 +234,20 @@ pub(super) async fn plan(
         if resources.content.is_quiver(&container.definition) {
             continue;
         }
-        let children: Vec<_> = items.iter().filter(|item| item.parent.as_ref() == Some(&container.id)).collect();
-        let capacity = usize::try_from(capacity.min(20)).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let children: Vec<_> = items
+            .iter()
+            .filter(|item| item.parent.as_ref() == Some(&container.id))
+            .collect();
+        let capacity =
+            usize::try_from(capacity.min(20)).map_err(|_| DurabilityError::InvalidStoredState)?;
         if children.len() > capacity {
             return Ok(None);
         }
         for receiver in &children {
-            if receiver.definition != resources.fragment || !receiver.plain || !(1..100).contains(&receiver.quantity) {
+            if receiver.definition != resources.fragment
+                || !receiver.plain
+                || !(1..100).contains(&receiver.quantity)
+            {
                 continue;
             }
             let added = remaining.min(100 - receiver.quantity);
@@ -168,8 +258,16 @@ pub(super) async fn plan(
             }
         }
         if children.len() < capacity && container.depth < 8 && tree_items < 500 {
-            let ordinal = children.iter().map(|item| item.ordinal).max().unwrap_or(0).checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
-            let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text").fetch_one(&mut ***tx).await?;
+            let ordinal = children
+                .iter()
+                .map(|item| item.ordinal)
+                .max()
+                .unwrap_or(0)
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+                .fetch_one(&mut ***tx)
+                .await?;
             outputs.push(json!({"item":item,"parent":container.id,"location":if container.surface==0 { "main" } else { "nested" },"ordinal":ordinal.to_string(),"key":key,"revision":resources.fragment.revision_ref,"count":remaining}));
             return Ok(Some(outputs));
         }

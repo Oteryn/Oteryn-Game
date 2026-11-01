@@ -33,7 +33,10 @@ fn canonical_slot(slot: u8) -> Option<(EquipmentSlot, ReferenceEquipmentSlot)> {
 
 /// Crystal201189f player.cpp:12772-12787 sums positive item Mantra on six body slots.
 /// Ammo, hands and the container do not contribute to Ascetic's mantra total.
-fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState) -> Option<u32> {
+pub(in crate::gameplay_transport) fn equipped_mantra(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<u32> {
     use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
     let mut total = 0_i64;
     for item in &equipment.items {

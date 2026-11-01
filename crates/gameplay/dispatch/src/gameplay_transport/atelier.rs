@@ -1,5 +1,10 @@
 //! Native dispatch boundary for Gem Atelier/Fragment Workshop commands.
 
+#[path = "atelier/resources.rs"]
+mod resources;
+#[path = "atelier/workshop.rs"]
+mod workshop;
+
 pub use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierCommit, AtelierRefusal, AtelierState,
 };
@@ -54,6 +59,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             || expected.connection_generation.get() != admitted.continuity.connection_generation
         {
             return AtelierWireReply::Rejected;
+        }
+        if kind == wire::resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY {
+            return self
+                .atelier_resources_wire(admitted, expected, payload)
+                .await;
         }
         let request = match kind {
             wire::COMMAND_TYPE_ATELIER_QUERY => {
@@ -258,6 +268,25 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             // derived vessel flags come from a subsequent live query.
             (Vec::new(), Vec::new())
         };
+        let grades = if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
+            let Some(grades) = workshop::grades_for_query(&state) else {
+                return AtelierWireReply::Unavailable;
+            };
+            grades
+        } else {
+            state
+                .grades
+                .iter()
+                .map(|(&(kind, mod_id), &grade)| wire::GradeView {
+                    kind: match kind {
+                        oteryn_gameplay_progression::atelier::FragmentKind::Basic => 0,
+                        oteryn_gameplay_progression::atelier::FragmentKind::Supreme => 1,
+                    },
+                    mod_id,
+                    grade,
+                })
+                .collect()
+        };
         let gems = state
             .gems
             .values()
@@ -283,18 +312,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             refused,
             revision: state.revision,
             gems,
-            grades: state
-                .grades
-                .iter()
-                .map(|(&(kind, mod_id), &grade)| wire::GradeView {
-                    kind: match kind {
-                        oteryn_gameplay_progression::atelier::FragmentKind::Basic => 0,
-                        oteryn_gameplay_progression::atelier::FragmentKind::Supreme => 1,
-                    },
-                    mod_id,
-                    grade,
-                })
-                .collect(),
+            grades,
             quality_quotes,
             grade_quotes,
         })

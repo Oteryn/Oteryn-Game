@@ -4,7 +4,7 @@
 
 pub(super) mod appearance_change;
 mod authority;
-pub use authority::{DepotObservation, FreshAdmissionAuthority};
+pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;

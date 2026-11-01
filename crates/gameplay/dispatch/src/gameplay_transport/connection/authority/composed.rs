@@ -1,6 +1,6 @@
 //! Production delegation to the existing mechanic owners.
 
-use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::connection::{AchievementNoticeObservation, UseCommand};
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
@@ -884,6 +884,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         account_id: [u8; 16],
     ) -> Option<oteryn_protocol_oteryn::achievement_notices::AchievementWatermark> {
         self.observe_account_achievement_notices(account_id).await
+    }
+
+    async fn observe_achievement_notice_facts(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<AchievementNoticeObservation> {
+        self.observe_current_achievement_facts(admitted).await
     }
 
     async fn account_achievements(

@@ -108,7 +108,7 @@ macro_rules! title_catalogue {
     };
 }
 
-pub const TITLE_COUNT: usize = 43;
+pub const TITLE_COUNT: usize = 84;
 
 title_catalogue! {
     AdeptArmorer = 1, "Adept Armorer", None, true, WeaponMastery,
@@ -197,6 +197,88 @@ title_catalogue! {
         "Reached level 50.";
     TrulyBoss = 43, "Truly Boss", None, true, BossPoints(15_000),
         "Challenging leagues of foes and prevailing against all odds is truly boss.";
+    Beastly = 44, "Beastly", None, true, CharmPoints(2_000),
+        "Reached 2000 charm points. Quite beastly!";
+    ChallengerOfTheIks = 45, "Challenger of the Iks", None, true, TrackedKills(TRACKED_AHAU, 1),
+        "Challenged Ahau, guardian of Iksupan, in traditional Iks warrior attire.";
+    AdmirerOfTheCrown = 46, "Admirer of the Crown", None, true, CompleteOutfit(FullOutfit::RoyalCostume),
+        "Adjust your crown and handle it.";
+    BeaststriderGrade1 = 47, "Beaststrider (Grade 1)", None, true, Mounts(10),
+        "Unlocked 10 or more Mounts.";
+    BeaststriderGrade2 = 48, "Beaststrider (Grade 2)", None, true, Mounts(20),
+        "Unlocked 20 or more Mounts.";
+    BeaststriderGrade3 = 49, "Beaststrider (Grade 3)", None, true, Mounts(30),
+        "Unlocked 30 or more Mounts.";
+    BeaststriderGrade4 = 50, "Beaststrider (Grade 4)", None, true, Mounts(40),
+        "Unlocked 40 or more Mounts.";
+    BeaststriderGrade5 = 51, "Beaststrider (Grade 5)", None, true, Mounts(50),
+        "Unlocked 50 or more Mounts.";
+    BigSpender = 52, "Big Spender", None, true, CompleteOutfit(FullOutfit::Golden),
+        "Unlocked the full Golden Outfit.";
+    RoyalBounaceanAdvisor = 53, "Royal Bounacean Advisor", None, true, CompleteOutfit(FullOutfit::RoyalBounacean),
+        "Called to the court of Bounac by Kesar the Younger himself.";
+    TibiasTopmodelGrade1 = 54, "Tibia's Topmodel (Grade 1)", None, true, Outfits(10),
+        "Unlocked 10 or more Outfits.";
+    TibiasTopmodelGrade2 = 55, "Tibia's Topmodel (Grade 2)", None, true, Outfits(20),
+        "Unlocked 20 or more Outfits.";
+    TibiasTopmodelGrade3 = 56, "Tibia's Topmodel (Grade 3)", None, true, Outfits(30),
+        "Unlocked 30 or more Outfits.";
+    TibiasTopmodelGrade4 = 57, "Tibia's Topmodel (Grade 4)", None, true, Outfits(40),
+        "Unlocked 40 or more Outfits.";
+    TibiasTopmodelGrade5 = 58, "Tibia's Topmodel (Grade 5)", None, true, Outfits(50),
+        "Unlocked 50 or more Outfits.";
+    Bipedantic = 59, "Bipedantic", None, false, CompleteBestiaryClass(BestiaryClass::Humanoid),
+        "Unlocked All Humanoid Bestiary entries.";
+    BloodMoonHunter = 60, "Blood Moon Hunter", Some("Blood Moon Huntress"), false, CompleteBestiaryClass(BestiaryClass::Lycanthrope),
+        "Unlocked All Lycanthrope Bestiary entries.";
+    Coldblooded = 61, "Coldblooded", None, false, CompleteBestiaryClass(BestiaryClass::Amphibic),
+        "Unlocked All Amphibic Bestiary entries.";
+    DeathFromBelow = 62, "Death from Below", None, false, CompleteBestiaryClass(BestiaryClass::Bird),
+        "Unlocked all Bird Bestiary entries.";
+    Demonator = 63, "Demonator", None, false, CompleteBestiaryClass(BestiaryClass::Demon),
+        "Unlocked all Demon Bestiary entries.";
+    Dragonslayer = 64, "Dragonslayer", None, false, CompleteBestiaryClass(BestiaryClass::Dragon),
+        "Unlocked all Dragon Bestiary entries.";
+    Elementalist = 65, "Elementalist", None, false, CompleteBestiaryClass(BestiaryClass::Elemental),
+        "Unlocked all Elemental Bestiary entries.";
+    Exterminator = 66, "Exterminator", None, false, CompleteBestiaryClass(BestiaryClass::Vermin),
+        "Unlocked all Vermin Bestiary entries.";
+    FeySwatter = 67, "Fey Swatter", None, false, CompleteBestiaryClass(BestiaryClass::Fey),
+        "Unlocked all Fey Bestiary entries.";
+    Ghosthunter = 68, "Ghosthunter", Some("Ghosthuntress"), false, CompleteBestiaryClass(BestiaryClass::Undead),
+        "Unlocked all Undead Bestiary entries.";
+    Handyman = 69, "Handyman", Some("Handywoman"), false, CompleteBestiaryClass(BestiaryClass::Construct),
+        "Unlocked all Construct Bestiary entries.";
+    Huntsman = 70, "Huntsman", Some("Huntress"), false, CompleteBestiaryClass(BestiaryClass::Mammal),
+        "Unlocked all Mammal Bestiary entries.";
+    InterdimensionalDestroyer = 71, "Interdimensional Destroyer", None, false, CompleteBestiaryClass(BestiaryClass::ExtraDimensional),
+        "Unlocked all Extra Dimensional Bestiary entries.";
+    Manhunter = 72, "Manhunter", Some("Manhuntress"), false, CompleteBestiaryClass(BestiaryClass::Human),
+        "Unlocked all Human Bestiary entries.";
+    MasterOfIllusion = 73, "Master of Illusion", Some("Mistress of Illusion"), false, CompleteBestiaryClass(BestiaryClass::Magical),
+        "Unlocked all Magical Bestiary entries.";
+    OozeBlues = 74, "Ooze Blues", None, false, CompleteBestiaryClass(BestiaryClass::Slime),
+        "Unlocked all Slime Bestiary entries.";
+    SeaBane = 75, "Sea Bane", None, false, CompleteBestiaryClass(BestiaryClass::Aquatic),
+        "Unlocked all Aquatic Bestiary entries.";
+    SnakeCharmer = 76, "Snake Charmer", None, false, CompleteBestiaryClass(BestiaryClass::Reptile),
+        "Unlocked all Reptile Bestiary entries.";
+    Tumbler = 77, "Tumbler", None, false, CompleteBestiaryClass(BestiaryClass::Giant),
+        "Unlocked all Giant Bestiary entries.";
+    Weedkiller = 78, "Weedkiller", None, false, CompleteBestiaryClass(BestiaryClass::Plant),
+        "Unlocked all Plant Bestiary entries.";
+    InkEraser = 79, "Ink Eraser", None, false, CompleteBestiaryClass(BestiaryClass::Inkborn),
+        "Unlocked all Inkborn Bestiary entries.";
+    Executioner = 80, "Executioner", None, false, AllBestiary,
+        "Unlocked all Bestiary entries.";
+    BossAnnihilator = 81, "Boss Annihilator", None, false, CompleteBossCategory(BossCategory::Nemesis),
+        "Unlocked all Nemesis bosses.";
+    BossEraser = 82, "Boss Eraser", None, false, CompleteBossCategory(BossCategory::Archfoe),
+        "Unlocked all Archfoe bosses.";
+    BossExecutioner = 83, "Boss Executioner", None, false, AllBosses,
+        "Unlocked all bosses.";
+    BossSlayer = 84, "Boss Slayer", None, false, CompleteBossCategory(BossCategory::Bane),
+        "Unlocked all Bane bosses.";
 }
 
 impl CharacterTitle {
@@ -227,17 +309,124 @@ pub enum BossCategory {
     Nemesis = 2,
 }
 
+/// Canonical Bestiary classes named by Crystal `game.cpp:361-381`. These ordinals are an
+/// internal projection index, never Crystal monster race IDs or additional wire values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BestiaryClass {
+    Humanoid,
+    Lycanthrope,
+    Amphibic,
+    Bird,
+    Demon,
+    Dragon,
+    Elemental,
+    Vermin,
+    Fey,
+    Undead,
+    Construct,
+    Mammal,
+    ExtraDimensional,
+    Human,
+    Magical,
+    Slime,
+    Aquatic,
+    Reptile,
+    Giant,
+    Plant,
+    Inkborn,
+}
+
+impl BestiaryClass {
+    pub const COUNT: usize = 21;
+    pub const ALL: [Self; Self::COUNT] = [
+        Self::Humanoid,
+        Self::Lycanthrope,
+        Self::Amphibic,
+        Self::Bird,
+        Self::Demon,
+        Self::Dragon,
+        Self::Elemental,
+        Self::Vermin,
+        Self::Fey,
+        Self::Undead,
+        Self::Construct,
+        Self::Mammal,
+        Self::ExtraDimensional,
+        Self::Human,
+        Self::Magical,
+        Self::Slime,
+        Self::Aquatic,
+        Self::Reptile,
+        Self::Giant,
+        Self::Plant,
+        Self::Inkborn,
+    ];
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|class| class.name() == name)
+    }
+
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Humanoid => "Humanoid",
+            Self::Lycanthrope => "Lycanthrope",
+            Self::Amphibic => "Amphibic",
+            Self::Bird => "Bird",
+            Self::Demon => "Demon",
+            Self::Dragon => "Dragon",
+            Self::Elemental => "Elemental",
+            Self::Vermin => "Vermin",
+            Self::Fey => "Fey",
+            Self::Undead => "Undead",
+            Self::Construct => "Construct",
+            Self::Mammal => "Mammal",
+            Self::ExtraDimensional => "Extra Dimensional",
+            Self::Human => "Human",
+            Self::Magical => "Magical",
+            Self::Slime => "Slime",
+            Self::Aquatic => "Aquatic",
+            Self::Reptile => "Reptile",
+            Self::Giant => "Giant",
+            Self::Plant => "Plant",
+            Self::Inkborn => "Inkborn",
+        }
+    }
+}
+
+/// Exact look pairs in Crystal `player_title.cpp:291-303`. Native cosmetics must explicitly
+/// admit each look and both addons; opaque grant keys never identify a title's outfit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FullOutfit {
+    RoyalCostume = 0,
+    Golden = 1,
+    RoyalBounacean = 2,
+}
+
+impl FullOutfit {
+    pub const ALL: [Self; 3] = [Self::RoyalCostume, Self::Golden, Self::RoyalBounacean];
+
+    pub const fn looks(self) -> [u32; 2] {
+        match self {
+            Self::RoyalCostume => [1457, 1456],
+            Self::Golden => [1211, 1210],
+            Self::RoyalBounacean => [1437, 1436],
+        }
+    }
+}
+
 /// Creatures whose kill count a title names; `TitleFacts::tracked_kills` follows this order.
-pub const TRACKED_CREATURES: [&str; 4] = [
+pub const TRACKED_CREATURES: [&str; 5] = [
     "oteryn:creature.midnight_panther",
     "oteryn:creature.cave_rat",
     "oteryn:creature.gaz_haragoth",
     "oteryn:creature.morshabaal",
+    "oteryn:creature.ahau",
 ];
 const TRACKED_MIDNIGHT_PANTHER: usize = 0;
 const TRACKED_CAVE_RAT: usize = 1;
 const TRACKED_GAZ_HARAGOTH: usize = 2;
 const TRACKED_MORSHABAAL: usize = 3;
+const TRACKED_AHAU: usize = 4;
 
 /// The unlock predicate of an admitted title, evaluated against `TitleFacts`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -265,107 +454,72 @@ pub enum TitleRule {
     BossesUnlocked(BossCategory, u32),
     /// Global note for Aeternal: the character is at least ten years old.
     CharacterDecade,
+    /// Crystal `checkOther("Beastly")`, `player_title.cpp:312-314`: unspent Charm Points.
+    CharmPoints(u64),
+    /// Crystal `checkMount`, `player_title.cpp:195-203`, using native owned mounts (D61).
+    Mounts(u32),
+    /// Both sex-specific donor looks with both addons, interpreted by admitted cosmetics.
+    CompleteOutfit(FullOutfit),
+    /// PR #2782 Q3=B: one earned canonical outfit identity counts once, not once per sex look.
+    Outfits(u32),
+    /// PR #2782 Q2=B corrects Crystal `player_title.cpp:254-267`: complete every entry of
+    /// the actual class/category, rather than treating its enum as one creature race ID.
+    CompleteBestiaryClass(BestiaryClass),
+    AllBestiary,
+    CompleteBossCategory(BossCategory),
+    AllBosses,
 }
 
-/// Why a Global title is not admitted: Oteryn has no durable fact for its predicate.
+/// Why a Global title is not admitted: no sourced rule, a missing native owner, or an
+/// unresolved difference between the donor catalogue and its implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NotAdmitted {
-    /// Appearance unlock keys are opaque grant keys; no durable outfit/mount/addon projection.
-    Appearance,
-    /// No durable Bestiary class catalogue; the class exists only in creature authoring.
-    BestiaryClass,
-    /// No durable per-category Bosstiary catalogue size to compare against.
-    BosstiaryTotal,
     /// No World highscore category for the value (0129 publishes categories 1..11).
     NoHighscore,
     /// No hunting-task point owner.
     TaskPoints,
-    /// Charm points are derived in the domain and not durable.
-    CharmPoints,
     /// Map progress stores no explored percentage.
     MapPercent,
     /// No completion fact for the quest the title names.
     Quest,
     /// No Tibiadrome wave owner.
     Tibiadrome,
-    /// No fact for the encounter condition (boss difficulty, burdens, attire, ovations).
-    Encounter,
-    /// No mod grade, weapon proficiency or animus mastery fact.
-    Proficiency,
+    /// No entry or complete rule in the pinned Crystal title catalogue; existing owner facts
+    /// cannot establish an unsourced title threshold.
+    DonorRule,
 }
 
-/// The 69 Global titles outside the catalogue, with the missing fact. Together with
+/// The 28 Global titles outside the catalogue, with the missing fact. Together with
 /// `CharacterTitle::ALL` they are the 112 titles of TibiaWiki revid 1197515.
-pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 69] = [
-    ("Admirer of the Crown", NotAdmitted::Appearance),
-    ("Armor Breaker", NotAdmitted::Encounter),
+pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 28] = [
+    ("Armor Breaker", NotAdmitted::DonorRule),
     ("Aspiring Huntsman", NotAdmitted::TaskPoints),
-    ("Beastly", NotAdmitted::CharmPoints),
-    ("Beaststrider (Grade 1)", NotAdmitted::Appearance),
-    ("Beaststrider (Grade 2)", NotAdmitted::Appearance),
-    ("Beaststrider (Grade 3)", NotAdmitted::Appearance),
-    ("Beaststrider (Grade 4)", NotAdmitted::Appearance),
-    ("Beaststrider (Grade 5)", NotAdmitted::Appearance),
     ("Big Boss", NotAdmitted::NoHighscore),
-    ("Big Spender", NotAdmitted::Appearance),
-    ("Bipedantic", NotAdmitted::BestiaryClass),
-    ("Blood Moon Hunter", NotAdmitted::BestiaryClass),
-    ("Boss Annihilator", NotAdmitted::BosstiaryTotal),
-    ("Boss Eraser", NotAdmitted::BosstiaryTotal),
-    ("Boss Executioner", NotAdmitted::BosstiaryTotal),
-    ("Boss Slayer", NotAdmitted::BosstiaryTotal),
     ("Bringer of Rain", NotAdmitted::Tibiadrome),
-    ("Challenger of the Iks", NotAdmitted::Encounter),
     ("Chompmeister", NotAdmitted::Quest),
-    ("Cleansing Conqueror", NotAdmitted::Quest),
-    ("Coldblooded", NotAdmitted::BestiaryClass),
+    ("Cleansing Conqueror", NotAdmitted::DonorRule),
     ("Competent Beastslayer", NotAdmitted::TaskPoints),
-    ("Death from Below", NotAdmitted::BestiaryClass),
     ("Dedicated Entrepreneur", NotAdmitted::MapPercent),
-    ("Demonator", NotAdmitted::BestiaryClass),
-    ("Djinn Dominator", NotAdmitted::Encounter),
-    ("Dragonslayer", NotAdmitted::BestiaryClass),
-    ("Eclipse Bringer", NotAdmitted::Encounter),
-    ("Elementalist", NotAdmitted::BestiaryClass),
-    ("Executioner", NotAdmitted::BestiaryClass),
-    ("Exterminator", NotAdmitted::BestiaryClass),
+    ("Djinn Dominator", NotAdmitted::DonorRule),
+    ("Eclipse Bringer", NotAdmitted::DonorRule),
     ("Feared Bountyhunter", NotAdmitted::TaskPoints),
-    ("Fey Swatter", NotAdmitted::BestiaryClass),
-    ("Ghosthunter", NotAdmitted::BestiaryClass),
-    ("Handyman", NotAdmitted::BestiaryClass),
     ("Hero of Bounac", NotAdmitted::Quest),
-    ("Huntsman", NotAdmitted::BestiaryClass),
-    ("Ink Eraser", NotAdmitted::BestiaryClass),
-    ("Interdimensional Destroyer", NotAdmitted::BestiaryClass),
     ("Jack of all Taints", NotAdmitted::NoHighscore),
-    ("Lamp Breaker", NotAdmitted::Encounter),
-    ("Light Reaver", NotAdmitted::Encounter),
-    ("Manhunter", NotAdmitted::BestiaryClass),
-    ("Master Enhancer", NotAdmitted::Proficiency),
-    ("Master of Illusion", NotAdmitted::BestiaryClass),
-    ("Master of Souls", NotAdmitted::Proficiency),
-    ("Master of the Arsenal", NotAdmitted::Proficiency),
-    ("Novice Enhancer", NotAdmitted::Proficiency),
-    ("Ooze Blues", NotAdmitted::BestiaryClass),
-    ("Pit Fighter", NotAdmitted::Encounter),
+    ("Lamp Breaker", NotAdmitted::DonorRule),
+    ("Light Reaver", NotAdmitted::DonorRule),
+    ("Master Enhancer", NotAdmitted::DonorRule),
+    ("Master of Souls", NotAdmitted::DonorRule),
+    ("Master of the Arsenal", NotAdmitted::DonorRule),
+    ("Novice Enhancer", NotAdmitted::DonorRule),
+    ("Pit Fighter", NotAdmitted::DonorRule),
     ("Planegazer", NotAdmitted::Quest),
     ("Proconsul of Iksupan", NotAdmitted::Quest),
     ("Robinson Crusoe", NotAdmitted::Quest),
-    ("Royal Bounacean Advisor", NotAdmitted::Appearance),
-    ("Sea Bane", NotAdmitted::BestiaryClass),
-    ("Seasoned Armorer", NotAdmitted::Proficiency),
-    ("Snake Charmer", NotAdmitted::BestiaryClass),
-    ("Tibia's Topmodel (Grade 1)", NotAdmitted::Appearance),
-    ("Tibia's Topmodel (Grade 2)", NotAdmitted::Appearance),
-    ("Tibia's Topmodel (Grade 3)", NotAdmitted::Appearance),
-    ("Tibia's Topmodel (Grade 4)", NotAdmitted::Appearance),
-    ("Tibia's Topmodel (Grade 5)", NotAdmitted::Appearance),
+    ("Seasoned Armorer", NotAdmitted::DonorRule),
     ("Time Traveller", NotAdmitted::Quest),
-    ("Tumbler", NotAdmitted::BestiaryClass),
-    ("Unbreakable Purifier", NotAdmitted::Encounter),
-    ("Usurper of the Demon Throne", NotAdmitted::Encounter),
-    ("Veteran Armorer", NotAdmitted::Proficiency),
-    ("Weedkiller", NotAdmitted::BestiaryClass),
+    ("Unbreakable Purifier", NotAdmitted::DonorRule),
+    ("Usurper of the Demon Throne", NotAdmitted::DonorRule),
+    ("Veteran Armorer", NotAdmitted::DonorRule),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -395,8 +549,22 @@ pub struct TitleFacts {
     /// Unlocked bosses per `BossCategory`.
     pub bosses_unlocked: [u32; 3],
     /// Kill counts in `TRACKED_CREATURES` order.
-    pub tracked_kills: [u32; 4],
+    pub tracked_kills: [u32; TRACKED_CREATURES.len()],
     pub character_decade: bool,
+    /// Earned points less the costs of the durable Charm unlocks, using the Charm owner rule.
+    pub available_charm_points: u64,
+    /// Distinct admitted mounts with a compatible native earned grant.
+    pub mounts_unlocked: u32,
+    /// Full outfit ownership in `FullOutfit` order; includes both donor look ids and addons.
+    pub full_outfits: [bool; 3],
+    /// Distinct earned canonical outfit identities. A male/female look pair counts once.
+    pub outfits_unlocked: u32,
+    /// Every canonical class member has reached its Bestiary final kill threshold.
+    pub bestiary_classes_complete: [bool; BestiaryClass::COUNT],
+    pub all_bestiary_complete: bool,
+    /// Every canonical boss in the category has reached its owner's mastery threshold.
+    pub boss_categories_complete: [bool; 3],
+    pub all_bosses_complete: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -426,6 +594,16 @@ pub fn qualify(title: CharacterTitle, facts: TitleFacts) -> Qualification {
             facts.bosses_unlocked[category as usize] >= count
         }
         TitleRule::CharacterDecade => facts.character_decade,
+        TitleRule::CharmPoints(points) => facts.available_charm_points >= points,
+        TitleRule::Mounts(count) => facts.mounts_unlocked >= count,
+        TitleRule::CompleteOutfit(outfit) => facts.full_outfits[outfit as usize],
+        TitleRule::Outfits(count) => facts.outfits_unlocked >= count,
+        TitleRule::CompleteBestiaryClass(class) => facts.bestiary_classes_complete[class as usize],
+        TitleRule::AllBestiary => facts.all_bestiary_complete,
+        TitleRule::CompleteBossCategory(category) => {
+            facts.boss_categories_complete[category as usize]
+        }
+        TitleRule::AllBosses => facts.all_bosses_complete,
     };
     let lifetime = match title.rule() {
         // Global: not permanent, held for the rota after a top-five finish.
@@ -506,6 +684,51 @@ pub struct CharacterSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn p12a_source_backed_kill_and_charm_titles_are_admitted() {
+        for name in ["Beastly", "Challenger of the Iks"] {
+            assert!(
+                CharacterTitle::ALL
+                    .into_iter()
+                    .any(|title| title.name() == name),
+                "the native owner must admit {name}"
+            );
+        }
+    }
+
+    /// Crystal `player_title.cpp:297-299,312-314`: the implemented Ahau rule is one credited
+    /// kill; Beastly tests the available Charm Points. Both titles remain earned permanently.
+    #[test]
+    fn p12a_beastly_and_iks_use_the_donor_thresholds_and_remain_earned() {
+        for points in [0, 1_999, 2_000, 2_001] {
+            let facts = TitleFacts {
+                available_charm_points: points,
+                ..TitleFacts::default()
+            };
+            assert_eq!(
+                qualify(CharacterTitle::Beastly, facts).eligible,
+                points >= 2_000
+            );
+        }
+        let mut facts = TitleFacts::default();
+        assert!(!qualify(CharacterTitle::ChallengerOfTheIks, facts).eligible);
+        // Another boss does not satisfy Ahau's predicate.
+        facts.tracked_kills[TRACKED_MORSHABAAL] = 5;
+        assert!(!qualify(CharacterTitle::ChallengerOfTheIks, facts).eligible);
+        facts.tracked_kills[TRACKED_AHAU] = 1;
+        facts.available_charm_points = 2_000;
+        let earned = newly_eligible(facts, &[], 1);
+        for title in [CharacterTitle::Beastly, CharacterTitle::ChallengerOfTheIks] {
+            assert!(earned.contains(&title));
+            assert_eq!(qualify(title, facts).lifetime, TitleLifetime::Permanent);
+            assert_eq!(
+                qualified_selection(Some(title), TitleFacts::default(), 1),
+                Some(title)
+            );
+        }
+        assert!(newly_eligible(facts, &earned, 1).is_empty());
+    }
 
     #[test]
     fn monk_pilgrimage_title_has_an_appended_id_and_requires_the_earned_flag() {
@@ -656,7 +879,9 @@ mod tests {
             Some(CharacterTitle::PensiveWanderer)
         );
         assert_eq!(CharacterTitle::from_id(6), Some(CharacterTitle::Aeternal));
-        assert_eq!(CharacterTitle::from_id(44), None);
+        // P12a appends source-backed titles without changing the older ids.
+        assert_eq!(CharacterTitle::from_id(44), Some(CharacterTitle::Beastly));
+        assert_eq!(CharacterTitle::from_id(TITLE_COUNT as u8 + 1), None);
         let all = TitleFacts {
             monk_pilgrimage: true,
             weapon_mastery: true,
@@ -765,12 +990,12 @@ mod tests {
             tracked_kills,
             ..base
         };
-        assert!(at(kills([25, 0, 0, 0]), CharacterTitle::MidnightHunter));
-        assert!(!at(kills([24, 0, 0, 0]), CharacterTitle::MidnightHunter));
-        assert!(at(kills([0, 10_000, 0, 0]), CharacterTitle::Ratinator));
-        assert!(at(kills([0, 0, 1, 0]), CharacterTitle::DoomsdayNemesis));
-        assert!(!at(kills([0, 0, 0, 4]), CharacterTitle::KingOfDemon));
-        assert!(at(kills([0, 0, 0, 5]), CharacterTitle::KingOfDemon));
+        assert!(at(kills([25, 0, 0, 0, 0]), CharacterTitle::MidnightHunter));
+        assert!(!at(kills([24, 0, 0, 0, 0]), CharacterTitle::MidnightHunter));
+        assert!(at(kills([0, 10_000, 0, 0, 0]), CharacterTitle::Ratinator));
+        assert!(at(kills([0, 0, 1, 0, 0]), CharacterTitle::DoomsdayNemesis));
+        assert!(!at(kills([0, 0, 0, 4, 0]), CharacterTitle::KingOfDemon));
+        assert!(at(kills([0, 0, 0, 5, 0]), CharacterTitle::KingOfDemon));
         assert!(at(
             TitleFacts {
                 boss_points: 15_000,
@@ -834,5 +1059,106 @@ mod tests {
             [CharacterTitle::Cyclopscamper]
         );
         assert!(newly_eligible(TitleFacts::default(), &[], 1).is_empty());
+    }
+
+    #[test]
+    fn p12a_cosmetic_grades_and_full_outfits_follow_donor_thresholds() {
+        let grades = [
+            CharacterTitle::BeaststriderGrade1,
+            CharacterTitle::BeaststriderGrade2,
+            CharacterTitle::BeaststriderGrade3,
+            CharacterTitle::BeaststriderGrade4,
+            CharacterTitle::BeaststriderGrade5,
+        ];
+        for (title, threshold) in grades.into_iter().zip([10, 20, 30, 40, 50]) {
+            let mut facts = TitleFacts {
+                mounts_unlocked: threshold - 1,
+                ..TitleFacts::default()
+            };
+            assert!(!qualify(title, facts).eligible);
+            facts.mounts_unlocked = threshold;
+            assert!(qualify(title, facts).eligible);
+            assert_eq!(qualify(title, facts).lifetime, TitleLifetime::Permanent);
+            assert_eq!(
+                qualified_selection(Some(title), TitleFacts::default(), 0),
+                Some(title)
+            );
+        }
+        for (index, title) in [
+            CharacterTitle::AdmirerOfTheCrown,
+            CharacterTitle::BigSpender,
+            CharacterTitle::RoyalBounaceanAdvisor,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut facts = TitleFacts::default();
+            assert!(!qualify(title, facts).eligible);
+            facts.full_outfits[index] = true;
+            assert_eq!(newly_eligible(facts, &[], 0), [title]);
+            assert!(newly_eligible(facts, &[title], 0).is_empty());
+        }
+    }
+
+    #[test]
+    fn p12a_topmodel_counts_canonical_identities_at_every_grade() {
+        for (title, threshold) in [
+            CharacterTitle::TibiasTopmodelGrade1,
+            CharacterTitle::TibiasTopmodelGrade2,
+            CharacterTitle::TibiasTopmodelGrade3,
+            CharacterTitle::TibiasTopmodelGrade4,
+            CharacterTitle::TibiasTopmodelGrade5,
+        ]
+        .into_iter()
+        .zip([10, 20, 30, 40, 50])
+        {
+            let facts = |outfits_unlocked| TitleFacts {
+                outfits_unlocked,
+                ..TitleFacts::default()
+            };
+            assert!(!qualify(title, facts(threshold - 1)).eligible);
+            assert!(qualify(title, facts(threshold)).eligible);
+            assert_eq!(qualify(title, facts(0)).lifetime, TitleLifetime::Permanent);
+            assert_eq!(qualified_selection(Some(title), facts(0), 0), Some(title));
+        }
+    }
+
+    #[test]
+    fn p12a_all_completion_titles_are_conditional_and_require_their_exact_group() {
+        // Q2=B corrects the donor's enum-as-race check, but retains its conditional lifetime.
+        for title in CharacterTitle::ALL {
+            let mut facts = TitleFacts::default();
+            match title.rule() {
+                TitleRule::CompleteBestiaryClass(class) => {
+                    facts.bestiary_classes_complete[class as usize] = true
+                }
+                TitleRule::AllBestiary => facts.all_bestiary_complete = true,
+                TitleRule::CompleteBossCategory(category) => {
+                    facts.boss_categories_complete[category as usize] = true
+                }
+                TitleRule::AllBosses => facts.all_bosses_complete = true,
+                _ => continue,
+            }
+            assert_eq!(newly_eligible(facts, &[], 0), [title]);
+            assert_eq!(qualify(title, facts).lifetime, TitleLifetime::Conditional);
+            assert_eq!(qualified_selection(Some(title), facts, 0), Some(title));
+            assert_eq!(
+                qualified_selection(Some(title), TitleFacts::default(), 0),
+                None
+            );
+        }
+        assert_eq!(
+            CharacterTitle::BloodMoonHunter.name_for(true),
+            "Blood Moon Huntress"
+        );
+        assert_eq!(CharacterTitle::Handyman.name_for(true), "Handywoman");
+        assert_eq!(
+            CharacterTitle::MasterOfIllusion.name_for(true),
+            "Mistress of Illusion"
+        );
+        for class in BestiaryClass::ALL {
+            assert_eq!(BestiaryClass::from_name(class.name()), Some(class));
+        }
+        assert_eq!(BestiaryClass::from_name("unknown"), None);
     }
 }

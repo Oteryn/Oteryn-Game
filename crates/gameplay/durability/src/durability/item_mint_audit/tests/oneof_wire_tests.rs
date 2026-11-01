@@ -149,6 +149,14 @@ fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
                 },
             ),
         ),
+        // P18: additive native Forge tag; death17/18 keep their dedicated owner.
+        (
+            19,
+            "Forge",
+            OneItemOperationV1::Forge(crate::durability::character_forge_dust::OneItemForgeV1 {
+                proof: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -270,6 +278,14 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
+        // P18: closed Forge fee cause, with every old wire golden unchanged.
+        (
+            14,
+            "Forge",
+            FeeBurnCauseV1::Forge(crate::durability::character_forge_dust::OneItemForgeV1 {
+                proof: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -290,6 +306,8 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("PlayerTrade", "080172040a028107"),
         ("Craft", "08017a040a028107"),
         ("Atelier", "08018201040a028107"),
+        ("Forge", "08019a01040a028107"),
+        ("ForgeFee", "72040a028107"),
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
@@ -344,7 +362,10 @@ fn every_operation_matches_pre_structure_wire_bytes() {
 #[test]
 fn every_fee_cause_matches_pre_structure_wire_bytes() {
     for (_, name, cause) in fee_fixtures() {
-        assert_wire(name, OneItemFeeBurnCauseV1 { cause: Some(cause) });
+        assert_wire(
+            if name == "Forge" { "ForgeFee" } else { name },
+            OneItemFeeBurnCauseV1 { cause: Some(cause) },
+        );
     }
 }
 

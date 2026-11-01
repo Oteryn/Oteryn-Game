@@ -22,6 +22,11 @@ fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "forge_dispatch", true, false).await?;
         prepare_current_session(&h).await?;
+        sqlx::query(
+            "INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING",
+        )
+        .execute(&h.pool)
+        .await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -115,6 +120,7 @@ fn scenario() -> TestResult {
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let serve = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
             let first_command = admitted.continuity.next_command_id;
+            let history_harness = &h;
             let exercise = async move {
                 let mut dust_limit = [0; 51];
                 dust_limit[0] = 7;
@@ -135,12 +141,13 @@ fn scenario() -> TestResult {
                     );
                     let mut history = [0; 51];
                     history[50] = 50;
+                    super::item_forge::support::cooldown_elapsed(history_harness).await?;
                     let (status, result) = send(&mut client, first_command + 2, &history).await?;
                     assert_eq!(status, CommandStatus::Accepted);
                     let rows: serde_json::Value = serde_json::from_slice(&result)?;
                     assert_eq!(rows.as_array().ok_or("history array")?.len(), 1);
                     assert_eq!(rows[0]["receipt"], first);
-                    // Staged item conversions refuse through real dispatch, without new stores.
+                    // A different operation cannot reuse the retained DustLimit occurrence.
                     let mut conversion = dust_limit;
                     conversion[0] = 5;
                     assert_eq!(
@@ -178,7 +185,8 @@ fn scenario() -> TestResult {
                 .item_forge(
                     admitted,
                     admitted.continuity.next_command_id,
-                    Request::decode(&request).ok_or("request")?
+                    Request::decode(&request).ok_or("request")?,
+                    None,
                 )
                 .await,
             Some(Vec::new())

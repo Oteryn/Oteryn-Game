@@ -69,6 +69,10 @@ pub enum FeeBurnCause {
     TaskBoardTalisman {
         occurrence: [u8; 16],
     },
+    Forge {
+        occurrence: [u8; 16],
+        proof: Vec<u8>,
+    },
     PreyListReroll {
         slot: u8,
         occurrence: [u8; 16],
@@ -316,6 +320,7 @@ async fn burn_fee(
             FeeBurnCause::NpcRepair { .. }
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
+                | FeeBurnCause::Forge { .. }
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
@@ -434,7 +439,9 @@ async fn burn_fee(
         Some(backpack) => lock_coin_inputs(connection, request, &backpack, world_id).await?,
         None => BackpackInputs::default(),
     };
-    let inputs = carried.as_ref().map_or(inputs, |carried| carried.inputs.clone());
+    let inputs = carried
+        .as_ref()
+        .map_or(inputs, |carried| carried.inputs.clone());
     let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _, _)| *stack).collect();
     let eligible = stacks.iter().try_fold(0_u64, |total, stack| {
         u64::from(stack.quantity)
@@ -674,7 +681,11 @@ async fn burn_fee(
     .await?;
 
     if let Some(carried) = &carried {
-        carried.record(connection, fence, request, &plan, backpack, capacity, &entries).await?;
+        carried
+            .record(
+                connection, fence, request, &plan, backpack, capacity, &entries,
+            )
+            .await?;
     }
 
     for (ordinal, line) in (1_i16..).zip(&lines) {
@@ -708,7 +719,9 @@ async fn burn_fee(
         if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState.into());
         }
-        if line.quantity_after == 0 && let Some(carried) = &carried {
+        if line.quantity_after == 0
+            && let Some(carried) = &carried
+        {
             carried.remove(connection, line).await?;
         } else if line.quantity_after == 0 {
             let removed = sqlx::query(
@@ -729,7 +742,9 @@ async fn burn_fee(
         }
     }
     if let Some(carried) = &carried {
-        carried.advance_equipment(connection, fence, request, &plan).await?;
+        carried
+            .advance_equipment(connection, fence, request, &plan)
+            .await?;
     }
 
     for output in &change {

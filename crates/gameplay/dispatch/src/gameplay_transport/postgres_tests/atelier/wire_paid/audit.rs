@@ -4,8 +4,11 @@
 use super::*;
 
 async fn outbox(h: &Harness) -> TestResult<Vec<serde_json::Value>> {
-    let rows = sqlx::query_scalar("SELECT to_jsonb(a) FROM game_item_audit_outbox a ORDER BY event_id LIMIT 100")
-        .fetch_all(&h.pool).await?;
+    let rows = sqlx::query_scalar(
+        "SELECT to_jsonb(a) FROM game_item_audit_outbox a ORDER BY event_id LIMIT 100",
+    )
+    .fetch_all(&h.pool)
+    .await?;
     assert!(rows.len() < 100);
     Ok(rows)
 }
@@ -20,7 +23,9 @@ pub(super) async fn reject_size_forgery(h: &Harness) -> TestResult {
             CREATE CONSTRAINT TRIGGER atelier_size_probe_proven AFTER INSERT ON atelier_size_probe DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_item_audit_envelope_size_proven();
             GRANT INSERT ON atelier_size_probe TO oteryn_game_runtime;")
             .execute(&mut *tx).await?;
-        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         let envelope = vec![0_u8; if probe == 2 { 262_145 } else { 25_713 }];
         if probe == 1 {
             // A fresh promotion fee has its own smaller registered shape. It must
@@ -39,12 +44,19 @@ pub(super) async fn reject_size_forgery(h: &Harness) -> TestResult {
             // Other transaction proofs remain deferred; this must fail at the
             // real size guard, not an unrelated absent Character receipt.
             sqlx::query("SET CONSTRAINTS atelier_size_probe_proven IMMEDIATE")
-                .execute(&mut *tx).await.expect_err("historical or unrelated proof cannot borrow the Atelier ceiling")
+                .execute(&mut *tx)
+                .await
+                .expect_err("historical or unrelated proof cannot borrow the Atelier ceiling")
         };
-        let database = error.as_database_error().ok_or("expected PostgreSQL guard refusal")?;
+        let database = error
+            .as_database_error()
+            .ok_or("expected PostgreSQL guard refusal")?;
         assert_eq!(database.code().as_deref(), Some("23514"));
         if probe == 2 {
-            assert_eq!(database.constraint(), Some("game_item_audit_outbox_envelope_check"));
+            assert_eq!(
+                database.constraint(),
+                Some("game_item_audit_outbox_envelope_check")
+            );
         } else {
             assert!(database.message().contains("registered shape ceiling"));
         }

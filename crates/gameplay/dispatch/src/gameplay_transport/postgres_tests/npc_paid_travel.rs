@@ -81,6 +81,8 @@ fn scenario() -> TestResult {
         let h = Harness::create_with_admission_seed(admin, "npc_paid_travel", true, false).await?;
         eprintln!("POSTGRES_STARTED TRAVEL npc_paid_travel");
         prepare_current_session(&h).await?;
+        let achievement_key = "oteryn:achievement/ship_s_kobold";
+        super::achievement_granters::seed_progress(&h, achievement_key, 1248).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -398,6 +400,9 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(untouched, (0, 0));
+        super::achievement_granters::assert_progress(
+            &h, achievement_key, 1248, false, "oteryn:npc-travel",
+        ).await?;
         assert_eq!(
             slot.cursor(&h.root, &authority).await.map_err(debug)?.get(),
             current.expected_character_revision.get() + 1,
@@ -421,6 +426,10 @@ fn scenario() -> TestResult {
         drop(slot);
         assert_eq!(bank(&h).await?, 80);
         assert_eq!(fees(&h).await?, 1);
+        // Paid departure alone is not the donor's completed teleport.
+        super::achievement_granters::assert_progress(
+            &h, achievement_key, 1248, false, "oteryn:npc-travel",
+        ).await?;
         let resumed = owner
             .resume_npc_bank(
                 dependencies.actor,
@@ -451,6 +460,9 @@ fn scenario() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(pending, 0);
+        super::achievement_granters::assert_progress(
+            &h, achievement_key, 1249, false, "oteryn:npc-travel",
+        ).await?;
         assert_eq!(
             owner
                 .revision_sequencer
@@ -487,6 +499,9 @@ fn scenario() -> TestResult {
         );
         assert_eq!(fees(&h).await?, 1);
         // The same production talk owner serves Premium carpets and their route-specific discount.
+        super::achievement_granters::assert_progress(
+            &h, achievement_key, 1249, false, "oteryn:npc-travel",
+        ).await?;
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
         sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
         let pilot = {
@@ -551,6 +566,12 @@ fn scenario() -> TestResult {
             .map_err(debug)?
             .position();
         assert_eq!((position.x, position.y, position.floor), (33270, 32441, 6));
+        let first_achievement = super::achievement_granters::assert_progress(
+            &h, achievement_key, 1250, true, "oteryn:npc-travel",
+        ).await?;
+        let occurrence: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(occurrence_id) FROM game_newhaven_travel_receipts WHERE command_id=16 AND arrived_at IS NOT NULL")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(first_achievement.as_ref().map(|fact| fact.1.as_slice()), Some(occurrence.as_slice()));
         // Arrival consumption releases the travel hold back to the ordinary Movement owner.
         // Exercise that production handoff rather than only inspecting the relocated snapshot.
         tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
@@ -867,6 +888,10 @@ fn scenario() -> TestResult {
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
         }
+        assert_eq!(first_achievement, super::achievement_granters::assert_progress(
+            &h, achievement_key, 1250, true, "oteryn:npc-travel",
+        ).await?);
+        eprintln!("POSTGRES_CASE_COMPLETED P11 travel counts actual arrivals, fences and saturates");
         drop(owner);
         drop(authority);
         drop(seal);

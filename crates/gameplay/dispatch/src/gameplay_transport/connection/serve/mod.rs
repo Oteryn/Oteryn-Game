@@ -3,11 +3,13 @@ mod vip_presence;
 
 use super::*;
 
+mod achievement_notices;
 mod activity_transfer;
 mod autowalk;
 mod command;
 mod creature_push;
 mod cyclopedia_tracker;
+mod forge;
 mod hotkey_equip;
 mod house_transfer;
 mod idle;
@@ -75,6 +77,7 @@ struct ServeState {
     /// P22d: the domain 98 revision this connection has seen; 1 after the join snapshot.
     cyclopedia_tracker_revision: u64,
     notices_selected: bool,
+    achievement_notices: Option<achievement_notices::SeenAchievements>,
     overlay_served: bool,
     revision: u64,
     actor: ExactActorRef,

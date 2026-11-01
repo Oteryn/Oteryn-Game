@@ -108,10 +108,12 @@ fn room_line(text: &str) -> ChatLine {
 fn the_advertised_set_carries_chat_and_stays_closed() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-    // Capability 148 now has playable Wheel and Atelier controls.
+    // Capability 272 adds live Atelier balances and retains its prerequisite 148.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
-        &[4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 91, 147, 148]
+        &[
+            4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 91, 147, 148, 272
+        ]
     );
 }
 
@@ -514,7 +516,15 @@ fn a_contradicting_chat_delta_poisons_the_session() -> Result<(), BoxError> {
             ),
             (
                 // An unregistered delta type; 3 now belongs to the cap-80 channel list.
-                Step::Send(encode_state_delta(1, 41, STATE_DOMAIN_CHAT, 3, 4, 255, b"x")?),
+                Step::Send(encode_state_delta(
+                    1,
+                    41,
+                    STATE_DOMAIN_CHAT,
+                    3,
+                    4,
+                    255,
+                    b"x",
+                )?),
                 |error| {
                     matches!(
                         error,

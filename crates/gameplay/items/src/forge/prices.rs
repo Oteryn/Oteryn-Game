@@ -1,13 +1,13 @@
-//! Reference data only, not Content activation.
-//! Values remain UNVERIFIED against Global where no public value exists.
-//! https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/scripts/systems/item_tiers.lua
+//! Crystal 201189f data/scripts/systems/item_tiers.lua:1-90 prices and
+//! config.lua.dist:193-204 resource costs. Canary 47dfd51 has identical prices;
+//! its standard-transfer index differs and is intentionally not followed.
 
 pub const FORGE_CLASS_CAPS: [u8; 5] = [0, 1, 2, 3, 10];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForgeReferencePrice {
     pub classification: u8,
-    /// Result tier for fusion; donor tier for standard transfer gold.
+    /// Result tier for both fusion and transfer gold (Crystal player.cpp:10843-10846).
     pub tier: u8,
     pub gold: u64,
     /// Indexed by receiver result tier for standard transfer.
@@ -65,7 +65,7 @@ pub const FORGE_REFERENCE_PRICES: [ForgeReferencePrice; 16] = [
     convergence(10, 15_000_000_000, 85, 125_000_000_000, 300_000_000_000),
 ];
 
-/// Candidate resource identities; UNVERIFIED until native Content admission.
+/// Native resource identities shared with the P19 influenced-creature supply path.
 pub const FORGE_SLIVER_KEY: &str = "oteryn:item.tibia.i37109";
 pub const EXALTED_CORE_KEY: &str = "oteryn:item.tibia.i37110";
 pub const NORMAL_FUSION_DUST: u32 = 100;

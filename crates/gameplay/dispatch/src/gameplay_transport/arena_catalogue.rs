@@ -4,6 +4,7 @@ use oteryn_protocol_oteryn::arena as wire;
 
 macro_rules! authority_methods {
     () => {
+        $crate::gameplay_transport::item_use::drome_cube::authority_methods!();
         fn arena_catalogue_command(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
@@ -18,6 +19,7 @@ pub(super) use authority_methods;
 
 macro_rules! composed_methods {
     () => {
+        $crate::gameplay_transport::item_use::drome_cube::composed_methods!();
         async fn arena_catalogue_command(
             &self,
             admitted: connection::AdmittedSession,

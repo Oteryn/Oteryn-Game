@@ -9,6 +9,8 @@ use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::*;
 use crate::domain::CharacterId;
 
+pub mod kooldown_aid;
+
 pub const CONCOCTION_CAUSE: u32 = 527;
 pub const WEALTH_DUPLEX_KEY: &str = "oteryn:item.tibia.i36727";
 

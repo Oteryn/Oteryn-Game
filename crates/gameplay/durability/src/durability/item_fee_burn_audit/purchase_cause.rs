@@ -30,6 +30,13 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         {
             check_uuid_v7(&cause.occurrence)
         }
+        Some(FeeBurnCauseV1::Forge(cause)) => {
+            let proof=crate::durability::character_forge_dust::live::audit::decode(&cause.proof)?;
+            if !(1..=4).contains(&proof.operation) || proof.character!=value.character_id || proof.world!=value.world_id || proof.gold_spent!=value.fee_gold_units {
+                return Err(AuditError::InvalidInput);
+            }
+            Ok(())
+        }
         Some(FeeBurnCauseV1::PreyListReroll(cause)) if ["oteryn:prey.list_reroll.1","oteryn:prey.list_reroll.2","oteryn:prey.list_reroll.3"].contains(&cause.service_key.as_str()) && value.fee_gold_units>0 && value.fee_gold_units.is_multiple_of(200) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::MarketFee(cause))
             if (20..=1_000_000).contains(&value.fee_gold_units)

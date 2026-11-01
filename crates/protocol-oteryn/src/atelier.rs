@@ -1,6 +1,8 @@
 //! Gem Atelier query, lock and paid mutation wire contract.
 use crate::charm_wire::{CyclopediaWireError as Error, push_varint_field, read_varint, set_once};
 
+pub mod resources;
+
 pub const CAPABILITY_WHEEL_ALLOCATION_V1: u32 = 148;
 pub const COMMAND_TYPE_ATELIER_QUERY: u32 = 308;
 pub const COMMAND_TYPE_ATELIER_SET_LOCK: u32 = 309;

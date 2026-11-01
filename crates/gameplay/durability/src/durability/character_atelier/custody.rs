@@ -58,19 +58,35 @@ pub(super) async fn apply(
     let world = fence.runtime_scope.world_id();
     let bag=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots b JOIN game_item_instances i USING(item_instance_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF b,i")
         .bind(character).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-    let parent: Option<String> = bag.as_ref().map(|row| row.try_get("item_instance_id")).transpose()?;
+    let parent: Option<String> = bag
+        .as_ref()
+        .map(|row| row.try_get("item_instance_id"))
+        .transpose()?;
     let planned = if let Some((key, needed)) = burn {
-        let Some(plan) = materials::plan(tx, fence, request, resources, key, needed).await? else { return Ok(None); };
+        let Some(plan) = materials::plan(tx, fence, request, resources, key, needed).await? else {
+            return Ok(None);
+        };
         plan
     } else {
-        materials::MaterialPlan { inputs: Vec::new(), stash: None, equipment: None, burned_weight: 0 }
+        materials::MaterialPlan {
+            inputs: Vec::new(),
+            stash: None,
+            equipment: None,
+            burned_weight: 0,
+        }
     };
-    let materials::MaterialPlan { inputs, stash, equipment, burned_weight } = planned;
+    let materials::MaterialPlan {
+        inputs,
+        stash,
+        equipment,
+        burned_weight,
+    } = planned;
     let transaction = &identity.transaction;
     let event = &identity.event;
     let now = identity.now;
     let outputs = if let Some((key, count)) = mint {
-        let Some(outputs) = outputs::plan(tx, fence, resources, key, count, burned_weight).await? else {
+        let Some(outputs) = outputs::plan(tx, fence, resources, key, count, burned_weight).await?
+        else {
             return Ok(None);
         };
         outputs
@@ -104,52 +120,55 @@ pub(super) async fn apply(
     let proof = json!({"character":fence.character_id.as_bytes(),"occurrence":request.occurrence,"mutation":request.mutation,"character_lease_generation":fence.character_lease_generation,"scope_ownership_generation":fence.scope_ownership_generation.get(),"content_digest":resources.content.loop_content_digest(),"inputs":audit_inputs,"outputs":outputs,"parent":parent,"stash":stash});
     let proof = serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)?;
     let tuple = tx.tuple();
-    let wire = if identity.paid { None } else {
-    let payload = audit::encode_bounded(
-        &audit::OneItemTransactionV1 {
-            interpretation_revision: audit::INTERPRETATION_REVISION,
-            operation: Some(audit::OneItemOperationV1::Atelier(OneItemAtelierV1 {
-                proof: proof.clone(),
-            })),
-        },
-        atelier_audit::PAYLOAD_BYTES_MAX,
-    )
-    .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let envelope = audit::EventEnvelopeV1 {
-        envelope_revision: 1,
-        event_id: uuid_text(event)?.to_vec(),
-        event_type_id: audit::EVENT_TYPE_ID,
-        event_schema_revision: tuple.schema_revision(),
-        durability_class: audit::DURABLE_AUDIT,
-        privacy_class: audit::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: tuple.retention_profile_id().into(),
-        occurred_at_unix_ms: now,
-        world_id: Some(world.as_bytes().to_vec()),
-        channel_id: match fence.runtime_scope {
-            crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
-                Some(channel_id.as_bytes().to_vec())
-            }
-            crate::foundation::RuntimeScopeRefV1::Instance { .. } => None,
-        },
-        game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
-        connection_generation: Some(fence.connection_generation.get()),
-        transaction_event: Some(audit::TransactionEventRefV1 {
-            transaction_id: uuid_text(transaction)?.to_vec(),
-            ordinal: 1,
-            count: 1,
-        }),
-        causation: Some(audit::CausationRefV1 {
-            cause: Some(audit::CausationV1::OperationId(request.occurrence.to_vec())),
-        }),
-        server_build_id: super::super::character_authority::SERVER_BUILD_ID.into(),
-        payload_sha256: Sha256::digest(&payload).to_vec(),
-        payload,
-        ..Default::default()
-    };
-    let wire = audit::encode_bounded(&envelope, atelier_audit::ENVELOPE_BYTES_MAX)
+    let wire = if identity.paid {
+        None
+    } else {
+        let payload = audit::encode_bounded(
+            &audit::OneItemTransactionV1 {
+                interpretation_revision: audit::INTERPRETATION_REVISION,
+                operation: Some(audit::OneItemOperationV1::Atelier(OneItemAtelierV1 {
+                    proof: proof.clone(),
+                })),
+            },
+            atelier_audit::PAYLOAD_BYTES_MAX,
+        )
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    audit::decode_common_envelope_within(&wire, atelier_audit::ENVELOPE_BYTES_MAX).map_err(|_| DurabilityError::InvalidStoredState)?;
-    Some(wire)
+        let envelope = audit::EventEnvelopeV1 {
+            envelope_revision: 1,
+            event_id: uuid_text(event)?.to_vec(),
+            event_type_id: audit::EVENT_TYPE_ID,
+            event_schema_revision: tuple.schema_revision(),
+            durability_class: audit::DURABLE_AUDIT,
+            privacy_class: audit::RESTRICTED_PLAYER_LINKED,
+            retention_profile_id: tuple.retention_profile_id().into(),
+            occurred_at_unix_ms: now,
+            world_id: Some(world.as_bytes().to_vec()),
+            channel_id: match fence.runtime_scope {
+                crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                    Some(channel_id.as_bytes().to_vec())
+                }
+                crate::foundation::RuntimeScopeRefV1::Instance { .. } => None,
+            },
+            game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
+            connection_generation: Some(fence.connection_generation.get()),
+            transaction_event: Some(audit::TransactionEventRefV1 {
+                transaction_id: uuid_text(transaction)?.to_vec(),
+                ordinal: 1,
+                count: 1,
+            }),
+            causation: Some(audit::CausationRefV1 {
+                cause: Some(audit::CausationV1::OperationId(request.occurrence.to_vec())),
+            }),
+            server_build_id: super::super::character_authority::SERVER_BUILD_ID.into(),
+            payload_sha256: Sha256::digest(&payload).to_vec(),
+            payload,
+            ..Default::default()
+        };
+        let wire = audit::encode_bounded(&envelope, atelier_audit::ENVELOPE_BYTES_MAX)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        audit::decode_common_envelope_within(&wire, atelier_audit::ENVELOPE_BYTES_MAX)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        Some(wire)
     };
     sqlx::query("INSERT INTO game_atelier_item_records(transaction_id,event_id,character_id,world_id,occurrence,cause,parent_item_instance_id,inputs,outputs,occurred_at,envelope_sha256,stash_input,equipment_before) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7::uuid,$8,$9,$10,sha256($11),$12,$13)")
         .bind(transaction).bind(event).bind(character).bind(world.as_bytes().as_slice()).bind(request.occurrence.as_slice()).bind(cause.as_str()).bind(&parent).bind(json!(inputs)).bind(json!(outputs)).bind(now).bind(wire.as_deref()).bind(stash.as_ref()).bind(equipment.as_ref()).execute(&mut ***tx).await?;
@@ -163,7 +182,9 @@ pub(super) async fn apply(
         sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=$2::uuid WHERE character_id=encode($1,'hex')::uuid AND revision=($3->>'revision')::numeric")
             .bind(character).bind(transaction).bind(before).execute(&mut ***tx).await?;
     }
-    if let Some(stash) = &stash { materials::apply_stash(tx, fence, transaction, stash).await?; }
+    if let Some(stash) = &stash {
+        materials::apply_stash(tx, fence, transaction, stash).await?;
+    }
     for output in &outputs {
         if output.get("before").is_some() {
             sqlx::query("UPDATE game_item_instances SET quantity=quantity+($1->>'count')::bigint,last_transaction_id=$2::uuid WHERE item_instance_id=($1->>'item')::uuid").bind(output).bind(transaction).execute(&mut ***tx).await?;

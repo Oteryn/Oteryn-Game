@@ -9,7 +9,7 @@
     "maximum": 262144
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "The three Atelier fee causes and standalone dismantle use this existing global envelope ceiling; payloads remain bounded at the existing global 196608 bytes. Actual encoded size is checked before publication; no claim that every maximum-length definition fits. Other fees retain their measured 25712-byte envelope and 25398-byte payload ceilings.",
+  "allocation_impact": "The three Atelier fee causes and standalone dismantle use this existing global envelope ceiling; payloads remain bounded at the existing global 196608 bytes. Actual encoded size is checked before publication; no claim that every maximum-length definition fits. Payload/envelope ceilings remain cause-specific: Atelier 196608/262144 bytes, legacy fees 25398/25712 bytes, and Forge fees 29494/29808 bytes.",
   "client_visible": false,
   "boundary_tests": [
     "262144 envelope bytes is the hard ceiling",

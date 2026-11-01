@@ -128,19 +128,23 @@ where
                 }
                 Err(_) => return Err(ServeEnd::ControlLost),
             }
-            // PARITY-EVENT-CALLBACKS-1: the server-save countdown rides the liveness cadence.
-            let countdown = tokio::time::timeout(
-                session.policy.interval,
+            // Existing periodic display work shares the liveness cadence. No independent
+            // achievement timer or timestamp cursor is needed for committed kill/event facts.
+            let interval = session.policy.interval;
+            let updates = async {
                 server_save_countdown_transport::emit(
                     stream,
                     authority,
                     &mut session.admitted,
                     &mut session.sequence,
-                ),
-            );
-            return match countdown.await {
-                Ok(Some(())) => Ok(None),
-                Ok(None) => Err(ServeEnd::Disconnected),
+                )
+                .await
+                .ok_or(ServeEnd::Disconnected)?;
+                achievement_notices::refresh(stream, authority, session).await
+            };
+            return match tokio::time::timeout(interval, updates).await {
+                Ok(Ok(())) => Ok(None),
+                Ok(Err(end)) => Err(end),
                 Err(_) => Err(ServeEnd::ControlLost),
             };
         }
