@@ -38,18 +38,18 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
-/// Prey slots, candidate selection, bonuses, and automatic reroll controls.
-#[path = "features/0140-prey/mod.rs"]
-pub mod prey;
-/// Direct player-trade panel state and controls.
-#[path = "features/0060-player-trade/mod.rs"]
-pub mod player_trade;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;
 /// Server-confirmed party membership controls.
 #[path = "features/0042-party/mod.rs"]
 pub mod party;
+/// Direct player-trade panel state and controls.
+#[path = "features/0060-player-trade/mod.rs"]
+pub mod player_trade;
+/// Prey slots, candidate selection, bonuses, and automatic reroll controls.
+#[path = "features/0140-prey/mod.rs"]
+pub mod prey;
 /// Wheel allocation, vessels and Gem Atelier controls.
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
