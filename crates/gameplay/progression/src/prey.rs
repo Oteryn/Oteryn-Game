@@ -4,6 +4,9 @@
 
 use oteryn_gameplay_domain::domain::premium::PremiumGate;
 
+pub mod difficulty;
+pub use difficulty::{PreyActivityKind, PreyCreatureValue, PreyDefenseMode, PreyRules};
+
 pub const SLOT_COUNT: u8 = 3;
 pub const LIST_SIZE: usize = 9;
 pub const CREATURE_KEY_BYTES: usize = 256;
@@ -23,6 +26,10 @@ pub enum PreyRefusal {
     InvalidBalance,
     NotEnoughWildcards,
     InvalidOption,
+    InvalidConfiguration,
+    InvalidTier,
+    TierLocked,
+    InvalidCreature,
 }
 
 /// Only live, same Account+World permanent facts belong here, never Store intent.
