@@ -37,7 +37,9 @@ use oteryn_gameplay_content_promotion::content::{
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
     item_document_promotion::apply_item_document_promotion_v1,
     item_elemental_magic_modifier_promotion::apply_item_elemental_magic_modifier_promotion_v1,
-    item_forge289_promotion::apply_item_forge289_promotion_v1,
+    item_forge289_promotion::{
+        ITEM_FORGE289_PACKET, ITEM_FORGE289_PACKET_SHA256, apply_item_forge289_promotion_v1,
+    },
     item_forge3332_promotion::apply_item_forge3332_promotion_v1,
     item_hit_magic_promotion::apply_item_hit_magic_promotion_v1,
     item_identity::{
@@ -2999,6 +3001,37 @@ fn apply_official_creature_balance(
     Ok(())
 }
 
+/// The pinned predecessor already contains Forge289's source and owner facts. Refresh only
+/// its mapper after the digest-bound admission chain; every other batch field must still match.
+fn refresh_item_forge289_mapper(
+    imports: &mut [ImportBatch],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if hex_sha256(ITEM_FORGE289_PACKET) != ITEM_FORGE289_PACKET_SHA256 {
+        return Err("Forge289 packet digest drift".into());
+    }
+    let packet: Value = serde_json::from_slice(ITEM_FORGE289_PACKET)?;
+    let expected: ImportBatch = serde_json::from_value(packet["import_batch"].clone())?;
+    let mut matching = imports
+        .iter_mut()
+        .filter(|batch| batch.batch_id == expected.batch_id);
+    let current = matching
+        .next()
+        .ok_or("Forge289 predecessor batch missing")?;
+    if matching.next().is_some() {
+        return Err("Forge289 predecessor batch duplicated".into());
+    }
+    let mut refreshed = current.clone();
+    refreshed
+        .mapper_revision
+        .clone_from(&expected.mapper_revision);
+    refreshed.mapper_sha256.clone_from(&expected.mapper_sha256);
+    if refreshed != expected {
+        return Err("Forge289 predecessor non-mapper metadata drift".into());
+    }
+    *current = refreshed;
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (root, predecessor) = authoring_roots()?;
     validate_ranged_profiles()?;
@@ -3014,6 +3047,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         )?;
         let mut draft = captured.migrate_to_v2();
+        refresh_item_forge289_mapper(&mut draft.core.imports)?;
         apply_official_creature_balance(&mut draft)?;
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
@@ -3356,6 +3390,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "npc_provisional_first={npc_bulk_definitions} npc_provisional_remaining={npc_more_definitions} total_npcs=1282 total_dialogues=836"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod forge289_mapper_tests {
+    use super::*;
+
+    fn batch() -> Result<ImportBatch, Box<dyn std::error::Error>> {
+        let packet: Value = serde_json::from_slice(ITEM_FORGE289_PACKET)?;
+        Ok(serde_json::from_value(packet["import_batch"].clone())?)
+    }
+
+    #[test]
+    fn forge289_mapper_refresh_preserves_other_batches_and_is_idempotent()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let expected = batch()?;
+        let mut historical = expected.clone();
+        historical.batch_id = "historical-batch".to_owned();
+        let mut imports = vec![historical.clone(), expected.clone()];
+        imports[1].mapper_revision = "old-mapper".to_owned();
+        imports[1].mapper_sha256 = "0".repeat(64);
+        refresh_item_forge289_mapper(&mut imports)?;
+        assert_eq!(imports, [historical.clone(), expected.clone()]);
+        refresh_item_forge289_mapper(&mut imports)?;
+        assert_eq!(imports, [historical, expected]);
+        Ok(())
+    }
+
+    #[test]
+    fn forge289_mapper_refresh_rejects_non_mapper_drift_missing_and_duplicate_batches()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let expected = batch()?;
+        let mut opposed = expected.clone();
+        opposed.source_revision = "opposed-source".to_owned();
+        for mut imports in [vec![], vec![expected.clone(), expected], vec![opposed]] {
+            let before = imports.clone();
+            assert!(refresh_item_forge289_mapper(&mut imports).is_err());
+            assert_eq!(imports, before);
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
