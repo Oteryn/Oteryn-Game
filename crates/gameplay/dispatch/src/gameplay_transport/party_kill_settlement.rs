@@ -51,7 +51,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if entry.task_board_recipients.get().is_some() {
             return Ok(());
         }
-        let plan = self.discover_party_xp(permit, entry).await?;
+        let Ok(plan) = self.discover_party_xp_plan(permit, entry).await? else {
+            // The shared-XP plan refused this captured death (for example a contributor with
+            // no live player state). That refusal is a fact of the death, so a retry cannot
+            // change it; party XP grants nothing in the same case. Freeze no recipient rather
+            // than holding the kill queue on a retry that never settles.
+            let _ = entry.task_board_recipients.set(Vec::new());
+            return Ok(());
+        };
         let mut recipients = Vec::new();
         for member in &plan.members {
             let Some(fence) = self
@@ -175,6 +182,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
     ) -> Result<PartyXpPlan, CharacterProgressionError> {
+        self.discover_party_xp_plan(permit, entry)
+            .await?
+            .map_err(|()| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))
+    }
+
+    /// `Ok(Err(()))` means the shared-XP plan itself refused this death
+    /// (`SpellItemError::Rejected`); every other failure stays `Err` and is retried.
+    async fn discover_party_xp_plan(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+    ) -> Result<Result<PartyXpPlan, ()>, CharacterProgressionError> {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
@@ -197,11 +216,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let plan = plan_shared_xp_in_transaction(
+                    let plan = match plan_shared_xp_in_transaction(
                         &mut tx, owner.root, &scope, runtime, states, entry,
                     )
                     .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
+                    {
+                        Ok(plan) => Ok(plan),
+                        Err(item_tx::SpellItemError::Rejected(_)) => Err(()),
+                        Err(_) => return Err(DurabilityError::Unavailable),
+                    };
                     tx.rollback().await?;
                     Ok(plan)
                 })
