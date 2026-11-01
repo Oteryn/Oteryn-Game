@@ -809,7 +809,7 @@ pub(super) fn creature_damage(
         u16,
     ),
     wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<i64> {
+) -> Option<[i64; 2]> {
     use oteryn_gameplay_combat_rules::resolution::{
         creature_damage_response_with_reduction, swing_mitigated,
     };
@@ -871,7 +871,7 @@ pub(super) fn creature_damage(
     } else {
         (physical, elemental)
     };
-    physical.checked_add(elemental)
+    Some([physical, elemental])
 }
 
 #[cfg(test)]

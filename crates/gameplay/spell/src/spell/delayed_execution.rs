@@ -133,6 +133,8 @@ pub struct SavedStrike {
 #[derive(Debug, Clone)]
 pub struct ResolvedStrike {
     pub batch: OwnerCombatBatch,
+    /// First due qualification's talisman rates, keyed by target and effect ordinal.
+    pub bounty_leech: Vec<(ExactActorRef, u16, u16)>,
     pub presentation: std::sync::Arc<super::spell_presentations::PreparedPresentation>,
     pub magnitude: std::sync::Arc<super::magnitude_owner::PreparedMagnitudeOwner>,
     pub owned: super::owned_cast_facts::OwnedCastFacts,

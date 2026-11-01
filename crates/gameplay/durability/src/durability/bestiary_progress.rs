@@ -75,6 +75,40 @@ pub struct BestiaryKillRequest {
     pub reward_revision: String,
 }
 
+/// A read-qualified lethal-event projection, never a client-supplied bonus.
+/// Only `capture_bestiary_talisman` constructs it under current Character/root
+/// authority. A pending death retains it across rollback and party task credit.
+#[derive(Debug, Clone)]
+pub struct CapturedBountyTalismanKill {
+    fence: CurrentCharacterGameplayFence,
+    occurrence: BestiaryKillOccurrence,
+    race: String,
+    increment: u8,
+    projection: super::task_board::BountyTalismanSnapshot,
+}
+
+impl CapturedBountyTalismanKill {
+    #[must_use]
+    pub fn bonuses(&self, race: &str) -> [i64; 4] {
+        self.projection.bonuses(race)
+    }
+
+    fn matches(
+        &self,
+        fence: &CurrentCharacterGameplayFence,
+        request: &BestiaryKillRequest,
+    ) -> bool {
+        self.occurrence == request.occurrence && self.race == request.race.key()
+            && self.fence.character_id == fence.character_id
+            && self.fence.game_session_id == fence.game_session_id
+            // Same-session reconnect replaces only the transport generation. The
+            // writer still admits its current generation before using this capture.
+            && self.fence.character_lease_generation == fence.character_lease_generation
+            && self.fence.runtime_scope == fence.runtime_scope
+            && self.fence.scope_ownership_generation == fence.scope_ownership_generation
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommittedBestiaryKill {
     pub occurrence: BestiaryKillOccurrence,
@@ -157,6 +191,48 @@ impl std::fmt::Display for BestiaryProgressError {
 impl std::error::Error for BestiaryProgressError {}
 
 impl DurabilityRoot {
+    /// Capture under current durable authority before any descendant can finish
+    /// this Character's bounty. Its numeric result is bound to the original death
+    /// and session; a later task completion cannot redraw an unresolved kill.
+    pub async fn capture_bestiary_talisman(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: BestiaryKillOccurrence,
+        race: &BestiaryRace,
+    ) -> Result<CapturedBountyTalismanKill> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BestiaryProgressError::AuthorityRejected)?;
+        let node = node.clone();
+        let race = race.key().to_owned();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(fence_error(error)));
+                    }
+                    let projection =
+                        super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
+                    let increment =
+                        talisman_bestiary_increment(occurrence, projection.bonuses(&race)[3]);
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(CapturedBountyTalismanKill {
+                        fence,
+                        occurrence,
+                        race,
+                        increment,
+                        projection,
+                    }))
+                })
+            })
+            .await?
+    }
+
     /// Record one credited kill. Exact occurrence replay returns its retained
     /// result without reacquiring gameplay authority; changed semantic reuse
     /// conflicts. A new occurrence is fenced by current recovery, FND-04
@@ -169,6 +245,20 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: BestiaryKillRequest,
+    ) -> Result<BestiaryKillOutcome> {
+        self.commit_bestiary_kill_with_talisman(authority, node, fence, request, None)
+            .await
+    }
+
+    /// The original API still qualifies the current runtime gate. The combat
+    /// settlement may supply only this owner's sealed, death-bound capture.
+    pub async fn commit_bestiary_kill_with_talisman(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: BestiaryKillRequest,
+        captured: Option<CapturedBountyTalismanKill>,
     ) -> Result<BestiaryKillOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
@@ -210,6 +300,9 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(fence_error(error))),
                     };
                     let root_revision = root.revision;
+                    if captured.as_ref().is_some_and(|capture| !capture.matches(&fence, &request)) {
+                        return Ok(Err(BestiaryProgressError::AuthorityRejected));
+                    }
 
                     let state = sqlx::query(
                         "SELECT character_revision::text, level, total_experience, \
@@ -253,7 +346,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         None => 0,
                     };
-                    let Some(kill_count_after) = request.race.next_kill_count(kill_count_before)
+                    let Some(first_kill_count) = request.race.next_kill_count(kill_count_before)
                     else {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(BestiaryKillOutcome::Saturated {
@@ -261,6 +354,18 @@ impl DurabilityRoot {
                             kill_count: kill_count_before,
                         }));
                     };
+                    // Replay is authoritative before any capture check. A first
+                    // mutation uses the sealed original death; legacy callers
+                    // still read current equipment/task/levels in this transaction.
+                    let increment = if let Some(captured) = &captured {
+                        captured.increment
+                    } else {
+                        let talisman = super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
+                        talisman_bestiary_increment(request.occurrence, talisman.bonuses(request.race.key())[3])
+                    };
+                    let kill_count_after = first_kill_count
+                        .saturating_add(u32::from(increment - 1))
+                        .min(request.race.final_kill_threshold());
                     let committed_revision = root_revision
                         .checked_add(1)
                         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -342,10 +447,10 @@ impl DurabilityRoot {
                            kill_count_before, kill_count_after, profile_revision, \
                            ruleset_revision, content_revision, simulation_revision, \
                            evidence_revision, declaration_revision, policy_revision, \
-                           reward_revision, committed_at) \
+                           reward_revision, committed_at, kill_count_increment) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $7, $8, $8, \
-                           $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)",
+                           $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
                     )
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
@@ -369,6 +474,7 @@ impl DurabilityRoot {
                     .bind(&request.policy_revision)
                     .bind(&request.reward_revision)
                     .bind(committed_at)
+                    .bind(i16::from(increment))
                     .execute(&mut *tx)
                     .await?;
                     grant_achievements(
@@ -502,6 +608,32 @@ fn validate_request(
         return Err(BestiaryProgressError::InvalidInput);
     }
     Ok(())
+}
+
+/// Crystal player.cpp:6555-6561 uses one uniform roll in 1..=10000. A tagged
+/// death occurrence makes transaction retries deterministic; no counter or clock
+/// can cause a second roll for the same credited death.
+fn talisman_bestiary_increment(occurrence: BestiaryKillOccurrence, bonus: i64) -> u8 {
+    if bonus <= 0 {
+        return 1;
+    }
+    if bonus >= 10_000 {
+        return 2;
+    }
+    let mut ordinal = 0_u64;
+    loop {
+        let hash = Sha256::new()
+            .chain_update(b"oteryn:bounty-talisman-bestiary:v1")
+            .chain_update(occurrence.as_bytes())
+            .chain_update(ordinal.to_be_bytes())
+            .finalize();
+        let value = u64::from_be_bytes(hash[..8].try_into().unwrap_or([0; 8]));
+        // Rejection sampling preserves the donor's uniform integer range.
+        if value < u64::MAX - u64::MAX % 10_000 {
+            return if value % 10_000 < bonus as u64 { 2 } else { 1 };
+        }
+        ordinal = ordinal.wrapping_add(1);
+    }
 }
 
 fn all_revisions(request: &BestiaryKillRequest) -> impl Iterator<Item = &str> {
@@ -727,6 +859,54 @@ mod tests {
             scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
             expected_character_revision: CharacterRevision::new(1).expect("revision"),
         }
+    }
+
+    #[test]
+    fn sealed_talisman_capture_survives_same_session_resume_only() {
+        let request = request();
+        let original = fence();
+        let captured = CapturedBountyTalismanKill {
+            fence: original,
+            occurrence: request.occurrence,
+            race: request.race.key().to_owned(),
+            increment: 1,
+            projection: super::super::task_board::BountyTalismanSnapshot::default(),
+        };
+        let mut current = original;
+        current.connection_generation = ConnectionGeneration::new(2).expect("resumed connection");
+        current.expected_character_revision = CharacterRevision::new(4).expect("advanced revision");
+        assert!(captured.matches(&current, &request));
+        let mut changed = current;
+        changed.game_session_id = GameSessionId::decode(&id(8)).expect("new session");
+        assert!(!captured.matches(&changed, &request));
+        changed = current;
+        changed.character_lease_generation += 1;
+        assert!(!captured.matches(&changed, &request));
+        changed = current;
+        changed.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(2).expect("new scope owner");
+        assert!(!captured.matches(&changed, &request));
+        let mut other_death = request;
+        other_death.occurrence = BestiaryKillOccurrence::from_bytes(id(9)).expect("other death");
+        assert!(!captured.matches(&current, &other_death));
+    }
+
+    #[test]
+    fn talisman_double_kill_draw_is_bound_to_one_death_and_respects_endpoints() {
+        let occurrence = request().occurrence;
+        assert_eq!(talisman_bestiary_increment(occurrence, 0), 1);
+        assert_eq!(talisman_bestiary_increment(occurrence, 10_000), 2);
+        let expected = talisman_bestiary_increment(occurrence, 600);
+        for _ in 0..20 {
+            assert_eq!(talisman_bestiary_increment(occurrence, 600), expected);
+        }
+        let mut outcomes = std::collections::BTreeSet::new();
+        for value in 1..=255_u8 {
+            let occurrence =
+                BestiaryKillOccurrence::from_bytes(id(value)).expect("UUIDv7 occurrence");
+            outcomes.insert(talisman_bestiary_increment(occurrence, 5_000));
+        }
+        assert_eq!(outcomes, [1, 2].into());
     }
 
     #[test]

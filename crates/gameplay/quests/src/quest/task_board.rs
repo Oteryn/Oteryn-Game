@@ -1,12 +1,15 @@
-//! TASKBOARD-1: the weekly Task Board's kill tasks as one code-built quest
-//! (`OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md` §2).
+//! Task Board quest identity, persisted tracks and accepted talisman profile.
 //!
-//! One active task at a time: `select-<n>` makes task `n` active and zeroes the kill counter, a
-//! kill of its race adds one (`kill-<n>`), and `claim-<n>` at the required count clears the
-//! active task, adds the task points, stamps the task's `claimed-at` with database time and
-//! carries the fixed experience. A task is selectable again seven days after its last claim.
+//! The historical TASKBOARD-1 definition remains for existing quest pins and tracks.
+//! Production weekly tasks, bounty actions, shops and reset rules live in [`full`]
+//! and the fenced durable Task Board owner. Legacy select/claim commands record a
+//! retired-action refusal; their fixed-board transitions are not a production path.
+//! Point balances and talisman levels retain these existing quest-track identities.
 
 use std::collections::BTreeMap;
+
+#[path = "task_board_full.rs"]
+pub mod full;
 
 use super::{
     QuestCatalogueError, QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue,
@@ -29,7 +32,6 @@ pub const LOCKOUT_SECONDS: i64 = 604_800;
 pub const EXPERIENCE: i64 = 1_850;
 /// Task points of one Beginner kill task (Canary and Crystal agree on 25).
 pub const TASK_POINTS: i64 = 25;
-const POINTS_MAX: i64 = 1_000_000_000;
 pub const TALISMAN_MAX_LEVEL: i64 = 355;
 pub const TALISMAN_PATHS: [&str; 4] = [
     TALISMAN_DAMAGE,
@@ -44,6 +46,16 @@ pub const fn talisman_upgrade_cost(level: i64) -> Option<i64> {
         None
     } else {
         Some(5 + level * 12)
+    }
+}
+
+/// Path validation shares the accepted Canary upgrade profile (NEWS-HIST-TALISMAN-1).
+#[must_use]
+pub const fn talisman_upgrade_cost_for_path(path: usize, level: i64) -> Option<i64> {
+    if path >= TALISMAN_PATHS.len() {
+        None
+    } else {
+        talisman_upgrade_cost(level)
     }
 }
 
@@ -165,8 +177,12 @@ pub fn tracks() -> Vec<QuestTrack> {
     let mut tracks = vec![
         track(SELECTED, i64::try_from(TASKS.len()).unwrap_or(i64::MAX)),
         track(KILLS, required),
-        track(POINTS, POINTS_MAX),
-        track(BOUNTY_POINTS, POINTS_MAX),
+        // PR #2764 ANSWER 6543406906 replaces the legacy 1e9 bound; existing
+        // persisted values and definition pins are not rewritten.
+        track(POINTS, i64::MAX),
+        track(BOUNTY_POINTS, i64::from(full::MAX_BOUNTY_POINTS)),
+        track(full::SOULSEALS, i64::from(full::MAX_SOULSEALS)),
+        track(full::BOARD_REVISION, i64::MAX),
     ];
     tracks.extend(numbers().map(|(number, _)| track(claimed_at_track(number), i64::MAX)));
     tracks.extend(TALISMAN_PATHS.map(|key| track(key, TALISMAN_MAX_LEVEL)));
@@ -273,28 +289,6 @@ pub fn kill_credit(tracks: &BTreeMap<String, i64>, race: &str) -> Option<String>
     let state = state(tracks);
     let task = task(state.selected)?;
     (task.race == race && state.kills < task.required).then(|| kill_transition(state.selected))
-}
-
-/// Returns a live path bonus only while the Talisman is equipped and the affected creature is
-/// the character's active Bounty Task creature.
-#[must_use]
-pub fn active_talisman_bonus(
-    tracks: &BTreeMap<String, i64>,
-    race: &str,
-    equipped: bool,
-    path: usize,
-) -> i64 {
-    if !equipped {
-        return 0;
-    }
-    let state = state(tracks);
-    let Some(active) = task(state.selected) else {
-        return 0;
-    };
-    if active.race != race {
-        return 0;
-    }
-    talisman_bonus(path, state.talisman_levels.get(path).copied().unwrap_or(0))
 }
 
 #[cfg(test)]
