@@ -1,4 +1,5 @@
-//! Fixed wire fixtures captured before DUR-ONEOF-1 changed either oneof block.
+//! Fixed wire fixtures captured before DUR-ONEOF-1 changed either oneof block,
+//! plus explicit fixtures for later registered additive variants.
 //! These are codec fixtures, not semantically valid gameplay transactions.
 use super::*;
 use crate::durability::item_fee_burn_audit::{
@@ -260,6 +261,15 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
+        (
+            472,
+            "HirelingService",
+            FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:service.hireling.food.29409".into(),
+                occurrence: vec![0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7],
+            }),
+        ),
     ]
 }
 
@@ -295,6 +305,8 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("MarketFee", "32080a02810712020809"),
         ("Imbuement", "3a070a028107208101"),
         ("NpcTravel", "420c0a0674726176656c12028107"),
+        // E12 adds reserved cause472; every earlier codec golden remains unchanged.
+        ("HirelingService", "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007"),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

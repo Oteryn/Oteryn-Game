@@ -158,6 +158,8 @@ pub use runtime_actor_carrier::TickFacts;
 pub use runtime_actor_carrier::TickKind;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::VisibleRuntimeCorpse;
+pub use runtime_actor_carrier::npc_actor::HirelingProjection;
+pub use runtime_actor_carrier::npc_actor::HouseHirelingEntity;
 pub use runtime_actor_carrier::npc_actor::NpcPlacement;
 pub use runtime_actor_carrier::npc_actor::NpcPlacementError;
 pub use runtime_actor_carrier::npc_actor::NpcPlacementTable;

@@ -6,6 +6,17 @@ use crate::content::{
 use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_timed_state::{TimedDefinitionFacts, TimedExpiryTarget};
+
+/// I05 keeps these effects closed until invisibility/regeneration are hosted.
+/// Crystal 201189f items.xml:6917,6948,7468 supplies their physical identities;
+/// E12 admitting those identities for Trader custody cannot activate equipment.
+pub(super) fn unhosted_equipment_effect(production_key: &str) -> bool {
+    matches!(
+        production_key,
+        "oteryn:item.tibia.i3049" | "oteryn:item.tibia.i3052" | "oteryn:item.tibia.i3098"
+    )
+}
+
 fn typed(target: &ReferenceItemTarget) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -39,6 +50,9 @@ pub(super) fn equipped_definition(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Option<TypedDefinitionRef> {
+    if unhosted_equipment_effect(&definition.production_key) {
+        return None;
+    }
     let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
     let paired = matches!(&policy.record().semantics.use_transform, ReferenceItemField::Known(transforms)
         if transforms.targets.iter().any(|entry| entry.kind == ReferenceTransformKind::Equip
@@ -63,6 +77,9 @@ pub(super) fn facts(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Option<(TimedDefinitionFacts, Option<TimedExpiryTarget>)> {
+    if unhosted_equipment_effect(&definition.production_key) {
+        return None;
+    }
     let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
     if matches!(&policy.record().semantics.temporal, ReferenceItemField::Known(temporal)
         if temporal.consumption_mode == ReferenceItemField::Known(ReferenceTemporalMode::DurableAbsoluteDeadline))

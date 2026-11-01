@@ -39,9 +39,13 @@ pub const FEE_RL06_EFFECT_WORK_UNITS_MAX: u64 = 64;
 /// `DUR03-RL-03-FEE`: the bank part's one value line (BANK-FEE-0 §4.3).
 pub const FEE_RL03_VALUE_LINES_MAX: u64 = 1;
 pub const FEE_RL07_EVENTS_MAX: u64 = 1;
-/// Measured worst case of this schema (the `worst_case_*` test), D50 method.
-pub const FEE_RL07_PAYLOAD_BYTES_MAX: usize = 25_398;
-pub const FEE_RL07_ENVELOPE_BYTES_MAX: usize = 25_712;
+/// Original Channel bounds and bytes remain unchanged.
+pub const CHANNEL_FEE_PAYLOAD_BYTES_MAX: usize = 25_398;
+pub const CHANNEL_FEE_ENVELOPE_BYTES_MAX: usize = 25_712;
+/// Hireling worst case adds 515 B for House512 and 385 B for the existing512-byte
+/// purchase service key/tag472 instead of Charm128. Measured by the scope boundary test.
+pub const FEE_RL07_PAYLOAD_BYTES_MAX: usize = CHANNEL_FEE_PAYLOAD_BYTES_MAX+900;
+pub const FEE_RL07_ENVELOPE_BYTES_MAX: usize = CHANNEL_FEE_ENVELOPE_BYTES_MAX+900;
 /// The largest coin part of a fee: 20 stacks of 100 crystal coins. A fee paid from coins only
 /// is at most this.
 pub const FEE_GOLD_UNITS_MAX: u64 = 20_000_000;
@@ -97,6 +101,8 @@ pub enum FeeBurnCauseV1 {
     GemGradeUp(OneItemNpcPurchaseV1),
     #[prost(message, tag = "12")]
     PreyListReroll(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "472")]
+    HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -125,6 +131,7 @@ pub struct OneItemFeeBurnCauseV1 {
             10, // GemSwitchDomain
             11, // GemGradeUp
             12, // PreyListReroll
+            472, // HirelingService
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -215,6 +222,9 @@ pub struct OneItemFeeBurnV1 {
     /// The bank part, present exactly when it is positive: every line whole, no change.
     #[prost(message, optional, tag = "13")]
     pub bank_debit: Option<OneItemFeeBankDebitV1>,
+    /// Cause472 only: actual named House; channel_id remains origin attribution.
+    #[prost(string, optional, tag = "14")]
+    pub house_key: Option<String>,
 }
 
 /// Resource usage of one fee transaction: each line and each change MINT is a participant; a
@@ -295,6 +305,11 @@ fn line_coin(state: &OneItemStateV1) -> Result<Coin, AuditError> {
 /// Complete closed fee shape, conservation and every registered bound.
 pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     purchase_cause::check(value)?;
+    match (value.cause.as_ref().and_then(|cause|cause.cause.as_ref()),value.house_key.as_deref()) {
+        (Some(FeeBurnCauseV1::HirelingService(_)),Some(house)) if super::house_hireling::audit::valid(&value.world_id,house)=>{},
+        (Some(FeeBurnCauseV1::HirelingService(_)),_)|(_,Some(_))=>return Err(AuditError::InvalidInput),
+        (_,None)=>{},
+    }
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
@@ -319,6 +334,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                 value.cause.as_ref().and_then(|c| c.cause.as_ref()),
                 Some(
                     FeeBurnCauseV1::NpcRepair(_)
+                        | FeeBurnCauseV1::HirelingService(_)
                         | FeeBurnCauseV1::Imbuement(_)
                         | FeeBurnCauseV1::NpcTravel(_)
                 )
@@ -504,6 +520,18 @@ fn check_change(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
 /// RL-07 payload gate for the fee shape: size before decode, canonical round trip, closed
 /// shape and per-field bounds.
 pub fn decode_fee_burn_payload(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditError> {
+    match decode_fee_burn_payload_within(wire) {
+        Err(_) if wire.len()>CHANNEL_FEE_PAYLOAD_BYTES_MAX=>Err(AuditError::CapacityExceeded),
+        result=>result,
+    }
+}
+
+fn fee_bounds(house:bool)->(usize,usize) {
+    if house {(FEE_RL07_PAYLOAD_BYTES_MAX,FEE_RL07_ENVELOPE_BYTES_MAX)}
+    else {(CHANNEL_FEE_PAYLOAD_BYTES_MAX,CHANNEL_FEE_ENVELOPE_BYTES_MAX)}
+}
+
+fn decode_fee_burn_payload_within(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditError> {
     if wire.len() > FEE_RL07_PAYLOAD_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
@@ -516,6 +544,7 @@ pub fn decode_fee_burn_payload(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditErr
     let Some(OneItemOperationV1::FeeBurn(burn)) = value.operation else {
         return Err(AuditError::InvalidInput);
     };
+    if wire.len()>fee_bounds(burn.house_key.is_some()).0 {return Err(AuditError::CapacityExceeded)}
     check_fee_burn(&burn)?;
     Ok(burn)
 }
@@ -527,8 +556,16 @@ pub fn decode_fee_burn_payload(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditErr
 pub fn decode_fee_burn_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, OneItemFeeBurnV1), AuditError> {
+    match decode_fee_burn_envelope_within(wire) {
+        Err(_) if wire.len()>CHANNEL_FEE_ENVELOPE_BYTES_MAX=>Err(AuditError::CapacityExceeded),
+        result=>result,
+    }
+}
+
+fn decode_fee_burn_envelope_within(wire:&[u8])->Result<(EventEnvelopeV1,OneItemFeeBurnV1),AuditError> {
     let value = mint::decode_common_envelope_within(wire, FEE_RL07_ENVELOPE_BYTES_MAX)?;
     let burn = decode_fee_burn_payload(&value.payload)?;
+    if wire.len()>fee_bounds(burn.house_key.is_some()).1 {return Err(AuditError::CapacityExceeded)}
     let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
         .ok_or(AuditError::InvalidInput)?;
     if (tuple == Type2EventTuple::V1 && burn.bank_debit.is_some())
@@ -579,12 +616,13 @@ pub fn encode_fee_burn_event_with(
         return Err(AuditError::InvalidInput);
     }
     let (world_id, channel_id) = (burn.world_id.clone(), burn.channel_id.clone());
+    let (payload_max,envelope_max)=fee_bounds(burn.house_key.is_some());
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
             operation: Some(OneItemOperationV1::FeeBurn(burn)),
         },
-        FEE_RL07_PAYLOAD_BYTES_MAX,
+        payload_max,
     )?;
     let envelope = EventEnvelopeV1 {
         envelope_revision: mint::ENVELOPE_REVISION,
@@ -607,7 +645,7 @@ pub fn encode_fee_burn_event_with(
         payload,
         ..EventEnvelopeV1::default()
     };
-    let wire = encode_bounded(&envelope, FEE_RL07_ENVELOPE_BYTES_MAX)?;
+    let wire = encode_bounded(&envelope, envelope_max)?;
     let (decoded, _) = decode_fee_burn_envelope(&wire)?;
     if decoded != envelope {
         return Err(AuditError::InvalidInput);
@@ -707,6 +745,7 @@ mod tests {
             change_gold_units: 0,
             change: Vec::new(),
             bank_debit: None,
+            house_key: None,
         }
     }
 
@@ -1069,14 +1108,14 @@ mod tests {
             operation: Some(OneItemOperationV1::FeeBurn(value.clone())),
         }
         .encoded_len();
-        assert_eq!(payload, FEE_RL07_PAYLOAD_BYTES_MAX);
+        assert_eq!(payload, CHANNEL_FEE_PAYLOAD_BYTES_MAX);
         let identity = FeeBurnEventIdentity {
             occurred_at_unix_ms: i64::MAX,
             server_build_id: &"b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX),
             ..identity()
         };
         let wire = encode_fee_burn_event(identity, value.clone()).unwrap();
-        assert_eq!(wire.len(), FEE_RL07_ENVELOPE_BYTES_MAX);
+        assert_eq!(wire.len(), CHANNEL_FEE_ENVELOPE_BYTES_MAX);
         // max + 1: a 21st line is rejected before encoding.
         let mut over = worst_case(FEE_INPUTS_MAX + 1);
         over.fee_gold_units = FEE_GOLD_UNITS_MAX;
@@ -1134,6 +1173,36 @@ mod tests {
             FEE_RL01_TOUCHED_ITEM_INSTANCES_MAX
         );
         assert_eq!(fee.check(), Err(AuditError::CapacityExceeded));
+    }
+
+    #[test]
+    fn hireling_house_scope_has_measured_worst_case_and_closed_channel_compatibility() {
+        let mut value=worst_case(FEE_INPUTS_MAX);
+        let prefix="oteryn:service.hireling.";
+        value.cause=Some(OneItemFeeBurnCauseV1 {cause:Some(FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
+            service_key:format!("{prefix}{}","s".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX-prefix.len())),
+            occurrence:uuid(70),atelier_proof:Vec::new(),
+        }))});
+        let house="oteryn:content.house.";
+        value.house_key=Some(format!("{house}{}","h".repeat(super::super::house_scope_handoff::HOUSE_KEY_MAX_BYTES-house.len())));
+        let payload=OneItemTransactionV1 {interpretation_revision:mint::INTERPRETATION_REVISION,
+            operation:Some(OneItemOperationV1::FeeBurn(value.clone()))}.encoded_len();
+        assert_eq!(payload,FEE_RL07_PAYLOAD_BYTES_MAX);
+        let identity=FeeBurnEventIdentity {occurred_at_unix_ms:i64::MAX,
+            server_build_id:&"b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX),..identity()};
+        let wire=encode_fee_burn_event(identity,value.clone()).unwrap();
+        assert_eq!(wire.len(),FEE_RL07_ENVELOPE_BYTES_MAX);
+        assert_eq!(decode_fee_burn_envelope(&wire).unwrap().1,value);
+        let mut missing=value.clone();missing.house_key=None;
+        assert_eq!(check_fee_burn(&missing),Err(AuditError::InvalidInput));
+        let mut wrong=value.clone();wrong.house_key=Some("oteryn:activity.instance.fake".into());
+        assert_eq!(check_fee_burn(&wrong),Err(AuditError::InvalidInput));
+        let mut foreign=with_change();foreign.house_key=value.house_key.clone();
+        assert_eq!(check_fee_burn(&foreign),Err(AuditError::InvalidInput));
+        let mut oversize=value;oversize.house_key.as_mut().unwrap().push('h');
+        assert!(encode_fee_burn_event(identity,oversize).is_err());
+        let mut trailing=wire;trailing.push(0);
+        assert_eq!(decode_fee_burn_envelope(&trailing),Err(AuditError::CapacityExceeded));
     }
 
     fn debit(debit: u64, before: u64) -> OneItemFeeBankDebitV1 {

@@ -1,4 +1,4 @@
-//! Read only players already selected by the existing interest/visibility owner.
+//! Read actors already selected by the existing interest/visibility owner.
 use super::*;
 impl SessionVisibility {
     pub(in crate::gameplay_transport) fn appearance_actors(
@@ -7,7 +7,11 @@ impl SessionVisibility {
     ) -> Vec<WorldSpatialEntity> {
         self.entities
             .values()
-            .filter(|e| e.kind == EntityKind::Player || (forge && e.kind == EntityKind::Creature))
+            .filter(|e| {
+                e.kind == EntityKind::Player
+                    || e.kind == EntityKind::Npc
+                    || (forge && e.kind == EntityKind::Creature)
+            })
             .copied()
             .collect()
     }

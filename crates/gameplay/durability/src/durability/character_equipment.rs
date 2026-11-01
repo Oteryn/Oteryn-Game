@@ -6,6 +6,9 @@
 )]
 #[path = "character_equipment/hotkey.rs"]
 mod hotkey;
+#[path = "character_equipment/house_read.rs"]
+mod house_read;
+pub(crate) use house_read::read_house_equipment_in_transaction;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};

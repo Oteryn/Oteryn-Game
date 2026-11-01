@@ -80,6 +80,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(character_id) => character_id,
                 Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
+        let gourmet = match self
+            .root
+            .read_gourmet_conditions(self.character, character_id)
+            .await
+        {
+            Ok(saved) => saved,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         let daily_streak = match self
             .root
             .read_daily_reward_streak(self.character, character_id, self.world_id)
@@ -318,6 +326,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
             .then(|| last_position::admitted_vitals(&decided, self.world_id))
             .flatten();
+        let gourmet_created = !self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .actors
+            .iter()
+            .any(|(present, session, _)| *present == actor && *session == game_session_id);
         if self
             .states
             .spell_states
@@ -338,6 +354,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if gourmet_created {
+            let mut states = self.states.spell_states.lock().await;
+            let Some(state) = states.get_mut(&runtime, actor, game_session_id) else {
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
+            };
+            if crate::spell::actor_conditions::restore_gourmet_food(
+                state,
+                gourmet,
+                self.owner_now().get() / 1000,
+            )
+            .is_err()
+            {
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
+            }
+            super::super::item_use::gourmet::remember(
+                &mut states,
+                actor,
+                game_session_id,
+                gourmet,
+                self.owner_now().get(),
+            );
         }
         if self
             .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)

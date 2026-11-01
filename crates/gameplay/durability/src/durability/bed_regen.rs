@@ -2,7 +2,8 @@
 //! projection, records its immutable outcome and consumes the sleeper/revision.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_last_position::{
-    LastPositionKey, LastPositionWrite, LastVitals, load_last_position, upsert_last_position,
+    LastPositionKey, LastPositionWrite, LastVitals, ScopedLastPosition, load_scoped_last_position,
+    upsert_scoped_last_position,
 };
 use super::character_progression::{CurrentCharacterGameplayFence, assert_gameplay_fence};
 use super::db::{
@@ -21,7 +22,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<(), DurabilityError> {
-        // Bed admission settles the saved Channel projection. An activity
+        // Bed admission settles vitals/rest in the same saved projection, retaining
+        // its named House/origin metadata. Its admitting session is genuinely Channel. An activity
         // session must not consume a sleeper or rewrite that projection.
         if !matches!(
             fence.runtime_scope,
@@ -50,10 +52,10 @@ impl DurabilityRoot {
             };
             let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)")
                 .bind(character).fetch_one(&mut *tx).await?;
-            let stored = load_last_position(&mut tx, fence.character_id).await?;
+            let stored = load_scoped_last_position(&mut tx, fence.character_id).await?;
             let previous: u64 = sleeper.try_get::<String, _>("lease")?.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             if !pending && sleeper.try_get::<Option<bool>, _>("eligible")? == Some(true)
-                && let Some(mut stored) = stored
+                && let Some(ScopedLastPosition { position: mut stored, house }) = stored
                 // A legacy projection from another lease cannot fund this sleep.
                 && stored.key.character_lease_generation == previous
                 && stored.record.world_id == fence.runtime_scope.world_id()
@@ -80,7 +82,7 @@ impl DurabilityRoot {
                 stored.record.vitals=LastVitals::new(after[0],after[1]);
                 stored.record.rest=Some(rest);
                 let key = LastPositionKey { character_lease_generation:fence.character_lease_generation,write_sequence:1 };
-                if upsert_last_position(&mut tx,fence.character_id.as_bytes(),key,&stored.record).await? != LastPositionWrite::Written {
+                if upsert_scoped_last_position(&mut tx,fence.character_id.as_bytes(),key,&stored.record,house.as_ref()).await? != LastPositionWrite::Written {
                     return Err(DurabilityError::InvalidStoredState);
                 }
             }

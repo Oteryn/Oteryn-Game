@@ -6,6 +6,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, game_session_id)
+            .is_ok()
+        {
+            let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(game_session_id)
+                .await
+                .ok()?;
+            let fence = item_fence_of(current)?;
+            let runtime = self.runtime.lock().await;
+            return self.states.spell_states.lock().await.house_vitals(
+                &runtime,
+                actor,
+                game_session_id,
+                fence,
+            );
+        }
         self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
             &*self.states.spell_states.lock().await,
@@ -25,6 +45,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        // Named House residents also own these persistent native conditions.
+        // Checkpoint before unrelated Channel-only cadence may return early.
+        if !super::super::item_use::gourmet::checkpoint(self, actor, game_session_id, false).await {
+            return None;
+        }
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, game_session_id)
+            .is_ok()
+        {
+            return self.observe_actor_vitals(actor, game_session_id).await;
+        }
         if !self.ensure_source_map_initialized().await {
             return None;
         }

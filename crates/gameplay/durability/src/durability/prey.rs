@@ -2,6 +2,7 @@
 mod command;
 mod decode;
 mod draw;
+mod house_read;
 mod storage;
 
 pub use command::PreyMutation;

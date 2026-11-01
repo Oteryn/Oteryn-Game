@@ -1403,15 +1403,15 @@ impl OwnedSkillAdjustments {
         Self::adjust(base, self.native.magic_level, self.source.magic_points)
     }
     pub fn adjust_shielding(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.shielding, None)
+        Self::adjust(base, self.native.shielding, self.source.shielding)
     }
     pub fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
         let (native, modifier) = match index {
             0 => (self.native.fist, None),
             1..=3 => (self.native.melee, self.source.melee),
             4 => (self.native.distance, self.source.distance),
-            5 => (self.native.shielding, None),
-            6 => (0, None),
+            5 => (self.native.shielding, self.source.shielding),
+            6 => (0, self.source.fishing),
             _ => return None,
         };
         let value = Self::adjust(base, native, modifier)?;
@@ -1488,6 +1488,7 @@ mod source_attribute_projection_tests {
                 magic_points: Some(M::PercentOfBase(90)),
                 melee: Some(M::PercentOfBase(40)),
                 distance: Some(M::Add(-15)),
+                ..Default::default()
             },
         );
         let read = state.owned_skill_adjustments(0).unwrap();
@@ -1602,3 +1603,7 @@ mod source_attribute_projection_tests {
 
 #[cfg(test)]
 mod agony_tests;
+
+#[path = "actor_conditions/gourmet_food.rs"]
+mod gourmet_food;
+pub use gourmet_food::{gourmet_conditions, restore_gourmet_food, stage_gourmet_food};

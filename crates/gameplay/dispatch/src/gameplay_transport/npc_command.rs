@@ -36,9 +36,12 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod coin_exchange;
+#[path = "hireling_services.rs"]
+pub(super) mod hireling_services;
 mod monk;
 mod premium_purchase;
 mod service_context;
+mod session_transfer;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
@@ -53,6 +56,7 @@ struct SessionNpc {
     exchange: Option<coin_exchange::Pending>,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    hireling: Option<hireling_services::State>,
 }
 
 pub struct PendingBank {
@@ -184,7 +188,8 @@ impl NpcConversations {
         let context = self.current_npc(chat, runtime, actor, session, intent)?;
         let book = chat.npc_talk()?;
         (book.get(&context.2).is_some_and(|entry| entry.bank())
-            || context.2.starts_with("oteryn:npc.hireling-bank:"))
+            || context.2.starts_with("oteryn:npc.hireling-bank:")
+            || hireling_services::bank_selected(self, session, &context))
         .then_some(context)
     }
 
@@ -224,6 +229,17 @@ impl NpcConversations {
     ) -> Option<NpcUpdate> {
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
+            if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
+                sessions
+                    .get(&session)?
+                    .hireling
+                    .as_ref()
+                    .map(|state| (state.viewer, state.npc))
+            }) && let Some(npc) = service_context::live_npc(runtime, viewer, session, named)
+                && npc.actor == npc_ref
+            {
+                return Some(named);
+            }
             let visible = runtime.visible_entities();
             let npc = visible.npcs.iter().find(|npc| npc.actor == npc_ref)?;
             Some(EntityRef {
@@ -307,22 +323,18 @@ impl NpcConversations {
         items: Option<&ItemDefinitionIndex>,
     ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
         use NpcIntentDisposition as Disposition;
-        let visible = runtime.visible_entities();
-        let Some(speaker) = visible.players.iter().find(|entry| entry.actor == actor) else {
+        let Some(speaker) = service_context::speaker_position(runtime, actor, session) else {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
         };
-        let Some(npc) = visible.npcs.iter().find(|npc| {
-            npc.actor.placement_identity() == intent.npc_actor.identity
-                && npc.generation == intent.npc_actor.generation
-        }) else {
+        let Some(npc) = service_context::live_npc(runtime, actor, session, intent.npc_actor) else {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Stale)));
         };
         if chat.engaged(session) != Some(npc.actor) {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::NoConversation)));
         }
-        if speaker.position.floor != npc.position.floor
-            || speaker.position.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
-            || speaker.position.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
+        if speaker.floor != npc.position.floor
+            || speaker.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
+            || speaker.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
         {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::NotInRange)));
         }
@@ -355,10 +367,13 @@ impl NpcConversations {
         };
         let rejected = || NpcTradeRefusal::only(Disposition::Rejected);
         let (Some(book), Some(items), Some(npc_key)) =
-            (chat.npc_talk(), items, runtime.npc_key(npc.actor))
+            (chat.npc_talk(), items, Some(npc.key.as_str()))
         else {
             return Err(Box::new(rejected()));
         };
+        if crate::durability::house_hireling::npc_identity(npc_key).is_some() {
+            return hireling_services::resolve_trade(self, session, npc_key, intent, items);
+        }
         let Some(entry) = book.get(npc_key) else {
             return Err(Box::new(rejected()));
         };
@@ -428,15 +443,10 @@ impl NpcConversations {
         let (Some(book), Ok(text)) = (chat.npc_talk(), ChatText::parse(&intent.text)) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
-        let visible = runtime.visible_entities();
-        let Some(speaker) = visible.players.iter().find(|entry| entry.actor == actor) else {
+        let Some(speaker) = service_context::speaker_position(runtime, actor, session) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
-        let Some(npc) = visible.npcs.iter().find(|npc| {
-            npc.actor.placement_identity() == intent.npc_actor.identity
-                && npc.generation == intent.npc_actor.generation
-        }) else {
-            // The NPC is gone or is another generation: any conversation with it is over.
+        let Some(npc) = service_context::live_npc(runtime, actor, session, intent.npc_actor) else {
             return NpcTalkOutcome {
                 unknown: false,
                 inventory_changed: false,
@@ -446,14 +456,14 @@ impl NpcConversations {
             };
         };
         let (Ok(speaker_floor), Ok(npc_floor)) = (
-            u8::try_from(speaker.position.floor),
+            u8::try_from(speaker.floor),
             u8::try_from(npc.position.floor),
         ) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
         let at = ChatPosition {
-            x: speaker.position.x,
-            y: speaker.position.y,
+            x: speaker.x,
+            y: speaker.y,
             floor: speaker_floor,
         };
         let there = ChatPosition {
@@ -461,7 +471,7 @@ impl NpcConversations {
             y: npc.position.y,
             floor: npc_floor,
         };
-        if runtime.npc_key(npc.actor) == Some(super::vocation_choice::DAWNPORT_CHOICE_NPC) {
+        if Some(npc.key.as_str()) == Some(super::vocation_choice::DAWNPORT_CHOICE_NPC) {
             if runtime.owner_fence().is_err()
                 || !runtime
                     .player_control_facts(actor, session)
@@ -494,10 +504,11 @@ impl NpcConversations {
             );
         }
         let hireling_bank = super::npc_talk::hireling_bank_entry();
-        let Some(entry) = runtime.npc_key(npc.actor).and_then(|key| {
+        let Some(entry) = Some(npc.key.as_str()).and_then(|key| {
             book.get(key).or_else(|| {
-                key.starts_with("oteryn:npc.hireling-bank:")
-                    .then_some(&hireling_bank)
+                (key.starts_with("oteryn:npc.hireling-bank:")
+                    || crate::durability::house_hireling::npc_identity(key).is_some())
+                .then_some(&hireling_bank)
             })
         }) else {
             // A placed NPC with no talk entry (a Dialogue-backed NPC) is silent.
@@ -571,6 +582,9 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
+        return outcome;
+    }
     let session = command.game_session_id;
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
     let unknown = || NpcTalkOutcome {
@@ -582,7 +596,7 @@ pub(super) async fn npc_bank_talk(
     let reference = CommandId::new(command.command_id)
         .ok()
         .map(|id| CommandRef::new(session, id));
-    let _trade_permit = if intent.text.to_ascii_lowercase().contains("yes") {
+    let mut _trade_permit = if intent.text.to_ascii_lowercase().contains("yes") {
         let Some(permit) = admission.spell_lane_permit().await else {
             return unknown();
         };
@@ -606,6 +620,27 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if let Some(context) = admission
+        .states
+        .npc_conversations
+        .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+        .filter(|context| crate::durability::house_hireling::npc_identity(&context.2).is_some())
+    {
+        drop(runtime);
+        drop(_trade_permit.take());
+        if let Some(outcome) =
+            hireling_services::talk(admission, actor, command, &intent, context).await
+        {
+            return outcome;
+        }
+        if yes {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return unknown();
+            };
+            _trade_permit = Some(permit);
+        }
+        runtime = admission.runtime.lock().await;
     }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
@@ -773,17 +808,31 @@ pub(super) async fn npc_bank_talk(
         BankNpcIntent::Transfer { name, .. } => Some(name.clone()),
         _ => None,
     };
-    let preview = match admission
-        .root
-        .preview_npc_bank(
-            admission.character,
-            admission.holder,
-            fence,
-            coins.clone(),
-            recipient,
-        )
-        .await
-    {
+    let preview_result = if crate::durability::house_hireling::npc_identity(&npc_key).is_some() {
+        admission
+            .root
+            .preview_hireling_bank(
+                admission.character,
+                admission.holder,
+                fence,
+                coins.clone(),
+                recipient,
+                npc_key.clone(),
+            )
+            .await
+    } else {
+        admission
+            .root
+            .preview_npc_bank(
+                admission.character,
+                admission.holder,
+                fence,
+                coins.clone(),
+                recipient,
+            )
+            .await
+    };
+    let preview = match preview_result {
         Ok(preview) => preview,
         Err(BankError::Unavailable(_)) => return unknown(),
         Err(_) => return rejected(),

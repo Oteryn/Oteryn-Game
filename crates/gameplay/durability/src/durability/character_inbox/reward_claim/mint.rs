@@ -185,6 +185,39 @@ impl DurabilityRoot {
         source_plan: &RewardClaimInboxPlan,
         request: RewardClaimInboxMintRequest,
     ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
+        self.prepare_inbox_mint(authority, node, InboxAuthority::Character(fence), source_plan, request).await
+    }
+
+    pub async fn prepare_hireling_inbox_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        source_plan: &RewardClaimInboxPlan,
+        request: RewardClaimInboxMintRequest,
+    ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
+        self.prepare_inbox_mint(authority, node, InboxAuthority::Hireling(fence), source_plan, request).await
+    }
+
+    pub async fn prepare_hireling_recall_inbox_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        recall: HirelingRecallRequest,
+        source_plan: &RewardClaimInboxPlan,
+        request: RewardClaimInboxMintRequest,
+    ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
+        self.prepare_inbox_mint(authority, node, InboxAuthority::Recall(recall), source_plan, request).await
+    }
+
+    async fn prepare_inbox_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        authority_kind: InboxAuthority,
+        source_plan: &RewardClaimInboxPlan,
+        request: RewardClaimInboxMintRequest,
+    ) -> Result<RewardClaimInboxMintCandidate, RewardClaimInboxError> {
         source_plan.validate()?;
         let spec = mint_spec(&request)?;
         if source_plan.item_instance_ids.len() != request.outputs.len() {
@@ -212,18 +245,7 @@ impl DurabilityRoot {
                         Ok(None) => false,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if !replay
-                        && !character_item_fence_is_current(
-                            &mut tx,
-                            &node,
-                            &fence,
-                            query_plan.command,
-                            query_plan.character_id,
-                            *query_plan.world_id.as_bytes(),
-                            *query_plan.channel_id.as_bytes(),
-                        )
-                        .await?
-                    {
+                    if !replay && authority_kind.assert_current(&mut tx, &node, &query_plan).await?.is_none() {
                         return Ok(Err(RewardClaimInboxError::AuthorityRejected));
                     }
                     let item_ids: Vec<String> = query_plan
@@ -307,6 +329,75 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
+        self.commit_inbox_mint(authority, node, InboxAuthority::Character(fence), candidate, owner, operation).await
+    }
+
+    pub async fn commit_hireling_inbox_mint<T, C, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimInboxMintCandidate,
+        owner: &mut C,
+        operation: F,
+    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
+    where
+        T: Send + 'static,
+        C: Send,
+        F: for<'a, 'connection> FnOnce(
+                &'a mut RewardClaimInboxTransaction<'connection>,
+                &'a mut C,
+            ) -> Pin<
+                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
+            > + Send
+            + 'static,
+    {
+        self.commit_inbox_mint(authority, node, InboxAuthority::Hireling(fence), candidate, owner, operation).await
+    }
+
+    pub async fn commit_hireling_recall_inbox_mint<T, C, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        recall: HirelingRecallRequest,
+        candidate: &mut RewardClaimInboxMintCandidate,
+        owner: &mut C,
+        operation: F,
+    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
+    where
+        T: Send + 'static,
+        C: Send,
+        F: for<'a, 'connection> FnOnce(
+                &'a mut RewardClaimInboxTransaction<'connection>,
+                &'a mut C,
+            ) -> Pin<
+                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
+            > + Send
+            + 'static,
+    {
+        self.commit_inbox_mint(authority, node, InboxAuthority::Recall(recall), candidate, owner, operation).await
+    }
+
+    async fn commit_inbox_mint<T, C, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        authority_kind: InboxAuthority,
+        candidate: &mut RewardClaimInboxMintCandidate,
+        owner: &mut C,
+        operation: F,
+    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
+    where
+        T: Send + 'static,
+        C: Send,
+        F: for<'a, 'connection> FnOnce(
+                &'a mut RewardClaimInboxTransaction<'connection>,
+                &'a mut C,
+            ) -> Pin<
+                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
+            > + Send
+            + 'static,
+    {
         if let Some(positions) = self
             .reconcile_reward_claim_inbox(authority, candidate.plan())
             .await?
@@ -349,10 +440,10 @@ impl DurabilityRoot {
             })
             .await??;
         candidate.work_units_used = used;
-        self.with_reward_claim_inbox_transaction(
+        self.with_inbox_authority(
             authority,
             node,
-            fence,
+            authority_kind,
             candidate.plan(),
             owner,
             move |context, owner| {
@@ -429,6 +520,9 @@ async fn mint_inbox(
             plan_binding: binding.to_vec(),
             mint_intent_sha256: frozen.mint_intent_sha256.to_vec(),
             expected_character_lease_generation: context.character_lease_generation,
+            house_key: context.house_authority.as_ref().map(|scope| scope.house.clone()),
+            house_scope_ownership_generation: context.house_authority.as_ref().map(|scope| scope.generation),
+            house_authority_kind: context.house_authority.as_ref().map(|scope| u32::from(scope.kind)),
         }),
     };
     let tuple = context.selected_type2_tuple();
@@ -459,6 +553,14 @@ async fn mint_inbox(
     .execute(&mut **context.transaction())
     .await
     .map_err(mint_sql_error)?;
+    if let Some(scope) = context.house_authority.clone() {
+        sqlx::query(
+            "INSERT INTO game_hireling_inbox_scope_receipts(transaction_id,world_id,house_key,scope_ownership_generation,authority_kind) \
+             VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,$5)",
+        ).bind(plan.transaction_id.as_slice()).bind(plan.world_id.as_bytes().as_slice())
+         .bind(&scope.house).bind(scope.generation.to_string()).bind(i16::from(scope.kind))
+         .execute(&mut **context.transaction()).await.map_err(mint_sql_error)?;
+    }
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,\
         transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,\

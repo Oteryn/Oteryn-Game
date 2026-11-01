@@ -3,12 +3,12 @@
 //! the debit and the order ledger; Game retains only the request binding and its answer
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
 use super::connection::AdmittedSession;
-use super::item_ref_admission::generation_item_facts;
+use super::item_ref_admission::{generation_item_facts,generation_inbox_item_facts};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::durability::character_inbox::{RewardClaimInboxMintOutput, RewardClaimInboxMintRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::store::{DeliveryPlan, PurchaseRequest, PurchaseRequestState};
+use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState};
 use crate::foundation::{CommandId, CommandRef};
 use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer, StoreClient};
 use oteryn_gameplay_economy::store as rules;
@@ -20,6 +20,8 @@ use std::sync::{Arc, LazyLock};
 
 #[path = "store/catalogue.rs"]
 mod catalogue;
+#[path = "store/hireling.rs"]
+mod hireling;
 use catalogue::{RuntimeCatalogue, currency_text};
 
 /// The node's Platform Store client; `None` refuses every purchase as disabled.
@@ -29,7 +31,15 @@ static CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| {
     RuntimeCatalogue::from_json(include_bytes!(
         "../../../../../rulesets/economy/store/catalogue.json"
     ))
+ });
+
+static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| {
+    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/hirelings.json"))
 });
+
+fn catalogue_for_key(key: &str)->Option<&'static RuntimeCatalogue> {
+    if key.starts_with("store:hireling:") {HIRELING_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()}
+}
 
 macro_rules! authority_methods {
     () => {
@@ -71,24 +81,27 @@ pub(super) async fn execute(
     command_type: u32,
     payload: &[u8],
 ) -> (CommandStatus, Vec<u8>) {
-    let Some(catalogue) = CATALOGUE.as_ref() else {
-        return REJECTED;
-    };
     let encoded = match command_type {
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
                 return REJECTED;
             };
+            let catalogue=if matches!(request.category.as_str(),"houses.hirelings"|"houses.hireling-dresses") {
+                if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return REJECTED}
+                HIRELING_CATALOGUE.as_ref()
+            } else {CATALOGUE.as_ref()};
+            let Some(catalogue)=catalogue else {return REJECTED};
             let Some(page) = catalogue_page(owner, admitted, catalogue, &request).await else {
                 return REJECTED;
             };
             wire::encode_catalogue_page(&page)
         }
         wire::COMMAND_TYPE_STORE_PURCHASE => {
-            let Ok(request) = wire::decode_purchase_request(payload) else {
+            let Ok((request,customization)) = wire::decode_purchase_request_with_hireling(payload) else {
                 return REJECTED;
             };
-            let Some(result) = purchase(owner, admitted, catalogue, command_id, request).await
+            let Some(catalogue)=catalogue_for_key(&request.offer_key) else {return REJECTED};
+            let Some(result) = purchase(owner, admitted, catalogue, command_id, request,customization).await
             else {
                 return REJECTED;
             };
@@ -207,11 +220,20 @@ async fn purchase(
     catalogue: &RuntimeCatalogue,
     command_id: u64,
     request: wire::StorePurchaseRequest,
+    customization: Option<wire::StoreHirelingCustomization>,
 ) -> Option<wire::StorePurchaseResult> {
     let account = admitted.controller?.account_id;
     let fence = admitted.item_fence?;
     let Some(platform) = owner.store.clone() else {
         return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
+    };
+    let hireling_action=if let Some(offer)=catalogue.hireling(&request.offer_key) {
+        if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return None}
+        let Some(action)=hireling::action(offer,customization.as_ref()) else {return Some(refusal(wire::StorePurchaseCode::OfferUnavailable))};
+        Some(action)
+    } else {
+        if customization.is_some() {return None}
+        None
     };
     let Ok(quote) = rules::build_quote(
         &catalogue.rules,
@@ -238,9 +260,20 @@ async fn purchase(
         purchase_request_id: request.purchase_request_id,
         account_id: account,
         character_id,
-        binding: binding.binding_digest().to_vec(),
+        binding: hireling::request_binding(binding.binding_digest(),hireling_action.as_ref())?,
     };
-    let saved = match owner.root.record_purchase_request(journal.clone()).await.ok()? {
+    let hireling_purchase=hireling_action.as_ref().map(|action|HirelingStorePurchase {purchase_request_id:request.purchase_request_id,origin_channel:*admitted.channel_id.as_bytes(),action:action.clone()});
+    let request_state=if let Some(action)=hireling_action {
+        let current=gameplay_fence(owner,admitted).await?;
+        let weights=if matches!(&action,HirelingStoreAction::Hire {..}) {
+            owner.active_generation.and_then(|g|g.native_gameplay()).map(super::item_ref_admission::NativeInboxItemWeights)
+        } else {None};
+        let Some(state)=owner.root.reserve_hireling_store_purchase(owner.character,owner.holder,journal.clone(),action,current,*admitted.channel_id.as_bytes(),weights.as_ref().map(|w|w as &dyn crate::durability::item_transfer::ItemWeightLookup)).await.ok()? else {
+            return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+        };
+        state
+    } else {owner.root.record_purchase_request(journal.clone()).await.ok()?};
+    let saved = match request_state {
         PurchaseRequestState::Answered(saved) => saved,
         PurchaseRequestState::Sent => {
             let answer = platform
@@ -268,8 +301,9 @@ async fn purchase(
         return Some(refusal(code));
     }
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
+    if hireling_purchase.is_some() && answer.operation_ids.len()!=1 {return None}
     for operation in &answer.operation_ids {
-        deliver(owner, &platform, admitted, catalogue, &binding, command, operation).await?;
+        deliver(owner, &platform, admitted, catalogue, &binding, command, operation,hireling_purchase.as_ref()).await?;
     }
     Some(wire::StorePurchaseResult {
         code,
@@ -281,6 +315,7 @@ async fn purchase(
 /// Read the Platform delivery intent of one operation of this purchase and mint its item into
 /// the Character Inbox under the current gameplay fence; a delivered operation replays its
 /// receipt. The receipt is published to Platform and acknowledged in the outbox.
+#[allow(clippy::too_many_arguments, reason = "the existing Store delivery owner receives the optional immutable Hireling reservation")]
 async fn deliver(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     platform: &StorePlatform,
@@ -289,6 +324,7 @@ async fn deliver(
     binding: &rules::PurchaseStoreOffer,
     command: CommandRef,
     operation: &str,
+    purchase: Option<&HirelingStorePurchase>,
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
     let intent = platform.lock().await.read_intent(operation).await.ok()?;
@@ -306,6 +342,13 @@ async fn deliver(
     {
         return None;
     }
+    if let Some(purchase)=purchase.filter(|p|!matches!(p.action,HirelingStoreAction::Hire {..})) {
+        let fence=gameplay_fence(owner,admitted).await?;
+        let plan=HirelingServiceDeliveryPlan {identity:DeliveryIdentity {account_id:account,character_id,world_id,fulfilment_unit_id:intent.fulfilment_unit_id},command,purchase:purchase.clone()};
+        let receipt=owner.root.apply_store_hireling_service(owner.character,owner.holder,operation_id,plan,fence).await.ok()?;
+        publish(owner,platform,operation_id,&receipt).await?;
+        return Some(());
+    }
     let effects = rules::plan_delivery(
         &catalogue.rules,
         &rules::DeliveryIntent {
@@ -321,16 +364,21 @@ async fn deliver(
         &rules::CharacterStoreView::default(),
     )
     .ok()?;
-    let [rules::DeliveryEffect::MintStoreInbox { item_key, count: 1 }] = effects.as_slice() else {
-        return None;
+    let item_key=if purchase.is_some() {"oteryn:item.tibia.i29432"} else {
+        let [rules::DeliveryEffect::MintStoreInbox {item_key,count:1}]=effects.as_slice() else {return None};
+        item_key.as_str()
     };
     let definition = TypedDefinitionRef {
         family: "Item".into(),
-        production_key: item_key.clone(),
+        production_key: item_key.to_owned(),
         revision_ref: catalogue.item_revision(&binding.offer_key)?.to_owned(),
     };
     let native = owner.active_generation?.native_gameplay()?;
-    let item = generation_item_facts(native, &definition).ok()?;
+    let item = if matches!(purchase.map(|p| &p.action),Some(HirelingStoreAction::Hire {..})) {
+        generation_inbox_item_facts(native, &definition).ok()?
+    } else {
+        generation_item_facts(native, &definition).ok()?
+    };
     let fence = gameplay_fence(owner, admitted).await?;
     let plan = DeliveryPlan {
         account_id: account,
@@ -356,12 +404,16 @@ async fn deliver(
             }],
         },
     };
-    let receipt = owner
-        .root
-        .apply_store_delivery(owner.character, owner.holder, operation_id, plan, fence)
-        .await
-        .ok()?;
-    let bytes = serde_json::to_vec(&receipt).ok()?;
+    let receipt=if let Some(purchase)=purchase {
+        owner.root.apply_store_hireling_delivery(owner.character,owner.holder,operation_id,plan,fence,purchase.clone()).await.ok()?
+    } else {
+        owner.root.apply_store_delivery(owner.character,owner.holder,operation_id,plan,fence).await.ok()?
+    };
+    publish(owner,platform,operation_id,&receipt).await
+}
+
+async fn publish(owner:&ComposedFreshAdmission<'_, '_, '_>,platform:&StorePlatform,operation_id:[u8;16],receipt:&crate::durability::store::DeliveryReceipt)->Option<()> {
+    let bytes = serde_json::to_vec(receipt).ok()?;
     // Publication is best effort here: the outbox keeps the receipt until Platform accepts it.
     if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
         let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;

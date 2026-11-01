@@ -468,6 +468,48 @@ pub(super) async fn apply_build_in_transaction(
     binding: Vec<u8>,
     offline: Option<super::offline_training_state::OfflineChange>,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
+    apply_build_with_fence(tx, BuildFence::Gameplay(node), fence, request, policy_digest,
+        content_revision, binding, offline).await
+}
+
+/// Only the native explicit House logout participant can supply this proof.
+/// No general Character build caller acquires House write authority here.
+#[allow(clippy::too_many_arguments, reason = "the existing build participant plus its closed House logout proof")]
+pub(super) async fn apply_house_logout_in_transaction(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    house: super::loop_training::HouseLogout<'_>,
+    fence: &CurrentCharacterGameplayFence,
+    request: BuildChangeRequest,
+    policy_digest: [u8; 32],
+    content_revision: String,
+    binding: Vec<u8>,
+    offline: super::offline_training_state::OfflineChange,
+) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
+    if house.fence() != *fence || request.cause != BuildCause::Logout
+        || request.before != request.after || request.pruned_stance.is_some()
+    {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    apply_build_with_fence(tx, BuildFence::HouseLogout(house), fence, request, policy_digest,
+        content_revision, binding, Some(offline)).await
+}
+
+enum BuildFence<'a> {
+    Gameplay(&'a NodeIncarnationProof),
+    HouseLogout(super::loop_training::HouseLogout<'a>),
+}
+
+#[allow(clippy::too_many_arguments, reason = "the unchanged native build transaction participant")]
+async fn apply_build_with_fence(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    authority: BuildFence<'_>,
+    fence: &CurrentCharacterGameplayFence,
+    request: BuildChangeRequest,
+    policy_digest: [u8; 32],
+    content_revision: String,
+    binding: Vec<u8>,
+    offline: Option<super::offline_training_state::OfflineChange>,
+) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
     let stamina_training = offline.is_some_and(|change| {
         request.cause == BuildCause::Training
             && request.before == request.after
@@ -501,7 +543,11 @@ pub(super) async fn apply_build_in_transaction(
         return Ok(Ok(BuildCommitOutcome::AlreadyCommitted(committed)));
     }
 
-    let root = match assert_gameplay_fence(tx, fence, node).await? {
+    let proven = match authority {
+        BuildFence::Gameplay(node) => assert_gameplay_fence(tx, fence, node).await?,
+        BuildFence::HouseLogout(house) => house.fenced_root(tx).await?,
+    };
+    let root = match proven {
         Ok(root) => root,
         Err(error) => return Ok(Err(error)),
     };

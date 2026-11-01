@@ -42,12 +42,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
         for _ in 0..EXPIRY_ATTEMPTS {
-            let mark = match self
-                .runtime
-                .lock()
-                .await
-                .player_control_facts(actor, session)
-            {
+            let facts = {
+                let runtime = self.runtime.lock().await;
+                if runtime.house_actor_state(actor, session).is_ok() {
+                    runtime.house_player_control_facts(actor, session)
+                } else {
+                    runtime.player_control_facts(actor, session)
+                }
+            };
+            let mark = match facts {
                 Ok(facts) => facts.control_loss,
                 Err(_) => return GraceExpiryResult::Unknown,
             };
@@ -127,6 +130,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
             // before the release can end the Character lease.
             if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
+            if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
+            {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }

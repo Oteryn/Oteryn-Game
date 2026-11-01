@@ -23,6 +23,8 @@ mod attack_chase_search;
 pub(super) mod charm_combat;
 mod drain;
 mod equipped_offence;
+#[path = "attack/house_transfer.rs"]
+mod house_transfer;
 mod monk_shrines;
 pub(super) mod player_block;
 pub(in crate::gameplay_transport) mod ranged;
@@ -495,6 +497,9 @@ impl ChannelAttackStates {
             runtime
                 .player_control_facts(entry.actor, entry.session)
                 .is_ok()
+                || runtime
+                    .house_player_control_facts(entry.actor, entry.session)
+                    .is_ok()
         });
         self.blocks
             .retain(|(creature, _)| runtime.contains_live_creature(*creature));

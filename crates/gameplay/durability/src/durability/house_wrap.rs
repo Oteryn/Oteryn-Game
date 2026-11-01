@@ -9,6 +9,9 @@ use super::{DurabilityError, DurabilityRoot};
 use oteryn_protocol_oteryn::house_wrap::{Refusal, Reply, Request};
 use sqlx::Row;
 
+mod purchased_kit;
+pub(crate) use purchased_kit::record_purchased_kit;
+
 pub struct HouseWrapCommand {
     pub house: HouseId,
     pub command: u64,

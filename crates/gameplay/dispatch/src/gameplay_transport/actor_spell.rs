@@ -31,6 +31,10 @@ pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, S
 mod actor_movement;
 #[path = "familiar_cast.rs"]
 mod familiar_cast;
+#[path = "actor_spell/house_admission.rs"]
+mod house_admission;
+#[path = "actor_spell/house_transfer.rs"]
+mod house_transfer;
 #[path = "movement_equipment.rs"]
 mod movement_equipment;
 pub(in crate::gameplay_transport) use familiar_cast::{FamiliarActorEnd, FamiliarLogoutSave};
@@ -96,6 +100,15 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    /// Last persisted native gourmet conditions; a write-suppression projection only.
+    pub(in crate::gameplay_transport) gourmet_checkpoints: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
+        u64,
+    )>,
+    pub(in crate::gameplay_transport) pending_gourmet: Vec<super::item_use::gourmet::PendingUse>,
+    pub(in crate::gameplay_transport) pending_hireling_lamps: Vec<super::hireling::PendingLampUse>,
     pub(super) prey: Vec<super::prey::LivePrey>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
@@ -270,6 +283,9 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            gourmet_checkpoints: Vec::new(),
+            pending_gourmet: Vec::new(),
+            pending_hireling_lamps: Vec::new(),
             prey: Vec::new(),
             hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
@@ -339,7 +355,8 @@ impl ChannelSpellStates {
             return false;
         }
         self.charm_states.retain(|(present, held, _)| {
-            runtime.player_control_facts(*present, *held).is_ok()
+            (runtime.player_control_facts(*present, *held).is_ok()
+                || runtime.house_player_control_facts(*present, *held).is_ok())
                 && !(*present == actor && *held == session)
         });
         self.charm_states.push((actor, session, state));
@@ -361,7 +378,14 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.has_pending_native(actor, session)
+        self.pending_gourmet
+            .iter()
+            .any(|pending| pending.actor == actor && pending.session == session)
+            || self
+                .pending_hireling_lamps
+                .iter()
+                .any(|pending| pending.actor == actor && pending.session == session)
+            || self.has_pending_native(actor, session)
             || self.has_pending_world_items(actor, session)
             || self.has_pending_parameters(actor, session)
             || self.has_pending_familiar(actor, session)
@@ -499,6 +523,26 @@ impl ChannelSpellStates {
         now: SemanticTimeMicros,
     ) -> Option<&PlayerSpellState> {
         runtime.player_control_facts(actor, game_session_id).ok()?;
+        self.initialize_owner_bookkeeping(runtime)?;
+        let index = match self.index(actor, game_session_id) {
+            Some(index) => index,
+            None => {
+                let mut state = PlayerSpellState::new(facts, harmony, serene_forced_micros)?;
+                state.make_playable(now).ok()?;
+                self.actors.try_reserve(1).ok()?;
+                self.actors.push((actor, game_session_id, state));
+                return self.actors.last().map(|(_, _, state)| state);
+            }
+        };
+        let state = &mut self.actors.get_mut(index)?.2;
+        state.make_playable(now).ok()?;
+        Some(state)
+    }
+
+    /// Shared carrier-owner bookkeeping. This uses the carrier's actual Channel
+    /// binding to maintain its existing timer owner; it grants no actor authority.
+    /// Each caller first proves either ordinary Channel or explicit House custody.
+    fn initialize_owner_bookkeeping(&mut self, runtime: &ChannelRuntimeV1) -> Option<()> {
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
             timers.scope()
@@ -529,9 +573,36 @@ impl ChannelSpellStates {
         }
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
+                || runtime
+                    .house_player_control_facts(*present, *session)
+                    .is_ok()
         });
-        self.charm_states
-            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
+        self.gourmet_checkpoints.retain(|(present, session, _, _)| {
+            runtime.player_control_facts(*present, *session).is_ok()
+                || runtime
+                    .house_player_control_facts(*present, *session)
+                    .is_ok()
+        });
+        self.pending_gourmet.retain(|pending| {
+            runtime
+                .player_control_facts(pending.actor, pending.session)
+                .is_ok()
+                || runtime
+                    .house_player_control_facts(pending.actor, pending.session)
+                    .is_ok()
+        });
+        self.pending_hireling_lamps.retain(|pending| {
+            runtime
+                .player_control_facts(pending.actor, pending.session)
+                .is_ok()
+                || runtime
+                    .house_player_control_facts(pending.actor, pending.session)
+                    .is_ok()
+        });
+        self.charm_states.retain(|(actor, session, _)| {
+            runtime.player_control_facts(*actor, *session).is_ok()
+                || runtime.house_player_control_facts(*actor, *session).is_ok()
+        });
         self.prune_source_memos(runtime);
         let actors = &self.actors;
         self.deaths.retain(|(dead, session, _)| {
@@ -539,19 +610,7 @@ impl ChannelSpellStates {
                 .iter()
                 .any(|(present, held, _)| present == dead && held == session)
         });
-        let index = match self.index(actor, game_session_id) {
-            Some(index) => index,
-            None => {
-                let mut state = PlayerSpellState::new(facts, harmony, serene_forced_micros)?;
-                state.make_playable(now).ok()?;
-                self.actors.try_reserve(1).ok()?;
-                self.actors.push((actor, game_session_id, state));
-                return self.actors.last().map(|(_, _, state)| state);
-            }
-        };
-        let state = &mut self.actors.get_mut(index)?.2;
-        state.make_playable(now).ok()?;
-        Some(state)
+        Some(())
     }
 
     /// FND-04B §20/§21 recovery made the present actor playable again: the Serene
@@ -576,6 +635,44 @@ impl ChannelSpellStates {
         game_session_id: GameSessionId,
     ) {
         if let Some(state) = self.get_mut(runtime, actor, game_session_id) {
+            state.detach();
+        }
+    }
+
+    /// Reattach the existing condition owner only after native House custody
+    /// and its reservation state have been proved by the current carrier.
+    pub fn resume_house(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        if runtime
+            .assert_house_actor_spell_unreserved(actor, game_session_id)
+            .is_err()
+        {
+            return false;
+        }
+        self.index(actor, game_session_id)
+            .and_then(|index| self.actors.get_mut(index))
+            .is_some_and(|(_, _, state)| state.make_playable(now).is_ok())
+    }
+
+    /// The House path retains the exact same condition owner across control
+    /// loss; it cannot turn a Channel actor or stale session into a resident.
+    pub fn detach_house(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) {
+        if runtime
+            .assert_house_actor_spell_unreserved(actor, game_session_id)
+            .is_ok()
+            && let Some(index) = self.index(actor, game_session_id)
+            && let Some((_, _, state)) = self.actors.get_mut(index)
+        {
             state.detach();
         }
     }

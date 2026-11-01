@@ -7,6 +7,7 @@ mod command;
 mod creature_push;
 mod cyclopedia_tracker;
 mod hotkey_equip;
+mod house_hireling;
 mod house_transfer;
 mod idle;
 mod inbound;

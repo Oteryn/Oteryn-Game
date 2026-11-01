@@ -9,8 +9,8 @@ import json
 import os
 from pathlib import Path
 
-import import_spell_families as spell_import
 import import_current_spell_sources as current_sources
+import import_spell_families as spell_import
 
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY_INDEXES = {
@@ -277,8 +277,6 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     reward_bag_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import rust_lottery_profiles
     rust_lottery_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    import ranged_item_profiles
-    ranged_item_profiles.apply_native(root, generated)
     import readable_item_profiles
     readable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import writable_item_profiles
@@ -299,6 +297,12 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     quick_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import coin_converter_profiles
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import hireling_item_profiles
+    hireling_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Resolve existing ranged authoring after the complete native Item closure
+    # is present, including the weapons sold by the source Hireling catalogue.
+    import ranged_item_profiles
+    ranged_item_profiles.apply_native(root, generated)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
@@ -309,7 +313,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     energy = next(row for row in items["records"]
                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
     energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
-    generated[item_path] = (json.dumps(items, indent=2, ensure_ascii=False) + "\n").encode()
+    # The complete source closure must fit native_gameplay's existing 8 MiB
+    # Item-profile input bound. Only the final active serialization is compact;
+    # record order/values are unchanged and donor captures stay readable.
+    generated[item_path] = spell_import.canonical_bytes(items)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:

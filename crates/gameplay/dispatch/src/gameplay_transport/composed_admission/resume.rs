@@ -12,7 +12,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // DEFLAKE-2: a step refused on a busy durability holder before the resume wrote
         // anything is repeated from fresh reads within the root recovery window.
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        let admitted = if let Some(admitted) = self
+        let transferred = self
             .recover_transferred_house(
                 &budget,
                 connection::ResumeAttempt {
@@ -23,8 +23,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     supported_capabilities: attempt.supported_capabilities,
                 },
             )
-            .await?
-        {
+            .await?;
+        let recovered_transfer = transferred.is_some();
+        let admitted = if let Some(admitted) = transferred {
             admitted
         } else {
             loop {
@@ -60,7 +61,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(controller) = admitted.controller {
             self.admit_premium(controller.account_id, admitted.game_session_id);
         }
-        self.admit_quest_session(&admitted).await;
+        let actual_house = if let Some(actor) = admitted.runtime_actor {
+            self.runtime
+                .lock()
+                .await
+                .house_actor_state(actor, admitted.game_session_id)
+                .is_ok()
+        } else {
+            false
+        };
+        if actual_house {
+            if !recovered_transfer {
+                // CompleteReconnect has already committed and removed its lost
+                // entry. Match ordinary optional observation refresh: missing
+                // data cannot discard that current resumed controller.
+                let _ = self.restore_house_admission_views(&admitted, None).await;
+            }
+        } else if !recovered_transfer {
+            self.admit_quest_session(&admitted).await;
+        }
         Ok(admitted)
     }
 }

@@ -2,6 +2,7 @@
 //!
 //! Family writers still own their atomic durable effects. An uncertain pending command
 //! is never re-executed here: without terminal truth that session cannot resume.
+use super::capabilities::SelectedCapabilities;
 use super::connection::AdmittedSession;
 use crate::foundation::{
     CommandId, CommandIngress, CommandSemanticIdentity, DuplicateDisposition,
@@ -16,14 +17,56 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+#[path = "session_ingress/native.rs"]
+mod native;
+#[cfg(test)]
+#[path = "session_ingress/native_tests.rs"]
+mod native_tests;
+
 #[derive(Default)]
 struct SessionIngress {
     ingress: CommandIngress,
     retained: Option<Vec<u8>>,
     result_sequence_floor: u64,
     active: bool,
-    pending_delivery: Option<(u64, u64, u64)>,
+    pending_delivery: Option<PendingDelivery>,
     reconciled_sequence: Option<u64>,
+}
+
+#[derive(Clone, Copy)]
+struct PendingDelivery {
+    generation: u64,
+    sequence: u64,
+    command: u64,
+    selected: SelectedCapabilities,
+    proven_native: Option<ProvenNativeReply>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ProvenNativeReply {
+    ItemUse(oteryn_protocol_oteryn::world_object::UseDisposition),
+    HirelingSummon(bool),
+}
+
+impl ProvenNativeReply {
+    fn payload(self, selected: SelectedCapabilities) -> Option<(bool, Vec<u8>)> {
+        match self {
+            Self::ItemUse(disposition) => {
+                let mut payload =
+                    oteryn_protocol_oteryn::world_object::encode_use_result(disposition).ok()?;
+                oteryn_protocol_oteryn::refusal_detail::append_refusal_detail(
+                    &mut payload,
+                    selected.as_slice(),
+                    oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_use(disposition),
+                );
+                Some((
+                    disposition == oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
+                    payload,
+                ))
+            }
+            Self::HirelingSummon(active) => Some((false, vec![u8::from(active)])),
+        }
+    }
 }
 
 /// Owned alongside the Channel's admitted sessions, forgotten only at retirement.
@@ -50,6 +93,32 @@ impl SessionCommands {
                     entry.lock().is_ok_and(|state| {
                         state.active
                             && state.ingress.outstanding() == 1
+                            && semantic(command.command_id()).is_some_and(|identity| {
+                                matches!(
+                                    state
+                                        .ingress
+                                        .classify_duplicate(command.command_id(), &identity),
+                                    DuplicateDisposition::PendingOriginal
+                                )
+                            })
+                    })
+                })
+        })
+    }
+
+    /// A disconnected stream retains its exact outstanding original. Family
+    /// recovery may resolve that occurrence; a caller counter is never proof.
+    pub(super) fn pending_reconciliation(&self, command: crate::foundation::CommandRef) -> bool {
+        self.0.lock().is_ok_and(|commands| {
+            commands
+                .get(&command.game_session_id())
+                .is_some_and(|entry| {
+                    entry.lock().is_ok_and(|state| {
+                        !state.active
+                            && state.ingress.outstanding() == 1
+                            && state.pending_delivery.is_some_and(|pending| {
+                                pending.command == command.command_id().get()
+                            })
                             && semantic(command.command_id()).is_some_and(|identity| {
                                 matches!(
                                     state
@@ -93,6 +162,58 @@ impl SessionCommands {
         self.complete_reconciled(command, false, &payload)
     }
 
+    /// A native USE without a gate message has a proven durable outcome. The
+    /// active connection still owns its normal reply; disconnected recovery
+    /// completes only this exact reservation through the same retained ledger.
+    pub(super) fn complete_item_use(
+        &self,
+        command: crate::foundation::CommandRef,
+        disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+    ) -> Option<()> {
+        self.retain_native_result(command, ProvenNativeReply::ItemUse(disposition))
+    }
+
+    /// Legacy command 220 shares the lamp's native effect, but retains its own
+    /// historical Accepted/boolean reply, including a known refused summon.
+    pub(super) fn complete_hireling_summon(
+        &self,
+        command: crate::foundation::CommandRef,
+        active: bool,
+    ) -> Option<()> {
+        self.retain_native_result(command, ProvenNativeReply::HirelingSummon(active))
+    }
+
+    fn retain_native_result(
+        &self,
+        command: crate::foundation::CommandRef,
+        result: ProvenNativeReply,
+    ) -> Option<()> {
+        let commands = self.0.lock().ok()?;
+        let Some(entry) = commands.get(&command.game_session_id()) else {
+            return Some(());
+        };
+        let mut state = entry.lock().ok()?;
+        let Some(pending) = state.pending_delivery else {
+            return (state.ingress.outstanding() == 0).then_some(());
+        };
+        if pending.command != command.command_id().get()
+            || state.ingress.outstanding() != 1
+            || !matches!(
+                state
+                    .ingress
+                    .classify_duplicate(command.command_id(), &semantic(command.command_id())?),
+                DuplicateDisposition::PendingOriginal
+            )
+            || pending.proven_native.is_some_and(|known| known != result)
+        {
+            return None;
+        }
+        state.pending_delivery.as_mut()?.proven_native = Some(result);
+        // An active connection terminalizes its own original frame. If it is
+        // cancelled first, the same pending record retains this proven verdict.
+        state.complete_native_if_disconnected()
+    }
+
     fn complete_reconciled(
         &self,
         command: crate::foundation::CommandRef,
@@ -102,54 +223,20 @@ impl SessionCommands {
         let commands = self.0.lock().ok()?;
         let state = commands.get(&command.game_session_id())?;
         let mut state = state.lock().ok()?;
-        let (generation, sequence, pending) = state.pending_delivery?;
-        if pending != command.command_id().get() {
-            return None;
-        }
-        let frame = oteryn_protocol_oteryn::encode_command_result(
-            generation,
-            sequence,
-            pending,
-            if rejected {
-                oteryn_protocol_oteryn::CommandStatus::Rejected
-            } else {
-                oteryn_protocol_oteryn::CommandStatus::Accepted
-            },
-            payload,
-        )
-        .ok()?;
-        let digest = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(&frame));
-        let outcome = TerminalSemanticOutcome::new("command-result", &digest, sequence).ok()?;
-        state
-            .ingress
-            .terminalize(command.command_id(), outcome, || {})
-            .ok()?;
-        state.retained = Some(frame);
-        state.result_sequence_floor = sequence;
-        state.pending_delivery = None;
-        state.reconciled_sequence = Some(sequence);
-        Some(())
+        state.complete_reconciled(command.command_id(), rejected, payload)
     }
 
     /// Carry the one now-known terminal result into the resumed snapshot barrier.
     pub(super) fn recover_trade_continuity(&self, admitted: &mut AdmittedSession) -> Option<()> {
         let commands = self.0.lock().ok()?;
-        let state = commands.get(&admitted.game_session_id)?.lock().ok()?;
-        if let Some(sequence) = state.reconciled_sequence {
-            if state.active
-                || state.ingress.outstanding() != 0
-                || state.ingress.next_command_id().map(CommandId::get)
-                    != Some(admitted.continuity.next_command_id)
-            {
-                return None;
-            }
-            if admitted.continuity.server_sequence < sequence {
-                if admitted.continuity.server_sequence.checked_add(1)? != sequence {
-                    return None;
-                }
-                admitted.continuity.server_sequence = sequence;
-            }
-        }
+        let mut state = commands.get(&admitted.game_session_id)?.lock().ok()?;
+        state.complete_native_if_disconnected()?;
+        let (next, sequence) = state.recovered_continuity(
+            admitted.continuity.next_command_id,
+            admitted.continuity.server_sequence,
+        )?;
+        admitted.continuity.next_command_id = next;
+        admitted.continuity.server_sequence = sequence;
         Some(())
     }
 
@@ -182,6 +269,7 @@ pub(super) enum CommandAction {
 pub(super) struct SessionCommandStream {
     state: Option<Arc<Mutex<SessionIngress>>>,
     next: u64,
+    selected: SelectedCapabilities,
 }
 
 fn semantic(command: CommandId) -> Option<CommandSemanticIdentity> {
@@ -230,7 +318,11 @@ impl SessionCommandStream {
         } else {
             None
         };
-        Some(Self { state, next })
+        Some(Self {
+            state,
+            next,
+            selected: admitted.continuity.selected_capabilities,
+        })
     }
 
     pub(super) const fn next_command_id(&self) -> u64 {
@@ -288,7 +380,13 @@ impl SessionCommandStream {
             IngressDecision::Reserved(_) => {
                 // Exhaustion is refused before domain execution; the namespace never wraps.
                 self.next = state.ingress.next_command_id().ok_or(unavailable)?.get();
-                state.pending_delivery = Some((generation, sequence + 1, command));
+                state.pending_delivery = Some(PendingDelivery {
+                    generation,
+                    sequence: sequence + 1,
+                    command,
+                    selected: self.selected,
+                    proven_native: None,
+                });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)
             }

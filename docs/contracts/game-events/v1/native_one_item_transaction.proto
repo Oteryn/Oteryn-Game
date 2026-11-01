@@ -318,12 +318,15 @@ message RewardClaimInboxMintOutputV1 {
 message RewardClaimInboxMintV1 {
   bytes character_id = 1; // UUIDv7
   bytes world_id = 2; // UUIDv7; every output after-state has this World
-  uint64 expected_session_generation = 3; // actual native fence, positive
+  uint64 expected_session_generation = 3; // live native fence, or original placement provenance for House recall; positive
   bytes source_binding = 4; // exact 32-byte source-owner claim binding
   repeated RewardClaimInboxMintOutputV1 outputs = 5; // 1..20 distinct fresh items
   bytes plan_binding = 6; // exact full MAIL output-plan SHA-256
   bytes mint_intent_sha256 = 7; // exact persisted canonical mint specification
-  uint64 expected_character_lease_generation = 8; // actual native lease, positive
+  uint64 expected_character_lease_generation = 8; // live lease, or original placement provenance for House recall; positive
+  optional string house_key = 9; // all three House fields present together, otherwise absent
+  optional uint64 house_scope_ownership_generation = 10; // current named House authority; positive
+  optional uint32 house_authority_kind = 11; // 1 live House session, 2 current House recall; CommandRef remains historical provenance for2
 }
 
 message OneItemRewardClaimMintV1 {
@@ -405,6 +408,8 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 gem_switch_domain = 10;
     OneItemNpcPurchaseV1 gem_grade_up = 11;
     OneItemNpcPurchaseV1 prey_list_reroll = 12; // service key fixes slot 1..3; level * 200 gold
+    // Closed named-House Hireling food purchase through the existing fee owner.
+    OneItemNpcPurchaseV1 hireling_service = 472;
   }
 }
 message OneItemMarketFeeV1 {
@@ -491,6 +496,7 @@ message OneItemFeeBurnV1 {
   // Present exactly when the bank part is positive; then every line is whole,
   // change is 0 and no change MINT exists.
   optional OneItemFeeBankDebitV1 bank_debit = 13;
+  optional string house_key = 14; // named House for its dedicated services; absent on Channel
 }
 
 // One side of the timed row: absent values are a spent row (a transform to a
@@ -587,6 +593,21 @@ message OneItemNpcTradeLineV1 {
 // from the buyer's (Account, World) bank balance (BANK-FEE-0 §4.3/§5): it then
 // carries bank_debit, every coin BURN is whole, there is no change MINT and
 // burned_gold_units + bank_debit.debit_gold_units = total_gold_units.
+// E12 native NPC purchase: one present and exactly three source-defined ingredient stacks.
+message OneItemHirelingPackageV1 {
+  bytes hireling_id = 1;
+  string name = 2;
+  bytes present_item_instance_id = 3;
+  repeated OneItemNpcTradeLineV1 children = 4; // exactly three fresh nested MINT lines
+}
+
+// Source-derived unWrapId of a kit minted by the existing NPCBUY owner.
+message OneItemHouseFurnitureKitV1 {
+  bytes item_instance_id = 1; // exactly the native Item MINT identity
+  OneItemTypedDefinitionRevisionV1 target = 2;
+  uint32 source_row = 3; // exact Crystal201189f Hireling catalogue row
+}
+
 message OneItemNpcTradeV1 {
   OneItemNpcTradeCauseV1 cause = 1;
   OneItemCommandRefV1 command = 2; // the trade command, command_id non-zero
@@ -611,12 +632,15 @@ message OneItemNpcTradeV1 {
   // descending placement_ordinal (display) order; their units sum to quantity;
   // the cause names the first. SELL only; lines 1..23.
   bool sell_all = 15;
+  optional OneItemHirelingPackageV1 hireling_package = 16;
+  optional string house_key = 17; // world_id + key name the House; channel_id is origin provenance
+  optional OneItemHouseFurnitureKitV1 house_furniture_kit = 18; // mutually exclusive with package
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
 // command's CommandRef, which is the cause's identity.
 message OneItemUseCauseV1 {
-  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 328 MountTaming (burn)
+  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 328 MountTaming (burn), 470 HirelingLamp, 471 HirelingFood (burn)
   string content_revision = 6;
   string ruleset_revision = 7;
   string sim_revision = 8;
@@ -637,7 +661,9 @@ message OneItemUseFlaskV1 {
 // potion with an empty flask adds `flask` (the TRANSFORM output); `flask_missing`
 // records a flask the character had no room for (burn shape, PARITY_PENDING
 // until ITEM-MOVE-2b); `flask` and `flask_missing` are never both set, and
-// neither is set for Food. Touches 1 ItemInstance (2 with `flask`).
+// neither is set for Food. Touches 1 ItemInstance (2 with `flask`). E12 HirelingLamp
+// may consume its one physical item directly from native character Inbox custody;
+// exactly one of source_entry and source_inbox_ordinal identifies the real source.
 message OneItemUseV1 {
   OneItemStateV1 source_before = 1; // LIVE, quantity >= 1
   OneItemStateV1 source_after = 2;  // same identity, World and definition
@@ -651,6 +677,8 @@ message OneItemUseV1 {
   bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
   OneItemUseFlaskV1 flask = 11;
   bool flask_missing = 12;
+  optional uint64 source_inbox_ordinal = 13; // positive; HirelingLamp cause 470 only
+  optional string house_key = 14; // required470, optional471; world_id + key name the House; channel_id is origin provenance
 }
 
 // D1230 closed material-free ForgeCause::DustLimit. Exactly one Character dust debit

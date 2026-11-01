@@ -3,6 +3,9 @@
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+#[path = "item_use_gourmet.rs"]
+pub(super) mod gourmet;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -98,6 +101,9 @@ impl ItemUseGate {
         let (ready, cooldown) = match kind {
             ItemUseKind::Food => (&mut self.food_ready_ms, FOOD_COOLDOWN_MS),
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
+            ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. } => {
+                return Err(UseDisposition::Rejected);
+            }
             // The concoction cooldown is durable; the writer refuses inside it.
             ItemUseKind::Concoction => {
                 self.in_flight_since_ms = Some(now_ms);
@@ -145,6 +151,39 @@ impl ItemUseGate {
 pub struct ItemUseGates(Vec<(ExactActorRef, GameSessionId, ItemUseGate)>);
 
 impl ItemUseGates {
+    pub(in crate::gameplay_transport) fn house_transfer_ready(
+        &self,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+    ) -> bool {
+        !self.0.iter().any(|(_, session, _)| *session == destination)
+            && self
+                .0
+                .iter()
+                .filter(|(present, session, _)| *present == actor && *session == source)
+                .all(|(_, _, gate)| {
+                    gate.in_flight_since_ms.is_none() && gate.unspendable.is_empty()
+                })
+    }
+
+    /// Genuine scope handoff retains rate/cooldown clocks. The old CommandId
+    /// memo belongs to the retired source namespace and cannot answer a new
+    /// destination command with the same number. Native receipts remain there.
+    pub(in crate::gameplay_transport) fn move_house(
+        &mut self,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+    ) {
+        for (present, session, gate) in &mut self.0 {
+            if *present == actor && *session == source {
+                *session = destination;
+                gate.last = None;
+            }
+        }
+    }
+
     /// The gate of the committed player of `session`. Gates of actors no longer present go.
     fn gate(
         &mut self,
@@ -153,8 +192,10 @@ impl ItemUseGates {
         session: GameSessionId,
     ) -> Option<&mut ItemUseGate> {
         runtime.player_control_facts(actor, session).ok()?;
-        self.0
-            .retain(|(present, held, _)| runtime.player_control_facts(*present, *held).is_ok());
+        self.0.retain(|(present, held, _)| {
+            runtime.player_control_facts(*present, *held).is_ok()
+                || runtime.house_player_control_facts(*present, *held).is_ok()
+        });
         let index = match self
             .0
             .iter()
@@ -168,6 +209,46 @@ impl ItemUseGates {
         };
         self.0.get_mut(index).map(|(_, _, gate)| gate)
     }
+}
+
+/// A parked lamp can finish during a checkpoint, before its original USE is retried.
+/// Keep that terminal refusal in the existing use memo; current authority must not turn
+/// the same previously refused command into a newly prepared lamp placement.
+pub(super) fn remember_hireling_result(
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    disposition: UseDisposition,
+) {
+    let gates = &mut states.item_uses.0;
+    let index = if let Some(index) = gates
+        .iter()
+        .position(|(a, s, _)| *a == actor && *s == session)
+    {
+        index
+    } else {
+        gates.push((actor, session, ItemUseGate::default()));
+        gates.len() - 1
+    };
+    gates[index].2.last = Some((command, disposition));
+}
+
+pub(super) fn hireling_refusal(
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+) -> Option<UseDisposition> {
+    states
+        .item_uses
+        .0
+        .iter()
+        .find(|(a, s, _)| *a == actor && *s == session)?
+        .2
+        .last
+        .filter(|(id, result)| *id == command && *result != UseDisposition::Committed)
+        .map(|(_, result)| result)
 }
 
 /// What a known commit applies.
@@ -236,6 +317,96 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<UseDisposition, UseDisposition> {
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
         let session = command.game_session_id;
+        if !super::hireling::resolve_pending_lamp(self, actor, session).await {
+            return Err(UseDisposition::Rejected);
+        }
+        // Bind the exact ingress before resolving live inventory. A replay after return/relog
+        // answers from its record without selecting a different lamp or using a new tile.
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            use crate::durability::house_hireling::HirelingLampInput;
+            let input = match &source {
+                UseSource::Handle(ItemKey::Instance(id)) => {
+                    Some(HirelingLampInput::ItemInstance(*id))
+                }
+                UseSource::Definition(wanted) => {
+                    Some(HirelingLampInput::ItemDefinition(wanted.get()))
+                }
+                _ => None,
+            };
+            if let Some(input) = input {
+                if let Some(disposition) = super::hireling::replay_lamp(self, actor, command, input)
+                    .await
+                    .map_err(|_| UseDisposition::Rejected)?
+                {
+                    return Ok(disposition);
+                }
+                if let Some(refused) = hireling_refusal(
+                    &*self.states.spell_states.lock().await,
+                    actor,
+                    session,
+                    command.command_id,
+                ) {
+                    return Err(refused);
+                }
+                let lamp = match &source {
+                    UseSource::Handle(ItemKey::Instance(id)) => Some(*id),
+                    UseSource::Definition(wanted) => {
+                        let is_lamp = {
+                            let runtime = self.runtime.lock().await;
+                            super::item_ref_admission::pinned_index(
+                                &runtime,
+                                self.active_generation,
+                            )
+                            .and_then(|index| index.definition_at(*wanted))
+                            .is_some_and(|(key, _)| {
+                                key == crate::durability::house_hireling::HIRELING_LAMP_KEY
+                            })
+                        };
+                        if is_lamp {
+                            let mut owned = self
+                                .root
+                                .read_owned_hirelings(
+                                    self.character,
+                                    self.holder,
+                                    fence,
+                                    *self.channel_id.as_bytes(),
+                                )
+                                .await
+                                .map_err(|_| UseDisposition::Rejected)?
+                                .into_iter()
+                                .filter(|h| h.position.is_none())
+                                .filter_map(|h| h.lamp);
+                            let first = owned.next();
+                            if owned.next().is_some() {
+                                return Err(UseDisposition::Rejected);
+                            }
+                            first
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                };
+                if let Some(lamp) = lamp
+                    && self
+                        .root
+                        .hireling_lamp_identity(self.character, fence, lamp)
+                        .await
+                        .map_err(|_| UseDisposition::Rejected)?
+                        .is_some()
+                {
+                    return super::hireling::use_lamp(self, actor, command, lamp, input)
+                        .await
+                        .ok_or(UseDisposition::Rejected);
+                }
+            }
+        }
+        if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
+            return result;
+        }
         // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
         // item commit and its effect, so no spell stages or commits a successor of this actor's
         // state meanwhile. `None` is retryable with no side effect while the lane is fenced.
@@ -882,6 +1053,43 @@ mod tests {
         assert_eq!(gate.start(ItemUseKind::Potion, 1_000), Ok(()));
         gate.settle(3, UseDisposition::Committed, &[]);
         assert_eq!(gate.start(ItemUseKind::Food, 1_199), Ok(()));
+    }
+
+    #[test]
+    fn house_handoff_keeps_use_deadlines_and_rate_but_not_the_old_command_memo() {
+        let (_, actor, source) = super::super::actor_spell::tests::runtime_with_player(144);
+        let destination =
+            GameSessionId::decode(&[0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 199])
+                .expect("destination");
+        let mut gate = ItemUseGate::default();
+        assert_eq!(gate.admit(7, 10), Ok(()));
+        assert_eq!(gate.start(ItemUseKind::Potion, 10), Ok(()));
+        gate.settle(7, UseDisposition::Committed, &[]);
+        let mut gates = ItemUseGates(vec![(actor, source, gate)]);
+        assert!(gates.house_transfer_ready(actor, source, destination));
+        gates.move_house(actor, source, destination);
+        assert_eq!(gates.0[0].1, destination);
+        let gate = &mut gates.0[0].2;
+        // A real new GameSession may reuse command7, but cannot escape the
+        // original source's cooldown or per-actor rate window.
+        assert_eq!(gate.admit(7, 20), Ok(()));
+        assert_eq!(
+            gate.start(ItemUseKind::Potion, 20),
+            Err(UseDisposition::Exhausted)
+        );
+        for command in 8..=10 {
+            assert_eq!(gate.admit(command, 20), Ok(()));
+        }
+        assert_eq!(gate.admit(11, 20), Err(UseDisposition::Exhausted));
+        assert_eq!(
+            gate.start(ItemUseKind::Potion, 1_009),
+            Err(UseDisposition::Exhausted)
+        );
+        assert_eq!(gate.start(ItemUseKind::Potion, 1_010), Ok(()));
+        assert!(
+            !gates.house_transfer_ready(actor, destination, source),
+            "an unresolved physical use cannot change its original authority"
+        );
     }
 
     #[test]

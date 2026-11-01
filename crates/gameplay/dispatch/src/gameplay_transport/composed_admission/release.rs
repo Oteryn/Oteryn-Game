@@ -132,6 +132,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ReleaseAttempt::Retry;
         }
+        if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
+            return ReleaseAttempt::Retry;
+        }
         // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
         *kills = match self.seal_kill_rewards(session).await {
             KillRelease::Send(mark) => mark,

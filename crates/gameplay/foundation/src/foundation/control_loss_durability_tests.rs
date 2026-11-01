@@ -636,5 +636,114 @@ fn owning_loss_after_post_grace_generation_one_preserves_rearm_evidence() -> Tes
     Ok(())
 }
 
+#[test]
+fn owning_loss_scope_transfer_preserves_origin_and_rejects_changed_history() -> TestResult {
+    // The native PG owner proves the transfer receipt. This Foundation test
+    // checks its inert facts without turning historical DTOs into authority.
+    // Retain already-consumed protection from the prior real recovery.
+    let mut source = resumed()?;
+    let commit = source.0.session.commit();
+    let transport = source.0.session.current_transport().ok_or("source transport")?;
+    let mut destination_bytes = *commit.game_session_id().as_bytes();
+    destination_bytes[15] = 7;
+    let destination = GameSessionId::decode(&destination_bytes).map_err(|_| "destination")?;
+    let mut transfer = destination_bytes;
+    transfer[15] = 8;
+    let house = RuntimeScopeRefV1::instance(commit.world_id(), transfer).map_err(|_| "House scope")?;
+    let entry_epoch = ControlLossEpochRefV1::new(1).map_err(|_| "entry epoch")?;
+    let generation = ScopeOwnershipGeneration::new(1).map_err(|_| "House generation")?;
+    let eligibility = Some(CharacterWorldEligibilityClaimV1::new(commit.character_id(), commit.world_id()));
+    source.0.session = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        destination, commit, GameSessionState::Active, commit.connection_generation(),
+        Some(transport), CharacterLease::new(commit.character_id(), 3)?, eligibility,
+        house, generation,
+    ).map_err(|_| "transferred current authority")?
+        .with_control_loss_continuity(entry_epoch, 90).map_err(|_| "entry marker")?;
+    source.0.source_authority = house;
+    source.0.history = ControlLossHistoryV1::ScopeTransfer {
+        transfer, entry_epoch, protection: source.0.protection,
+    };
+    assert_ne!(destination, commit.game_session_id());
+    assert_ne!(transport, commit.initial_transport());
+    assert!(generation.get() < commit.scope_ownership_generation(),
+        "different native scopes have independent generations");
+    let auth = ControlLossAuthorizationV1::authorize(&source, destination, 100)
+        .map_err(|_| "transferred loss authorization")?;
+    let effect = auth.validate_final(&source, 100).map_err(|_| "transferred final decision")?;
+    assert_eq!(effect.predecessor(), source.0.session);
+    assert_eq!(effect.successor().current_game_session_id(), destination);
+    assert_eq!(effect.successor().commit(), commit, "origin receipt is immutable");
+    assert_eq!(effect.successor().current_runtime_scope(), house);
+    assert_eq!(effect.successor().current_scope_generation(), generation);
+    assert_eq!(effect.successor().current_character_lease(), source.0.session.current_character_lease());
+    assert_eq!(effect.successor().current_connection_generation(), commit.connection_generation());
+    assert_eq!(effect.successor().session_state(), GameSessionState::Reconnectable);
+    assert_eq!(effect.successor().current_transport(), None);
+    assert_eq!(effect.successor().current_control_loss_epoch(), Some(source.0.loss_epoch));
+    assert_eq!(effect.operation().observation.protection, source.0.protection);
+    assert!(matches!(source.0.protection.usage, RecoveryProtectionUseV1::Activated { .. }),
+        "transfer must not refill previously consumed recovery protection");
+    assert!(ControlLossAuthorizationV1::authorize(&source, commit.game_session_id(), 100).is_err());
+    let mut historical = ControlLossFlowV1::restore(auth.operation().clone()).map_err(|_| "history")?;
+    assert!(historical.take_request().is_err(), "inert history cannot create a live request");
+
+    // Changing scope on the original identity cannot exploit the independent
+    // generation rule reserved for a persisted destination projection.
+    assert!(GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        commit.game_session_id(), commit, GameSessionState::Active, commit.connection_generation(),
+        Some(commit.initial_transport()), CharacterLease::new(commit.character_id(), 2)?, eligibility,
+        house, generation,
+    ).is_err());
+
+    for case in ["nil transfer", "origin identity", "changed entry epoch", "reused loss epoch",
+        "skipped loss epoch", "reset consumed protection", "changed retained protection"] {
+        let mut changed = source.clone();
+        match case {
+            "nil transfer" => {
+                let ControlLossHistoryV1::ScopeTransfer { transfer, .. } = &mut changed.0.history else {
+                    return Err("transfer history".into());
+                };
+                *transfer = [0; 16];
+            }
+            "origin identity" => {
+                changed.0.session.replacement_game_session_id = None;
+                changed.0.session.current_character_lease = CharacterLease::new(commit.character_id(), 2)?;
+                changed.0.session.current_scope_generation = ScopeOwnershipGeneration::new(3)
+                    .map_err(|_| "origin generation")?;
+            }
+            "changed entry epoch" => {
+                let ControlLossHistoryV1::ScopeTransfer { entry_epoch, .. } = &mut changed.0.history else {
+                    return Err("transfer history".into());
+                };
+                *entry_epoch = source.0.loss_epoch;
+            }
+            "reused loss epoch" | "skipped loss epoch" => {
+                changed.0.loss_epoch = ControlLossEpochRefV1::new(if case == "reused loss epoch" { 1 } else { 3 })
+                    .map_err(|_| "changed loss epoch")?;
+                changed.0.decision_identity = changed.0.loss_epoch;
+                changed.0.accepted_decision_identity = changed.0.loss_epoch;
+            }
+            "reset consumed protection" => changed.0.protection.usage = RecoveryProtectionUseV1::Unused {
+                entitlement_generation: 2,
+            },
+            "changed retained protection" => {
+                let ControlLossHistoryV1::ScopeTransfer { protection, .. } = &mut changed.0.history else {
+                    return Err("transfer history".into());
+                };
+                protection.usage = RecoveryProtectionUseV1::NotEntitled;
+            }
+            _ => return Err("unknown test case".into()),
+        }
+        let changed_id = changed.0.session.current_game_session_id();
+        assert!(ControlLossAuthorizationV1::authorize(&changed, changed_id, 100).is_err(),
+            "authorization admitted {case}");
+        assert!(auth.validate_final(&changed, 100).is_err(), "final decision admitted {case}");
+        let mut operation = auth.operation().clone();
+        operation.observation = changed.0;
+        assert!(ControlLossFlowV1::restore(operation).is_err(), "historical decode admitted {case}");
+    }
+    Ok(())
+}
+
 #[path = "planned_world_reset_tests.rs"]
 mod planned_world_reset_tests;

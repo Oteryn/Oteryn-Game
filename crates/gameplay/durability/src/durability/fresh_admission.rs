@@ -2,6 +2,8 @@
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
 mod retired_holder_release;
 mod terminal_release;
+mod house_lifecycle;
+mod training_lineage;
 use super::DurabilityError;
 use super::admission_authority_guards::*;
 use crate::foundation::admission_authority_publication::*;
@@ -324,6 +326,10 @@ pub struct FreshAdmissionStore {
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
+    /// Q16: named House metadata and the same current node proof used for its final capture.
+    final_house: Option<(super::character_last_position::HouseLastPosition, super::runtime_scope_assignment::NodeIncarnationProof)>,
+    /// Original entry reservation cleanup shares the terminal commit even when no living capture exists.
+    house_release_node: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
 }
@@ -388,8 +394,9 @@ impl FreshAdmissionStore {
     /// release (`release_expired_loss`, `release_abandoned_session`,
     /// `release_capability_mismatch`, `release`) upserts inside the release transaction, before
     /// the session becomes TERMINAL, under the released session's Character lease key. A
-    /// release of a non-Channel scope, a World other than the record's, a pending respawn or a
-    /// later stored key writes nothing; the release itself is unchanged by it.
+    /// generic non-Channel scope, a World other than the record's, a pending respawn or a
+    /// later stored key writes nothing; the release itself is unchanged by it. Named House
+    /// captures use the separately proven [`Self::with_final_house_position`] path.
     #[must_use]
     pub fn with_final_position(
         &self,
@@ -397,8 +404,27 @@ impl FreshAdmissionStore {
     ) -> Self {
         Self {
             final_position: Some(final_position),
+            final_house: None,
+            house_release_node: None,
             ..self.clone()
         }
+    }
+
+    /// Q16: final named-House capture in the existing terminal release transaction.
+    #[must_use]
+    pub fn with_final_house_position(
+        &self, position: super::character_last_position::FinalLastPosition,
+        house: super::character_last_position::HouseLastPosition,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    ) -> Self {
+        Self { final_position: Some(position), final_house: Some((house, node.clone())), house_release_node: Some(node.clone()), ..self.clone() }
+    }
+
+    /// The current named-House carrier owner retains its node proof for native
+    /// entry-reservation cleanup at terminal release, including a dead actor.
+    #[must_use]
+    pub fn with_house_release_owner(&self, node: &super::runtime_scope_assignment::NodeIncarnationProof) -> Self {
+        Self { house_release_node: Some(node.clone()), ..self.clone() }
     }
 
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
@@ -420,6 +446,8 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             final_position: None,
+            final_house: None,
+            house_release_node: None,
             retired_holder: None,
         }
     }
@@ -612,7 +640,7 @@ impl FreshAdmissionStore {
         let operation = request.operation();
         let encoded = encode_fresh_loss(operation)?;
         let observation = &operation.observation;
-        let session_id = observation.session.commit().game_session_id();
+        let session_id = observation.session.current_game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&observation.loss_epoch.get().to_be_bytes());
@@ -630,18 +658,9 @@ impl FreshAdmissionStore {
         if !super::world_reset::loss_binding_current(&mut tx, observation.cause).await? {
             return Ok(ControlLossOutcomeV1::Rejected);
         }
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-        let Some(row) = row else {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        };
-        let original_json: Option<String> = row.try_get("operation_json")?;
-        let original = decode_operation(
-            &original_json.ok_or(DurabilityError::InvalidStoredState)?,
-            store.maximum_operation_bytes,
-        )?;
+        let original = store.initial_operation_locked(&mut tx, session_id).await?;
         let FreshReconciliation::Committed(current) =
-            store.reconcile_locked(&mut tx, &original).await?
+            store.reconcile_session_locked(&mut tx, &original, session_id).await?
         else {
             return Ok(ControlLossOutcomeV1::Rejected);
         };
@@ -666,21 +685,23 @@ impl FreshAdmissionStore {
         // current runtime owner. Load its complete guard under the same relation
         // fence before taking L, so concurrent ownership/readiness publication
         // cannot authorize loss against a superseded session observation.
-        let runtime = store
-            .guards
-            .load_locked(
-                &mut tx,
-                &AdmissionAuthorityGuardKeyV1::Runtime(observation.session.current_runtime_scope()),
-            )
-            .await?;
-        if !matches!(runtime.as_ref().map(|row| &row.state),
-            Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
-            if *ownership_generation == observation.session.current_scope_generation().get())
-        {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        }
+        let runtime_valid = match observation.session.current_runtime_scope() {
+            RuntimeScopeRefV1::Instance { .. } => store
+                .house_lifecycle_fence_locked(&mut tx, current.current_session, false).await?.is_some(),
+            scope @ RuntimeScopeRefV1::Channel { .. } => {
+                let runtime = store.guards.load_locked(&mut tx,
+                    &AdmissionAuthorityGuardKeyV1::Runtime(scope)).await?;
+                matches!(runtime.as_ref().map(|row| &row.state),
+                    Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
+                    if *ownership_generation == observation.session.current_scope_generation().get())
+            }
+        };
+        if !runtime_valid { return Ok(ControlLossOutcomeV1::Rejected); }
+        // Initial transport reservation proves the original authenticated grant.
+        // It stays on the origin; current destination transport is independently
+        // proven below by its exact transfer or committed recovery history.
         let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
-            .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(observation.session.commit().game_session_id().as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
         let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
             .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
         if !reservation || epoch_exists {
@@ -690,6 +711,14 @@ impl FreshAdmissionStore {
         // re-derived here from the durable receipts, never taken from the observation.
         let resumed_from = match &observation.history {
             ControlLossHistoryV1::FreshOrigin => None,
+            ControlLossHistoryV1::ScopeTransfer { entry_epoch, .. } => {
+                if store.transferred_loss_history_locked(&mut tx, current.current_session).await?.as_ref()
+                    != Some(&observation.history)
+                    || entry_epoch.get().checked_add(1) != Some(observation.loss_epoch.get()) {
+                    return Ok(ControlLossOutcomeV1::Rejected);
+                }
+                Some(*entry_epoch)
+            }
             ControlLossHistoryV1::Resumed { budget, .. } => {
                 if store
                     .resumed_history_locked(&mut tx, current.current_session)
@@ -776,7 +805,7 @@ impl FreshAdmissionStore {
             .run_pass(issued, |holder, deadline| Box::pin(async move {
         use sqlx::Row;
         let encoded = encode_fresh_loss(&original)?;
-        let session_id = original.observation.session.commit().game_session_id();
+        let session_id = original.observation.session.current_game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&original.observation.loss_epoch.get().to_be_bytes());
@@ -792,16 +821,9 @@ impl FreshAdmissionStore {
         let decided_at: i64 = row.try_get("decided_at")?;
         // The canonical fresh receipt supplies the initial commit; inventing a
         // replay key merely to deserialize the loss DTO would lose provenance.
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = row.try_get("operation_json")?;
-        let fresh = decode_operation(
-            &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            store.maximum_operation_bytes,
-        )?;
+        let fresh = store.initial_operation_locked(&mut tx, session_id).await?;
         let operation = decode_fresh_loss(&stored, checked(fresh.authorization.initial_commit())?)?;
-        if operation.observation.session.commit().game_session_id() != session_id
+        if operation.observation.session.current_game_session_id() != session_id
             || operation.observation.loss_epoch != original.observation.loss_epoch
             || operation.observation.account_presence.account_id() != fresh.authorization.account_id
             || decided_at < operation.authorized_at
@@ -813,7 +835,7 @@ impl FreshAdmissionStore {
             return Ok(FreshLossReconciliation::Conflict);
         }
         let FreshReconciliation::Committed(current) =
-            store.reconcile_locked(&mut tx, &fresh).await?
+            store.reconcile_session_locked(&mut tx, &fresh, session_id).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -1704,32 +1726,49 @@ impl FreshAdmissionStore {
 
 /// CHAR-POSITION-0 §3.2 "At logout": the final last-position upsert of the session being
 /// released, in the release transaction (which holds the admission relation locks and has just
-/// revalidated the session), before `session_state` becomes 3. Only a Channel scope of the
-/// record's World writes; the upsert itself skips a pending respawn and a later stored key.
+/// revalidated the session), before `session_state` becomes 3. A Channel scope of the
+/// record's World or a separately proven named-House capture writes; the upsert itself
+/// skips a pending respawn and a later stored key.
 async fn write_final_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     final_position: &super::character_last_position::FinalLastPosition,
+    house: Option<&(super::character_last_position::HouseLastPosition, super::runtime_scope_assignment::NodeIncarnationProof)>,
 ) -> Result<()> {
-    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
-        current.current_runtime_scope()
-    else {
-        return Ok(());
-    };
-    if world_id != final_position.record.world_id || final_position.write_sequence == 0 {
-        return Ok(());
-    }
+    if final_position.write_sequence == 0 { return Ok(()); }
     let lease = current.current_character_lease();
-    super::character_last_position::upsert_last_position(
-        tx,
-        lease.character_id().as_bytes(),
-        super::character_last_position::LastPositionKey {
-            character_lease_generation: lease.generation(),
-            write_sequence: final_position.write_sequence,
-        },
-        &final_position.record,
-    )
-    .await?;
+    let named_house = match (current.current_runtime_scope(), house) {
+        (RuntimeScopeRefV1::Channel { world_id, .. }, None)
+            if world_id == final_position.record.world_id => None,
+        (RuntimeScopeRefV1::Instance { world_id, .. }, Some((saved, node)))
+            if world_id == final_position.record.world_id
+                && saved.house.runtime_scope()? == current.current_runtime_scope() => {
+            let fence = super::item_transfer::CurrentCharacterItemFence {
+                character_id: crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                game_session_id: current.current_game_session_id(),
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: lease.generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+            };
+            if super::house_hireling::fence::assert_house_custody_fence(
+                tx, node, &fence, *saved.origin_channel.as_bytes(),
+            ).await?.as_ref() != Some(&saved.house) {
+                // Terminal release must remain available after ownership,
+                // eligibility or node authority is lost. Keep the last valid
+                // projection; never retain Account/Character claims for a save.
+                return Ok(());
+            }
+            Some(saved)
+        }
+        _ => return Ok(()),
+    };
+    super::character_last_position::upsert_scoped_last_position(
+        tx, lease.character_id().as_bytes(), super::character_last_position::LastPositionKey {
+            character_lease_generation: lease.generation(), write_sequence: final_position.write_sequence,
+        }, &final_position.record, named_house,
+    ).await?;
     Ok(())
 }
 
@@ -1910,6 +1949,8 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             final_position: None,
+            final_house: None,
+            house_release_node: None,
             retired_holder: None,
         }
     }
@@ -2413,7 +2454,7 @@ impl FreshAdmissionStore {
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
         capabilities: CurrentCapabilityCheck,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.apply_complete_reconnect_with(
+        self.with_house_lifecycle_owner(custody).apply_complete_reconnect_with(
             Some(custody.clone()),
             request,
             source,
@@ -2509,11 +2550,7 @@ impl FreshAdmissionStore {
         {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
-        let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
-        let fresh = decode_operation(&fresh_json.ok_or(DurabilityError::InvalidStoredState)?, store.maximum_operation_bytes)?;
+        let fresh = store.initial_operation_locked(&mut tx, session_id).await?;
         if fresh.authorization.account_id != identity.account_id() {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
@@ -2536,15 +2573,16 @@ impl FreshAdmissionStore {
         {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
-        let runtime = store.guards.load_locked(&mut tx, &AdmissionAuthorityGuardKeyV1::Runtime(current.current_runtime_scope())).await?;
-        // The runtime owner is ready at the session's scope generation and still serves exactly
-        // the ruleset/content/map/world-policy revisions the credential was verified against.
+        let runtime = store.recovery_runtime_locked(&mut tx, current).await?;
+        // Channel recovery retains its exact ready owner. A named House was
+        // independently proved above under current node/assignment/ACL locks;
+        // its origin publication supplies only the existing compatibility policy.
         let revisions = &original.recovery;
         if !matches!(runtime.as_ref().map(|row| &row.state),
             Some(AdmissionAuthorityGuardStateV1::Runtime {
                 ownership_generation, ready: true, ruleset_revision, content_revision, map_revision, world_policy_revision, ..
             })
-            if *ownership_generation == current.current_scope_generation().get()
+            if *ownership_generation > 0
                 && *ruleset_revision == revisions.ruleset_revision
                 && *content_revision == revisions.content_revision
                 && *map_revision == revisions.map_revision
@@ -2552,6 +2590,10 @@ impl FreshAdmissionStore {
         {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
+        let Some(AdmissionAuthorityPublicationChangeV1 {
+            key: AdmissionAuthorityGuardKeyV1::Runtime(policy_scope),
+            state: AdmissionAuthorityGuardStateV1::Runtime { ownership_generation: policy_generation, .. }, ..
+        }) = runtime.as_ref() else { return Ok(CompleteReconnectOutcomeV1::Rejected); };
         let budget = store.recovery_budget_locked(&mut tx, session_id, epoch).await?;
         let expected_budget = if commit {
             // The prepared attempt is part of the durable budget by now.
@@ -2604,7 +2646,7 @@ impl FreshAdmissionStore {
         match (&custody, &capabilities) {
             (_, Some(check)) if custody.is_some() || cfg!(any(test, feature = "test-support")) => {
                 if !store.check_current_runtime_capabilities(&mut tx,
-                    current.current_runtime_scope(), current.current_scope_generation().get(), check).await? {
+                    *policy_scope, *policy_generation, check).await? {
                     return Ok(CompleteReconnectOutcomeV1::Rejected);
                 }
             }
@@ -2732,19 +2774,13 @@ impl FreshAdmissionStore {
         };
         let stored: Option<String> = row.try_get("operation_json")?;
         let decided_at: i64 = row.try_get("decided_at")?;
-        let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
-        let fresh = decode_operation(
-            &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            self.maximum_operation_bytes,
-        )?;
+        let fresh = self.initial_operation_locked(tx, session).await?;
         let loss = decode_fresh_loss(
             &stored.ok_or(DurabilityError::InvalidStoredState)?,
             checked(fresh.authorization.initial_commit())?,
         )?;
-        if loss.observation.loss_epoch != epoch || decided_at < loss.authorized_at {
+        if loss.observation.session.current_game_session_id() != session
+            || loss.observation.loss_epoch != epoch || decided_at < loss.authorized_at {
             return Err(DurabilityError::InvalidStoredState);
         }
         Ok(Some((loss, decided_at)))
@@ -2789,7 +2825,7 @@ impl FreshAdmissionStore {
         ) else {
             return Ok(None);
         };
-        let session = current.commit().game_session_id();
+        let session = current.current_game_session_id();
         let budget = self.recovery_budget_locked(tx, session, epoch).await?;
         let Some(committed) = budget.entries().iter().find(|entry| {
             entry.disposition == RetainedRecoveryAttemptDispositionV1::Committed

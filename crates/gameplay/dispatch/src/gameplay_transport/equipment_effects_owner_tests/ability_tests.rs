@@ -22,6 +22,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // E12 captures 1425 bound Hireling items from Crystal 201189f; 135 reuse
+    // existing profiles and 1290 are new (hireling-item-profiles.json).
+    // The native importer preserves shared attributes/richer ability facts;
+    // every raw speed and the exact unknown-speed set remain checked below.
+    ("HIRELING-E12", 1290),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I10a: the podiums 35973/35974, 38707 and 42367/42368
@@ -157,7 +162,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             unknown_speed.insert(record.production_definition.production_key.clone());
         }
         let equipment = snapshot(&content, &record.production_definition.production_key, 10);
-        assert_eq!(speed_term(&equipment, &content), Some(0));
+        // I05 keeps these three timed rings' equipment effects unhosted. E12
+        // adds their physical Trader custody without granting equip admission;
+        // the raw source attributes are still checked independently above.
+        let expected = match record.production_definition.production_key.as_str() {
+            "oteryn:item.tibia.i3049" | "oteryn:item.tibia.i3052" | "oteryn:item.tibia.i3098" => {
+                None
+            }
+            _ => Some(0),
+        };
+        assert_eq!(
+            speed_term(&equipment, &content),
+            expected,
+            "{}",
+            record.production_definition.production_key
+        );
     }
     assert_eq!(
         unknown_speed,

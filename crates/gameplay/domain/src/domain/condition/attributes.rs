@@ -26,6 +26,10 @@ pub struct AttributeModifiers {
     pub melee: Option<AttributeModifier>,
     pub distance: Option<AttributeModifier>,
     pub magic_points: Option<AttributeModifier>,
+    /// Crystal hireling_foods.lua:19-23: a temporary bonus, never a base build edit.
+    pub shielding: Option<AttributeModifier>,
+    /// Crystal hireling_foods.lua:5-7.
+    pub fishing: Option<AttributeModifier>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CombatSkill {
@@ -39,16 +43,28 @@ pub enum CombatSkill {
 }
 impl AttributeModifiers {
     pub fn is_negative(self) -> bool {
-        [self.melee, self.distance, self.magic_points]
-            .into_iter()
-            .flatten()
-            .any(|m| match m {
-                AttributeModifier::PercentOfBase(n) => n > 0 && n < 100,
-                AttributeModifier::Add(n) => n < 0,
-            })
+        [
+            self.melee,
+            self.distance,
+            self.magic_points,
+            self.shielding,
+            self.fishing,
+        ]
+        .into_iter()
+        .flatten()
+        .any(|m| match m {
+            AttributeModifier::PercentOfBase(n) => n > 0 && n < 100,
+            AttributeModifier::Add(n) => n < 0,
+        })
     }
     pub fn valid(self) -> bool {
-        let values = [self.melee, self.distance, self.magic_points];
+        let values = [
+            self.melee,
+            self.distance,
+            self.magic_points,
+            self.shielding,
+            self.fishing,
+        ];
         values.iter().any(Option::is_some)
             && values.into_iter().flatten().all(AttributeModifier::valid)
     }
@@ -59,7 +75,9 @@ impl AttributeModifiers {
         let modifier = match skill {
             CombatSkill::Club | CombatSkill::Sword | CombatSkill::Axe => self.melee,
             CombatSkill::Distance => self.distance,
-            CombatSkill::Fist | CombatSkill::Shield | CombatSkill::Fishing => None,
+            CombatSkill::Shield => self.shielding,
+            CombatSkill::Fishing => self.fishing,
+            CombatSkill::Fist => None,
         };
         modifier.map_or(Some(base), |m| m.effective(base))
     }

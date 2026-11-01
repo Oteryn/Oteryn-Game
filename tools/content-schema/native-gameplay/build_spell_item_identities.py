@@ -10,10 +10,10 @@ import argparse
 import copy
 import hashlib
 import json
-from pathlib import Path
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
@@ -21,6 +21,10 @@ BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a
 CRYSTAL_PIN = "ff7ede593c69d4c658b382c97443e8155926924a"
 CANARY_PIN = "99902524e052f37574194466c2949c576e4ab269"
 XML_PATH = "data/items/items.xml"
+# E12 independently captures facts from this exact donor. Historical identity
+# rows retain their original source_revision; this pin only qualifies membership.
+INDEPENDENT_CRYSTAL_PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
+INDEPENDENT_CRYSTAL_XML_SHA = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
 XML_SHA = {
     "canary": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
     "crystal": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
@@ -76,11 +80,34 @@ def source_xml(root: Path, server: str) -> tuple[set[int], dict]:
     return ids, {"server": server, "revision": pin, "path": XML_PATH, "sha256": digest}
 
 
-def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidate: dict | None = None) -> dict:
+def independent_crystal_membership(proof: tuple[str, bytes]) -> set[int]:
+    revision, raw = proof
+    if revision != INDEPENDENT_CRYSTAL_PIN or hashlib.sha256(raw).hexdigest() != INDEPENDENT_CRYSTAL_XML_SHA:
+        raise ValueError("Unqualified independent Crystal XML pin")
+    ids = set()
+    for node in ET.fromstring(raw):
+        low = int(node.get("id", node.get("fromid", "-1")))
+        high = int(node.get("id", node.get("toid", "-1")))
+        if not (0 < low <= 65535 and 0 < high <= 65535):
+            raise ValueError("Invalid independent source Item range")
+        if low <= high:
+            ids.update(range(low, high + 1))
+    return ids
+
+
+def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidate: dict | None = None,
+                  *, independent_crystal_source: tuple[str, bytes] | None = None) -> dict:
     if document.get("schema") != "OTERYN_NATIVE_ITEM_PROFILES/v1" or not isinstance(document.get("records"), list):
         raise ValueError("Invalid native Item profile document")
     result = copy.deepcopy(document)
     bindings = copy.deepcopy(bindings)
+    independent_ids = set()
+    admitted_bindings = {}
+    if independent_crystal_source is not None:
+        independent_ids = independent_crystal_membership(independent_crystal_source)
+        # An independently captured newer Item never creates or revises an
+        # identity: the exact previously admitted row must still match.
+        admitted_bindings = binding_index(BINDINGS.read_bytes())
     if candidate is not None:
         from canary_generic_item_identity import PACKET
         if candidate != json.loads(PACKET.read_bytes()):
@@ -105,7 +132,8 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
         seen.add(external)
         binding = bindings[external]
         generic = external == "40450" and candidate is not None
-        if not generic and binding["source_revision"] != CRYSTAL_PIN:
+        if (not generic and binding["source_revision"] != CRYSTAL_PIN
+            and (int(external) not in independent_ids or admitted_bindings.get(external) != binding)):
             raise ValueError("Selected Item identity requires independently qualified source revision")
         if generic:
             policy = candidate["qualification"]["policy"]

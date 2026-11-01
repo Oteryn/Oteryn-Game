@@ -396,6 +396,16 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// A parked native item-use successor must reconcile before ingress can
+    /// terminalize USE. `true` closes the connection without acknowledging it.
+    fn item_use_pending(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     fn use_consume_transform(
         &self,
         _actor: ExactActorRef,

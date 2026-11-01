@@ -338,6 +338,8 @@ pub enum NativeItemStackClass {
 pub enum NativeItemDestination {
     CharacterInventory,
     Ground,
+    /// Explicit immovable Store custody; does not grant carried inventory access.
+    CharacterInbox,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1246,6 +1248,26 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             {
                 return Err(invalid("native gameplay item admission destinations"));
             }
+            if record
+                .admission
+                .legal_destinations
+                .contains(&NativeItemDestination::CharacterInbox)
+            {
+                use super::ReferenceItemField as F;
+                if record.production_definition.family != "Item"
+                    || record.production_definition.production_key != "oteryn:item.tibia.i29432"
+                    || !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations
+                        != [NativeItemDestination::CharacterInbox]
+                    || !matches!(&record.semantics.physical,
+                        F::Known(physical) if physical.movable == F::Known(false))
+                    || !matches!(&record.semantics.stack,
+                        F::Known(stack) if stack.stackable == F::Known(false))
+                {
+                    return Err(invalid("native gameplay closed Hireling Inbox destination"));
+                }
+            }
         }
         // WRITE-0 §5.3 / owner decision 25: a write-once transform ends in
         // an explicitly readable, nonwritable definition of this same pin.
@@ -1792,6 +1814,73 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn hireling_lamp_inbox_destination_is_source_bound_and_not_portable() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let raw =
+            include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json");
+        supplied.item_profiles = Some(pinned(raw));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let lamp = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i29432", "definition-r1")
+            .unwrap()
+            .record();
+        assert_eq!(
+            lamp.admission.legal_destinations,
+            [NativeItemDestination::CharacterInbox]
+        );
+        assert_eq!(
+            lamp.admission.stack_class,
+            NativeItemStackClass::NonStackable
+        );
+        assert!(matches!(&lamp.semantics.physical, F::Known(physical)
+            if physical.movable == F::Known(false) && physical.weight == F::Known(1_000)));
+        let original: Value = serde_json::from_slice(raw).unwrap();
+        let lamp_index = original["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|row| {
+                row["production_definition"]["production_key"] == "oteryn:item.tibia.i29432"
+            })
+            .unwrap();
+        let coin_index = original["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|row| {
+                row["production_definition"]["production_key"] == "oteryn:item.tibia.i3031"
+            })
+            .unwrap();
+        for mutation in 0..3 {
+            let mut profiles = original.clone();
+            match mutation {
+                0 => {
+                    profiles["records"][lamp_index]["semantics"]["physical"]["value"]["movable"] =
+                        serde_json::json!({"state":"KNOWN", "value":true})
+                }
+                1 => {
+                    profiles["records"][lamp_index]["admission"]["legal_destinations"] =
+                        serde_json::json!(["CharacterInventory", "CharacterInbox"])
+                }
+                _ => {
+                    profiles["records"][coin_index]["admission"]["legal_destinations"] =
+                        serde_json::json!(["CharacterInbox"])
+                }
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_err(),
+                "a source/definition/destination substitution must not grant the new Inbox surface"
+            );
+        }
+    }
+
     #[test]
     fn item_spell_augments_artifact_roundtrip_and_bounds() {
         let world = test_source(1).unwrap().world_id;

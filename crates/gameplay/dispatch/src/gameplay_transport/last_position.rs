@@ -1,4 +1,4 @@
-//! The Channel owner's side of the durable last position (CHAR-POSITION-1, decision
+//! The native actor owner's side of the durable last position (CHAR-POSITION-1, decision
 //! CHAR-POSITION-0, `reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md`
 //! §3.2 and §3.3), with the Character's saved health and mana (CHAR-VITALS-1, owner decision
 //! 2026-10-13, `reviews/OTERYN_GAME_CHAR_VITALS0_DURABLE_VITALS_DECISION_2026-10-13.md`).
@@ -49,6 +49,11 @@
 //!   owner step that creates its spell state ([`admitted_vitals`]); a respawn admission, a first
 //!   login or a row without vitals starts at the maxima (SPELL-D2).
 //!
+//! Q16 extends this same tracker/cadence to actual named-House residents. A fresh
+//! admission with scoped House metadata is restored before the generic Channel
+//! first-entry steps above. Its immutable native entry acknowledgement and origin
+//! routing cell remain separate from this current position projection.
+//!
 //! Each capture takes its `write_sequence` under the runtime lock from one process-wide
 //! generator that is strictly increasing and never below the wall clock in microseconds, so a
 //! write captured later always orders after one captured earlier in the same lease, including
@@ -64,8 +69,9 @@ use crate::domain::CharacterRevision;
 use crate::durability::DB_PASS_DEADLINE;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
-    FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionRecord,
-    LastPositionWrite, LastVitals, PeriodicLastPosition, StoredLastPosition,
+    FinalLastPosition, HouseLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell,
+    LastPositionRecord, LastPositionWrite, LastVitals, PeriodicLastPosition,
+    ScopedPeriodicLastPosition, StoredLastPosition,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -284,7 +290,7 @@ impl Saved {
 
 /// One capture attempt under the runtime lock.
 enum Captured {
-    At(Capture),
+    At(Box<Capture>),
     /// The actor is dead: the placement of its respawn writes the respawn cell.
     Dead,
     /// A retained vocation commit awaits live installation; retry the track later.
@@ -294,9 +300,10 @@ enum Captured {
 }
 
 /// One captured position: its record and the sequence it was captured with.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Capture {
     record: LastPositionRecord,
+    house: Option<HouseLastPosition>,
     write_sequence: u64,
     at: Instant,
 }
@@ -344,6 +351,29 @@ impl LastPositions {
                 },
             );
         }
+    }
+
+    /// Native scope handoff remaps the same tracked actor without a second timer/sequence owner.
+    pub(super) fn transferred(
+        &self,
+        source: GameSessionId,
+        destination: GameSessionId,
+        actor: ExactActorRef,
+        record: &LastPositionRecord,
+    ) -> bool {
+        if let Ok(mut tracks) = self.tracks.lock()
+            && let Some(mut track) = tracks
+                .get(&source)
+                .copied()
+                .filter(|track| track.actor == actor)
+        {
+            tracks.remove(&source);
+            track.written = Some(Saved::of(record));
+            track.checked = Instant::now();
+            tracks.insert(destination, track);
+            return true;
+        }
+        false
     }
 
     pub(super) fn forget(&self, session: GameSessionId) {
@@ -601,6 +631,34 @@ pub(super) fn initialize_first_entry_at(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// A committed native scope transfer keeps the same LastPosition sequence/cadence owner.
+    pub(super) async fn track_transferred_position(
+        &self,
+        source: GameSessionId,
+        destination: GameSessionId,
+        actor: ExactActorRef,
+        record: &LastPositionRecord,
+        character: crate::domain::CharacterId,
+    ) -> Option<()> {
+        if self
+            .states
+            .last_positions
+            .transferred(source, destination, actor, record)
+        {
+            return Some(());
+        }
+        let revision = self
+            .root
+            .read_current_character(self.character, character)
+            .await
+            .ok()?
+            .revision;
+        self.states
+            .last_positions
+            .track(destination, actor, Some(Saved::of(record)), revision);
+        Some(())
+    }
+
     /// Capture `track`'s actor's current cell and `session`'s vitals under the runtime lock,
     /// with its record and a fresh write sequence. A dead actor (DEATH-2 §4.2, until its
     /// respawn) is not captured. Vitals that cannot be read (no spell state, or a health of 0 not
@@ -625,36 +683,76 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Captured::Held;
         }
+        let house = runtime.house_actor_state(actor, session).ok();
         let (vitals, rest) = {
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) {
                 return Captured::Dead;
             }
-            let vitals = match states.saved_vitals(&runtime, actor, session) {
+            if states.has_pending_spell_commit(actor, session) {
+                return Captured::Held;
+            }
+            // The native House owner above proves the actual actor/session/lease before
+            // reading the same PlayerSpellState tuple. Generic Channel APIs remain closed.
+            let state = if house.is_some() {
+                states
+                    .actors
+                    .iter()
+                    .find(|(held, bound, _)| *held == actor && *bound == session)
+                    .map(|(_, _, state)| state)
+            } else {
+                states.get(&runtime, actor, session)
+            };
+            let vitals = match state.map(|state| state.saved_vitals()) {
                 Some(Some((health, mana))) => LastVitals::new(health, mana).or(kept),
                 Some(None) => None,
                 None => kept,
             };
-            let rest = states
-                .get(&runtime, actor, session)
+            let rest = state
                 .map(|state| state.bed_rest_snapshot(self.owner_now().get()))
                 .or_else(|| track.written.and_then(|saved| saved.rest));
             (vitals, rest)
         };
-        let Ok(snapshot) = runtime.read_actor_position(actor) else {
-            return Captured::Gone;
+        let (cell, house) = if let Some(state) = house {
+            let Some(house) =
+                crate::durability::house_scope_handoff::HouseId::new(self.world_id, &state.house)
+            else {
+                return Captured::Gone;
+            };
+            (
+                MovementLocalPosition {
+                    x: state.position.x,
+                    y: state.position.y,
+                    floor: state.position.floor,
+                },
+                Some(HouseLastPosition {
+                    house,
+                    origin_channel: self.channel_id,
+                    origin: LastPositionCell {
+                        x: state.origin_position.x,
+                        y: state.origin_position.y,
+                        floor: state.origin_position.floor,
+                    },
+                }),
+            )
+        } else {
+            let Ok(snapshot) = runtime.read_actor_position(actor) else {
+                return Captured::Gone;
+            };
+            if snapshot.context() != runtime.pinned_movement_context() {
+                return Captured::Gone;
+            }
+            (snapshot.position(), None)
         };
-        if snapshot.context() != runtime.pinned_movement_context() {
-            return Captured::Gone;
-        }
-        let mut placed = self.placed_record(&runtime, snapshot.position());
+        let mut placed = self.placed_record(&runtime, cell);
         placed.record.vitals = vitals;
         placed.record.rest = rest;
-        Captured::At(Capture {
+        Captured::At(Box::new(Capture {
             record: placed.record,
+            house,
             write_sequence: placed.write_sequence,
             at: Instant::now(),
-        })
+        }))
     }
 
     /// The record of `cell` in the pinned context, with a fresh write sequence and no vitals (a
@@ -706,9 +804,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> FreshAdmissionStore {
-        match self.final_last_position(session, actor).await {
-            Some(position) => store.with_final_position(position),
-            None => store.clone(),
+        let store = if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            store.with_house_release_owner(self.holder)
+        } else {
+            store.clone()
+        };
+        let Some(track) = self
+            .states
+            .last_positions
+            .tracked(session)
+            .filter(|track| track.actor == actor)
+        else {
+            return store;
+        };
+        match self.capture_last_position(&track, session).await {
+            Captured::At(capture) => {
+                let position = FinalLastPosition {
+                    record: capture.record,
+                    write_sequence: capture.write_sequence,
+                };
+                match capture.house {
+                    Some(house) => store.with_final_house_position(position, house, self.holder),
+                    None => store.with_final_position(position),
+                }
+            }
+            Captured::Dead | Captured::Held | Captured::Gone => store.clone(),
         }
     }
 
@@ -939,18 +1065,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 failed += 1;
                 continue;
             };
-            writes.push(PeriodicLastPosition {
-                fence: CurrentCharacterGameplayFence {
-                    character_id,
-                    game_session_id: session,
-                    connection_generation: current.current_connection_generation(),
-                    character_lease_generation: current.current_character_lease().generation(),
-                    runtime_scope: current.current_runtime_scope(),
-                    scope_ownership_generation: current.current_scope_generation(),
-                    expected_character_revision: track.revision,
+            writes.push(ScopedPeriodicLastPosition {
+                house: capture.house.clone(),
+                write: PeriodicLastPosition {
+                    fence: CurrentCharacterGameplayFence {
+                        character_id,
+                        game_session_id: session,
+                        connection_generation: current.current_connection_generation(),
+                        character_lease_generation: current.current_character_lease().generation(),
+                        runtime_scope: current.current_runtime_scope(),
+                        scope_ownership_generation: current.current_scope_generation(),
+                        expected_character_revision: track.revision,
+                    },
+                    write_sequence: capture.write_sequence,
+                    record: capture.record,
                 },
-                write_sequence: capture.write_sequence,
-                record: capture.record,
             });
             fenced.push((session, track, capture));
         }
@@ -959,7 +1088,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let outcomes = match self
             .root
-            .write_character_last_positions(self.character, self.holder, writes)
+            .write_scoped_character_last_positions(self.character, self.holder, writes)
             .await
         {
             Ok(outcomes) => outcomes,

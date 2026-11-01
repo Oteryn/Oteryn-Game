@@ -1,6 +1,8 @@
 //! Current owner observations. Visibility supplies the exact player identities to read.
 use super::*;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
+#[path = "observation/house.rs"]
+mod house;
 
 #[derive(Debug, Clone)]
 pub struct Observation {
@@ -24,16 +26,7 @@ pub(in crate::gameplay_transport) async fn observe(
     let (context, content) = admission.appearance_context()?;
     let own_fence =
         super::super::character_gameplay_fence::current(admission, session, false).await?;
-    let own = admission
-        .root
-        .read_current_character_appearance_state(
-            admission.character,
-            admission.holder,
-            own_fence,
-            content.earned_grant_keys(),
-        )
-        .await
-        .ok()?;
+    let own = house::read_state(admission, own_fence, content.earned_grant_keys()).await?;
     let catalogue = super::catalogue::catalogue(
         &content,
         &own,
@@ -41,15 +34,30 @@ pub(in crate::gameplay_transport) async fn observe(
         context,
     )?;
     let runtime = admission.runtime.lock().await;
-    if !current_runtime(&runtime, observer, session, &own_fence, &content) {
+    if !house::current_runtime_for_read(&runtime, observer, session, &own_fence, &content) {
         return None;
     }
     let states = admission.states.spell_states.lock().await;
-    let census = runtime.positioned_melee_census().ok()?;
+    let (census, hirelings) = house::census(&runtime, observer, session)?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
     for entity in entities {
-        let (actor, _, target_session) = census.iter().find(|(actor, _, _)| {
+        if let Some(entry) = hirelings.iter().find(|entry| entry.actor.placement_identity() == entity.identity
+            && entry.actor.actor_local_generation() == entity.generation) {
+            bindings.push(wire::Binding {
+                context,
+                appearance_ref: 1,
+                entity,
+                root_revision: 1,
+                condition_revision: entry.revision,
+                owner_time_us: now,
+                look: wire::Look::Outfit { look_type: u32::from(entry.look_type), colours: entry.colors.map(u16::from), addons: 0 },
+                selection_revision: None,
+                forge_stacks: None,
+            });
+            continue;
+        }
+        let (actor, target_session) = census.iter().find(|(actor, _)| {
             actor.placement_identity() == entity.identity
                 && actor.actor_local_generation() == entity.generation
         })?;
@@ -98,26 +106,24 @@ pub(in crate::gameplay_transport) async fn observe(
         {
             return None;
         }
-        let current = admission
-            .root
-            .read_current_character_appearance_state(
-                admission.character,
-                admission.holder,
-                fence,
-                content.earned_grant_keys(),
-            )
-            .await
-            .ok()?;
-        let player = states.get(&runtime, *actor, target_session)?;
+        let current = house::read_state(admission, fence, content.earned_grant_keys()).await?;
+        let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
+        let player = if in_house {
+            states.actors.iter().find(|(held, held_session, _)| *held == *actor && *held_session == target_session).map(|(_, _, state)| state)?
+        } else {
+            states.get(&runtime, *actor, target_session)?
+        };
         let (base, selection_revision) = super::catalogue::base(&content, &current);
         let mut look = wire::Look::Outfit {
             look_type: content.look_type(&base.outfit_key, current.sex)?,
             colours: base.colours,
             addons: base.addons,
         };
-        let owned = runtime
-            .actor_conditions_at(*actor, Some(target_session), now)
-            .ok()?;
+        let owned = if in_house {
+            runtime.house_actor_conditions_at(*actor, target_session, now).ok()?
+        } else {
+            runtime.actor_conditions_at(*actor, Some(target_session), now).ok()?
+        };
         let spell = player.owned_conditions();
         if !spell.accepts_time(now) || !owned.accepts_time(now) {
             return None;
@@ -157,17 +163,7 @@ pub(in crate::gameplay_transport) async fn observe(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if admission
-            .root
-            .read_current_character_appearance_state(
-                admission.character,
-                admission.holder,
-                fence,
-                content.earned_grant_keys(),
-            )
-            .await
-            .ok()?
-            != current
+        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current
         {
             return None;
         }

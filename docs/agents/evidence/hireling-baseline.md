@@ -21,7 +21,7 @@ temporary-database harness and real House handoff.
 OTERYN_TAG=2783-baseline bash /home/mole/oteryn-cache/slot-run.sh \
   cargo check --locked -p oteryn-gameplay-dispatch --all-features --tests --message-format short
 
-OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:@127.0.0.1:56583/postgres \
+# OTERYN_TEST_POSTGRES_ADMIN_URL is configured for the isolated PostgreSQL 18.6 cluster.
 OTERYN_REQUIRE_PG=1 RUST_MIN_STACK=67108864 OTERYN_TAG=2783-baseline \
   bash /home/mole/oteryn-cache/slot-run.sh cargo test --locked \
   -p oteryn-gameplay-dispatch --all-features --lib hireling_baseline -- --nocapture

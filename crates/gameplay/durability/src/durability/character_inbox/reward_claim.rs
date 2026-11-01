@@ -37,7 +37,10 @@ use sqlx::{Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
 
+mod authority;
 mod mint;
+use authority::InboxAuthority;
+pub use authority::HirelingRecallRequest;
 pub use mint::{
     RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
 };
@@ -180,6 +183,7 @@ pub struct RewardClaimInboxTransaction<'connection> {
     backend_pid: i32,
     connection_generation: u64,
     character_lease_generation: u64,
+    house_authority: Option<authority::HouseAuditAuthority>,
     positions: Vec<Option<RewardClaimInboxPosition>>,
     refused: bool,
 }
@@ -189,6 +193,11 @@ impl<'connection> RewardClaimInboxTransaction<'connection> {
     /// transaction. The source must return an error for every refused value
     /// operation; it must not COMMIT, ROLLBACK or replace the borrowed transaction.
     pub fn transaction(&mut self) -> &mut Transaction<'connection, Postgres> {
+        &mut self.transaction
+    }
+
+    /// Borrow the already selected native transaction for an atomic source fee.
+    pub(crate) fn type2_transaction(&mut self) -> &mut Type2Transaction<'connection> {
         &mut self.transaction
     }
 
@@ -319,6 +328,29 @@ impl DurabilityRoot {
             > + Send
             + 'static,
     {
+        self.with_inbox_authority(authority, node, InboxAuthority::Character(fence), plan, owner, operation).await
+    }
+
+    async fn with_inbox_authority<T, C, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        authority_kind: InboxAuthority,
+        plan: &RewardClaimInboxPlan,
+        owner: &mut C,
+        operation: F,
+    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
+    where
+        T: Send + 'static,
+        C: Send,
+        F: for<'a, 'connection> FnOnce(
+                &'a mut RewardClaimInboxTransaction<'connection>,
+                &'a mut C,
+            ) -> Pin<
+                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
+            > + Send
+            + 'static,
+    {
         plan.validate()?;
         let recovery = authority
             .record_for(self)
@@ -341,19 +373,9 @@ impl DurabilityRoot {
                         Ok(None) => {}
                         Err(error) => return Ok(Err(error)),
                     }
-                    if !character_item_fence_is_current(
-                        &mut tx,
-                        &node,
-                        &fence,
-                        plan.command,
-                        plan.character_id,
-                        *plan.world_id.as_bytes(),
-                        *plan.channel_id.as_bytes(),
-                    )
-                    .await?
-                    {
+                    let Some(generations) = authority_kind.assert_current(&mut tx, &node, &plan).await? else {
                         return Ok(Err(RewardClaimInboxError::AuthorityRejected));
-                    }
+                    };
                     let row = sqlx::query(
                         "SELECT pg_current_xact_id()::text AS xact_id, pg_backend_pid() AS backend_pid",
                     )
@@ -366,8 +388,9 @@ impl DurabilityRoot {
                         binding,
                         physical_xact_id: row.try_get("xact_id")?,
                         backend_pid: row.try_get("backend_pid")?,
-                        connection_generation: fence.connection_generation.get(),
-                        character_lease_generation: fence.character_lease_generation,
+                        connection_generation: generations.connection,
+                        character_lease_generation: generations.character_lease,
+                        house_authority: generations.house,
                         positions,
                         refused: false,
                     };

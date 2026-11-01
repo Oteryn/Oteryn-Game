@@ -50,6 +50,9 @@ fn batch(count: usize) -> OneItemRewardClaimMintV1 {
             plan_binding: vec![8; 32],
             mint_intent_sha256: vec![9; 32],
             expected_character_lease_generation: 11,
+            house_key: None,
+            house_scope_ownership_generation: None,
+            house_authority_kind: None,
             outputs: (0..count)
                 .map(|index| RewardClaimInboxMintOutputV1 {
                     after: Some(OneItemStateV1 {
@@ -102,6 +105,45 @@ fn inbox_batch_reuses_tag4_and_round_trips_each_admitted_tuple() {
                 wire
             );
             assert!(common::decode_envelope(&wire).is_err());
+        }
+    }
+}
+
+#[test]
+fn house_inbox_audit_distinguishes_live_fence_from_offline_provenance() {
+    let legacy = batch(1);
+    assert!(legacy.inbox.as_ref().unwrap().house_key.is_none());
+    for kind in [1, 2] {
+        let mut house = legacy.clone();
+        let inbox = house.inbox.as_mut().unwrap();
+        inbox.house_key = Some("oteryn:content.house.fixture".into());
+        inbox.house_scope_ownership_generation = Some(19);
+        inbox.house_authority_kind = Some(kind);
+        if kind == 2 {
+            inbox.outputs[0].after.as_mut().unwrap().definition.as_mut().unwrap().production_key =
+                crate::durability::house_hireling::HIRELING_LAMP_KEY.into();
+            house.source.as_mut().unwrap().reward_claim.as_mut().unwrap().production_key =
+                crate::durability::house_hireling::HIRELING_LAMP_KEY.into();
+        }
+        let bytes = encode_reward_claim_mint_event(identity(), house.clone(), Type2EventTuple::V2).unwrap();
+        let (_, decoded) = decode_reward_claim_mint_envelope(&bytes).unwrap();
+        assert_eq!(decoded, house);
+        for changed in 0..5 {
+            let mut invalid = house.clone();
+            let scope = invalid.inbox.as_mut().unwrap();
+            match changed {
+                0 => scope.house_key = None,
+                1 => scope.house_scope_ownership_generation = Some(0),
+                2 => scope.house_authority_kind = Some(3),
+                3 => scope.house_key = Some("oteryn:activity.instance.fixture".into()),
+                _ => scope.house_scope_ownership_generation = None,
+            }
+            assert_eq!(check_inbox(&invalid), Err(AuditError::InvalidInput));
+        }
+        if kind == 2 {
+            let mut invalid = house;
+            invalid.inbox.as_mut().unwrap().outputs[0].after.as_mut().unwrap().quantity = 2;
+            assert_eq!(check_inbox(&invalid), Err(AuditError::InvalidInput));
         }
     }
 }
@@ -232,22 +274,47 @@ fn inbox_maximum_fields_fit_its_own_byte_and_resource_bounds() {
         after.definition = Some(maximum.clone());
         after.key_number = u32::from(u16::MAX);
     }
-    let mut event_identity = identity();
+    let house = format!("oteryn:content.house.{}",
+        "a".repeat(512 - "oteryn:content.house.".len()));
+    let mut live_house = value.clone();
+    let live_scope = live_house.inbox.as_mut().unwrap();
+    live_scope.house_key = Some(house);
+    live_scope.house_scope_ownership_generation = Some(u64::MAX);
+    live_scope.house_authority_kind = Some(1);
+    let mut recall = live_house.clone();
+    let lamp = OneItemTypedDefinitionRevisionV1 { family: "Item".into(),
+        production_key: crate::durability::house_hireling::HIRELING_LAMP_KEY.into(),
+        revision_ref: "r".repeat(512) };
+    recall.source.as_mut().unwrap().reward_claim = Some(lamp.clone());
+    let recall_scope = recall.inbox.as_mut().unwrap();
+    recall_scope.house_authority_kind = Some(2);
+    recall_scope.outputs.truncate(1);
+    recall_scope.outputs[0].ordinal = u64::MAX;
+    let after = recall_scope.outputs[0].after.as_mut().unwrap();
+    after.definition = Some(lamp);
+    after.key_number = 0;
     let build = "b".repeat(128);
-    event_identity.server_build_id = &build;
-    event_identity.occurred_at_unix_ms = i64::MAX - common::AUDIT_RETENTION_P90D_MS;
-    let wire = encode_reward_claim_mint_event(event_identity, value, Type2EventTuple::V2).unwrap();
-    assert!(wire.len() > common::RL07_ENVELOPE_BYTES_MAX);
-    assert!(wire.len() <= REWARD_INBOX_ENVELOPE_BYTES_MAX);
-    let (envelope, _) = decode_reward_claim_mint_envelope(&wire).unwrap();
-    assert!(envelope.payload.len() <= REWARD_INBOX_PAYLOAD_BYTES_MAX);
-    eprintln!(
-        "reward Inbox native prost cap measurement: outputs=20 payload_bytes={} envelope_bytes={} payload_cap={} envelope_cap={}",
-        envelope.payload.len(),
-        wire.len(),
-        REWARD_INBOX_PAYLOAD_BYTES_MAX,
-        REWARD_INBOX_ENVELOPE_BYTES_MAX
-    );
+    for (scope, value) in [("Channel", value), ("House", live_house), ("Recall", recall)] {
+        let output_count = value.inbox.as_ref().unwrap().outputs.len();
+        let payload_len = common::OneItemTransactionV1 {
+            interpretation_revision: common::INTERPRETATION_REVISION,
+            operation: Some(common::OneItemOperationV1::RewardClaimMint(value.clone())),
+        }.encoded_len();
+        for tuple in [Type2EventTuple::V1, Type2EventTuple::V2] {
+            let event_identity = RewardClaimMintEventIdentity { server_build_id: &build,
+                occurred_at_unix_ms: i64::MAX - common::AUDIT_RETENTION_P90D_MS, ..identity() };
+            let wire = encode_reward_claim_mint_event(event_identity, value.clone(), tuple).unwrap();
+            if output_count == 20 { assert!(wire.len() > common::RL07_ENVELOPE_BYTES_MAX); }
+            assert!(wire.len() <= REWARD_INBOX_ENVELOPE_BYTES_MAX);
+            let (envelope, decoded) = decode_reward_claim_mint_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            assert_eq!(payload_len, envelope.payload.len());
+            assert_eq!(envelope.encoded_len(), wire.len());
+            assert!(payload_len <= REWARD_INBOX_PAYLOAD_BYTES_MAX);
+            eprintln!("reward Inbox native prost cap measurement: scope={scope} outputs={output_count} schema={} payload_bytes={payload_len} envelope_bytes={} payload_cap={} envelope_cap={}",
+                tuple.schema_revision(), wire.len(), REWARD_INBOX_PAYLOAD_BYTES_MAX, REWARD_INBOX_ENVELOPE_BYTES_MAX);
+        }
+    }
     assert_eq!(reward_inbox_usage(20).unwrap().effect_work_units, 41);
     assert_eq!(reward_inbox_usage(21), Err(AuditError::CapacityExceeded));
     assert_eq!(

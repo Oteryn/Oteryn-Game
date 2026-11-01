@@ -87,6 +87,65 @@ pub struct ChatRuntime {
 }
 
 impl ChatRuntime {
+    /// Actual House handoff keeps the existing mute/rate owner. A new
+    /// destination must not overwrite another session's independently held data.
+    pub(super) fn house_transfer_ready(
+        &self,
+        source: GameSessionId,
+        destination: GameSessionId,
+    ) -> bool {
+        source != destination
+            && self.sessions.lock().is_ok_and(|sessions| {
+                !sessions.contains_key(&source) || !sessions.contains_key(&destination)
+            })
+    }
+
+    pub(super) fn transfer_house_session(
+        &self,
+        source: GameSessionId,
+        destination: GameSessionId,
+        character: [u8; 16],
+    ) -> bool {
+        if !self.house_transfer_ready(source, destination) {
+            return false;
+        }
+        {
+            let Ok(sessions) = self.sessions.lock() else {
+                return false;
+            };
+            if [source, destination].iter().any(|session| {
+                sessions
+                    .get(session)
+                    .and_then(|state| state.character)
+                    .is_some_and(|held| held != character)
+            }) {
+                return false;
+            }
+        }
+        // Contextual memberships and NPC windows close through their existing
+        // owners. They are not current scope permissions to carry to a successor.
+        self.guild.forget(source);
+        self.party.forget(source);
+        self.forget_private_channels(source);
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return false;
+        };
+        if sessions.contains_key(&source) && sessions.contains_key(&destination) {
+            return false;
+        }
+        if let Some(mut held) = sessions.remove(&source) {
+            held.egress.clear();
+            held.engaged = None;
+            held.joined = 0;
+            held.walked_away.clear();
+            held.npc_service = false;
+            held.channels = private_channel::PrivateChannels::default();
+            held.rooms_shown = ChatRoomSet::default();
+            sessions.insert(destination, held);
+        }
+        true
+    }
+
     /// [`Self::admit_as`] for a session that receives no private line.
     #[cfg(test)]
     pub fn admit(&self, session: GameSessionId, name: &str, now: SemanticTimeMicros) {
@@ -364,24 +423,59 @@ impl ChatRuntime {
         let Some(npc) = self.engaged(session) else {
             return false;
         };
+        let house = runtime.house_player_for_session(session).ok().flatten();
         let customer = runtime
             .positioned_player_for_session(session)
             .ok()
             .flatten()
-            .map(|(_, snapshot)| snapshot.position());
+            .map(|(_, snapshot)| snapshot.position())
+            .or_else(|| {
+                house
+                    .as_ref()
+                    .map(|(_, state)| crate::foundation::MovementLocalPosition {
+                        x: state.position.x,
+                        y: state.position.y,
+                        floor: state.position.floor,
+                    })
+            });
         let visible = runtime.visible_entities();
-        let placed = visible.npcs.iter().find(|placed| placed.actor == npc);
+        let placed = if let Some((observer, _)) = &house {
+            runtime
+                .house_hireling_entities(*observer, session)
+                .ok()
+                .and_then(|entries| {
+                    entries
+                        .into_iter()
+                        .find(|entry| entry.actor == npc)
+                        .map(|entry| entry.position)
+                })
+        } else {
+            visible
+                .npcs
+                .iter()
+                .find(|placed| placed.actor == npc)
+                .map(|entry| entry.position)
+        };
         let near = customer.zip(placed).is_some_and(|(at, placed)| {
-            at.floor == placed.position.floor
-                && at.x.abs_diff(placed.position.x) <= TALK_RANGE_TILES
-                && at.y.abs_diff(placed.position.y) <= TALK_RANGE_TILES
+            at.floor == placed.floor
+                && at.x.abs_diff(placed.x) <= TALK_RANGE_TILES
+                && at.y.abs_diff(placed.y) <= TALK_RANGE_TILES
         });
         if near {
             return false;
         }
         let line = self
             .npc_talk()
-            .and_then(|book| runtime.npc_key(npc).and_then(|key| book.get(key)))
+            .and_then(|book| {
+                runtime
+                    .npc_key(npc)
+                    .or_else(|| {
+                        house.as_ref().and_then(|(observer, _)| {
+                            runtime.house_hireling_key(*observer, session, npc)
+                        })
+                    })
+                    .and_then(|key| book.get(key))
+            })
             .map(|entry| entry.farewell().to_owned());
         let Ok(mut sessions) = self.sessions.lock() else {
             return false;
@@ -1542,6 +1636,35 @@ mod tests {
         assert!(chat.muted_cast(session_of(0x7f), BASE).is_none());
         let later = SemanticTimeMicros::from_micros(BASE.get() + 600_000_000);
         assert!(chat.muted_cast(first.1, later).is_none());
+    }
+
+    #[test]
+    fn house_handoff_preserves_chat_mute_deadline_and_closes_contextual_egress() {
+        let (runtime, chat, first, _) = two_players(0);
+        for _ in 0..8 {
+            speak(&chat, &runtime, first, &say("x"), BASE);
+        }
+        assert!(chat.muted_cast(first.1, BASE).is_some());
+        chat.set_npc_service(first.1);
+        let deadline = chat.active_mute_wait(first.1, BASE);
+        let destination = session_of(0x7e);
+        assert!(chat.transfer_house_session(first.1, destination, [99; 16]));
+        assert!(!chat.knows(first.1));
+        assert_eq!(chat.active_mute_wait(destination, BASE), deadline);
+        assert!(chat.muted_cast(destination, BASE).is_some());
+        assert!(chat.drain(destination).is_empty());
+        assert!(
+            !chat
+                .sessions
+                .lock()
+                .expect("owner")
+                .get(&destination)
+                .expect("successor")
+                .npc_service
+        );
+        assert!(chat.transfer_house_session(first.1, destination, [99; 16]));
+        let later = SemanticTimeMicros::from_micros(BASE.get() + 600_000_000);
+        assert!(chat.muted_cast(destination, later).is_none());
     }
 
     #[test]
