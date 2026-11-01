@@ -2,9 +2,11 @@
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
 
+use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
+use std::sync::Arc;
 
 const PANEL_IDS: &[&str] = &[
     "battle",
@@ -91,10 +93,33 @@ impl Display for PreferenceError {
 
 impl std::error::Error for PreferenceError {}
 
+#[derive(Debug, Clone)]
+pub(crate) struct LocalPlayState {
+    world: Arc<World>,
+    preferences: ReferencePreferences,
+}
+
+impl LocalPlayState {
+    pub(crate) fn new(world: World) -> Self {
+        Self {
+            world: Arc::new(world),
+            preferences: ReferencePreferences::default(),
+        }
+    }
+
+    pub(crate) fn world(&self) -> Arc<World> {
+        Arc::clone(&self.world)
+    }
+
+    pub(crate) fn set_world(&mut self, world: Arc<World>) {
+        self.world = world;
+    }
+}
+
 impl PlayView {
     #[must_use]
     pub const fn preferences(&self) -> &ReferencePreferences {
-        &self.preferences
+        &self.local.preferences
     }
 
     pub fn set_preferences(
@@ -102,7 +127,7 @@ impl PlayView {
         preferences: ReferencePreferences,
     ) -> Result<(), PreferenceError> {
         preferences.validate()?;
-        self.preferences = preferences;
+        self.local.preferences = preferences;
         Ok(())
     }
 }

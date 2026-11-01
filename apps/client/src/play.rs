@@ -8,6 +8,7 @@
 use crate::input::{ClickWalk, StepDir};
 use crate::map::World;
 use crate::scene::Scene;
+use feature_local_reference_preferences::settings::LocalPlayState;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -16,7 +17,6 @@ use oteryn_session::{
 };
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
-use std::sync::Arc;
 
 /// Any session error ends play and returns to login with this public class.
 #[must_use]
@@ -41,7 +41,6 @@ enum Input {
     Logout,
 }
 
-/// Most inputs held while the session task is busy; a later one is dropped.
 const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
@@ -52,7 +51,7 @@ pub struct PlayView {
     floor: i16,
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
-    world: Arc<World>,
+    local: LocalPlayState,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
     /// The session floor the map is anchored to; on any other floor no map is drawn.
@@ -69,8 +68,6 @@ pub struct PlayView {
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
-    /// Local display intent; it grants no server capability and contains no credentials.
-    preferences: feature_local_reference_preferences::settings::ReferencePreferences,
 }
 
 impl PlayView {
@@ -88,15 +85,15 @@ impl PlayView {
         floor: i16,
         overlay: &[WorldObjectOverlayEntry],
     ) -> Result<Self, BatchError> {
-        let world = Arc::new(World::builtin()?);
+        let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
             own,
             facing: StepDir::South,
             floor,
             markers: BTreeMap::new(),
-            scene: Scene::centered_on(Arc::clone(&world), None, own, StepDir::South, &[])?,
-            world,
+            scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
+            local,
             anchor,
             map_floor: None,
             walk: ClickWalk::new(),
@@ -105,8 +102,6 @@ impl PlayView {
             entities: Vec::new(),
             combat_line: None,
             logout_line: None,
-            preferences:
-                feature_local_reference_preferences::settings::ReferencePreferences::default(),
         };
         for entry in overlay {
             view.set_marker(entry);
