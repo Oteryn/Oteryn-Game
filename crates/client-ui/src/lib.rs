@@ -54,6 +54,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// NPC shop look and sell-all panel state.
+#[path = "features/0081-npc-shop/mod.rs"]
+pub mod npc_shop;
+
 /// Imbuement shrine state, actions, and plain-text view.
 #[path = "features/0068-imbue/mod.rs"]
 pub mod imbue;

@@ -83,6 +83,10 @@ pub use oteryn_protocol_oteryn::exiva;
 pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// Shared NPC trade enums carried by capability-81 shop messages.
+pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
+/// Capability-81 NPC shop wire values consumed by the native client adapter.
+pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::prey;
 pub use oteryn_protocol_oteryn::vip_presence::{

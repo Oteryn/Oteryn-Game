@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn npc_shop_selected(&self) -> bool {
+        false
+    }
+    fn npc_shop(
+        &mut self,
+        _command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError>>
+    + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 81 }) }
+    }
     fn prey_selected(&self) -> bool {
         false
     }
@@ -215,6 +225,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn npc_shop_selected(&self) -> bool {
+        self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
+    }
+    async fn npc_shop(
+        &mut self,
+        command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
+    ) -> Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError> {
+        oteryn_client_runtime::npc_shop::send(self, command).await
+    }
     fn prey_selected(&self) -> bool {
         self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
     }
@@ -313,6 +332,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.npc_shop_initialize(session.npc_shop_selected());
     outbox.prey_initialize(session.prey_selected());
     outbox.imbue_initialize(session.imbue_selected());
     outbox.player_trade_initialize(
@@ -392,6 +412,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcShop(command)) => match session.npc_shop(&command).await {
+                Ok(result) => {
+                    outbox.npc_shop_result(&result);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

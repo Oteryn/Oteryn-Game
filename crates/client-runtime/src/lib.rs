@@ -140,6 +140,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+/// Capability-81 NPC shop command execution through the admitted session.
+#[path = "features/0081-npc-shop/protocol.rs"]
+pub mod npc_shop;
+
 /// Imbuement commands executed through the admitted session.
 #[path = "features/0068-imbue/protocol.rs"]
 pub mod imbue;
