@@ -46,8 +46,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
     // M08: the bunch of sugar cane 5466, added to the gathering set for the scythe and sickle
-    // harvests (tools/content-migration/gathering_item_profiles.py). speed_bonus=0.
-    ("M08-HARVEST", 1),
+    // harvests, plus the scythe 3453, sickle 3293 and squeezing gear 9596 themselves so a
+    // character can hold them (tools/content-migration/gathering_item_profiles.py). speed_bonus=0.
+    ("M08-HARVEST", 4),
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),

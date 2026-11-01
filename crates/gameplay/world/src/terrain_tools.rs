@@ -68,7 +68,11 @@ pub struct TerrainTransformPlan<'a> {
 /// :19-31 tries the scythe, sickle, rope, shovel, pick and machete in that order; the targets of
 /// those tools are disjoint, so the first matching binding is the donor's. The 1% jam roll at
 /// :16-17 and :34-40 needs an item transform and decay owner and is not applied here.
-const TOOL_GEAR: &str = "oteryn:item.tibia.i9596";
+pub const TOOL_GEAR: &str = "oteryn:item.tibia.i9596";
+/// Jam odds and duration: `math.random(1000) <= 10` (:16-17) and items.xml:25842-25847.
+pub const TOOL_JAM_OUT_OF: u32 = 1000;
+pub const TOOL_JAM_CHANCE: u32 = 10;
+pub const TOOL_JAM_MS: i64 = 60_000;
 const TOOL_GEAR_TOOLS: [TerrainTool; 5] = [
     TerrainTool::Scythe,
     TerrainTool::Sickle,
@@ -76,6 +80,11 @@ const TOOL_GEAR_TOOLS: [TerrainTool; 5] = [
     TerrainTool::Pick,
     TerrainTool::Machete,
 ];
+
+/// Whether the carried tool is the squeezing gear, which rolls the jam before each use.
+pub fn is_tool_gear(tool_key: &str) -> bool {
+    tool_key == TOOL_GEAR
+}
 
 /// Fail-closed item-use dispatch. The caller must additionally prove current carried custody and
 /// target revision; this function proves the tool/target pair and computes the durable deadline.

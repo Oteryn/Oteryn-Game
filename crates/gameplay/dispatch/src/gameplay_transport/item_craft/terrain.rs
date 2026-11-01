@@ -123,7 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let mutation = {
+        let (mutation, gear_jam) = 'plan: {
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if runtime.binding().world_id() != self.world_id
@@ -214,8 +214,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // M08: a harvest commits through the audited gathering craft owner, which mints
             // the yield with the same CAS. Never transform here and lose the promised yield.
+            // The gear's 1% jam roll precedes every tool it carries (squeezing_gear_of_girlpower
+            // .lua:16-17); it is the same deterministic draw for a replay of this command.
+            let gear_jam = if terrain_tools::is_tool_gear(&definition.production_key) {
+                let roll = super::super::item_craft::tool_jam_roll(
+                    native.source_digest(),
+                    command.game_session_id,
+                    command.command_id,
+                )
+                .ok_or(())?;
+                Some(roll <= terrain_tools::TOOL_JAM_CHANCE)
+            } else {
+                None
+            };
             if plan.binding.yield_item.is_some() {
-                return Ok(None);
+                // M08: the harvest commits through the gathering craft owner after the jam gate.
+                if gear_jam.is_none() {
+                    return Ok(None);
+                }
+                break 'plan (None, gear_jam);
             }
             for state in std::iter::once(plan.binding.transformed)
                 .chain(plan.binding.decay.iter().map(|s| s.state))
@@ -230,7 +247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut placement = at.map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            TerrainMutation {
+            let mutation = TerrainMutation {
                 tool: entry.item.item_instance_id,
                 tool_key: definition.production_key.clone(),
                 tool_revision: definition.revision_ref.clone(),
@@ -244,7 +261,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .iter()
                     .map(|s| Ok((s.state, i64::try_from(s.after.as_millis()).map_err(|_| ())?)))
                     .collect::<Result<_, ()>>()?,
+            };
+            (Some(mutation), gear_jam)
+        };
+        if let Some(jam) = gear_jam {
+            let tool = entry.item.item_instance_id;
+            if jam {
+                let result = self
+                    .root
+                    .jam_tool(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        command_ref,
+                        encoded,
+                        tool,
+                        definition.production_key.clone(),
+                        definition.revision_ref.clone(),
+                        terrain_tools::TOOL_JAM_MS,
+                        native.source_digest(),
+                    )
+                    .await
+                    .map_err(|_| ())?;
+                return Ok(Some(outcome(result)));
             }
+            if self
+                .root
+                .tool_jam_active(self.character, *fence.character_id.as_bytes(), tool)
+                .await
+                .map_err(|_| ())?
+            {
+                return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            }
+        }
+        let Some(mutation) = mutation else {
+            return Ok(None);
         };
         // The lane remains held until durable acknowledgement. The next clock/read recovers an
         // ambiguous commit from the same rows, so no speculative runtime mutation occurs.

@@ -405,6 +405,36 @@ pub(in crate::gameplay_transport) fn gathering_roll(
     u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()
 }
 
+/// The gear's jam draw, `math.random(1000)` (squeezing_gear_of_girlpower.lua:16). It depends on
+/// the content digest, session and command only, so a replay of the command draws the same value.
+pub(in crate::gameplay_transport) fn tool_jam_roll(
+    digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+    command_id: u64,
+) -> Option<u32> {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.tool.jam.v1")
+        .chain_update(session.as_bytes())
+        .chain_update(command_id.to_be_bytes())
+        .chain_update(digest)
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    let draw = deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(digest.into()),
+        DecisionOccurrenceId::from_bytes(occurrence),
+        "tool.jam",
+        0,
+    )
+    .ok()?;
+    u32::try_from(crate::spell::uniform_draw(
+        draw,
+        1,
+        i64::from(oteryn_gameplay_world::terrain_tools::TOOL_JAM_OUT_OF),
+    ))
+    .ok()
+}
+
 #[cfg(test)]
 #[path = "item_craft_crystal_parity_tests.rs"]
 mod crystal_parity_tests;

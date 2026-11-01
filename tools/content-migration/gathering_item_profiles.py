@@ -3,9 +3,9 @@ import hashlib
 import json
 
 PATH = 'tools/content-schema/native-gameplay/gathering-item-profiles.json'
-IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5466, 5876, 5877, 5878, 5905, 5906,
+IDS = {3293, 3453, 3580, 4012, 4026, 4063, 4098, 4138, 4325, 5466, 5876, 5877, 5878, 5905, 5906,
        5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159, 7200,
-       7236, 7237, 7441, 7442}
+       7236, 7237, 7441, 7442, 9596}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

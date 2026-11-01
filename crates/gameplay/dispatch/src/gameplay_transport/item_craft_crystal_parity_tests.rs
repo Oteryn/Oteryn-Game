@@ -170,6 +170,10 @@ fn m08_harvest_states_and_yields_resolve_in_active_content() {
         ("oteryn:item.tibia.i3453", 30623),
         ("oteryn:item.tibia.i9596", 3653),
     ] {
+        assert!(
+            state.item_policy(tool, "definition-r1").is_some(),
+            "tool {tool} has no native item profile"
+        );
         let plan =
             oteryn_gameplay_world::terrain_tools::harvest_plan(tool, target).expect("harvest plan");
         let yield_item = u32::from(plan.attempt.yield_item.expect("yield"));
@@ -184,4 +188,28 @@ fn m08_harvest_states_and_yields_resolve_in_active_content() {
             assert!(typed(state, id).is_some(), "state {id} is not in content");
         }
     }
+}
+
+/// squeezing_gear_of_girlpower.lua:16-17 (`math.random(1000) <= 10`) and items.xml:25842-25847
+/// (duration 60). The roll is the deterministic per-command draw, so a replay jams identically.
+#[test]
+fn m08_gear_jam_roll_is_deterministic_in_range_and_about_one_percent() {
+    let mut raw = [7u8; 16];
+    (raw[6], raw[8]) = (0x70, 0x80);
+    let session = crate::foundation::GameSessionId::decode(&raw).expect("session");
+    let (digest, mut hits) = ([3; 32], 0u32);
+    for command in 1..=20_000u64 {
+        let roll = super::tool_jam_roll(digest, session, command).expect("roll");
+        assert!((1..=1000).contains(&roll));
+        assert_eq!(Some(roll), super::tool_jam_roll(digest, session, command));
+        hits += u32::from(roll <= oteryn_gameplay_world::terrain_tools::TOOL_JAM_CHANCE);
+    }
+    assert!((120..=290).contains(&hits), "about 1% of 20000, got {hits}");
+    assert!(oteryn_gameplay_world::terrain_tools::is_tool_gear(
+        "oteryn:item.tibia.i9596"
+    ));
+    assert!(!oteryn_gameplay_world::terrain_tools::is_tool_gear(
+        "oteryn:item.tibia.i3453"
+    ));
+    assert_eq!(oteryn_gameplay_world::terrain_tools::TOOL_JAM_MS, 60_000);
 }
