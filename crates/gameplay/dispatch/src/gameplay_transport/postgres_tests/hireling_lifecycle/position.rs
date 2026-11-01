@@ -75,8 +75,9 @@ pub(super) async fn capture(
     // a Channel fence. Refused proofs leave the owning state unchanged.
     assert!(h.root.read_house_pvp_state(owner.character, owner.holder, fence, admitted.channel_id)
         .await.map_err(debug)?.is_none());
+    // Main's read_pvp_state_in_scope guard now delegates House refusal to the session fence.
     assert!(matches!(h.root.read_pvp_state(owner.character, owner.holder, fence).await,
-        Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)));
+        Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
     let mut stale_pvp = fence;
     stale_pvp.character_lease_generation += 1;
     assert!(matches!(h.root.read_house_pvp_state(owner.character, owner.holder,

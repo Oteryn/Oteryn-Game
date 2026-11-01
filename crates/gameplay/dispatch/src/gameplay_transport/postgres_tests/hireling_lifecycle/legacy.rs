@@ -46,9 +46,10 @@ pub(super) async fn upgrade(h: &Harness, current: CurrentCharacterItemFence)
 
 async fn apply_and_check(connection: &mut sqlx::PgConnection, character: String,
     session: String, current: CurrentCharacterItemFence) -> TestResult<ConvertedPlacement> {
+    // The hireling identity upgrade is migration 0719 (renumbered from 0700 when main took 0700).
     let before = sqlx::migrate::Migrator::with_migrations(
         oteryn_gameplay_durability::GAME_MIGRATOR.iter()
-            .filter(|migration| migration.version < 700).cloned().collect(),
+            .filter(|migration| migration.version < 719).cloned().collect(),
     );
     before.run(&mut *connection).await?;
     let mut tx = connection.begin().await?;
@@ -66,7 +67,7 @@ async fn apply_and_check(connection: &mut sqlx::PgConnection, character: String,
 
     let upgraded = sqlx::migrate::Migrator::with_migrations(
         oteryn_gameplay_durability::GAME_MIGRATOR.iter()
-            .filter(|migration| migration.version <= 700).cloned().collect(),
+            .filter(|migration| migration.version <= 719).cloned().collect(),
     );
     upgraded.run(&mut *connection).await?;
     let rows = sqlx::query("SELECT house_key,uuid_send(owner_character_id) AS owner,x,y,floor,active,legacy_grant, \
