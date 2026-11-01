@@ -139,6 +139,7 @@ fn owned_source_damage_and_food_clock_commit_once_at_the_same_now() {
             let facts = TickFacts {
                 in_protection_zone,
                 standing_on_field: None,
+                standing_on_agony_field: false,
             };
             let now = 1_000_000;
             let Some(receipt) = pass(&mut states, &mut runtime, actor, session, now, facts) else {
@@ -275,7 +276,7 @@ fn actual_malformed_creature_field_origin_refuses_without_hp_or_cursor_write() {
         "creature:field:{malformed}".into(),
         &poison(10),
         &facts,
-        DotElement::Poison,
+        Some(DotElement::Poison),
     ) else {
         panic!("TEST_PARAMETERS malformed historical source in actual canonical store");
     };
@@ -306,6 +307,7 @@ fn actual_creature_field_pz_deals_damage_then_due_residual_uses_same_store() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: None,
+        standing_on_agony_field: false,
     };
     let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
     assert!(
@@ -422,6 +424,7 @@ fn owned_tick_pz_deals_damage_and_field_retains_compressed_source_budget() {
         TickFacts {
             in_protection_zone: true,
             standing_on_field: None,
+            standing_on_agony_field: false,
         },
     ) else {
         panic!("current PZ")
@@ -440,6 +443,7 @@ fn owned_tick_pz_deals_damage_and_field_retains_compressed_source_budget() {
         TickFacts {
             in_protection_zone: false,
             standing_on_field: Some(DotElement::Poison),
+            standing_on_agony_field: false,
         },
     ) else {
         panic!("actual field facts")
@@ -474,6 +478,7 @@ fn monster_poison_in_protection_zone_lowers_player_health_and_exhausts_ticks() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: Some(DotElement::Poison),
+        standing_on_agony_field: false,
     };
     for second in 1..=3u32 {
         let Some(receipt) = pass(

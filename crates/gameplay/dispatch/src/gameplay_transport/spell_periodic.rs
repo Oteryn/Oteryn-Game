@@ -15,10 +15,43 @@ use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarge
 use oteryn_gameplay_foundation::foundation::condition::TickFacts;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 
+/// The field an actor stands on: a damage-over-time element, or the agony field (C08).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::gameplay_transport) enum StandingField {
+    Element(DotElement),
+    Agony,
+}
+impl StandingField {
+    /// The standing fact of one field recipe; `None` when it is not resolvable.
+    pub(in crate::gameplay_transport) fn of(
+        recipe: &oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition,
+    ) -> Option<Option<Self>> {
+        if recipe.is_agony() {
+            return Some(Some(Self::Agony));
+        }
+        recipe
+            .element()
+            .ok()
+            .map(|element| element.map(Self::Element))
+    }
+    pub(in crate::gameplay_transport) fn tick_facts(
+        in_protection_zone: bool,
+        standing: Option<Self>,
+    ) -> TickFacts {
+        TickFacts {
+            in_protection_zone,
+            standing_on_field: match standing {
+                Some(Self::Element(element)) => Some(element),
+                Some(Self::Agony) | None => None,
+            },
+            standing_on_agony_field: standing == Some(Self::Agony),
+        }
+    }
+}
 fn standing_element(
     read: &StandingTileRead,
     source: &NativeGameplayState,
-) -> Option<Option<DotElement>> {
+) -> Option<Option<StandingField>> {
     for item in read.items() {
         let policy = source.item_policy(
             &item.definition.production_key,
@@ -30,7 +63,7 @@ fn standing_element(
         };
         match classification.item_type {
             ReferenceItemField::Known(ReferenceItemType::MagicField) => {
-                return record.attributes.field_condition.as_ref()?.element().ok();
+                return StandingField::of(record.attributes.field_condition.as_ref()?);
             }
             ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {}
             ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
@@ -46,11 +79,11 @@ enum StaticItemFact {
     /// A known Item that is not a field.
     Plain,
     /// A known field Item; `None` when its element is not resolvable.
-    Field(Option<Option<DotElement>>),
+    Field(Option<Option<StandingField>>),
     /// A classification that is not known.
     Unknown,
 }
-fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option<DotElement>> {
+fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option<StandingField>> {
     // The first field wins, but every later Item is still checked: one without qualified
     // semantics could be the matching field, so it makes the whole tile Unknown.
     let mut field = Some(None);
@@ -74,7 +107,7 @@ fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option
 fn static_element(
     tile: &crate::content::QualifiedSpellTile,
     source: &NativeGameplayState,
-) -> Option<Option<DotElement>> {
+) -> Option<Option<StandingField>> {
     fold_static(tile.top_source_ids().iter().map(|id| {
         let Some(policy) = source.item_policy_for_source_id(*id) else {
             return StaticItemFact::NoPolicy;
@@ -89,7 +122,7 @@ fn static_element(
                     .attributes
                     .field_condition
                     .as_ref()
-                    .and_then(|f| f.element().ok()),
+                    .and_then(StandingField::of),
             ),
             ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {
                 StaticItemFact::Plain
@@ -101,9 +134,9 @@ fn static_element(
 /// Ground Items and static bundle Items are two sources of the one standing fact: a known field
 /// wins, Unknown on either side stays Unknown (no damage consumed).
 fn combine_elements(
-    dynamic: Option<Option<DotElement>>,
-    fixed: Option<Option<DotElement>>,
-) -> Option<Option<DotElement>> {
+    dynamic: Option<Option<StandingField>>,
+    fixed: Option<Option<StandingField>>,
+) -> Option<Option<StandingField>> {
     match (dynamic?, fixed?) {
         (Some(element), _) | (None, Some(element)) => Some(Some(element)),
         (None, None) => Some(None),
@@ -237,7 +270,7 @@ impl ChannelSpellStates {
             return None;
         }
         let in_protection_zone = qualified_protection_zone(runtime, cells, actor)?;
-        let standing_on_field = if in_protection_zone {
+        let standing = if in_protection_zone {
             None
         } else {
             let static_tile = cells
@@ -269,10 +302,7 @@ impl ChannelSpellStates {
             actor,
             session,
             now,
-            TickFacts {
-                in_protection_zone,
-                standing_on_field,
-            },
+            StandingField::tick_facts(in_protection_zone, standing),
             Some(source),
         ) {
             return source_result;
@@ -285,10 +315,7 @@ impl ChannelSpellStates {
             session,
             stamp,
             now,
-            TickFacts {
-                in_protection_zone,
-                standing_on_field,
-            },
+            StandingField::tick_facts(in_protection_zone, standing),
             // Player fields use the fenced transaction below. Other player
             // conditions still need their own current PvP authorization here;
             // a source receipt/session string cannot grant it.
@@ -304,10 +331,7 @@ impl ChannelSpellStates {
                     crate::spell::actor_conditions::stage_source_owner_cycle_without_damage(
                         before,
                         now,
-                        TickFacts {
-                            in_protection_zone,
-                            standing_on_field,
-                        },
+                        StandingField::tick_facts(in_protection_zone, standing),
                         None,
                     )
                     .ok()??;
@@ -480,7 +504,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let static_tile=owner.movement_cells.spell_tiles().lookup(owner.movement_cells.scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
             let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
             let before=states.get(runtime,actor,session).ok_or(crate::durability::DurabilityError::Unavailable)?.clone();
-            let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(TickFacts{in_protection_zone:pz,standing_on_field:standing}),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(StandingField::tick_facts(pz,standing)),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let Some(cycle)=cycle else {return Ok(None)};
             let pending=owner.stage_player_field_ticks(&mut tx,permit,runtime,states,&read,actor,session,position,now.get(),false,before,cycle.next,cycle.combat_ticks).await?;
             let mut window=permit.open_commit_window(pending,super::player_field::park);
@@ -503,7 +527,7 @@ mod standing_fact_tests {
     use super::*;
     #[test]
     fn static_bundle_field_is_not_lost_and_unknown_stays_unknown() {
-        let fire = Some(Some(DotElement::Fire));
+        let fire = Some(Some(StandingField::Element(DotElement::Fire)));
         assert_eq!(combine_elements(Some(None), fire), fire);
         assert_eq!(combine_elements(fire, Some(None)), fire);
         assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
@@ -515,23 +539,35 @@ mod standing_fact_tests {
         use StaticItemFact::*;
         assert_eq!(fold_static([Plain, NoPolicy]), None);
         assert_eq!(
-            fold_static([NoPolicy, Field(Some(Some(DotElement::Fire)))]),
+            fold_static([
+                NoPolicy,
+                Field(Some(Some(StandingField::Element(DotElement::Fire))))
+            ]),
             None
         );
         assert_eq!(fold_static([Plain, Unknown]), None);
         assert_eq!(fold_static([Plain, Plain]), Some(None));
         assert_eq!(
-            fold_static([Plain, Field(Some(Some(DotElement::Fire)))]),
-            Some(Some(DotElement::Fire))
+            fold_static([
+                Plain,
+                Field(Some(Some(StandingField::Element(DotElement::Fire))))
+            ]),
+            Some(Some(StandingField::Element(DotElement::Fire)))
         );
         assert_eq!(fold_static([Field(None)]), None);
-        let fire = Field(Some(Some(DotElement::Fire)));
+        let fire = Field(Some(Some(StandingField::Element(DotElement::Fire))));
         assert_eq!(fold_static([fire, NoPolicy]), None);
         assert_eq!(fold_static([fire, Unknown]), None);
-        assert_eq!(fold_static([fire, Plain]), Some(Some(DotElement::Fire)));
         assert_eq!(
-            fold_static([fire, Field(Some(Some(DotElement::Energy)))]),
-            Some(Some(DotElement::Fire))
+            fold_static([fire, Plain]),
+            Some(Some(StandingField::Element(DotElement::Fire)))
+        );
+        assert_eq!(
+            fold_static([
+                fire,
+                Field(Some(Some(StandingField::Element(DotElement::Energy))))
+            ]),
+            Some(Some(StandingField::Element(DotElement::Fire)))
         );
     }
 }

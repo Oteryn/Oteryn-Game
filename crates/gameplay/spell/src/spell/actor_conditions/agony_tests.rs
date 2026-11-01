@@ -121,6 +121,7 @@ fn with_agony(source: &str, kind: ConditionSourceKind, total: u32) -> PlayerSpel
 const OPEN: TickFacts = TickFacts {
     in_protection_zone: false,
     standing_on_field: None,
+    standing_on_agony_field: false,
 };
 
 #[test]
@@ -165,6 +166,7 @@ fn the_cycle_deals_and_uses_up_an_agony_tick_in_a_protection_zone() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: Some(DotElement::Fire),
+        standing_on_agony_field: false,
     };
     assert!(tick(&mut state, 0, pz).unwrap().is_empty());
     // NIGHT-W1 #1 permits agony in PZ, bypassing the shield as outside PZ.

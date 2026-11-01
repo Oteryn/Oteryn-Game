@@ -180,6 +180,14 @@ impl ConditionDefinition {
                         && per_tick > 0
                         && interval_ok(interval_ms)
                 }
+                ConditionValues::AgonyRamp {
+                    start, interval_ms, ..
+                } => {
+                    start > 0
+                        && interval_ok(interval_ms)
+                        && ramp_total(start).is_some()
+                        && start.checked_mul(interval_ms).is_some()
+                }
                 ConditionValues::DamageSequence { steps, len, .. } => {
                     let count = usize::from(len);
                     count > 0
@@ -345,7 +353,9 @@ impl ConditionDefinition {
                 ConditionType::Outfit
             }
             ConditionValues::Gate { gate, .. } => ConditionType::Gate(gate),
-            ConditionValues::Agony { .. } => ConditionType::Agony,
+            ConditionValues::Agony { .. } | ConditionValues::AgonyRamp { .. } => {
+                ConditionType::Agony
+            }
         }
     }
 }
@@ -532,6 +542,9 @@ pub struct TickFacts {
     pub in_protection_zone: bool,
     /// The element of a field the actor stands on: ticks of that element are not used up.
     pub standing_on_field: Option<DotElement>,
+    /// The actor stands on an agony field: an agony ramp tick is not used up (Crystal
+    /// `Creature::onTickCondition`, `creature.cpp:1183`).
+    pub standing_on_agony_field: bool,
 }
 
 /// Frozen removal chosen before commit. The actor owner retains this exact plan for replay;
@@ -740,6 +753,11 @@ impl<S: Clone> ConditionStore<S> {
                 sequence_duration(&steps[..usize::from(len)])
                     .ok_or(ConditionRefusal::ArithmeticBounds)?
             }
+            ConditionValues::AgonyRamp {
+                start, interval_ms, ..
+            } => start
+                .checked_mul(interval_ms)
+                .ok_or(ConditionRefusal::ArithmeticBounds)?,
             ConditionValues::Speed { duration_ms, .. }
             | ConditionValues::Recovery { duration_ms, .. }
             | ConditionValues::SpellRegeneration { duration_ms, .. }
@@ -958,6 +976,21 @@ impl<S: Clone> ConditionStore<S> {
                 }
                 instance.remaining_total =
                     draw_in_range(total_min, total_max, facts, COND_DOT_TOTAL_DRAW)?;
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
+                instance.immediate_due = (!delayed).then_some(now);
+            }
+            ConditionValues::AgonyRamp {
+                start,
+                interval_ms,
+                delayed,
+            } => {
+                // §3.5 `AGONY`: replace when the new total is at least the remaining one; the
+                // replacement follows §3.1 and restarts the ramp at `start`.
+                let total = ramp_total(start).ok_or(ConditionRefusal::ArithmeticBounds)?;
+                if existing.is_some_and(|old| total < old.remaining_total) {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.remaining_total = total;
                 instance.next_tick_at = Some(keep_timing(interval_ms)?);
                 instance.immediate_due = (!delayed).then_some(now);
             }
@@ -1324,6 +1357,32 @@ impl<S: Clone> ConditionStore<S> {
                         refused: false,
                     }
                 }
+                ConditionValues::AgonyRamp {
+                    start, interval_ms, ..
+                } => {
+                    // `sequence_repetition` counts the ramp ticks used up: the next is
+                    // `start - used`. Crystal `Creature::onTickCondition` (`creature.cpp:1183`)
+                    // keeps the tick while the actor stands on an agony field; the application
+                    // tick is used up even there, as in the sequence path.
+                    let amount = start
+                        .saturating_sub(instance.sequence_repetition)
+                        .min(instance.remaining_total);
+                    let immediate = instance.immediate_due == Some(due);
+                    if immediate {
+                        instance.immediate_due = None;
+                    }
+                    if immediate || !facts.standing_on_agony_field {
+                        instance.remaining_total -= amount;
+                        instance.sequence_repetition += 1;
+                    }
+                    instance.next_tick_at = (instance.remaining_total > 0)
+                        .then(|| due.checked_add(u64::from(interval_ms) * MICROS_PER_MS))
+                        .flatten();
+                    TickKind::Agony {
+                        amount,
+                        refused: false,
+                    }
+                }
                 ConditionValues::FoodRegeneration { interval_ms, .. }
                 | ConditionValues::Recovery { interval_ms, .. } => {
                     let key = instance.definition.condition_type().conflict_key();
@@ -1462,6 +1521,10 @@ impl<S: Clone> ConditionStore<S> {
     }
 }
 
+/// `start + (start - 1) + … + 1`.
+fn ramp_total(start: u32) -> Option<u32> {
+    u32::try_from(u64::from(start) * (u64::from(start) + 1) / 2).ok()
+}
 fn sequence_total(steps: &[DotSequenceStep]) -> Option<u32> {
     steps.iter().try_fold(0u32, |sum, s| {
         sum.checked_add(s.amount.checked_mul(s.repetitions)?)

@@ -69,6 +69,7 @@ mod tests {
                     oteryn_gameplay_foundation::foundation::condition::TickFacts {
                         in_protection_zone: true,
                         standing_on_field: None,
+                        standing_on_agony_field: false,
                     },
                 )
                 .map_err(|error| format!("{error:?}"))?;

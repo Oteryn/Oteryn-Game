@@ -566,6 +566,7 @@ mod source_player_owner_regressions {
                 oteryn_gameplay_foundation::foundation::condition::TickFacts {
                     in_protection_zone: false,
                     standing_on_field: None,
+                    standing_on_agony_field: false,
                 },
             ),
             None,

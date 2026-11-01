@@ -361,6 +361,7 @@ mod tests {
         let pz = TickFacts {
             in_protection_zone: true,
             standing_on_field: None,
+            standing_on_agony_field: false,
         };
         run(&mut state, 0, 6, pz);
         assert_eq!((state.health, state.mana), (100, 100));
@@ -374,6 +375,7 @@ mod tests {
         let pz = TickFacts {
             in_protection_zone: true,
             standing_on_field: None,
+            standing_on_agony_field: false,
         };
         // Fed clocks hold one second short of HP 3 s and MP 5 s.
         run(&mut state, 0, 10, pz);
@@ -396,6 +398,7 @@ mod tests {
         let pz = TickFacts {
             in_protection_zone: true,
             standing_on_field: None,
+            standing_on_agony_field: false,
         };
         run(&mut state, 0, 2, TickFacts::default());
         run(&mut state, 2, 4, pz);
@@ -427,6 +430,7 @@ mod tests {
         let pz = TickFacts {
             in_protection_zone: true,
             standing_on_field: None,
+            standing_on_agony_field: false,
         };
         run(&mut state, 0, 10, pz);
         assert_eq!((state.health, state.mana), (100, 100));
@@ -452,6 +456,7 @@ mod tests {
                 let facts = TickFacts {
                     in_protection_zone,
                     standing_on_field: None,
+                    standing_on_agony_field: false,
                 };
                 for now in [1_000_000, 60_000_000] {
                     let _ = state.source_take_due(now, facts);

@@ -348,6 +348,7 @@ fn saved_of(instance: &ConditionInstance<String>, now_us: u64) -> Option<SavedCo
             })
         }
         ConditionValues::DamageSchedule { .. }
+        | ConditionValues::AgonyRamp { .. }
         | ConditionValues::DamageSequence { .. }
         | ConditionValues::FoodRegeneration { .. }
         | ConditionValues::ManaShield { .. }

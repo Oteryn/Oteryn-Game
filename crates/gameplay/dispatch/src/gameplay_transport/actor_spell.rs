@@ -59,6 +59,7 @@ pub(in crate::gameplay_transport) use native_combat_cast::{
 };
 #[path = "spell_periodic.rs"]
 mod spell_periodic;
+pub(in crate::gameplay_transport) use spell_periodic::StandingField;
 #[path = "training_save.rs"]
 mod training_save;
 pub(in crate::gameplay_transport) use training_save::TrainingSave;
@@ -643,6 +644,7 @@ impl ChannelSpellStates {
             // Dynamic fields cannot suppress non-damage ticks; every PZ
             // damage tick is consumed independently of standing-field facts.
             standing_on_field: None,
+            standing_on_agony_field: false,
         });
         let cycle = if has_dot && facts.is_some_and(|facts| !facts.in_protection_zone) {
             crate::spell::actor_conditions::stage_source_owner_cycle_without_damage(
@@ -1978,9 +1980,53 @@ pub(in crate::gameplay_transport) struct CreatureFieldContact {
     pub(in crate::gameplay_transport) source: String,
     pub(in crate::gameplay_transport) definition:
         oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+    /// `None` for the agony field (C08), which has no damage element.
     pub(in crate::gameplay_transport) element:
-        oteryn_gameplay_domain::domain::condition::DotElement,
+        Option<oteryn_gameplay_domain::domain::condition::DotElement>,
     pub(in crate::gameplay_transport) content: [u8; 32],
+}
+impl CreatureFieldContact {
+    /// The contact of a Creature-origin magic field `recipe` on a step-in, or `None` for a
+    /// field that deals nothing. The agony field 43297 lowers to the agony ramp (C08).
+    pub(in crate::gameplay_transport) fn of_recipe(
+        recipe: &oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition,
+        item_key: &str,
+        source: String,
+        content: [u8; 32],
+    ) -> Result<Option<Self>, crate::movement::MovementError> {
+        use crate::movement::MovementError::NotQualified;
+        let Some(values) = recipe.condition_values().map_err(|_| NotQualified)? else {
+            return Ok(None);
+        };
+        let element = if recipe.is_agony() {
+            None
+        } else {
+            Some(
+                recipe
+                    .element()
+                    .map_err(|_| NotQualified)?
+                    .ok_or(NotQualified)?,
+            )
+        };
+        let definition =
+            oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                &format!(
+                    "native.field.{}",
+                    item_key
+                        .strip_prefix("oteryn:item.tibia.")
+                        .ok_or(NotQualified)?
+                ),
+                1,
+                values,
+            )
+            .ok_or(NotQualified)?;
+        Ok(Some(Self {
+            source,
+            definition,
+            element,
+            content,
+        }))
+    }
 }
 impl ChannelSpellStates {
     /// Real STEP and field initial HP/DOT are staged before movement. This is an

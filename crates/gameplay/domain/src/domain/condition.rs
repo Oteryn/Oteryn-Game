@@ -291,6 +291,15 @@ pub enum ConditionValues {
         /// `false`: the first tick is dealt at once on application.
         delayed: bool,
     },
+    /// §3.5 `agony` as a ramp: the ticks `start, start - 1, …, 1`, each `interval_ms` after the
+    /// previous one. Crystal 201189f8 `ConditionDamage::generateDamageList` (`condition.cpp:1993`)
+    /// gives this list for the agony field 43297 (start 260 above damage 100).
+    AgonyRamp {
+        start: u32,
+        interval_ms: u32,
+        /// `false`: the first tick is dealt at once on application.
+        delayed: bool,
+    },
 }
 
 impl ConditionValues {

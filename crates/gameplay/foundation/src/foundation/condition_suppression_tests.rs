@@ -46,7 +46,8 @@ fn equipment_suppression_removes_current_drown_and_drunk_and_refuses_reapplicati
                 0,
                 TickFacts {
                     in_protection_zone: false,
-                    standing_on_field: None
+                    standing_on_field: None,
+                    standing_on_agony_field: false,
                 }
             )
             .is_empty()

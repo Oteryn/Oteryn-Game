@@ -70,6 +70,7 @@ fn immediate_schedule_tick_on_own_field_consumes_the_cursor() {
     let field = TickFacts {
         in_protection_zone: false,
         standing_on_field: Some(DotElement::Poison),
+        standing_on_agony_field: false,
     };
     assert_eq!(store.take_due(0, field).len(), 1);
     assert_eq!(

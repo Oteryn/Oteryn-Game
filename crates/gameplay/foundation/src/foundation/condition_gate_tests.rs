@@ -400,6 +400,7 @@ fn agony_deals_damage_and_is_used_up_in_a_protection_zone_and_no_field_keeps_it(
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: None,
+        standing_on_agony_field: false,
     };
     assert_eq!(
         agony_kinds(&store.take_due(0, pz)),
@@ -411,6 +412,7 @@ fn agony_deals_damage_and_is_used_up_in_a_protection_zone_and_no_field_keeps_it(
     let field = TickFacts {
         in_protection_zone: false,
         standing_on_field: Some(DotElement::Fire),
+        standing_on_agony_field: false,
     };
     assert_eq!(agony_kinds(&store.take_due(2_000 * MS, field)), [AGONY_10]);
     assert_eq!(store.get(ConflictKey::Agony).unwrap().remaining_total(), 10);

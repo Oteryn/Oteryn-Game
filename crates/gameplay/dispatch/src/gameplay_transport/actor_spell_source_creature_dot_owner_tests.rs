@@ -250,6 +250,7 @@ fn retired_exact_attacker_cannot_heal_and_pz_tick_damages_through_real_owner_sto
             crate::foundation::TickFacts {
                 in_protection_zone: true,
                 standing_on_field: None,
+                standing_on_agony_field: false,
             },
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
         )

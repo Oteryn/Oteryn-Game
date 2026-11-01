@@ -337,6 +337,7 @@ fn a_field_retains_fire_ticks_but_a_protection_zone_deals_and_uses_them() {
     let on_field = TickFacts {
         in_protection_zone: false,
         standing_on_field: Some(DotElement::Fire),
+        standing_on_agony_field: false,
     };
     let tick = store.take_due(2_000 * MS, on_field);
     assert_eq!(damage_amount(&tick[0]), (10, false));
@@ -350,6 +351,7 @@ fn a_field_retains_fire_ticks_but_a_protection_zone_deals_and_uses_them() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: None,
+        standing_on_agony_field: false,
     };
     let tick = store.take_due(4_000 * MS, pz);
     // NIGHT-W1 #1 permits fire damage in a PZ and still consumes the tick.
@@ -521,6 +523,7 @@ fn food_time_adds_up_to_its_cap_and_regenerates_nothing_in_a_protection_zone() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: None,
+        standing_on_agony_field: false,
     };
     let ticks = store.take_due(3_000 * MS, pz);
     assert_eq!(
@@ -865,6 +868,7 @@ fn source_field_sequence_keeps_variable_damage_and_real_field_pause_clock() {
     let field = TickFacts {
         in_protection_zone: false,
         standing_on_field: Some(DotElement::Poison),
+        standing_on_agony_field: false,
     };
     assert_eq!(damage_amount(&store.take_due(0, field)[0]), (5, false));
     assert_eq!(
@@ -894,6 +898,7 @@ fn source_field_sequence_keeps_variable_damage_and_real_field_pause_clock() {
     let pz = TickFacts {
         in_protection_zone: true,
         standing_on_field: Some(DotElement::Poison),
+        standing_on_agony_field: false,
     };
     // NIGHT-W1 #1 permits poison in a PZ, even on its own field.
     assert_eq!(
@@ -1652,6 +1657,7 @@ fn protection_zone_element_policy_deals_permitted_ticks_and_consumes_all_damage_
                 let pz = TickFacts {
                     in_protection_zone: true,
                     standing_on_field,
+                    standing_on_agony_field: false,
                 };
                 let first = store.take_due(2_000 * MS, pz);
                 assert_eq!(first.len(), 1, "{element:?} {definition:?}");

@@ -177,6 +177,7 @@ pub trait MonsterCombatReader:
         Some(TickFacts {
             in_protection_zone: tile.flags().protection_zone,
             standing_on_field: standing,
+            standing_on_agony_field: false,
         })
     }
     fn condition_tick_facts(
@@ -508,6 +509,7 @@ fn qualified_source_player_tick_spatial_facts(
         oteryn_gameplay_foundation::foundation::condition::TickFacts {
             in_protection_zone: tile.flags().protection_zone,
             standing_on_field,
+            standing_on_agony_field: false,
         },
     )
 }

@@ -323,15 +323,24 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
     for recipe in &crystal {
         let item = recipe.source.server_item_id;
         match (&recipe.condition, crystal_expected(item)) {
-            // C08: the agony ramp equals Crystal's, start 260 above damage 100 included; it has
-            // no damage-over-time lowering (`FieldElement::condition_element`).
+            // C08: the agony ramp equals Crystal's, start 260 above damage 100 included; it
+            // lowers to the agony ramp, not to a damage-over-time element
+            // (`FieldElement::condition_element`).
             (FieldConditionKind::Damage { element, entries }, Some(expected))
                 if *element == FieldElement::Agony =>
             {
                 assert_eq!((*element, entries.clone()), expected, "item {item}");
                 assert_eq!(recipe.total_damage(), Ok((1..=260).sum()));
-                assert_eq!(recipe.condition_values(), Err(FieldError::Unsupported));
+                assert_eq!(
+                    recipe.condition_values(),
+                    Ok(Some(ConditionValues::AgonyRamp {
+                        start: 260,
+                        interval_ms: 5_000,
+                        delayed: false,
+                    }))
+                );
                 assert_eq!(recipe.element(), Err(FieldError::Unsupported));
+                assert!(recipe.is_agony());
             }
             (FieldConditionKind::Damage { element, entries }, Some(expected)) => {
                 assert_eq!((*element, entries.clone()), expected, "item {item}");

@@ -1176,7 +1176,7 @@ mod creature_field_step_tests {
                     values,
                 )
                 .unwrap(),
-            element: recipe.element().unwrap().unwrap(),
+            element: Some(recipe.element().unwrap().unwrap()),
             content: runtime.content_pin().server_artifact_digest(),
         }
     }
@@ -1348,6 +1348,91 @@ mod creature_field_step_tests {
                 .owned_conditions()
                 .instances()
                 .is_empty()
+        );
+    }
+    /// C08: the Crystal agony field 43297 (Crystal 201189f8 `items.xml:75219`) on the real step
+    /// path. Its contact is built from the production recipe, as `step_with_field_ingress` does
+    /// (`NotQualified` while the recipe had no lowering); the step deals 260 at once and leaves
+    /// the rest of Crystal's 260-tick ramp (260 down to 1, 33930 in all) on the actor.
+    #[test]
+    fn c08_agony_field_step_in_runs_the_crystal_ramp() {
+        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+        use oteryn_gameplay_foundation::foundation::condition::{TickFacts, TickKind};
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let catalog: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let recipe = catalog["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| {
+                serde_json::from_value::<
+                    oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition,
+                >(v.clone())
+                .unwrap()
+            })
+            .find(|r| r.source.server == "crystal" && r.source.server_item_id == 43297)
+            .unwrap();
+        let field = super::super::CreatureFieldContact::of_recipe(
+            &recipe,
+            "oteryn:item.tibia.i43297",
+            "creature:field:agony-fixture".into(),
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("the agony field qualifies on the step path")
+        .expect("the agony field deals damage");
+        assert_eq!(field.element, None);
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::East,
+                    &std::collections::BTreeSet::new(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_ok()
+        );
+        let next = states.get(&runtime, actor, session).unwrap();
+        assert_eq!(next.vitals().health, before.vitals().health - 260);
+        assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
+        let agony = next
+            .owned_conditions()
+            .get(ConflictKey::Agony)
+            .expect("the agony ramp is installed");
+        assert_eq!(agony.remaining_total(), (1..=259).sum::<u32>());
+        // The rest of the ramp, one tick every 5 s: 259, then 258 off the field; on an agony
+        // field the tick is kept (Crystal `Creature::onTickCondition`), so 257 comes twice.
+        let mut store = next.owned_conditions().clone();
+        let mut amounts = Vec::new();
+        for (second, on_field) in [(5, false), (10, false), (15, true), (20, false)] {
+            for tick in store.take_due(
+                second * 1_000_000,
+                TickFacts {
+                    in_protection_zone: false,
+                    standing_on_field: None,
+                    standing_on_agony_field: on_field,
+                },
+            ) {
+                let TickKind::Agony { amount, refused } = tick.kind else {
+                    panic!("an agony tick");
+                };
+                assert!(!refused);
+                amounts.push(amount);
+            }
+        }
+        assert_eq!(amounts, [259, 258, 257, 257]);
+        assert_eq!(
+            store.get(ConflictKey::Agony).unwrap().remaining_total(),
+            (1..=256).sum::<u32>()
         );
     }
 }

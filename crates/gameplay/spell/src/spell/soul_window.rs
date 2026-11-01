@@ -155,6 +155,7 @@ mod tests {
         let facts = oteryn_gameplay_foundation::foundation::condition::TickFacts {
             in_protection_zone,
             standing_on_field: None,
+            standing_on_agony_field: false,
         };
         if let Some(cycle) = stage_source_owner_cycle(state, now, Some(facts), None).expect("cycle")
         {

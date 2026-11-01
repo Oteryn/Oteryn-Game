@@ -157,7 +157,7 @@ impl StepIngressRead<'_, '_> {
                     let values = recipe
                         .condition_values()
                         .map_err(|_| MovementError::NotQualified)?;
-                    if let Some(values) = values
+                    if values.is_some()
                         && !tile.flags().protection_zone
                         && let Some(historical) = &item.creature_field_origin
                     {
@@ -170,30 +170,14 @@ impl StepIngressRead<'_, '_> {
                         {
                             return Err(MovementError::NotQualified);
                         }
-                        let element = recipe
-                            .element()
-                            .map_err(|_| MovementError::NotQualified)?
-                            .ok_or(MovementError::NotQualified)?;
-                        let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
-                            &format!(
-                                "native.field.{}",
-                                historical
-                                    .item_key
-                                    .strip_prefix("oteryn:item.tibia.")
-                                    .ok_or(MovementError::NotQualified)?
-                            ),
-                            1,
-                            values,
-                        )
-                        .ok_or(MovementError::NotQualified)?;
-                        creature_contact = Some(super::CreatureFieldContact {
-                            source: historical
+                        creature_contact = super::CreatureFieldContact::of_recipe(
+                            recipe,
+                            &historical.item_key,
+                            historical
                                 .condition_source_key()
                                 .ok_or(MovementError::NotQualified)?,
-                            definition,
-                            element,
-                            content: source.source_digest(),
-                        });
+                            source.source_digest(),
+                        )?;
                         continue;
                     }
                     if values.is_some() && !tile.flags().protection_zone {

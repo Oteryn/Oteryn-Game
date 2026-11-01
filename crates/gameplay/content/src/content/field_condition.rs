@@ -145,10 +145,32 @@ impl QualifiedFieldCondition {
         match &self.condition {
             FieldConditionKind::None => Ok(None),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
+            FieldConditionKind::Damage {
+                element: FieldElement::Agony,
+                entries,
+            } => {
+                // Crystal's agony field ramp: one tick each of `start, start - 1, …, 1` at one
+                // interval (260 runs for 43297). Any other shape stays unlowered.
+                let start = u32::try_from(entries.len()).map_err(|_| FieldError::Bounds)?;
+                let interval_ms = entries.first().ok_or(FieldError::Unsupported)?.interval_ms;
+                let ramp = entries
+                    .iter()
+                    .zip((1..=start).rev())
+                    .all(|(entry, amount)| {
+                        entry.amount == amount
+                            && entry.repetitions == 1
+                            && entry.interval_ms == interval_ms
+                    });
+                if !ramp {
+                    return Err(FieldError::Unsupported);
+                }
+                Ok(Some(ConditionValues::AgonyRamp {
+                    start,
+                    interval_ms,
+                    delayed: false,
+                }))
+            }
             FieldConditionKind::Damage { element, entries } => {
-                // Crystal's agony field ramp has 260 runs (260 down to 1), above
-                // MAX_DOT_SEQUENCE_STEPS, and no condition value carries an agony sequence, so
-                // the recipe is recorded but not lowered.
                 let element = element.condition_element().ok_or(FieldError::Unsupported)?;
                 let entries = self.global_entries().unwrap_or(entries);
                 if entries.is_empty() || self.total_damage()? == 0 {
@@ -211,6 +233,18 @@ impl QualifiedFieldCondition {
                 .ok_or(FieldError::Unsupported),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
         }
+    }
+    /// Whether this is the Crystal agony field, which keeps an agony tick while an actor stands
+    /// on it (`Creature::onTickCondition`, `creature.cpp:1183`) and has no damage element.
+    pub fn is_agony(&self) -> bool {
+        self.validate().is_ok()
+            && matches!(
+                self.condition,
+                FieldConditionKind::Damage {
+                    element: FieldElement::Agony,
+                    ..
+                }
+            )
     }
     pub fn total_damage(&self) -> Result<u32, FieldError> {
         self.validate()?;

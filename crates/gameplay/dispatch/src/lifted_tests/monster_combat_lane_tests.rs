@@ -271,6 +271,7 @@ mod tests {
             (!self.missing).then_some(TickFacts {
                 in_protection_zone: false,
                 standing_on_field: None,
+                standing_on_agony_field: false,
             })
         }
     }

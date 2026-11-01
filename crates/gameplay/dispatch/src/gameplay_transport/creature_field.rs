@@ -6,9 +6,7 @@ use crate::durability::spell_item_transaction::{
 use crate::durability::{DurabilityError, spell_items_abi::SpellGroundTarget};
 use crate::foundation::ChannelRuntimeV1;
 use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
-use oteryn_gameplay_foundation::foundation::condition::{
-    ConditionDefinition, ConditionLineage, TickFacts,
-};
+use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, ConditionLineage};
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -56,7 +54,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(recipe) = &policy.record().attributes.field_condition else {
                     continue;
                 };
-                standing = recipe.element().map_err(|_| DurabilityError::Unavailable)?;
+                standing = super::actor_spell::StandingField::of(recipe)
+                    .ok_or(DurabilityError::Unavailable)?;
                 if let Some(values) = recipe
                     .condition_values()
                     .map_err(|_| DurabilityError::Unavailable)?
@@ -127,10 +126,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .tick_source_creature_conditions(
                     runtime,
                     visible.actor,
-                    TickFacts {
-                        in_protection_zone: tile.flags().protection_zone,
-                        standing_on_field: standing,
-                    },
+                    super::actor_spell::StandingField::tick_facts(
+                        tile.flags().protection_zone,
+                        standing,
+                    ),
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
                 )
                 .map_err(|_| DurabilityError::Unavailable)?;

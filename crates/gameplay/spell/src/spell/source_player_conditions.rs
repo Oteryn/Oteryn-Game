@@ -380,6 +380,7 @@ impl PlayerSpellState {
             native::TickFacts {
                 in_protection_zone: false,
                 standing_on_field: Some(element),
+                standing_on_agony_field: false,
             },
             &source,
         );
@@ -393,7 +394,7 @@ impl PlayerSpellState {
         source: String,
         definition: &native::ConditionDefinition,
         facts: &native::ApplicationFacts<'_>,
-        element: values::DotElement,
+        element: Option<values::DotElement>,
     ) -> Option<(Self, u32)> {
         if self.health == 0
             || !facts.target_is_player
@@ -422,27 +423,37 @@ impl PlayerSpellState {
             facts.now,
             native::TickFacts {
                 in_protection_zone: false,
-                standing_on_field: Some(element),
+                standing_on_field: element,
+                // `None`: the agony field (C08).
+                standing_on_agony_field: element.is_none(),
             },
             &source,
         );
         let mut damage = 0u32;
         for tick in ticks {
-            let native::TickKind::Damage {
-                amount,
-                refused: false,
-                ..
-            } = tick.kind
-            else {
-                return None;
+            // CONDITIONS-0 §3.5: an agony tick skips the incoming mitigation.
+            let (amount, agony) = match tick.kind {
+                native::TickKind::Damage {
+                    amount,
+                    refused: false,
+                    ..
+                } => (amount, false),
+                native::TickKind::Agony {
+                    amount,
+                    refused: false,
+                } => (amount, true),
+                _ => return None,
             };
             if tick.provenance.source_kind != native::ConditionSourceKind::Creature
                 || tick.provenance.source.as_deref() != Some(source.as_str())
             {
                 return None;
             }
-            let (successor, hit) =
-                super::actor_conditions::stage_creature_hit(&next, amount, facts.now).ok()?;
+            let (successor, hit) = if agony {
+                super::actor_conditions::stage_agony_hit(&next, amount, facts.now).ok()?
+            } else {
+                super::actor_conditions::stage_creature_hit(&next, amount, facts.now).ok()?
+            };
             damage = damage.checked_add(hit.applied)?;
             next = successor;
             if next.health == 0 {
@@ -547,7 +558,7 @@ mod creature_field_initial_tests {
                     format!("creature:field:{item}"),
                     &definition,
                     &facts,
-                    element,
+                    Some(element),
                 )
                 .unwrap();
             assert_eq!(damage, entry, "entry {item}");
@@ -777,7 +788,7 @@ mod creature_field_initial_tests {
                 "creature:field:fixture".into(),
                 &fresh,
                 &facts,
-                values::DotElement::Fire,
+                Some(values::DotElement::Fire),
             )
             .expect("qualified fixture");
         assert_eq!(damage, 20);

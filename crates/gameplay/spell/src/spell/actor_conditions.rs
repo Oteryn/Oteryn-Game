@@ -1170,6 +1170,7 @@ mod tests {
             TickFacts {
                 in_protection_zone: true,
                 standing_on_field: None,
+                standing_on_agony_field: false,
             },
         )
         .unwrap();
@@ -1594,6 +1595,7 @@ mod source_attribute_projection_tests {
             oteryn_gameplay_foundation::foundation::condition::TickFacts {
                 in_protection_zone: false,
                 standing_on_field: None,
+                standing_on_agony_field: false,
             },
         );
         assert!(state.owned_skill_adjustments(1999).is_err());
