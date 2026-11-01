@@ -54,6 +54,7 @@ impl CreatureAiTable {
             fence,
             |actor| runtime.contains_live_creature(actor),
         );
+        let mut landed = Vec::new();
         for timer in fired {
             let actor = timer.occurrence;
             let Some(entry) = self.entry_mut(actor) else {
@@ -112,6 +113,9 @@ impl CreatureAiTable {
                 continue;
             }
             motion.expected = moved.ok();
+            if let Some(at) = motion.expected {
+                landed.push((actor, at.position()));
+            }
             if motion.route.is_some() {
                 motion.cursor += 1;
             }
@@ -121,6 +125,11 @@ impl CreatureAiTable {
                 entry.due_us = None;
             }
         }
+        self.landed.extend(
+            landed
+                .into_iter()
+                .map(|(actor, at)| (actor.placement_identity(), (actor, at))),
+        );
         for entry in self.entries.values_mut() {
             let actor = entry.state.actor;
             let motion = &mut entry.motion;

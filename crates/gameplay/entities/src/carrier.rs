@@ -60,6 +60,8 @@ mod creature_heal;
 
 mod creature_relocation;
 
+mod creature_step_hook;
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "carrier/damage_contributors_tests.rs"]
@@ -571,10 +573,12 @@ impl CreatureDeathOccurrenceRef {
 }
 
 /// `(WorldId, ChannelId, ScopeOwnershipGeneration, ActorLocalId,
-/// ActorLocalGeneration)` of one committed creature death. The only
-/// constructor is [`CreatureDeathOccurrenceRef::death_key`]: there is no
-/// raw-byte, field or caller constructor, so a key always names a lethal
-/// occurrence the physical Channel owner committed.
+/// ActorLocalGeneration)` of one committed creature death. The constructors
+/// are [`CreatureDeathOccurrenceRef::death_key`] and the step-hook removal
+/// [`ChannelRuntimeV1::remove_stepped_creature`], the creature's other end:
+/// there is no raw-byte, field or caller constructor, so a key always names an
+/// end of a creature (a lethal occurrence or a removal) the physical Channel
+/// owner committed. A removed creature never dies, so the two never collide.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct CreatureDeathOccurrenceKey {
     actor: ActorRef,

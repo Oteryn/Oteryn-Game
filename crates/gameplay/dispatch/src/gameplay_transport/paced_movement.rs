@@ -2,6 +2,7 @@
 use super::*;
 
 mod autowalk;
+pub(super) mod creature_step_hook;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;

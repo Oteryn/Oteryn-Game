@@ -185,6 +185,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(next) => next,
             Err(()) => return,
         };
+        // PAR-M10: the step-in hooks of the creature steps this pass committed, under the same
+        // runtime guard; a removed creature leaves the think table before the swings below.
+        let landed = states.monster_melee.creature_ai.take_landed_steps();
+        let captures = match self.bundle_map() {
+            Some(map) if !landed.is_empty() => {
+                use super::paced_movement::creature_step_hook as hook;
+                let admitted = content
+                    .item_policy(hook::CAPTURED_WOLF_KEY, hook::CAPTURED_WOLF_REVISION)
+                    .is_some();
+                let hooks = hook::apply_creature_step_hooks(&mut runtime, map, landed, admitted);
+                for actor in hooks.removed {
+                    states.monster_melee.creature_ai.remove(actor);
+                }
+                hooks.captures
+            }
+            _ => Vec::new(),
+        };
         states.next_monster_ai_pass_us = due;
         states.monster_ai_sequence = sequence;
         // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
@@ -396,6 +413,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(attack);
         drop(states);
         drop(runtime);
+        if !captures.is_empty() {
+            self.commit_creature_step_captures(&permit, captures).await;
+        }
         drop(permit);
         self.save_trained_levels(trained).await;
     }

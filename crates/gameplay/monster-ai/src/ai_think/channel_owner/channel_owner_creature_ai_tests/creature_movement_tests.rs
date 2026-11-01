@@ -153,3 +153,36 @@ fn a_changed_bundle_revision_drops_paths_and_deadlines_before_a_step() {
     assert!(channel.table.step_timers.is_none());
     assert_eq!(channel.position(creature), at(110, 100));
 }
+
+/// Crystal `trap.lua:12` and `thornfire_wolf.lua:3` run on a creature's step-in: every committed
+/// creature step is reported once to the Channel owner's step hooks, and a refused one is not.
+#[test]
+fn m10_committed_creature_step_is_reported_once_for_step_in_hooks() {
+    let mut channel = Channel::new();
+    let creature = channel.admit(at(110, 100), 0);
+    channel.thinks(0, true);
+    let due = channel
+        .table
+        .entry(creature)
+        .expect("entry")
+        .motion
+        .due
+        .expect("step timer");
+    channel.advance_movement(due - 1, true);
+    assert!(channel.table.take_landed_steps().is_empty());
+    channel.advance_movement(due, true);
+    assert_eq!(
+        channel.table.take_landed_steps(),
+        vec![(creature, channel.position(creature))]
+    );
+    assert!(channel.table.take_landed_steps().is_empty());
+    let next = channel
+        .table
+        .entry(creature)
+        .expect("entry")
+        .motion
+        .due
+        .expect("next step");
+    channel.advance_movement(next, false);
+    assert!(channel.table.take_landed_steps().is_empty());
+}

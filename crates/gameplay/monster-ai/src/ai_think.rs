@@ -223,9 +223,20 @@ pub struct CreatureAiTable {
     window: Option<u64>,
     window_started: usize,
     step_timers: Option<creature_steps::StepTimers>,
+    /// The latest committed step of each creature since the owner last took them, for its
+    /// step-in hooks. One entry per creature, so bounded by `CREATUREAI0-RL-04`.
+    landed: BTreeMap<[u8; 16], (ExactActorRef, crate::foundation::MovementLocalPosition)>,
 }
 
 impl CreatureAiTable {
+    /// The creature steps committed since the last call, one per creature (Crystal step-in
+    /// hooks: `trap.lua:12`, `thornfire_wolf.lua:3`). A pass steps a creature at most once.
+    pub fn take_landed_steps(
+        &mut self,
+    ) -> Vec<(ExactActorRef, crate::foundation::MovementLocalPosition)> {
+        std::mem::take(&mut self.landed).into_values().collect()
+    }
+
     /// Admits `state` with its first think due at `now_us`. A creature already present is
     /// replaced.
     pub fn admit(&mut self, state: CreatureAiState, now_us: u64) {
