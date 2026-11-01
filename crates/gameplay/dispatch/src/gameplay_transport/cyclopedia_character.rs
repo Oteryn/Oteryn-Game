@@ -68,10 +68,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(bytes) => crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?,
                     None => fence.character_id,
                 };
+                if matches!(
+                    request.tab,
+                    wire::CharacterTab::Offence
+                        | wire::CharacterTab::Defence
+                        | wire::CharacterTab::Misc
+                ) && target == fence.character_id
+                {
+                    self.refresh_cyclopedia_combat(
+                        admitted.runtime_actor.ok_or(())?,
+                        admitted.game_session_id,
+                        Some(fence),
+                    )
+                    .await?;
+                }
                 self.root
                     .read_cyclopedia_character_tab(
                         self.character,
-                        fence.character_id,
+                        self.holder,
+                        fence,
                         target,
                         request.tab,
                         request.page,

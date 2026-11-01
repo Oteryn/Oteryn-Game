@@ -1,11 +1,18 @@
 //! PAR-P12c Cyclopedia character tabs: a read-only projection of the native owners. A foreign
 //! target is disclosed under the same VIP consent rule as `read_character_info`.
 
+#[path = "cyclopedia_character/combat.rs"]
+pub mod combat;
+
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
+use super::item_transfer::CurrentCharacterItemFence;
+use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::{HISTORY_WINDOW_MS, PageRequest};
 use oteryn_protocol_oteryn::cyclopedia_character::{
@@ -49,26 +56,36 @@ const STORE_SUMMARY_SQL: &str = "WITH me AS (SELECT account_id,world_id FROM gam
 const INSPECTION_SQL: &str = "SELECT s.slot,i.definition_production_key,i.quantity FROM game_character_equipment_slots s JOIN game_item_instances i ON i.item_instance_id=s.item_instance_id WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot";
 
 fn narrow<T: TryFrom<i64>>(value: i64) -> Result<T, sqlx::Error> {
-    T::try_from(value)
-        .map_err(|_| sqlx::Error::Decode("cyclopedia value out of range".into()))
+    T::try_from(value).map_err(|_| sqlx::Error::Decode("cyclopedia value out of range".into()))
 }
 
 impl DurabilityRoot {
     /// PAR-P12c (Crystal `ProtocolGame::sendCyclopediaCharacter*`, `protocolgame.cpp:4372-4817`):
     /// one tab of `target`'s character window as `viewer` may see it.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the current viewer fence and target remain explicit at the durable privacy boundary"
+    )]
     pub async fn read_cyclopedia_character_tab(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
-        viewer: CharacterId,
+        node: &NodeIncarnationProof,
+        viewer_fence: CurrentCharacterItemFence,
         target: CharacterId,
         tab: CharacterTab,
         page: PageRequest,
         now_unix_ms: i64,
     ) -> Result<TabView, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
+        let node = node.clone();
+        let viewer = viewer_fence.character_id;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if super::character_progression::assert_item_only_fence(&mut tx, &viewer_fence, &node).await?.is_err() {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
             let allowed: bool = sqlx::query_scalar(VISIBLE_SQL)
                 .bind(viewer.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !allowed { return Ok(Err(CharacterAuthorityError::Rejected)); }
@@ -145,6 +162,21 @@ impl DurabilityRoot {
                         });
                     }
                     TabView::Inspection(items)
+                }
+                CharacterTab::Offence | CharacterTab::Defence | CharacterTab::Misc => {
+                    let bytes: Option<Vec<u8>> = sqlx::query_scalar(
+                        "SELECT CASE $2 WHEN 8 THEN offence WHEN 9 THEN defence WHEN 10 THEN misc END \
+                         FROM game_character_cyclopedia_combat WHERE character_id=encode($1,'hex')::uuid",
+                    ).bind(&id).bind(i32::from(tab as u8)).fetch_optional(&mut *tx).await?;
+                    let Some(bytes) = bytes else {
+                        return Ok(Err(CharacterAuthorityError::Rejected));
+                    };
+                    let value = oteryn_protocol_oteryn::cyclopedia_character::combat::CombatStats::decode(&bytes)
+                        .map_err(|_| sqlx::Error::Decode("stored cyclopedia combat tab".into()))?;
+                    if value.tab() != tab {
+                        return Ok(Err(CharacterAuthorityError::Rejected));
+                    }
+                    TabView::Combat(value)
                 }
             };
             commit_semantic_transaction(tx, deadline).await?;

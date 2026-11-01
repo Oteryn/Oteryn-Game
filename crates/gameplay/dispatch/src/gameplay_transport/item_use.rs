@@ -3,6 +3,9 @@
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+#[path = "drome_cube_use.rs"]
+pub(super) mod drome_cube;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -38,6 +41,9 @@ use crate::spell::actor_conditions::eat_food;
 use crate::spell::cast::CharacterCastFacts;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[path = "condition_potions.rs"]
+pub(super) mod condition_potions;
+
 /// `ITEMUSE0-RL-01`: item uses per actor per second.
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;
 /// `ITEMUSE0-RL-04`: the ambiguous-commit bound before the in-flight slot is freed.
@@ -64,6 +70,8 @@ struct ItemUseGate {
     unspendable: Vec<[u8; 16]>,
     /// The last decided CommandId and its result: a replay of it returns that result.
     last: Option<(u64, UseDisposition)>,
+    /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
+    cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
 }
 
 impl ItemUseGate {
@@ -104,6 +112,7 @@ impl ItemUseGate {
                 return Ok(());
             }
             ItemUseKind::PickRefine { .. }
+            | ItemUseKind::DromeCube { .. }
             | ItemUseKind::MountTaming
             | ItemUseKind::ProficiencyCatalyst
             | ItemUseKind::ProficiencyOrb => {
@@ -239,15 +248,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
         // item commit and its effect, so no spell stages or commits a successor of this actor's
         // state meanwhile. `None` is retryable with no side effect while the lane is fenced.
-        let _permit = self
+        let mut permit = self
             .spell_lane_permit()
             .await
             .ok_or(UseDisposition::Rejected)?;
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            // A pending spell commit or a durable spell reserving this actor refuses the use
-            // before anything is burned.
+            // A pending spell commit or a durable spell reserving this actor's
+            // state refuses the use before anything is burned.
             if states.is_dead(actor)
                 || !states.spell_idle(&runtime, actor, session)
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
@@ -313,6 +322,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
+        if let Some(potion) =
+            oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
+                &entry.item.definition.production_key,
+            )
+        {
+            return self
+                .use_condition_potion(
+                    &mut permit,
+                    actor,
+                    command,
+                    fence,
+                    native,
+                    &inventory,
+                    entry,
+                    record.ok_or(UseDisposition::NothingToUse)?,
+                    potion,
+                )
+                .await;
+        }
         if let Some(record) = record
             && let ReferenceItemField::Known(_) = &record.semantics.fluid
         {
@@ -323,7 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
-            None if entry.item.definition.production_key
+            _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
                 (

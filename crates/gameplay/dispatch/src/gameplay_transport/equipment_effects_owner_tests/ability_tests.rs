@@ -57,6 +57,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
     // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
     ("MONKQUEST", 7),
+    // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
+    // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
+    ("P11-CONDITION-POTIONS", 4),
+    // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
+    // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
+    ("P11-MECHANICAL-FISHING", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -97,6 +103,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // soulpit-echo-item-profiles.json. All 845 profiles have qualified speed_bonus=0.
     // W06 contributes the 24 basic scrolls 53751..=53774. W07 contributes the 835
     // source catalogue minus 15 unbound IDs, plus Exalted Core 37110 (821 profiles).
+    // P18 Forge shares that existing core profile and adds no duplicate.
     ("W06-ECHO", 24),
     ("W07-SOULPIT", 821),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
@@ -127,6 +134,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 3342, 7380, 7383, 7384, 7389, 7392, 7402, 7406, 7415 and 8077..=8081.
     // 8080 (sparking rainbow shield) has speed_bonus=10; the other 107 have speed_bonus=0.
     ("GEMX-I19", 108),
+    // W22c Drome: the Crystal Cube and its twenty rewards 36723..=36742 and 36827 from
+    // Crystal 201189f (tools/content-migration/drome_item_profiles.py). All have
+    // speed_bonus=0. P15 Forge reuses the existing Exalted Core 37110 and adds none.
+    ("W22C-DROME", 21),
 ];
 
 #[test]

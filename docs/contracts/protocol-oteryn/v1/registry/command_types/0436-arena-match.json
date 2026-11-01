@@ -1,0 +1,10 @@
+{
+  "id": 436,
+  "name": "ARENA_MATCH",
+  "owner_decision": "W17 + W09 Svargrond arena implementation",
+  "capability": 170,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/arena-v1.md#match-request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/arena-v1.md#match-reply",
+  "max_payload_bytes": 32,
+  "max_result_payload_bytes": 128
+}

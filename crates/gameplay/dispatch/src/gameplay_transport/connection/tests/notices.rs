@@ -1,5 +1,9 @@
 const NOTICE_ACCOUNT: [u8; 16] = [0x7a; 16];
 
+mod account_observation {
+    include!("achievement_observation.rs");
+}
+
 fn earned(fact_count: u32, total_points: u32) -> AchievementEarned {
     AchievementEarned {
         key: "oteryn:achievement/allow_cookies".to_owned(),

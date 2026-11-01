@@ -1,6 +1,6 @@
 //! Installed tier storage/read owner (IMBUE-FORGE-0 §8), not a forge writer.
-//! Migration 0156 supplies the single schema and atomic storage audit; runtime
-//! has SELECT only. A caller must separately qualify current authority,
+//! Migration0156 supplies the single schema and atomic storage audit; P18's
+//! native Forge writer adds only receipt-proven tier mutations. A caller must qualify current authority,
 //! item ownership/location/lifecycle, Content compatibility, class cap and imbuements.
 
 use super::item_mint_audit::check_uuid_v7;
@@ -35,7 +35,7 @@ impl From<sqlx::Error> for TierReadError {
 /// Read one ItemInstance and its optional tier in one statement snapshot.
 /// Unknown items fail closed; only an existing item without a row has tier zero.
 /// No gameplay fence or root lock is acquired: this read cannot authorize a
-/// mutation. A future writer must re-read under its actual current locks/fences.
+/// mutation. The native Forge writer re-reads under its actual current locks/fences.
 pub async fn read_item_tier(
     connection: &mut PgConnection,
     item_instance_id: [u8; 16],

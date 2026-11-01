@@ -4,16 +4,16 @@
     "kind": "handlers",
     "id": "0152-item-forge-unsupported",
     "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "reason": "The server exposes all Forge actions through command 181; the native Forge panel is a separate client feature.",
     "commands": [
       181
     ],
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "state": "Native Forge panel state is not part of the P18 server mechanic.",
+      "protocol": "Server command 181 supports canonical Forge requests and durable JSON results; native panel binding is pending.",
+      "view": "Native Forge panel rendering is not part of the P18 server mechanic.",
+      "input": "Native Forge panel input is not part of the P18 server mechanic.",
+      "settings": "No Forge client settings are introduced by the P18 server mechanic."
     }
   }
 ]

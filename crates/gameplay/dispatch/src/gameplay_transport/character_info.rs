@@ -112,7 +112,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = unix_now_ms();
         let _ = self
             .root
-            .refresh_character_titles(self.character, self.holder, item_fence, now)
+            .refresh_character_titles(
+                self.character,
+                self.holder,
+                item_fence,
+                now,
+                self.appearance_context().map(|(_, content)| content),
+            )
             .await;
         // PAR-P12b: badges share the trigger points (Crystal checks both at login).
         let _ = self
@@ -133,7 +139,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
                 return;
             };
-            let Ok(character) = crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
+            let Ok(character) =
+                crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
             else {
                 return;
             };
@@ -171,29 +178,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = unix_now_ms();
         match operation {
             CharacterInfoOperation::Unlock(title) => {
-                // Qualification is deliberately sourced from the native owners. Until an
-                // observation proves a catalogue predicate, a client cannot mint an earned fact.
-                let facts = match self
-                    .root
-                    .character_title_facts(self.character, character, now)
-                    .await
-                {
-                    Ok(facts) => facts,
-                    Err(_) => return CharacterInfoReply::Rejected,
-                };
-                let qualification = oteryn_protocol_oteryn::character_info::qualify(title, facts);
-                if !oteryn_protocol_oteryn::character_info::valid_at(qualification, now) {
-                    return CharacterInfoReply::Rejected;
-                }
-                let expiry = match qualification.lifetime {
-                    oteryn_protocol_oteryn::character_info::TitleLifetime::Until(value) => {
-                        Some(value)
-                    }
-                    _ => None,
-                };
+                // Read native qualification and persist the title under one session fence.
+                // A client can name a title, never supply its proof or expiry.
                 match self
                     .root
-                    .unlock_character_title(self.character, self.holder, fence, title, now, expiry)
+                    .qualify_and_unlock_character_title(
+                        self.character,
+                        self.holder,
+                        fence,
+                        title,
+                        now,
+                        self.appearance_context().map(|(_, content)| content),
+                    )
                     .await
                 {
                     Ok(_) => CharacterInfoReply::Payload(vec![2, title.id()]),
@@ -253,7 +249,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if target == fence.character_id
             && self
                 .root
-                .refresh_character_titles(self.character, self.holder, fence, now)
+                .refresh_character_titles(
+                    self.character,
+                    self.holder,
+                    fence,
+                    now,
+                    self.appearance_context().map(|(_, content)| content),
+                )
                 .await
                 .is_err()
         {
@@ -267,14 +269,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(bytes) => bytes,
             Err(_) => return CharacterInfoReply::Rejected,
         };
-        let facts = match self
-            .root
-            .character_title_facts(self.character, target, now)
-            .await
-        {
-            Ok(facts) => facts,
-            Err(_) => return CharacterInfoReply::Rejected,
-        };
         let titles = match self
             .root
             .read_and_requalify_character_titles(
@@ -282,8 +276,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 target,
-                facts,
                 now,
+                self.appearance_context().map(|(_, content)| content),
             )
             .await
         {
@@ -343,7 +337,8 @@ mod tests {
                 1,
                 &oteryn_protocol_oteryn::ClientCommandValue {
                     command_id: 1,
-                    command_type: oteryn_protocol_oteryn::character_info::COMMAND_TYPE_CHARACTER_INFO,
+                    command_type:
+                        oteryn_protocol_oteryn::character_info::COMMAND_TYPE_CHARACTER_INFO,
                     payload: &payload,
                 },
             )?;
@@ -386,7 +381,9 @@ mod tests {
             );
         }
         assert_eq!(decode(&[2, 0]), Err(DecodeError));
-        assert_eq!(decode(&[2, 44]), Err(DecodeError));
-        assert_eq!(decode(&[3, 44]), Err(DecodeError));
+        // P12a appends titles after 43; the next value outside the catalogue remains invalid.
+        let unknown = oteryn_protocol_oteryn::character_info::TITLE_COUNT as u8 + 1;
+        assert_eq!(decode(&[2, unknown]), Err(DecodeError));
+        assert_eq!(decode(&[3, unknown]), Err(DecodeError));
     }
 }

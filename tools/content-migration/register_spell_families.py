@@ -34,7 +34,7 @@ NATIVE_MANIFEST = "content/spells.manifest.json"
 COIN_PROFILES = "tools/content-schema/native-gameplay/coin-item-profiles.json"
 COIN_KEYS = {f"oteryn:item.tibia.i{i}" for i in (3031, 3035, 3043)}
 # I14: carry agreeing facts and the I14G owner-selected Global values into the native provider.
-# Condition-only potions remain outside this bounded admission.
+# The four condition-only potions are admitted separately by condition_potion_profiles.
 CONSUMPTION_FACTS = "docs/agents/evidence/OTV2-20261004-item-consumption-facts-v1.json"
 CONSUMPTION_FACTS_SHA256 = "d13625eadd669ca491964e4a0cd1a76ec0e92999c613a55c9b8964c01687e5e6"
 CONSUMABLE_KEY = "oteryn:item.tibia.i3577"
@@ -303,6 +303,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     quick_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import coin_converter_profiles
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import condition_potion_profiles
+    condition_potion_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import drome_item_profiles
+    drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -310,6 +314,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     task_board_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import forge_core_profiles
+    forge_core_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import forge_item_profiles
+    forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
@@ -383,6 +391,9 @@ def main() -> int:
                  if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data]
         if drift:
             raise SystemExit("Spell import drift: " + ", ".join(drift))
+        # Native Forge Content and its immutable SQL admission must agree.
+        import forge_sql_admission
+        forge_sql_admission.check()
     else:
         for path, data in generated.items():
             destination = ROOT / path

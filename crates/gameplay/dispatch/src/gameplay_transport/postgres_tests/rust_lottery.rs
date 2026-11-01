@@ -170,6 +170,8 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             vec![(key, 1)]
         };
         super::item_look::seed_main_backpack(&harness, &entries).await?;
+        let achievement_key = "oteryn:achievement/polisher";
+        super::achievement_granters::seed_progress(&harness, achievement_key, 999).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -265,6 +267,16 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             usize::from(success)
         );
         assert!(hash_matches);
+        let polished = rust && success;
+        let achievement = super::achievement_granters::assert_progress(
+            &harness, achievement_key, 999 + i64::from(polished), polished,
+            "oteryn:consume-transform",
+        ).await?;
+        if let Some((_, event, _)) = &achievement {
+            let receipt_event: String = sqlx::query_scalar("SELECT event_id::text FROM game_item_consume_transform_records")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(event.as_slice(), receipt_event.as_bytes());
+        }
         if rust {
             let proof = before;
             assert_eq!(
@@ -319,6 +331,11 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         // Re-enter the real connection with the post-use inventory, then replay the wire command.
         let (_, replayed, _) = exchange(&owner, end, command_id, &actual, None, None).await?;
         assert_eq!(replayed, UseDisposition::Committed);
+        assert_eq!(achievement, super::achievement_granters::assert_progress(
+            &harness, achievement_key, 999 + i64::from(polished), polished,
+            "oteryn:consume-transform",
+        ).await?);
+        eprintln!("POSTGRES_CASE_COMPLETED P11 Polisher rust={rust} success={success} replay");
         let elapsed = started.elapsed();
         assert!(elapsed > std::time::Duration::ZERO);
         eprintln!(

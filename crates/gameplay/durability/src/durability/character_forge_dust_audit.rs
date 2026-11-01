@@ -138,7 +138,7 @@ pub async fn audit_forge_dust_ledger(
                     .map(|gain| (gain.after, gain.lost))
                     == Some((entry.after, entry.lost))
             }
-            ForgeDustEntryKind::Spend => {
+            ForgeDustEntryKind::Spend | ForgeDustEntryKind::Convert => {
                 entry.lost == 0
                     && entry
                         .before
@@ -165,7 +165,9 @@ pub async fn audit_forge_dust_ledger(
                 audit.credited += amount - lost;
                 audit.lost += lost;
             }
-            ForgeDustEntryKind::Spend | ForgeDustEntryKind::LimitRaise => audit.spent += amount,
+            ForgeDustEntryKind::Spend
+            | ForgeDustEntryKind::Convert
+            | ForgeDustEntryKind::LimitRaise => audit.spent += amount,
         }
         audit.entries += 1;
         audit.balance = entry.after;

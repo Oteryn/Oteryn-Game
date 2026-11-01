@@ -24,6 +24,7 @@ pub(super) use activity_transfer::PreparedActivityAttackStates;
 
 mod attack_chase_search;
 pub(super) mod charm_combat;
+mod cyclopedia;
 mod drain;
 mod equipped_offence;
 mod monk_shrines;
@@ -1360,6 +1361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 read_at: now,
             },
         );
+        let _ = self.refresh_cyclopedia_combat(actor, session, None).await;
     }
 }
 
