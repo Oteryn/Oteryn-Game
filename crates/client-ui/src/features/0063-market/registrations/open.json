@@ -1,0 +1,1 @@
+{"mechanic":"0063-market","kind":"keybindings","id":"0063-market-open","status":"supported","context":"gameplay","chord":"CTRL+M","entry":"input.rs::open_key"}

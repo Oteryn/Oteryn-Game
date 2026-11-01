@@ -26,7 +26,13 @@ mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+/// Hireling wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::hireling;
 pub use oteryn_protocol_oteryn::hotkey_equip;
+/// Market wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::market;
+/// Party wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::party;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
 /// Wheel and Atelier wire values for the selected client feature.
