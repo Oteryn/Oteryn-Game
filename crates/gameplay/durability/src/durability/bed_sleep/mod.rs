@@ -7,7 +7,8 @@
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_last_position::{
-    FinalLastPosition, LastPositionKey, LastPositionWrite, upsert_last_position,
+    FinalLastPosition, LastPositionKey, LastPositionWrite, SavedConditions,
+    upsert_last_position_with_conditions,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -35,6 +36,9 @@ pub struct BedSleepRequest {
     /// Final living actor capture, committed with the terminal sleep. Legacy producers
     /// without a capture cannot receive bed regeneration.
     pub final_position: Option<FinalLastPosition>,
+    /// C08: the persistent conditions of the same capture, stored with it (Crystal 201189f8
+    /// `bed.cpp:206` logs the sleeper out, and the logout save writes them).
+    pub final_conditions: Option<SavedConditions>,
 }
 
 /// Available only on an authority with the current House owner context. Keeping
@@ -140,7 +144,7 @@ impl BedSleepOwner<'_, '_, '_> {
                             character_lease_generation: request.fence.character_lease_generation,
                             write_sequence: final_position.write_sequence,
                         };
-                        if upsert_last_position(&mut tx, request.fence.character_id.as_bytes(), key, &final_position.record).await? != LastPositionWrite::Written {
+                        if upsert_last_position_with_conditions(&mut tx, request.fence.character_id.as_bytes(), key, &final_position.record, request.final_conditions.as_ref()).await? != LastPositionWrite::Written {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }

@@ -464,6 +464,20 @@ impl<S> ConditionInstance<S> {
         (self.mana_shield_remaining, self.mana_shield_capacity)
     }
 
+    /// `(step, repetition)`: the next tick of a damage sequence, or the ticks an agony ramp has
+    /// dealt (`repetition`), so a saved instance can resume where it stopped.
+    pub const fn sequence_cursor(&self) -> (u8, u32) {
+        (self.sequence_step, self.sequence_repetition)
+    }
+
+    /// The segments a damage schedule has still to deal, the current one shortened to the ticks
+    /// it has left; `None` for any other family.
+    pub fn remaining_damage_segments(&self) -> Option<Vec<DamageSegment>> {
+        self.scheduled_damage
+            .as_ref()
+            .map(DamageCursor::remaining_segments)
+    }
+
     /// §3: the light level decays linearly over the duration.
     pub fn light_level(&self, now: u64) -> u8 {
         let (ConditionValues::Light { level, .. }, Some(ends_at)) =

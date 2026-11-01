@@ -8,16 +8,23 @@ use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session, reset, track};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::LogoutReply;
-use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey, StatusKind};
+use oteryn_gameplay_domain::domain::condition::{
+    ConditionValues, ConflictKey, DotElement, StatusKind,
+};
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind,
 };
 use oteryn_protocol_oteryn::logout::LogoutResult;
-use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+};
 
 const DRUNK_MS: u32 = 600_000;
+const POISON_TOTAL: u32 = 50;
+const COOLDOWN_US: u64 = 600_000_000;
 
-/// Make the admitted actor drunk for `DRUNK_MS` at the owner's clock.
+/// Make the admitted actor drunk for `DRUNK_MS` at the owner's clock, poisoned by a creature for
+/// `POISON_TOTAL` and with a running `exura` cooldown of `COOLDOWN_US`.
 async fn make_drunk(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     dependencies: &Dependencies,
@@ -61,7 +68,61 @@ async fn make_drunk(
             &facts,
         )
         .map_err(debug)?;
+    let poison = ConditionDefinition::new(
+        "poison",
+        1,
+        ConditionValues::DamageOverTime {
+            element: DotElement::Poison,
+            total_min: POISON_TOTAL,
+            total_max: POISON_TOTAL,
+            per_tick: 5,
+            interval_ms: 4_000,
+            delayed: true,
+        },
+    )
+    .ok_or("poison")?;
+    state
+        .conditions
+        .apply(
+            &poison,
+            Some("creature:fixture".to_owned()),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+        )
+        .map_err(debug)?;
+    state.cooldowns.spells.insert(
+        "exura".to_owned(),
+        SemanticTimeMicros::from_micros(owner.owner_now().get() + COOLDOWN_US),
+    );
     Ok(())
+}
+
+/// C08: the restored poison (its remaining total and saved creature provenance) and the
+/// re-armed `exura` cooldown (the time it has left) of the admitted actor.
+async fn restored_poison_and_cooldown(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+) -> TestResult<(Option<(u32, Option<String>)>, Option<u64>)> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let state = states
+        .get(
+            &runtime,
+            dependencies.actor,
+            dependencies.admitted.game_session_id,
+        )
+        .ok_or("spell state")?;
+    let poison = state
+        .conditions
+        .get(ConflictKey::Element(DotElement::Poison))
+        .map(|poison| (poison.remaining_total(), poison.provenance().source.clone()));
+    let cooldown = state
+        .cooldowns
+        .spells
+        .get("exura")
+        .and_then(|deadline| deadline.get().checked_sub(owner.owner_now().get()));
+    Ok((poison, cooldown))
 }
 
 async fn drunk_remaining_ms(
@@ -126,6 +187,23 @@ async fn logout_saves(admin: &str) -> TestResult<String> {
     .await?;
     let saved = saved.ok_or("the logout saved no conditions")?;
     let entries: Vec<serde_json::Value> = serde_json::from_str(&saved)?;
+    assert_eq!(entries.len(), 3, "{saved}");
+    let poison = entries
+        .iter()
+        .find(|entry| entry["key"] == "poison")
+        .ok_or("no saved poison")?;
+    assert_eq!(poison["values"]["type"], "damage_over_time");
+    assert_eq!(poison["values"]["total"], POISON_TOTAL);
+    let cooldown = entries
+        .iter()
+        .find(|entry| entry["key"] == "exura")
+        .ok_or("no saved cooldown")?;
+    assert_eq!(cooldown["values"]["type"], "spell_cooldown");
+    let entries = entries
+        .iter()
+        .filter(|entry| entry["key"] == "drunk")
+        .cloned()
+        .collect::<Vec<_>>();
     assert_eq!(entries.len(), 1, "{saved}");
     assert_eq!(entries[0]["key"], "drunk");
     assert_eq!(entries[0]["values"]["type"], "timed_status");
@@ -174,6 +252,21 @@ async fn login_restores(admin: &str, saved: &str) -> TestResult<Option<i32>> {
         .map_err(|e| format!("admit: {e}"))?;
     let remaining = drunk_remaining_ms(&owner, &dependencies).await?;
     eprintln!("PG_MARKER c08-login-restored-conditions remaining_ms={remaining:?}");
+    let (poison, cooldown) = restored_poison_and_cooldown(&owner, &dependencies).await?;
+    assert_eq!(
+        poison,
+        Some((
+            POISON_TOTAL,
+            Some(crate::spell::saved_conditions::SAVED_DAMAGE_SOURCE.to_owned())
+        ))
+    );
+    assert!(
+        cooldown.is_some_and(|us| us > 0 && us <= COOLDOWN_US),
+        "{cooldown:?}"
+    );
+    eprintln!(
+        "PG_MARKER c08-login-restored-damage-and-cooldown poison={poison:?} cooldown_us={cooldown:?}"
+    );
     // The retry of the same first entry keeps the live state: nothing is re-applied.
     admit(&owner, &dependencies, &request)
         .await

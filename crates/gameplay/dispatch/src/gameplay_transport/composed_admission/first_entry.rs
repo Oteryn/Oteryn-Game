@@ -345,13 +345,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
             // C08 (Crystal 201189f8 `player.cpp:11565`): a newly created actor re-adds the
-            // persistent conditions its logout saved, in this same owner step.
+            // persistent conditions and cooldowns its logout saved, in this same owner step;
+            // those of the runtime actor's own store go back there.
             if created
                 && outcome == FirstEntryOutcome::Positioned
                 && let Some(saved) = &saved_conditions
                 && let Some(state) = states.get_mut(&runtime, actor, game_session_id)
+                && let Some(restored) = state.restore_saved_conditions(
+                    saved,
+                    self.owner_now().get(),
+                    runtime.content_pin().server_artifact_digest(),
+                )
             {
-                let _ = state.restore_saved_conditions(saved, self.owner_now().get());
+                restore_runtime_conditions(
+                    &mut runtime,
+                    actor,
+                    game_session_id,
+                    &restored,
+                    self.owner_now(),
+                );
             }
         }
         if self
@@ -435,4 +447,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         (outcome, item_fence, Some(decided))
     }
+}
+
+/// C08: re-apply on the runtime actor's own store the conditions its logout saved from there, as
+/// one self application in the first-entry owner step. A refused definition is dropped; the
+/// rest still apply.
+fn restore_runtime_conditions(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    restored: &crate::spell::saved_conditions::RestoredConditions,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+) {
+    if restored.runtime.is_empty() {
+        return;
+    }
+    // Restoration replays no random decision (no restored definition draws). This inert
+    // context grants no authority.
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([0; 32]);
+    let facts = crate::foundation::ApplicationFacts {
+        now: now.get(),
+        base_speed: restored.base_speed,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([0xc8; 16]),
+    };
+    let Ok(plan) = runtime.prepare_actor_condition(
+        actor,
+        Some(session),
+        crate::foundation::ActorConditionTransition::ApplyBatch {
+            definitions: &restored.runtime,
+            source: crate::foundation::ConditionSource {
+                actor,
+                session: Some(session),
+                kind: crate::foundation::ConditionSourceKind::SelfUse,
+            },
+            immunities: &[],
+            facts,
+        },
+        now,
+    ) else {
+        return;
+    };
+    let _ = runtime.commit_actor_condition(&plan, now);
 }

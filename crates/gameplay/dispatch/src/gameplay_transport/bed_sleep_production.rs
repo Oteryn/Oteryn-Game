@@ -74,6 +74,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(UseOutcome::rejected());
         };
+        // C08: the bed sleep is a logout (Crystal 201189f8 `bed.cpp:206`), so its final write
+        // stores the persistent conditions too.
+        let final_conditions = self
+            .final_saved_conditions(command.game_session_id, actor)
+            .await;
         let Some(room) = self.rooms.gate_source_world() else {
             return Ok(UseOutcome::rejected());
         };
@@ -125,6 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 sex,
                 skill: intent.skill,
                 final_position: Some(final_position),
+                final_conditions,
             },
         };
         super::bed_sleep::finish_owner(command, intent, owner).await

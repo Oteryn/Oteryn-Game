@@ -162,6 +162,14 @@ impl DamageCursor {
     pub fn current(&self) -> Option<DamageSegment> {
         self.segments.get(self.at).copied()
     }
+    /// The segments still to deal, the current one with the `left` ticks it has.
+    pub fn remaining_segments(&self) -> Vec<DamageSegment> {
+        let mut rest = self.segments.get(self.at..).unwrap_or_default().to_vec();
+        if let Some(first) = rest.first_mut() {
+            first.count = self.left;
+        }
+        rest
+    }
     pub fn consume(&mut self) {
         if let Some(s) = self.current() {
             self.remaining -= s.amount;

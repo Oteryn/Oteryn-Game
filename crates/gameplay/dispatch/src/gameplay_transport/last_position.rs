@@ -718,10 +718,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// C08: the persistent conditions the final write of `session`'s fenced actor stores with
-    /// its position (Crystal 201189f8 `iologindata_save_player.cpp:264`). `None` for a dead
-    /// actor, one without spell state, or one with nothing to save.
-    async fn final_saved_conditions(
+    /// C08: the persistent conditions and cooldowns the final write of `session`'s fenced actor
+    /// stores with its position (Crystal 201189f8 `iologindata_save_player.cpp:264`), from the
+    /// spell owner's store and the runtime actor's own. `None` for a dead actor, one without
+    /// spell state, or one with nothing to save. The logout and the bed sleep (Crystal
+    /// `bed.cpp:206`, a logout after the sleep) both store it.
+    pub(super) async fn final_saved_conditions(
         &self,
         session: GameSessionId,
         actor: ExactActorRef,
@@ -731,9 +733,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.is_dead(actor) {
             return None;
         }
+        let own = runtime
+            .actor_conditions(actor, Some(session))
+            .map(|store| store.instances())
+            .unwrap_or_default();
         states
             .get(&runtime, actor, session)?
-            .saved_conditions_snapshot(self.owner_now().get())
+            .saved_conditions_snapshot(own, self.owner_now().get())
     }
 
     /// C08: the saved conditions a new runtime actor restores, read under `fence` before the
