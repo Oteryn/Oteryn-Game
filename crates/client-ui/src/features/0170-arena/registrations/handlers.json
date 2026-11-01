@@ -5,7 +5,8 @@
   "status": "unsupported",
   "reason": "ARENA-1 is server-only; native client presentation is pending.",
   "commands": [
-    240
+    240,
+    436
   ],
   "not_applicable": {
     "state": "Server-only slice.",

@@ -187,7 +187,8 @@ fn transfer_allows_different_definitions_but_enforces_class_donor_and_receiver_c
 fn convergence_transfer_requires_both_class_four_and_keeps_the_donor_tier_within_cap() {
     let target = item("oteryn:item.target");
     let donor = item("oteryn:item.donor");
-    for tier in [2, 10] {
+    // Crystal protocolgame.cpp:6970-6975 admits a convergence donor from tier1.
+    for tier in [1, 2, 10] {
         assert_eq!(
             shape(&target, 4, 10, 0)
                 .convergence_transfer_target_tier(shape(&donor, 4, 10, tier))
@@ -223,13 +224,11 @@ fn convergence_transfer_requires_both_class_four_and_keeps_the_donor_tier_within
         shape(&target, 4, 10, 1).convergence_transfer_target_tier(shape(&donor, 4, 10, 2)),
         Err(ForgeShapeError::TargetAlreadyTiered)
     );
-    for donor_tier in [0, 1] {
-        assert_eq!(
-            shape(&target, 4, 10, 0)
-                .convergence_transfer_target_tier(shape(&donor, 4, 10, donor_tier)),
-            Err(ForgeShapeError::DonorTierTooLow)
-        );
-    }
+    let donor_tier = 0;
+    assert_eq!(
+        shape(&target, 4, 10, 0).convergence_transfer_target_tier(shape(&donor, 4, 10, donor_tier)),
+        Err(ForgeShapeError::DonorTierTooLow)
+    );
 }
 
 #[test]

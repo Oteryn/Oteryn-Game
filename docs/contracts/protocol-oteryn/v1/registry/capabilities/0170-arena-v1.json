@@ -5,9 +5,10 @@
   "owner": "Admitted channel session and shared boss/instance admission owners",
   "requires": [],
   "command_types": [
-    240
+    240,
+    436
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "ARENA-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 240 returns the server-owned Svargrond challenge catalogue to an admitted session with current channel runtime authority; without the capability selected, command type 240 is refused as unsupported."
+  "offer_gate": "ARENA-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); fixture worlds never offer it. Command 240 reads the Svargrond challenge catalogue and command 436 reads or changes the current arena match through the admitted, session-generation-fenced durable owner. Both commands require capability 170 to be selected."
 }

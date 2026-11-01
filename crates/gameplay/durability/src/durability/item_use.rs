@@ -39,8 +39,8 @@ use super::item_use_audit::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
-use oteryn_gameplay_progression::item_use_achievement;
 use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
+use oteryn_gameplay_progression::item_use_achievement;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
@@ -48,6 +48,7 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod concoction;
+pub mod drome_cube;
 pub mod condition_potions;
 pub mod fluid;
 pub mod mining;
@@ -58,6 +59,7 @@ pub mod proficiency_orb;
 pub use carried_inventory::ItemUseInventory;
 pub(super) use carried_inventory::read_use_inventory;
 use carried_source::lock_use_path;
+use drome_cube::DromeCubeError;
 
 /// The closed `ItemUseCause` kinds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,6 +72,10 @@ pub enum ItemUseKind {
     /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
     ProficiencyOrb,
     Concoction,
+    /// W09: the Cube's bounded original USE bytes, retained beside the atomic transform.
+    DromeCube {
+        wire_binding: [u8; 32],
+    },
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -86,6 +92,7 @@ impl ItemUseKind {
             Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
             Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
             Self::Concoction => concoction::CONCOCTION_CAUSE,
+            Self::DromeCube { .. } => drome_cube::DROME_CUBE_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -227,7 +234,9 @@ impl ItemUseRequest {
                     definition,
                     quantity_before,
                 },
-                ItemUseKind::Potion | ItemUseKind::PickRefine { .. },
+                ItemUseKind::Potion
+                | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id
@@ -241,7 +250,9 @@ impl ItemUseRequest {
                     definition,
                     placement_ordinal,
                 },
-                ItemUseKind::Potion | ItemUseKind::PickRefine { .. },
+                ItemUseKind::Potion
+                | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id
@@ -249,7 +260,7 @@ impl ItemUseRequest {
                     && *definition != self.source_definition
                     && *placement_ordinal != 0
             }
-            (_, ItemUseKind::PickRefine { .. }) => false,
+            (_, ItemUseKind::PickRefine { .. } | ItemUseKind::DromeCube { .. }) => false,
         };
         if !flask_valid
             || self.command_id == 0
@@ -290,6 +301,9 @@ impl ItemUseRequest {
             hasher.update(tool);
             hasher.update(wire_binding);
             hasher.update([percentile]);
+        }
+        if let ItemUseKind::DromeCube { wire_binding } = self.kind {
+            hasher.update(wire_binding);
         }
         hasher.update(self.command_id.to_be_bytes());
         text(&mut hasher, &self.content_revision);
@@ -369,6 +383,7 @@ impl DurabilityRoot {
         if matches!(
             request.kind,
             ItemUseKind::PickRefine { .. }
+                | ItemUseKind::DromeCube { .. }
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
@@ -388,6 +403,26 @@ impl DurabilityRoot {
         request: ItemUseRequest,
         weights: Option<&dyn super::item_loop_move::ItemLoopContent>,
     ) -> Result<ItemUseOutcome> {
+        // Cube-only refusals must not expand the error contract of unrelated item owners.
+        if matches!(request.kind, ItemUseKind::DromeCube { .. }) {
+            return Err(ItemUseError::InvalidInput);
+        }
+        self.commit_use_inner(authority, node, fence, request, weights)
+            .await
+            .map_err(|error| match error {
+                DromeCubeError::ItemUse(error) => error,
+                DromeCubeError::Capacity => ItemUseError::InvalidInput,
+            })
+    }
+
+    async fn commit_use_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemUseRequest,
+        weights: Option<&dyn super::item_loop_move::ItemLoopContent>,
+    ) -> drome_cube::Result<ItemUseOutcome> {
         request.validate()?;
         let recovery = authority
             .record_for(self)
@@ -407,7 +442,7 @@ impl DurabilityRoot {
                         }
                         Ok(None) => {}
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
-                        Err(error) => return Ok(Err(error)),
+                        Err(error) => return Ok(Err(error.into())),
                     }
                     if let Some(content) = *weights {
                         use super::character_equipment::{
@@ -432,7 +467,7 @@ impl DurabilityRoot {
                             Err(EquipmentError::Durability(error)) => return Err(error),
                             Err(EquipmentError::Database(error)) => return Err(error.into()),
                             Err(EquipmentError::Rejected(_)) => {
-                                return Ok(Err(ItemUseError::AuthorityRejected));
+                                return Ok(Err(ItemUseError::AuthorityRejected.into()));
                             }
                         }
                     }
@@ -441,17 +476,26 @@ impl DurabilityRoot {
                             if root.content_revision != request.content_revision
                                 || root.ruleset_revision != request.ruleset_revision
                             {
-                                return Ok(Err(ItemUseError::StaleState));
+                                return Ok(Err(ItemUseError::StaleState.into()));
                             }
                         }
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
-                        Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
+                        Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
                     }
                     let tuple = tx.tuple();
                     if let ItemUseKind::PickRefine { .. } = request.kind {
                         match mining::admit(&mut tx, &fence, &request, *weights).await {
                             Ok(()) => {}
                             Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error.into())),
+                        }
+                    }
+                    if matches!(request.kind, ItemUseKind::DromeCube { .. }) {
+                        match drome_cube::admit(&mut tx, &fence, &request, *weights).await {
+                            Ok(()) => {}
+                            Err(DromeCubeError::ItemUse(ItemUseError::Unavailable(error))) => {
+                                return Err(error);
+                            }
                             Err(error) => return Ok(Err(error)),
                         }
                     }
@@ -459,7 +503,7 @@ impl DurabilityRoot {
                         match concoction::admit(&mut tx, &fence, &request).await {
                             Ok(()) => {}
                             Err(ItemUseError::Unavailable(error)) => return Err(error),
-                            Err(error) => return Ok(Err(error)),
+                            Err(error) => return Ok(Err(error.into())),
                         }
                     }
                     let written = match write(&mut tx, &fence, &request, tuple).await {
@@ -483,7 +527,8 @@ impl DurabilityRoot {
                                 | ItemUseKind::MountTaming
                                 | ItemUseKind::ProficiencyCatalyst
                                 | ItemUseKind::ProficiencyOrb
-                                | ItemUseKind::Concoction => None,
+                                | ItemUseKind::Concoction
+                                | ItemUseKind::DromeCube { .. } => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(
@@ -500,7 +545,7 @@ impl DurabilityRoot {
                             Ok(Ok(outcome))
                         }
                         Err(ItemUseError::Unavailable(error)) => Err(error),
-                        Err(error) => Ok(Err(error)),
+                        Err(error) => Ok(Err(error.into())),
                     }
                 })
             })
