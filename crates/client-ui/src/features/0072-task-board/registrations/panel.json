@@ -1,0 +1,7 @@
+{
+  "mechanic": "0072-task-board",
+  "kind": "panels",
+  "id": "0072-task-board-panel",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

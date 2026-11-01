@@ -140,6 +140,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+/// Task Board command execution through the admitted session.
+#[path = "features/0072-task-board/protocol.rs"]
+pub mod task_board;
+
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
 pub mod stash;

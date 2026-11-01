@@ -2,18 +2,23 @@
   {
     "mechanic": "0072-task-board",
     "kind": "handlers",
-    "id": "0072-task-board-unsupported",
-    "status": "unsupported",
-    "reason": "The full server Task Board uses command 89; the native client Task Board view remains unsupported.",
+    "id": "0072-task-board-actions",
+    "status": "supported",
     "commands": [
       89
     ],
+    "direction": "client_to_server",
+    "capability": 72,
+    "entry": "mod.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "The Task Board is server-owned state."
     }
+  },
+  {
+    "mechanic": "0072-task-board",
+    "kind": "panels",
+    "id": "0072-task-board-panel",
+    "status": "supported",
+    "entry": "mod.rs::panel_text"
   }
 ]

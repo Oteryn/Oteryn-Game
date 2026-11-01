@@ -54,6 +54,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// Weekly Task Board state and controls.
+#[path = "features/0072-task-board/mod.rs"]
+pub mod task_board;
+
 /// Server-owned stash browsing and conversion controls.
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;

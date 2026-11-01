@@ -74,6 +74,7 @@ pub(super) struct Mailbox {
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
+    pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,

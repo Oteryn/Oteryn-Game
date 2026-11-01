@@ -70,6 +70,17 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn task_board_selected(&self) -> bool {
+        false
+    }
+    fn task_board(
+        &mut self,
+        _command: &oteryn_client_runtime::task_board::TaskBoardCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::task_board::TaskBoardResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 72 }) }
+    }
     fn stash_selected(&self) -> bool {
         false
     }
@@ -235,6 +246,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn task_board_selected(&self) -> bool {
+        self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
+    }
+    async fn task_board(
+        &mut self,
+        command: &oteryn_client_runtime::task_board::TaskBoardCommand,
+    ) -> Result<oteryn_client_runtime::task_board::TaskBoardResponse, SessionError> {
+        oteryn_client_runtime::task_board::send(self, command).await
+    }
     fn stash_selected(&self) -> bool {
         self.is_selected(oteryn_session::stash::CAPABILITY_STASH_V1)
     }
@@ -351,6 +371,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
     outbox.npc_shop_initialize(session.npc_shop_selected());
     outbox.prey_initialize(session.prey_selected());
@@ -440,6 +461,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::TaskBoard(command)) => match session.task_board(&command).await {
+                Ok(response) => {
+                    outbox.task_board_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
