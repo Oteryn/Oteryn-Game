@@ -25,6 +25,8 @@ mod gated_command;
 mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
+/// Server-owned Animus mastery pages for the native client feature.
+pub use oteryn_protocol_oteryn::animus_mastery;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
 pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Quest log wire values consumed by the client feature adapter.

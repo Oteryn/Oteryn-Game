@@ -17,6 +17,19 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn animus_selected(&self) -> bool {
+        false
+    }
+    fn animus(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async {
+            Err(SessionError::CapabilityNotSelected {
+                capability: oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+            })
+        }
+    }
     fn wheel_selected(&self) -> bool {
         false
     }
@@ -73,6 +86,20 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn animus_selected(&self) -> bool {
+        self.is_selected(oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1)
+    }
+    async fn animus(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        self.gated_command(
+            oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+            oteryn_session::animus_mastery::COMMAND_TYPE_ANIMUS_MASTERY_QUERY,
+            payload,
+        )
+        .await
+    }
     fn wheel_selected(&self) -> bool {
         self.is_selected(oteryn_session::wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
     }
@@ -149,12 +176,21 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::Animus(payload)) => match session.animus(&payload).await {
+                Ok(result) => {
+                    outbox.animus_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Wheel(request)) => match session.wheel(&request).await {
                 Ok(response) => {
                     outbox.wheel_result(&response);

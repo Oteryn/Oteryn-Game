@@ -9,7 +9,8 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         if let Some(play) = &mut self.play {
-            if play.link.wheel_input(events)
+            if play.link.animus_input(events)
+                || play.link.wheel_input(events)
                 || play.link.exiva_input(events)
                 || play.link.quest_input(events)
             {

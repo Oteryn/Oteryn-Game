@@ -121,6 +121,9 @@ pub mod quest_log;
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
 
+/// Server-owned Animus mastery wire values.
+pub use oteryn_session::animus_mastery;
+
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 

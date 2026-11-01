@@ -2,6 +2,10 @@
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+/// Completed species and bounded Animus mastery pages.
+#[path = "features/0168-animus-mastery/mod.rs"]
+pub mod animus_mastery;
+
 /// World-interaction click intent mapping.
 pub mod world_interaction {
     include!(concat!(

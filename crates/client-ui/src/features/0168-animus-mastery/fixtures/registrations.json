@@ -1,19 +1,33 @@
 [
   {
     "mechanic": "0168-animus-mastery",
+    "kind": "keybindings",
+    "id": "0168-animus-mastery-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+M",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0168-animus-mastery",
+    "kind": "panels",
+    "id": "0168-animus-mastery-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0168-animus-mastery",
     "kind": "handlers",
-    "id": "0168-animus-mastery-unsupported",
-    "status": "unsupported",
-    "reason": "ANIMUS-1 is server-only; native client presentation is pending.",
+    "id": "0168-animus-mastery-query",
+    "status": "supported",
     "commands": [
       232
     ],
+    "direction": "client_to_server",
+    "capability": 168,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Server-only slice.",
-      "protocol": "Server-only slice.",
-      "view": "Server-only slice.",
-      "input": "Server-only slice.",
-      "settings": "Server-only slice."
+      "settings": "Masteries are server-owned; this window has no local authority settings."
     }
   }
 ]
