@@ -1309,8 +1309,9 @@ fn server_seam_real_owners_over_tcp_tls() -> TestResult {
     // Debug builds poll the composed seam scenario through a call chain deeper than the
     // default 2 MiB test and worker stacks (it overflowed in the admission stage even with
     // the scenario future boxed). Poll it on a dedicated thread, and run the runtime's
-    // workers, with an explicit 8 MiB stack; the scenario itself is unchanged.
-    const SEAM_STACK_BYTES: usize = 8 << 20;
+    // workers, with the same 64 MiB stack as main.rs's game-node thread. Wheel/atelier
+    // admission (60f2542a5) outgrew the previous 8 MiB even with seam_flow boxed.
+    const SEAM_STACK_BYTES: usize = 64 << 20;
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(SEAM_STACK_BYTES)

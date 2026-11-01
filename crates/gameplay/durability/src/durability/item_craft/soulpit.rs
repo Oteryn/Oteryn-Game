@@ -343,7 +343,7 @@ async fn write<C: ItemLoopContent>(
     } else {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,$5::uuid)")
             .bind(&output_id).bind(world.as_bytes().as_slice()).bind(&output_definition.production_key).bind(&output_definition.revision_ref).bind(&transaction).execute(&mut ***tx).await?;
-        place_output(tx, fence, &delivery, &output_id, &ordinal, &transaction).await?;
+        place_output(tx, context.permit, fence, &delivery, &output_id, &ordinal, &transaction).await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice())
@@ -436,12 +436,14 @@ async fn choose_container<C: ItemLoopContent>(
 
 async fn place_output(
     tx: &mut Type2Transaction<'_>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterItemFence,
     delivery: &Value,
     item: &str,
     ordinal: &str,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     if delivery["kind"] == "container" {
         if delivery["nested"] == true {
