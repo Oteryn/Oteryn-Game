@@ -150,6 +150,18 @@ pub(super) async fn dev_client<'a>(
         door_revision + 1,
         door_revision + 2,
     ));
+    client_guild::guild(&mut dev_client).await?;
+    client_party::party(&mut dev_client).await?;
+    client_vip::vip(&mut dev_client).await?;
+    client_player_trade::player_trade(&mut dev_client).await?;
+    client_imbue::imbue(&mut dev_client).await?;
+    client_npc_shop::npc_shop(&mut dev_client).await?;
+    client_stash::stash(&mut dev_client).await?;
+    client_market::market(&mut dev_client).await?;
+    client_task_board::task_board(&mut dev_client).await?;
+    client_prey::prey(&mut dev_client).await?;
+    client_hireling::hireling(&mut dev_client).await?;
+
     // Dropped here, closing the TLS stream the same silent way the join-only stage did.
     drop(dev_client);
     let dev_client_session = *dev_client_snapshot.game_session_id.as_bytes();
