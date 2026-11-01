@@ -156,7 +156,7 @@ fn scenario() -> TestResult {
                                 .await;
                         }
                         Err(crate::durability::DurabilityError::RootUnavailable) => break,
-                        Err(error) => return Err(debug(error).into()),
+                        Err(error) => return Err(debug(error)),
                     }
                 }
                 h.root.request_ready();
