@@ -6,7 +6,7 @@ use crate::foundation::DotElement;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::VirtualOwnerClock;
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1, RuntimeWorkStamp,
+    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
@@ -82,7 +82,7 @@ fn policies(r: &ChannelRuntimeV1) -> CompiledCreaturePolicies {
 fn fence(r: &ChannelRuntimeV1, g: u64) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
     let b = r.binding();
     crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        b.runtime_scope(),
         ScopeOwnershipGeneration::new(g).expect("qualified fixture"),
     )
     .expect("qualified fixture")

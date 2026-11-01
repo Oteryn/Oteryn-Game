@@ -4,7 +4,7 @@ use super::super::{
     item_view::ItemKey,
 };
 use super::{SoulpitCoreSelection, SoulpitEntryIntent, outcome};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeScopeRefV1};
+use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::map::view::{self, MapEntryKey};
 use oteryn_gameplay_domain::domain::soulpit::{
     self, OBELISK_ACTIVE_SOURCE_ID, OBELISK_INACTIVE_SOURCE_ID, OBELISK_POSITION,
@@ -131,8 +131,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(None);
             }
             if fence.game_session_id != command.game_session_id
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || states.is_dead(actor)

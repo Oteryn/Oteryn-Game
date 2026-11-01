@@ -87,3 +87,33 @@ impl PremiumSessions {
         true
     }
 }
+
+impl PremiumSessions {
+    pub(super) fn transfer_activity(
+        &mut self,
+        destination: &mut Self,
+        old: GameSessionId,
+        new: GameSessionId,
+    ) {
+        if let Some(account) = self.account_of(old) {
+            destination.admit(account, new);
+            if let Some(value) = self.1.remove(&old) {
+                destination.1.insert(new, value);
+            }
+            if let Some(value) = self.2.remove(&old) {
+                destination.2.insert(new, value);
+            }
+            // The shared Premium refresher keeps its live account registration.
+            if let Some(sessions) = self.0.get_mut(&account) {
+                sessions.remove(&old);
+            }
+            if self
+                .0
+                .get(&account)
+                .is_some_and(|sessions| sessions.is_empty())
+            {
+                self.0.remove(&account);
+            }
+        }
+    }
+}

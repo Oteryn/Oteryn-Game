@@ -62,7 +62,7 @@ fn current(
         } => {
             let held = runtime.binding();
             if held.world_id() != world_id
-                || held.channel_id() != channel_id
+                || held.channel_id() != Some(channel_id)
                 || held.scope_generation() != fence.scope_ownership_generation
             {
                 return false;

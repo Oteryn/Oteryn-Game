@@ -302,3 +302,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 }
+
+impl LivePrey {
+    pub(in crate::gameplay_transport) fn activity_matches(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.actor == actor && self.session == session
+    }
+    pub(in crate::gameplay_transport) fn activity_pending(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.activity_matches(actor, session) && self.pending.is_some()
+    }
+    pub(in crate::gameplay_transport) fn rebind_activity(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        self.actor = actor;
+        self.session = session;
+    }
+}

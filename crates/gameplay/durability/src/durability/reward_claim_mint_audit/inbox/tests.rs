@@ -32,6 +32,7 @@ fn batch(count: usize) -> OneItemRewardClaimMintV1 {
         destination: None,
         before_semantically_absent: true,
         source: Some(OneItemRewardClaimCauseV1 {
+            boss_reward: None,
             typed_cause: REWARD_CLAIM_MINT_TYPED_CAUSE.into(),
             content_revision: "content-r1".into(),
             ruleset_revision: "rules-r1".into(),

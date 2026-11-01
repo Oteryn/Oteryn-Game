@@ -7,7 +7,7 @@ use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{SmellyDuePulse, SmellyPulse};
 use oteryn_gameplay_entities::ChannelRuntimeV1;
 use oteryn_gameplay_foundation::foundation::ExactActorRef;
-use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
 #[derive(Debug)]
@@ -33,10 +33,8 @@ pub fn commit_smelly_unambiguous_damage(
     now: oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros,
 ) -> Result<Vec<PlayerDamageReceipt>, SmellyDamageError> {
     let binding = runtime.binding();
-    if !fence.is_current_for_scope(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-        binding.scope_generation(),
-    ) || !fence.accepts_stamp(stamp)
+    if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+        || !fence.accepts_stamp(stamp)
     {
         return Err(SmellyDamageError::StaleOwner);
     }

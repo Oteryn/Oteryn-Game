@@ -114,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 &permit,
                 DailyBoostBinding {
-                    scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                    scope: binding.runtime_scope(),
                     generation: binding.scope_generation().get(),
                     bundle: map.overlay.base().digest(),
                     epoch: self.reset_epoch,
@@ -157,7 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 != RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id)
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
             || runtime.binding().world_id() != admitted.world_id
-            || runtime.binding().channel_id() != admitted.channel_id
+            || runtime.binding().channel_id() != Some(admitted.channel_id)
             || !admitted.runtime_actor.is_some_and(|actor| {
                 runtime
                     .player_control_facts(actor, admitted.game_session_id)

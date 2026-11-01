@@ -250,8 +250,8 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// §8.1 admission: the Character's stored state under the session fence, `None` when no row
-    /// exists (nothing to restore).
+    /// §8.1 admission: the Character's stored state under the exact current Channel or
+    /// Instance session fence, `None` when no row exists (nothing to restore).
     pub async fn read_pvp_state(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -281,10 +281,9 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         origin_channel: Option<[u8; 16]>,
     ) -> Result<Option<StoredPvpState>> {
+        // Activities use the shared session fence; named Houses require custody below.
         if fence.character_lease_generation == 0
-            || !matches!((fence.runtime_scope, origin_channel),
-                (RuntimeScopeRefV1::Channel { .. }, None)
-                    | (RuntimeScopeRefV1::Instance { .. }, Some(_)))
+            || (origin_channel.is_some() && !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }

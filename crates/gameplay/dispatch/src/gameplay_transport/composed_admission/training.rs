@@ -92,8 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let binding = runtime.binding();
-        if current.current_runtime_scope()
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        if current.current_runtime_scope() != binding.runtime_scope()
             || current.current_scope_generation() != binding.scope_generation()
             || runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()

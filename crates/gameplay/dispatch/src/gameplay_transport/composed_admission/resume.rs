@@ -5,6 +5,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
+            return Ok(admitted);
+        }
+        // Directory lookup selects an owner only. The original recovery owner
+        // below still verifies the credential, exact lost epoch, transport,
+        // current guards, attempt budget and generation before any mutation.
+        let scoped =
+            if let Some(registered) = self.activity_runtimes.connection(attempt.game_session_id) {
+                self.resolve_runtime_view(registered)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)?
+            } else {
+                None
+            };
+        let owner = scoped.as_ref().unwrap_or(self);
+        let admitted = owner.resume_session_for_scope(attempt).await?;
+        self.activity_runtimes
+            .remember(admitted)
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
+        Ok(admitted)
+    }
+
+    async fn resume_session_for_scope(
+        &self,
+        attempt: connection::ResumeAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(AdmissionRefusal::Unavailable);
@@ -49,6 +76,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        self.finish_resumed_session(admitted, recovered_transfer)
+            .await;
+        Ok(admitted)
+    }
+
+    pub(in crate::gameplay_transport) async fn finish_resumed_session(
+        &self,
+        admitted: AdmittedSession,
+        recovered_house_transfer: bool,
+    ) {
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
             self.states
@@ -61,6 +98,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(controller) = admitted.controller {
             self.admit_premium(controller.account_id, admitted.game_session_id);
         }
+        // Native House recovery already restored its views and retained clocks.
+        if recovered_house_transfer {
+            return;
+        }
         let actual_house = if let Some(actor) = admitted.runtime_actor {
             self.runtime
                 .lock()
@@ -71,15 +112,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             false
         };
         if actual_house {
-            if !recovered_transfer {
-                // CompleteReconnect has already committed and removed its lost
-                // entry. Match ordinary optional observation refresh: missing
-                // data cannot discard that current resumed controller.
-                let _ = self.restore_house_admission_views(&admitted, None).await;
-            }
-        } else if !recovered_transfer {
+            // CompleteReconnect has already committed and removed its lost
+            // entry. Match ordinary optional observation refresh: missing
+            // data cannot discard that current resumed controller.
+            let _ = self.restore_house_admission_views(&admitted, None).await;
+        } else {
             self.admit_quest_session(&admitted).await;
         }
-        Ok(admitted)
     }
 }

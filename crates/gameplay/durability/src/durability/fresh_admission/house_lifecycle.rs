@@ -24,20 +24,6 @@ impl FreshAdmissionStore {
         self.with_house_release_owner(node)
     }
 
-    pub(super) async fn initial_operation_locked(
-        &self, tx: &mut Transaction<'_, Postgres>, session: GameSessionId,
-    ) -> Result<FreshAdmissionOperationV1> {
-        let payload: Option<String> = sqlx::query_scalar(
-            "SELECT CASE WHEN octet_length(r.operation_json)<=65536 THEN r.operation_json END \
-             FROM game_durability_reconnect_sessions s \
-             JOIN game_durability_fresh_admission_receipts r \
-               ON r.replay_key=COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) \
-             WHERE s.game_session_id=encode($1,'hex')::uuid FOR SHARE OF s,r",
-        ).bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        decode_operation(&payload.ok_or(DurabilityError::InvalidStoredState)?, self.maximum_operation_bytes)
-    }
-
     /// Current named custody only. Loss/terminal history must remain writable
     /// after ACL revocation; granting a recovered controller also requires ACL.
     pub(super) async fn house_lifecycle_fence_locked(
@@ -83,10 +69,18 @@ impl FreshAdmissionStore {
         let scope = match current.current_runtime_scope() {
             RuntimeScopeRefV1::Channel { .. } => current.current_runtime_scope(),
             RuntimeScopeRefV1::Instance { .. } => {
-                let Some(origin) = self.house_lifecycle_fence_locked(tx, current, true).await? else {
-                    return Ok(None);
-                };
-                RuntimeScopeRefV1::channel(current.commit().world_id(), origin)
+                let named_house: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND runtime_scope_house_key IS NOT NULL)",
+                ).bind(current.current_game_session_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+                if named_house {
+                    let Some(origin) = self.house_lifecycle_fence_locked(tx, current, true).await? else {
+                        return Ok(None);
+                    };
+                    RuntimeScopeRefV1::channel(current.commit().world_id(), origin)
+                } else {
+                    // Activity recovery retains its exact Instance runtime guard.
+                    current.current_runtime_scope()
+                }
             }
         };
         let publication = self.guards.load_locked(tx, &AdmissionAuthorityGuardKeyV1::Runtime(scope)).await?;

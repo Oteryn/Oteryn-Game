@@ -9,9 +9,9 @@ pub(super) fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV
     if operation.version != 1 {
         return Err(DurabilityError::Unavailable);
     }
+    // Existing fresh/ordinary same-session records keep their exact tag-1
+    // bytes. Activity descendants additionally encode their actual session id.
     let transferred = o.session.current_game_session_id() != o.session.commit().game_session_id();
-    // Existing initial-session bytes remain canonical tag 1. Tag 2 adds only
-    // the independently persisted current identity; the original commit stays.
     w.tag(if transferred { 2 } else { 1 })?;
     w.i64(operation.authorized_at)?;
     write_scope(w, o.source_authority)?;
@@ -30,7 +30,9 @@ pub(super) fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV
     w.u64(c.scope_ownership_generation())?;
     w.u64(c.connection_generation().get())?;
     w.bytes(&c.initial_transport().to_bytes())?;
-    if transferred { w.bytes(s.current_game_session_id().as_bytes())?; }
+    if transferred {
+        w.bytes(s.current_game_session_id().as_bytes())?;
+    }
     w.tag(match s.session_state() {
         GameSessionState::Active => 1,
         GameSessionState::Reconnectable => 2,
@@ -70,8 +72,17 @@ pub(super) fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV
     w.i64(o.original_grace_deadline)?;
     match &o.history {
         ControlLossHistoryV1::FreshOrigin => w.tag(1)?,
-        ControlLossHistoryV1::ScopeTransfer { transfer, entry_epoch, protection } => {
+        ControlLossHistoryV1::ActivityOrigin {
+            admission_id,
+            protection,
+        } => {
             w.tag(3)?;
+            w.bytes(admission_id)?;
+            write_protection(w, *protection)?;
+        }
+        ControlLossHistoryV1::ScopeTransfer { transfer, entry_epoch, protection } => {
+            // Main's tag 3 is the persisted activity origin; House history is additive.
+            w.tag(4)?;
             w.bytes(transfer)?;
             w.u64(entry_epoch.get())?;
             write_protection(w, *protection)?;
@@ -169,8 +180,8 @@ pub fn decode_fresh_loss(
 ) -> Result<ControlLossOperationV1> {
     let bytes = decode_envelope(encoded, MAX_FRESH_OPERATION_BYTES)?;
     let mut r = Reader::new(&bytes);
-    let encoding = r.tag()?;
-    if !matches!(encoding, 1 | 2) {
+    let version = r.tag()?;
+    if !matches!(version, 1 | 2) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let authorized_at = r.i64()?;
@@ -191,11 +202,15 @@ pub fn decode_fresh_loss(
     {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let current_session = if encoding == 2 {
-        let current = checked(GameSessionId::decode(&r.bytes::<16>()?))?;
-        if current == initial.game_session_id() { return Err(DurabilityError::InvalidStoredState); }
-        current
-    } else { initial.game_session_id() };
+    let current_session = if version == 2 {
+        let session = checked(GameSessionId::decode(&r.bytes::<16>()?))?;
+        if session == initial.game_session_id() {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        session
+    } else {
+        initial.game_session_id()
+    };
     let state = match r.tag()? {
         1 => GameSessionState::Active,
         2 => GameSessionState::Reconnectable,
@@ -262,7 +277,11 @@ pub fn decode_fresh_loss(
     let original_grace_deadline = r.i64()?;
     let history = match r.tag()? {
         1 => ControlLossHistoryV1::FreshOrigin,
-        3 => ControlLossHistoryV1::ScopeTransfer {
+        3 if version == 2 => ControlLossHistoryV1::ActivityOrigin {
+            admission_id: r.bytes::<16>()?,
+            protection: read_protection(&mut r)?,
+        },
+        4 if version == 2 => ControlLossHistoryV1::ScopeTransfer {
             transfer: r.bytes::<16>()?,
             entry_epoch: checked(ControlLossEpochRefV1::new(r.u64()?))?,
             protection: read_protection(&mut r)?,

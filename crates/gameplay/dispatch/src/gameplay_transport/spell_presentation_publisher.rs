@@ -22,8 +22,7 @@ use sqlx::{Postgres, Transaction};
 use std::collections::VecDeque;
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ScopeContext {
-    world: [u8; 16],
-    channel: [u8; 16],
+    scope: crate::foundation::RuntimeScopeRefV1,
     generation: u64,
     content: [u8; 32],
     map: [u8; 32],
@@ -34,8 +33,7 @@ fn context(runtime: &ChannelRuntimeV1) -> Result<ScopeContext, Error> {
     let b = runtime.binding();
     let p = runtime.content_pin();
     Ok(ScopeContext {
-        world: *b.world_id().as_bytes(),
-        channel: *b.channel_id().as_bytes(),
+        scope: b.runtime_scope(),
         generation: b.scope_generation().get(),
         content: p.server_artifact_digest(),
         map: p.map_revision_digest(),

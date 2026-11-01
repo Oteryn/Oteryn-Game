@@ -765,6 +765,7 @@ pub(super) async fn incomplete_proof(
             destination: None,
             before_semantically_absent: true,
             source: Some(OneItemRewardClaimCauseV1 {
+                boss_reward: None,
                 typed_cause: context.typed_cause().into(),
                 content_revision: owner.request.content_revision.clone(),
                 ruleset_revision: owner.request.ruleset_revision.clone(),

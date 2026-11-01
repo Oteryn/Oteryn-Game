@@ -129,7 +129,7 @@ async fn apply_and_check(connection: &mut sqlx::PgConnection, character: String,
 pub(super) async fn recall_after_session_retirement(h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>, current: CurrentCharacterItemFence,
     converted: ConvertedPlacement) -> TestResult {
-    // Import the exact rows produced by the real0405->0700 migration above.
+    // Import the exact rows produced by the real0405->0719 migration above.
     // This is a historical fixture, not a synthetic session or source receipt.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;

@@ -98,7 +98,9 @@ const INVENTORY: &[Entry] = &[
         accessor: "gate_native_combat_cast",
         key: "",
         state: COMBAT_ENABLE,
+        // Activity registration validates its combat room against the active content pin.
         calls: &[
+            ("gameplay_transport/activity_runtime.rs", 1),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
         ],
@@ -234,6 +236,8 @@ const INVENTORY: &[Entry] = &[
         key: "",
         state: Gate::SourceWorldBranch,
         calls: &[
+            // Activity construction inherits this gate; it cannot promote a bundle origin.
+            ("gameplay_transport/activity_content.rs", 1),
             ("gameplay_transport/attack.rs", 1),
             ("gameplay_transport/bed_sleep_production.rs", 1),
             ("gameplay_transport/composed_admission/objects.rs", 2),
@@ -728,6 +732,10 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    // Qualified activity content inherits the origin gate, checked below.
+    ("gameplay_transport/activity_content.rs", 2),
+    // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
+    ("gameplay_transport/activity_runtime.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     (
@@ -743,6 +751,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
+    // Boss PG fixtures explicitly bind their activated source and Instance rooms.
+    ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
@@ -781,5 +791,45 @@ fn a_bundle_world_seam_has_no_qualified_room() {
             if call.args.first().is_some_and(withholds_from_a_bundle)),
         "serve.rs no longer builds `SeamRooms::new(bundle.is_none().then_some(&qualified_room), \
          …)`: every closed gate would open at once without its owner"
+    );
+}
+
+/// Activity content may replace the room, but never widen the origin seam's qualification.
+fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
+    let syn::Expr::MethodCall(map) = expr else {
+        return false;
+    };
+    let syn::Expr::MethodCall(gate) = &*map.receiver else {
+        return false;
+    };
+    let syn::Expr::Field(rooms) = &*gate.receiver else {
+        return false;
+    };
+    map.method == "map"
+        && map.attrs.is_empty()
+        && gate.method == "gate_source_world"
+        && gate.args.is_empty()
+        && gate.attrs.is_empty()
+        && rooms.attrs.is_empty()
+        && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
+        && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        && matches!(
+            map.args.iter().collect::<Vec<_>>().as_slice(),
+            [syn::Expr::Closure(select)]
+                if select.inputs.len() == 1
+                    && matches!(select.inputs.first(), Some(syn::Pat::Wild(_)))
+                    && matches!(&*select.body, syn::Expr::Path(path) if path.path.is_ident("room"))
+        )
+}
+
+#[test]
+fn an_activity_instance_preserves_the_origin_room_gate() {
+    let content = parse_source("src/gameplay_transport/activity_content.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&content);
+    assert!(
+        matches!(constructions.0.as_slice(), [call]
+            if call.args.first().is_some_and(inherits_origin_qualification)),
+        "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
     );
 }

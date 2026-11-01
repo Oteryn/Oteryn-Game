@@ -1070,10 +1070,6 @@ fn validate_session_claims(
         || lease.character_id() != commit.character_id()
         || lease.generation() < commit.character_lease_generation()
         || snapshot.current_connection_generation().get() < commit.connection_generation().get()
-        // A native handoff retains its origin receipt, but the destination's
-        // ownership generation belongs to a different runtime scope. Only an
-        // independently persisted current identity can cross that boundary;
-        // same-session projections and the origin scope retain their ordering.
         || ((snapshot.current_game_session_id() == commit.game_session_id()
             || snapshot.current_runtime_scope()
                 == RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()))

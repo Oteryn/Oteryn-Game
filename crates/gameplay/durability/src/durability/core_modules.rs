@@ -8,6 +8,7 @@
 pub mod account_achievement;
 pub mod account_badge;
 pub mod account_characters_projection;
+pub mod activity_handoff;
 pub mod admission_authority_guards;
 pub mod admission_journal;
 pub mod animus_mastery;

@@ -18,9 +18,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use {
     oteryn_gameplay_entities::ChannelRuntimeV1,
-    oteryn_gameplay_foundation::foundation::{
-        ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-    },
+    oteryn_gameplay_foundation::foundation::{ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence},
 };
 pub const CREATURE: &str = "oteryn:creature.smelly_cheese";
 pub const PARENT: &str = "oteryn:ability.creature.smelly_cheese.berserk_bridge";
@@ -232,10 +230,8 @@ impl SmellyEncounterOwner {
         now: SemanticTimeMicros,
     ) -> Result<bool, AttackError> {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !f.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -254,11 +250,8 @@ impl SmellyEncounterOwner {
                     .try_reserve(1)
                     .map_err(|_| AttackError::LedgerFull)?;
                 let b = r.binding();
-                let timers = SmellyCheeseTimers::new(
-                    RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-                    b.scope_generation(),
-                )
-                .map_err(|_| AttackError::InvalidPlan)?;
+                let timers = SmellyCheeseTimers::new(b.runtime_scope(), b.scope_generation())
+                    .map_err(|_| AttackError::InvalidPlan)?;
                 self.entries.push(Entry {
                     actor: p.issuer,
                     source: s.clone(),
@@ -294,10 +287,8 @@ impl SmellyEncounterOwner {
         clock: &impl OwnerClock,
     ) -> SmellyPulseResults {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !f.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -325,10 +316,7 @@ fn execute_pulse(
     now: SemanticTimeMicros,
 ) -> Result<SmellyEffect, AttackError> {
     let b = r.binding();
-    if !_f.is_current_for_scope(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    ) || !_f.accepts_stamp(stamp)
+    if !_f.is_current_for_scope(b.runtime_scope(), b.scope_generation()) || !_f.accepts_stamp(stamp)
     {
         return Err(AttackError::StaleOwner);
     }

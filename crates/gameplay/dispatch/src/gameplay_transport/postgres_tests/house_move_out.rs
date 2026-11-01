@@ -306,7 +306,11 @@ fn scenario() -> TestResult {
                 admitted.continuity = session.continuity;
                 admitted.continuity.selected_capabilities = selected;
             }
-            std::mem::take(&mut owner.states.command_ingress)
+            std::mem::take(
+                &mut std::sync::Arc::get_mut(&mut owner.states)
+                    .expect("W02: isolated fixture state")
+                    .command_ingress,
+            )
         };
         // An earlier-day NOTICE is historical DATA only; no current authority is derived from it.
         seed::overdue(&h).await?;
@@ -323,7 +327,9 @@ fn scenario() -> TestResult {
                 .map_err(debug)?;
             // The Channel keeps each GameSession's command stream (SESSION-INGRESS-1).
             let mut owner = deps.owner(&h, &authority);
-            owner.states.command_ingress = std::mem::take(&mut commands);
+            std::sync::Arc::get_mut(&mut owner.states)
+                .expect("W02: isolated fixture state")
+                .command_ingress = std::mem::take(&mut commands);
             owner
                 .drain_source_house_dispositions()
                 .await
@@ -375,7 +381,11 @@ fn scenario() -> TestResult {
                 seed::assert_frozen(&h).await?;
                 seed::blocked_steps_rollback(&h, &owner).await?;
             }
-            commands = std::mem::take(&mut owner.states.command_ingress);
+            commands = std::mem::take(
+                &mut std::sync::Arc::get_mut(&mut owner.states)
+                    .expect("W02: isolated fixture state")
+                    .command_ingress,
+            );
             drop(owner);
             drop(authority);
             if phase >= 2 {

@@ -1,0 +1,10 @@
+{
+  "id": 431,
+  "name": "BOSS_DIFFICULTY",
+  "owner_decision": "W21; PR #2769 ANSWER 6542714759",
+  "capability": 225,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/boss-difficulty-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/boss-difficulty-v1.md#reply",
+  "max_payload_bytes": 1024,
+  "max_result_payload_bytes": 2048
+}

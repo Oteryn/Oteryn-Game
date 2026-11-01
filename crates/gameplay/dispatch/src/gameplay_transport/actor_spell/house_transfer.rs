@@ -46,7 +46,7 @@ fn current_owner(
     let binding = runtime.binding();
     Some((
         runtime.bound_attacker_lease(actor, session).ok()?,
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()?),
     ))
 }
 
@@ -121,7 +121,7 @@ impl ChannelSpellStates {
         if recovered.started
             || source == destination
             || recovered.ack.world != *binding.world_id().as_bytes()
-            || recovered.ack.channel != *binding.channel_id().as_bytes()
+            || recovered.ack.channel != *binding.channel_id()?.as_bytes()
             || recovered.current.world_id != binding.world_id()
         {
             return None;
@@ -148,7 +148,7 @@ impl ChannelSpellStates {
                 runtime.player_control_facts(actor, source).ok()?;
                 (
                     actor,
-                    RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                    RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()?),
                 )
             } else {
                 // Cold reconstruction and an already installed destination keep

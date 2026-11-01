@@ -262,6 +262,17 @@ impl BuildCause {
         matches!(self, Self::VocationChoice | Self::VocationTrial)
     }
 
+    /// Pending native training follows its Character into an activity Instance.
+    /// Other build causes retain their Channel admission contract. This only
+    /// admits the input shape; every new write still proves the complete current
+    /// session, lease, runtime assignment and Character revision fence below.
+    fn admits_runtime_scope(self, scope: RuntimeScopeRefV1) -> bool {
+        match scope {
+            RuntimeScopeRefV1::Channel { .. } => true,
+            RuntimeScopeRefV1::Instance { .. } => matches!(self, Self::Training),
+        }
+    }
+
     fn admits(self, before: &DurableBuildState, after: &DurableBuildState) -> bool {
         let (from, to) = (before.families(), after.families());
         match self {
@@ -407,7 +418,7 @@ pub(super) async fn prepare_character_build_with_recovery(
     formula: &dyn BuildFormula,
 ) -> Result<PendingBuildChange> {
     if fence.character_lease_generation == 0
-        || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        || !request.cause.admits_runtime_scope(fence.runtime_scope)
         || !request.cause.admits(&request.before, &request.after)
         || !normalized(formula, &request.after)
         || request
@@ -520,7 +531,9 @@ async fn apply_build_with_fence(
             && request.before == request.after
             && change.after.stamina_minutes > change.before.stamina_minutes
     });
-    if (!request.cause.admits(&request.before, &request.after) && !stamina_training && !stamina_resting)
+    if (!request.cause.admits(&request.before, &request.after)
+        && !stamina_training
+        && !stamina_resting)
         || binding.is_empty()
         || binding.len() > 1024
     {
@@ -738,10 +751,12 @@ async fn apply_build_with_fence(
         || (request.cause == BuildCause::VocationTrial && level > 8)
     {
         let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
-            request.after.vocation(), level,
+            request.after.vocation(),
+            level,
             oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
             oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
-        ).ok_or(DurabilityError::InvalidStoredState)?;
+        )
+        .ok_or(DurabilityError::InvalidStoredState)?;
         // Same transaction and replay boundary as the build receipt. No position row means
         // admission already starts at maxima (0084); otherwise keep the cell/rest snapshot.
         // Advance the projection order key so pre-choice captures cannot undo the refill.
@@ -756,23 +771,39 @@ async fn apply_build_with_fence(
             .bind(fence.character_lease_generation.to_string())
             .execute(&mut **tx).await?;
     }
-    if request.cause == BuildCause::Training && offline.after.stamina_minutes < offline.before.stamina_minutes {
-        sqlx::query("SELECT game_hunting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
-            .bind(character).bind(request.occurrence.0.as_slice())
-            .bind(i32::from(offline.after.stamina_minutes)).execute(&mut **tx).await?;
+    if request.cause == BuildCause::Training
+        && offline.after.stamina_minutes < offline.before.stamina_minutes
+    {
+        sqlx::query(
+            "SELECT game_hunting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)",
+        )
+        .bind(character)
+        .bind(request.occurrence.0.as_slice())
+        .bind(i32::from(offline.after.stamina_minutes))
+        .execute(&mut **tx)
+        .await?;
     }
-    if request.cause == BuildCause::RestingStamina && offline.after.stamina_minutes > offline.before.stamina_minutes {
-        sqlx::query("SELECT game_resting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
-            .bind(character).bind(request.occurrence.0.as_slice())
-            .bind(i32::from(offline.after.stamina_minutes)).execute(&mut **tx).await?;
+    if request.cause == BuildCause::RestingStamina
+        && offline.after.stamina_minutes > offline.before.stamina_minutes
+    {
+        sqlx::query(
+            "SELECT game_resting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)",
+        )
+        .bind(character)
+        .bind(request.occurrence.0.as_slice())
+        .bind(i32::from(offline.after.stamina_minutes))
+        .execute(&mut **tx)
+        .await?;
     }
     if request.cause == BuildCause::OfflineSettlement {
-        sqlx::query("SELECT game_training_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
-            .bind(character)
-            .bind(request.occurrence.0.as_slice())
-            .bind(i32::from(offline.after.stamina_minutes))
-            .execute(&mut **tx)
-            .await?;
+        sqlx::query(
+            "SELECT game_training_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)",
+        )
+        .bind(character)
+        .bind(request.occurrence.0.as_slice())
+        .bind(i32::from(offline.after.stamina_minutes))
+        .execute(&mut **tx)
+        .await?;
     }
     if request.pruned_stance.is_some() {
         let pruned = sqlx::query(
@@ -856,7 +887,7 @@ impl DurabilityRoot {
         formula: &dyn BuildFormula,
     ) -> Result<BuildCommitOutcome> {
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || !request.cause.admits_runtime_scope(fence.runtime_scope)
             || !request.cause.admits(&request.before, &request.after)
             || !normalized(formula, &request.after)
             || request.pruned_stance.as_deref().is_some_and(|stance| {
@@ -1141,8 +1172,7 @@ mod tests {
     fn s16c_vocation_trial_switches_between_vocations_and_back_but_never_to_none() {
         let seed = DurableBuildState::default();
         let knight = DurableBuildState::new("knight", (0, 0), [(10, 0); 7]).unwrap_or_default();
-        let sorcerer =
-            DurableBuildState::new("sorcerer", (0, 0), [(10, 0); 7]).unwrap_or_default();
+        let sorcerer = DurableBuildState::new("sorcerer", (0, 0), [(10, 0); 7]).unwrap_or_default();
         assert!(BuildCause::VocationTrial.admits(&seed, &knight));
         assert!(BuildCause::VocationTrial.admits(&knight, &sorcerer));
         assert!(BuildCause::VocationTrial.admits(&sorcerer, &knight));

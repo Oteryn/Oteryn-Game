@@ -1,7 +1,7 @@
 //! DEATH-DUR-1: idempotent one-item TRANSFER and necklace BURN under the Character item fence.
 //! The persisted receipt supplies the death cell. DEATH-3 owns selection and workflow ordering;
 //! these primitives neither select items nor change CharacterRevision or receipt constraints.
-//! The caller holds its Channel spell lane from before begin through commit (key-33 Ground).
+//! The caller holds its exact scope spell lane from before begin through commit (key-33 Ground).
 //! Contents retain their parent identity: no child is written or expanded into audit lines.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{assert_item_only_fence, numeric_u64, uuid_text};
@@ -22,6 +22,7 @@ use sqlx::{PgConnection, Row};
 const NECKLACE_SLOT: u8 = 7;
 
 pub mod audit;
+mod recovery;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerDeathDropCause {
@@ -88,6 +89,42 @@ fn plan(burn: bool, slot: u8, quantity: u32, depth: u8) -> Result<(u32, u32)> {
     Ok(if burn { (0, 2) } else { (quantity, 1) })
 }
 impl PlayerDeathItemRequest {
+    /// The original DEATH-3 operation identity and audit context, shared by live
+    /// dispatch and lost-owner recovery. Recovery never redraws a selected item.
+    pub fn selected(
+        death: &super::character_death::CommittedCharacterDeath,
+        item: [u8; 16],
+        burn: bool,
+    ) -> Result<Self> {
+        let items = death
+            .items
+            .as_ref()
+            .ok_or(PlayerDeathItemError::InvalidInput)?;
+        let selected = if burn {
+            items.amulet == Some(item)
+        } else {
+            items.lost.contains(&item)
+        };
+        if !selected {
+            return Err(PlayerDeathItemError::InvalidInput);
+        }
+        let request = Self {
+            transaction_id: selected_operation_id(
+                death.occurrence.as_bytes(),
+                item,
+                b"transaction",
+            ),
+            event_id: selected_operation_id(death.occurrence.as_bytes(), item, b"event"),
+            occurred_at_unix_ms: items.occurred_at,
+            content_revision: items.content_revision.clone(),
+            ruleset_revision: items.ruleset_revision.clone(),
+            sim_revision: items.simulation_revision.clone(),
+            server_build_id: "player-death-items-v1".into(),
+        };
+        request.validate(death.occurrence.as_bytes(), &item)?;
+        Ok(request)
+    }
+
     fn validate(&self, occurrence: &[u8; 16], item: &[u8; 16]) -> Result<()> {
         for id in [occurrence, item, &self.transaction_id, &self.event_id] {
             check_uuid_v7(id).map_err(|_| PlayerDeathItemError::InvalidInput)?;
@@ -135,6 +172,22 @@ impl PlayerDeathItemRequest {
         }
         hash.finalize().into()
     }
+}
+
+// Byte-identical to the original dispatch operation_id. Existing partial
+// workflows must retain their TransactionId/EventId when resumed elsewhere.
+fn selected_operation_id(occurrence: &[u8; 16], item: [u8; 16], purpose: &[u8]) -> [u8; 16] {
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.death.item_operation.v1");
+    hash.update(occurrence);
+    hash.update(item);
+    hash.update(purpose);
+    let digest = hash.finalize();
+    let mut id = *occurrence;
+    id[6..].copy_from_slice(&digest[..10]);
+    id[6] = (id[6] & 0x0f) | 0x70;
+    id[8] = (id[8] & 0x3f) | 0x80;
+    id
 }
 impl DurabilityRoot {
     pub async fn commit_player_death_drop(
@@ -285,16 +338,18 @@ async fn write(
         &cause.item_instance,
         character,
     );
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(PlayerDeathItemError::AuthorityRejected);
+    let world_id = fence.runtime_scope.world_id();
+    let (scope_kind, channel_id, instance_id) = match fence.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            (1_i16, Some(channel_id.as_bytes().to_vec()), None)
+        }
+        RuntimeScopeRefV1::Instance { instance_id, .. } => {
+            (2_i16, None, Some(instance_id.to_vec()))
+        }
     };
-    permit.check_channel(world_id, channel_id)?;
-    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_channel_id=encode($4,'hex')::uuid")
-        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
+    permit.check_scope(fence.runtime_scope)?;
+    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
+        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
     if death.try_get::<String, _>("content_revision")? != request.content_revision {
         return Err(PlayerDeathItemError::StaleState);
     }
@@ -355,7 +410,8 @@ async fn write(
     };
     let ground = mint::OneItemGroundV1 {
         world_id: world_id.as_bytes().to_vec(),
-        channel_id: channel_id.as_bytes().to_vec(),
+        channel_id: channel_id.clone().unwrap_or_default(),
+        instance_id: instance_id.clone(),
         spatial_position: death.try_get("death_spatial_position")?,
         corpse_ref: [
             super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
@@ -392,11 +448,17 @@ async fn write(
         session_generation: fence.connection_generation.get(),
         game_session_id: fence.game_session_id.as_bytes().to_vec(),
         lease_generation: fence.character_lease_generation,
+        instance_scope: instance_id
+            .as_ref()
+            .map(|id| audit::OneItemPlayerDeathInstanceV1 {
+                instance_id: id.clone(),
+                ownership_generation: fence.scope_ownership_generation.get(),
+            }),
     };
     let envelope = audit::encode(request, burn, event, tuple.tuple())
         .map_err(|_| PlayerDeathItemError::InvalidInput)?;
-    sqlx::query("INSERT INTO game_player_death_item_records(death_occurrence_id,item_instance_id,operation,transaction_id,event_id,character_id,world_id,channel_id,source_slot,source_parent,source_ordinal,source_placement,quantity_before,state_revision_before,equipment_revision_before,request_binding,occurred_at,envelope_sha256,scope_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid,$11::text::numeric,$12::uuid,$13,$14::text::numeric,$15::text::numeric,$16,$17,sha256($18),$19::text::numeric)")
-        .bind(cause.death_occurrence.as_slice()).bind(cause.item_instance.as_slice()).bind(if burn {2_i16} else {1_i16}).bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(i16::from(slot)).bind(parent.map(|v|v.to_vec())).bind(ordinal.map(|v|v.to_string())).bind(source.try_get::<String,_>("placement")?).bind(i64::from(quantity)).bind(revision.to_string()).bind(equipment_revision.as_ref()).bind(binding.as_slice()).bind(request.occurred_at_unix_ms).bind(envelope.as_slice()).bind(fence.scope_ownership_generation.get().to_string()).execute(&mut *connection).await?;
+    sqlx::query("INSERT INTO game_player_death_item_records(death_occurrence_id,item_instance_id,operation,transaction_id,event_id,character_id,world_id,channel_id,source_slot,source_parent,source_ordinal,source_placement,quantity_before,state_revision_before,equipment_revision_before,request_binding,occurred_at,envelope_sha256,scope_generation,scope_kind,instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid,$11::text::numeric,$12::uuid,$13,$14::text::numeric,$15::text::numeric,$16,$17,sha256($18),$19::text::numeric,$20,encode($21,'hex')::uuid)")
+        .bind(cause.death_occurrence.as_slice()).bind(cause.item_instance.as_slice()).bind(if burn {2_i16} else {1_i16}).bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_deref()).bind(i16::from(slot)).bind(parent.map(|v|v.to_vec())).bind(ordinal.map(|v|v.to_string())).bind(source.try_get::<String,_>("placement")?).bind(i64::from(quantity)).bind(revision.to_string()).bind(equipment_revision.as_ref()).bind(binding.as_slice()).bind(request.occurred_at_unix_ms).bind(envelope.as_slice()).bind(fence.scope_ownership_generation.get().to_string()).bind(scope_kind).bind(instance_id.as_deref()).execute(&mut *connection).await?;
     sqlx::query("UPDATE game_item_instances SET quantity=$2,lifecycle=$3,last_transaction_id=encode($4,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(cause.item_instance.as_slice()).bind(i64::from(after)).bind(i16::try_from(lifecycle).map_err(|_| PlayerDeathItemError::InvalidInput)?).bind(request.transaction_id.as_slice()).execute(&mut *connection).await?;
     sqlx::query(match slot { 0 => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid", 9 => "DELETE FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid", _ => "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid" })
@@ -406,8 +468,8 @@ async fn write(
             .bind(revision).bind(request.transaction_id.as_slice()).bind(character.as_slice()).execute(&mut *connection).await?;
     }
     if !burn {
-        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9)")
-            .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(ground.runtime_scope_ownership_generation.to_string()).bind(&ground.spatial_position).bind(&ground.corpse_ref).bind(&ground.map_revision).bind(&ground.content_revision).bind(&ground.native_room_placement_context).execute(&mut *connection).await?;
+        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,scope_kind,instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9,$10,encode($11,'hex')::uuid)")
+            .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_deref()).bind(ground.runtime_scope_ownership_generation.to_string()).bind(&ground.spatial_position).bind(&ground.corpse_ref).bind(&ground.map_revision).bind(&ground.content_revision).bind(&ground.native_room_placement_context).bind(scope_kind).bind(instance_id.as_deref()).execute(&mut *connection).await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(request.event_id.as_slice()).bind(request.transaction_id.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(cause.item_instance.as_slice()).bind(request.occurred_at_unix_ms).bind(mint::AUDIT_RETENTION_P90D_MS).bind(envelope).execute(&mut *connection).await?;

@@ -37,7 +37,8 @@ package oteryn.events.v1;
 // entry of a live corpse container; the corpse item itself is never a source.
 // The reward-claim MINT (operation tag 4, chest decisions §5.1, CHEST-1) mints
 // exactly one live item into a new direct entry of the equipped main backpack
-// for a `once` RewardClaim; it has no Ground and no creature-death source.
+// for a `once` RewardClaim or a W03 frozen personal entitlement. It has no Ground;
+// the additive boss source identifies the immutable death/chest ordinal explicitly.
 // The D3 corpse-loot MINT (D3-2, DUR-03 §39.4) is the same `mint` operation
 // with its destination carried in `corpse_container_entry` (field 5) instead of
 // the Ground `destination` (field 2): exactly one of the two is set, and the
@@ -175,13 +176,16 @@ message OneItemStateV1 {
 
 message OneItemGroundV1 {
   bytes world_id = 1;                      // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2;                    // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2;                    // Channel: UUIDv7; Instance: absent/empty
   bytes spatial_position = 3;              // <= 128 B
   bytes corpse_ref = 4;                    // <= 128 B; provenance, not location authority
   string map_revision = 5;                 // <= 512 B
   string content_revision = 6;             // <= 512 B
   bytes native_room_placement_context = 7; // <= 128 B
   uint64 runtime_scope_ownership_generation = 8; // non-zero
+  // W02 prerequisite: exact Instance custody. Exactly one of channel_id or this
+  // field is present. Legacy Channel fields and encodings remain unchanged.
+  optional bytes instance_id = 9;          // exactly 16-byte non-nil UUIDv7
 }
 
 message OneItemInventoryV1 {
@@ -304,6 +308,18 @@ message OneItemRewardClaimCauseV1 {
   string sim_revision = 8;     // <= 512 B
   OneItemCommandRefV1 command_ref = 9;
   OneItemTypedDefinitionRevisionV1 reward_claim = 10; // the claimed RewardClaim
+  // W03: exactly one of reward_claim and boss_reward; never an invented Content claim.
+  BossRewardClaimSourceV1 boss_reward = 11;
+}
+
+// Frozen personal entitlement of the existing op4 one-item custody mint.
+// The envelope supplies the exact current Channel or Instance collection scope.
+message BossRewardClaimSourceV1 {
+  bytes death = 1;             // exactly 16 non-nil bytes; durable boss death identity
+  uint32 item_ordinal = 2;     // 1..1000 in that Character's immutable chest
+  string boss_key = 3;         // admitted Content key, <= 512 B
+  uint64 lease_generation = 4; // current collecting Character lease, positive
+  uint64 scope_generation = 5; // current collecting scope generation, positive
 }
 
 // One fresh live item placed in a new direct entry of the main backpack; the
@@ -370,6 +386,15 @@ message OneItemGroundContainerEntryV1 {
 // retires to RETIRED, quantity 0, no location (after), from exactly one live
 // location. Touches 1 ItemInstance with 1 location line (DUR03-RL-01/-RL-06
 // defaults; no new resource row).
+// Exact completed activity; its history alone grants no current authority.
+// Existing Channel audits leave this cause absent.
+message OneItemActivityRetirementV1 {
+  bytes world_id = 1;
+  bytes instance_id = 2;
+  bytes handoff_id = 3;
+  uint64 ownership_generation = 4;
+  bytes item_instance_id = 5;
+}
 message OneItemDecayRetireV1 {
   OneItemStateV1 before = 1; // LIVE, quantity > 0
   OneItemStateV1 after = 2;  // RETIRED, quantity 0; same identity, World and definition
@@ -387,6 +412,7 @@ message OneItemDecayRetireV1 {
   // CorpseDecay bytes retain their original representation.
   OneItemWorldResetV1 world_reset = 7;
   OneItemGroundContainerEntryV1 ground_container_entry = 8;
+  OneItemActivityRetirementV1 activity_retirement = 9;
 }
 
 // Closed FeeBurnCause (decision §4.4): one variant per admitted fee source.
@@ -771,4 +797,12 @@ message OneItemPlayerDeathItemV1 {
   uint64 session_generation = 13;
   bytes game_session_id = 14;
   uint64 lease_generation = 15;
+  // Present exactly for Instance death drops/burns; absent for unchanged Channel events.
+  OneItemPlayerDeathInstanceV1 instance_scope = 16;
+}
+
+// A burn has no Ground line, so its Instance source still needs the exact scope.
+message OneItemPlayerDeathInstanceV1 {
+  bytes instance_id = 1;           // exactly 16-byte non-nil UUIDv7
+  uint64 ownership_generation = 2; // positive; matches Ground and envelope when present
 }

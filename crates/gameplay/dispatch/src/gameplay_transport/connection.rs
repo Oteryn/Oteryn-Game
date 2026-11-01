@@ -714,6 +714,12 @@ where
             {
                 return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
             }
+            // A real activity receipt/current owner supplies the exact scope;
+            // no House acknowledgement or unsolicited command result is used.
+            let activity_scope = authority
+                .activity_scope_snapshot(resumed)
+                .await
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
             let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
@@ -756,13 +762,14 @@ where
                 resumed.continuity.server_sequence += 1;
                 return Ok(resumed);
             }
-            if resumed.game_session_id != resume.game_session_id
-                || resumed.item_fence.is_some_and(|f| {
-                    matches!(
-                        f.runtime_scope,
-                        crate::foundation::RuntimeScopeRefV1::Instance { .. }
-                    )
-                })
+            if activity_scope.is_none()
+                && (resumed.game_session_id != resume.game_session_id
+                    || resumed.item_fence.is_some_and(|f| {
+                        matches!(
+                            f.runtime_scope,
+                            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                        )
+                    }))
             {
                 return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
             }
@@ -1038,12 +1045,25 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let (actor, session) = (admitted.runtime_actor, admitted.game_session_id);
     let end = serve_admitted_actor(stream, admitted, authority, policy).await;
+    let ended = match end {
+        ConnectionEnd::AdmittedThenClosed(current, _)
+        | ConnectionEnd::AdmittedThenDisconnected(current)
+        | ConnectionEnd::AdmittedThenControlLost(current)
+        | ConnectionEnd::AdmittedThenLoggedOut(current) => current,
+        _ => admitted,
+    };
+    let ended = authority.current_activity_connection(ended);
+    let (actor, session) = (ended.runtime_actor, ended.game_session_id);
     // CHASE-1 (`RANGED0-RL-03`): the ended connection drives no more chase, so its waiting
     // search leaves the Channel's ordering now rather than holding a place through the grace.
     if let Some(actor) = actor {
-        authority.yield_chase_to_client(actor, session).await;
+        let scoped = authority.resolve_native_scope(ended).await.ok().flatten();
+        scoped
+            .as_ref()
+            .unwrap_or(authority)
+            .yield_chase_to_client(actor, session)
+            .await;
     }
     end
 }

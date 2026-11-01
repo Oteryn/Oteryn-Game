@@ -29,6 +29,7 @@ struct SessionIngress {
     retained: Option<Vec<u8>>,
     result_sequence_floor: u64,
     active: bool,
+    activity_recovery: bool,
     pending_delivery: Option<PendingDelivery>,
     reconciled_sequence: Option<u64>,
 }
@@ -73,7 +74,47 @@ impl ProvenNativeReply {
 #[derive(Default)]
 pub struct SessionCommands(Mutex<HashMap<GameSessionId, Arc<Mutex<SessionIngress>>>>);
 
+/// Excludes an old socket's late stream-open while its unused activity
+/// destination is being adopted. The durable first-input marker remains the
+/// authority fence; this token never resets counters or retained results.
+pub(super) struct ActivityStreamReservation(Arc<Mutex<SessionIngress>>);
+impl Drop for ActivityStreamReservation {
+    fn drop(&mut self) {
+        if let Ok(mut state) = self.0.lock() {
+            state.activity_recovery = false;
+        }
+    }
+}
+
 impl SessionCommands {
+    pub(super) fn reserve_activity_recovery(
+        &self,
+        admitted: &AdmittedSession,
+    ) -> Option<ActivityStreamReservation> {
+        if admitted.continuity.next_command_id != 1 {
+            return None;
+        }
+        let commands = self.0.lock().ok()?;
+        // Absent owner state is not evidence of an unused command stream.
+        let entry = Arc::clone(commands.get(&admitted.game_session_id)?);
+        let mut state = entry.lock().ok()?;
+        if state.active
+            || state.activity_recovery
+            || state.ingress.outstanding() != 0
+            || state.ingress.next_command_id().map(CommandId::get) != Some(1)
+            || state.ingress.retained_count() != 0
+            || state.retained.is_some()
+            || state.pending_delivery.is_some()
+            || state.reconciled_sequence.is_some()
+            || state.result_sequence_floor != 0
+        {
+            return None;
+        }
+        state.activity_recovery = true;
+        drop(state);
+        Some(ActivityStreamReservation(entry))
+    }
+
     pub(super) fn admit(&self, session: GameSessionId) {
         if let Ok(mut commands) = self.0.lock() {
             commands.entry(session).or_default();
@@ -247,6 +288,7 @@ impl SessionCommands {
                 .is_some_and(|state| {
                     state.lock().is_ok_and(|state| {
                         !state.active
+                            && !state.activity_recovery
                             && state.ingress.outstanding() == 0
                             && state.ingress.next_command_id().map(CommandId::get)
                                 == Some(admitted.continuity.next_command_id)
@@ -299,7 +341,7 @@ impl SessionCommandStream {
             }
             let entry = Arc::clone(commands.entry(session).or_default());
             let mut state = entry.lock().ok()?;
-            if state.active || state.ingress.outstanding() != 0 {
+            if state.active || state.activity_recovery || state.ingress.outstanding() != 0 {
                 return None;
             }
             if state.ingress.next_command_id().map(CommandId::get) != Some(next)

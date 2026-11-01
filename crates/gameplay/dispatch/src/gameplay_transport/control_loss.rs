@@ -7,10 +7,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         wait: Duration,
         reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> ControlLossResult {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        let Some(actor) = admitted.runtime_actor else {
             return ControlLossResult::NotApplicable;
         };
+        let Some(controller) = admitted.controller else {
+            return self.recorded_activity_control_loss(admitted).await;
+        };
         tokio::time::sleep(wait).await;
+        let current = self.activity_runtimes.current_connection(admitted);
+        if current.game_session_id != admitted.game_session_id
+            || current.item_fence != admitted.item_fence
+        {
+            return ControlLossResult::Unknown;
+        }
         let result = match reset {
             Some(reset) => {
                 self.commit_loss_cause(
@@ -52,6 +61,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             lost.insert(admitted.game_session_id, admitted);
         }
         result
+    }
+
+    /// A server-owned return can carry an already recorded loss to a fresh
+    /// origin session. Reuse its exact durable epoch and native mark; this is
+    /// not a new loss observation and never invents a live transport.
+    async fn recorded_activity_control_loss(&self, admitted: AdmittedSession) -> ControlLossResult {
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
+            return ControlLossResult::NotApplicable;
+        };
+        if admitted.controller.is_some() || self.activity_runtimes.account_for(admitted).is_none() {
+            return ControlLossResult::NotApplicable;
+        }
+        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(admitted.game_session_id)
+            .await
+        else {
+            return ControlLossResult::Unknown;
+        };
+        if current.session_state() == GameSessionState::Terminal {
+            return ControlLossResult::Terminal;
+        }
+        if item_fence_of(current) != Some(fence)
+            || current.session_state() != GameSessionState::Reconnectable
+            || current.current_transport().is_some()
+        {
+            return ControlLossResult::NotApplicable;
+        }
+        let (Some(epoch), Some(deadline)) = (
+            current.current_control_loss_epoch(),
+            current.current_original_grace_deadline(),
+        ) else {
+            return ControlLossResult::Refused;
+        };
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.binding().runtime_scope() != fence.runtime_scope
+            || runtime.binding().scope_generation() != fence.scope_ownership_generation
+        {
+            return ControlLossResult::Refused;
+        }
+        let Ok(facts) = runtime.player_control_facts(actor, admitted.game_session_id) else {
+            return ControlLossResult::Unknown;
+        };
+        if facts.control_loss
+            != Some(ControlLossMark {
+                epoch: epoch.get(),
+                grace_deadline: deadline,
+            })
+        {
+            return ControlLossResult::Unknown;
+        }
+        drop(runtime);
+        let Ok(mut lost) = self.states.lost.lock() else {
+            return ControlLossResult::Unknown;
+        };
+        lost.insert(admitted.game_session_id, admitted);
+        ControlLossResult::Recorded
     }
 
     pub(super) async fn commit_control_loss(
@@ -117,9 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if session.session_state() != GameSessionState::Active
             || session.current_transport() != Some(controller.transport)
-            || (!owned_house
-                && session.current_runtime_scope()
-                    != RuntimeScopeRefV1::channel(self.world_id, self.channel_id))
+            || (!owned_house && session.current_runtime_scope() != actor.runtime_scope())
         {
             return ControlLossResult::NotApplicable;
         }
@@ -132,6 +196,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // session with proven missing or invalid history is released (`ResumedHistory`);
         // an unreadable history stays unknown so the listener retries.
         let (history, protection) = match session.current_control_loss_epoch() {
+            None if session.current_game_session_id() != session.commit().game_session_id() => {
+                match store.activity_loss_origin(game_session_id).await {
+                    Ok(Some(
+                        history @ ControlLossHistoryV1::ActivityOrigin {
+                            protection: retained,
+                            ..
+                        },
+                    )) => {
+                        // The handoff inherits the source entitlement and its
+                        // original deadline. Enter/return never rearms it.
+                        (history, retained)
+                    }
+                    Ok(_) | Err(crate::durability::DurabilityError::InvalidStoredState) => {
+                        return ControlLossResult::Refused;
+                    }
+                    Err(_) => return ControlLossResult::Unknown,
+                }
+            }
             None => (
                 ControlLossHistoryV1::FreshOrigin,
                 RecoveryProtectionContinuityV1 {
@@ -177,7 +259,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ControlLossResult::Refused
         };
         let next_epoch = match &history {
-            ControlLossHistoryV1::FreshOrigin => Some(1),
+            ControlLossHistoryV1::FreshOrigin | ControlLossHistoryV1::ActivityOrigin { .. } => {
+                Some(1)
+            }
             ControlLossHistoryV1::ScopeTransfer { entry_epoch, .. } => {
                 entry_epoch.get().checked_add(1)
             }

@@ -18,7 +18,7 @@ use {
         ChannelRuntimeV1, MovementPositionContext, PreparedCreatureProfileTransformation,
     },
     oteryn_gameplay_foundation::foundation::{
-        ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
+        ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
     },
 };
 
@@ -221,10 +221,8 @@ impl SevenSource {
         p: &ProfileAbilityProposal,
     ) -> Result<u64, AttackError> {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !f.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -387,7 +385,7 @@ impl TimeGuardianOwner {
         let b = r.binding();
         Ok(Self {
             timers: OwnerTimerLane::for_generation(
-                RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+                b.runtime_scope(),
                 b.scope_generation(),
                 [(
                     ReturnFamily,
@@ -525,10 +523,8 @@ impl TimeGuardianOwner {
         plan: PreparedTimeCast,
     ) -> Result<TimePhaseOutcome, AttackError> {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !f.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -609,10 +605,7 @@ impl TimeGuardianOwner {
         clock: &impl OwnerClock,
     ) -> Result<Vec<Result<DueTimeReturn, AttackError>>, AttackError> {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) {
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation()) {
             return Err(AttackError::StaleOwner);
         }
         let now = clock.now();
@@ -700,10 +693,8 @@ impl TimeGuardianOwner {
         plan: DueTimeReturn,
     ) -> Result<TimePhaseOutcome, AttackError> {
         let b = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !f.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }

@@ -1,7 +1,7 @@
 //! HOUSE-1b owner commands composed from the admitted actor and current Channel owner.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::{house_disposition::HouseDispositionError, house_scope_handoff::HouseId};
-use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_housing::house_move_out::HouseMoveOutCommand;
 use oteryn_protocol_oteryn::house_move_out as wire;
 
@@ -41,9 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
             || admitted.world_id != binding.world_id()
-            || admitted.channel_id != binding.channel_id()
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+            || Some(admitted.channel_id) != binding.channel_id()
+            || fence.runtime_scope != binding.runtime_scope()
             || fence.scope_ownership_generation != binding.scope_generation()
             || runtime.owner_fence().is_err()
             || !admitted.runtime_actor.is_some_and(|actor| {
@@ -112,7 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &permit,
                 self.character,
                 self.holder,
-                RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                binding.runtime_scope(),
                 binding.scope_generation().get(),
             )
             .await?;

@@ -693,7 +693,10 @@ fn environment_tick_on_qualified_pz_tile_respects_elements_and_records_lethal_da
 
     let (template, _, session) = super::tests::runtime_with_player(0xbd);
     let world = template.binding().world_id();
-    let channel = template.binding().channel_id();
+    // W02: preserve the existing Channel-only environment fixture.
+    let Some(channel) = template.binding().channel_id() else {
+        panic!("W02: pinned Channel fixture");
+    };
     let Ok(room) = crate::content::qualify_native_entry_room(world) else {
         panic!("qualified entry content");
     };

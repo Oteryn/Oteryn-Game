@@ -115,6 +115,135 @@ fn owning_loss_first_loss_preserves_claims_and_removes_only_exact_controller() -
 }
 
 #[test]
+fn activity_origin_loss_keeps_initial_anchor_and_distinct_scope_generation() -> TestResult {
+    let mut source = owner()?;
+    let initial = source.0.session.commit();
+    let id = |last: u8| {
+        let mut id = [0; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id[15] = last;
+        id
+    };
+    let current = GameSessionId::decode(&id(71)).map_err(|_| "activity session")?;
+    let admission = id(72);
+    let scope = RuntimeScopeRefV1::instance(initial.world_id(), id(73)).map_err(|_| "instance")?;
+    let transport = AuthenticatedTransportRefV1::decode(&[74; 16]).map_err(|_| "transport")?;
+    for generation in [1, 2] {
+        // The origin Channel has generation 3; the distinct new Instance has 1.
+        source.0.session = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            current,
+            initial,
+            GameSessionState::Active,
+            ConnectionGeneration::new(generation).map_err(|_| "generation")?,
+            Some(transport),
+            CharacterLease::new(
+                initial.character_id(),
+                initial.character_lease_generation() + 1,
+            )?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                initial.character_id(),
+                initial.world_id(),
+            )),
+            scope,
+            ScopeOwnershipGeneration::new(1).map_err(|_| "scope generation")?,
+        )
+        .map_err(|_| "activity snapshot")?;
+        source.0.source_authority = scope;
+        // Even an expired, already-used right remains used across scopes.
+        // No handoff or lost-ack reauthentication restarts its four seconds.
+        source.0.protection.usage = RecoveryProtectionUseV1::Activated {
+            entitlement_generation: 1,
+            activated_at: 90,
+            deadline: 94,
+        };
+        source.0.history = ControlLossHistoryV1::ActivityOrigin {
+            admission_id: admission,
+            protection: source.0.protection,
+        };
+        let auth = ControlLossAuthorizationV1::authorize(&source, current, 100)
+            .map_err(|_| "activity loss")?;
+        let effect = auth
+            .validate_final(&source, 100)
+            .map_err(|_| "activity final")?;
+        assert_eq!(effect.successor().current_game_session_id(), current);
+        assert_eq!(effect.successor().commit(), initial);
+        assert_eq!(effect.successor().current_runtime_scope(), scope);
+        assert_eq!(effect.successor().current_scope_generation().get(), 1);
+        assert_eq!(
+            effect.successor().current_connection_generation().get(),
+            generation
+        );
+        assert_eq!(
+            effect.successor().session_state(),
+            GameSessionState::Reconnectable
+        );
+        assert!(effect.successor().current_transport().is_none());
+        assert_eq!(
+            effect.operation().observation.protection,
+            source.0.protection
+        );
+        assert_eq!(
+            source
+                .0
+                .protection
+                .after_complete_reconnect(100)
+                .map_err(|_| "retained protection")?,
+            source.0.protection
+        );
+        assert!(
+            ControlLossAuthorizationV1::authorize(&source, initial.game_session_id(), 100).is_err()
+        );
+        let mut wrong = source.clone();
+        wrong.0.history = ControlLossHistoryV1::FreshOrigin;
+        assert!(
+            ControlLossAuthorizationV1::authorize(&wrong, current, 100).is_err(),
+            "activity must not impersonate the original fresh transport"
+        );
+        wrong.0.history = ControlLossHistoryV1::ActivityOrigin {
+            admission_id: [0; 16],
+            protection: source.0.protection,
+        };
+        assert!(ControlLossAuthorizationV1::authorize(&wrong, current, 100).is_err());
+        wrong = source.clone();
+        wrong.0.protection.usage = RecoveryProtectionUseV1::Unused {
+            entitlement_generation: 1,
+        };
+        assert!(
+            ControlLossAuthorizationV1::authorize(&wrong, current, 100).is_err(),
+            "scope handoff must not renew a consumed protection right"
+        );
+        wrong = source.clone();
+        wrong.0.loss_epoch = ControlLossEpochRefV1::new(2).map_err(|_| "epoch")?;
+        wrong.0.decision_identity = wrong.0.loss_epoch;
+        wrong.0.accepted_decision_identity = wrong.0.loss_epoch;
+        assert!(ControlLossAuthorizationV1::authorize(&wrong, current, 100).is_err());
+    }
+    assert!(
+        GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            current,
+            initial,
+            GameSessionState::Active,
+            ConnectionGeneration::new(1).map_err(|_| "generation")?,
+            Some(transport),
+            CharacterLease::new(
+                initial.character_id(),
+                initial.character_lease_generation() + 1
+            )?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                initial.character_id(),
+                initial.world_id()
+            )),
+            RuntimeScopeRefV1::channel(initial.world_id(), initial.channel_id()),
+            ScopeOwnershipGeneration::new(2).map_err(|_| "scope generation")?,
+        )
+        .is_err(),
+        "the original Channel still rejects a lower generation"
+    );
+    Ok(())
+}
+
+#[test]
 fn owning_loss_non_authoritative_causes_never_start_epoch() -> TestResult {
     for cause in [
         ControlLossCauseV1::HealthyController,

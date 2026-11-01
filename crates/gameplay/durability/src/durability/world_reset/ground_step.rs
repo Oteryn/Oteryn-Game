@@ -10,7 +10,7 @@ pub(super) async fn next(
     // House custody survives a map reset.  The house tile catalogue is the durable
     // authority here; relying on the retiring map's in-memory facts would make a
     // restart capable of deleting property before the replacement map is loaded.
-    let row = sqlx::query("SELECT g.item_instance_id::text,g.channel_id::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND NOT EXISTS(SELECT 1 FROM game_house_tiles h WHERE h.world_id=g.world_id AND h.spatial_position=g.spatial_position) ORDER BY g.channel_id,g.item_instance_id LIMIT 1")
+    let row = sqlx::query("SELECT g.item_instance_id::text,g.channel_id::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=1 AND i.lifecycle=1 AND NOT EXISTS(SELECT 1 FROM game_house_tiles h WHERE h.world_id=g.world_id AND h.spatial_position=g.spatial_position) ORDER BY g.channel_id,g.item_instance_id LIMIT 1")
         .bind(reset.world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(None);
@@ -56,6 +56,6 @@ pub(in crate::durability) async fn is_death_container(
     tx: &mut Transaction<'_, Postgres>,
     root: [u8; 16],
 ) -> Result<bool> {
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_player_death_item_records r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.item_instance_id=encode($1,'hex')::uuid AND r.operation=1 AND r.source_slot=9 AND g.world_id=r.world_id AND g.channel_id=r.channel_id AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id))")
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_player_death_item_records r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.item_instance_id=encode($1,'hex')::uuid AND r.operation=1 AND r.source_slot=9 AND g.world_id=r.world_id AND (g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM (r.scope_kind,r.channel_id,r.instance_id) AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id))")
         .bind(root.as_slice()).fetch_one(&mut **tx).await?)
 }

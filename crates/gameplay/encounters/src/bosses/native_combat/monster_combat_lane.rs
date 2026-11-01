@@ -431,13 +431,7 @@ impl MonsterCombatLane {
         due: SemanticTimeMicros,
     ) -> Result<ThinkOccurrence, CombatLaneError> {
         let binding = runtime.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                binding.world_id(),
-                binding.channel_id(),
-            ),
-            binding.scope_generation(),
-        ) {
+        if !current.is_current_for_scope(binding.runtime_scope(), binding.scope_generation()) {
             return Err(CombatLaneError::Cycle(CycleError::StaleOwner));
         }
         if creature.family != ProjectV2Family::Creature {
@@ -1450,13 +1444,8 @@ fn commit_summon_follow(
     facts: SummonFollowFacts<'_>,
 ) -> Result<Option<oteryn_gameplay_entities::NativeSummonMovementOutcome>, SummonFollowError> {
     let b = runtime.binding();
-    if !fence.is_current_for_scope(
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-            b.world_id(),
-            b.channel_id(),
-        ),
-        b.scope_generation(),
-    ) || !fence.accepts_stamp(stamp)
+    if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+        || !fence.accepts_stamp(stamp)
     {
         return Err(SummonFollowError::StaleOwner);
     }
@@ -1678,13 +1667,8 @@ impl MonsterCombatLane {
         let mut receipts = Vec::new();
         for (actor, creature, due, stamp) in pending {
             let b = runtime.binding();
-            let current_job = current.is_current_for_scope(
-                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                    b.world_id(),
-                    b.channel_id(),
-                ),
-                b.scope_generation(),
-            ) && current.accepts_stamp(stamp);
+            let current_job = current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+                && current.accepts_stamp(stamp);
             let result = if !current_job {
                 Err(CombatLaneError::Cycle(CycleError::StaleOwner))
             } else if self.actors.iter().any(|a| {
@@ -2045,11 +2029,8 @@ mod bone_map_admission_actual_tests {
     use super::*;
     use crate::content::*;
     use crate::world_runtime::{ReferenceContentGeneration, ScopeContentGenerationFence};
+    use oteryn_gameplay_entities::MovementLocalPosition;
     use std::collections::BTreeMap;
-    use {
-        oteryn_gameplay_entities::MovementLocalPosition,
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1,
-    };
     #[test]
     #[ignore = "Retained actual native eleven-document source capture; isolated PROJECT positions, not donor map admission"]
     fn actual_source_map_association_admits_native_shared_hp_and_phase() {
@@ -2162,7 +2143,7 @@ mod bone_map_admission_actual_tests {
             });
         }
         let b = runtime.binding();
-        let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        let scope = b.runtime_scope();
         let generation = b.scope_generation();
         let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5475: qualified fixture operation must succeed");
         let map_fence = ScopeContentGenerationFence::for_test(
@@ -2412,13 +2393,8 @@ fn commit_native_defense_condition(
 ) -> Result<bool, DefenseError> {
     use native_conditions::NativeConditionError;
     let b = runtime.binding();
-    if !current.is_current_for_scope(
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-            b.world_id(),
-            b.channel_id(),
-        ),
-        b.scope_generation(),
-    ) || !current.accepts_stamp(stamp)
+    if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+        || !current.accepts_stamp(stamp)
     {
         return Err(DefenseError::NativeCondition(
             NativeConditionError::StaleOwner,
@@ -2544,13 +2520,8 @@ fn commit_paced_summon_follow(
     now: SemanticTimeMicros,
 ) -> Result<Option<oteryn_gameplay_entities::NativeSummonMovementOutcome>, SummonFollowError> {
     let b = runtime.binding();
-    if !fence.is_current_for_scope(
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-            b.world_id(),
-            b.channel_id(),
-        ),
-        b.scope_generation(),
-    ) || !fence.accepts_stamp(stamp)
+    if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+        || !fence.accepts_stamp(stamp)
     {
         return Err(SummonFollowError::StaleOwner);
     }
@@ -2915,10 +2886,7 @@ mod project_native_registration_membership_tests {
         );
         let b = runtime.binding();
         let (mut fence, _) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
+            b.runtime_scope(),
             b.scope_generation(),
         )
         .unwrap();

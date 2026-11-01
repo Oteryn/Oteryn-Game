@@ -151,10 +151,9 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
-    pub fn encounter_owner_scope(&self) -> (WorldId, ChannelId, ScopeOwnershipGeneration) {
+    pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
-            self.binding.world_id,
-            self.binding.channel_id,
+            self.binding.runtime_scope,
             self.continuity.current_generation,
         )
     }
@@ -418,12 +417,10 @@ impl ChannelRuntimeV1 {
         &mut self,
         generation: ScopeOwnershipGeneration,
     ) -> Result<(), CarrierError> {
-        self.continuity
-            .advance(PreProductionContinuityGrant::fixture(
-                self.binding.world_id,
-                self.binding.channel_id,
-                generation,
-            ))
+        self.continuity.advance(PreProductionContinuityGrant {
+            runtime_scope: self.binding.runtime_scope,
+            scope_generation: generation,
+        })
     }
 }
 

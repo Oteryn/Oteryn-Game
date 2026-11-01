@@ -50,9 +50,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::character_revision_sequencer::RevisionSlot;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
 use crate::gameplay_transport::actor_spell::TrainingSave;
 use crate::gameplay_transport::chat_intent::ChatRuntime;
 use crate::gameplay_transport::npc_command::NpcTalkOutcome;
@@ -144,8 +142,7 @@ fn current_npc_owner(
 ) -> bool {
     let binding = runtime.binding();
     if fence.game_session_id != session
-        || fence.runtime_scope
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || fence.runtime_scope != binding.runtime_scope()
         || fence.scope_ownership_generation != binding.scope_generation()
     {
         return false;

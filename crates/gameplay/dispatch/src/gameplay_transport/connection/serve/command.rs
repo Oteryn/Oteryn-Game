@@ -125,7 +125,10 @@ where
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
+    if input_permit.is_some()
+        && (!authority.house_transfer_input(session.admitted).await
+            || !authority.activity_transfer_input(session.admitted).await)
+    {
         return Err(ServeEnd::Disconnected);
     }
 

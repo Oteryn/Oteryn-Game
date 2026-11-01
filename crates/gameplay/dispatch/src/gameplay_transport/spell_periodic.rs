@@ -7,9 +7,7 @@ use crate::content::{ReferenceItemField, ReferenceItemType};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_item_transaction::StandingTileRead;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
 use oteryn_gameplay_domain::domain::condition::DotElement;
 use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 use oteryn_gameplay_foundation::foundation::condition::TickFacts;
@@ -215,11 +213,7 @@ impl ChannelSpellStates {
         read: &StandingTileRead,
     ) -> Option<(u64, ActorVitals)> {
         if read.fence().game_session_id != session
-            || read.fence().runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || read.fence().runtime_scope != runtime.binding().runtime_scope()
             || read.fence().scope_ownership_generation != runtime.binding().scope_generation()
             || read.content_digest() != runtime.content_pin().server_artifact_digest()
             || !runtime

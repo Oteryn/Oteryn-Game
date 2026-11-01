@@ -23,7 +23,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceItemTarget};
 use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::character_equipment::{self, EquipmentMoveContent};
-use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
 
 #[path = "equipment_effects_owner.rs"]
@@ -195,11 +195,7 @@ pub(super) async fn read_current_equipment(
     let fence = super::item_fence_of(current)?;
     let digest = {
         let runtime = admission.runtime.lock().await;
-        if fence.runtime_scope
-            != RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        if fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return None;
