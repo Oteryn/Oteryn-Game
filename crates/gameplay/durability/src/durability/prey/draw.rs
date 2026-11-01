@@ -2,19 +2,43 @@ use super::super::DurabilityError;
 use oteryn_gameplay_content::content::{
     ProjectV2AuthoringProfileData, native_gameplay::NativeGameplayState,
 };
-use oteryn_gameplay_progression::prey::{BonusType, PreyBonus};
+use oteryn_gameplay_progression::prey::{BonusType, PreyBonus, PreyRules};
 use sha2::{Digest, Sha256};
 
 /// The active generation's eligible native creatures, in canonical key order.
 #[derive(Debug, Clone)]
 pub struct PreyCatalogue {
     pub(super) creatures: Vec<(String, u8, bool)>,
+    pub(super) rules: PreyRules,
     /// Creatures whose loot table exceeds the PREY-0 R4 budget (`PREY0-RL-16`, 7 entries).
     pub(super) unsupported_loot: std::collections::BTreeSet<String>,
 }
 impl TryFrom<&NativeGameplayState> for PreyCatalogue {
     type Error = DurabilityError;
     fn try_from(native: &NativeGameplayState) -> Result<Self, Self::Error> {
+        let rules = serde_json::from_value(
+            native
+                .creature_profiles()
+                .prey_rules
+                .clone()
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+        Self::with_rules(native, rules)
+    }
+}
+impl PreyCatalogue {
+    pub fn rules(&self) -> &PreyRules {
+        &self.rules
+    }
+
+    pub fn with_rules(
+        native: &NativeGameplayState,
+        rules: PreyRules,
+    ) -> Result<Self, DurabilityError> {
+        rules
+            .validate()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let mut creatures = Vec::new();
         for record in &native.creature_profiles().records {
             let ProjectV2AuthoringProfileData::Creature(value) = &record.profile.data else {
@@ -32,26 +56,19 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
             {
                 continue;
             }
-            let stars = details
-                .bestiary
-                .as_ref()
-                .and_then(|b| b.stars)
-                .unwrap_or_else(
-                    || match value.bestiary.as_ref().map(|b| b.difficulty.as_str()) {
-                        Some("trivial") => 1,
-                        Some("easy") => 2,
-                        Some("medium") => 3,
-                        _ => 4,
-                    },
-                );
+            let tier = rules
+                .creatures
+                .get(&record.profile.target.key)
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .tier;
             creatures.push((
                 record.profile.target.key.clone(),
-                stars.clamp(1, 4),
+                tier,
                 details.system_eligibility.exclusive_prey,
             ));
         }
         creatures.sort_by(|a, b| a.0.cmp(&b.0));
-        if creatures.iter().filter(|c| !c.2).count() < 27 {
+        if creatures.iter().filter(|c| !c.2).count() < rules.list_size(false) * 3 {
             return Err(DurabilityError::InvalidStoredState);
         }
         // A creature without a settleable loot row rolls no loot, so it is an empty table
@@ -69,6 +86,7 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
             .map(|c| c.0.clone())
             .collect();
         Ok(Self {
+            rules,
             creatures,
             unsupported_loot,
         })
@@ -103,17 +121,18 @@ impl Draw {
     pub(super) fn list(
         &mut self,
         catalogue: &PreyCatalogue,
-        level: u32,
+        tier: u8,
+        size: usize,
         blacklist: &[String],
     ) -> Result<Vec<String>, DurabilityError> {
-        let quotas = match level {
-            0..=99 => [3, 3, 2, 1],
-            100..=299 => [1, 3, 3, 2],
-            300..=499 => [1, 2, 3, 3],
-            _ => [1, 1, 3, 4],
-        };
-        // A listed creature must be selectable: oversized loot tables are refused on Select,
-        // so they are never offered (interim guard until `PREY_LOOT_TABLE_TOO_LARGE`).
+        if !(1..=5).contains(&tier)
+            || size == 0
+            || size > oteryn_gameplay_progression::prey::difficulty::MAX_LIST_SIZE
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        // OWNER-DEVIATION PREY-DIFF: chosen tier replaces Bestiary-star quotas.
+        // Offered-today keys and all other slots are added by the durable caller.
         let mut pool: Vec<_> = catalogue
             .creatures
             .iter()
@@ -121,24 +140,23 @@ impl Draw {
                 !c.2 && !blacklist.contains(&c.0) && !catalogue.unsupported_loot.contains(&c.0)
             })
             .collect();
-        let mut out = Vec::new();
-        for (band, count) in quotas.into_iter().enumerate() {
-            for _ in 0..count {
-                // Accepted PREY-0 fallback: next band down, then up, bounded by the pool.
-                let order = (1..=band + 1).rev().chain(band + 2..=4);
-                let candidates = order
-                    .map(|b| {
-                        pool.iter()
-                            .enumerate()
-                            .filter(|(_, c)| usize::from(c.1) == b)
-                            .map(|(i, _)| i)
-                            .collect::<Vec<_>>()
-                    })
-                    .find(|c| !c.is_empty())
-                    .ok_or(DurabilityError::InvalidStoredState)?;
-                let index = candidates[self.below(candidates.len())];
-                out.push(pool.remove(index).0.clone());
-            }
+        let mut out = Vec::with_capacity(size.min(pool.len()));
+        for _ in 0..size.min(pool.len()) {
+            // Keep the PREY-0 fallback: nearest tier down, then up.
+            let candidates = (1..=tier)
+                .rev()
+                .chain(tier + 1..=5)
+                .map(|band| {
+                    pool.iter()
+                        .enumerate()
+                        .filter(|(_, c)| c.1 == band)
+                        .map(|(index, _)| index)
+                        .collect::<Vec<_>>()
+                })
+                .find(|c| !c.is_empty())
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let index = candidates[self.below(candidates.len())];
+            out.push(pool.remove(index).0.clone());
         }
         Ok(out)
     }
@@ -173,6 +191,55 @@ impl Draw {
 mod tests {
     use super::*;
 
+    fn fixture_rules() -> PreyRules {
+        PreyRules {
+            schema_version: 1,
+            list_size: 9,
+            expanded_list_size: 12,
+            minimum_levels: [1, 50, 100, 300, 600],
+            pick_again_list_multiplier_ppm: 2_000_000,
+            pick_again_value_factor_ppm: 300_000,
+            defense_mode: oteryn_gameplay_progression::prey::PreyDefenseMode::DealtOrAttacked,
+            creatures: Default::default(),
+            npc_sell_prices: Default::default(),
+        }
+    }
+
+    #[test]
+    fn prey_draw_falls_down_then_up_and_never_repeats_offered_creatures()
+    -> Result<(), DurabilityError> {
+        let catalogue = PreyCatalogue {
+            rules: fixture_rules(),
+            unsupported_loot: Default::default(),
+            creatures: (1..=5)
+                .flat_map(|tier| {
+                    (0..3).map(move |n| (format!("oteryn:creature.b{tier}_{n}"), tier, false))
+                })
+                .collect(),
+        };
+        let list = Draw::new(&[7; 32], &[3; 16], b"list").list(&catalogue, 3, 12, &[])?;
+        for (chunk, tier) in list.chunks(3).zip([3, 2, 1, 4]) {
+            assert!(
+                chunk
+                    .iter()
+                    .all(|key| key.starts_with(&format!("oteryn:creature.b{tier}_")))
+            );
+        }
+        let rest = Draw::new(&[7; 32], &[4; 16], b"list").list(&catalogue, 3, 12, &list)?;
+        assert_eq!(rest.len(), 3);
+        assert!(
+            rest.iter()
+                .all(|key| key.starts_with("oteryn:creature.b5_"))
+        );
+        let offered: Vec<_> = list.into_iter().chain(rest).collect();
+        assert!(
+            Draw::new(&[7; 32], &[5; 16], b"list")
+                .list(&catalogue, 3, 12, &offered)?
+                .is_empty()
+        );
+        Ok(())
+    }
+
     #[test]
     fn prey_catalogue_draws_only_wire_encodable_native_creatures()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -197,11 +264,16 @@ mod tests {
         let creatures = Draw::new(&secret, &5_u128.to_be_bytes(), b"oteryn.prey.list.v1").list(
             &catalogue,
             1,
+            9,
             &[],
         )?;
         let reply = wire::Reply {
             status: 0,
             wildcard_balance: 0,
+            list_size: 9,
+            expansion_owned: false,
+            offered_today: vec![],
+            offered_next: String::new(),
             slots: vec![wire::Slot {
                 slot: 1,
                 state: 1,
@@ -213,6 +285,9 @@ mod tests {
                 hunting_seconds: 0,
                 option: 0,
                 free_reroll_at: 0,
+                chosen_tier: 1,
+                allowed_tier: 1,
+                selection_epoch: 0,
             }],
         };
         assert!(
@@ -242,38 +317,34 @@ mod tests {
     #[test]
     fn prey_draw_is_receipt_stable_unique_and_respects_bands() -> Result<(), DurabilityError> {
         let catalogue = PreyCatalogue {
+            rules: fixture_rules(),
             unsupported_loot: Default::default(),
-            creatures: (1..=4)
+            creatures: (1..=5)
                 .flat_map(|stars| {
                     (0..20).map(move |n| (format!("oteryn:creature.b{stars}_{n}"), stars, false))
                 })
                 .collect(),
         };
-        for (level, expected) in [
-            (99, [3, 3, 2, 1]),
-            (100, [1, 3, 3, 2]),
-            (300, [1, 2, 3, 3]),
-            (500, [1, 1, 3, 4]),
-        ] {
-            let list = Draw::new(&[7; 32], &[3; 16], b"list").list(&catalogue, level, &[])?;
+        // OWNER-DEVIATION PREY-DIFF, 2026-11-01: all entries use the chosen tier.
+        for tier in 1..=5 {
+            let list = Draw::new(&[7; 32], &[3; 16], b"list").list(&catalogue, tier, 9, &[])?;
             assert_eq!(
                 list,
-                Draw::new(&[7; 32], &[3; 16], b"list").list(&catalogue, level, &[])?
+                Draw::new(&[7; 32], &[3; 16], b"list").list(&catalogue, tier, 9, &[])?
             );
             assert_eq!(
                 list.iter().collect::<std::collections::BTreeSet<_>>().len(),
                 9
             );
-            for (i, n) in expected.into_iter().enumerate() {
-                assert_eq!(
-                    list.iter()
-                        .filter(|key| key.starts_with(&format!("oteryn:creature.b{}_", i + 1)))
-                        .count(),
-                    n
-                );
-            }
-            let next = Draw::new(&[7; 32], &[4; 16], b"list").list(&catalogue, level, &list)?;
+            assert!(
+                list.iter()
+                    .all(|key| key.starts_with(&format!("oteryn:creature.b{tier}_")))
+            );
+            let next = Draw::new(&[7; 32], &[4; 16], b"list").list(&catalogue, tier, 9, &list)?;
             assert!(next.iter().all(|key| !list.contains(key)));
+            let expanded =
+                Draw::new(&[7; 32], &[5; 16], b"list").list(&catalogue, tier, 12, &[])?;
+            assert_eq!(expanded.len(), 12);
         }
         Ok(())
     }
@@ -285,6 +356,7 @@ mod tests {
             })
             .collect();
         let catalogue = PreyCatalogue {
+            rules: fixture_rules(),
             unsupported_loot: creatures
                 .iter()
                 .filter(|c| c.0.ends_with("_0"))
@@ -293,7 +365,7 @@ mod tests {
             creatures,
         };
         for n in 0..50_u8 {
-            let list = Draw::new(&[7; 32], &[n; 16], b"list").list(&catalogue, 1, &[])?;
+            let list = Draw::new(&[7; 32], &[n; 16], b"list").list(&catalogue, 1, 9, &[])?;
             assert_eq!(list.len(), 9);
             assert!(
                 list.iter()

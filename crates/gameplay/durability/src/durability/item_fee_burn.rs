@@ -68,6 +68,10 @@ pub enum FeeBurnCause {
     TaskBoardTalisman {
         occurrence: [u8; 16],
     },
+    PreyPickAgain {
+        slot: u8,
+        occurrence: [u8; 16],
+    },
     Forge {
         occurrence: [u8; 16],
         proof: Vec<u8>,
