@@ -542,7 +542,7 @@ async fn framed_target(
     let admitted = AdmittedSession {
         game_session_id: session,
         world_id: binding.world_id(),
-        channel_id: binding.channel_id(),
+        channel_id: binding.channel_id().expect("W02: pinned Channel fixture"),
         runtime_actor: Some(actor),
         first_entry: FirstEntryOutcome::Positioned,
         controller: None,

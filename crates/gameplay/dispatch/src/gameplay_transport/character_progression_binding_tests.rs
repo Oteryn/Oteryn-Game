@@ -97,7 +97,7 @@ fn the_death_request_is_formed_from_the_session_binding() {
     };
     let request = player_death_request(
         &binding,
-        (world, channel),
+        crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         [0x01; 32],
         actor_spell::PlayerDeath { occurrence, cell },
         cell,

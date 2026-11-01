@@ -104,11 +104,7 @@ pub(super) async fn append_creations(
         || prepared.batch.current_lease_generation != caster.lease_generation
         || request.catalog_digest != caster.content_digest
         || caster.content_digest != content.source_digest()
-        || authority.runtime_scope()
-            != crate::foundation::RuntimeScopeRefV1::channel(
-                binding.world_id(),
-                binding.channel_id(),
-            )
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.scope_generation() != binding.scope_generation().get()
         || !request.caster_origin.as_ref().is_some_and(|origin| {
             origin.actor == caster.actor

@@ -127,7 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if runtime.binding().world_id() != self.world_id
-                || runtime.binding().channel_id() != self.channel_id
+                || runtime.binding().channel_id() != Some(self.channel_id)
                 || pinned_index(&runtime, self.active_generation).is_none()
                 || !runtime
                     .player_control_facts(actor, command.game_session_id)
@@ -280,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().world_id() != self.world_id
-                || runtime.binding().channel_id() != self.channel_id
+                || runtime.binding().channel_id() != Some(self.channel_id)
             {
                 return;
             }
@@ -288,8 +288,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             CorpseDecayFence {
-                world_id: self.world_id,
-                channel_id: self.channel_id,
+                runtime_scope: runtime.binding().runtime_scope(),
                 scope_ownership_generation: owner.generation(),
             }
         };

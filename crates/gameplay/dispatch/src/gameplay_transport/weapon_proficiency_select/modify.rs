@@ -323,11 +323,7 @@ pub(in crate::gameplay_transport) async fn execute(
         let mut runtime = owner.runtime.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
-            || fence.runtime_scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return None;

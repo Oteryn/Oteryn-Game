@@ -46,6 +46,11 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+#[path = "boss_reward_contribution.rs"]
+mod boss_reward_contribution;
+#[path = "boss_reward_settlement.rs"]
+mod boss_reward_settlement;
+
 #[cfg(test)]
 #[allow(
     clippy::expect_used,
@@ -104,6 +109,10 @@ pub struct PendingKillSettlement {
     pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
     /// Keep the completing death's loot bonus across partial settlement retries.
     talisman: Arc<OnceLock<crate::durability::bestiary_progress::CapturedBountyTalismanKill>>,
+    /// W03: complete contribution census and original loot pin captured on the lethal turn.
+    pub(super) boss_reward: Option<boss_reward_contribution::FrozenBossDeath>,
+    /// Nonreward Instance death metadata captured before releasing the lethal turn.
+    pub(super) activity_death: Option<CapturedActivityDeath>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -112,6 +121,14 @@ pub struct PendingKillSettlement {
 pub(super) struct TaskBoardKillRecipient {
     pub fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     pub occurrence: [u8; 16],
+}
+
+/// A native death's authored creature identity and first observed wall clock.
+/// The existing kill queue retains this beside the sealed death occurrence.
+#[derive(Debug, Clone)]
+pub(super) struct CapturedActivityDeath {
+    pub(super) creature: String,
+    pub(super) died_at_unix_ms: i64,
 }
 
 impl PendingKillSettlement {
@@ -144,6 +161,8 @@ impl PendingKillSettlement {
             callback_loot: Vec::new(),
             task_board_recipients: Arc::default(),
             talisman: Arc::default(),
+            boss_reward: None,
+            activity_death: None,
             no_progression_logged: false,
         }
     }
@@ -198,11 +217,15 @@ struct ReleasingMark {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    boss_contributions: boss_reward_contribution::BossContributions,
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
     proficiency_deaths: Vec<FrozenProficiencyDeath>,
     /// One frozen contribution per retained exact corpse projection; pruned on each death.
     prey_loot: Vec<(ExactActorRef, u8)>,
+    /// At most one clock per bounded native corpse projection, including settled
+    /// deaths whose original command may still replay. Pruned on every capture.
+    activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
     queued: VecDeque<PendingKillSettlement>,
     /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
     accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
@@ -394,6 +417,17 @@ impl KillSettlementQueue {
         self.state().entries() != 0
     }
 
+    /// The owner may retire only after queued deaths, executing settlements and
+    /// retained actor-end release holds have all completed. Historical death
+    /// memos do not represent pending work.
+    pub(super) fn activity_retirement_drained(&self) -> bool {
+        let state = self.state();
+        state.queued.is_empty()
+            && state.in_flight.is_empty()
+            && state.releasing.is_empty()
+            && state.reserved_loot_mints == 0
+    }
+
     /// Actor-end saves drain deaths to which this session contributed, including another
     /// principal's queue. An in-flight settle must finish before the contributor can save.
     pub(super) fn proficiency_principals(&self, session: GameSessionId) -> Vec<GameSessionId> {
@@ -409,6 +443,12 @@ impl KillSettlementQueue {
             )
             .filter(|entry| {
                 entry.facts.principal.session == session
+                    || entry.boss_reward.as_ref().is_some_and(|reward| {
+                        reward
+                            .participants
+                            .iter()
+                            .any(|participant| participant.session == session)
+                    })
                     || entry
                         .damage_shares
                         .iter()
@@ -419,6 +459,7 @@ impl KillSettlementQueue {
         for (_, principal, target, contributors) in &state.in_flight {
             if principal.0 == session
                 || contributors.contains(&session)
+                || state.boss_contributions.involves(*target, session)
                 || state.proficiency_deaths.iter().any(|death| {
                     death.target == *target
                         && death
@@ -435,6 +476,7 @@ impl KillSettlementQueue {
 
     pub(super) fn prune_proficiency(&self, runtime: &ChannelRuntimeV1) {
         let mut state = self.state();
+        state.boss_contributions.prune(runtime);
         state.proficiency_weapons.retain(|(actor, session, _, _)| {
             runtime.player_control_facts(*actor, *session).is_ok()
         });
@@ -566,6 +608,39 @@ impl KillSettlementQueue {
         }
         state.prey_loot.push((target, percent));
         percent
+    }
+
+    fn freeze_activity_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        creature: &str,
+    ) -> Option<CapturedActivityDeath> {
+        let mut state = self.state();
+        state
+            .activity_deaths
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if !runtime.retains_corpse_projection(target) {
+            return None;
+        }
+        if let Some((_, frozen)) = state
+            .activity_deaths
+            .iter()
+            .find(|(actor, _)| *actor == target)
+        {
+            return (frozen.creature == creature).then(|| frozen.clone());
+        }
+        let died_at_unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .and_then(|at| i64::try_from(at.as_millis()).ok())?;
+        let frozen = CapturedActivityDeath {
+            creature: creature.to_owned(),
+            died_at_unix_ms,
+        };
+        state.activity_deaths.try_reserve(1).ok()?;
+        state.activity_deaths.push((target, frozen.clone()));
+        Some(frozen)
     }
 
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
@@ -1033,6 +1108,11 @@ pub fn record_creature_kill(
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
+    let personal_rewards = snapshot.as_ref().is_ok_and(|view| {
+        view.state.master.is_none()
+            && !view.state.policy.is_familiar
+            && view.state.policy.reward_boss == Some(true)
+    });
     let forge_kind = snapshot
         .as_ref()
         .ok()
@@ -1055,14 +1135,29 @@ pub fn record_creature_kill(
     };
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
-    let mut owner = runtime.borrow_combat_death();
-    if crate::combat::project_fixed_one_creature_death(&mut owner, target).is_err() {
+    if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
+        .is_err()
+    {
         return;
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;
     };
+    let activity_death = if !personal_rewards
+        && matches!(
+            target.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+        let Some(frozen) = sink.queue.freeze_activity_death(runtime, target, &creature) else {
+            refuse("activity_death_capture_unavailable", &creature);
+            return;
+        };
+        Some(frozen)
+    } else {
+        None
+    };
+    let mut owner = runtime.borrow_combat_death();
     let Ok(top) = owner.top_damage_contributor(target) else {
         return;
     };
@@ -1151,23 +1246,28 @@ pub fn record_creature_kill(
                             callback_loot: Vec::new(),
                             task_board_recipients: Arc::default(),
                             talisman: Arc::default(),
+                            boss_reward: None,
+                            activity_death: None,
                             no_progression_logged: false,
                         },
                     );
                 }
                 return;
             };
-            let entry = PendingKillSettlement::for_bosstiary(
+            let mut entry = PendingKillSettlement::for_bosstiary(
                 facts,
                 boss.clone(),
                 ground,
                 target,
                 observed_at,
             );
+            // Only the actual lethal producer supplies the retained Instance clock.
+            entry.activity_death = activity_death;
             accept_kill(runtime, sink.queue, entry);
             return;
         }
     };
+    let personal_reward_row = personal_rewards.then(|| Arc::clone(&row));
     if let Some(choice) = daily_boost {
         let boosted_creature = creature == choice.creature;
         let boosted_boss = creature == choice.boss;
@@ -1432,7 +1532,24 @@ pub fn record_creature_kill(
             callback_loot.extend(items);
         }
     }
+    let boss_reward = if let Some(reward) = personal_reward_row {
+        let Some(frozen) = sink
+            .queue
+            .freeze_boss_death(runtime, target, &damage_shares, reward)
+        else {
+            refuse("boss_contribution_unavailable", &creature);
+            return;
+        };
+        // A reward boss has exactly one loot route: the private chests. XP/Bosstiary and
+        // the empty physical corpse keep their existing independent owner paths.
+        Arc::make_mut(&mut row).loot_table.entries.clear();
+        Some(frozen)
+    } else {
+        None
+    };
     let entry = PendingKillSettlement {
+        boss_reward,
+        activity_death,
         forge,
         echo,
         callback_loot,
@@ -1506,6 +1623,7 @@ pub fn record_batch_kills(
     receipt: &CombatBatchReceipt,
     now_ms: u64,
 ) {
+    sink.queue.boss_spell_contribution(runtime, receipt);
     let observed_at = runtime.committed_spell_batch_time(receipt).ok().flatten();
     let now_ms = observed_at.map_or(now_ms, |at| at.get() / 1_000);
     let session = receipt.command.game_session_id();
@@ -2102,6 +2220,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
+        // W02 is a descendant of the committed native death independently of
+        // personal rewards, ordinary corpse admission or the recipient's presence.
+        if !self.settle_activity_boss_defeat(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if let Some(boss) = &entry.bosstiary_only {
             let Some(_permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -2167,6 +2293,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .await
                 .is_err()
         {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
+        // W03 entitlement creation is independent of the top-damage principal's
+        // current presence and must precede the proficiency-only early return.
+        if !self.settle_personal_boss_rewards(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,
@@ -2440,11 +2574,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             )
             .await
         };
-        // The runtime lock is first in the lock order, so the lane permit and the revision slot
-        // are released before it is taken.
-        drop(slot);
-        drop(other_slots);
-        drop(permit);
+        // Publish every committed recipient effect while its revision slots
+        // and the source lane are still held. An activity handoff takes these
+        // same guards, so it cannot move the Character between award and mark.
         if let Ok(outcome) = &outcome
             && let Ok(xp) = &outcome.rewards.xp
         {
@@ -2488,6 +2620,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 marks.mark(self.fence.character_id, TrackerKind::Bosstiary, &boss.key);
             }
         }
+        // No leaf notification lock survives this point. Release revisions and
+        // lane before descendants that take the native runtime or reenter a lane.
+        drop(slot);
+        drop(other_slots);
+        drop(permit);
         let mut report = classify(&entry.creature, &outcome);
         // Never complete the bounty while this death's Bestiary/loot receipt is unresolved.
         // Crystal creature.cpp:536-590 credits every contributor and enabled shared-XP party.

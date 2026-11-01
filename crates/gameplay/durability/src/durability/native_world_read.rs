@@ -40,8 +40,7 @@ impl<O: NativeWorldObjectRead + ?Sized> QualifiedCombatTileFact<'_, O> {
         let actual = runtime.binding();
         let ep = self._runtime.content_pin();
         let ap = runtime.content_pin();
-        expected.world_id() == actual.world_id()
-            && expected.channel_id() == actual.channel_id()
+        expected.runtime_scope() == actual.runtime_scope()
             && expected.scope_generation() == actual.scope_generation()
             && ep.server_artifact_digest() == ap.server_artifact_digest()
             && ep.map_revision_digest() == ap.map_revision_digest()
@@ -196,6 +195,10 @@ async fn initialized_tile_in_transaction<'owner, E>(
         room, runtime, position,
     )
     .map_err(NativeWorldReadError::GroundAddress)?;
+    let channel = runtime
+        .binding()
+        .channel_id()
+        .ok_or(NativeWorldReadError::MissingTileMetadata)?;
     let mut count = 0;
     for placement in world
         .pending_mutable_placements()
@@ -220,7 +223,7 @@ async fn initialized_tile_in_transaction<'owner, E>(
             placement.ordinal()
         );
         let row=sqlx::query("SELECT r.source_binding,r.spatial_position,r.map_revision,r.content_revision,r.placement_context,COALESCE((SELECT MAX(ad.ownership_generation) FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=r.transaction_id),r.scope_generation)::text FROM game_native_map_item_receipts r JOIN game_native_map_item_audit a USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id WHERE r.world_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.content_digest=$3 AND r.placement_key=$4 AND a.envelope=r.source_intent FOR SHARE OF i")
-            .bind(runtime.binding().world_id().as_bytes().as_slice()).bind(runtime.binding().channel_id().as_bytes().as_slice()).bind(runtime.content_pin().server_artifact_digest().as_slice()).bind(key).fetch_optional(&mut **tx).await.map_err(crate::durability::spell_item_transaction::SpellItemError::from).map_err(NativeWorldReadError::Items)?
+            .bind(runtime.binding().world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(runtime.content_pin().server_artifact_digest().as_slice()).bind(key).fetch_optional(&mut **tx).await.map_err(crate::durability::spell_item_transaction::SpellItemError::from).map_err(NativeWorldReadError::Items)?
             .ok_or(NativeWorldReadError::MissingTileMetadata)?;
         let expected = serde_json::to_vec(placement.binding())
             .map_err(|_| NativeWorldReadError::AuthorityMismatch)?;
@@ -260,11 +263,7 @@ pub async fn tile_in_transaction<'owner, E>(
     crate::durability::spell_item_transaction::check_transaction(tx, authority)
         .await
         .map_err(NativeWorldReadError::Items)?;
-    if authority.runtime_scope()
-        != crate::foundation::RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        )
+    if authority.runtime_scope() != runtime.binding().runtime_scope()
         || authority.scope_generation() != runtime.binding().scope_generation().get()
         || authority.compatible_content_digest() != runtime.content_pin().server_artifact_digest()
     {
@@ -286,11 +285,7 @@ pub async fn qualified_standing_tile_in_transaction<'owner, O: NativeWorldObject
     read.check_transaction(tx)
         .await
         .map_err(NativeWorldReadError::Items)?;
-    if read.fence().runtime_scope
-        != crate::foundation::RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        )
+    if read.fence().runtime_scope != runtime.binding().runtime_scope()
         || read.fence().scope_ownership_generation != runtime.binding().scope_generation()
         || read.content_digest() != runtime.content_pin().server_artifact_digest()
     {
@@ -344,11 +339,7 @@ pub async fn qualified_source_step_probe_in_transaction<
     read.check_transaction(tx)
         .await
         .map_err(NativeWorldReadError::Items)?;
-    if read.fence().runtime_scope
-        != crate::foundation::RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        )
+    if read.fence().runtime_scope != runtime.binding().runtime_scope()
         || read.fence().scope_ownership_generation != runtime.binding().scope_generation()
         || read.content_digest() != runtime.content_pin().server_artifact_digest()
         || room.source_world().is_none()
@@ -493,8 +484,7 @@ pub async fn qualified_creature_source_tile_in_transaction<
     crate::durability::spell_item_transaction::check_scope_transaction(tx, authority)
         .await
         .map_err(NativeWorldReadError::Items)?;
-    if authority.world_bytes() != *runtime.binding().world_id().as_bytes()
-        || authority.channel_bytes() != *runtime.binding().channel_id().as_bytes()
+    if authority.runtime_scope() != runtime.binding().runtime_scope()
         || authority.generation() != runtime.binding().scope_generation().get()
     {
         return Err(NativeWorldReadError::AuthorityMismatch);

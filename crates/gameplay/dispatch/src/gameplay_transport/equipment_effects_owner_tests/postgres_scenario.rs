@@ -260,11 +260,13 @@ async fn equipment_dispatch_scenario(
     let runtime = Mutex::new(runtime);
     let owner = ComposedFreshAdmission {
         server_motd: "",
-        runtime: &runtime,
+        runtime: (&runtime).into(),
         movement_cells: room.movement_cells(),
-        door: &door,
+        door: (&door).into(),
         chest: room.door(),
         active_generation: Some(active),
+        // W02: this fixture owns a different activated generation and runtime.
+        activity_runtimes: Default::default(),
         ..supplied
     };
     let drunk = ConditionDefinition::new(

@@ -11,7 +11,7 @@ pub(super) fn actor_is_current(runtime: &ChannelRuntimeV1, admitted: AdmittedSes
         && fence.connection_generation.get() == admitted.continuity.connection_generation
         && fence.runtime_scope == scope
         && runtime.binding().world_id() == admitted.world_id
-        && runtime.binding().channel_id() == admitted.channel_id
+        && runtime.binding().channel_id() == Some(admitted.channel_id)
         && runtime
             .player_control_facts(actor, admitted.game_session_id)
             .is_ok_and(|facts| facts.control_loss.is_none())

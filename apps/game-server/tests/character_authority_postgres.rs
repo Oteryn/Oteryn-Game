@@ -2505,8 +2505,11 @@ mod monk_state_postgres_cases {
             },
             held_blessings: Vec::new(),
             death_cell: DeathCell {
-                world_id: WorldId::decode(&id(42)).map_err(debug)?,
-                channel_id: ChannelId::decode(&id(43)).map_err(debug)?,
+                // W02 typed-scope extension preserves this pinned Channel fixture.
+                runtime_scope: crate::foundation::RuntimeScopeRefV1::Channel {
+                    world_id: WorldId::decode(&id(42)).map_err(debug)?,
+                    channel_id: ChannelId::decode(&id(43)).map_err(debug)?,
+                },
                 spatial_position: vec![1, 2, 3, 7],
                 map_revision: "map-1".into(),
             },

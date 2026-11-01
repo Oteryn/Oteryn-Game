@@ -38,8 +38,11 @@ pub(super) fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
         reward_revision: "reward-1".into(),
         held_blessings: vec![],
         death_cell: DeathCell {
-            world_id: WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
-            channel_id: ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+            // W02 retains this Channel death fixture and every existing loss expectation.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
+                ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+            ),
             spatial_position: vec![1, 2, 3, 7],
             map_revision: "map-1".into(),
         },

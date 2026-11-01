@@ -85,8 +85,7 @@ pub async fn leave_in_transaction(
     check_transaction(tx, authority).await?;
     let binding = runtime.binding();
     if runtime.owner_fence().is_err()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.scope_generation() != binding.scope_generation().get()
         || !runtime
             .player_control_facts(actor, authority.game_session_id())

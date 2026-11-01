@@ -8,7 +8,6 @@ use crate::durability::player_death_items::{
     PlayerDeathAmuletCause, PlayerDeathDropCause, PlayerDeathItemRequest,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn resume_pending_player_death_items(
@@ -16,12 +15,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<(), CharacterProgressionError> {
-        if let Some(pending) = self
+        if let Some(occurrence) = self
             .root
-            .pending_respawn(self.character, self.holder, fence)
+            .pending_player_death_item_occurrence(self.character, self.holder, fence)
             .await?
         {
-            self.resume_player_death_items(permit, fence, pending.occurrence)
+            self.resume_player_death_items(permit, fence, occurrence)
                 .await?;
         }
         Ok(())
@@ -63,15 +62,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|id| (*id, false))
             .chain(items.amulet.iter().map(|id| (*id, true)))
         {
-            let request = PlayerDeathItemRequest {
-                transaction_id: operation_id(death.occurrence, item, b"transaction"),
-                event_id: operation_id(death.occurrence, item, b"event"),
-                occurred_at_unix_ms: items.occurred_at,
-                content_revision: items.content_revision.clone(),
-                ruleset_revision: items.ruleset_revision.clone(),
-                sim_revision: items.simulation_revision.clone(),
-                server_build_id: "player-death-items-v1".into(),
-            };
+            let request = PlayerDeathItemRequest::selected(death, item, burn)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
             let result = if burn {
                 self.root
                     .commit_player_death_amulet(
@@ -112,20 +104,4 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(())
     }
-}
-
-/// Stable UUIDv7 identities survive retries and reconnects. The occurrence supplies
-/// the timestamp; independently domain-separated hashes supply the remaining bits.
-fn operation_id(occurrence: PlayerDeathOccurrence, item: [u8; 16], purpose: &[u8]) -> [u8; 16] {
-    let mut hash = Sha256::new();
-    hash.update(b"oteryn.death.item_operation.v1");
-    hash.update(occurrence.as_bytes());
-    hash.update(item);
-    hash.update(purpose);
-    let digest = hash.finalize();
-    let mut id = *occurrence.as_bytes();
-    id[6..].copy_from_slice(&digest[..10]);
-    id[6] = (id[6] & 0x0f) | 0x70;
-    id[8] = (id[8] & 0x3f) | 0x80;
-    id
 }

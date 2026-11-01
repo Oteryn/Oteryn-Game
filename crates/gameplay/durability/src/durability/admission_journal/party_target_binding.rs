@@ -25,8 +25,7 @@ pub struct QualifiedPartyVisibleTarget<'owner> {
     session: GameSessionId,
     target_position: MovementPositionSnapshot,
     character: [u8; 16],
-    world: [u8; 16],
-    channel: [u8; 16],
+    scope: RuntimeScopeRefV1,
     scope_generation: u64,
 }
 impl QualifiedPartyVisibleTarget<'_> {
@@ -35,11 +34,9 @@ impl QualifiedPartyVisibleTarget<'_> {
     }
     pub fn matches(&self, authority: &SpellItemAuthority) -> bool {
         let actual = self.runtime.binding();
-        authority.runtime_scope()
-            == RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        authority.runtime_scope() == actual.runtime_scope()
             && authority.scope_generation() == self.scope_generation
-            && self.world == *actual.world_id().as_bytes()
-            && self.channel == *actual.channel_id().as_bytes()
+            && self.scope == actual.runtime_scope()
             && self
                 .runtime
                 .player_control_facts(self.caster, authority.game_session_id())
@@ -66,8 +63,7 @@ pub async fn prove_visible_party_target_in_transaction<'owner>(
     let binding = runtime.binding();
     if caster == target
         || runtime.owner_fence().is_err()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.scope_generation() != binding.scope_generation().get()
         || !runtime
             .player_control_facts(caster, authority.game_session_id())
@@ -97,10 +93,7 @@ pub async fn prove_visible_party_target_in_transaction<'owner>(
     if row.try_get::<i16, _>("session_state")? != ACTIVE
         || row.try_get::<Vec<u8>, _>("world_id")? != binding.world_id().as_bytes()
         || row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? != binding.world_id().as_bytes()
-        || row
-            .try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?
-            .as_deref()
-            != Some(binding.channel_id().as_bytes().as_slice())
+        || !row_matches_scope(&row, binding.runtime_scope())?
         || row.try_get::<String, _>("scope_ownership_generation")?
             != binding.scope_generation().get().to_string()
         || !canonical_current_party_session(tx, root, session, &row, authority.runtime_scope())
@@ -119,8 +112,7 @@ pub async fn prove_visible_party_target_in_transaction<'owner>(
         session,
         target_position,
         character,
-        world: *binding.world_id().as_bytes(),
-        channel: *binding.channel_id().as_bytes(),
+        scope: binding.runtime_scope(),
         scope_generation: binding.scope_generation().get(),
     }))
 }
@@ -140,8 +132,7 @@ pub async fn current_colocated_party_character_in_transaction(
         .map_err(|_| DurabilityError::Unavailable)?;
     let binding = runtime.binding();
     if runtime.owner_fence().is_err()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.scope_generation() != binding.scope_generation().get()
         || !runtime
             .player_control_facts(actor, session)
@@ -155,10 +146,7 @@ pub async fn current_colocated_party_character_in_transaction(
     if row.try_get::<i16, _>("session_state")? != ACTIVE
         || row.try_get::<Vec<u8>, _>("world_id")? != binding.world_id().as_bytes()
         || row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? != binding.world_id().as_bytes()
-        || row
-            .try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?
-            .as_deref()
-            != Some(binding.channel_id().as_bytes().as_slice())
+        || !row_matches_scope(&row, binding.runtime_scope())?
         || row.try_get::<String, _>("scope_ownership_generation")?
             != binding.scope_generation().get().to_string()
         || !canonical_current_party_session(tx, root, session, &row, authority.runtime_scope())
@@ -187,8 +175,7 @@ pub async fn current_colocated_party_character_for_scope_in_transaction(
         .map_err(|_| DurabilityError::Unavailable)?;
     let binding = runtime.binding();
     if runtime.owner_fence().is_err()
-        || authority.world_bytes() != *binding.world_id().as_bytes()
-        || authority.channel_bytes() != *binding.channel_id().as_bytes()
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.generation() != binding.scope_generation().get()
         || !runtime
             .player_control_facts(actor, session)
@@ -202,20 +189,11 @@ pub async fn current_colocated_party_character_for_scope_in_transaction(
     if row.try_get::<i16, _>("session_state")? != ACTIVE
         || row.try_get::<Vec<u8>, _>("world_id")? != binding.world_id().as_bytes()
         || row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? != binding.world_id().as_bytes()
-        || row
-            .try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?
-            .as_deref()
-            != Some(binding.channel_id().as_bytes().as_slice())
+        || !row_matches_scope(&row, binding.runtime_scope())?
         || row.try_get::<String, _>("scope_ownership_generation")?
             != binding.scope_generation().get().to_string()
-        || !canonical_current_party_session(
-            tx,
-            root,
-            session,
-            &row,
-            RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-        )
-        .await?
+        || !canonical_current_party_session(tx, root, session, &row, binding.runtime_scope())
+            .await?
     {
         return Ok(None);
     }
@@ -235,14 +213,10 @@ async fn canonical_current_party_session(
     row: &sqlx::postgres::PgRow,
     scope: RuntimeScopeRefV1,
 ) -> Result<bool, DurabilityError> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = scope
-    else {
-        return Ok(false);
-    };
-    let key = crate::durability::runtime_scope_assignment::scope_key(world_id, channel_id);
+    let mut key = crate::durability::runtime_scope_assignment::assignment_scope_key(scope);
+    if matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
+        key[0] = 2;
+    }
     let fresh_origin: bool = sqlx::query_scalar("SELECT fresh_replay_key IS NOT NULL OR initial_fresh_replay_key IS NOT NULL FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     // The immutable receipt cannot supersede independently current account/Character claims.
@@ -256,6 +230,9 @@ async fn canonical_current_party_session(
     }
     let store = FreshAdmissionStore::from_root(root.clone());
     let current = store.current_session_in_transaction(tx, session).await?;
+    let activity_origin = store
+        .committed_activity_origin_in_transaction(tx, current.commit().character_id(), session)
+        .await?;
     if current.current_control_loss_epoch().is_some() {
         // Same-session complete resume retains its full typed loss/budget/protection proof.
         // A genuine replaced current session uses the existing complete legacy validator.
@@ -273,34 +250,23 @@ async fn canonical_current_party_session(
         } else if !active_committed_binding_is_valid(tx, session.as_bytes(), row).await? {
             return Ok(false);
         }
-    } else if current.current_game_session_id() != current.commit().game_session_id()
-        || current.current_connection_generation().get() != 1
-        || current.current_transport() != Some(current.commit().initial_transport())
-        || current.current_character_lease().generation()
-            != current.commit().character_lease_generation()
+    } else if !activity_origin
+        && (current.current_game_session_id() != current.commit().game_session_id()
+            || current.current_connection_generation().get() != 1
+            || current.current_transport() != Some(current.commit().initial_transport())
+            || current.current_character_lease().generation()
+                != current.commit().character_lease_generation())
     {
         return Ok(false);
     }
-    let scope = current.current_runtime_scope();
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = scope
-    else {
+    if current.current_runtime_scope() != scope {
         return Ok(false);
-    };
+    }
     Ok(current.session_state() == GameSessionState::Active
         && current.current_game_session_id() == session
         && row.try_get::<Vec<u8>, _>("character_id")? == current.commit().character_id().as_bytes()
         && row.try_get::<Vec<u8>, _>("world_id")? == current.commit().world_id().as_bytes()
-        && row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? == world_id.as_bytes()
-        && row
-            .try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?
-            .as_deref()
-            == Some(channel_id.as_bytes().as_slice())
-        && row
-            .try_get::<Option<Vec<u8>>, _>("runtime_scope_instance_id")?
-            .is_none()
+        && row_matches_scope(row, scope)?
         && row.try_get::<String, _>("scope_ownership_generation")?
             == current.current_scope_generation().get().to_string()
         && row.try_get::<String, _>("character_lease_generation")?
@@ -315,6 +281,26 @@ async fn canonical_current_party_session(
                 .map(|e| e.get().to_string())
         && row.try_get::<Option<i64>, _>("original_grace_deadline")?
             == current.current_original_grace_deadline())
+}
+
+/// Exact namespace, nullable identity and World comparison; two Instances never alias
+/// because both lack a Channel identifier.
+fn row_matches_scope(
+    row: &sqlx::postgres::PgRow,
+    scope: RuntimeScopeRefV1,
+) -> Result<bool, DurabilityError> {
+    let (kind, channel, instance) = match scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            (1_i16, Some(*channel_id.as_bytes()), None)
+        }
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, None, Some(instance_id)),
+    };
+    Ok(row.try_get::<i16, _>("runtime_scope_kind")? == kind
+        && row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? == scope.world_id().as_bytes()
+        && row.try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?
+            == channel.map(|id| id.to_vec())
+        && row.try_get::<Option<Vec<u8>>, _>("runtime_scope_instance_id")?
+            == instance.map(|id| id.to_vec()))
 }
 
 /// Read the generation of the exact session already checked by the canonical observer factory.

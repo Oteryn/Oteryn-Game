@@ -879,10 +879,7 @@ mod wheel_projection_tests {
                 )
                 .expect("connection"),
                 character_lease_generation: expected.lease_generation,
-                runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
-                    scope.world_id(),
-                    scope.channel_id(),
-                ),
+                runtime_scope: scope.runtime_scope(),
                 scope_ownership_generation: scope.scope_generation(),
             },
         };
@@ -939,8 +936,14 @@ mod progression_dispatch_tests {
         let channel = template.binding().channel_id();
         let room = crate::content::qualify_native_entry_room(world).expect("entry Content");
         let (bytes, pins) = floor_bundle();
-        let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
-            .expect("qualified map");
+        let map = crate::map::boot::boot(
+            &bytes,
+            &floor_pins(pins),
+            world,
+            channel.expect("W02: pinned Channel fixture"),
+            floor_items,
+        )
+        .expect("qualified map");
         let cells = map
             .movement_cells(room.movement_cells())
             .expect("map cells");
@@ -958,7 +961,7 @@ mod progression_dispatch_tests {
         node[8] = 0x80;
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            channel,
+            channel.expect("W02: pinned Channel fixture"),
             NodeId::decode(&node).expect("node"),
             1,
             1,

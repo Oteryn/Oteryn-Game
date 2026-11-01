@@ -254,6 +254,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             // CREATURE-AI-1 §2.1: the swing goes only at the target the think decided.
+            attack.kills().boss_targets(
+                &runtime,
+                *actor,
+                indices
+                    .iter()
+                    .map(|index| (targets[*index].0, targets[*index].2)),
+            );
             let perceived = think_target_only(
                 melee_owner
                     .creature_ai
@@ -288,7 +295,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let input = CreatureThinkInput {
                 provenance: AiProvenance::new(AiProvenanceInput {
-                    scope_id: marker(runtime.binding().channel_id().as_bytes()),
+                    scope_id: match runtime.binding().runtime_scope() {
+                        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                            marker(channel_id.as_bytes())
+                        }
+                        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                            marker(&instance_id)
+                        }
+                    },
                     scope_generation: runtime.binding().scope_generation().get(),
                     actor_generation: marker(&placement),
                     behavior_revision: marker(&content.source_digest()),
@@ -363,6 +377,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match dispatch {
                 Dispatch::Bite(Ok(applied)) => {
                     if applied.damage.applied > 0 {
+                        attack.kills().boss_damage_received(
+                            &runtime,
+                            *actor,
+                            player,
+                            session,
+                            u64::from(applied.damage.applied),
+                            applied.vitals_revision,
+                        );
                         states.hunting_activity(&runtime, player, session, now.get());
                     }
                 }

@@ -671,11 +671,7 @@ impl SpellTimerOwner {
         now: SemanticTimeMicros,
     ) -> Result<Option<TimerPayload>, Error> {
         let fence = runtime.owner_fence().map_err(|_| Error::StaleOwner)?;
-        if self.scope()
-            != RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        if self.scope() != runtime.binding().runtime_scope()
             || self.generation() != runtime.binding().scope_generation()
         {
             return Err(Error::StaleOwner);
@@ -711,11 +707,7 @@ impl SpellTimerOwner {
         saved: &SavedStrike,
         now: SemanticTimeMicros,
     ) -> bool {
-        self.scope()
-            == RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        self.scope() == runtime.binding().runtime_scope()
             && self.generation() == runtime.binding().scope_generation()
             && runtime.owner_fence().is_ok()
             && self.payloads.iter().any(|p| match &p.payload {
@@ -781,11 +773,7 @@ impl SpellTimerOwner {
         runtime: &ChannelRuntimeV1,
         command: CommandRef,
     ) -> Result<(), Error> {
-        if self.scope()
-            != RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        if self.scope() != runtime.binding().runtime_scope()
             || self.generation() != runtime.binding().scope_generation()
             || runtime.owner_fence().is_err()
         {
@@ -852,11 +840,7 @@ impl SpellTimerOwner {
         saved: &super::ordinary_timer::SavedOrdinaryCombat,
         now: SemanticTimeMicros,
     ) -> bool {
-        self.scope()
-            == RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        self.scope() == runtime.binding().runtime_scope()
             && self.generation() == runtime.binding().scope_generation()
             && runtime.owner_fence().is_ok()
             && self.payloads.iter().any(|pending| {
@@ -883,11 +867,7 @@ impl SpellTimerOwner {
         occurrence: SpellTimerOccurrence,
         resolved: super::ordinary_timer::ResolvedOrdinaryCombat,
     ) -> Result<(), Error> {
-        if self.scope()
-            != RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        if self.scope() != runtime.binding().runtime_scope()
             || self.generation() != runtime.binding().scope_generation()
             || runtime.owner_fence().is_err()
         {

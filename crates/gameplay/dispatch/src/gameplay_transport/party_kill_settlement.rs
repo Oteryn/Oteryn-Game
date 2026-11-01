@@ -29,15 +29,8 @@ pub(super) struct SettledPartyXp {
 fn rejected() -> CharacterProgressionError {
     CharacterProgressionError::AuthorityRejected
 }
-fn key(entry: &PendingKillSettlement) -> [u8; 52] {
-    let d = entry.facts.death;
-    let mut key = [0; 52];
-    key[..16].copy_from_slice(d.world_id().as_bytes());
-    key[16..32].copy_from_slice(d.channel_id().as_bytes());
-    key[32..40].copy_from_slice(&d.scope_ownership_generation().get().to_be_bytes());
-    key[40..44].copy_from_slice(&d.actor_local_id().to_be_bytes());
-    key[44..52].copy_from_slice(&d.actor_local_generation().to_be_bytes());
-    key
+fn key(entry: &PendingKillSettlement) -> Vec<u8> {
+    party_kill_xp::encode_death_key(entry.facts.death)
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -119,7 +112,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         owner.root,
                         owner.character,
                         owner.holder,
-                        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                        binding.runtime_scope(),
                         binding.scope_generation().get(),
                     )
                     .await
@@ -211,7 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         owner.root,
                         owner.character,
                         owner.holder,
-                        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+                        b.runtime_scope(),
                         b.scope_generation().get(),
                     )
                     .await
@@ -335,7 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         owner.root,
                         owner.character,
                         owner.holder,
-                        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+                        b.runtime_scope(),
                         b.scope_generation().get(),
                     )
                     .await
@@ -504,6 +497,16 @@ async fn initialize(
     fence: CurrentCharacterGameplayFence,
     binding: &RewardProgressionBinding<CHARACTER_EXPERIENCE_TABLE_LEVELS>,
 ) -> Result<(), CharacterProgressionError> {
+    if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+        // A fresh activity session carries an already initialized Character. Its
+        // current gameplay fence is checked again by the atomic award transaction.
+        return owner
+            .root
+            .read_character_progression(owner.character, fence.character_id)
+            .await?
+            .map(|_| ())
+            .ok_or(CharacterProgressionError::MissingProgressionState);
+    }
     owner
         .root
         .initialize_character_progression(

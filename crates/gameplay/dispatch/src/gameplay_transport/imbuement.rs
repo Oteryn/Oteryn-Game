@@ -6,6 +6,7 @@
 //! Canary quest unlock is a declared difference) and Premium for tiers 2 and 3, and then the
 //! one fenced durable transaction that consumes the recipe materials, burns the gold and writes
 //! or removes the imbuement (PARITY-IMBUE-FORGE-WIRE-1, migration 0196).
+use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::{generation_item_facts, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
@@ -18,7 +19,7 @@ use crate::durability::item_imbuement::{
     ImbuementWrite, ImbuementWriteError,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::{CommandId, ExactActorRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, ExactActorRef};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
     BLANK_IMBUEMENT_SCROLL_ITEM_ID, IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD,
@@ -27,10 +28,9 @@ use oteryn_gameplay_items::imbuement::{
 };
 use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
 use sha2::{Digest, Sha256};
 use wire::{ImbuementAction, ImbuementResult};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
-use super::connection::{UseCommand, UseOutcome};
 
 /// The Canary imbuing shrines, sorted (`data/items/items.xml`, `script="imbuement_shrine"`).
 pub(super) const SHRINE_KEYS: [&str; 10] = [
@@ -128,8 +128,13 @@ fn blank_scroll_allowance() -> Allowance {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Decision {
     Reply(wire::ImbuementReply),
-    Apply { slot: u8, offer: wire::ImbuementOffer },
-    Clear { slot: u8 },
+    Apply {
+        slot: u8,
+        offer: wire::ImbuementOffer,
+    },
+    Clear {
+        slot: u8,
+    },
 }
 
 /// Result of qualifying an inventory USE-with before the durable owner consumes its source.
@@ -173,11 +178,11 @@ pub fn decide_imbuement_item_use(
     let Some(scroll) = imbuement_scroll(source_item_id) else {
         return ImbuementItemDecision::NotAnImbuementItem;
     };
-    if !allowance.offers.iter().any(|offer| {
-        offer.family == scroll.family && offer.tier == scroll.tier
-    }) || applied
+    if !allowance
+        .offers
         .iter()
-        .any(|row| row.category + 1 == scroll.family)
+        .any(|offer| offer.family == scroll.family && offer.tier == scroll.tier)
+        || applied.iter().any(|row| row.category + 1 == scroll.family)
     {
         return ImbuementItemDecision::Refused(ImbuementResult::NotAllowed);
     }
@@ -258,7 +263,10 @@ pub(super) fn decide(
 
 /// Shrine access: an imbuing shrine on the actor's floor within one tile (Canary
 /// `imbuement_shrine` is used from an adjacent tile).
-fn shrine_in_reach(at: &super::bundle_map_position::BundleMapPosition<'_>, index: &ItemDefinitionIndex) -> bool {
+fn shrine_in_reach(
+    at: &super::bundle_map_position::BundleMapPosition<'_>,
+    index: &ItemDefinitionIndex,
+) -> bool {
     let facts = at.map.facts.pinned();
     let Ok(floor) = i8::try_from(at.at.floor) else {
         return false;
@@ -355,29 +363,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .then(|| allowance(&record.semantics.imbuement))
                     .flatten()
             });
-        let write = match decide_imbuement_item_use(
-            source_id,
-            allowance.as_ref(),
-            &target_facts.applied,
-        ) {
-            ImbuementItemDecision::NotAnImbuementItem => return None,
-            ImbuementItemDecision::Refused(_) => {
-                return Some(outcome(UseDisposition::NothingToUse));
-            }
-            ImbuementItemDecision::Etch { slots } => ImbuementItemWrite::Etch { slots },
-            ImbuementItemDecision::ApplyScroll { slot, family, tier } => {
-                let Some(recipe) = imbuement_recipe(family, tier) else {
+        let write =
+            match decide_imbuement_item_use(source_id, allowance.as_ref(), &target_facts.applied) {
+                ImbuementItemDecision::NotAnImbuementItem => return None,
+                ImbuementItemDecision::Refused(_) => {
                     return Some(outcome(UseDisposition::NothingToUse));
-                };
-                ImbuementItemWrite::ApplyScroll {
-                    slot,
-                    category: family - 1,
-                    imbuement_key: recipe.key.into(),
-                    imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
-                    tier,
                 }
-            }
-        };
+                ImbuementItemDecision::Etch { slots } => ImbuementItemWrite::Etch { slots },
+                ImbuementItemDecision::ApplyScroll { slot, family, tier } => {
+                    let Some(recipe) = imbuement_recipe(family, tier) else {
+                        return Some(outcome(UseDisposition::NothingToUse));
+                    };
+                    ImbuementItemWrite::ApplyScroll {
+                        slot,
+                        category: family - 1,
+                        imbuement_key: recipe.key.into(),
+                        imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
+                        tier,
+                    }
+                }
+            };
         {
             let runtime = self.runtime.lock().await;
             if !runtime
@@ -408,16 +413,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             write,
             occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
         };
-        Some(outcome(match self
-            .root
-            .commit_imbuement_item_command(self.character, self.holder, current, durable)
-            .await
-        {
-            Ok(ImbuementResult::Ok) => UseDisposition::Committed,
-            Ok(ImbuementResult::SlotOccupied) => UseDisposition::Occupied,
-            Ok(_) => UseDisposition::StaleState,
-            Err(_) => UseDisposition::Rejected,
-        }))
+        Some(outcome(
+            match self
+                .root
+                .commit_imbuement_item_command(self.character, self.holder, current, durable)
+                .await
+            {
+                Ok(ImbuementResult::Ok) => UseDisposition::Committed,
+                Ok(ImbuementResult::SlotOccupied) => UseDisposition::Occupied,
+                Ok(_) => UseDisposition::StaleState,
+                Err(_) => UseDisposition::Rejected,
+            },
+        ))
     }
 
     pub(super) async fn imbuement_wire(
@@ -448,9 +455,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || fence.game_session_id != admitted.game_session_id
                 || fence.connection_generation.get() != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !admitted.runtime_actor.is_some_and(|actor| {

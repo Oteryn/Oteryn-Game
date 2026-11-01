@@ -803,6 +803,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &result,
                     &mut activity_cells,
                 );
+                if result.applied && result.health_after < result.health_before {
+                    kills.boss_damage_dealt(&runtime, target, entry.actor, entry.session);
+                }
                 // Source-qualified leaf damage uses the existing independent replay stream.
                 // It neither consumes another player command nor re-enters Charm evaluation.
                 let mut lethal_result = result;

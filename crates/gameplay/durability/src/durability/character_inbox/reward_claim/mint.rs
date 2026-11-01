@@ -471,6 +471,7 @@ async fn mint_frozen_in_transaction(
         destination: None,
         before_semantically_absent: true,
         source: Some(OneItemRewardClaimCauseV1 {
+            boss_reward: None,
             typed_cause: REWARD_CLAIM_MINT_TYPED_CAUSE.into(),
             content_revision: frozen.request.content_revision.clone(),
             ruleset_revision: frozen.request.ruleset_revision.clone(),

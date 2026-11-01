@@ -359,6 +359,7 @@ mod tests {
                 key_number: 0,
             }),
             destination: Some(OneItemGroundV1 {
+                instance_id: None,
                 world_id: uuid(1),
                 channel_id: uuid(2),
                 spatial_position: map_item_spatial_position(100, 200, -7),
@@ -660,6 +661,7 @@ mod tests {
                     key_number: 0,
                 }),
                 destination: Some(OneItemGroundV1 {
+                    instance_id: None,
                     world_id: uuid(0xee),
                     channel_id: uuid(0xee),
                     spatial_position: technical_bytes.clone(),

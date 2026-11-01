@@ -36,7 +36,7 @@ impl MonsterThinkLane {
         current: &ScopeRuntimeFence,
     ) -> Result<Self, CycleError> {
         let binding = runtime.binding();
-        let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+        let scope = binding.runtime_scope();
         let generation = binding.scope_generation();
         if !current.is_current_for_scope(scope, generation) {
             return Err(CycleError::StaleOwner);
@@ -63,7 +63,7 @@ impl MonsterThinkLane {
     }
     fn current(&self, runtime: &ChannelRuntimeV1, current: &ScopeRuntimeFence) -> bool {
         let b = runtime.binding();
-        self.scope == RuntimeScopeRefV1::channel(b.world_id(), b.channel_id())
+        self.scope == b.runtime_scope()
             && self.generation == b.scope_generation()
             && current.is_current_for_scope(self.scope, self.generation)
     }

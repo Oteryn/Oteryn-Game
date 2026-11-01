@@ -137,8 +137,11 @@ pub(super) async fn qualify(
                 owner.character,
                 &h.node,
                 CorpseDecayFence {
-                    world_id: owner.world_id,
-                    channel_id: owner.channel_id,
+                    // W02 keeps this pinned Channel fixture in its exact tagged scope.
+                    runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                        owner.world_id,
+                        owner.channel_id,
+                    ),
                     scope_ownership_generation: generation,
                 },
                 corpse.item.item_instance_id,

@@ -182,7 +182,7 @@ fn due_focus_fixture() -> (
     f.batch.deferred = Some(
         DeferredCommitAuthority::from_due(
             f.runtime.owner_fence().expect("current scope fence"),
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.runtime_scope(),
             binding.scope_generation(),
             stamp,
             1,
@@ -308,7 +308,7 @@ fn empty_due_combat_consumes_focus_with_the_player_owner_and_exact_replay_preser
     phase_zero.deferred = Some(
         crate::spell::combat_batch::DeferredCommitAuthority::from_due(
             f.runtime.owner_fence().expect("actual fence"),
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.runtime_scope(),
             binding.scope_generation(),
             stamp,
             0,

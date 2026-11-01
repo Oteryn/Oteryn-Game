@@ -812,11 +812,8 @@ fn current_fence(
     crate::foundation::RuntimeWorkStamp,
 ) {
     let b = runtime.binding();
-    crate::foundation::crystal_timer_fixture(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("existing test-only native owner grant")
+    crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+        .expect("existing test-only native owner grant")
 }
 #[test]
 fn typed_first_ai_sequence_zero_valid_replay_and_later_think_does_not_starve_melee() {

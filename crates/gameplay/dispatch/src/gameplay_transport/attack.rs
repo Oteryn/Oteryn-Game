@@ -19,6 +19,9 @@
 //! route and chase re-paths at its next 1,000 ms check. `STAND` never moves the player. `secure`
 //! has no creature-target effect; its PvP refusal waits for player targets (PVP-RT-1).
 
+mod activity_transfer;
+pub(super) use activity_transfer::PreparedActivityAttackStates;
+
 mod attack_chase_search;
 pub(super) mod charm_combat;
 mod cyclopedia;

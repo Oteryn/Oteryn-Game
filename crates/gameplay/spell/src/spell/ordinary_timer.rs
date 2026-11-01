@@ -288,8 +288,7 @@ mod tests {
     use crate::spell::delayed_execution::SpellTimerOwner;
     use {
         crate::foundation::{
-            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
-            WorldId,
+            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
         },
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
@@ -443,10 +442,7 @@ mod tests {
                 .is_err()
         );
         let mut owner = SpellTimerOwner::new(
-            RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            ),
+            runtime.binding().runtime_scope(),
             runtime.binding().scope_generation(),
         )
         .unwrap();

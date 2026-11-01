@@ -279,7 +279,7 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_items_abi::SpellItemTransactionRequest;
 use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass};
-use crate::foundation::{CommandId, CommandRef, GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef, GameSessionState};
 use crate::spell::companion_lifecycle::{
     FamiliarOwnerFacts, check_commit_familiar, familiar_cost_binding, finish_familiar_payment,
     install_familiar, prepare_familiar,
@@ -316,7 +316,7 @@ fn current_owner(
 ) -> bool {
     let b = runtime.binding();
     fence.game_session_id == session
-        && fence.runtime_scope == RuntimeScopeRefV1::channel(b.world_id(), b.channel_id())
+        && fence.runtime_scope == b.runtime_scope()
         && fence.scope_ownership_generation == b.scope_generation()
         && runtime
             .player_control_facts(actor, session)
@@ -341,8 +341,7 @@ fn logout_owner(
 ) -> bool {
     let binding = runtime.binding();
     fence.game_session_id == session
-        && fence.runtime_scope
-            == RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        && fence.runtime_scope == binding.runtime_scope()
         && fence.scope_ownership_generation == binding.scope_generation()
         && runtime
             .player_control_facts(actor, session)

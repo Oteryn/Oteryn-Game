@@ -25,7 +25,7 @@ use {
     crate::foundation::{
         ActorMemoTable, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, ChannelRuntimeV1, ExactActorRef,
         MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, NativeSummonAdmissionSpec,
-        RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+        RuntimeWorkStamp, ScopeRuntimeFence,
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
@@ -259,11 +259,8 @@ mod tests {
             )
             .expect("monster_summon.rs:tests:509: qualified fixture operation must succeed");
         let b = r.binding();
-        let (f, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .expect("monster_summon.rs:tests:515: qualified fixture operation must succeed");
+        let (f, _) = crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("monster_summon.rs:tests:515: qualified fixture operation must succeed");
         let spec = NativeSummonSpec {
             parent: parent.clone(),
             child: child.clone(),
@@ -1083,10 +1080,8 @@ impl DefenseSummonOwner {
         policy: &mut dyn SummonLocationPolicy,
     ) -> Result<DefenseSummonBatch, SummonError> {
         let b = runtime.binding();
-        if !fence.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(SummonError::StaleOwner);
         }

@@ -1316,7 +1316,7 @@ fn scenario_with_creature_charmed(
             let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                 oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
                     *death.world_id().as_bytes(),
-                    *death.channel_id().as_bytes(),
+                    *death.channel_id().expect("Channel fixture").as_bytes(),
                     death.scope_ownership_generation().get(),
                     death.actor_local_id(),
                     death.actor_local_generation(),
@@ -1381,7 +1381,7 @@ fn scenario_with_creature_charmed(
                 oteryn_gameplay_items::loot_plan::plan_creature_loot(
                     oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
                         *death.world_id().as_bytes(),
-                        *death.channel_id().as_bytes(),
+                        *death.channel_id().expect("Channel fixture").as_bytes(),
                         death.scope_ownership_generation().get(),
                         death.actor_local_id(),
                         death.actor_local_generation(),

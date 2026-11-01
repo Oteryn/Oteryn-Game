@@ -185,7 +185,7 @@ async fn plan_group(
             .map_err(|_| SpellItemError::Rejected("XP level"))?;
         if source.party_id.is_some() {
             let p = position.position();
-            rules.push(SharedExperienceMember {character:*character.as_bytes(),channel:scope.channel_bytes(),level,x:p.x,y:p.y,z:i32::from(p.floor),
+            rules.push(SharedExperienceMember {character:*character.as_bytes(),channel:scope.runtime_scope(),level,x:p.x,y:p.y,z:i32::from(p.floor),
                 vocation:vocation(state.source_party_vocation()),activity:cells.iter().find(|a|a.character==*character.as_bytes())
                     .and_then(|a|oteryn_gameplay_social_rules::shared_experience::committed_shared_experience_activity(*a,character.as_bytes(),lease.generation(),now))});
         }
@@ -227,17 +227,54 @@ async fn plan_group(
     } else {
         false
     };
-    let missing_local = source.members.iter().any(|m| {
-        m.channel == Some(scope.channel_bytes())
-            && !rules.iter().any(|p| p.character == m.character)
-    });
+    let missing_local = match scope.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            source.members.iter().any(|member| {
+                member.channel == Some(*channel_id.as_bytes())
+                    && !rules
+                        .iter()
+                        .any(|local| local.character == member.character)
+            })
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id,
+            instance_id,
+        } => {
+            // Public PartyPresence does not encode private Instance identity. This
+            // denial-only completeness check uses current exact session/lease claims;
+            // every actual recipient above still proves its canonical admission.
+            let missing = source
+                .members
+                .iter()
+                .filter(|member| {
+                    !rules
+                        .iter()
+                        .any(|local| local.character == member.character)
+                })
+                .map(|member| {
+                    member
+                        .character
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                })
+                .collect::<Vec<_>>();
+            if missing.is_empty() {
+                false
+            } else {
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s JOIN game_durability_admission_character_guards c ON c.character_id=s.character_id AND c.holder_game_session_id=s.game_session_id AND c.lease_generation=s.character_lease_generation JOIN game_durability_admission_account_guards a ON a.account_id=c.account_id AND a.holder_game_session_id=s.game_session_id AND a.presence_character_id=s.character_id WHERE s.character_id IN (SELECT value::uuid FROM unnest($1::text[]) value) AND c.eligible AND s.world_id=encode($2,'hex')::uuid AND s.runtime_scope_world_id=encode($2,'hex')::uuid AND s.runtime_scope_kind=2 AND s.runtime_scope_channel_id IS NULL AND s.runtime_scope_instance_id=encode($3,'hex')::uuid AND s.scope_ownership_generation=$4::text::numeric AND s.session_state IN (1,2))")
+                    .bind(missing).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+                    .bind(scope.generation().to_string()).fetch_one(&mut **tx).await?
+            }
+        }
+    };
     let share = if rules.is_empty() {
         None
     } else {
         shared_experience_share(
             observed.enabled && !missing_local,
             source.leader.unwrap_or([0; 16]),
-            scope.channel_bytes(),
+            scope.runtime_scope(),
             leader_pz,
             &rules,
             SharedExperiencePool {

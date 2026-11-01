@@ -194,3 +194,43 @@ fn w14_crystal_shared_experience_parity() {
     // manual, Shared Experience); Crystal applies 1.20 to any amount (ceil(19 * 1.2 / 2) = 12).
     assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(10)));
 }
+
+#[test]
+fn shared_experience_preserves_full_scope_identity_when_uuid_bytes_match() {
+    // A typed scope supplied by the native owner: (World, kind, exact identity).
+    let channel = ([1; 16], 1_u8, [2; 16]);
+    let instance = ([1; 16], 2_u8, [2; 16]);
+    let other_world = ([3; 16], 2_u8, [2; 16]);
+    let scoped = |id, scope| {
+        let old = member(id);
+        SharedExperienceMember {
+            character: old.character,
+            channel: scope,
+            level: old.level,
+            x: old.x,
+            y: old.y,
+            z: old.z,
+            vocation: old.vocation,
+            activity: old.activity,
+        }
+    };
+    let mut members = [
+        scoped(1, instance),
+        scoped(2, instance),
+        scoped(3, channel),
+        scoped(4, other_world),
+    ];
+    assert_eq!(
+        shared_experience_share(true, [1; 16], instance, false, &members, pool(101, 0)),
+        Ok(Some(61))
+    );
+    members[1].channel = channel;
+    assert_eq!(
+        shared_experience_share(true, [1; 16], instance, false, &members, pool(101, 0)),
+        Ok(Some(122))
+    );
+    assert_eq!(
+        shared_experience_share(true, [1; 16], channel, false, &members, pool(101, 0)),
+        Ok(None)
+    );
+}

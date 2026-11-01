@@ -15,7 +15,7 @@ use crate::durability::charm_state::{
     BestiaryCharmEntry, BestiaryCharmFacts, CharmCommandOccurrence, CharmRemoveFee,
 };
 use crate::durability::item_fee_burn::FeeChangeFacts;
-use crate::foundation::{CommandId, RuntimeScopeRefV1};
+use crate::foundation::CommandId;
 use oteryn_protocol_oteryn::charm::{CharmAssignIntent, CharmUnlockStageIntent};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
@@ -169,9 +169,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             let binding = runtime.binding();
             if admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !runtime
