@@ -39,8 +39,8 @@ use super::item_use_audit::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
-use oteryn_gameplay_progression::item_use_achievement;
 use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
+use oteryn_gameplay_progression::item_use_achievement;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
@@ -72,7 +72,9 @@ pub enum ItemUseKind {
     ProficiencyOrb,
     Concoction,
     /// W09: the Cube's bounded original USE bytes, retained beside the atomic transform.
-    DromeCube { wire_binding: [u8; 32] },
+    DromeCube {
+        wire_binding: [u8; 32],
+    },
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -231,7 +233,9 @@ impl ItemUseRequest {
                     definition,
                     quantity_before,
                 },
-                ItemUseKind::Potion | ItemUseKind::PickRefine { .. } | ItemUseKind::DromeCube { .. },
+                ItemUseKind::Potion
+                | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id
@@ -245,7 +249,9 @@ impl ItemUseRequest {
                     definition,
                     placement_ordinal,
                 },
-                ItemUseKind::Potion | ItemUseKind::PickRefine { .. } | ItemUseKind::DromeCube { .. },
+                ItemUseKind::Potion
+                | ItemUseKind::PickRefine { .. }
+                | ItemUseKind::DromeCube { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id

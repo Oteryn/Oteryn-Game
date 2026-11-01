@@ -50,9 +50,10 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_physical_item_line"),
-    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_authority_with_recovery"),
-    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_scope_with_recovery"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
+    // The Channel/Instance key-33 SQL moved from the two authority minters into
+    // this private helper; it requires and checks their existing lane permit.
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_runtime_items"),
 ];
 
 /// Non-lane readers use key 33 to stabilize custody, never to write a key-33 table.

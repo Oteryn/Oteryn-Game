@@ -254,10 +254,7 @@ pub fn bone_shared_actual_owner_harness(
     let cages = BONE_CAGE_KEYS.map(|k| actor(&mut r, k, 120000));
     let phyl = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let mut state = register(&r, cages, phyl);
-    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-        world,
-        r.binding().channel_id(),
-    );
+    let scope = r.binding().runtime_scope();
     let generation = r.binding().scope_generation();
     let mut fence = oteryn_gameplay_foundation::foundation::scoped_fence_fixture(scope, generation);
     let ordinal = fence

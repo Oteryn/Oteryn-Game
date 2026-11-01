@@ -26,7 +26,7 @@ use crate::durability::spell_item_transaction::{
 use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass, UnresolvedLane};
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CommandRef, ExactActorRef, GameSessionId, MovementFacing,
-    MovementLocalPosition, MovementPositionSnapshot, RuntimeScopeRefV1,
+    MovementLocalPosition, MovementPositionSnapshot,
 };
 use crate::spell::cast::{PlayerSpellState, prepare_native_owner_cast_with_caster};
 use crate::spell::chain::TilePosition;
@@ -175,6 +175,7 @@ pub struct PendingNativeCast {
     prepared: PreparedNativeCombatCast,
     owned: OwnedCastFacts,
     request: crate::durability::spell_items_abi::SpellItemTransactionRequest,
+    bounty_leech: Vec<crate::gameplay_transport::task_board::bounty_talisman::SpellLeech>,
 }
 
 #[derive(Debug)]
@@ -201,6 +202,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
     Ranged(Box<super::super::attack::ranged::PendingShot>),
@@ -348,6 +350,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::Enchanting(pending) => {
+                drop(states);
+                self.resolve_enchanting(&mut permit, *pending).await;
+                return permit;
+            }
             UnresolvedSpellCommit::PlayerField(pending) => {
                 drop(states);
                 self.resolve_player_field(&mut permit, *pending).await;
@@ -547,7 +554,7 @@ impl PreparedNativeCombatCast {
                     self.batch.command,
                     character,
                     self.batch.current_lease_generation,
-                    RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id()),
+                    actual.runtime_scope(),
                     actual.scope_generation().get(),
                 )
             }) {
@@ -618,6 +625,7 @@ impl PreparedNativeCombatCast {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
+        bounty_leech: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
         if let Some(companion) = self.direct_companion.as_mut() {
             companion
@@ -641,9 +649,15 @@ impl PreparedNativeCombatCast {
                 .map_err(|_| Error::SnapshotChanged)?;
         }
         let mut physical = runtime.stage_spell_batch(&self.batch)?;
-        let mut player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
-            .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
-        player.stage_item_spell_leech(&physical, self.item_spell_leech)?;
+        let mut player = super::stage_player_batch_with_magnitude(
+            runtime,
+            states,
+            &self.batch,
+            Some(self.paid.clone()),
+            self.magnitude.as_deref(),
+        )
+        .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
+        player.stage_item_spell_leech(&physical, self.item_spell_leech, bounty_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
         if let Some(original) = self.installation.as_ref() {
@@ -1101,8 +1115,7 @@ async fn prepare_source_self_from_owners(
         || authority.command() != command
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
         || b.content_digest != runtime.content_pin().server_artifact_digest()
     {
@@ -2520,6 +2533,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                 let mut owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                     command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                owner.install_cast_proficiency(spell, &mut owned);
                 if pending.is_none(){
                     let promoted=crate::durability::character_promotion::read_durable_promotion(&mut tx,fence.character_id).await?;
                     if states.apply_current_premium(runtime,actor,session,&owned,owner.owner_now().get(),promoted)
@@ -2528,6 +2542,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                             command,runtime,actor,state,active,*access,owner.owner_now().get()).await
                             .map_err(|_|DurabilityError::Unavailable)?;
+                        owner.install_cast_proficiency(spell, &mut owned);
                     }
                     let now=owner.owner_now();
                     let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
@@ -2541,6 +2556,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                             owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,
                                 &item_fence,command,runtime,actor,state,active,*access,now.get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                            owner.install_cast_proficiency(spell, &mut owned);
                         }
                     }
                     let rune_reservation=match rune.as_ref(){
@@ -2611,6 +2627,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
                     states.apply_prey_spell_damage(runtime,&mut prepared.batch);
+                    let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
+                    let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+                        runtime,&mut prepared.batch,&talisman,&stream,decision).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -2624,14 +2643,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     ordinary_field_items::append_creations(&mut tx,&authority,owner.root,runtime,room,objects,content,&mut prepared,&mut request).await
                         .map_err(|_|DurabilityError::Unavailable)?;
-                    *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request});
+                    *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request,bounty_leech});
                 }
                 let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
                 // Current actor facts never come from historical cost/training rows.
                 if attempt.prepared.before!=*states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?{
                     return Err(DurabilityError::Unavailable);
                 }
-                attempt.prepared.stage_installation(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
+                attempt.prepared.stage_installation(runtime,states,&attempt.bounty_leech).map_err(|_|DurabilityError::Unavailable)?;
                 let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(
                     &mut tx,&authority,&attempt.fence,&item_fence).await?;
                 // Re-read only the original source footprint. A changed/unavailable current tile
@@ -2846,8 +2865,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let state=states.get(&runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
-                let current_owned=super::super::spell_access_facts::qualify_owned_cast_read(&current_read,command,&item_fence,
+                let mut current_owned=super::super::spell_access_facts::qualify_owned_cast_read(&current_read,command,&item_fence,
                     &runtime,actor,state,active,*access,owner.owner_now().get()).map_err(|_|DurabilityError::Unavailable)?;
+                owner.install_cast_proficiency(spell, &mut current_owned);
                 window.attempt().prepared.check_commit(&runtime,&states,&current_owned,receipt,committed.companion(),
                     committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?
             };
@@ -2918,7 +2938,11 @@ mod tests {
     fn marker(lane: &SpellLane) -> ParkedMarker {
         ParkedMarker {
             kind: ParkedMarkerKind::Native,
-            actor: ExactActorRef::transport_fixture(lane.world_id(), lane.channel_id()),
+            actor: ExactActorRef::transport_fixture(
+                lane.world_id(),
+                // W02: this existing spell marker fixture remains a Channel.
+                lane.channel_id().unwrap(),
+            ),
             session: GameSessionId::decode(&identity(22)).unwrap(),
         }
     }

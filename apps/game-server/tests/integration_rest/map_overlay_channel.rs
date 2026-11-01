@@ -8,7 +8,7 @@ use std::sync::Arc;
 use oteryn_game_server::durability::item_mint::{
     GroundItemInstance, GroundPlacement, TypedDefinitionRef,
 };
-use oteryn_game_server::foundation::{ChannelId, WorldId};
+use oteryn_game_server::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use oteryn_game_server::map::overlay::{
     AddedItem, Admission, ChannelOverlay, EntryId, GroundRebuildItem, OVERLAY_BUDGET_BYTES,
     OverlayError, TilePos, VolatileItem, map_revision,
@@ -240,7 +240,7 @@ fn ground_item(
     Ok(GroundItemInstance {
         item_instance_id: uuid(seed),
         world_id: world()?,
-        channel_id,
+        runtime_scope: RuntimeScopeRefV1::channel(world()?, channel_id),
         definition: TypedDefinitionRef {
             family: "Item".into(),
             production_key: "item:coin".into(),
@@ -609,7 +609,12 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     type Corrupt = fn(&mut GroundItemInstance);
     let cases: [(Corrupt, OverlayError); 5] = [
         (
-            |item| item.channel_id = channel(3).unwrap_or(item.channel_id),
+            // Tagged Ground scope preserves the same deliberately foreign Channel.
+            |item| {
+                item.runtime_scope = channel(3).map_or(item.runtime_scope, |channel_id| {
+                    RuntimeScopeRefV1::channel(item.world_id, channel_id)
+                });
+            },
             OverlayError::Channel,
         ),
         (

@@ -19,6 +19,9 @@ fn derived_gated_routes_match_previous_table() {
         (14, &[21], &[14]),
         (179, &[348], &[]),
         (180, &[], &[]),
+        (147, &[170], &[]),
+        // Wheel and Atelier are playable through the selected capability 148.
+        (148, &[161, 308, 309, 424], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
@@ -220,20 +223,21 @@ pub(super) async fn join_peer_with(
     let (spatial_type, spatial_payload) = spatial_snapshot;
     let overlay_payload = encode_world_object_overlay_snapshot(&[])
         .map_err(|error| format!("overlay snapshot: {error:?}"))?;
-    let mut domains = vec![
-        DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision: 5,
-            snapshot_type: spatial_type,
-            payload: &spatial_payload,
-        },
-        DomainSnapshot {
+    let mut domains = vec![DomainSnapshot {
+        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+        revision: 5,
+        snapshot_type: spatial_type,
+        payload: &spatial_payload,
+    }];
+    // Bundle Worlds replace the legacy overlay with capability 18's map snapshot.
+    if !selected.contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1) {
+        domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
             revision: 2,
             snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
             payload: &overlay_payload,
-        },
-    ];
+        });
+    }
     for &(domain_id, revision) in extra {
         domains.push(DomainSnapshot {
             domain_id,
@@ -478,4 +482,155 @@ fn a_resume_never_changes_the_selected_set() {
         check_resume_selection(&[7, 13], &[13]),
         Err(SessionError::ResumeSelectionChanged)
     ));
+}
+
+#[test]
+fn p17c_client_advertises_exiva_and_field_prerequisites() {
+    for id in [147, 91, 4, 6, 11, 15, 18, 22, 30] {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&id), "missing {id}");
+    }
+}
+
+#[test]
+fn p17c_field_functions_select_with_prerequisites_on_the_default_client() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::world_map::{
+                    MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+                };
+                let selected: &[u32] = &[4, 6, 11, 15, 18, 22, 30, 91];
+                let (client, mut server) = tokio::io::duplex(256 * 1024);
+                let peer = tokio::spawn(async move {
+                    let map = encode_world_map_snapshot(&WorldMapViewSnapshot {
+                        header: MapViewHeader {
+                            content_generation: CONTENT_GENERATION,
+                            bundle_digest: [0x22; 32],
+                            reset_epoch: 0,
+                            origin: at(0, 0),
+                            first_visible_floor: 0,
+                        },
+                        tiles: vec![],
+                    })
+                    .map_err(|e| format!("{e:?}"))?;
+                    let inv = item_view::encode_character_inventory(&CharacterInventory::default())
+                        .map_err(|e| format!("{e:?}"))?;
+                    let container = item_view::encode_open_container(&OpenContainer::default())
+                        .map_err(|e| format!("{e:?}"))?;
+                    join_peer_with(
+                        &mut server,
+                        CLIENT_SUPPORTED_CAPABILITIES,
+                        selected,
+                        &[],
+                        item_snapshot(vec![])?,
+                        &[(9, 0, 1, inv), (11, 0, 1, container), (17, 0, 1, map)],
+                    )
+                    .await?;
+                    let frame = read_frame(&mut server).await?;
+                    let envelope = decode_wire_envelope(&frame)?;
+                    let command = envelope.client_command(1)?;
+                    assert_eq!(command.command_type, 2);
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            41,
+                            command.command_id,
+                            CommandStatus::Accepted,
+                            &world_object::encode_use_result(UseDisposition::TargetIllegal)
+                                .map_err(|e| format!("{e:?}"))?,
+                        )?,
+                    )
+                    .await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, entity_admission()?).await?;
+                assert!(session.is_selected(91));
+                for capability in selected {
+                    assert!(session.is_selected(*capability));
+                }
+                assert_eq!(
+                    session.use_item(handle(1)).await?.disposition,
+                    UseDisposition::TargetIllegal
+                );
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "field selection thread panicked")?
+}
+
+#[test]
+fn p17c_exiva_selection_routes_command_170_and_refuses_without_selection() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(64 * 1024);
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[147] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &[],
+                        )
+                        .await?;
+                        if selected {
+                            for (id, payload, reply) in [
+                                (7, vec![6, b'A', b'l'], vec![1]),
+                                (8, vec![5], vec![2, 2, 0]),
+                            ] {
+                                let frame = read_frame(&mut server).await?;
+                                let envelope = decode_wire_envelope(&frame)?;
+                                let command = envelope.client_command(1)?;
+                                assert_eq!(
+                                    (command.command_type, command.command_id, command.payload),
+                                    (170, id, payload.as_slice())
+                                );
+                                write_frame(
+                                    &mut server,
+                                    &encode_command_result(
+                                        1,
+                                        34 + id,
+                                        id,
+                                        CommandStatus::Accepted,
+                                        &reply,
+                                    )?,
+                                )
+                                .await?;
+                            }
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    let result = session.gated_command(147, 170, &[6, b'A', b'l']).await;
+                    if selected {
+                        assert_eq!(result?.payload, [1]);
+                        let result = session.gated_command(147, 170, &[5]).await?;
+                        assert_eq!(
+                            exiva::PlayerList::decode(&result.payload)
+                                .ok_or("list")?
+                                .modes,
+                            2
+                        );
+                    } else {
+                        assert!(matches!(
+                            result,
+                            Err(SessionError::CapabilityNotSelected { capability: 147 })
+                        ));
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Exiva selection thread panicked")?
 }

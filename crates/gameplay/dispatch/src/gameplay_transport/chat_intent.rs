@@ -67,8 +67,10 @@ struct ChatSession {
     walked_away: Vec<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
-    /// Its private channels (capability 80, CHAT-PM-CHANNELS-1).
+    /// Historical local rule fixture; production capability80 uses private_world.
+    #[cfg(test)]
     channels: private_channel::PrivateChannels,
+    public_rooms: public_channels::PublicRoomState,
 }
 
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
@@ -77,6 +79,10 @@ struct ChatSession {
 pub struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
+    pub(super) party: super::guild_chat::GuildChatRuntime,
+    pub(super) typing: super::player_typing::TypingRuntime,
+    pub(super) vip: super::vip_presence::VipPresenceRuntime,
+    pub(super) private_world: super::private_channel_world::PrivateChannelRuntime,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
     npc_talk: OnceLock<Arc<NpcTalkBook>>,
     /// The World relay; unset on a node without one, which refuses room and private lines.
@@ -103,6 +109,10 @@ impl ChatRuntime {
         now: SemanticTimeMicros,
     ) {
         self.guild.forget(session);
+        self.party.forget(session);
+        // Typing admission owns its generation-aware reset after this generic chat snapshot.
+        self.vip.forget(session);
+        self.private_world.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
                 name: name.to_owned(),
@@ -116,7 +126,9 @@ impl ChatRuntime {
                 joined: 0,
                 walked_away: Vec::new(),
                 npc_service: false,
+                #[cfg(test)]
                 channels: private_channel::PrivateChannels::default(),
+                public_rooms: public_channels::PublicRoomState::default(),
             });
             entry.name = name.to_owned();
             entry.character = character;
@@ -192,6 +204,9 @@ impl ChatRuntime {
         let Some(entry) = sessions.get_mut(&session) else {
             return result(ChatDisposition::ChatUnavailable);
         };
+        if open && !entry.public_rooms.can_join(room) {
+            return result(ChatDisposition::NotAllowed);
+        }
         if open {
             entry.rooms.insert(room);
         } else {
@@ -244,6 +259,9 @@ impl ChatRuntime {
     /// A reconnect of a known session: drops undelivered lines, keeps the name and limiter.
     pub fn refresh(&self, session: GameSessionId) {
         self.guild.forget(session);
+        self.party.forget(session);
+        self.vip.forget(session);
+        self.private_world.forget(session);
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
@@ -418,6 +436,11 @@ impl ChatRuntime {
 
     pub fn forget(&self, session: GameSessionId) {
         self.guild.forget(session);
+        self.party.forget(session);
+        self.typing.forget(session);
+        self.vip.forget(session);
+        self.private_world.forget(session);
+        #[cfg(test)]
         self.forget_private_channels(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&session);
@@ -833,6 +856,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: &ChatIntent,
     ) -> ChatIntentResult {
+        // Only the fully fenced World owner handles private channels. A direct legacy call
+        // cannot create another local room or bypass its durable receipt/Premium transaction.
+        if matches!(intent, ChatIntent::PrivateChannel(_)) {
+            return result(ChatDisposition::Rejected);
+        }
         if let Some(wait_seconds) = self.staff_mute_wait(session).await {
             return ChatIntentResult {
                 disposition: ChatDisposition::Muted,
@@ -848,11 +876,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             return result;
-        }
-        // Every other private-channel intent was answered by the gate.
-        if let ChatIntent::PrivateChannel(_) = intent {
-            let premium = self.session_premium_gate(session).await.premium_current();
-            return self.states.chat.create_private_channel(session, premium);
         }
         if matches!(intent, ChatIntent::Private { .. } | ChatIntent::Room { .. }) {
             return self.chat_relay(actor, session, intent, now).await;
@@ -1611,6 +1634,9 @@ mod tests {
     }
 }
 
+#[path = "guild_chat/public_channels.rs"]
+pub(super) mod public_channels;
+
 #[path = "guild_chat/relay_delivery.rs"]
 mod relay_delivery;
 #[path = "guild_chat/sender_gate.rs"]
@@ -1618,6 +1644,7 @@ mod sender_gate;
 
 #[path = "guild_chat/egress_acceptance.rs"]
 mod egress_acceptance;
+#[cfg(test)]
 #[path = "guild_chat/private_channel.rs"]
 mod private_channel;
 

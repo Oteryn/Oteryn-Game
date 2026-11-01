@@ -139,11 +139,7 @@ pub(super) async fn resolve_named_player_in_transaction(
     }
     if current.current_runtime_scope() != authority.runtime_scope()
         || current.current_scope_generation().get() != authority.scope_generation()
-        || authority.runtime_scope()
-            != crate::foundation::RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        || authority.runtime_scope() != runtime.binding().runtime_scope()
         || authority.compatible_content_digest() != runtime.content_pin().server_artifact_digest()
     {
         return Err(SpellCastDisposition::NotAvailable);

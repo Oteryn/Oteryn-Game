@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0225-boss-difficulty",
+    "kind": "handlers",
+    "id": "0225-boss-difficulty-unsupported",
+    "status": "unsupported",
+    "reason": "W21 has a server window contract; native client presentation is pending. Start is explicitly refused without an accepted difficulty profile.",
+    "commands": [
+      431
+    ],
+    "not_applicable": {
+      "state": "Server-only selection slice.",
+      "protocol": "Server-only selection slice.",
+      "view": "Server-only selection slice.",
+      "input": "Server-only selection slice.",
+      "settings": "Server-only selection slice."
+    }
+  }
+]

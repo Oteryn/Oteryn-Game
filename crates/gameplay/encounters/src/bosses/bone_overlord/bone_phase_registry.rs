@@ -121,9 +121,9 @@ pub fn register_bone_phase_shared(
     phylactery: ExactActorRef,
 ) -> Result<BoneOverlordCagePhase, BonePhaseError> {
     use crate::content::DefinitionFamily;
-    use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+
     let binding = runtime.binding();
-    let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+    let scope = binding.runtime_scope();
     if !current.is_current_for_scope(scope, binding.scope_generation())
         || !current.accepts_stamp(stamp)
     {

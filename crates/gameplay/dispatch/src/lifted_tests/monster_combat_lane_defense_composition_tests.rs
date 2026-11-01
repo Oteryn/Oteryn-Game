@@ -30,9 +30,7 @@ mod defense_composition_tests {
     use crate::monster_combat_lane::*;
     use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
     use {
-        crate::foundation::{
-            ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, crystal_timer_fixture,
-        },
+        crate::foundation::{ChannelId, MovementLocalPosition, NodeId, crystal_timer_fixture},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
     /// Explicit no-target test owner. Unknown attack/condition facts never grant admission.
@@ -269,7 +267,7 @@ mod defense_composition_tests {
             .expect("monster_combat_lane.rs:defense_composition_tests:3644: qualified fixture operation must succeed");
         let b = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.runtime_scope(),
             b.scope_generation(),
         )
         .expect("monster_combat_lane.rs:defense_composition_tests:3649: qualified fixture operation must succeed");
@@ -465,7 +463,7 @@ mod defense_composition_tests {
             .expect("monster_combat_lane.rs:defense_composition_tests:3845: qualified fixture operation must succeed");
         let binding = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.runtime_scope(),
             binding.scope_generation(),
         )
         .expect("monster_combat_lane.rs:defense_composition_tests:3850: qualified fixture operation must succeed");

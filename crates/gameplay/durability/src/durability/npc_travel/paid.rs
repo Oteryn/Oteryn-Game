@@ -58,6 +58,20 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if route.yalahar_gate || route.yalahar_town_gate.is_some() {
+        let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
+        let track = format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}");
+        let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND ((track_key=$2 AND value=1) OR (track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter' AND value>=5)))")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(track).fetch_one(&mut ***tx).await?;
+        if !permitted { return Ok(Err(TravelRefusal::UnavailableRoute)); }
+    }
+    if let Some(track) = &route.quest_gate {
+        let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>=1)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(track).fetch_one(&mut ***tx).await?;
+        if !permitted {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     if level.is_none_or(|level| level < i64::from(route.route.min_level.unwrap_or(0))) {
@@ -167,6 +181,10 @@ impl DurabilityRoot {
             hash.update(route.route.price.to_be_bytes());
             hash.update(route.route.min_level.unwrap_or(0).to_be_bytes());
             hash.update([u8::from(route.route.premium), u8::from(route.postman), u8::from(route.carpet), u8::from(route.held)]);
+            // Preserve v1 bindings for receipts issued before this new route existed.
+            if route.yalahar_gate { hash.update(b"yalahar-searoutes-gate:v1"); }
+            if let Some(town) = &route.yalahar_town_gate { hash.update(town.as_bytes()); }
+            if let Some(track) = &route.quest_gate { hash.update(track.as_bytes()); }
             hash.update(arrival.destination.x.to_be_bytes());
             hash.update(arrival.destination.y.to_be_bytes());
             hash.update(arrival.destination.floor.to_be_bytes());

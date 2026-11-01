@@ -25,11 +25,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     );
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
-    if admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_ITEM_USE_V1)
         && let Ok(intent) = &decoded
-        && intent.use_with.is_none() && intent.use_with_map_item.is_none()
+        && intent.use_with.is_none()
+        && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+        )
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
@@ -37,12 +44,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            authority.use_drome_cube(actor, UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: command.command_id,
-                item_fence: admitted.item_fence,
-            }, intent.clone(), source),
-        ).await.ok()?.ok()? {
+            authority.use_drome_cube(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -113,9 +129,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     }
                     _ => None,
                 };
+                // Carried targets otherwise enter the pick owner directly. Probe W07
+                // here, including historical receipts whose source handle was retired.
+                if let Some(outcome) = tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    authority.use_soulpit_items(
+                        actor,
+                        UseCommand { game_session_id: admitted.game_session_id,
+                            command_id: command.command_id, item_fence: admitted.item_fence },
+                        intent.clone(), source, target,
+                    ),
+                ).await.ok()?.ok()? {
+                    return Some(Dispatch::Use(outcome));
+                }
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_coin_converter(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await
                 { return Some(Dispatch::Use(outcome)); }
+                if let Some(outcome) = authority.use_consume_transform(
+                    actor,
+                    UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence },
+                    intent.clone(), source, target,
+                ).await { return Some(Dispatch::Use(outcome)); }
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_proficiency_catalyst(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await
                 { return Some(Dispatch::Use(outcome)); }

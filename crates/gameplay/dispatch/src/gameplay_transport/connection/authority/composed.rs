@@ -5,6 +5,50 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
+        self.resolve_runtime_view(admitted).await
+    }
+    async fn boss_activity_command(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+        self.boss_activity_wire(admitted, id, kind, payload).await
+    }
+    async fn settle_activity_connection(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<AdmittedSession, ()> {
+        let admitted = self.settle_native_activity_connection(admitted).await?;
+        self.settle_native_return_connection(admitted).await
+    }
+    fn current_activity_connection(&self, admitted: AdmittedSession) -> AdmittedSession {
+        self.activity_runtimes.current_connection(admitted)
+    }
+    fn remember_activity_connection(&self, admitted: AdmittedSession) -> bool {
+        self.activity_runtimes.remember(admitted).is_ok()
+    }
+    async fn pending_activity_switch(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>, ()>
+    {
+        self.activity_runtimes.pending_switch(admitted)
+    }
+    fn finish_activity_switch(
+        &self,
+        source: AdmittedSession,
+        destination: AdmittedSession,
+    ) -> bool {
+        self.activity_runtimes
+            .finish_switch(source, destination)
+            .is_ok()
+    }
+    fn finish_activity_connection_lineage(&self, admitted: AdmittedSession) {
+        let _ = self.activity_runtimes.finish_connection_lineage(admitted);
+    }
     async fn sleep_in_bed(
         &self,
         actor: ExactActorRef,
@@ -25,7 +69,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_bundle_key(actor, command, key, &door).await
     }
     mechanic_composed_methods!();
+    async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        self.note_activity_input(admitted).await
+    }
+    async fn activity_scope_snapshot(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        self.project_activity_scope(admitted).await
+    }
+
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        if let (Some(actor), Some(fence), Some(controller)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            admitted.controller,
+        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+            && actor.runtime_scope() == fence.runtime_scope
+        {
+            let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(admitted.game_session_id)
+                .await
+            else {
+                return false;
+            };
+            return item_fence_of(current) == Some(fence)
+                && current.session_state() == GameSessionState::Active
+                && current.current_transport() == Some(controller.transport);
+        }
         if !admitted
             .continuity
             .selected_capabilities
@@ -151,15 +222,42 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
-    async fn chat_private_channels(&self, session: GameSessionId, selected: bool) {
-        self.states.chat.set_private_channels(session, selected);
+    async fn public_chat_admit(
+        &self,
+        admitted: AdmittedSession,
+        rooms: oteryn_protocol_oteryn::chat::ChatRoomSet,
+    ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
+        ComposedFreshAdmission::public_chat_admit(self, admitted, rooms).await
     }
 
-    async fn chat_channel_list(
+    async fn public_chat_preflight(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: &oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<Option<oteryn_protocol_oteryn::chat::ChatIntentResult>> {
+        ComposedFreshAdmission::public_chat_preflight(self, admitted, command_id, intent).await
+    }
+
+    async fn chat_private_admit_bound(&self, admitted: AdmittedSession, selected: bool) {
+        self.private_channel_admit(admitted, selected).await;
+    }
+
+    async fn chat_channel_list_bound(
+        &self,
+        admitted: AdmittedSession,
     ) -> Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList> {
-        self.states.chat.take_channel_list(session)
+        self.private_channel_list(admitted).await
+    }
+
+    async fn chat_private_intent(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatIntentResult> {
+        self.private_channel_command(admitted, command_id, &intent)
+            .await
     }
 
     async fn chat_guild_admit(
@@ -167,6 +265,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> oteryn_protocol_oteryn::chat::guild_room::GuildRoomState {
         self.guild_chat_admit(admitted).await
+    }
+
+    async fn chat_party_admit(&self, admitted: AdmittedSession) {
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+        {
+            self.states.chat.party.bind(admitted);
+        }
+    }
+
+    async fn chat_party_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.party_chat_send(admitted, text).await
     }
 
     async fn chat_guild_intent(
@@ -189,11 +305,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.chat.delivered(session);
     }
 
-    async fn chat_rooms_changed(
+    async fn chat_rooms_changed_bound(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
-        self.states.chat.take_rooms_change(session)
+        self.states.chat.take_public_rooms_change(&admitted)
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {
@@ -595,6 +711,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_converter_item(actor, command, item).await {
             return outcome;
         }
@@ -602,6 +721,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return outcome;
         }
         Some(self.use_item(actor, command, item).await)
+    }
+
+    async fn use_consume_transform(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_consume_transform(actor, command, intent, source, target)
+            .await
     }
 
     async fn use_coin_converter(
@@ -632,6 +763,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         definition: std::num::NonZeroU32,
     ) -> UseOutcome {
         self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_soulpit_items(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_soulpit_items(actor, command, &intent, source, target)
+            .await
     }
 
     async fn use_craft(
@@ -844,7 +987,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         wait: Duration,
         reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> ControlLossResult {
-        self.lose_control_for_cause(admitted, wait, reset).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.lose_control_for_cause(admitted, wait, reset).await
     }
 
     async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
@@ -871,11 +1023,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// The abandoned-session release follows the same fence, commit and settle steps as grace
     /// expiry (CHARM-DESC-FENCE-LEASE §3 item 1), under one transition token minted for it.
     async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.release_abandoned_session(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.release_abandoned_session(admitted).await
     }
 
     async fn reconcile_terminal(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.reconcile_terminal_session(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.reconcile_terminal_session(admitted).await
     }
 
     async fn offline_training(
@@ -922,9 +1092,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
     }
+    async fn logout_command(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+    ) -> logout::LogoutReply {
+        self.logout_activity_command(admitted, command_id).await
+    }
+    async fn logout_idle(&self, admitted: AdmittedSession) -> logout::LogoutReply {
+        self.logout_activity_idle(admitted).await
+    }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.expire_session_control_loss(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.expire_session_control_loss(admitted).await
     }
 
     async fn admit(

@@ -327,8 +327,9 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         ) => ItemUseShape::Burn,
         (ITEM_USE_CAUSE_POTION, None, true) => ItemUseShape::BurnFlaskMissing,
         (
-            ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE
-                | super::item_use::drome_cube::DROME_CUBE_CAUSE,
+            ITEM_USE_CAUSE_POTION
+            | super::item_use::mining::PICK_REFINE_CAUSE
+            | super::item_use::drome_cube::DROME_CUBE_CAUSE,
             Some(flask),
             false,
         ) => check_flask(flask, before, entry)?,

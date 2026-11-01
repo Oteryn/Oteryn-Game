@@ -47,7 +47,7 @@ impl GameplayIdleState {
         self.training = training;
     }
 
-    pub(super) fn elapsed(&self, now: Instant) -> std::time::Duration {
+    pub(in crate::gameplay_transport) fn elapsed(&self, now: Instant) -> std::time::Duration {
         self.since.map_or(std::time::Duration::ZERO, |since| {
             now.saturating_duration_since(since)
         })

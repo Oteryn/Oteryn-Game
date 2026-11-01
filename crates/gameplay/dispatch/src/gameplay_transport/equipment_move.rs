@@ -23,7 +23,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceItemTarget};
 use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::character_equipment::{self, EquipmentMoveContent};
-use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
 
 #[path = "equipment_effects_owner.rs"]
@@ -189,11 +189,7 @@ pub(super) async fn read_current_equipment(
     let fence = super::item_fence_of(current)?;
     let digest = {
         let runtime = admission.runtime.lock().await;
-        if fence.runtime_scope
-            != RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        if fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return None;
@@ -340,7 +336,20 @@ async fn move_equipment_inner(
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
-    let Some(_permit) = admission.spell_lane_permit().await else {
+    // EXTRA can qualify a death's talisman reward. Settle earlier deaths before
+    // changing that slot, then retain the lane returned by the queue recheck.
+    let changes_extra = match &request {
+        MoveRequest::Exact(
+            EquipmentMove::Equip { to: slot, .. } | EquipmentMove::Unequip { from: slot, .. },
+        ) => durable_slot(*slot) == Some(10),
+        MoveRequest::Hotkey { slot, .. } => *slot == 10,
+    };
+    let permit = if changes_extra {
+        admission.task_board_lane_after_kills().await
+    } else {
+        admission.spell_lane_permit().await
+    };
+    let Some(_permit) = permit else {
         return EquipmentMoveResult::Unknown;
     };
     let trade_ready = match &request {
@@ -414,17 +423,31 @@ async fn move_equipment_inner(
             let Some(durable) = durable_move(request) else {
                 return refused;
             };
-            admission
-                .root
-                .commit_equipment_move(
-                    admission.character,
-                    admission.holder,
-                    &fence,
-                    CommandRef::new(command.game_session_id, command_id),
-                    &NativeItemWeights(native),
-                    durable,
-                )
-                .await
+            if hotkey {
+                admission
+                    .root
+                    .commit_hotkey_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                    )
+                    .await
+            } else {
+                admission
+                    .root
+                    .commit_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                    )
+                    .await
+            }
         }
     };
     // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever

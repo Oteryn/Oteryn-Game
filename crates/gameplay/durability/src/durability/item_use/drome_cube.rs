@@ -162,8 +162,11 @@ pub(super) async fn admit(
         return Err(ItemUseError::InvalidInput.into());
     };
     let content = content.ok_or(ItemUseError::InvalidInput)?;
-    let index = reward_index(request.source_item_instance_id, request.source_quantity_before)
-        .ok_or(ItemUseError::InvalidInput)?;
+    let index = reward_index(
+        request.source_item_instance_id,
+        request.source_quantity_before,
+    )
+    .ok_or(ItemUseError::InvalidInput)?;
     let selected = reward(index).ok_or(ItemUseError::InvalidInput)?;
     let output = flask_definition(request).ok_or(ItemUseError::InvalidInput)?;
     if request.source_definition.family != "Item"
@@ -193,7 +196,9 @@ pub(super) async fn admit(
     if request.source_quantity_before > source_maximum {
         return Err(ItemUseError::InvalidInput.into());
     }
-    if let ItemUseFlaskPlan::Stack { quantity_before, .. } = request.flask
+    if let ItemUseFlaskPlan::Stack {
+        quantity_before, ..
+    } = request.flask
         && (!stackable || quantity_before >= maximum)
     {
         return Err(DromeCubeError::Capacity);
@@ -241,7 +246,10 @@ pub(super) async fn admit(
     let mut total = weight(&bag.backpack.definition)?
         .checked_mul(u64::from(bag.backpack.quantity))
         .ok_or(ItemUseError::InvalidInput)?;
-    for item in entries.map(|entry| &entry.item).chain(inventory.equipment.iter()) {
+    for item in entries
+        .map(|entry| &entry.item)
+        .chain(inventory.equipment.iter())
+    {
         let stack_weight = weight(&item.definition)?
             .checked_mul(u64::from(item.quantity))
             .ok_or(ItemUseError::InvalidInput)?;
@@ -253,7 +261,7 @@ pub(super) async fn admit(
         .checked_sub(weight(&source.item.definition)?)
         .and_then(|value| value.checked_add(u64::from(output_facts.weight?)))
         .ok_or(ItemUseError::InvalidInput)?;
-    if after > read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await? {
+    if after > read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await? {
         return Err(DromeCubeError::Capacity);
     }
     sqlx::query(

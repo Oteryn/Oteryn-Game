@@ -22,7 +22,9 @@ use super::item_transfer_audit::{
 use prost::Message;
 use sha2::{Digest, Sha256};
 
+mod boss;
 mod inbox;
+pub use boss::BossRewardClaimSourceV1;
 pub use inbox::{
     REWARD_INBOX_ENVELOPE_BYTES_MAX, REWARD_INBOX_ITEMS_MAX, REWARD_INBOX_PAYLOAD_BYTES_MAX,
     RewardClaimInboxMintOutputV1, RewardClaimInboxMintV1, reward_inbox_usage,
@@ -47,6 +49,9 @@ pub struct OneItemRewardClaimCauseV1 {
     pub command_ref: Option<OneItemCommandRefV1>,
     #[prost(message, optional, tag = "10")]
     pub reward_claim: Option<OneItemTypedDefinitionRevisionV1>,
+    /// Frozen personal entitlement, mutually exclusive with a once-only Content RewardClaim.
+    #[prost(message, optional, tag = "11")]
+    pub boss_reward: Option<BossRewardClaimSourceV1>,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -107,7 +112,7 @@ pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), A
     check_content_key(&source.ruleset_revision)?;
     check_content_key(&source.sim_revision)?;
     check_uuid_v7(&command.game_session_id)?;
-    check_definition(source.reward_claim.as_ref())?;
+    boss::check_source(source)?;
     if !value.before_semantically_absent
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
@@ -118,6 +123,9 @@ pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), A
         || entry.parent_item_instance_id == after.item_instance_id
         || command.command_id == 0
         || command.game_session_id != destination.expected_game_session_id
+        || source.boss_reward.as_ref().is_some_and(|boss| {
+            boss.lease_generation != destination.expected_character_lease_generation
+        })
         || destination.expected_session_generation == 0
     {
         return Err(AuditError::InvalidInput);
@@ -163,11 +171,18 @@ pub fn decode_reward_claim_mint_envelope(
         .as_ref()
         .and_then(|source| source.command_ref.as_ref())
         .ok_or(AuditError::InvalidInput)?;
-    let channel_id = value
-        .channel_id
-        .as_deref()
-        .ok_or(AuditError::InvalidInput)?;
-    check_uuid_v7(channel_id)?;
+    match (&value.channel_id, &value.instance_id) {
+        (Some(channel), None) => check_uuid_v7(channel)?,
+        (None, Some(instance))
+            if minted
+                .source
+                .as_ref()
+                .is_some_and(|s| s.boss_reward.is_some()) =>
+        {
+            check_uuid_v7(instance)?
+        }
+        _ => return Err(AuditError::InvalidInput),
+    }
     let envelope_command = CausationRefV1 {
         cause: Some(CausationV1::Command(EnvelopeCommandRefV1 {
             game_session_id: command.game_session_id.clone(),
@@ -213,9 +228,52 @@ pub fn encode_reward_claim_mint_event(
     minted: OneItemRewardClaimMintV1,
     tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
+    encode_scoped_reward_claim_mint_event(
+        ScopedRewardClaimMintEventIdentity {
+            event_id: identity.event_id,
+            transaction_id: identity.transaction_id,
+            occurred_at_unix_ms: identity.occurred_at_unix_ms,
+            scope: RewardClaimMintEventScope::Channel(identity.channel_id),
+            server_build_id: identity.server_build_id,
+        },
+        minted,
+        tuple,
+    )
+}
+
+/// Collection in a real Instance keeps that Instance in the normative envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RewardClaimMintEventScope {
+    Channel([u8; 16]),
+    Instance([u8; 16]),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScopedRewardClaimMintEventIdentity<'a> {
+    pub event_id: [u8; 16],
+    pub transaction_id: [u8; 16],
+    pub occurred_at_unix_ms: i64,
+    pub scope: RewardClaimMintEventScope,
+    pub server_build_id: &'a str,
+}
+
+pub fn encode_scoped_reward_claim_mint_event(
+    identity: ScopedRewardClaimMintEventIdentity<'_>,
+    minted: OneItemRewardClaimMintV1,
+    tuple: mint::Type2EventTuple,
+) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
-    check_uuid_v7(&identity.channel_id)?;
+    let (channel_id, instance_id) = match identity.scope {
+        RewardClaimMintEventScope::Channel(id) => {
+            check_uuid_v7(&id)?;
+            (Some(id.to_vec()), None)
+        }
+        RewardClaimMintEventScope::Instance(id) => {
+            check_uuid_v7(&id)?;
+            (None, Some(id.to_vec()))
+        }
+    };
     check_technical_text(identity.server_build_id)?;
     if identity.occurred_at_unix_ms <= 0 {
         return Err(AuditError::InvalidInput);
@@ -253,7 +311,8 @@ pub fn encode_reward_claim_mint_event(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
-        channel_id: Some(identity.channel_id.to_vec()),
+        channel_id,
+        instance_id,
         game_session_id: Some(command.game_session_id.clone()),
         connection_generation: Some(connection_generation),
         command_id: Some(command.command_id),
@@ -344,6 +403,7 @@ mod tests {
                     command_id: 7,
                 }),
                 reward_claim: Some(definition("RewardClaim", "fixture:chest.claim")),
+                boss_reward: None,
             }),
             before_semantically_absent: true,
             inbox: None,
@@ -518,5 +578,81 @@ mod tests {
     #[test]
     fn usage_fits_the_registered_rows() {
         assert!(REWARD_CLAIM_MINT_USAGE.check().is_ok());
+    }
+    #[test]
+    fn personal_reward_mint_preserves_true_instance_scope_and_entitlement_source() {
+        let mut value = minted();
+        let source = value.source.as_mut().expect("source");
+        source.reward_claim = None;
+        source.boss_reward = Some(BossRewardClaimSourceV1 {
+            death: vec![9; 16],
+            item_ordinal: 7,
+            boss_key: "oteryn:boss.test".into(),
+            lease_generation: 1,
+            scope_generation: 4,
+        });
+        let wire = encode_scoped_reward_claim_mint_event(
+            ScopedRewardClaimMintEventIdentity {
+                event_id: fixed(30),
+                transaction_id: fixed(31),
+                occurred_at_unix_ms: 1_700_000_000_000,
+                scope: RewardClaimMintEventScope::Instance(fixed(80)),
+                server_build_id: "test-build",
+            },
+            value.clone(),
+            mint::Type2EventTuple::V1,
+        )
+        .expect("instance mint");
+        let (envelope, decoded) = decode_reward_claim_mint_envelope(&wire).expect("decode");
+        assert_eq!(decoded, value);
+        assert_eq!(envelope.instance_id, Some(uuid(80)));
+        assert!(envelope.channel_id.is_none());
+        let mut mixed = envelope;
+        mixed.channel_id = Some(uuid(2));
+        assert_eq!(
+            decode_reward_claim_mint_envelope(&mixed.encode_to_vec()),
+            Err(AuditError::InvalidInput)
+        );
+        let mut both = value.clone();
+        both.source.as_mut().expect("source").reward_claim =
+            Some(definition("RewardClaim", "oteryn:claim.test"));
+        assert_eq!(
+            check_reward_claim_mint(&both),
+            Err(AuditError::InvalidInput)
+        );
+        let mut stale = value.clone();
+        stale
+            .source
+            .as_mut()
+            .expect("source")
+            .boss_reward
+            .as_mut()
+            .expect("boss")
+            .lease_generation = 2;
+        assert_eq!(
+            check_reward_claim_mint(&stale),
+            Err(AuditError::InvalidInput)
+        );
+        for ordinal in [0, 1_001] {
+            let mut invalid = value.clone();
+            invalid
+                .source
+                .as_mut()
+                .expect("source")
+                .boss_reward
+                .as_mut()
+                .expect("boss")
+                .item_ordinal = ordinal;
+            assert_eq!(
+                check_reward_claim_mint(&invalid),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        let mut no_source = value;
+        no_source.source.as_mut().expect("source").boss_reward = None;
+        assert_eq!(
+            check_reward_claim_mint(&no_source),
+            Err(AuditError::InvalidInput)
+        );
     }
 }

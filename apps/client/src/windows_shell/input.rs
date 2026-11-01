@@ -9,7 +9,10 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         if let Some(play) = &mut self.play {
-            if play.link.quest_input(events) {
+            if play.link.wheel_input(events)
+                || play.link.exiva_input(events)
+                || play.link.quest_input(events)
+            {
                 return;
             }
             if let Some(direction) = arrow_step(events) {

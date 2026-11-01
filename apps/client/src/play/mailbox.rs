@@ -57,6 +57,9 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
+    pub(super) wheel_shutdown: bool,
+    pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
@@ -182,6 +185,8 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 
 impl Drop for PlayLink {
     fn drop(&mut self) {
-        lock(&self.mailbox).quest_shutdown = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.quest_shutdown = true;
+        mailbox.wheel_shutdown = true;
     }
 }

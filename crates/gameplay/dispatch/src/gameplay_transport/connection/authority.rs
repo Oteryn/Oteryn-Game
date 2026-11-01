@@ -16,6 +16,60 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Select the complete native owner for a committed activity successor.
+    /// Transport fixtures and the existing House custody path keep their owner.
+    fn resolve_native_scope(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<Self>, ()>>
+    where
+        Self: Sized,
+    {
+        async { Ok(None) }
+    }
+    fn boss_activity_command(
+        &self,
+        _admitted: AdmittedSession,
+        _id: u64,
+        _kind: u32,
+        _payload: &[u8],
+    ) -> impl Future<Output = Option<(crate::foundation::CommandStatus, Vec<u8>)>> {
+        async { Some((crate::foundation::CommandStatus::Rejected, Vec::new())) }
+    }
+    fn settle_activity_connection(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<AdmittedSession, ()>> {
+        async move { Ok(admitted) }
+    }
+    fn current_activity_connection(&self, admitted: AdmittedSession) -> AdmittedSession {
+        admitted
+    }
+    fn remember_activity_connection(&self, _admitted: AdmittedSession) -> bool {
+        true
+    }
+    fn pending_activity_switch(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = Result<
+            Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>,
+            (),
+        >,
+    > {
+        async { Ok(None) }
+    }
+    fn finish_activity_switch(
+        &self,
+        _source: AdmittedSession,
+        _destination: AdmittedSession,
+    ) -> bool {
+        true
+    }
+    /// Local bookkeeping only, after the listener has completed all callbacks
+    /// for this exact socket/loss lifecycle. Cancellation or an unknown durable
+    /// outcome must retain the aliases needed by the existing recovery owners.
+    fn finish_activity_connection_lineage(&self, _admitted: AdmittedSession) {}
     mechanic_authority_methods!();
     /// KEYDOOR-1: use a resolved carried/map key on a non-movable map door.
     fn use_key_on_door(
@@ -27,6 +81,16 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
+    fn activity_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    fn activity_scope_snapshot(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<Vec<u8>>, ()>> {
+        async { Ok(None) }
+    }
+
     fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
     }
@@ -396,6 +460,17 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    fn use_consume_transform(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     fn use_coin_converter(
         &self,
         _actor: ExactActorRef,
@@ -517,6 +592,20 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
         async { None }
+    }
+
+    /// W07 reuses USE for carried Soul Core targets and the fixed obelisk. An unknown
+    /// item returns None so existing tool owners can handle it; uncertain writes close
+    /// the command through Err instead of falling through to a second mutation owner.
+    fn use_soulpit_items(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
@@ -810,6 +899,61 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// The original connection alone may acknowledge its room-set delta.
+    fn chat_rooms_changed_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<ChatRoomSet>> {
+        self.chat_rooms_changed(admitted.game_session_id)
+    }
+
+    /// S04 public-room admission refreshes authoritative roles and preserves legacy wire bits.
+    fn public_chat_admit(
+        &self,
+        _admitted: AdmittedSession,
+        rooms: ChatRoomSet,
+    ) -> impl Future<Output = ChatRoomSet> {
+        std::future::ready(rooms)
+    }
+
+    fn public_chat_preflight(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _intent: &ChatIntent,
+    ) -> impl Future<Output = Option<Option<ChatIntentResult>>> {
+        std::future::ready(None)
+    }
+
+    /// S04b passes the original admitted fence into the World membership owner.
+    fn chat_private_admit_bound(
+        &self,
+        admitted: AdmittedSession,
+        selected: bool,
+    ) -> impl Future<Output = ()> {
+        self.chat_private_channels(admitted.game_session_id, selected)
+    }
+
+    fn chat_channel_list_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList>>
+    {
+        self.chat_channel_list(admitted.game_session_id)
+    }
+
+    fn chat_private_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _intent: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent,
+    ) -> impl Future<Output = Option<ChatIntentResult>> {
+        std::future::ready(Some(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::ChatUnavailable,
+            wait_seconds: 0,
+        }))
+    }
+
     /// CHAT-PM-CHANNELS-1: negotiation of `session`; `selected` is capability 80.
     fn chat_private_channels(
         &self,
@@ -834,6 +978,21 @@ pub trait FreshAdmissionAuthority {
         _admitted: AdmittedSession,
     ) -> impl Future<Output = oteryn_protocol_oteryn::chat::guild_room::GuildRoomState> {
         std::future::ready(oteryn_protocol_oteryn::chat::guild_room::GuildRoomState::Unavailable)
+    }
+
+    fn chat_party_admit(&self, _admitted: AdmittedSession) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    fn chat_party_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _text: String,
+    ) -> impl Future<Output = ChatIntentResult> {
+        std::future::ready(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::Rejected,
+            wait_seconds: 0,
+        })
     }
 
     fn chat_guild_intent(
@@ -1127,6 +1286,21 @@ pub trait FreshAdmissionAuthority {
     /// no session refuse it as `BUSY`, with no effect.
     fn logout(&self, _admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
         async { LogoutReply::Result(LogoutResult::Busy) }
+    }
+
+    /// The real admitted LOGOUT_INTENT identity, retained through a scope return.
+    /// Existing non-activity authorities keep their original logout behavior.
+    fn logout_command(
+        &self,
+        admitted: AdmittedSession,
+        _command_id: u64,
+    ) -> impl Future<Output = LogoutReply> {
+        self.logout(admitted)
+    }
+
+    /// Called only by the existing elapsed idle timer under its input permit.
+    fn logout_idle(&self, admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
+        self.logout(admitted)
     }
 
     /// Once the original grace deadline of the recorded loss passes without resumed

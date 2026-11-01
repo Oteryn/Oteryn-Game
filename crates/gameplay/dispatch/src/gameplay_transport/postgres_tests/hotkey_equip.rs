@@ -78,12 +78,73 @@ fn scenario_options(
         started,
         occupied,
         extra_quiver,
-        false,
+        ScenarioMode::Normal,
     )
 }
 
 pub(super) fn coalescing_scenario() -> TestResult {
-    scenario_options_impl(false, false, false, false, None, false, true)
+    scenario_options_impl(
+        false,
+        false,
+        false,
+        false,
+        None,
+        false,
+        ScenarioMode::Coalescing,
+    )
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum ScenarioMode {
+    Normal,
+    Coalescing,
+    Pouch,
+    ForeignPouch,
+    Managed,
+    Hands {
+        incoming: &'static str,
+        both: bool,
+        full: bool,
+    },
+    Ammo {
+        full: bool,
+        absent: bool,
+    },
+}
+
+#[test]
+fn hotkey_equip_postgres_pouch_source_replay_and_foreign_refusal() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-pouch", || {
+        scenario_options_impl(false, false, true, false, None, false, ScenarioMode::Pouch)?;
+        scenario_options_impl(
+            false,
+            false,
+            true,
+            false,
+            None,
+            false,
+            ScenarioMode::ForeignPouch,
+        )
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_managed_destination_replay() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-managed", || {
+        scenario_options_impl(
+            false,
+            false,
+            true,
+            false,
+            None,
+            false,
+            ScenarioMode::Managed,
+        )
+    })
+}
+
+pub(super) fn swap_scenario(mode: ScenarioMode) -> TestResult {
+    scenario_options_impl(false, false, false, false, None, false, mode)
 }
 
 fn scenario_options_impl(
@@ -93,9 +154,14 @@ fn scenario_options_impl(
     started: bool,
     occupied: Option<bool>,
     extra_quiver: bool,
-    coalescing: bool,
+    mode: ScenarioMode,
 ) -> TestResult {
+    let coalescing = matches!(mode, ScenarioMode::Coalescing);
+    let pouch = matches!(mode, ScenarioMode::Pouch | ScenarioMode::ForeignPouch);
+    let foreign = matches!(mode, ScenarioMode::ForeignPouch);
+    let managed = matches!(mode, ScenarioMode::Managed);
     run(async |admin| {
+        let started_at = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -110,7 +176,11 @@ fn scenario_options_impl(
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let item_key = if started {
+        let item_key = if let ScenarioMode::Hands { incoming, .. } = mode {
+            incoming
+        } else if matches!(mode, ScenarioMode::Ammo { .. }) {
+            "oteryn:item.tibia.i3447"
+        } else if started {
             "oteryn:item.tibia.i6529"
         } else {
             "oteryn:item.tibia.i3264"
@@ -161,7 +231,10 @@ fn scenario_options_impl(
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
-        let mut entries = vec![("oteryn:item.tibia.i3264", 1)];
+        let mut entries = vec![(item_key, 1)];
+        if matches!(mode, ScenarioMode::Hands { full: true, .. }) {
+            entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+        }
         if spare {
             entries.push(("oteryn:item.tibia.i3264", 1));
         }
@@ -175,6 +248,60 @@ fn scenario_options_impl(
             entries.resize(20, ("oteryn:item.tibia.i3031", 1));
         }
         item_look::seed_main_backpack(&harness, &entries).await?;
+        if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            if matches!(mode, ScenarioMode::Hands { .. }) {
+                // The pinned gameplay profile qualifies this two-hander for level-50 monks.
+                sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            }
+            let worn: Vec<(u8, &str, i16)> = match mode {
+                ScenarioMode::Hands { both: true, .. } => vec![
+                    (110, "oteryn:item.tibia.i3277", 5),
+                    (111, "oteryn:item.tibia.i3412", 6),
+                ],
+                ScenarioMode::Hands { .. } => vec![(110, "oteryn:item.tibia.i50273", 5)],
+                ScenarioMode::Ammo { absent: false, .. } => {
+                    vec![(110, "oteryn:item.tibia.i35562", 6)]
+                }
+                _ => vec![],
+            };
+            for (seed, key, slot) in worn {
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        seed,
+                        key,
+                        "definition-r1",
+                        1,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
+                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($3,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(slot).bind(id(seed).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            }
+            if matches!(mode, ScenarioMode::Ammo { full: true, .. }) {
+                // Crystal items.xml:66305: ordinary quiver has six entries.
+                for seed in 120..126 {
+                    sqlx::raw_sql(sqlx::AssertSqlSafe(
+                        crate::durability::item_fee_burn::test_support::item(
+                            seed,
+                            "oteryn:item.tibia.i3447",
+                            "definition-r1",
+                            100,
+                        ),
+                    ))
+                    .execute(&mut *tx)
+                    .await?;
+                    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($1,'hex')::uuid)")
+                        .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(110).as_slice()).bind(i64::from(seed)-119).execute(&mut *tx).await?;
+                }
+            }
+            tx.commit().await?;
+        }
         if occupied.is_some() {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -240,12 +367,37 @@ fn scenario_options_impl(
             }
             tx.commit().await?;
         }
+        if pouch || managed {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            if pouch {
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i23721' WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).execute(&mut *tx).await?;
+                if foreign {
+                    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Hotkey Foreign' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+                        .bind(id(90).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+                }
+                sqlx::query("INSERT INTO game_item_character_inbox_locations(item_instance_id,character_id,world_id,ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
+                    .bind(id(71).as_slice()).bind(id(if foreign {90} else {41}).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            } else {
+                sqlx::query("INSERT INTO game_character_quick_loot_settings(character_id,unassigned_container_id,committed_character_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+                    .bind(id(41).as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+        }
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            if nested || started {
+            if nested
+                || started
+                || matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. })
+            {
                 &[4, 6, 12, 14, 179, 180]
             } else {
                 &[4, 6, 12, 14, 179]
@@ -275,6 +427,30 @@ fn scenario_options_impl(
                 if envelope.message_type() == protocol::MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
+                let expected = match mode {
+                    ScenarioMode::Hands { full: true, .. }
+                    | ScenarioMode::Ammo { full: true, .. } => ItemMoveOutcome::NoRoom,
+                    ScenarioMode::Ammo { absent: true, .. } => ItemMoveOutcome::SlotMismatch,
+                    _ => ItemMoveOutcome::Moved,
+                };
+                assert_eq!(
+                    send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
+                    expected
+                );
+                assert_eq!(
+                    send(
+                        &mut client,
+                        1,
+                        &request,
+                        protocol::CommandStatus::DuplicateReplay
+                    )
+                    .await?,
+                    expected
+                );
+                client.shutdown().await?;
+                return Ok(());
             }
             if let Some(full) = occupied {
                 assert_eq!(
@@ -311,10 +487,14 @@ fn scenario_options_impl(
                 client.shutdown().await?;
                 return Ok(());
             }
-            if feared {
+            if feared || foreign {
                 assert_eq!(
                     send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
-                    ItemMoveOutcome::Rejected
+                    if foreign {
+                        ItemMoveOutcome::Stale
+                    } else {
+                        ItemMoveOutcome::Rejected
+                    }
                 );
                 assert_eq!(equipped_count(pool).await?, 0);
                 let receipts: i64 =
@@ -437,6 +617,30 @@ fn scenario_options_impl(
                 ItemMoveOutcome::Moved
             );
             assert_eq!(equipped_count(pool).await?, 0);
+            if managed || pouch {
+                let query = if managed {
+                    "SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid"
+                } else {
+                    "SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid"
+                };
+                let count: i64 = sqlx::query_scalar(query)
+                    .bind(id(100).as_slice())
+                    .bind(id(if managed { 71 } else { 41 }).as_slice())
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(count, 1);
+                assert_eq!(
+                    send(
+                        &mut client,
+                        3,
+                        &request,
+                        protocol::CommandStatus::DuplicateReplay
+                    )
+                    .await?,
+                    ItemMoveOutcome::Moved
+                );
+                assert_eq!(equipped_count(pool).await?, 0);
+            }
             assert_eq!(
                 send(&mut client, 4, &request, protocol::CommandStatus::Accepted).await?,
                 ItemMoveOutcome::Moved
@@ -456,6 +660,77 @@ fn scenario_options_impl(
         )
         .await
         .ok_or("reloaded equipment")?;
+        if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
+            let refused = matches!(
+                mode,
+                ScenarioMode::Hands { full: true, .. }
+                    | ScenarioMode::Ammo { full: true, .. }
+                    | ScenarioMode::Ammo { absent: true, .. }
+            );
+            if !refused {
+                // Bypass the connection's retained reply: a new owner must answer from
+                // the durable receipt before selecting the now-moved source again.
+                assert_eq!(
+                    crate::gameplay_transport::hotkey_equip::execute(
+                        &reloaded,
+                        deps.actor,
+                        crate::gameplay_transport::connection::UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 1,
+                            item_fence: Some(fence),
+                        },
+                        protocol::hotkey_equip::Request { definition: reference },
+                        true,
+                    )
+                    .await,
+                    Some(ItemMoveOutcome::Moved),
+                );
+            }
+            let source_main: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(source_main, i64::from(refused));
+            let source_revision: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(source_revision, if refused { "1" } else { "2" });
+            let receipts: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_equipment_receipts)+(SELECT count(*) FROM game_item_loop_move_receipts)").fetch_one(&harness.pool).await?;
+            assert_eq!(receipts, i64::from(!refused));
+            match mode {
+                ScenarioMode::Hands {
+                    both,
+                    full,
+                    incoming,
+                } => {
+                    assert_eq!(equipment.items.len(), if full { 2 } else { 1 });
+                    if !full {
+                        assert_eq!(equipment.items[0].item_instance_id, id(71));
+                        assert_eq!(
+                            equipment.items[0].slot,
+                            if incoming == "oteryn:item.tibia.i3412" {
+                                6
+                            } else {
+                                5
+                            }
+                        );
+                    }
+                    for seed in if both { vec![110, 111] } else { vec![110] } {
+                        let old_main: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid")
+                            .bind(id(seed).as_slice()).bind(id(70).as_slice()).fetch_one(&harness.pool).await?;
+                        assert_eq!(old_main, i64::from(!full));
+                        let revision: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(seed).as_slice()).fetch_one(&harness.pool).await?;
+                        assert_eq!(revision, if full { "1" } else { "2" });
+                    }
+                }
+                ScenarioMode::Ammo { absent, .. } => {
+                    assert_eq!(equipment.items.len(), usize::from(!absent));
+                    let in_quiver: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid")
+                        .bind(id(71).as_slice()).bind(id(110).as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(in_quiver, i64::from(!refused));
+                }
+                _ => return Err("swap mode".into()),
+            }
+            eprintln!("HOTKEYC_POSTGRES_EXECUTED elapsed={:?}", started_at.elapsed());
+            return Ok(());
+        }
         if extra_quiver {
             assert_eq!(equipment.items.len(), 2);
             assert!(
@@ -488,7 +763,7 @@ fn scenario_options_impl(
                     .fetch_one(&harness.pool)
                     .await?;
             assert_eq!(receipts, 3);
-        } else if feared {
+        } else if feared || foreign {
             assert!(equipment.items.is_empty());
         } else {
             assert_eq!(equipment.items.len(), 1);
@@ -528,8 +803,17 @@ fn scenario_options_impl(
                 sqlx::query_scalar("SELECT count(*) FROM game_equipment_nested_removals")
                     .fetch_one(&harness.pool)
                     .await?;
-            assert_eq!(evidence, if occupied == Some(true) { 0 } else { 1 });
-            if occupied != Some(true) {
+            assert_eq!(
+                evidence,
+                if occupied == Some(true) || foreign {
+                    0
+                } else if managed {
+                    2
+                } else {
+                    1
+                }
+            );
+            if occupied != Some(true) && !foreign {
                 let mut tx = harness.pool.begin().await?;
                 sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
                     .execute(&mut *tx)
@@ -538,6 +822,12 @@ fn scenario_options_impl(
                 tx.rollback().await?;
             }
         }
+        if foreign {
+            let unchanged: (String, i64) = sqlx::query_as("SELECT i.state_revision::text,(SELECT count(*) FROM game_item_nested_entries e WHERE e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=encode($2,'hex')::uuid) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(100).as_slice()).bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(unchanged, ("1".into(), 1));
+        }
+        eprintln!("PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed} elapsed={:?}", started_at.elapsed());
         if coalescing {
             eprintln!(
                 "PKG7_POSTGRES_EXECUTED: burst 3,4,5; zero cancelled receipts; replay 6; durable reload; PostgreSQL 18.6"
@@ -611,7 +901,7 @@ where
             return Poll::Ready(if result.is_some() {
                 Ok(end)
             } else {
-                Err("connection ended before hotkey exercise".into())
+                Err(format!("connection ended before hotkey exercise: {end:?}").into())
             });
         }
         Poll::Pending

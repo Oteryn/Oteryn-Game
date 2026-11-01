@@ -241,7 +241,39 @@ pub fn prepare_ordinary_owner_cast_with_caster(
     )>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
+    prepare_ordinary_owner_cast_with_wheel(
+        book,
+        state,
+        spell,
+        operational,
+        now,
+        caster,
+        party,
+        chain,
+        draw,
+        Default::default(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_ordinary_owner_cast_with_wheel(
+    book: &SpellBook,
+    state: &PlayerSpellState,
+    spell: &SpellDefinition,
+    operational: &crate::spell::OperationalCastFacts,
+    now: SemanticTimeMicros,
+    caster: &CasterState,
+    party: Option<&dyn crate::spell::party::PartyWorld>,
+    chain: Option<(
+        &dyn crate::spell::chain::ChainWorld,
+        crate::spell::chain::ChainStart,
+    )>,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+    wheel: crate::spell::wheel_formula::WheelFormulaMagic,
+) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
     admit_condition_gates(state, spell, now)?;
+    // OwnedCastFacts qualifies effective magic, including loyalty and equipped proficiency
+    // bonuses that the condition-only PlayerSpellState projection does not contain.
     if state.pending_stance.is_some()
         || state.training_checkpoint.is_some()
         || !book.spells.contains(spell)
@@ -253,7 +285,6 @@ pub fn prepare_ordinary_owner_cast_with_caster(
         )
         || caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
@@ -266,38 +297,52 @@ pub fn prepare_ordinary_owner_cast_with_caster(
     if spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield" {
         crate::spell::actor_conditions::require_active_mana_shield(&state.conditions, now.get())?;
     }
-    let resolution = if matches!(spell.execution, crate::spell::Execution::PartyBuff(_)) {
-        crate::spell::resolve_party_cast(
-            spell,
-            caster,
-            &state.cooldowns,
-            now,
-            party.ok_or(SpellCastDisposition::TargetRequired)?,
-            draw,
-        )
+    let facts = if matches!(spell.execution, crate::spell::Execution::PartyBuff(_)) {
+        crate::spell::Facts::Party(party.ok_or(SpellCastDisposition::TargetRequired)?)
     } else if spell.chains(operational.target.is_some()) {
         let (world, start) = chain.ok_or(SpellCastDisposition::TargetRequired)?;
-        crate::spell::resolve_chain_cast(
+        crate::spell::Facts::Chain(
+            world,
+            crate::spell::chain::ChainStart {
+                target: start.target.filter(|_| spell.takes_target()),
+                ..start
+            },
+        )
+    } else {
+        crate::spell::Facts::Owned(operational, false)
+    };
+    let has_target = match facts {
+        crate::spell::Facts::Party(_) => false,
+        crate::spell::Facts::Chain(_, start) => start.target.is_some(),
+        _ => operational.target.is_some(),
+    };
+    let resolution = if matches!(facts, crate::spell::Facts::Chain(..)) {
+        crate::spell::resolve_with_wheel(
             spell,
             caster,
             &state.cooldowns,
             now,
-            world,
-            start,
+            has_target,
+            facts,
+            wheel,
             &mut |minimum, _| minimum,
         )
     } else {
-        crate::spell::resolve_cast_with_operational_facts(
+        crate::spell::resolve_with_wheel(
             spell,
             caster,
             &state.cooldowns,
             now,
-            operational,
+            has_target,
+            facts,
+            wheel,
             draw,
         )
     }
-    .map_err(|e| disposition(&e))?;
+    .map_err(|error| disposition(&error))?;
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.mana = next
         .mana
         .checked_sub(resolution.mana_spent)
@@ -375,6 +420,16 @@ pub fn resolve_ordinary_due_effects(
     step: u32,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<Vec<crate::spell::ResolvedEffect>, SpellCastDisposition> {
+    resolve_ordinary_due_effects_with_wheel(spell, caster, step, draw, Default::default())
+}
+
+pub fn resolve_ordinary_due_effects_with_wheel(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    step: u32,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+    wheel: crate::spell::wheel_formula::WheelFormulaMagic,
+) -> Result<Vec<crate::spell::ResolvedEffect>, SpellCastDisposition> {
     let crate::spell::Execution::Effects(effects) = &spell.execution else {
         return Err(SpellCastDisposition::Rejected);
     };
@@ -382,9 +437,11 @@ pub fn resolve_ordinary_due_effects(
     if spell.authored.is_none() || step > chain.max_targets {
         return Err(SpellCastDisposition::Rejected);
     }
-    let inputs = crate::spell::formula::FormulaInputs {
+    let mut inputs = crate::spell::formula::FormulaInputs {
         level: caster.level,
-        magic_level: caster.magic_level,
+        magic_level: wheel
+            .roll_magic_level(caster.magic_level, draw)
+            .map_err(|_| SpellCastDisposition::Rejected)?,
         base_power: spell.base_power,
         attack_skill: caster.attack_skill,
         attack_value: caster.attack_value,
@@ -392,10 +449,17 @@ pub fn resolve_ordinary_due_effects(
         shielding_skill: caster.shielding_skill,
         shield_defense: caster.shield_defense,
     };
+    wheel
+        .skill_inputs(&mut inputs, caster.melee_weapon)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     effects
         .iter()
         .map(|effect| {
-            crate::spell::resolve_effect(effect, &inputs, caster.harmony_multiplier, draw)
+            wheel
+                .effect_inputs(effect, &inputs)
+                .and_then(|inputs| {
+                    crate::spell::resolve_effect(effect, &inputs, caster.harmony_multiplier, draw)
+                })
                 .map(|effect| crate::spell::scale(effect, step, chain.damage_step_percent))
                 .map_err(|_| SpellCastDisposition::Rejected)
         })
@@ -487,6 +551,8 @@ fn prepare_native_owner_cast_impl(
     )
     .map_err(|error| disposition(&error))?;
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.mana = next
         .mana
         .checked_sub(resolved.common.mana_spent)
@@ -652,6 +718,8 @@ fn prepare_native_callback_owner_cast_core(
     }
     .map_err(|error| disposition(&error))?;
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.mana = next
         .mana
         .checked_sub(common.mana_spent)
@@ -768,6 +836,8 @@ pub fn prepare_conjure_owner_cast_with_caster(
         return Err(SpellCastDisposition::Rejected);
     }
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.mana = next
         .mana
         .checked_sub(common.mana_spent)
@@ -829,6 +899,8 @@ pub fn prepare_locate_name_failure_owner_cast_with_caster(
     let common =
         prepare_native_callback_owner_cast_with_caster(state, spell, operational, now, caster)?;
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns = common.next.cooldowns;
     next.revision = common.next.revision;
     let anchor = crate::spell::combat_batch::SpellAnchor {
@@ -910,6 +982,8 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
         return Err(SpellCastDisposition::Rejected);
     }
     let mut next = state.clone();
+    next.prepare_wheel_spell_state(spell, now.get())
+        .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns
         .rearm(spell, now)
         .map_err(|e| disposition(&e))?;

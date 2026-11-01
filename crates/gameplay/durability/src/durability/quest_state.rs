@@ -233,8 +233,34 @@ impl QuestStateCopy {
     /// durable value for the source storage action id grants the door.
     #[must_use]
     pub fn meets_door_storage(&self, action: u16) -> bool {
-        self.tracks
-            .get(&format!("oteryn:quest-progress/storage/{action}"))
+        // The donor's numeric action names the same storage that quest authoring
+        // normalizes to a named track. Resolve that identity before reading the copy.
+        #[derive(serde::Deserialize)]
+        struct Binding {
+            action: u16,
+            track: String,
+        }
+        #[derive(serde::Deserialize)]
+        struct Bindings {
+            bindings: Vec<Binding>,
+        }
+        static BINDINGS: std::sync::OnceLock<Vec<Binding>> = std::sync::OnceLock::new();
+        let bindings = BINDINGS.get_or_init(|| {
+            serde_json::from_str::<Bindings>(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/world-authoring/samples/quest-door-bindings.json"
+            )))
+            .map(|document| document.bindings)
+            .unwrap_or_default()
+        });
+        bindings
+            .iter()
+            .find(|binding| binding.action == action)
+            .and_then(|binding| self.tracks.get(&binding.track))
+            .or_else(|| {
+                self.tracks
+                    .get(&format!("oteryn:quest-progress/storage/{action}"))
+            })
             .is_some_and(|value| *value != -1)
     }
     /// Stored track values with supported read projections (including the Monk shrine count).
@@ -492,6 +518,7 @@ pub(super) fn report_refused_experience(
 
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
+pub(super) mod capacity;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

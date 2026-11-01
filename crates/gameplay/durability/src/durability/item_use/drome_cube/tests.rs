@@ -8,17 +8,33 @@ fn id(seed: u8) -> [u8; 16] {
     value
 }
 fn definition(key: &str) -> TypedDefinitionRef {
-    TypedDefinitionRef { family: "Item".into(), production_key: key.into(), revision_ref: "definition-r1".into() }
+    TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "definition-r1".into(),
+    }
 }
 fn request() -> ItemUseRequest {
     ItemUseRequest {
-        kind: ItemUseKind::DromeCube { wire_binding: [9; 32] }, command_id: 1,
-        content_revision: "content-r1".into(), ruleset_revision: "ruleset-r1".into(),
-        sim_revision: "sim-r1".into(), transaction_id: id(3), event_id: id(4),
-        occurred_at_unix_ms: 1, server_build_id: "test-build".into(),
-        source_item_instance_id: id(1), source_definition: definition(DROME_CUBE_KEY), source_quantity_before: 1,
-        flask: ItemUseFlaskPlan::New { item_instance_id: id(2),
-            definition: definition("oteryn:item.tibia.i36723"), placement_ordinal: 2 },
+        kind: ItemUseKind::DromeCube {
+            wire_binding: [9; 32],
+        },
+        command_id: 1,
+        content_revision: "content-r1".into(),
+        ruleset_revision: "ruleset-r1".into(),
+        sim_revision: "sim-r1".into(),
+        transaction_id: id(3),
+        event_id: id(4),
+        occurred_at_unix_ms: 1,
+        server_build_id: "test-build".into(),
+        source_item_instance_id: id(1),
+        source_definition: definition(DROME_CUBE_KEY),
+        source_quantity_before: 1,
+        flask: ItemUseFlaskPlan::New {
+            item_instance_id: id(2),
+            definition: definition("oteryn:item.tibia.i36723"),
+            placement_ordinal: 2,
+        },
     }
 }
 
@@ -52,14 +68,19 @@ fn cube_request_binding_covers_wire_source_unit_and_output() {
     let original = request();
     let binding = original.binding();
     let mut changed = original.clone();
-    changed.kind = ItemUseKind::DromeCube { wire_binding: [8; 32] };
+    changed.kind = ItemUseKind::DromeCube {
+        wire_binding: [8; 32],
+    };
     assert_ne!(binding, changed.binding());
     changed = original.clone();
     changed.source_quantity_before = 2;
     assert_ne!(binding, changed.binding());
     changed = original.clone();
-    changed.flask = ItemUseFlaskPlan::New { item_instance_id: id(2),
-        definition: definition("oteryn:item.tibia.i36724"), placement_ordinal: 2 };
+    changed.flask = ItemUseFlaskPlan::New {
+        item_instance_id: id(2),
+        definition: definition("oteryn:item.tibia.i36724"),
+        placement_ordinal: 2,
+    };
     assert_ne!(binding, changed.binding());
     changed = original.clone();
     changed.kind = ItemUseKind::Potion;

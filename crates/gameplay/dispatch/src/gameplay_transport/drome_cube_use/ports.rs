@@ -1,5 +1,8 @@
-//! W09 ordinary-USE port, included by the existing arena/Drome feature registration.
-//! Capability 15 and command 2 remain the Cube's wire owner; this adds no wire identity.
+//! The existing ordinary USE command routes Drome items without another wire command.
+
+#[path = "kooldown_aid.rs"]
+mod kooldown_aid;
+
 macro_rules! authority_methods {
     () => {
         fn use_drome_cube(
@@ -26,6 +29,12 @@ macro_rules! composed_methods {
             intent: oteryn_protocol_oteryn::world_object::UseIntent,
             source: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()> {
+            if let Some(outcome) = self
+                .use_kooldown_aid_impl(actor, command, &intent, source)
+                .await?
+            {
+                return Ok(Some(outcome));
+            }
             self.use_drome_cube_impl(actor, command, intent, source)
                 .await
         }

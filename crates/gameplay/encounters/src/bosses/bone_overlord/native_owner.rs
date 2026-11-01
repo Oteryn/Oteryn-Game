@@ -58,8 +58,7 @@ pub struct BoneOverlordCagePhase {
     phylactery: ExactActorRef,
     dead_mask: u8,
     phase: BoneOverlordPhase,
-    world: WorldId,
-    channel: ChannelId,
+    scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     activation: u64,
     server: [u8; 32],
@@ -107,9 +106,8 @@ impl BoneOverlordCarrierExt for ChannelRuntimeV1 {
             phylactery,
             dead_mask: 0,
             phase: BoneOverlordPhase::Soulcages,
-            world: self.content_pin().world_id(),
-            channel: self.encounter_owner_scope().1,
-            generation: self.encounter_owner_scope().2,
+            scope: self.encounter_owner_scope().0,
+            generation: self.encounter_owner_scope().1,
             activation: self.content_pin().activation_sequence(),
             server: self.content_pin().server_artifact_digest(),
             client: self.content_pin().client_artifact_digest(),
@@ -124,9 +122,8 @@ impl BoneOverlordCarrierExt for ChannelRuntimeV1 {
         state: &mut BoneOverlordCagePhase,
         actor: ExactActorRef,
     ) -> Result<BonePhaseTransition, BonePhaseError> {
-        if state.world != self.content_pin().world_id()
-            || state.channel != self.encounter_owner_scope().1
-            || state.generation != self.encounter_owner_scope().2
+        if state.scope != self.encounter_owner_scope().0
+            || state.generation != self.encounter_owner_scope().1
             || state.activation != self.content_pin().activation_sequence()
             || state.server != self.content_pin().server_artifact_digest()
             || state.client != self.content_pin().client_artifact_digest()
@@ -194,8 +191,7 @@ pub struct BoneSharedHpResult {
 struct NativeBoneSharedGroup {
     cages: [ExactActorRef; 4],
     phylactery: ExactActorRef,
-    world: WorldId,
-    channel: ChannelId,
+    scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     activation: u64,
     server: [u8; 32],
@@ -298,8 +294,7 @@ impl BoneSharedCarrierExt for ChannelRuntimeV1 {
         hooks.groups.push(NativeBoneSharedGroup {
             cages: state.cages,
             phylactery: state.phylactery,
-            world: state.world,
-            channel: state.channel,
+            scope: state.scope,
             generation: state.generation,
             activation: state.activation,
             server: state.server,
@@ -388,22 +383,19 @@ fn bone_shared_owner_guard(
     continuity: &NamespaceContinuityGuard,
     content: &ChannelContentPin,
     binding: ChannelRuntimeAssignmentBinding,
-    owner_scope: (WorldId, ChannelId, ScopeOwnershipGeneration),
+    owner_scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     state: &BoneOverlordCagePhase,
     current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
 ) -> Result<[usize; 4], BonePhaseError> {
     let b = binding;
-    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-        b.world_id(),
-        b.channel_id(),
-    );
+    let scope = b.runtime_scope();
     if !current.is_current_for_scope(scope, b.scope_generation()) || !current.accepts_stamp(stamp) {
         return Err(BonePhaseError::Carrier(CarrierError::WrongScope));
     }
-    if state.world != content.world_id()
-        || state.channel != owner_scope.1
-        || state.generation != owner_scope.2
+    if state.scope != owner_scope.0
+        || state.scope.world_id() != content.world_id()
+        || state.generation != owner_scope.1
         || state.activation != content.activation_sequence()
         || state.server != content.server_artifact_digest()
         || state.client != content.client_artifact_digest()
@@ -451,10 +443,7 @@ fn bone_shared_indexes(
     c: &NamespaceContinuityGuard,
     g: &NativeBoneSharedGroup,
 ) -> Result<[usize; 4], CarrierError> {
-    if carrier.encounter_scope().0
-        != oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(g.world, g.channel)
-        || carrier.encounter_scope().1 != g.generation
-    {
+    if carrier.encounter_scope().0 != g.scope || carrier.encounter_scope().1 != g.generation {
         return Err(CarrierError::WrongScope);
     }
     let mut indexes = [0; 4];
@@ -584,7 +573,7 @@ impl EncounterHooks for BoneEncounterHooks {
                     || g.cages.contains(&ExactActorRef(actor_ref))
             }) {
                 let pin = pin.ok_or(CarrierError::PositionContextMismatch)?;
-                if pin.world_id() != g.world
+                if pin.world_id() != g.scope.world_id()
                     || pin.activation_sequence() != g.activation
                     || pin.server_artifact_digest() != g.server
                     || pin.client_artifact_digest() != g.client
@@ -593,10 +582,7 @@ impl EncounterHooks for BoneEncounterHooks {
                 {
                     return Err(CarrierError::PositionContextMismatch);
                 }
-                if carrier.encounter_scope().0
-                    != oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                        g.world, g.channel,
-                    )
+                if carrier.encounter_scope().0 != g.scope
                     || carrier.encounter_scope().1 != g.generation
                 {
                     return Err(CarrierError::WrongScope);
@@ -768,9 +754,8 @@ impl BoneFixtureDamageExt for ChannelRuntimeV1 {
 }
 
 fn bone_shared_pin_matches(runtime: &ChannelRuntimeV1, g: &NativeBoneSharedGroup) -> bool {
-    g.world == runtime.content_pin().world_id()
-        && g.channel == runtime.encounter_owner_scope().1
-        && g.generation == runtime.encounter_owner_scope().2
+    g.scope == runtime.encounter_owner_scope().0
+        && g.generation == runtime.encounter_owner_scope().1
         && g.activation == runtime.content_pin().activation_sequence()
         && g.server == runtime.content_pin().server_artifact_digest()
         && g.client == runtime.content_pin().client_artifact_digest()

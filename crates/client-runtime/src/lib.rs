@@ -120,3 +120,10 @@ pub mod quest_log;
 /// Spell command execution and feedback.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
+
+/// Server-owned Exiva settings wire types.
+pub use oteryn_session::exiva;
+
+/// Wheel and Atelier command execution through the admitted session.
+#[path = "features/0148-wheel-allocation/protocol.rs"]
+pub mod wheel_allocation;

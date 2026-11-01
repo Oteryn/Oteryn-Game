@@ -114,7 +114,12 @@ fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bo
         false,
     ))?;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        rt.block_on(resume_case(&h, history_read_fails, conditions, delayed_reads))
+        rt.block_on(resume_case(
+            &h,
+            history_read_fails,
+            conditions,
+            delayed_reads,
+        ))
     }));
     let cleanup = rt.block_on(h.cleanup());
     match result {
@@ -131,14 +136,17 @@ async fn wait_for_resume_barrier(
     signal: &tokio::sync::Notify,
 ) -> TestResult {
     let mut notified = std::pin::pin!(signal.notified());
-    tokio::time::timeout(std::time::Duration::from_secs(10), std::future::poll_fn(|cx| {
-        use std::future::Future;
-        use std::task::Poll;
-        if let Poll::Ready(early) = resume.as_mut().poll(cx) {
-            return Poll::Ready(Err(format!("resume ended before barrier: {early:?}")));
-        }
-        notified.as_mut().poll(cx).map(Ok)
-    }))
+    tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        std::future::poll_fn(|cx| {
+            use std::future::Future;
+            use std::task::Poll;
+            if let Poll::Ready(early) = resume.as_mut().poll(cx) {
+                return Poll::Ready(Err(format!("resume ended before barrier: {early:?}")));
+            }
+            notified.as_mut().poll(cx).map(Ok)
+        }),
+    )
     .await
     .map_err(|_| "resume did not reach barrier before deadline")??;
     Ok(())
@@ -203,10 +211,12 @@ async fn resume_case(
         delay: delayed_reads,
         ..Default::default()
     });
-    let mut resume = std::pin::pin!(crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
-        barrier.clone(),
-        resume_same_session(&owner, admitted.game_session_id, &token, 10)
-    ));
+    let mut resume = std::pin::pin!(
+        crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
+            barrier.clone(),
+            resume_same_session(&owner, admitted.game_session_id, &token, 10)
+        )
+    );
     if delayed_reads {
         wait_for_resume_barrier(resume.as_mut(), &barrier.entered).await?;
         // Keep a real root pass pending across the entire former 500 ms barrier.
@@ -502,7 +512,9 @@ async fn case(h: &Harness) -> TestResult {
     let mut unsupported = source;
     unsupported.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[]).ok_or("empty selection")?;
-    let (_, status, payload) = drive(&owner, unsupported, false).await?;
+    let (_, status, payload) = drive(&owner, unsupported, false)
+        .await
+        .map_err(|error| format!("House unsupported selection: {error}"))?;
     assert_ne!(status, CommandStatus::Accepted);
     assert!(payload.is_empty());
     // Each stale value changes just one expected generation and leaves native facts live.
@@ -523,7 +535,9 @@ async fn case(h: &Harness) -> TestResult {
                     crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?
             }
         }
-        let (_, status, payload) = drive(&fresh, stale, false).await?;
+        let (_, status, payload) = drive(&fresh, stale, false)
+            .await
+            .map_err(|error| format!("House stale fence field {field}: {error}"))?;
         assert_eq!(status, CommandStatus::Rejected);
         assert!(payload.is_empty());
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_transfer_receipts")
@@ -536,7 +550,9 @@ async fn case(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.movement_cells = &cells;
     owner.evidence = &recovery_source.evidence;
-    let (inside, status, ack) = drive(&owner, admitted, false).await?;
+    let (inside, status, ack) = drive(&owner, admitted, false)
+        .await
+        .map_err(|error| format!("House current source entry: {error}"))?;
     assert_eq!(status, CommandStatus::Accepted);
     assert!(!ack.is_empty());
     assert_ne!(inside.game_session_id, source.game_session_id);
@@ -556,7 +572,9 @@ async fn case(h: &Harness) -> TestResult {
             .read_actor_position(deps.actor)
             .is_err()
     );
-    let (outside, status, ack) = drive(&owner, inside, true).await?;
+    let (outside, status, ack) = drive(&owner, inside, true)
+        .await
+        .map_err(|error| format!("House current destination exit: {error}"))?;
     assert_eq!(status, CommandStatus::Accepted);
     assert!(!ack.is_empty());
     assert_eq!(
@@ -818,7 +836,7 @@ async fn drive(
 // Initial authority fixture: the composition owns these two guards before the
 // transfer. The runtime readiness still comes from the native assignment API.
 // Negative cases above never derive their current facts from the transfer record.
-async fn prepare_owned_session(h: &Harness) -> TestResult {
+pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::*;
     let now: i64 =
@@ -872,8 +890,8 @@ async fn prepare_owned_session(h: &Harness) -> TestResult {
     Ok(())
 }
 
-struct RecoverySource {
-    evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+pub(super) struct RecoverySource {
+    pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for RecoverySource {
@@ -882,7 +900,7 @@ impl Drop for RecoverySource {
     }
 }
 impl RecoverySource {
-    async fn start(h: &Harness) -> TestResult<Self> {
+    pub(super) async fn start(h: &Harness) -> TestResult<Self> {
         use crate::durability::native_admission_source::{
             DescriptorRegistration, FreshStoreProvenance,
         };
@@ -1014,7 +1032,7 @@ impl RecoverySource {
             task,
         })
     }
-    fn token(nonce: u8) -> TestResult<String> {
+    pub(super) fn token(nonce: u8) -> TestResult<String> {
         use base64::Engine;
         use ed25519_dalek::Signer;
         let now = std::time::SystemTime::now()

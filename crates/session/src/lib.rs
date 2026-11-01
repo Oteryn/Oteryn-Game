@@ -19,6 +19,8 @@
 mod appearance_state;
 mod depot;
 mod domain_dispatch;
+mod events;
+pub use events::SessionEvent;
 mod gated_command;
 mod hotkey_equip_transport;
 mod map_transport;
@@ -27,7 +29,10 @@ pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, 
 pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
+/// Wheel and Atelier wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::{atelier, wheel};
 mod guild_chat;
+mod private_channels;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
@@ -40,6 +45,10 @@ pub use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
 };
 pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState};
+/// Capability-80 channel list and command values used by typed client adapters.
+pub use oteryn_protocol_oteryn::chat::private_channel::{
+    ChatChannelList, InvitedChannel, PrivateChannelIntent, PrivateChannelLine,
+};
 use oteryn_protocol_oteryn::chat::{
     self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
@@ -57,8 +66,15 @@ pub use oteryn_protocol_oteryn::item_view::{
 };
 use oteryn_protocol_oteryn::logout;
 mod tutorial_notices;
+mod vip_presence;
+/// Exiva permission-list wire contract.
+pub use oteryn_protocol_oteryn::exiva;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+pub use oteryn_protocol_oteryn::vip_presence::{
+    PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
+    Status as VipPresenceStatus,
+};
 use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
@@ -624,61 +640,6 @@ pub struct AttackOutcome {
 /// session closed with [`SessionError::EventQueueOverflow`].
 pub const MAX_QUEUED_EVENTS: usize = 256;
 
-/// A server-sequenced delta that no command outcome claimed, already validated and applied to the
-/// session's domain store (FND-02 §14, §15), in the order it was applied.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SessionEvent {
-    /// Domain 16: the requested view and tracked lines, replaced whole.
-    QuestLog(AppliedDelta<quest_log::QuestLog>),
-    Appearance(AppliedDelta<AppearanceUpdate>),
-    TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
-    /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
-    WorldSpatial(AppliedDelta<WorldSpatialObservation>),
-    /// Domain 1 with capability 6 selected: the entities that entered, updated and left, and the
-    /// own-actor position. [`Session::world_entities`] already holds the result.
-    WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
-    /// Domain 2 `WORLD_OBJECT_OVERLAY`.
-    WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
-    /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
-    WorldMap(AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>),
-    /// Domain 3 `ACTOR_VITALS`.
-    ActorVitals(AppliedDelta<ActorVitals>),
-    /// Domain 10 `ACTOR_COMBAT_STATE`: the own actor's attack target, modes and in-fight flag,
-    /// replaced whole. [`Session::combat_state`] already holds it.
-    ActorCombatState(AppliedDelta<ActorCombatState>),
-    /// Domain 12 `CHAT`, delta type 1: one line. [`Session::chat_log`] already holds it.
-    ChatLine(AppliedDelta<ChatLine>),
-    /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
-    ChatRooms(AppliedDelta<ChatRoomSet>),
-    /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
-    /// [`Session::inventory`] already holds it.
-    Inventory(AppliedDelta<CharacterInventory>),
-    /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
-    /// [`Session::open_container`] already holds it.
-    OpenContainer(AppliedDelta<OpenContainer>),
-}
-
-impl SessionEvent {
-    #[must_use]
-    pub const fn domain_id(&self) -> u32 {
-        match self {
-            Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
-            Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
-            Self::TutorialNotice(_) => 23,
-            Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
-                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
-            }
-            Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            Self::WorldMap(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
-            Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-            Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
-            Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
-            Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
-            Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
-        }
-    }
-}
-
 /// Most chat lines [`ChatLog`] keeps: the oldest is dropped past it (the `CHAT0-RL-11` egress
 /// queue bound sets the size).
 pub const MAX_CHAT_LOG_LINES: usize = 64;
@@ -689,6 +650,7 @@ pub const MAX_CHAT_LOG_LINES: usize = 64;
 pub struct ChatLog {
     rooms: ChatRoomSet,
     guild: GuildRoomState,
+    private_channels: Option<ChatChannelList>,
     lines: VecDeque<ChatLine>,
 }
 
@@ -910,6 +872,7 @@ pub struct Session<S> {
     open_container: Option<OpenContainer>,
     /// `Some` exactly when capability 7 is selected.
     chat: Option<ChatLog>,
+    vip_presence: Option<vip_presence::VipPresenceStore>,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -1118,6 +1081,7 @@ impl<S: SessionStream> Session<S> {
         let attack_selected = selected_capabilities.contains(&CAPABILITY_ATTACK_V1);
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
         guild_chat::check_selection(&selected_capabilities)?;
+        vip_presence::check_selection(&selected_capabilities)?;
         let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
         let mut chat = chat_selected.then(ChatLog::default);
         let mut chat_revision = 0;
@@ -1352,6 +1316,7 @@ impl<S: SessionStream> Session<S> {
             inventory,
             open_container,
             chat,
+            vip_presence: None,
         })
     }
 
@@ -1841,16 +1806,24 @@ impl<S: SessionStream> Session<S> {
         }
         guild_chat::check_intent(intent, &self.selected_capabilities)?;
         let payload = chat::encode_chat_intent(intent)?;
-        let outcome = self.exchange_chat(&payload).await;
+        let outcome = self.exchange_chat(&payload, intent).await;
         self.poison_on_error(outcome)
     }
 
-    async fn exchange_chat(&mut self, payload: &[u8]) -> Result<ChatOutcome, SessionError> {
+    async fn exchange_chat(
+        &mut self,
+        payload: &[u8],
+        intent: &ChatIntent,
+    ) -> Result<ChatOutcome, SessionError> {
         let result = self
             .send_and_read_result(COMMAND_TYPE_CHAT_INTENT, payload)
             .await?;
         let decoded = chat::decode_chat_intent_result(&result.payload)?;
-        guild_chat::check_result(decoded.disposition, &self.selected_capabilities)?;
+        guild_chat::check_result_for_intent(
+            decoded.disposition,
+            &self.selected_capabilities,
+            intent,
+        )?;
         check_status_pairing(
             result.command_id,
             result.status,

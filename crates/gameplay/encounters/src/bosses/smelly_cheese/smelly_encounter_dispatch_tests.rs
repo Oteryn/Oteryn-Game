@@ -216,7 +216,7 @@ mod tests {
     fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
         let b = r.binding();
         oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.runtime_scope(),
             b.scope_generation(),
         )
         .expect("smelly_encounter_dispatch.rs:tests:645: qualified fixture operation must succeed")
@@ -459,7 +459,7 @@ mod tests {
         let (foreign, _) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             RuntimeScopeRefV1::channel(
                 oteryn_gameplay_foundation::foundation::WorldId::decode(&world).expect("smelly_encounter_dispatch.rs:tests:858: qualified fixture operation must succeed"),
-                b.channel_id(),
+                b.channel_id().expect("W02: pinned Channel fixture"),
             ),
             b.scope_generation(),
         )

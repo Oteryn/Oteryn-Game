@@ -2,18 +2,32 @@
   {
     "mechanic": "0147-exiva-settings",
     "kind": "handlers",
-    "id": "0147-exiva-settings-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0147-exiva-settings-edit",
+    "status": "supported",
     "commands": [
       170
     ],
+    "direction": "client_to_server",
+    "capability": 147,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Preferences are persisted by the server, never in local settings."
     }
+  },
+  {
+    "mechanic": "0147-exiva-settings",
+    "kind": "keybindings",
+    "id": "0147-exiva-settings-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+E",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0147-exiva-settings",
+    "kind": "panels",
+    "id": "0147-exiva-settings-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

@@ -177,8 +177,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     (Ok(value),Some(next)) => { ordinal = next; crate::spell::uniform_draw(value, min, max) },
                     _ => { invalid = true; min },
                 };
+                let talisman=crate::durability::task_board::read_talisman_in_item_transaction(&mut tx,*fence).await?;
                 let resolved = super::super::native_combat_cast::prepare_strike_due(&mut tx, authority.read_authority(), runtime, states,
-                    room, &objects, content, &owned, self.spells, saved, self.owner_now(), &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
+                    room, &objects, content, &owned, self.spells, saved, self.owner_now(), &talisman, decision, &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
                 if invalid { return Err(DurabilityError::Unavailable); }
                 let Some(resolved) = resolved else {
                     cancel(runtime, states, saved.binding.command).map_err(|_|DurabilityError::Unavailable)?;

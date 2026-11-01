@@ -808,8 +808,18 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
-) -> Option<i64> {
-    use oteryn_gameplay_combat_rules::resolution::{creature_damage_response, swing_mitigated};
+    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
+) -> Option<[i64; 2]> {
+    use oteryn_gameplay_combat_rules::resolution::{
+        creature_damage_response_with_reduction, swing_mitigated,
+    };
+    let bow = wheel.is_some_and(|(state, now, _, _, _)| {
+        state
+            .wheel_effects_at(now)
+            .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
+            && state.wheel_equipment().and_then(|hands| hands.ammunition())
+                == Some(crate::content::ReferenceAmmoType::Arrow)
+    });
     let (physical, elemental, element) = ranged.split(damage)?;
     let physical = if physical > 0 {
         let physical = swing_mitigated(
@@ -825,7 +835,12 @@ pub(super) fn creature_damage(
             None,
             policy.armor?,
         )?;
-        creature_damage_response(policy, physical, "physical")?
+        creature_damage_response_with_reduction(
+            policy,
+            physical,
+            "physical",
+            if bow { 2 } else { 0 },
+        )?
     } else {
         0
     };
@@ -837,7 +852,26 @@ pub(super) fn creature_damage(
         Element::Fire => "fire",
         Element::Ice => "ice",
     };
-    physical.checked_add(creature_damage_response(policy, elemental, element)?)
+    let elemental = creature_damage_response_with_reduction(
+        policy,
+        elemental,
+        element,
+        if bow && element == "physical" { 2 } else { 0 },
+    )?;
+    let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
+        if matches!(ranged.damage, RangedDamage::Magic { .. }) {
+            let (primary, _) = state
+                .finish_wheel_attack_components(elemental, 0, health, maximum, now, adjacent)?;
+            (0, primary)
+        } else {
+            state.finish_wheel_attack_components(
+                physical, elemental, health, maximum, now, adjacent,
+            )?
+        }
+    } else {
+        (physical, elemental)
+    };
+    Some([physical, elemental])
 }
 
 #[cfg(test)]

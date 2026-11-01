@@ -23,6 +23,8 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
 };
 use sha2::{Digest, Sha256};
 
+#[path = "weapon_proficiency_cast.rs"]
+mod cast_perks;
 #[path = "weapon_proficiency_shaping.rs"]
 mod shaping;
 pub use shaping::ProductionProficiencyShaping;
@@ -57,6 +59,53 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         Ok(())
+    }
+
+    /// Read selected defence effects from the same session track installed by the
+    /// existing equipment owner; absence of an equipped proficiency is a known zero.
+    pub(super) fn equipped_proficiency_defense(
+        &self,
+        session: crate::foundation::GameSessionId,
+        equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+    ) -> Option<(Option<String>, i32, i32)> {
+        let Some(catalogue) = &self.proficiency_catalogue else {
+            return Some((None, 0, 0));
+        };
+        let key = equipment
+            .items
+            .iter()
+            .filter(|item| matches!(item.slot, 5 | 6 | 10))
+            .find_map(|item| {
+                catalogue
+                    .resolve_weapon(&item.definition.production_key)
+                    .map(|resolved| resolved.canonical_item_key)
+            });
+        let Some(key) = key else {
+            return Some((None, 0, 0));
+        };
+        let states = self.states.proficiencies.lock().ok()?;
+        let effects = states.get(&session)?.track(&key)?.effects;
+        Some((Some(key), effects.defense, effects.weapon_shield_modifier))
+    }
+
+    /// A committed selection or shaping row changes the next incoming hit too.
+    /// The Player owner checks that this is still the equipped weapon identity.
+    pub(super) async fn refresh_equipped_proficiency_defense(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        item_key: &str,
+    ) -> Option<()> {
+        let effects = {
+            let states = self.states.proficiencies.lock().ok()?;
+            states.get(&session)?.track(item_key)?.effects
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        states
+            .get_mut(&runtime, actor, session)?
+            .refresh_wheel_proficiency(item_key, effects.defense, effects.weapon_shield_modifier);
+        Some(())
     }
 
     /// The caller holds the spell lane and runtime, just as for other equipment effects.
@@ -238,6 +287,22 @@ impl ProductionProficiencyCatalogue {
             }
             replaced.push(row.level);
             let (identity, unit, value) = shaping::modified_value(row, &resolved.definition_key)?;
+            if matches!(identity, "defence" | "weapon_shield_defence") {
+                if unit != ImportedShapingUnit::Points {
+                    return None;
+                }
+                let points = proficiency_defense_points(ProjectV2ExactRatio {
+                    numerator: value.numerator,
+                    denominator: value.denominator,
+                })?;
+                let target = if identity == "defence" {
+                    &mut effects.defense
+                } else {
+                    &mut effects.weapon_shield_modifier
+                };
+                *target = target.checked_add(points)?;
+                continue;
+            }
             let target = match identity {
                 "alpha_strike_damage" => AttackFraction::Alpha,
                 "omega_strike_damage" => AttackFraction::Omega,
@@ -273,6 +338,16 @@ impl ProductionProficiencyCatalogue {
                     effects.flat_attack = effects
                         .flat_attack
                         .checked_add(value.numerator / i64::try_from(value.denominator).ok()?)?;
+                }
+                ProjectV2ProficiencyPerk::Defence { value } => {
+                    effects.defense = effects
+                        .defense
+                        .checked_add(proficiency_defense_points(*value)?)?;
+                }
+                ProjectV2ProficiencyPerk::WeaponShieldDefence { value } => {
+                    effects.weapon_shield_modifier = effects
+                        .weapon_shield_modifier
+                        .checked_add(proficiency_defense_points(*value)?)?;
                 }
                 ProjectV2ProficiencyPerk::AlphaStrikeDamage { value } => {
                     effects.add_fraction(*value, AttackFraction::Alpha)?;
@@ -321,6 +396,9 @@ impl ProficiencyDefinitions for ProductionProficiencyCatalogue {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ProficiencyAttackEffects {
     pub flat_attack: i64,
+    /// Flat selected proficiency inputs required by player mitigation.
+    pub defense: i32,
+    pub weapon_shield_modifier: i32,
     pub damage_numerator: i64,
     pub denominator: i64,
     pub alpha_numerator: i64,
@@ -331,6 +409,14 @@ pub struct ProficiencyAttackEffects {
 enum AttackFraction {
     Alpha,
     Omega,
+}
+
+fn proficiency_defense_points(value: ProjectV2ExactRatio) -> Option<i32> {
+    let denominator = i64::try_from(value.denominator).ok()?;
+    if denominator <= 0 || value.numerator < 0 {
+        return None;
+    }
+    i32::try_from(value.numerator / denominator).ok()
 }
 
 impl ProficiencyAttackEffects {
@@ -518,8 +604,62 @@ mod tests {
                 denominator: 100,
                 alpha_numerator: 10,
                 omega_numerator: 20,
+                // This attack-only fixture selects no mitigation proficiency.
+                defense: 0,
+                weapon_shield_modifier: 0,
             },
         }
+    }
+
+    #[test]
+    fn selected_source_defense_perks_reach_mitigation_projection_and_clear() {
+        let catalogue = ProductionProficiencyCatalogue::embedded().expect("committed catalogue");
+        let mut seen = [false; 2];
+        for binding in catalogue.data.bindings().values() {
+            let resolved = catalogue
+                .resolved(&binding.item.key)
+                .expect("source binding");
+            let definition = &catalogue.data.definitions()[&resolved.definition_key];
+            for (level, row) in definition.levels.iter().enumerate() {
+                for (index, perk) in row.perks.iter().enumerate() {
+                    let (kind, value) = match perk {
+                        ProjectV2ProficiencyPerk::Defence { value } => (0, value),
+                        ProjectV2ProficiencyPerk::WeaponShieldDefence { value } => (1, value),
+                        _ => continue,
+                    };
+                    if seen[kind] {
+                        continue;
+                    }
+                    let mut selections = vec![None; definition.levels.len()];
+                    selections[level] = Some(u8::try_from(index).expect("bounded index"));
+                    let effects = catalogue
+                        .attack_effects(&resolved, u32::MAX, &selections, &[None, None])
+                        .expect("selected source perk");
+                    let expected = i32::try_from(
+                        value.numerator / i64::try_from(value.denominator).expect("denominator"),
+                    )
+                    .expect("flat points");
+                    assert_eq!(
+                        [effects.defense, effects.weapon_shield_modifier][kind],
+                        expected
+                    );
+                    selections[level] = None;
+                    let cleared = catalogue
+                        .attack_effects(&resolved, u32::MAX, &selections, &[None, None])
+                        .expect("cleared selection");
+                    assert_eq!((cleared.defense, cleared.weapon_shield_modifier), (0, 0));
+                    seen[kind] = true;
+                }
+            }
+            if seen == [true, true] {
+                break;
+            }
+        }
+        assert_eq!(
+            seen,
+            [true, true],
+            "both primary-source point kinds are exercised"
+        );
     }
 
     #[test]

@@ -211,11 +211,9 @@ pub(crate) fn fixture() -> (
     r.commit_monster_lab_damage(actor, b"source-initial-wound", 280000)
         .expect("qualified fixture");
     let b = r.binding();
-    let (f, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (f, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     (r, d, actor, f, stamp)
 }
 fn proposal(actor: ExactActorRef, s: &SevenSource, seq: u64) -> ProfileAbilityProposal {
@@ -358,7 +356,7 @@ fn distinct_time_source_entries_qualify_and_foreign_owner_source_substitution_ne
     let (foreign, _) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(
             WorldId::decode(&world).expect("qualified fixture"),
-            b.channel_id(),
+            b.channel_id().expect("W02: pinned Channel fixture"),
         ),
         b.scope_generation(),
     )
@@ -508,7 +506,7 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
         .expect("qualified fixture");
     let binding = r.binding();
     let (f, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.runtime_scope(),
         binding.scope_generation(),
     )
     .expect("qualified fixture");
@@ -585,7 +583,7 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
     assert_eq!(owner.pending.len(), 1);
     let b = r.binding();
     let (foreign, foreign_stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        b.runtime_scope(),
         crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
     )
     .expect("qualified fixture");
@@ -629,7 +627,7 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
     let pin: ChannelContentPin = base.content_pin().clone();
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         b.world_id(),
-        b.channel_id(),
+        b.channel_id().expect("W02: pinned Channel fixture"),
         NodeId::decode(&[1, 144, 0, 0, 0, 0x62, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x62])
             .expect("qualified fixture"),
         1,
@@ -680,7 +678,7 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
         .expect("qualified fixture");
     let binding = r.binding();
     let (f, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.runtime_scope(),
         binding.scope_generation(),
     )
     .expect("qualified fixture");

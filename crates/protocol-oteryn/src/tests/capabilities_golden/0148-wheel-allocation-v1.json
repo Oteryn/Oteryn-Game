@@ -4,8 +4,17 @@
   "constant": "wheel::CAPABILITY_WHEEL_ALLOCATION_V1",
   "requires": [],
   "acceptance_requires": false,
-  "commands": [161, 308, 309],
+  "commands": [
+    161,
+    308,
+    309,
+    424
+  ],
   "domains": [],
   "supersedes": [],
-  "offers": {"production": true, "item_view": true, "bundle_world": true}
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
 }

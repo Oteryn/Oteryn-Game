@@ -54,6 +54,7 @@ pub(super) async fn read_frame(client: &mut DuplexStream) -> TestResult<Vec<u8>>
 
 async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef) -> TestResult {
     let mut backpack = None;
+    let mut spellbook = None;
     let mut map_item = None;
     let mut near_item = None;
     let (mut near_sign, mut far_sign) = (None, None);
@@ -66,6 +67,7 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                 if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
                     let inventory = decode_character_inventory(domain.payload).map_err(debug)?;
                     backpack = inventory.main_backpack.map(|item| item.handle);
+                    spellbook = inventory.entries.first().map(|item| item.handle);
                 } else if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
                     let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
                     for tile in &map.tiles {
@@ -117,6 +119,7 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
         }
     }
     let backpack = backpack.ok_or("domain 9 carries the main backpack handle")?;
+    let spellbook = spellbook.ok_or("inventory carries the spellbook handle")?;
     let map_item = map_item.ok_or("domain 17 carries a far map item handle")?;
     let near_item = near_item.ok_or("domain 17 carries an adjacent map item handle")?;
     let near_sign = near_sign.ok_or("snapshot shows a real sign at distance 4")?;
@@ -125,6 +128,7 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
     forged.placement[0] ^= 1;
     let mut stale = near_sign.clone();
     stale.expected_revision += 1;
+    let mut next_look_window = tokio::time::Instant::now();
     for (offset, target) in [
         ItemLookTarget::Creature(own),
         ItemLookTarget::Item(backpack),
@@ -139,10 +143,15 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
         ItemLookTarget::WorldObject(far_sign),
         ItemLookTarget::WorldObject(forged),
         ItemLookTarget::WorldObject(stale),
+        ItemLookTarget::Item(spellbook),
     ]
     .into_iter()
     .enumerate()
     {
+        if offset == crate::gameplay_transport::item_look::ITEM_LOOK_COMMANDS_PER_SECOND {
+            // The eleventh LOOK must wait for the first server-observed rate window.
+            tokio::time::sleep_until(next_look_window).await;
+        }
         let command_id = u64::try_from(offset)? + 1;
         let payload =
             encode_item_look_intent_for(ItemLookIntent { target }, EXTENDED).map_err(debug)?;
@@ -164,6 +173,9 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                 continue;
             }
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            if offset == 0 {
+                next_look_window = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+            }
             assert_eq!(result.command_id, command_id);
             assert_eq!(result.status, CommandStatus::Accepted);
             let looked = decode_item_look_result_for(result.payload, EXTENDED).map_err(debug)?;
@@ -204,6 +216,36 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                     looked,
                     ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
                 ),
+                10 => {
+                    let ItemLookResult::Text(text) = looked else {
+                        return Err("spellbook look refused".into());
+                    };
+                    let book = crate::spell::cast::v1_spell_book().map_err(debug)?;
+                    let expected: std::collections::BTreeSet<_> = book
+                        .spells
+                        .iter()
+                        .enumerate()
+                        .filter(|(index, spell)| {
+                            !book.inactive_aliases.contains(index)
+                                && spell.level > 0
+                                && spell.vocations.contains(&crate::spell::Vocation::Monk)
+                                && matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
+                        })
+                        .map(|(_, spell)| spell.name.as_str())
+                        .collect();
+                    let actual: std::collections::BTreeSet<_> = text
+                        .lines()
+                        .filter_map(|line| {
+                            line.split_once(" - ")?
+                                .1
+                                .split_once(" :")
+                                .map(|(name, _)| name)
+                        })
+                        .collect();
+                    assert!(!expected.is_empty());
+                    assert_eq!(actual, expected);
+                    eprintln!("PG_MARKER spellbook-real-look-vocation-filter");
+                }
                 _ => unreachable!(),
             }
             break;
@@ -443,7 +485,7 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
         };
         let runtime = Mutex::new(runtime);
         let mut owner = dependencies.owner(&harness, &authority);
-        owner.runtime = &runtime;
+        owner.runtime = (&runtime).into();
         owner.movement_cells = &cells;
         owner.active_generation = Some(active);
         dependencies.initialize(&owner).await;
@@ -469,7 +511,7 @@ pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
             .await?;
         admitted.item_fence = item_fence_of(current);
 
-        seed_main_backpack(&harness, &[]).await?;
+        seed_main_backpack(&harness, &[("oteryn:item.tibia.i6120", 1)]).await?;
         if inspection.is_some() {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }

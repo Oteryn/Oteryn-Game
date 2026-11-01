@@ -268,7 +268,10 @@ async fn read_source_party_world(
             };
             if member.presence == PartyPresence::Offline
                 || (member.presence == PartyPresence::Channel
-                    && member.channel != Some(*runtime.binding().channel_id().as_bytes()))
+                    && runtime
+                        .binding()
+                        .channel_id()
+                        .is_none_or(|channel| member.channel != Some(*channel.as_bytes())))
             {
                 return Err(SpellItemError::Rejected(
                     "party presence projection changed",
@@ -312,7 +315,10 @@ async fn read_source_party_world(
         }
     }
     for member in &source.members {
-        if member.channel == Some(*runtime.binding().channel_id().as_bytes())
+        if runtime
+            .binding()
+            .channel_id()
+            .is_some_and(|channel| member.channel == Some(*channel.as_bytes()))
             && !seen.contains(&member.character)
         {
             return Err(SpellItemError::Rejected(
@@ -383,10 +389,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 &permit,
                 self.character,
                 self.holder,
-                crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                ),
+                binding.runtime_scope(),
                 binding.scope_generation().get(),
             )
             .await
@@ -405,10 +408,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 &permit,
                 self.character,
                 self.holder,
-                crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                ),
+                binding.runtime_scope(),
                 binding.scope_generation().get(),
             )
             .await
@@ -440,10 +440,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states) = ctx;
                 let binding = runtime.binding();
-                let scope = crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                );
+                let scope = binding.runtime_scope();
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                 let authority = item_tx::assert_spell_item_scope_in_transaction(
                     &mut tx,
@@ -471,16 +468,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     use oteryn_gameplay_spell_rules::native_actor_states::{
                         PartyBonusKind, StandardStance, plan_party_bonuses_with_guiding,
                     };
-                    if !matches!(
-                        monk_state.standard_stance(),
-                        Some(
-                            StandardStance::Harmony
-                                | StandardStance::Justice
-                                | StandardStance::Sustain
-                        )
-                    ) {
-                        continue;
-                    }
+                    if monk_state.monk.is_none() { continue; }
                     let Some(facts) = world
                         .member_facts
                         .iter()
@@ -516,6 +504,20 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, character, &ruleset,
                         ).await?
                     } else { false };
+                    // PR #2771 ANSWER6544065111 leaves shared Mantra unprojected.
+                    // Crystal player_wheel.cpp:4194-4210 reads own six-slot Mantra;
+                    // whole-party per-item absorption has a separate missing owner.
+
+                    if !matches!(
+                        monk_state.standard_stance(),
+                        Some(
+                            StandardStance::Harmony
+                                | StandardStance::Justice
+                                | StandardStance::Sustain
+                        )
+                    ) {
+                        continue;
+                    }
                     let plans = plan_party_bonuses_with_guiding(
                         parameters, *facts, &world.member_facts, true, serene, guiding,
                     ).map_err(|_| DurabilityError::Unavailable)?;

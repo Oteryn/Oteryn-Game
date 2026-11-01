@@ -30,7 +30,7 @@ pub struct PartyKillXpMember<const N: usize> {
 
 #[derive(Debug)]
 pub struct PartyKillXpRequest<const N: usize> {
-    pub death_key: [u8; 52],
+    pub death_key: Vec<u8>,
     pub principal: CharacterId,
     pub creature: String,
     pub base_xp: i64,
@@ -51,11 +51,59 @@ pub struct PartyKillXpAward {
     pub forge_dust: Option<super::character_forge_dust::ForgeDustEntry>,
 }
 
+/// Existing Channel receipts keep their exact 52-byte framing. An Instance key
+/// prefixes the same field layout with tag 2, making its 53-byte namespace disjoint.
+/// Production callers can encode only a sealed committed lethal occurrence.
+pub fn encode_death_key(death: crate::foundation::CreatureDeathOccurrenceKey) -> Vec<u8> {
+    let mut key = Vec::with_capacity(53);
+    match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => {
+            key.extend_from_slice(world_id.as_bytes());
+            key.extend_from_slice(channel_id.as_bytes());
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id,
+            instance_id,
+        } => {
+            key.push(2);
+            key.extend_from_slice(world_id.as_bytes());
+            key.extend_from_slice(&instance_id);
+        }
+    }
+    key.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
+    key.extend_from_slice(&death.actor_local_id().to_be_bytes());
+    key.extend_from_slice(&death.actor_local_generation().to_be_bytes());
+    key
+}
+
+fn decoded_death_scope(death: &[u8]) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
+    use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+    let (instance, fields) = match death {
+        bytes if bytes.len() == 52 => (false, bytes),
+        [2, fields @ ..] if fields.len() == 52 => (true, fields),
+        _ => return None,
+    };
+    let world = WorldId::decode(&fields[..16]).ok()?;
+    let scope = if instance {
+        RuntimeScopeRefV1::instance(world, fields[16..32].try_into().ok()?).ok()?
+    } else {
+        RuntimeScopeRefV1::channel(world, ChannelId::decode(&fields[16..32]).ok()?)
+    };
+    let generation = u64::from_be_bytes(fields[32..40].try_into().ok()?);
+    if generation == 0 || fields[40..44] == [0; 4] || fields[44..52] == [0; 8] {
+        return None;
+    }
+    Some((scope, generation))
+}
+
 /// Holds the death lock through planning; an existing receipt is terminal data, never a grant.
 pub async fn reconcile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     scope: &SpellItemScopeAuthority,
-    death: &[u8; 52],
+    death: &[u8],
     principal: CharacterId,
     creature: &str,
     base_xp: i64,
@@ -64,19 +112,19 @@ pub async fn reconcile_in_transaction(
     let (death_at_ms, death_at_us) = death_times;
     let death_at_ms =
         i64::try_from(death_at_ms).map_err(|_| CharacterProgressionError::InvalidInput)?;
-    if death[..16] != scope.world_bytes() || death[16..32] != scope.channel_bytes() {
+    if decoded_death_scope(death) != Some((scope.runtime_scope(), scope.generation())) {
         return Err(CharacterProgressionError::AuthorityRejected);
     }
     check_scope_transaction(tx, scope)
         .await
         .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:party-kill-xp:' || encode($1,'hex'),0))")
-        .bind(death.as_slice())
+        .bind(death)
         .execute(&mut **tx)
         .await
         .map_err(DurabilityError::from)?;
     let receipt = sqlx::query("SELECT principal_id::text,creature_key,base_xp,death_at_ms,death_at_us::text,principal_count FROM game_party_kill_xp_receipts WHERE death_key=$1")
-        .bind(death.as_slice()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+        .bind(death).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
     let Some(receipt) = receipt else {
         return Ok(None);
     };
@@ -105,7 +153,7 @@ pub async fn reconcile_in_transaction(
         return Err(CharacterProgressionError::ConflictingOccurrence);
     }
     let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
-        .bind(death.as_slice()).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
+        .bind(death).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if rows.is_empty()
         || rows.len() > 50
         || rows.len()
@@ -175,28 +223,18 @@ pub async fn commit_in_transaction<const N: usize>(
         || input.death_at_us / 1000 != input.death_at_ms
         || input.creature.is_empty()
         || input.creature.len() > 256
-        || input.death_key[..16] != scope.world_bytes()
-        || input.death_key[16..32] != scope.channel_bytes()
-        || input.death_key[32..40] != scope.generation().to_be_bytes()
+        || decoded_death_scope(&input.death_key)
+            != Some((scope.runtime_scope(), scope.generation()))
         || !input
             .members
             .iter()
             .any(|m| m.fence.character_id == input.principal)
-        || input.death_key[40..44] == [0; 4]
-        || input.death_key[44..52] == [0; 8]
         || input.members.iter().any(|m| {
             m.party_id.is_some() != m.party_revision.is_some() || (m.shared && m.party_id.is_none())
         })
-        || input.members.iter().any(|m| match m.fence.runtime_scope {
-            crate::foundation::RuntimeScopeRefV1::Channel {
-                world_id,
-                channel_id,
-            } => {
-                *world_id.as_bytes() != scope.world_bytes()
-                    || *channel_id.as_bytes() != scope.channel_bytes()
-                    || m.fence.scope_ownership_generation.get() != scope.generation()
-            }
-            _ => true,
+        || input.members.iter().any(|member| {
+            member.fence.runtime_scope != scope.runtime_scope()
+                || member.fence.scope_ownership_generation.get() != scope.generation()
         })
     {
         return Err(CharacterProgressionError::InvalidInput);
@@ -306,7 +344,7 @@ pub async fn commit_in_transaction<const N: usize>(
 }
 
 fn hunting_binding(
-    death: &[u8; 52],
+    death: &[u8],
     raw: i64,
     modifiers: hunting_xp::HuntingXpModifiers,
     party_id: Option<[u8; 16]>,
@@ -334,7 +372,7 @@ fn hunting_binding(
 
 // The full scope/death/Character tuple is the source identity. Tags separate the ledger
 // occurrence, entry and transaction; UUIDv7 shape is required by the existing ledger owner.
-fn forge_id(death: &[u8; 52], character: CharacterId, tag: u8) -> [u8; 16] {
+fn forge_id(death: &[u8], character: CharacterId, tag: u8) -> [u8; 16] {
     let hash = Sha256::new()
         .chain_update(b"FORGECREATURE/dust/v1")
         .chain_update(death)
@@ -346,4 +384,57 @@ fn forge_id(death: &[u8; 52], character: CharacterId, tag: u8) -> [u8; 16] {
     id[6] = (id[6] & 15) | 0x70;
     id[8] = (id[8] & 63) | 0x80;
     id
+}
+
+#[cfg(test)]
+mod scoped_death_tests {
+    use super::*;
+
+    fn id(seed: u8) -> [u8; 16] {
+        let mut value = [seed; 16];
+        value[6] = 0x70;
+        value[8] = 0x80;
+        value
+    }
+    fn channel_bytes() -> Vec<u8> {
+        [
+            id(1).as_slice(),
+            id(2).as_slice(),
+            3_u64.to_be_bytes().as_slice(),
+            4_u32.to_be_bytes().as_slice(),
+            5_u64.to_be_bytes().as_slice(),
+        ]
+        .concat()
+    }
+
+    #[test]
+    fn party_kill_death_scope_decoder_preserves_channel_and_separates_instance() {
+        let channel = channel_bytes();
+        let mut instance = vec![2];
+        instance.extend_from_slice(&channel);
+        let legacy = decoded_death_scope(&channel);
+        let private = decoded_death_scope(&instance);
+        assert!(matches!(
+            legacy,
+            Some((crate::foundation::RuntimeScopeRefV1::Channel { .. }, 3))
+        ));
+        assert!(matches!(
+            private,
+            Some((crate::foundation::RuntimeScopeRefV1::Instance { .. }, 3))
+        ));
+        assert_ne!(legacy, private);
+        assert_eq!(channel.len(), 52);
+        assert_eq!(instance.len(), 53);
+        for length in 0..52 {
+            assert_eq!(decoded_death_scope(&channel[..length]), None);
+        }
+        instance[0] = 1;
+        assert_eq!(decoded_death_scope(&instance), None);
+        let mut zero_actor = channel.clone();
+        zero_actor[40..44].fill(0);
+        assert_eq!(decoded_death_scope(&zero_actor), None);
+        let mut zero_generation = channel;
+        zero_generation[32..40].fill(0);
+        assert_eq!(decoded_death_scope(&zero_generation), None);
+    }
 }

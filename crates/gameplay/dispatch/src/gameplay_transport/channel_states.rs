@@ -16,6 +16,10 @@ pub struct ChannelSessionStates {
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,
+    /// Shared activity owner installed by the boss instance composition root.
+    pub boss_activity_handoff: super::BossActivityHandoffSlot,
+    /// Shared weak browse containers live only while a connection holds a view.
+    pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
@@ -31,7 +35,7 @@ pub struct ChannelSessionStates {
     /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
-    pub input_gate: input_gate::InputGate,
+    pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).

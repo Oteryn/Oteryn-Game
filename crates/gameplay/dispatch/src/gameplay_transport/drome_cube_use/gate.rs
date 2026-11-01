@@ -1,30 +1,36 @@
-//! The item-use gate owns one bounded PREPARE until a known Cube outcome.
+//! The item-use gate owns one bounded Cube/concoction PREPARE until a known outcome.
 use super::*;
 
 #[derive(Debug, Clone)]
 pub(in crate::gameplay_transport::item_use) struct PendingCubeUse {
     pub(super) request: ItemUseRequest,
+    concoction_binding: Option<[u8; 32]>,
 }
 
 impl PendingCubeUse {
     pub(super) fn binding(&self) -> Option<[u8; 32]> {
-        match self.request.kind {
-            ItemUseKind::DromeCube { wire_binding } => Some(wire_binding),
+        match (self.request.kind, self.concoction_binding) {
+            (ItemUseKind::DromeCube { wire_binding }, None) => Some(wire_binding),
+            (ItemUseKind::Concoction, Some(binding)) => Some(binding),
             _ => None,
         }
     }
 
-    fn touched(&self) -> Option<[[u8; 16]; 2]> {
-        let output = match self.request.flask {
-            ItemUseFlaskPlan::Stack {
-                item_instance_id, ..
-            }
-            | ItemUseFlaskPlan::New {
-                item_instance_id, ..
-            } => item_instance_id,
-            _ => return None,
-        };
-        Some([self.request.source_item_instance_id, output])
+    fn touched(&self) -> Option<Vec<[u8; 16]>> {
+        let source = self.request.source_item_instance_id;
+        match (&self.request.flask, self.request.kind) {
+            (ItemUseFlaskPlan::None, ItemUseKind::Concoction) => Some(vec![source]),
+            (
+                ItemUseFlaskPlan::Stack {
+                    item_instance_id, ..
+                }
+                | ItemUseFlaskPlan::New {
+                    item_instance_id, ..
+                },
+                ItemUseKind::DromeCube { .. },
+            ) if *item_instance_id != source => Some(vec![source, *item_instance_id]),
+            _ => None,
+        }
     }
 }
 
@@ -34,18 +40,40 @@ impl super::super::ItemUseGate {
         request: ItemUseRequest,
         now_ms: u64,
     ) -> Result<(), UseDisposition> {
+        self.prepare_drome(request, None, now_ms)
+    }
+
+    pub(super) fn prepare_concoction(
+        &mut self,
+        request: ItemUseRequest,
+        binding: [u8; 32],
+        now_ms: u64,
+    ) -> Result<(), UseDisposition> {
+        self.prepare_drome(request, Some(binding), now_ms)
+    }
+
+    fn prepare_drome(
+        &mut self,
+        request: ItemUseRequest,
+        concoction_binding: Option<[u8; 32]>,
+        now_ms: u64,
+    ) -> Result<(), UseDisposition> {
         if self.cube_pending.is_some() {
             return Err(UseDisposition::Exhausted);
         }
-        let pending = PendingCubeUse { request };
+        let pending = PendingCubeUse {
+            request,
+            concoction_binding,
+        };
         let touched = pending.touched().ok_or(UseDisposition::Rejected)?;
-        if pending.binding().is_none() || touched[0] == touched[1] {
+        if pending.binding().is_none() {
             return Err(UseDisposition::Rejected);
         }
         if touched.iter().any(|item| self.unspendable.contains(item)) {
             return Err(UseDisposition::StaleState);
         }
-        // No Cube cooldown. Reserve before the await, so cancellation cannot lose the plan.
+        // No Cube cooldown; concoction cooldowns are durable. Reserve before the await,
+        // so cancellation cannot lose the exact plan or its source-only burn binding.
         self.start_drink(now_ms)?;
         self.unspendable.extend_from_slice(&touched);
         self.cube_pending = Some(Box::new(pending));
@@ -173,5 +201,53 @@ mod tests {
         assert_eq!(gate.in_flight_since_ms, None);
         assert!(gate.cube_pending.is_none());
         assert_eq!(gate.unspendable, [[2; 16]]);
+    }
+
+    #[test]
+    fn unknown_concoction_retains_one_source_and_cannot_replace_a_cube() {
+        let mut gate = super::super::super::ItemUseGate::default();
+        let mut aid = request(7);
+        aid.kind = ItemUseKind::Concoction;
+        aid.flask = ItemUseFlaskPlan::None;
+        aid.source_definition.production_key = "oteryn:item.tibia.i36723".into();
+        assert_eq!(
+            gate.prepare_cube(aid.clone(), 10),
+            Err(UseDisposition::Rejected)
+        );
+        assert_eq!(gate.prepare_concoction(aid.clone(), [4; 32], 10), Ok(()));
+        assert_eq!(gate.unspendable, [[1; 16]]);
+        assert_eq!(
+            gate.cube_pending.as_ref().and_then(|p| p.binding()),
+            Some([4; 32])
+        );
+        gate.mark_cube_unknown(7);
+        assert_eq!(
+            gate.prepare_cube(request(8), 10_000),
+            Err(UseDisposition::Exhausted)
+        );
+        gate.unspendable.push([8; 16]);
+        assert!(gate.finish_cube(7, UseDisposition::Committed));
+        assert_eq!(gate.unspendable, [[8; 16]]);
+        assert!(!gate.finish_cube(7, UseDisposition::Committed));
+        assert_eq!(gate.prepare_cube(request(8), 10_001), Ok(()));
+    }
+
+    #[test]
+    fn concoction_rejects_an_output_or_reserved_source_before_start() {
+        let mut gate = super::super::super::ItemUseGate::default();
+        let mut aid = request(7);
+        aid.kind = ItemUseKind::Concoction;
+        assert_eq!(
+            gate.prepare_concoction(aid.clone(), [4; 32], 10),
+            Err(UseDisposition::Rejected)
+        );
+        aid.flask = ItemUseFlaskPlan::None;
+        gate.unspendable.push([1; 16]);
+        assert_eq!(
+            gate.prepare_concoction(aid, [4; 32], 10),
+            Err(UseDisposition::StaleState)
+        );
+        assert!(gate.cube_pending.is_none());
+        assert_eq!(gate.in_flight_since_ms, None);
     }
 }

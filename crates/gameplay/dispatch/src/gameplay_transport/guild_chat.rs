@@ -1,7 +1,7 @@
 //! GUILD-CHAT-1 composition on the existing chat relay and Guild owner.
 use super::connection::AdmittedSession;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::foundation::{ChannelRuntimeV1, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{ChannelRuntimeV1, GameSessionId};
 use oteryn_protocol_oteryn::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1;
 use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntentResult};
 use std::collections::HashMap;
@@ -12,6 +12,7 @@ use std::sync::{
 
 mod admission;
 mod dequeue;
+mod party;
 mod send;
 pub(super) mod wire;
 
@@ -76,6 +77,13 @@ fn qualified_fence(
     {
         return None;
     }
+    qualified_chat_fence(admitted, runtime)
+}
+
+fn qualified_chat_fence(
+    admitted: &AdmittedSession,
+    runtime: &ChannelRuntimeV1,
+) -> Option<CurrentCharacterItemFence> {
     let fence = admitted.item_fence?;
     let binding = runtime.binding();
     let actor = admitted.runtime_actor?;
@@ -86,9 +94,8 @@ fn qualified_fence(
         || fence.game_session_id != admitted.game_session_id
         || fence.connection_generation.get() != admitted.continuity.connection_generation
         || admitted.world_id != binding.world_id()
-        || admitted.channel_id != binding.channel_id()
-        || fence.runtime_scope
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || Some(admitted.channel_id) != binding.channel_id()
+        || fence.runtime_scope != binding.runtime_scope()
         || fence.scope_ownership_generation != binding.scope_generation()
     {
         return None;

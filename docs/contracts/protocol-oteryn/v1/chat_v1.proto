@@ -25,6 +25,11 @@ enum ChatRoom {
   CHAT_ROOM_ENGLISH = 2;
   CHAT_ROOM_HELP = 3;
   CHAT_ROOM_ADVERTISING = 4;
+  // S04c: room ids 5..8 require capability 259.
+  CHAT_ROOM_ADVERTISING_ROOKGAARD = 5;
+  CHAT_ROOM_TUTOR = 6;
+  CHAT_ROOM_GAMEMASTER = 7;
+  CHAT_ROOM_GUILD_LEADERS = 8;
 }
 
 message ChatSayV1 {
@@ -63,6 +68,7 @@ message ChatIntentV1 {
     ChatPrivateChannelRefV1 private_channel_leave = 11;      // requires capability 80
     ChatPrivateChannelSayV1 private_channel_say = 12;        // requires capability 80
     ChatChannelListRequestV1 channel_list = 13;              // requires capability 80
+    ChatPartySendV1 party = 14; // requires capability 240 (requires 7 + 42)
   }
 }
 
@@ -90,7 +96,7 @@ message ChatIntentResultV1 {
 // StateDomainSnapshot.payload of snapshot type 1 and StateDelta.payload of delta type 2: the
 // whole set of rooms the session has open; a delta replaces it. At most 4 bytes.
 message ChatRoomsV1 {
-  uint32 open_rooms = 1; // bit (room - 1) per open ChatRoom; bits 4 and up exceed CHAT0-RL-07
+  uint32 open_rooms = 1; // bit (room - 1) per open ChatRoom; bits 4..7 require capability 259; bits 8 and up exceed CHAT0-RL-07
 }
 
 enum ChatLineKind {
@@ -101,6 +107,7 @@ enum ChatLineKind {
   CHAT_LINE_KIND_DROPPED = 4; // no other field: lines were dropped by the egress bound (CHAT0-RL-11)
   CHAT_LINE_KIND_GUILD = 5; // capability 36: fields 4, 7, 9, 10 only
   CHAT_LINE_KIND_PRIVATE_CHANNEL = 6; // capability 80: fields 4, 7, 11 only
+  CHAT_LINE_KIND_PARTY = 7; // capability 240: fields 4, 7 only
 }
 
 // Same encoding as world_spatial ActorPositionV1; floor 0..=15.
@@ -134,7 +141,7 @@ message ChatLineV1 {
 // an accepted line may finish socket I/O after exclusion commits. No receipts/history.
 message ChatGuildSendV1 { string text = 1; } // no client destination, rank or name
 
-// Domain 12 snapshot type 2 replaces type 1 only for capability 36. At most 1049
+// Domain 12 snapshot type 2 replaces type 1 only for capability 36. At most 1050
 // bytes. No author/synthetic sender, Channel, position, Account or CharacterId.
 message GuildChatSnapshotV1 {
   ChatRoomsV1 rooms = 1;
@@ -147,15 +154,18 @@ message GuildChatSnapshotV1 {
 // CHAT-PM-CHANNELS-1, coordinator lane NIGHT-W1 2026-10-25: capability 80
 // CHAT_PRIVATE_CHANNEL_V1 requires 7. Only selected peers use intent tags 7..=13,
 // disposition 11, line kind 6 and delta type 3; every CHAT_V1 byte is unchanged
-// without selection. A private channel lives in the memory of one Channel: its owner,
-// invitations and members are sessions of that Channel, it closes when its owner
-// leaves it or its session ends, and nothing is stored. A channel is named by its
-// Channel-local number 1..=65535, never by a CharacterId. Lines pass the CHAT_V1
+// without selection. One World metadata/member owner holds channel ownership,
+// invitations and membership across Channels and nodes. Session/connection-fenced
+// receipts retain only request hashes and results; chat text is never retained.
+// Lines use the existing ephemeral encrypted World relay. A channel closes when
+// its owner leaves or its session ends. It is named by a World-local number 100..=9999
+// with a server-only epoch, never by a CharacterId; the u16 wire range is unchanged.
+// Lines pass the CHAT_V1
 // limiter (mute and bucket) and text rule; they are delivered to the joined members,
 // the speaker included. Results are common status ACCEPTED with wait_seconds=0
 // except MUTED and EXHAUSTED.
 message ChatPrivateChannelCreateV1 {} // Premium only; one own channel per session
-message ChatPrivateChannelNameV1 { string name = 1; } // 1..=120 bytes; an online session of this Channel
+message ChatPrivateChannelNameV1 { string name = 1; } // 1..=120 bytes; an online session of this World, across Channels/nodes
 message ChatPrivateChannelRefV1 { uint32 channel_id = 1; } // 1..=65535
 message ChatPrivateChannelSayV1 {
   uint32 channel_id = 1; // 1..=65535
@@ -169,9 +179,22 @@ message ChatInvitedChannelV1 {
 }
 
 // StateDelta.payload of delta type 3 (capability 80): the whole channel list; a delta
-// replaces it. At most 2054 bytes (16 invitations, CHATPM-RL-02).
+// replaces it. At most 2055 bytes with capability 259, 2054 otherwise (16 invitations, CHATPM-RL-02).
 message ChatChannelListV1 {
   uint32 public_rooms = 1; // ChatRoomsV1 bits of the rooms that can be opened; absent when none
   uint32 own_channel = 2; // the session's own channel; absent when it has none
   repeated ChatInvitedChannelV1 invited = 3; // at most 16, distinct, never the own channel
 }
+
+// CHATCH: capability 240 CHAT_PARTY_ROOM_V1 requires CHAT_V1 and PARTY_V1.
+// Only selected peers send tag 14, receive kind 7 or Party NOT_ALLOWED. No new room bit.
+// Destination, speaker name and membership come from the server's Party owner.
+// No level, vocation, Premium or leader restriction. Every party member can speak.
+// The World relay is ephemeral, at most once; OK means sent, never delivered.
+// Fresh recipient custody rechecks membership under the Party World lock.
+// Server-only queued metadata binds PartyId and the authenticated relay timestamp.
+// joined_at must not exceed that timestamp: new/rejoining
+// members never receive a queued line predating their current membership. A line
+// accepted before leave/kick/disband may finish writing afterwards, as for Guild.
+// Existing command ingress retains results for replay without sending twice.
+message ChatPartySendV1 { string text = 1; }

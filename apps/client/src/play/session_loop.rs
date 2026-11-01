@@ -17,6 +17,26 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn wheel_selected(&self) -> bool {
+        false
+    }
+    fn wheel(
+        &mut self,
+        _request: &oteryn_client_runtime::wheel_allocation::WheelCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::wheel_allocation::WheelResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 148 }) }
+    }
+    fn exiva_selected(&self) -> bool {
+        false
+    }
+    fn exiva(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 147 }) }
+    }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         oteryn_client_runtime::quest_log::QuestState::default()
     }
@@ -53,6 +73,24 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn wheel_selected(&self) -> bool {
+        self.is_selected(oteryn_session::wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
+    }
+    async fn wheel(
+        &mut self,
+        request: &oteryn_client_runtime::wheel_allocation::WheelCommand,
+    ) -> Result<oteryn_client_runtime::wheel_allocation::WheelResponse, SessionError> {
+        oteryn_client_runtime::wheel_allocation::send(self, request).await
+    }
+    fn exiva_selected(&self) -> bool {
+        self.is_selected(147)
+    }
+    async fn exiva(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        self.gated_command(147, 170, payload).await
+    }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         super::feature_0016_quest_log::protocol::initial(self)
     }
@@ -111,10 +149,43 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.wheel_initialize(session.wheel_selected());
+    outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::Wheel(request)) => match session.wheel(&request).await {
+                Ok(response) => {
+                    outbox.wheel_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Exiva(payload)) => {
+                let result = session.exiva(&payload).await;
+                match result {
+                    Ok(result) => {
+                        // An accepted edit is followed by a fresh server read, including
+                        // mode changes and UUID removal. Never infer the list locally.
+                        let result = if payload != [5] && result.payload == [1] {
+                            session.exiva(&[5]).await
+                        } else {
+                            Ok(result)
+                        };
+                        match result {
+                            Ok(result) => {
+                                outbox.exiva_result(&result);
+                                publish(&mut session, &outbox, &mut held);
+                                continue;
+                            }
+                            Err(error) => error,
+                        }
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);

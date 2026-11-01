@@ -16,8 +16,10 @@ pub const REVELATION_THRESHOLDS: [u32; 3] = [250, 500, 1000];
 pub const MAX_AUGMENT_STAGE: u8 = 2;
 /// `WHEEL0-RL-04`: the Wheel opens above this level, with 1 point per level above it.
 pub const WHEEL_LEVEL_OFFSET: u32 = 50;
-/// `WHEEL0-RL-05`: the caller's `at_temple` fact is a protection zone within this many tiles of a
-/// town temple position (§7.3).
+/// Crystal player_wheel.cpp:2151 uses X <= 1 and Y <= 10, with no floor comparison
+/// in the two-argument Position::areInRange overload (position.hpp:41-44).
+pub const TEMPLE_REMOVAL_HORIZONTAL_RANGE: u32 = 1;
+/// Vertical bound of the source temple rectangle; the current tile must be a PZ.
 pub const TEMPLE_REMOVAL_RADIUS: u32 = 10;
 
 /// The four domains, in the order `WheelStages` reports them.
@@ -279,6 +281,20 @@ impl WheelRuleset {
         available: u32,
         at_temple: bool,
     ) -> std::result::Result<(), WheelRefusal> {
+        self.validate_with_unlock_points(before, after, available, available, at_temple)
+    }
+
+    /// Crystal player_wheel.cpp:360 uses getWheelPoints for ring thresholds, while
+    /// :881-894 adds Grade-IV modifiers only to the spendable budget. Quest/scroll
+    /// points may unlock a ring; shared modifier grades never unlock it early.
+    pub fn validate_with_unlock_points(
+        &self,
+        before: &WheelSlots,
+        after: &WheelSlots,
+        available: u32,
+        unlock_points: u32,
+        at_temple: bool,
+    ) -> std::result::Result<(), WheelRefusal> {
         if after
             .0
             .iter()
@@ -292,7 +308,9 @@ impl WheelRuleset {
             .0
             .iter()
             .zip(self.slots.iter().zip(open))
-            .any(|(points, (rule, open))| *points > 0 && (!open || available < rule.minimum_points))
+            .any(|(points, (rule, open))| {
+                *points > 0 && (!open || unlock_points < rule.minimum_points)
+            })
         {
             return Err(WheelRefusal::NotAdjacent);
         }
@@ -575,6 +593,8 @@ impl WheelStages {
 /// A change refused before any write (§7.1 results).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WheelRefusal {
+    /// The shared native Wheel/Atelier ExAction interval has not elapsed.
+    Exhausted,
     NotEligible(WheelIneligibility),
     OverCapacity,
     OverPoints,
@@ -784,6 +804,31 @@ mod tests {
             Err(WheelIneligibility::NotPremium)
         );
         assert!(eligibility(&ruleset, "elite_knight", 60, true, true).is_ok());
+    }
+
+    #[test]
+    fn grade_iv_spending_never_unlocks_a_ring_before_the_level_or_quest_budget() {
+        let ruleset = ruleset();
+        let zero = WheelSlots::ZERO;
+        // Level 99 supplies 49 regular points. Two Grade-IV modifiers permit 51
+        // points in centre slots, but cannot open the 75-point ring (threshold50).
+        assert_eq!(
+            ruleset.validate_with_unlock_points(&zero, &slots(&[(15, 50), (16, 1)]), 51, 49, false),
+            Ok(())
+        );
+        assert_eq!(
+            ruleset.validate_with_unlock_points(&zero, &slots(&[(15, 50), (9, 1)]), 51, 49, false),
+            Err(WheelRefusal::NotAdjacent)
+        );
+        // At level100 (or with a regular quest point), the same proposal is legal.
+        assert_eq!(
+            ruleset.validate_with_unlock_points(&zero, &slots(&[(15, 50), (9, 1)]), 51, 50, false),
+            Ok(())
+        );
+        assert_eq!(
+            ruleset.validate_with_unlock_points(&zero, &slots(&[(15, 50), (9, 2)]), 51, 50, false),
+            Err(WheelRefusal::OverPoints)
+        );
     }
 
     #[test]

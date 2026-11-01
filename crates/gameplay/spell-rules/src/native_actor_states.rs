@@ -204,11 +204,7 @@ impl HealingRollPlan {
         &self,
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<i64, ActorPlanError> {
-        self.finish_draw(virtue_normal_draw(
-            self.bounds.minimum,
-            self.bounds.maximum,
-            draw,
-        )?)
+        self.finish_draw(normal_draw(self.bounds.minimum, self.bounds.maximum, draw)?)
     }
 
     pub fn finish_draw(&self, roll: i64) -> Result<i64, ActorPlanError> {
@@ -223,7 +219,9 @@ impl HealingRollPlan {
 // Canary 47dfd51f tools.cpp:466-476: N(0.5, 0.25), conditioned on [0,1],
 // then round to the integer interval. Inverting the truncated CDF consumes one bounded
 // world draw without rejection loops or a second independent RNG stream.
-fn virtue_normal_draw(
+/// Source truncated-normal draw shared by Harmony healing and Wheel rune mastery.
+/// Crystal201189f tools.cpp:442-450 has the same distribution as the pinned healing source.
+pub fn normal_draw(
     minimum: i64,
     maximum: i64,
     draw: &mut dyn FnMut(i64, i64) -> i64,

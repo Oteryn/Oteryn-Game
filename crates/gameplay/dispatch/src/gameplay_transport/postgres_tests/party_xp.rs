@@ -47,6 +47,12 @@ pub(super) enum Case {
     ForgeRollback,
     ForgeFar,
     ForgeForeign,
+    TaskBoardParty,
+    TaskBoardForeign,
+    TaskBoardTalisman,
+    TaskBoardUnbound,
+    TaskBoardPrechange,
+    TaskBoardOrdered,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -133,6 +139,37 @@ fn party_xp_real_dispatch_contended_absent_pz_row_defers_without_awards() -> Tes
     run(Case::PzContention)
 }
 
+#[test]
+fn task_board_real_dispatch_shared_member_without_damage_and_replay() -> TestResult {
+    run(Case::TaskBoardParty)
+}
+
+#[test]
+fn task_board_real_dispatch_all_damage_contributors_and_replay() -> TestResult {
+    run(Case::TaskBoardForeign)
+}
+
+#[test]
+fn bounty_talisman_real_dispatch_damage_life_and_equipped_active_bounty_gates() -> TestResult {
+    run(Case::TaskBoardTalisman)
+}
+
+#[test]
+fn task_board_real_dispatch_party_credit_without_progression_binding() -> TestResult {
+    run(Case::TaskBoardUnbound)
+}
+
+#[test]
+fn task_board_real_dispatch_shared_member_selects_after_prior_leader_death_settles() -> TestResult {
+    run(Case::TaskBoardPrechange)
+}
+
+#[test]
+fn task_board_real_dispatch_interleaved_principals_keep_death_order_and_final_bonus() -> TestResult
+{
+    run(Case::TaskBoardOrdered)
+}
+
 pub(super) fn run(case: Case) -> TestResult {
     // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
     if fixture::configured_admin().is_none() {
@@ -168,6 +205,16 @@ pub(super) fn run(case: Case) -> TestResult {
         .map_err(Into::into)
 }
 async fn scenario(h: &Harness, case: Case) -> TestResult {
+    let task_board_case = case;
+    let case = match case {
+        Case::TaskBoardParty
+        | Case::TaskBoardUnbound
+        | Case::TaskBoardPrechange
+        | Case::TaskBoardOrdered => Case::OneHit,
+        Case::TaskBoardForeign => Case::Foreign,
+        Case::TaskBoardTalisman => Case::Offence,
+        other => other,
+    };
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -245,16 +292,29 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
-    for (key, y) in [
-        ("oteryn:creature.rat", 11),
-        ("oteryn:creature.cave_rat", 12),
+    // Thalom (1,10,-7) is a protection-zone stair; (2,12,-7) is an open combat cell.
+    for (key, x, y) in [
+        ("oteryn:creature.rat", 1, 11),
+        ("oteryn:creature.cave_rat", 1, 12),
+        ("oteryn:creature.rat", 2, 12),
     ] {
-        if y == 12 && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2) {
+        if x == 2 && !matches!(task_board_case, Case::TaskBoardOrdered) {
+            continue;
+        }
+        let key = if matches!(task_board_case, Case::TaskBoardOrdered) {
+            "oteryn:creature.rat"
+        } else {
+            key
+        };
+        if y == 12
+            && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2)
+            && !matches!(task_board_case, Case::TaskBoardTalisman)
+        {
             continue;
         }
         let policy = runtime.companion_policy(key).map_err(debug)?;
         sources.push((
-            vec![(1, y, -7)],
+            vec![(x, y, -7)],
             60_000,
             5_000,
             key.to_owned(),
@@ -482,6 +542,23 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
     }
+    if matches!(
+        task_board_case,
+        Case::TaskBoardParty
+            | Case::TaskBoardForeign
+            | Case::TaskBoardTalisman
+            | Case::TaskBoardUnbound
+            | Case::TaskBoardPrechange
+            | Case::TaskBoardOrdered
+    ) {
+        task_board::install_boards(&mut owner, h, &players, &pin).await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardPrechange) {
+        task_board::prepare_selection(&owner, h, players[1].1).await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardTalisman) {
+        return task_board::qualify_talisman(&mut owner, h, &players).await;
+    }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
     }
@@ -569,6 +646,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         matches!(owner.states.chat.next(players[0].1),Some(oteryn_protocol_oteryn::chat::ChatLine::Private{speaker_name,text})
         if speaker_name=="Game" && text.starts_with("Party spell"))
     );
+    if matches!(task_board_case, Case::TaskBoardOrdered) {
+        return task_board::qualify_ordered_deaths(&mut owner, h, &players).await;
+    }
     if case.forge() {
         super::forge_creature::prepare(&owner, h, &players, case).await?;
     }
@@ -698,20 +778,38 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         _ => &[],
     };
     // These cases test settlement, not competing content-seeded swing draws.
-    // Bank at least five real damage per staged contributor. When sharing is
-    // required, leave only five HP for the member so the leader's committed
-    // activity is recent at death even with slow, content-seeded fist draws.
+    // Bank real damage per staged contributor: five, or four for the foreign Character.
+    // When sharing is required, the leader stops at its first landed hit and lab damage
+    // then leaves one HP, so the leader's committed activity is recent at death.
+    //
+    // No staged swing can kill the rat (20 HP, armor 1, mitigation 3/25 in
+    // spell-native-profiles.json), whatever the draws. A level-1 fist hit draws at most
+    // floor(2 * 8 * (fist + 4) / 28 * factor), the factor doubled for a monk
+    // (formulas.rs:42-118; the level term is 0, formula.rs:17). Armor takes exactly 1 and
+    // the 0.12% mitigation truncates 1 more (formulas.rs:225-233, resolution.rs:240-272).
+    // A pass is at most one swing and one fist try; fist 15 needs 304 tries, so within
+    // 256 passes fist <= 14. A Balanced knight then lands <= 5 per hit, a Defensive monk
+    // <= 8 and a Balanced monk <= 13. Foreign banks 4..=8, its leader 1..=8: the rat keeps
+    // >= 4 HP, and both 4 * foreign >= leader + 1 and 4 * (leader + 1) >= foreign hold,
+    // so each damage group earns XP. Concurrent's one leader hit leaves >= 7 HP.
     for &index in staged_contributors {
         let (actor, session) = players[index];
         {
             let runtime = owner.runtime.lock().await;
-            if matches!(case, Case::ForgeForeign) {
+            let staged_mode = match case {
+                Case::ForgeForeign => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
+                Case::Foreign if index == 0 => {
+                    Some(oteryn_protocol_oteryn::attack::FightMode::Defensive)
+                }
+                _ => None,
+            };
+            if let Some(fight_mode) = staged_mode {
                 assert!(owner.states.attack.lock().await.set_modes(
                     &runtime,
                     actor,
                     session,
                     oteryn_protocol_oteryn::attack::FightModes {
-                        fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                        fight_mode,
                         ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
                     }
                 ));
@@ -731,7 +829,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
         let initial_health = {
             let runtime = owner.runtime.lock().await;
-            runtime.companion_snapshot(creature.actor).map_err(debug)?.health
+            runtime
+                .companion_snapshot(creature.actor)
+                .map_err(debug)?
+                .health
         };
         for pass in 0..REAL_SWING_PASSES {
             owner.refresh_attack_weapon(actor, session).await;
@@ -748,7 +849,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             let contributed = if matches!(case, Case::ForgeForeign) {
                 health <= 15
             } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
-                health <= 5
+                health < initial_health
+            } else if index == 2 && matches!(case, Case::Foreign) {
+                initial_health - health >= 4
             } else {
                 initial_health - health >= 5
             };
@@ -772,21 +875,66 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .expect("clock");
         }
     }
-    if matches!(case, Case::Foreign) {
+    let foreign_staged = if matches!(case, Case::Foreign) {
         // The foreign and leader shares came from real swings. Leave one HP so the
         // member's first landed swing kills while the leader's activity is recent.
         // Lab damage has no character and does not enter reward_damage_shares.
+        let foreign = third
+            .as_ref()
+            .ok_or("third character")?
+            .current_character_lease()
+            .character_id();
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
+            .map_err(debug)?;
+        // The real damage the kill will settle, before the member's lethal hit.
+        let shares = runtime
+            .borrow_combat_death()
+            .reward_damage_shares(creature.actor)
+            .map_err(debug)?;
+        let dealt = |character: &[u8]| {
+            shares
+                .iter()
+                .filter(|share| share.character.as_bytes()[..] == *character)
+                .map(|share| share.total)
+                .sum::<u64>()
+        };
+        let staged = (
+            dealt(&first_id.as_bytes()[..]),
+            dealt(&foreign.as_bytes()[..]),
+        );
+        assert_eq!(shares.len(), 2, "only the leader and the foreign Character");
+        assert!(staged.0 > 0 && staged.1 > 0, "staged damage {staged:?}");
+        Some(staged)
+    } else {
+        None
+    };
+    if matches!(case, Case::Concurrent) {
+        // The leader's real swings qualify activity. Leave one HP so the member's
+        // first landed swing kills before content-seeded misses make that activity stale.
+        // Lab damage has no character and does not enter reward_damage_shares.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
+        runtime
+            .commit_monster_lab_damage(creature.actor, b"party-xp-concurrent-fixture", health - 1)
             .map_err(debug)?;
     }
     if case.staged_ally() {
         // The ally's activity is recent; leave one HP so the leader's next landed swing is
         // lethal well inside the shared-experience activity window.
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        let health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-staged-ally-fixture", health - 1)
             .map_err(debug)?;
@@ -870,11 +1018,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Inactive) {
+        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
+            // Foreign's final attacker must land before the leader's activity expires;
+            // Balanced content draws can take 66 three-second passes even at one HP.
             // These level-one fist attackers qualify reward settlement, not fight-mode
             // balance. Content-pinned draws can leave the 72-HP Fiendish rat alive
-            // after 256 Balanced passes. Use the same real Offensive mode for every
-            // Forge case, including the solo, range and foreign-contributor fixtures.
+            // after 256 Balanced passes. Use real Offensive mode for the foreign-share
+            // finisher and every Forge case, including solo, range and foreign contributors.
             assert!(owner.states.attack.lock().await.set_modes(
                 &runtime,
                 actor,
@@ -1084,6 +1234,50 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
     }
+    let task_board_entry = if matches!(
+        task_board_case,
+        Case::TaskBoardParty
+            | Case::TaskBoardForeign
+            | Case::TaskBoardUnbound
+            | Case::TaskBoardPrechange
+    ) {
+        Some(task_board::capture_pending(&owner, &players).await?)
+    } else {
+        None
+    };
+    if matches!(task_board_case, Case::TaskBoardPrechange) {
+        return task_board::select_after_shared_death(
+            &mut owner,
+            h,
+            &players,
+            task_board_entry.ok_or("queued shared death")?,
+        )
+        .await;
+    }
+    if matches!(task_board_case, Case::TaskBoardParty) {
+        task_board::seal_shared_member_after_death(
+            &owner,
+            h,
+            &players,
+            task_board_entry.as_ref().ok_or("queued shared death")?,
+        )
+        .await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardUnbound) {
+        let session = task_board_entry
+            .as_ref()
+            .ok_or("task-board pending death")?
+            .facts
+            .principal
+            .session;
+        owner
+            .states
+            .progression_sessions
+            .lock()
+            .map_err(|_| "progression sessions")?
+            .remove(&session);
+        assert!(owner.progression_binding(session).is_none());
+    }
     let mut forge_replay = None;
     if matches!(case, Case::Replay) || (case.forge() && !matches!(case, Case::ForgeRollback)) {
         let taken = {
@@ -1206,6 +1400,30 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             );
         }
     }
+    if let Some(entry) = task_board_entry {
+        task_board::assert_replay(
+            &mut owner,
+            h,
+            &players,
+            entry,
+            matches!(
+                task_board_case,
+                Case::TaskBoardParty | Case::TaskBoardUnbound
+            ),
+        )
+        .await?;
+    }
+    if matches!(task_board_case, Case::TaskBoardUnbound) {
+        let counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_character_bestiary_kill_receipts)")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            counts,
+            (0, 0),
+            "task credit does not manufacture a progression binding"
+        );
+        println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: party_credit_without_progression_binding");
+        return Ok(());
+    }
     if case.forge() {
         if let Some(entry) = forge_replay {
             let session = entry.facts.principal.session;
@@ -1250,7 +1468,25 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .filter(|r| r.0 == foreign.as_bytes())
             .map(|r| r.1)
             .sum::<i64>();
-        assert_eq!((first_award, second_award, award), (4, 4, 2));
+        let (leader, staged) = foreign_staged.ok_or("staged foreign damage")?;
+        // The member's lethal hit on one HP credits exactly 1 (damage_ledger.rs:731-737).
+        let total = leader + staged + 1;
+        // PARTY-XP-1, restated: the rat's base XP (experience 5) splits by real damage.
+        // The party keeps floor(5 * (leader + member) / total). A monk and a knight add
+        // 30%, and each member's equal share rounds up: ceil(pool * 130 / 200). The solo
+        // foreign Character keeps floor(5 * foreign / total). Level 1 doubles each award.
+        let pool = 5 * (leader + 1) / total;
+        let member = i64::try_from(2 * (pool * 130).div_ceil(200))?;
+        let outside = i64::try_from(2 * (5 * staged / total))?;
+        assert!(
+            member > 0 && outside > 0,
+            "leader={leader}, foreign={staged}"
+        );
+        assert_eq!(
+            (first_award, second_award, award),
+            (member, member, outside),
+            "leader={leader}, foreign={staged}"
+        );
     } else if matches!(case, Case::Exhausted) {
         assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
@@ -1316,3 +1552,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
 #[path = "party_xp/support.rs"]
 mod support;
 use support::{initialize_build, join_two};
+
+#[path = "party_xp/task_board.rs"]
+mod task_board;

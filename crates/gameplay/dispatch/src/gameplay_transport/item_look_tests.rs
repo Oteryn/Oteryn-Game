@@ -643,6 +643,24 @@ fn spellbook_lists_only_current_vocation_in_level_order() -> Result<(), Box<dyn 
         .map(str::parse)
         .collect::<Result<_, _>>()?;
     assert!(levels.windows(2).all(|pair| pair[0] < pair[1]));
+    let expected_levels: std::collections::BTreeSet<_> = book
+        .spells
+        .iter()
+        .enumerate()
+        .filter(|(index, spell)| {
+            !book.inactive_aliases.contains(index)
+                && spell.vocations.contains(&Vocation::Knight)
+                && spell.level > 0
+                && matches!(spell.carrier, Carrier::Instant { .. })
+        })
+        .map(|(_, spell)| spell.level)
+        .collect();
+    assert_eq!(
+        levels
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_levels
+    );
     assert!(text.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
     Ok(())
 }
@@ -953,7 +971,8 @@ fn reading_map_forged_stale_hidden_and_not_visible_are_refused() {
         let mut overlay = crate::map::overlay::ChannelOverlay::new(
             std::sync::Arc::clone(map.base()),
             map.overlay().world_id(),
-            map.overlay().channel_id(),
+            // W02: this existing map visibility fixture remains a Channel.
+            map.overlay().channel_id().unwrap(),
         );
         overlay
             .hide(

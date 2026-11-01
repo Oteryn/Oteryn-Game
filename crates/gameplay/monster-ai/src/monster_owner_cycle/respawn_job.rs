@@ -20,7 +20,7 @@ impl MonsterRespawnJob {
         runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
         let binding = runtime.binding();
         Ok(Self {
-            scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            scope: binding.runtime_scope(),
             generation: binding.scope_generation(),
             last_window: None,
         })

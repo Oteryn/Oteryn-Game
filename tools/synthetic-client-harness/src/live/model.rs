@@ -230,6 +230,10 @@ pub const fn room_name(room: ChatRoom) -> &'static str {
         ChatRoom::English => "English",
         ChatRoom::Help => "Help",
         ChatRoom::Advertising => "Advertising",
+        ChatRoom::AdvertisingRookgaard => "Advertising-Rookgaard",
+        ChatRoom::Tutor => "Tutor",
+        ChatRoom::Gamemaster => "Gamemaster",
+        ChatRoom::GuildLeaders => "Guild Leaders",
     }
 }
 
@@ -259,6 +263,9 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             speaker_name,
             text,
         } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
+        ChatLine::Party {
+            speaker_name, text, ..
+        } => format!("[Party] {speaker_name}: {text}"),
         ChatLine::Guild(line) => super::guild_chat::render_line(line),
         ChatLine::PrivateChannel(line) => format!(
             "[#{}] {}: {}",

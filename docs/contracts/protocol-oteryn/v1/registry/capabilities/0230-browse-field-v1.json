@@ -1,0 +1,16 @@
+{
+  "id": 230,
+  "name": "BROWSE_FIELD_V1",
+  "owner_decision": "I18-BROWSE-FIELD-1; Crystal 201189f871d23597b82caf88fd611454a2ddefb8 browse field parity",
+  "owner": "current ChannelRuntime and connection container views; existing durable item transfer owns moves",
+  "requires": [
+    14,
+    18
+  ],
+  "command_types": [
+    440
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle-world only through BUNDLE_WORLD_OFFERED_CAPABILITIES. Requires CONTAINER_TREE_V1 and WORLD_MAP_VIEW_V1. Command 440 opens or seeks a session-local tile view; the selected extension of domain 14 carries thirty-entry pages. Command 21 retains close/up, and command 9 retains durable moves. Without capability 230, command 440 and browse metadata fail closed, ordinary domain 14 keeps its 20-entry/10384-byte limits and up from a ground container keeps its earlier behavior."
+}

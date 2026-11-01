@@ -143,9 +143,21 @@ mod tests {
     fn non_stackable_output_never_grows_an_existing_item() {
         let source = entry(1, DROME_CUBE_KEY, 1);
         let inventory = inventory(vec![source.clone(), entry(2, "output", 1)]);
-        let plan = plan_output(&inventory, &source, facts(ItemStackClass::NonStackable), 20,
-            &[], || Some([3; 16]));
-        assert!(matches!(plan, Ok(ItemUseFlaskPlan::New { item_instance_id: [3, ..], .. })));
+        let plan = plan_output(
+            &inventory,
+            &source,
+            facts(ItemStackClass::NonStackable),
+            20,
+            &[],
+            || Some([3; 16]),
+        );
+        assert!(matches!(
+            plan,
+            Ok(ItemUseFlaskPlan::New {
+                item_instance_id: [3, ..],
+                ..
+            })
+        ));
     }
 
     #[test]
@@ -157,9 +169,16 @@ mod tests {
             (24, vec![[2; 16]], false),
         ] {
             let inventory = inventory(vec![source.clone(), entry(2, "output", quantity)]);
-            let plan = plan_output(&inventory, &source,
-                facts(ItemStackClass::Stackable { proven_maximum: Some(25) }), 20,
-                &unavailable, || Some([3; 16]));
+            let plan = plan_output(
+                &inventory,
+                &source,
+                facts(ItemStackClass::Stackable {
+                    proven_maximum: Some(25),
+                }),
+                20,
+                &unavailable,
+                || Some([3; 16]),
+            );
             assert!(plan.is_ok());
             assert_eq!(matches!(plan, Ok(ItemUseFlaskPlan::Stack { .. })), top_up);
         }
@@ -170,37 +189,81 @@ mod tests {
         let source = entry(1, DROME_CUBE_KEY, 1);
         let mut inventory = inventory(vec![entry(2, "bag", 1)]);
         inventory.nested.push(([2; 16], source.clone()));
-        assert!(matches!(plan_output(&inventory, &source, facts(ItemStackClass::NonStackable),
-            1, &[], || Some([3; 16])), Err(DromeCubeError::Capacity)));
+        assert!(matches!(
+            plan_output(
+                &inventory,
+                &source,
+                facts(ItemStackClass::NonStackable),
+                1,
+                &[],
+                || Some([3; 16])
+            ),
+            Err(DromeCubeError::Capacity)
+        ));
         inventory.nested.clear();
         if let Some(bag) = inventory.backpack.as_mut() {
             bag.entries = vec![source.clone()];
         }
-        assert!(matches!(plan_output(&inventory, &source, facts(ItemStackClass::NonStackable),
-            1, &[], || Some([3; 16])), Ok(ItemUseFlaskPlan::New { .. })));
+        assert!(matches!(
+            plan_output(
+                &inventory,
+                &source,
+                facts(ItemStackClass::NonStackable),
+                1,
+                &[],
+                || Some([3; 16])
+            ),
+            Ok(ItemUseFlaskPlan::New { .. })
+        ));
     }
 
     #[test]
     fn item_count_and_ordinal_bounds_fail_without_allocating_an_output() {
         let mut source = entry(1, DROME_CUBE_KEY, 2);
         let before = inventory(vec![source.clone()]);
-        assert!(matches!(plan_output(&before, &source, facts(ItemStackClass::NonStackable),
-            1, &[], || None), Err(DromeCubeError::Capacity)));
+        assert!(matches!(
+            plan_output(
+                &before,
+                &source,
+                facts(ItemStackClass::NonStackable),
+                1,
+                &[],
+                || None
+            ),
+            Err(DromeCubeError::Capacity)
+        ));
         source.placement_ordinal = u64::MAX;
         let inventory = inventory(vec![source.clone()]);
-        assert!(matches!(plan_output(&inventory, &source, facts(ItemStackClass::NonStackable),
-            20, &[], || None), Err(DromeCubeError::ItemUse(ItemUseError::InvalidInput))));
+        assert!(matches!(
+            plan_output(
+                &inventory,
+                &source,
+                facts(ItemStackClass::NonStackable),
+                20,
+                &[],
+                || None
+            ),
+            Err(DromeCubeError::ItemUse(ItemUseError::InvalidInput))
+        ));
     }
 
     #[test]
     fn unknown_or_unsupported_stack_classes_fail_closed() {
         let source = entry(1, DROME_CUBE_KEY, 1);
         let inventory = inventory(vec![source.clone()]);
-        for stack in [ItemStackClass::Unknown,
-            ItemStackClass::Stackable { proven_maximum: Some(0) },
-            ItemStackClass::Stackable { proven_maximum: Some(101) }] {
-            assert!(matches!(plan_output(&inventory, &source, facts(stack), 20, &[],
-                || Some([3; 16])), Err(DromeCubeError::ItemUse(ItemUseError::InvalidInput))));
+        for stack in [
+            ItemStackClass::Unknown,
+            ItemStackClass::Stackable {
+                proven_maximum: Some(0),
+            },
+            ItemStackClass::Stackable {
+                proven_maximum: Some(101),
+            },
+        ] {
+            assert!(matches!(
+                plan_output(&inventory, &source, facts(stack), 20, &[], || Some([3; 16])),
+                Err(DromeCubeError::ItemUse(ItemUseError::InvalidInput))
+            ));
         }
     }
 }

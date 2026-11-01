@@ -134,7 +134,10 @@ impl ChannelRuntimeV1 {
                 ..
             } if target_identity.as_ref() == registration.target.as_bytes() && *health > 0 => (
                 *health,
-                if spell_combat.forge.is_some() {
+                if spell_combat.forge.is_some()
+                    || spell_combat.echo.is_some()
+                    || spell_combat.soulpit.is_some()
+                {
                     spell_combat.maximum_health
                 } else {
                     registration.max_health
@@ -185,7 +188,14 @@ impl ChannelRuntimeV1 {
         // Aggregate current-owner ScopeRuntimeFence is required at the composition call.
         // Allocate source binding before native HP write, including replay state replacement.
         let ability = registration.ability.clone();
-        let after = before.saturating_add(server_draw).min(maximum);
+        let effective_draw = match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
+                Some(tag) => tag.incoming_health_change(server_draw, before, maximum)?,
+                None => server_draw,
+            },
+            _ => return Err(CarrierError::NotCreature),
+        };
+        let after = before.saturating_add(effective_draw).min(maximum);
         let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
@@ -275,7 +285,10 @@ impl ChannelRuntimeV1 {
             if target_identity.as_ref() != key.as_bytes() || *health <= 0 {
                 return Err(CarrierError::CreatureTargetMismatch);
             }
-            let maximum = if spell_combat.forge.is_some() {
+            let maximum = if spell_combat.forge.is_some()
+                || spell_combat.echo.is_some()
+                || spell_combat.soulpit.is_some()
+            {
                 spell_combat.maximum_health
             } else {
                 *max as i64
@@ -284,7 +297,11 @@ impl ChannelRuntimeV1 {
                 return Err(CarrierError::InvalidCreatureHealth);
             }
             let before = *health;
-            let after = before.saturating_add(*draw as i64).min(maximum);
+            let draw = match spell_combat.soulpit {
+                Some(tag) => tag.incoming_health_change(*draw as i64, before, maximum)?,
+                None => *draw as i64,
+            };
+            let after = before.saturating_add(draw).min(maximum);
             *health = after;
             prepared.push((index, next));
             results.push(OwnerDamageResult {
@@ -327,7 +344,10 @@ impl ChannelRuntimeV1 {
             } if target_identity.as_ref() == key.as_bytes()
                 && *health > 0
                 && *health
-                    <= if spell_combat.forge.is_some() {
+                    <= if spell_combat.forge.is_some()
+                        || spell_combat.echo.is_some()
+                        || spell_combat.soulpit.is_some()
+                    {
                         spell_combat.maximum_health
                     } else {
                         max as i64

@@ -115,8 +115,11 @@ impl NpcTalkBook {
                 &reference.key,
                 &npc.services,
             );
-            let travel_routes =
-                crate::content::npc_catalogue::travel::resolve(model, &npc.services);
+            let travel_routes = crate::content::npc_catalogue::travel::resolve(
+                model,
+                &reference.key,
+                &npc.services,
+            );
             let bank = npc
                 .services
                 .iter()

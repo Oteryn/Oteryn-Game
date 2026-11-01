@@ -9,14 +9,16 @@
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
 //! emitted: zero or unknown enums, a local speaker's zero generation, an intent with no or several variants, empty or oversized text
 //! or names, invalid UTF-8, a wait outside `1..=`[`MAX_CHAT_WAIT_SECONDS`] with `MUTED` or
-//! `EXHAUSTED` or any wait with another disposition, room bits outside the four rooms, a floor
+//! `EXHAUSTED` or any wait with another disposition, room bits outside the eight rooms, a floor
 //! outside `0..=15`, a line field that does not belong to its kind, and unknown or repeated fields
 //! all fail closed. Trimming and control characters are the server's text rule (CHAT-0 §4).
 
 use std::num::NonZeroU64;
 
 pub mod guild_room;
+pub mod party_room;
 pub mod private_channel;
+pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
@@ -46,7 +48,7 @@ pub const MAX_CHAT_NAME_BYTES: usize = 120;
 /// The longest wait a result reports: a mute of 5 s × 16² (`CHAT0-RL-04`).
 pub const MAX_CHAT_WAIT_SECONDS: u32 = 1_280;
 /// `CHAT0-RL-07`: every room can be open at once.
-pub const MAX_CHAT_OPEN_ROOMS: usize = 4;
+pub const MAX_CHAT_OPEN_ROOMS: usize = 8;
 /// A private message: oneof tag 1 + length 2, name 1 + 1 + 120, text 1 + 2 + 1,020.
 pub const MAX_CHAT_INTENT_BYTES: usize = 1_148;
 /// Disposition 1 + 1 and wait 1 + 2 = 5 bytes, with slack.
@@ -84,11 +86,31 @@ pub enum ChatRoom {
     English = 2,
     Help = 3,
     Advertising = 4,
+    /// Capability 259. Existing room ids remain unchanged.
+    AdvertisingRookgaard = 5,
+    Tutor = 6,
+    Gamemaster = 7,
+    GuildLeaders = 8,
 }
 
 impl ChatRoom {
-    pub const ALL: [Self; MAX_CHAT_OPEN_ROOMS] =
-        [Self::World, Self::English, Self::Help, Self::Advertising];
+    pub const ALL: [Self; MAX_CHAT_OPEN_ROOMS] = [
+        Self::World,
+        Self::English,
+        Self::Help,
+        Self::Advertising,
+        Self::AdvertisingRookgaard,
+        Self::Tutor,
+        Self::Gamemaster,
+        Self::GuildLeaders,
+    ];
+
+    pub const fn requires_public_channels(self) -> bool {
+        matches!(
+            self,
+            Self::AdvertisingRookgaard | Self::Tutor | Self::Gamemaster | Self::GuildLeaders
+        )
+    }
 
     fn from_wire(value: u32) -> WireResult<Self> {
         Self::ALL
@@ -120,6 +142,10 @@ pub enum ChatIntent {
     OpenRoom(ChatRoom),
     CloseRoom(ChatRoom),
     Guild {
+        text: String,
+    },
+    /// Capability 240 (CHAT_V1 + PARTY_V1), oneof tag 14.
+    Party {
         text: String,
     },
     /// Capability 80, oneof tags 7..=13.
@@ -176,8 +202,6 @@ pub struct ChatIntentResult {
 pub struct ChatRoomSet(u8);
 
 impl ChatRoomSet {
-    const ALL_BITS: u8 = 0b1111;
-
     pub fn contains(self, room: ChatRoom) -> bool {
         self.0 & room.bit() != 0
     }
@@ -219,6 +243,10 @@ pub enum ChatLine {
         text: String,
     },
     Guild(guild_room::GuildChatLine),
+    Party {
+        speaker_name: String,
+        text: String,
+    },
     /// Capability 80, line kind 6.
     PrivateChannel(private_channel::PrivateChannelLine),
     /// Lines were dropped by the session's egress bound (`CHAT0-RL-11`).
@@ -276,6 +304,7 @@ pub fn encode_chat_intent(intent: &ChatIntent) -> WireResult<Vec<u8>> {
     let mut inner = Vec::new();
     let field = match intent {
         ChatIntent::Guild { text } => return guild_room::encode_intent(text),
+        ChatIntent::Party { text } => return party_room::encode_intent(text),
         ChatIntent::PrivateChannel(intent) => return private_channel::encode_intent(intent),
         ChatIntent::Say { mode, text } => {
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
@@ -320,7 +349,7 @@ pub fn decode_chat_intent(payload: &[u8]) -> WireResult<ChatIntent> {
     }
     let mut intent = None;
     read_fields(payload, |field, wire, input, cursor| {
-        if wire != 2 || !(1..=13).contains(&field) {
+        if wire != 2 || !(1..=14).contains(&field) {
             return Err(ChatWireError::Malformed);
         }
         let inner = read_bytes(input, cursor)?;
@@ -332,6 +361,9 @@ pub fn decode_chat_intent(payload: &[u8]) -> WireResult<ChatIntent> {
 fn decode_intent_variant(field: u64, inner: &[u8]) -> WireResult<ChatIntent> {
     if field == 6 {
         return guild_room::decode_intent(inner);
+    }
+    if field == 14 {
+        return party_room::decode_intent(inner);
     }
     if field >= 7 {
         return private_channel::decode_intent(field, inner);
@@ -428,7 +460,6 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
     // A bit beyond the four rooms exceeds `CHAT0-RL-07`.
     let bits = u8::try_from(bits)
         .ok()
-        .filter(|bits| bits & !ChatRoomSet::ALL_BITS == 0)
         .ok_or(ChatWireError::LimitExceeded)?;
     Ok(ChatRoomSet(bits))
 }
@@ -438,6 +469,9 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_CHAT_LINE_BYTES);
     match line {
         ChatLine::Guild(line) => return guild_room::encode_line(line),
+        ChatLine::Party { speaker_name, text } => {
+            return party_room::encode_line(speaker_name, text);
+        }
         ChatLine::PrivateChannel(line) => return private_channel::encode_line(line),
         ChatLine::Local {
             speaker,
@@ -502,6 +536,9 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
     }
     if let Some(line) = private_channel::decode_line_if_private_channel(payload)? {
         return Ok(ChatLine::PrivateChannel(line));
+    }
+    if let Some(line) = party_room::decode_line(payload)? {
+        return Ok(line);
     }
     let mut f = LineFields::default();
     read_fields(payload, |number, wire, input, cursor| {

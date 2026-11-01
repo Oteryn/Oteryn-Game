@@ -278,3 +278,41 @@ fn dmg3_installed_offence_tiers_add_before_clamp_and_expired_rows_do_not_contrib
     }
     Ok(())
 }
+
+#[test]
+fn wheel_ascetic_mantra_uses_positive_items_in_the_six_source_slots() -> TestResult {
+    let mantra = |value| {
+        serde_json::json!({"kind":"MANTRA",
+        "parameter":{"state":"KNOWN","value":{"kind":"SIGNED_POINTS","value":value}},
+        "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(serde_json::json!([mantra(10)]), Some(0))?)?;
+    let mut equipment = snapshot(&content, "oteryn:item.tibia.i2854", 1);
+    let item = equipment.items[0].clone();
+    equipment.items = [1, 2, 3, 4, 7, 8]
+        .into_iter()
+        .map(|slot| {
+            let mut item = item.clone();
+            item.slot = slot;
+            item.item_instance_id = id(slot);
+            item
+        })
+        .collect();
+    assert_eq!(equipped_mantra(&equipment, &content), Some(60));
+    for slot in [5, 6, 9, 10] {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i2854", slot);
+        assert_eq!(
+            equipped_mantra(&equipment, &content),
+            Some(0),
+            "slot {slot} is excluded by Crystal's total"
+        );
+    }
+    let negative = native(&fixture_input(serde_json::json!([mantra(-10)]), Some(0))?)?;
+    let equipment = snapshot(&negative, "oteryn:item.tibia.i2854", 1);
+    assert_eq!(
+        equipped_mantra(&equipment, &negative),
+        Some(0),
+        "only a positive item's Mantra contributes"
+    );
+    Ok(())
+}

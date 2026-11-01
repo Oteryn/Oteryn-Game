@@ -101,21 +101,30 @@ fn scenario() -> TestResult {
     run(async |admin| {
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, "team_finder_leader", true, false).await?;
+            Harness::create_with_admission_seed(admin, "team_finder_leader", false, false).await?;
         prepare_current_session(&h).await?;
-        let deps = Dependencies::new()?;
+        let world = super::fence(1)?.runtime_scope.world_id();
+        // Qualify native progression/training against the same content-1
+        // durable fixture revision as the full-world logout scenario.
+        let (controller, activated) =
+            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
+        let room = activated.qualified_room().clone();
+        let active = controller.active().ok_or("active generation")?;
+        let deps = Dependencies::with_content(
+            activated.into_channel_pin(),
+            room,
+            active
+                .native_gameplay()
+                .ok_or("native gameplay")?
+                .spell_book()
+                .clone(),
+        )?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let (controller, _pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                deps.admitted.world_id,
-                None,
-            );
-        let active = controller.active().ok_or("active")?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
@@ -132,7 +141,29 @@ fn scenario() -> TestResult {
                 .current_session_at(admitted.game_session_id)
                 .await?
                 .0;
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
         admitted.item_fence = item_fence_of(current);
+        owner.admit_progression_session(&mut admitted).await;
+        assert!(
+            owner
+                .progression_binding(admitted.game_session_id)
+                .is_some()
+        );
+        owner.admit_loop_training(&mut admitted).await;
+        assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
+        admitted.controller = Some(crate::gameplay_transport::connection::ControllerBinding {
+            transport: current.current_transport().ok_or("current controller")?,
+            account_id: fixture::id(40),
+        });
         let unselected = admitted.continuity.selected_capabilities;
         let hunt = LeaderListing {
             min_level: 8,
@@ -227,16 +258,18 @@ fn scenario() -> TestResult {
             CommandStatus::DuplicateReplay
         );
         assert_eq!(listing(&h).await?, edited);
-        // Relog: a new owner over the same character still sees the durable listing.
+        // Reopening an owner in the same live session retains the advertisement.
+        // Actual logout below tests Q3B: only the template survives a relog.
         drop(owner);
         let mut reopened = deps.owner(&h, &authority);
         reopened.active_generation = Some(active);
         deps.initialize(&reopened).await;
         assert_eq!(listing(&h).await?, edited);
-        // The new connection starts its command ids again; the receipts are per command id.
+        // The recreated connection uses command ids that did not reach this owner before.
         let mut relogged = deps.admitted;
         relogged.first_entry = FirstEntryOutcome::Positioned;
         relogged.item_fence = admitted.item_fence;
+        relogged.controller = admitted.controller;
         relogged.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
         let mut admitted = relogged;
         assert_eq!(
@@ -268,6 +301,70 @@ fn scenario() -> TestResult {
         .await?;
         let access: (bool, bool, bool, bool, bool, bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime','game_team_finder_leader_listings','DELETE'),has_table_privilege('oteryn_game_runtime','game_team_finder_leader_receipts','INSERT'),has_table_privilege('oteryn_game_runtime','game_team_finder_leader_receipts','UPDATE'),has_table_privilege('oteryn_game_control','game_team_finder_leader_listings','SELECT'),has_table_privilege('oteryn_game_control','game_team_finder_leader_listings','INSERT'),has_table_privilege('public','game_team_finder_leader_listings','SELECT')").fetch_one(&h.pool).await?;
         assert_eq!(access, (true, true, false, true, false, false));
+        // Q3B supersedes S14a's automatic relog advertisement: the authored
+        // template remains, but the real logout command ends its active occurrence.
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[CAPABILITY_TEAM_FINDER_LEADER_V1],
+        )
+        .ok_or("team finder capability")?;
+        // Commands 4/5 were already recorded before removal. Replaying them
+        // through a recreated connection returns history without republishing.
+        assert_eq!(
+            exchange(
+                &reopened,
+                &mut admitted,
+                4,
+                upsert,
+                &encode_upsert(hunt).map_err(debug)?
+            )
+            .await?,
+            CommandStatus::Accepted
+        );
+        assert_eq!(
+            exchange(
+                &reopened,
+                &mut admitted,
+                5,
+                upsert,
+                &encode_upsert(boss).map_err(debug)?
+            )
+            .await?,
+            CommandStatus::Accepted
+        );
+        let replayed_active: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_team_finder_active_listings")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(replayed_active, 0);
+        assert_eq!(
+            exchange(
+                &reopened,
+                &mut admitted,
+                6,
+                upsert,
+                &encode_upsert(boss).map_err(debug)?
+            )
+            .await?,
+            CommandStatus::Accepted
+        );
+        let active_before: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_team_finder_active_listings")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(active_before, 1);
+        super::party_skull::logout(&reopened, &mut admitted).await?;
+        assert_eq!(listing(&h).await?, edited);
+        let active_after: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_team_finder_active_listings")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(active_after, 0, "logout retained an active advertisement");
+        let requests_after: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_team_finder_members")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(requests_after, 0);
         drop(reopened);
         drop(authority);
         drop(seal);

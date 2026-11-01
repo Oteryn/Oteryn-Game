@@ -258,6 +258,55 @@ pub struct OneItemGroundV1 {
     pub native_room_placement_context: Vec<u8>,
     #[prost(uint64, tag = "8")]
     pub runtime_scope_ownership_generation: u64,
+    /// Additive W02 prerequisite: a Channel leaves this absent, preserving its wire bytes.
+    /// Instance Ground has no Channel identifier; mixed or empty scope variants are rejected.
+    #[prost(bytes = "vec", optional, tag = "9")]
+    pub instance_id: Option<Vec<u8>>,
+}
+
+impl OneItemGroundV1 {
+    pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
+        use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+        check_uuid_v7(&self.world_id)?;
+        let world = WorldId::decode(&self.world_id).map_err(|_| AuditError::InvalidInput)?;
+        match &self.instance_id {
+            None => {
+                check_uuid_v7(&self.channel_id)?;
+                let channel =
+                    ChannelId::decode(&self.channel_id).map_err(|_| AuditError::InvalidInput)?;
+                Ok(RuntimeScopeRefV1::channel(world, channel))
+            }
+            Some(instance) if self.channel_id.is_empty() => {
+                check_uuid_v7(instance)?;
+                RuntimeScopeRefV1::instance(
+                    world,
+                    instance
+                        .as_slice()
+                        .try_into()
+                        .map_err(|_| AuditError::InvalidInput)?,
+                )
+                .map_err(|_| AuditError::InvalidInput)
+            }
+            Some(_) => Err(AuditError::InvalidInput),
+        }
+    }
+
+    #[must_use]
+    pub fn with_runtime_scope(mut self, scope: crate::foundation::RuntimeScopeRefV1) -> Self {
+        use crate::foundation::RuntimeScopeRefV1;
+        self.world_id = scope.world_id().as_bytes().to_vec();
+        match scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                self.channel_id = channel_id.as_bytes().to_vec();
+                self.instance_id = None;
+            }
+            RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                self.channel_id.clear();
+                self.instance_id = Some(instance_id.to_vec());
+            }
+        }
+        self
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -320,6 +369,10 @@ pub struct OneItemMintV1 {
 /// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]), `npc_trade` (tag 9,
 /// [`super::npc_trade_audit`]) and `item_use` (tag 10, [`super::item_use_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the audit oneof inline for retained-capacity qualification and existing value constructors"
+)]
 pub enum OneItemOperationV1 {
     // Keep sorted by tag; insert in order, never append.
     #[prost(message, tag = "2")]
@@ -582,7 +635,12 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     match (&value.destination, &value.corpse_container_entry) {
         (Some(ground), None) => {
             check_uuid_v7(&ground.world_id)?;
-            check_uuid_v7(&ground.channel_id)?;
+            if !matches!(
+                ground.runtime_scope()?,
+                crate::foundation::RuntimeScopeRefV1::Channel { .. }
+            ) {
+                return Err(AuditError::InvalidInput);
+            }
             check_technical_bytes(&ground.spatial_position)?;
             check_technical_bytes(&ground.corpse_ref)?;
             check_content_key(&ground.map_revision)?;
@@ -1222,6 +1280,7 @@ pub(super) mod tests {
                 content_revision: "content-1".into(),
                 native_room_placement_context: uuid(6),
                 runtime_scope_ownership_generation: 1,
+                instance_id: None,
             }),
             source: Some(OneItemProvenanceV1 {
                 typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
@@ -1285,6 +1344,7 @@ pub(super) mod tests {
                     content_revision: content.clone(),
                     native_room_placement_context: technical_bytes,
                     runtime_scope_ownership_generation: u64::MAX,
+                    instance_id: None,
                 }),
                 source: Some(OneItemProvenanceV1 {
                     typed_cause: technical,
@@ -1987,7 +2047,16 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
                 "crates/gameplay/durability/src/durability/character_forge_dust.rs",
                 "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
+                "crates/gameplay/durability/src/durability/consume_transform.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
+                // GEMX I19: shrine enchanting writes its outbox row from its Type2Transaction.
+                // production_sources() yields the item_craft/ directory before item_craft.rs,
+                // in path order, so enchanting.rs comes before the soulpit files.
+                "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
+                // Soul Core conversion and the shared-transaction entry debit both bind
+                // their existing CRAFT audit envelope to the caller's Type2 transaction.
+                "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
+                "crates/gameplay/durability/src/durability/item_craft/soulpit.rs",
                 "crates/gameplay/durability/src/durability/item_craft.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
@@ -1999,6 +2068,9 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
                 "crates/gameplay/durability/src/durability/player_death_items.rs",
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
+                // W03 collection keeps the caller's Type2Transaction through delivery
+                // and binds its selected tuple in both the envelope and outbox.
+                "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]
         );

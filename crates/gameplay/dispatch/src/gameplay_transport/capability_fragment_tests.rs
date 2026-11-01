@@ -65,3 +65,26 @@ fn all_capability_offer_sets_and_gates_match_fragments() -> Result<(), Box<dyn E
     }
     Ok(())
 }
+
+#[test]
+fn party_chat_offer_is_bundle_only_and_needs_chat_and_party() {
+    let party = 240;
+    assert!(
+        !PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .any(|offer| offer.id == party)
+    );
+    for supported in [&[party][..], &[7, party][..], &[6, 42, party][..]] {
+        assert!(
+            !SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, supported)
+                .expect("bounded")
+                .contains(party)
+        );
+    }
+    let selected =
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 7, 42, party])
+            .expect("bounded");
+    assert!(selected.contains(party));
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
+    assert!(!selected.resumable_with(&[6, 7, 42]));
+}

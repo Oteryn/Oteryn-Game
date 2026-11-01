@@ -36,6 +36,9 @@ impl<T> CurrentProjection<T> {
 }
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct AccessProjections {
+    /// Selected rewards of the currently worn weapon, read by native cast dispatch.
+    /// Fist, club, sword, axe, distance, shielding, fishing, magic level.
+    pub proficiency_skills: [u32; 8],
     /// Current durable Platform projection. Zero is the defined no-row value.
     pub loyalty_points: u32,
     /// Independently registered combat-state owner. Missing skull evidence is
@@ -44,6 +47,8 @@ pub struct AccessProjections {
     pub premium: Option<CurrentProjection<bool>>,
     pub learned: Option<CurrentProjection<BTreeSet<String>>>,
     pub wheel: Option<CurrentProjection<BTreeMap<String, u8>>>,
+    pub wheel_effects:
+        Option<CurrentProjection<oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects>>,
     /// Durable promotion read in the same Wheel cast transaction as `wheel`. The build keeps
     /// the base vocation, so a promoted vocation name never proves promotion.
     pub wheel_promoted: bool,
@@ -111,6 +116,22 @@ impl OwnedCastFacts {
     }
     pub fn binding(&self) -> &CastFactsBinding {
         &self.binding
+    }
+    pub fn current_wheel_effects(
+        &self,
+        now: u64,
+    ) -> Option<&oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects> {
+        self.access
+            .wheel_effects
+            .as_ref()
+            .filter(|value| value.current(&self.binding, now))
+            .filter(|_| {
+                self.access.wheel_promoted
+                    && self
+                        .current_premium(now)
+                        .is_some_and(|premium| premium.value)
+            })
+            .map(|value| &value.value)
     }
     pub fn wheel_revision(&self) -> Option<u64> {
         self.access.wheel.as_ref().map(|p| p.authority_revision)
@@ -214,7 +235,8 @@ impl OwnedCastFacts {
         let vitals = state.vitals();
         let skill_adjustments = state
             .owned_skill_adjustments(now)
-            .map_err(|_| OwnedFactsError::BuildMismatch)?;
+            .map_err(|_| OwnedFactsError::BuildMismatch)?
+            .with_wheel(self.current_wheel_effects(now));
         if state.revision() != self.binding.player_revision
             || content.source_digest() != self.binding.content_digest
         {
@@ -321,6 +343,9 @@ impl OwnedCastFacts {
                                     u32::from(loyalty_level(skill + 1, self.build.skills()[skill])),
                                     skill,
                                 )
+                                .and_then(|value| {
+                                    value.checked_add(self.access.proficiency_skills[skill])
+                                })
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
                             u32::try_from(value.0)
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
@@ -368,6 +393,7 @@ impl OwnedCastFacts {
             level: facts.level,
             magic_level: skill_adjustments
                 .adjust_magic_level(u32::from(loyalty_level(0, self.build.magic())))
+                .and_then(|value| value.checked_add(self.access.proficiency_skills[7]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
             mana: vitals.mana,
@@ -379,6 +405,7 @@ impl OwnedCastFacts {
             attack_factor,
             shielding_skill: skill_adjustments
                 .adjust_shielding(u32::from(loyalty_level(6, self.build.skills()[5])))
+                .and_then(|value| value.checked_add(self.access.proficiency_skills[5]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             melee_weapon,
             shield_defense: shield,

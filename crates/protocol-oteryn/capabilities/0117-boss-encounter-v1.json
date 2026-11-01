@@ -12,7 +12,9 @@
     180,
     340
   ],
-  "domains": [],
+  "domains": [
+    99
+  ],
   "supersedes": [],
   "offers": {
     "production": true,

@@ -1,5 +1,5 @@
 use super::{ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
-use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::guild_war::{self as wire, GuildWarIntent};
 use sha2::{Digest, Sha256};
 
@@ -25,9 +25,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
             || admitted.world_id != binding.world_id()
-            || admitted.channel_id != binding.channel_id()
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+            || Some(admitted.channel_id) != binding.channel_id()
+            || fence.runtime_scope != binding.runtime_scope()
             || fence.scope_ownership_generation != binding.scope_generation()
             || runtime.owner_fence().is_err()
             || !admitted.runtime_actor.is_some_and(|actor| {

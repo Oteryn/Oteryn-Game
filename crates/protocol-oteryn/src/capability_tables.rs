@@ -8,7 +8,8 @@ pub const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
 /// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
 pub const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
 pub(crate) const CAPABILITY_MAP_STATE_V1: u32 = 29;
-pub(crate) const CAPABILITY_WORLD_SPATIAL_FIELDS: u32 = 30;
+/// `WORLD_SPATIAL_FIELDS`, registry capability 30 and a field-rune prerequisite.
+pub const CAPABILITY_WORLD_SPATIAL_FIELDS: u32 = 30;
 
 // Whole-command/domain gates and offer sets are generated in ascending capability order.
 // Capability 6 extends core domain 1; its codecs gate the payload rather than the whole domain.

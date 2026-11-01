@@ -26,10 +26,8 @@ impl NativeSummonOwner {
         let current = fence
             .or_else(|| runtime.owner_fence().ok())
             .ok_or(SummonError::StaleOwner)?;
-        if !current.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(SummonError::StaleOwner);
         }

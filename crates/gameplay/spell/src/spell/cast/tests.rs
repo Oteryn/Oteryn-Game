@@ -1040,6 +1040,51 @@ fn vitals_credit_refuses_a_pool_above_its_current_maximum() {
 }
 
 #[test]
+fn c11r2_ordinary_cast_accepts_qualified_proficiency_magic_above_base() {
+    let book = monk_book("builder");
+    let spell = book.indexed(index(1)).expect("monk exura");
+    let state = playable_monk(0);
+    assert_eq!(state.character_facts().magic_level, 0);
+    let mut caster = state.caster(state.owned_harmony_multiplier(spell).expect("multiplier"));
+    // OwnedCastFacts adds the equipped weapon's selected magic-level reward.
+    caster.magic_level = 2;
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let prepare = |caster: &CasterState| {
+        prepare_ordinary_owner_cast_with_caster(
+            &book,
+            &state,
+            spell,
+            &operational,
+            at(0),
+            caster,
+            None,
+            None,
+            &mut |minimum, _| minimum,
+        )
+    };
+    let paid = prepare(&caster).expect("qualified effective magic level casts");
+    assert_eq!(paid.next.revision(), state.revision() + 1);
+    assert_eq!(paid.anchor.paid_mana, 20);
+    assert_eq!(paid.next.character_facts().magic_level, 0);
+    caster.mana += 1;
+    assert_eq!(prepare(&caster).err(), Some(SpellCastDisposition::Rejected));
+}
+
+#[test]
 fn the_ordinary_owner_cast_refuses_a_spell_outside_the_book_and_an_unaccepting_monk() {
     let book = monk_book("builder");
     let spell = book.indexed(index(1)).expect("monk exura").clone();
@@ -1317,6 +1362,7 @@ fn c11_mantra_ascetic_and_party_bonus_lifetime_are_owned_projections() {
         damage_reduction: 4,
         spell_damage: 8,
         spell_healing: 16,
+        mantra: 0,
     };
     assert!(
         state
@@ -1443,4 +1489,25 @@ fn pkg8_ordinary_virtue_healing_uses_added_and_spent_charges() {
         assert_eq!(paid.next.vitals().harmony, after);
         assert_eq!(state.vitals().harmony, u32::from(charges));
     }
+}
+
+#[test]
+fn c11r_ascetic_uses_only_equipped_mantra_even_with_party_projection() {
+    let mut state = playable_monk(0);
+    state
+        .install_virtue_party_bonuses(
+            super::super::harmony::VirtuePartyBonuses {
+                mantra: 17,
+                ..Default::default()
+            },
+            100,
+        )
+        .expect("party projection");
+    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 0);
+    state.install_equipped_mantra(3);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 9);
+    state.install_equipped_mantra(0);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_099), 0);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_100), 0);
+    assert_eq!(state.ascetic_attack_bonus_at(4, 100), 0);
 }

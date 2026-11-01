@@ -60,6 +60,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_bluebear/carlin",
+    "keyword": "carlin",
+    "price": 110,
+    "premium": false,
+    "x": 32387,
+    "y": 31820,
+    "floor": 6,
+    "postman": true,
+    "held": true,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.captain_bluebear/edron",
     "keyword": "edron",
     "price": 160,
@@ -144,6 +157,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_bluebear/targuna",
+    "keyword": "targuna",
+    "price": 110,
+    "premium": false,
+    "x": 31974,
+    "y": 31893,
+    "floor": 6,
+    "postman": true,
+    "held": true,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.captain_bluebear/venore",
     "keyword": "venore",
     "price": 170,
@@ -154,6 +180,20 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_bluebear/yalahar",
+    "keyword": "yalahar",
+    "price": 200,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "thais"
   },
   {
     "key": "oteryn:service.travel.captain_breezelda/carlin",
@@ -384,6 +424,20 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_fearless/yalahar",
+    "keyword": "yalahar",
+    "price": 185,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "venore"
+  },
+  {
     "key": "oteryn:service.travel.captain_greyhound/ab_dendriel",
     "keyword": "ab_dendriel",
     "price": 80,
@@ -442,6 +496,20 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_greyhound/yalahar",
+    "keyword": "yalahar",
+    "price": 185,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "carlin"
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/issavi",
@@ -538,6 +606,47 @@
     "postman": false,
     "held": true,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_jack_rat/safe",
+    "keyword": "safe",
+    "price": 0,
+    "premium": false,
+    "x": 33839,
+    "y": 31222,
+    "floor": 5,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed"
+  },
+  {
+    "key": "oteryn:service.travel.captain_max/calassa",
+    "keyword": "calassa",
+    "price": 200,
+    "premium": true,
+    "x": 31911,
+    "y": 32710,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_6/explorer_society/calassa_quest"
+  },
+  {
+    "key": "oteryn:service.travel.captain_max/yalahar",
+    "keyword": "yalahar",
+    "price": 400,
+    "premium": true,
+    "x": 32804,
+    "y": 31270,
+    "floor": 6,
+    "postman": true,
+    "held": true,
+    "carpet": false,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.captain_max_calassa/liberty_bay",
@@ -684,6 +793,20 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_seagull/yalahar",
+    "keyword": "yalahar",
+    "price": 160,
+    "premium": false,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "yalahar_gate": true,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.captain_seahorse/ab_dendriel",
     "keyword": "ab_dendriel",
     "price": 70,
@@ -768,6 +891,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_seahorse/oramond",
+    "keyword": "oramond",
+    "price": 200,
+    "premium": true,
+    "x": 33479,
+    "y": 31985,
+    "floor": 7,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.captain_seahorse/port_hope",
     "keyword": "port_hope",
     "price": 150,
@@ -790,6 +926,19 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.captain_seahorse/venore",
+    "keyword": "venore",
+    "price": 40,
+    "premium": true,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": true,
+    "held": true,
+    "carpet": false,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.captain_sinbeard/darashia",
@@ -852,6 +1001,47 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_sinbeard/yalahar",
+    "keyword": "yalahar",
+    "price": 230,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "ankrahmun"
+  },
+  {
+    "key": "oteryn:service.travel.captain_waverider/meriana",
+    "keyword": "peg leg",
+    "price": 50,
+    "premium": false,
+    "x": 32346,
+    "y": 32625,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana"
+  },
+  {
+    "key": "oteryn:service.travel.captain_waverider/treasure_island",
+    "keyword": "passage",
+    "price": 200,
+    "premium": false,
+    "x": 32131,
+    "y": 32913,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.captain_waverider_island/liberty_bay",
     "keyword": "liberty_bay",
     "price": 50,
@@ -898,6 +1088,111 @@
     "postman": false,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.charles/ankrahmun",
+    "keyword": "ankrahmun",
+    "price": 110,
+    "premium": true,
+    "x": 33092,
+    "y": 32883,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/carlin",
+    "keyword": "carlin",
+    "price": 120,
+    "premium": true,
+    "x": 32387,
+    "y": 31820,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/darashia",
+    "keyword": "darashia",
+    "price": 180,
+    "premium": true,
+    "x": 33289,
+    "y": 32480,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/edron",
+    "keyword": "edron",
+    "price": 150,
+    "premium": true,
+    "x": 33173,
+    "y": 31764,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/liberty_bay",
+    "keyword": "liberty_bay",
+    "price": 50,
+    "premium": true,
+    "x": 32285,
+    "y": 32892,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/thais",
+    "keyword": "thais",
+    "price": 160,
+    "premium": true,
+    "x": 32310,
+    "y": 32210,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/venore",
+    "keyword": "venore",
+    "price": 160,
+    "premium": true,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.charles/yalahar",
+    "keyword": "yalahar",
+    "price": 260,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "port_hope"
   },
   {
     "key": "oteryn:service.travel.cornell/edron",
@@ -1260,6 +1555,20 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.jack_fate/goroma",
+    "keyword": "goroma",
+    "price": 0,
+    "premium": true,
+    "x": 32161,
+    "y": 32558,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma"
+  },
+  {
     "key": "oteryn:service.travel.jack_fate/port_hope",
     "keyword": "port_hope",
     "price": 50,
@@ -1282,6 +1591,20 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.jack_fate/yalahar",
+    "keyword": "yalahar",
+    "price": 275,
+    "premium": true,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "liberty_bay"
   },
   {
     "key": "oteryn:service.travel.junkar_mines/kazordoon",
@@ -1390,6 +1713,118 @@
     "postman": true,
     "held": false,
     "carpet": false
+  },
+  {
+    "key": "oteryn:service.travel.karith/ab_dendriel",
+    "keyword": "ab'dendriel",
+    "price": 160,
+    "premium": true,
+    "x": 32734,
+    "y": 31668,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "ab_dendriel"
+  },
+  {
+    "key": "oteryn:service.travel.karith/ankrahmun",
+    "keyword": "ankrahmun",
+    "price": 230,
+    "premium": true,
+    "x": 33092,
+    "y": 32883,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "ankrahmun"
+  },
+  {
+    "key": "oteryn:service.travel.karith/carlin",
+    "keyword": "carlin",
+    "price": 185,
+    "premium": true,
+    "x": 32387,
+    "y": 31820,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "carlin"
+  },
+  {
+    "key": "oteryn:service.travel.karith/darashia",
+    "keyword": "darashia",
+    "price": 210,
+    "premium": true,
+    "x": 33289,
+    "y": 32480,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "darashia"
+  },
+  {
+    "key": "oteryn:service.travel.karith/liberty_bay",
+    "keyword": "liberty_bay",
+    "price": 275,
+    "premium": true,
+    "x": 32285,
+    "y": 32892,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "liberty_bay"
+  },
+  {
+    "key": "oteryn:service.travel.karith/port_hope",
+    "keyword": "port_hope",
+    "price": 260,
+    "premium": true,
+    "x": 32527,
+    "y": 32784,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "port_hope"
+  },
+  {
+    "key": "oteryn:service.travel.karith/thais",
+    "keyword": "thais",
+    "price": 200,
+    "premium": true,
+    "x": 32310,
+    "y": 32210,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "thais"
+  },
+  {
+    "key": "oteryn:service.travel.karith/venore",
+    "keyword": "venore",
+    "price": 185,
+    "premium": true,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "yalahar_town_gate": "venore"
   },
   {
     "key": "oteryn:service.travel.kendra/thais",

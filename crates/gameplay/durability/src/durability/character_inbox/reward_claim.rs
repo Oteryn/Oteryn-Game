@@ -253,41 +253,58 @@ impl<'connection> RewardClaimInboxTransaction<'connection> {
         if let Some(position) = self.positions[index] {
             return Ok(position);
         }
-        let row = sqlx::query(
-            "SELECT character_id::text AS character_id, ordinal::text AS ordinal \
-             FROM game_character_inbox_reward_claim_mint_deliver(\
-               encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
-               encode($4,'hex')::uuid, $5, encode($6,'hex')::uuid, $7::text::numeric, $8)",
-        )
-        .bind(item_instance_id.as_slice())
-        .bind(self.plan.character_id.as_bytes().as_slice())
-        .bind(self.plan.world_id.as_bytes().as_slice())
-        .bind(self.plan.transaction_id.as_slice())
-        .bind(self.binding.as_slice())
-        .bind(self.plan.command.game_session_id().as_bytes().as_slice())
-        .bind(self.plan.command.command_id().get().to_string())
-        .bind(self.plan.item_instance_ids.len() as i16)
-        .fetch_optional(&mut **self.transaction)
-        .await?
-        .ok_or(RewardClaimInboxError::MintNotProven)?;
-        if super::uuid_text(&row.try_get::<String, _>("character_id")?)?
-            != *self.plan.character_id.as_bytes()
-        {
-            return Err(DurabilityError::InvalidStoredState.into());
-        }
-        let ordinal = numeric_u64(&row, "ordinal")?;
-        if ordinal == 0 {
-            return Err(DurabilityError::InvalidStoredState.into());
-        }
-        let position = RewardClaimInboxPosition {
+        let position = deliver_fresh_in_transaction(
+            &mut self.transaction,
+            &self.plan,
+            &self.binding,
             item_instance_id,
-            character_id: self.plan.character_id,
-            world_id: self.plan.world_id,
-            ordinal,
-        };
+        )
+        .await?;
         self.positions[index] = Some(position);
         Ok(position)
     }
+}
+
+/// Shared fresh-item Inbox participant. Callers hold the current Character fence
+/// and the same Type2 transaction; the SQL owner proves the reserved mint.
+pub(super) async fn deliver_fresh_in_transaction(
+    tx: &mut Type2Transaction<'_>,
+    plan: &RewardClaimInboxPlan,
+    binding: &[u8; 32],
+    item_instance_id: [u8; 16],
+) -> Result<RewardClaimInboxPosition, RewardClaimInboxError> {
+    let row = sqlx::query(
+        "SELECT character_id::text AS character_id, ordinal::text AS ordinal \
+         FROM game_character_inbox_reward_claim_mint_deliver(\
+           encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           encode($4,'hex')::uuid, $5, encode($6,'hex')::uuid, $7::text::numeric, $8)",
+    )
+    .bind(item_instance_id.as_slice())
+    .bind(plan.character_id.as_bytes().as_slice())
+    .bind(plan.world_id.as_bytes().as_slice())
+    .bind(plan.transaction_id.as_slice())
+    .bind(binding.as_slice())
+    .bind(plan.command.game_session_id().as_bytes().as_slice())
+    .bind(plan.command.command_id().get().to_string())
+    .bind(plan.item_instance_ids.len() as i16)
+    .fetch_optional(&mut ***tx)
+    .await?
+    .ok_or(RewardClaimInboxError::MintNotProven)?;
+    if super::uuid_text(&row.try_get::<String, _>("character_id")?)?
+        != *plan.character_id.as_bytes()
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let ordinal = numeric_u64(&row, "ordinal")?;
+    if ordinal == 0 {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    Ok(RewardClaimInboxPosition {
+        item_instance_id,
+        character_id: plan.character_id,
+        world_id: plan.world_id,
+        ordinal,
+    })
 }
 
 impl DurabilityRoot {

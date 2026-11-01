@@ -24,7 +24,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 &permit,
                 crate::durability::character_cyclopedia::CyclopediaWorldBinding {
-                    scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                    scope: binding.runtime_scope(),
                     generation: binding.scope_generation().get(),
                     bundle: area.digest,
                     epoch: self.reset_epoch,

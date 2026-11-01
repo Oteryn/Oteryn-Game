@@ -44,19 +44,18 @@ use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
 
 /// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
-/// Channel runtime this PostgreSQL case does not own.
+/// Channel runtime this PostgreSQL case does not own. The scoped lane API preserves
+/// that exact Channel death scope; it does not substitute another scope or generation.
 async fn settle_on_fresh_lane<const N: usize>(
     facts: crate::combat::ProjectedCreatureDeathFacts,
     session: &crate::combat::DurabilitySession<'_, '_, '_>,
     slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
     input: crate::combat::CreatureDeathRewardInput<N>,
-) -> Result<
-    crate::combat::CreatureDeathRewardOutcome,
-    crate::combat::CreatureDeathRewardAdmissionError,
-> {
-    let permit =
-        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
-    settle_creature_death_rewards(&permit, facts, session, slot, input).await
+) -> TestResult<crate::combat::CreatureDeathRewardOutcome> {
+    let permit = SpellLanePermit::of_fresh_scope(facts.death.runtime_scope()).await?;
+    settle_creature_death_rewards(&permit, facts, session, slot, input)
+        .await
+        .map_err(|error| debug(error).into())
 }
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
