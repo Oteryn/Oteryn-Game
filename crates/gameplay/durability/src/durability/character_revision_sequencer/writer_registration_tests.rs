@@ -32,11 +32,13 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 ];
 
 // Revision-advancing fees run inside their sequenced Character source.
-// ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
+// ITEM-TIMED-1 and P18 Forge are item-only exceptions under the same locked root;
+// Forge's fee cause retains CharacterRevision and shares its native item transaction.
 const FEE_WRITERS: &[&str] = &[
     "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",
     "durability/charm_state.rs",
+    "durability/item_forge_live/actions.rs",
     "durability/item_imbuement.rs",
     "durability/item_timed_runtime/repair.rs",
     "durability/npc_purchase.rs",

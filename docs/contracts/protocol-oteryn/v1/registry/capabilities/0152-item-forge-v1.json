@@ -1,11 +1,15 @@
 {
   "id": 152,
   "name": "ITEM_FORGE_V1",
-  "owner_decision": "FORGE-LIVE-1",
+  "owner_decision": "P18-FORGE-COMPLETE",
   "owner": "Game Exaltation Forge owner",
-  "requires": [14],
-  "command_types": [181],
+  "requires": [
+    14
+  ],
+  "command_types": [
+    181
+  ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds only. The composed native DustLimit/history owner with a current Character item fence. Item operations remain staged and are rejected; migration 0320 has no runtime execution grant."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds only. Current Character item/session fences and admitted native Content qualify the existing Forge owner for fusion, convergence, transfer, conversions, DustLimit and retained history. Availability removes unsupported offers; it never adds Forge to fallback offers."
 }

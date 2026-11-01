@@ -314,6 +314,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     task_board_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import forge_core_profiles
+    forge_core_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import forge_item_profiles
+    forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
@@ -387,6 +391,9 @@ def main() -> int:
                  if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data]
         if drift:
             raise SystemExit("Spell import drift: " + ", ".join(drift))
+        # Native Forge Content and its immutable SQL admission must agree.
+        import forge_sql_admission
+        forge_sql_admission.check()
     else:
         for path, data in generated.items():
             destination = ROOT / path

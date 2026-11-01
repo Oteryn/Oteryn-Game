@@ -55210,6 +55210,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -55455,6 +55459,10 @@
           "family": "Item",
           "key": "candidate:item/3269",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -55685,6 +55693,10 @@
           "family": "Item",
           "key": "candidate:item/3271",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -55896,6 +55908,10 @@
           "family": "Item",
           "key": "candidate:item/3275",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -56356,6 +56372,10 @@
           "family": "Item",
           "key": "candidate:item/3279",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -56413,7 +56433,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 50
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -56941,6 +56998,10 @@
           "family": "Item",
           "key": "candidate:item/3291",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -57170,6 +57231,10 @@
           "family": "Item",
           "key": "candidate:item/3292",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -57399,6 +57464,10 @@
           "family": "Item",
           "key": "candidate:item/3301",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -57643,6 +57712,10 @@
           "family": "Item",
           "key": "candidate:item/3306",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -57872,6 +57945,10 @@
           "family": "Item",
           "key": "candidate:item/3307",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -58105,6 +58182,10 @@
         "taxonomy": {
           "primary": "Ferramentas",
           "secondary": "Espadas"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -58316,6 +58397,10 @@
           "family": "Item",
           "key": "candidate:item/3311",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -58527,6 +58612,10 @@
           "family": "Item",
           "key": "candidate:item/3316",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -58756,6 +58845,10 @@
           "family": "Item",
           "key": "candidate:item/3317",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -58967,6 +59060,10 @@
           "family": "Item",
           "key": "candidate:item/3318",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -59178,6 +59275,10 @@
           "family": "Item",
           "key": "candidate:item/3320",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -59651,6 +59752,10 @@
           "family": "Item",
           "key": "candidate:item/3322",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -60109,6 +60214,10 @@
           "family": "Item",
           "key": "candidate:item/3333",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -60549,6 +60658,10 @@
           "family": "Item",
           "key": "candidate:item/3342",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -60606,7 +60719,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 65
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -60727,6 +60877,10 @@
           "family": "Item",
           "key": "candidate:item/3346",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -98857,6 +99011,10 @@
           "family": "Item",
           "key": "candidate:item/7380",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -98914,7 +99072,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 35
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -99035,6 +99230,10 @@
           "family": "Item",
           "key": "candidate:item/7381",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -99264,6 +99463,10 @@
           "family": "Item",
           "key": "candidate:item/7383",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -99475,6 +99678,10 @@
           "family": "Item",
           "key": "candidate:item/7384",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -99686,6 +99893,10 @@
           "family": "Item",
           "key": "candidate:item/7386",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -99919,6 +100130,10 @@
           "family": "Item",
           "key": "candidate:item/7387",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -100148,6 +100363,10 @@
           "family": "Item",
           "key": "candidate:item/7388",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -100377,6 +100596,10 @@
           "family": "Item",
           "key": "candidate:item/7389",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -100588,6 +100811,10 @@
           "family": "Item",
           "key": "candidate:item/7392",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -100645,7 +100872,41 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 35
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -100766,6 +101027,10 @@
           "family": "Item",
           "key": "candidate:item/7402",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -100823,7 +101088,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 45
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -100944,6 +101246,10 @@
           "family": "Item",
           "key": "candidate:item/7406",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -101001,7 +101307,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 35
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -101122,6 +101465,10 @@
           "family": "Item",
           "key": "candidate:item/7413",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -101355,6 +101702,10 @@
           "family": "Item",
           "key": "candidate:item/7415",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -101566,6 +101917,10 @@
           "family": "Item",
           "key": "candidate:item/7425",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -101796,6 +102151,10 @@
           "family": "Item",
           "key": "candidate:item/7427",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -102026,6 +102385,10 @@
           "family": "Item",
           "key": "candidate:item/7428",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -102259,6 +102622,10 @@
           "family": "Item",
           "key": "candidate:item/7436",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -103271,6 +103638,10 @@
           "family": "Item",
           "key": "candidate:item/7449",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -103504,6 +103875,10 @@
           "family": "Item",
           "key": "candidate:item/7454",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -135580,6 +135955,10 @@
           "family": "Item",
           "key": "candidate:item/12683",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -140931,6 +141310,10 @@
           "family": "Item",
           "key": "candidate:item/16160",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -144147,6 +144530,10 @@
           "family": "Item",
           "key": "candidate:item/17812",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -144862,6 +145249,10 @@
           "family": "Item",
           "key": "candidate:item/17824",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -147076,6 +147467,10 @@
           "family": "Item",
           "key": "candidate:item/17859",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -153030,6 +153425,10 @@
           "family": "Item",
           "key": "candidate:item/21171",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -153259,6 +153658,10 @@
           "family": "Item",
           "key": "candidate:item/21174",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
         }
       },
       "semantics": {
@@ -178022,6 +178425,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -178231,6 +178638,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -178288,7 +178699,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 400
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -178405,6 +178853,10 @@
         },
         "taxonomy": {
           "primary": "Axe Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -178614,6 +179066,10 @@
         },
         "taxonomy": {
           "primary": "Machados"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -178671,7 +179127,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 400
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -178788,6 +179281,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -178997,6 +179494,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -179054,7 +179555,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 400
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -205724,6 +206262,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -205939,6 +206481,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -206154,6 +206700,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -206369,6 +206919,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -206584,6 +207138,10 @@
         },
         "taxonomy": {
           "primary": "Axe Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -206799,6 +207357,10 @@
         },
         "taxonomy": {
           "primary": "Axe Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207014,6 +207576,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207071,7 +207637,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -207194,6 +207797,10 @@
         },
         "taxonomy": {
           "primary": "Sword Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207251,7 +207858,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -207374,6 +208018,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207431,7 +208079,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -207554,6 +208239,10 @@
         },
         "taxonomy": {
           "primary": "Club Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207611,7 +208300,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -207734,6 +208460,10 @@
         },
         "taxonomy": {
           "primary": "Axe Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207791,7 +208521,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -207914,6 +208681,10 @@
         },
         "taxonomy": {
           "primary": "Axe Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -207971,7 +208742,44 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 600
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
@@ -332541,6 +333349,10 @@
         },
         "taxonomy": {
           "primary": "Fist Fighting Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -332756,6 +333568,10 @@
         },
         "taxonomy": {
           "primary": "Fist Fighting Weapons"
+        },
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
         }
       },
       "semantics": {
@@ -334417,6 +335233,10 @@
         },
         "taxonomy": {
           "primary": "Fist Fighting Weapons"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -334689,6 +335509,10 @@
         },
         "taxonomy": {
           "primary": "Fist Fighting Weapons"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -334961,6 +335785,10 @@
         },
         "taxonomy": {
           "primary": "Fist Fighting Weapons"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {
@@ -337467,6 +338295,10 @@
           "family": "Item",
           "key": "candidate:item/51475",
           "revision": "spell-p2-r21"
+        },
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
         }
       },
       "semantics": {

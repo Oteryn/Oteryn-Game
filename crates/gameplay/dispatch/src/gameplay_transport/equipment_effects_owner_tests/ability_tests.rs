@@ -103,6 +103,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // soulpit-echo-item-profiles.json. All 845 profiles have qualified speed_bonus=0.
     // W06 contributes the 24 basic scrolls 53751..=53774. W07 contributes the 835
     // source catalogue minus 15 unbound IDs, plus Exalted Core 37110 (821 profiles).
+    // P18 Forge shares that existing core profile and adds no duplicate.
     ("W06-ECHO", 24),
     ("W07-SOULPIT", 821),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
