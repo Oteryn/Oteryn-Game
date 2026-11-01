@@ -259,6 +259,117 @@ pub fn encode_state(state: &State) -> Result<Vec<u8>, Error> {
     }
     Ok(out)
 }
+/// Decodes the server-owned player-trade projection.
+pub fn decode_state(bytes: &[u8]) -> Result<State, Error> {
+    if bytes.len() > MAX_STATE_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut trade_id, mut partner, mut own, mut counter) = (None, None, None, None);
+    let (mut accepted_own, mut accepted_counter, mut phase, mut reason) = (None, None, None, None);
+    let (mut message, mut look) = (None, None);
+    let mut at = 0;
+    while at < bytes.len() {
+        match read_varint(bytes, &mut at)? {
+            10 => set_once(&mut trade_id, id(read_bytes(bytes, &mut at)?)?)?,
+            18 => set_once(&mut partner, read_entity(read_bytes(bytes, &mut at)?)?)?,
+            26 => set_once(&mut own, read_offer(read_bytes(bytes, &mut at)?)?)?,
+            34 => set_once(&mut counter, read_offer(read_bytes(bytes, &mut at)?)?)?,
+            40 => set_once(&mut accepted_own, boolean(read_varint(bytes, &mut at)?)?)?,
+            48 => set_once(
+                &mut accepted_counter,
+                boolean(read_varint(bytes, &mut at)?)?,
+            )?,
+            56 => set_once(
+                &mut phase,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            64 => set_once(
+                &mut reason,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            74 => set_once(&mut message, text(read_bytes(bytes, &mut at)?, 256)?)?,
+            82 => set_once(&mut look, text(read_bytes(bytes, &mut at)?, 4096)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let state = State {
+        trade_id,
+        partner,
+        own,
+        counter,
+        accepted: [
+            accepted_own.ok_or(Error::Malformed)?,
+            accepted_counter.ok_or(Error::Malformed)?,
+        ],
+        phase: phase.ok_or(Error::Malformed)?,
+        reason: reason.ok_or(Error::Malformed)?,
+        message: message.ok_or(Error::Malformed)?,
+        look: look.ok_or(Error::Malformed)?,
+    };
+    encode_state(&state)?;
+    Ok(state)
+}
+
+fn boolean(value: u64) -> Result<bool, Error> {
+    match value {
+        0 => Ok(false),
+        1 => Ok(true),
+        _ => Err(Error::Malformed),
+    }
+}
+
+fn text(bytes: &[u8], limit: usize) -> Result<String, Error> {
+    if bytes.len() > limit {
+        return Err(Error::LimitExceeded);
+    }
+    String::from_utf8(bytes.to_vec()).map_err(|_| Error::Malformed)
+}
+
+fn read_offer(bytes: &[u8]) -> Result<Offer, Error> {
+    let (mut definition, mut count, mut sub_type) = (None, None, None);
+    let mut at = 0;
+    while at < bytes.len() {
+        let slot = match read_varint(bytes, &mut at)? {
+            8 => &mut definition,
+            16 => &mut count,
+            24 => &mut sub_type,
+            _ => return Err(Error::Malformed),
+        };
+        set_once(
+            slot,
+            u32::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+        )?;
+    }
+    let value = Offer {
+        definition: definition.ok_or(Error::Malformed)?,
+        count: count.ok_or(Error::Malformed)?,
+        sub_type: sub_type.ok_or(Error::Malformed)?,
+    };
+    offer(value)?;
+    Ok(value)
+}
+
+/// Decodes the command receipt emitted by the server.
+pub fn decode_result(bytes: &[u8]) -> Result<ResultCode, Error> {
+    if bytes.len() != 2 || bytes[0] != 8 {
+        return Err(Error::Malformed);
+    }
+    match bytes[1] {
+        1 => Ok(ResultCode::Offered),
+        2 => Ok(ResultCode::Accepted),
+        3 => Ok(ResultCode::Completed),
+        4 => Ok(ResultCode::Cancelled),
+        5 => Ok(ResultCode::TooFar),
+        6 => Ok(ResultCode::NotTradeable),
+        7 => Ok(ResultCode::PartnerBusy),
+        8 => Ok(ResultCode::NoRoom),
+        9 => Ok(ResultCode::NoBackpack),
+        10 => Ok(ResultCode::Stale),
+        11 => Ok(ResultCode::NotSupported),
+        12 => Ok(ResultCode::Rejected),
+        _ => Err(Error::Malformed),
+    }
+}
 #[cfg(test)]
 #[path = "player_trade_tests.rs"]
 mod tests;

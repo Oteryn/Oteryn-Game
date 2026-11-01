@@ -124,6 +124,9 @@ pub mod spell;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Player-trade command execution through the admitted session.
+#[path = "features/0060-player-trade/protocol.rs"]
+pub mod player_trade;
 /// Guild command execution through the admitted session.
 #[path = "features/0040-guild/protocol.rs"]
 pub mod guild;

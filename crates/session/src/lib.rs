@@ -31,6 +31,8 @@ pub use oteryn_protocol_oteryn::guild;
 /// Hireling wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::hireling;
 pub use oteryn_protocol_oteryn::hotkey_equip;
+/// Player-trade wire values for the selected native-client feature.
+pub use oteryn_protocol_oteryn::player_trade;
 /// Market wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.

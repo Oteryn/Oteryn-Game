@@ -2,18 +2,32 @@
   {
     "mechanic": "0060-player-trade",
     "kind": "handlers",
-    "id": "0060-player-trade-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0060-player-trade-intent",
+    "status": "supported",
     "commands": [
       78
     ],
+    "direction": "client_to_server",
+    "capability": 60,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Trade state is session-owned and is not a preference."
     }
+  },
+  {
+    "mechanic": "0060-player-trade",
+    "kind": "keybindings",
+    "id": "0060-player-trade-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+T",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0060-player-trade",
+    "kind": "panels",
+    "id": "0060-player-trade-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

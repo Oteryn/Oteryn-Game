@@ -38,6 +38,9 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Direct player-trade panel state and controls.
+#[path = "features/0060-player-trade/mod.rs"]
+pub mod player_trade;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;
