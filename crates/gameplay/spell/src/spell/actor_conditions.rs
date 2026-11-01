@@ -1771,7 +1771,10 @@ mod source_attribute_projection_tests {
                 1,
                 ConditionValues::SpellSkills {
                     duration_ms: 1000,
-                    sub_id: 0,
+                    // sub_id 1: since #2793 SpellSkills sub_id 0 shares the Crystal
+                    // CONDITION_ATTRIBUTES slot and would replace the source debuff;
+                    // this test composes two live modifiers.
+                    sub_id: 1,
                     magic_level: 10,
                     fist: 0,
                     melee: 0,

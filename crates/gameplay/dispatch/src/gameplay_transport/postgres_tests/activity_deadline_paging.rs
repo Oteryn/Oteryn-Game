@@ -123,6 +123,18 @@ async fn case(h: &Harness) -> TestResult {
             request.participants[0].destination_transport =
                 Some(AuthenticatedTransportRefV1::decode(&[180 + member; 16]).map_err(debug)?);
         }
+        // The fixture has no node maintenance loop, and each admission/assignment above can
+        // still be returning the root's sole holder to the pool under load. Do not turn that
+        // transient busy holder into a boss-room refusal.
+        let settle = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !h.root.is_ready() && tokio::time::Instant::now() < settle {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        if !h.root.is_ready() {
+            return Err(
+                format!("pager durability did not settle before room entry {member}").into(),
+            );
+        }
         let outcome = owner
             .enter_boss_room(&authority, &h.node, request.clone())
             .await
