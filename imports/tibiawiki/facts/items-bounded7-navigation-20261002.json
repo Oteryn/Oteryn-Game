@@ -34,7 +34,7 @@
     },
     "dom_helper": {
       "path": "tools/content-migration/item_external_family_refinement.py",
-      "sha256": "392502106954e622a81a5bdc5922ae34660771b4b7e85c4d1f2ee993722230b6"
+      "sha256": "1b8dec597a03e9d506fe642d817659af850fc8b7621c5553eb81a7cd429b7a55"
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
@@ -46,7 +46,7 @@
     },
     "retained_stats": {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
+      "sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae"
     },
     "current_artifact": {
       "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",

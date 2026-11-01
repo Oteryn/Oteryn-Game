@@ -473,7 +473,7 @@ async fn settle_loot(
     }
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
-    // W22a: Oteryn stores no fluid state, so a subtype the donor would apply is refused.
+    // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
     if plan
         .entries
         .iter()
@@ -545,6 +545,7 @@ async fn settle_loot(
                 placement: CorpseContainerPlacement {
                     corpse_item_instance_id: parent,
                     placement_ordinal: entry.placement_ordinal,
+                    fluid_subtype: entry.fluid_subtype(),
                 },
                 content_revision: ground.content_revision.clone(),
                 ruleset_revision: ground.ruleset_revision.clone(),
@@ -628,6 +629,7 @@ async fn settle_loot(
                         corpse_mint.clone(),
                     )
                 })?,
+                fluid_subtype: entry.fluid_subtype(),
             },
             content_revision: ground.content_revision.clone(),
             ruleset_revision: ground.ruleset_revision.clone(),

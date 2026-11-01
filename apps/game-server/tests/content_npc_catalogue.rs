@@ -26,11 +26,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
     assert_eq!(
         catalogue.project_revision(),
-        "par-m10-drown-protection-20261028-r1"
+        "e06-market-crystal-parity-20261031-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "83d31d649df8311845177a275a7c528dc9cbcc6c3d9c4b7b04187b9b2a403d45"
+        "e1a549f21440659c6c0e234c6161d8399be6ae6d27b5ed078e751104041744dd"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

@@ -74,7 +74,7 @@ def semantic_digest(value):
 
 def stack_normalization_proof():
     path = Path(__file__).with_name('reward_stack_normalization.json')
-    if hashlib.sha256(path.read_bytes()).hexdigest() != '962a6cde5932fb4e17f457474de721f52749c32a7626ad7cf6d505916949fc69':
+    if hashlib.sha256(path.read_bytes()).hexdigest() != '4a71efae53f80b2080729959caa4d02b7cdd875a813118025e944376a480e248':
         raise ValueError('selected stack normalization proof changed')
     return json.loads(path.read_text())
 
@@ -83,7 +83,7 @@ def stack_normalization_checks():
     proof = stack_normalization_proof()
     return [{'code': 'OTERYN_SELECTED_STACK_SERIALIZATION', 'proof_path':
         'tools/content-schema/reward-claim-authoring/reward_stack_normalization.json',
-        'proof_sha256': '962a6cde5932fb4e17f457474de721f52749c32a7626ad7cf6d505916949fc69', 'source_behavior': 'RECORDED_DIVERGENCE',
+        'proof_sha256': '4a71efae53f80b2080729959caa4d02b7cdd875a813118025e944376a480e248', 'source_behavior': 'RECORDED_DIVERGENCE',
         'native_admission': 'WAITING_IMPLEMENTATION', 'selected_cases': proof['cases']}]
 
 

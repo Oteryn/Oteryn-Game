@@ -87,6 +87,7 @@ fn selected(quantities: &[u32]) -> LootPlan {
                 subtype: None,
                 charges: None,
                 unique: false,
+                stackable: true,
             })
             .collect(),
     }

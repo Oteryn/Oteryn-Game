@@ -84,6 +84,7 @@ pub(super) async fn qualify(
         placement: CorpseContainerPlacement {
             corpse_item_instance_id: parent,
             placement_ordinal: ordinal,
+            fluid_subtype: None,
         },
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),

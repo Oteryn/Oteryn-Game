@@ -193,11 +193,11 @@
   "historical_engine_599_and_formal_53": "old165 source provenance basis context; current exact289 basis/key validation separately required",
   "immutable_forge3332_compiler": {
     "path": "tools/content-schema/item-authoring/lower_item_forge3332_packet.py",
-    "sha256": "90c7057d61dc42345262625af5bc4295d8762786d982a89af1d439832aad9598"
+    "sha256": "bbf84871ad8eb55a51b5dc88735d21bf35232e9bf1c892ba334500017ba030e0"
   },
   "immutable_forge3332_packet": {
     "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
-    "sha256": "9e8776e9a0806667d268e41fbb89fa9159f182b18a807a370884745e3bc06fd3"
+    "sha256": "4d052fe9c131953d6c4c95753c51f3b4ccffc3d42f0980c1e42e7d63b6de5989"
   },
   "old165_bindings": {
     "git_blob_oid": "37c4c2edec935e22624fbbe2636c6c37cd28134f",

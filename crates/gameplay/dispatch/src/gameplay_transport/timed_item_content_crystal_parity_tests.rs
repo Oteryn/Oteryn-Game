@@ -71,13 +71,22 @@ fn i05_crystal_charged_amulet_matches() {
 
 /// Time ring 3053 -> 3090 (600 s) and dwarven ring 3097 -> 3099 (3,600 s, Crystal
 /// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
-/// item. Stealth, life and healing rings are pinned below until their invisibility and
+/// item. The power, sword, axe and club rings 3050/3091/3092/3093 -> 3087/3094/3095/3096
+/// (1,800 s, Crystal `items.xml:6927-6936`, `:7339-7350`, `:7392-7457`) are admitted too.
+/// Stealth, life and healing rings are pinned below until their invisibility and
 /// regeneration effects are production-ready.
 #[test]
 fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     let controller = native();
     let native = native_state(&controller);
-    for (base, active, seconds) in [(3053, 3090, 600), (3097, 3099, 3_600)] {
+    for (base, active, seconds) in [
+        (3053, 3090, 600),
+        (3097, 3099, 3_600),
+        (3050, 3087, 1_800),
+        (3091, 3094, 1_800),
+        (3092, 3095, 1_800),
+        (3093, 3096, 1_800),
+    ] {
         let definition = typed_of(native, base).expect("ring admitted");
         assert_eq!(
             equipped_definition(native, &definition)
@@ -96,6 +105,9 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         assert!(target.is_none(), "{base}");
     }
 
+    // I05 (2026-10-31): the skill rings left this pin when they were admitted above. These three
+    // stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089 and healing
+    // 3098 -> 3100 need equipment regeneration, and neither system is production-ready.
     for base in [3049, 3052, 3098] {
         let definition = typed_of(native, base);
         assert!(

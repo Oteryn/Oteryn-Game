@@ -26,7 +26,13 @@ fn towns() -> oteryn_world_bundle::subarea::Table {
         default_town: Some(8),
         client_version: "15.30".into(),
         candidate_sha256: hash.clone(),
-        areas: vec![area(1, None, 0), area(2, Some(8), 2), area(3, Some(6), 8)],
+        // Town 11 (Edron) is the P20 premium-area home town; 8 and 6 are free-account towns.
+        areas: vec![
+            area(1, None, 0),
+            area(2, Some(8), 2),
+            area(3, Some(6), 8),
+            area(4, Some(11), 14),
+        ],
         masks: vec![Mask {
             subarea: 2,
             asset: format!("content/assets/files/subarea-0002-{hash}.bmp.lzma"),
@@ -48,19 +54,45 @@ fn towns() -> oteryn_world_bundle::subarea::Table {
 
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
+    on_large_stack(None)
+}
+
+#[test]
+fn p20_ended_premium_moves_a_premium_area_citizen_to_the_thais_temple() -> TestResult {
+    on_large_stack(Some(PremiumEntry::Stored))
+}
+
+#[derive(Clone, Copy)]
+enum PremiumEntry {
+    Stored,
+    Respawn,
+    Arrival,
+}
+
+#[test]
+fn p20_ended_premium_consumes_pending_respawn_with_relocation() -> TestResult {
+    on_large_stack(Some(PremiumEntry::Respawn))
+}
+
+#[test]
+fn p20_ended_premium_consumes_pending_arrival_with_relocation() -> TestResult {
+    on_large_stack(Some(PremiumEntry::Arrival))
+}
+
+fn on_large_stack(p20: Option<PremiumEntry>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(p20).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "home town PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(p20: Option<PremiumEntry>) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "citizen_temple", false, false).await?;
-        prepare_current_session(&h).await?;
+        let request = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -100,6 +132,16 @@ fn scenario() -> TestResult {
             room.map_revision_digest(),
             (2, 11, 7),
         );
+        if p20.is_some() {
+            // Real first entry independently verifies this activation before P20 placement.
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice())
+                .bind(channel_pin.server_artifact_digest().as_slice())
+                .bind(channel_pin.client_artifact_digest().as_slice())
+                .bind(channel_pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+        }
         let deps = Dependencies::with_content(
             channel_pin,
             room,
@@ -109,6 +151,7 @@ fn scenario() -> TestResult {
                 .spell_book()
                 .clone(),
         )?;
+        let (consumer, coordinator) = premium_reads(&h);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
@@ -166,6 +209,21 @@ fn scenario() -> TestResult {
             "SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(receipts, 1, "one receipt for the actual town change");
+        if let Some(entry) = p20 {
+            premium_ended(
+                &h,
+                &mut owner,
+                (&consumer, &coordinator),
+                actor,
+                session,
+                (&deps, &request, entry),
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert!(sqlx::query(
             "UPDATE game_character_home_towns SET town_id=8 WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).execute(&h.pool).await.is_err(), "town writes require their receipt");
@@ -187,7 +245,7 @@ fn scenario() -> TestResult {
         stale.character_lease_generation = 1;
         assert!(
             h.root
-                .character_home_town(&authority, &h.node, stale, 8, Some(8))
+                .character_home_town(&authority, &h.node, stale, 8, Some(8), None)
                 .await
                 .is_err()
         );
@@ -252,6 +310,306 @@ fn scenario() -> TestResult {
     })
 }
 
+const P20_NOW: i64 = 1_790_812_800_000_000;
+
+struct P20Clock(std::sync::Mutex<Option<crate::premium::TrustedNow>>);
+impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered
+    for P20Clock
+{
+}
+impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for P20Clock {
+    fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
+        *self.0.lock().expect("clock")
+    }
+}
+
+/// P20: delivered Premium reads with a trusted clock and the durable latch.
+fn premium_reads(
+    h: &Harness,
+) -> (
+    std::sync::Arc<crate::premium::PremiumConsumer>,
+    crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+) {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        PremiumActivation, SpellPremiumCoordinator,
+    };
+    let consumer = std::sync::Arc::new(crate::premium::PremiumConsumer::default());
+    let coordinator = SpellPremiumCoordinator::new(
+        consumer.clone(),
+        Some(std::sync::Arc::new(P20Clock(std::sync::Mutex::new(
+            crate::premium::TrustedNow::new(P20_NOW, 1_000_000),
+        )))),
+        Some(PremiumActivation {
+            activation_id: "p20-test".to_owned(),
+            switch_over_us: P20_NOW - 60_000_000,
+        }),
+        Some(h.root.clone()),
+    );
+    (consumer, coordinator)
+}
+
+/// P20: Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:8-15`.
+async fn premium_ended<'a>(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'a, '_, '_>,
+    (consumer, coordinator): (
+        &crate::premium::PremiumConsumer,
+        &'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    ),
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    (deps, request, entry): (
+        &Dependencies,
+        &crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+        PremiumEntry,
+    ),
+) -> TestResult {
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    let now = P20_NOW;
+    let evidence = |state| PremiumEvidence {
+        account_id: id(40),
+        producer_revision: "1".repeat(40),
+        producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
+        product_id: crate::premium::PRODUCT_ID.to_owned(),
+        product_version: crate::premium::PRODUCT_VERSION,
+        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
+        state,
+        lifecycle_revision: 1,
+        authority_revision: 7,
+        effective_from_us: now - 60_000_000,
+        effective_until_us: now + 3_600_000_000,
+        authority_issued_at_us: now,
+        authority_valid_until_us: now + 3_600_000_000,
+        refresh_after_us: now + 1_800_000_000,
+    };
+    let town = async |h: &Harness| -> TestResult<i32> {
+        Ok(sqlx::query_scalar("SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+    };
+    assert_eq!(owner.home_town(session, Some((actor, 11))).await, Some(11));
+    // A restart before the first admission position write must not restore this premium cell
+    // after citizenship has already changed to Thais.
+    let old_cell = MovementLocalPosition {
+        x: 14,
+        y: 11,
+        floor: 7,
+    };
+    let saved = {
+        let runtime = owner.runtime.lock().await;
+        let mut saved = owner.placed_record(&runtime, old_cell);
+        saved.record.vitals = crate::durability::character_last_position::LastVitals::new(40, 3);
+        saved.record.rest = Some([1, 2, 3, 4]);
+        saved
+    };
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("fence")?;
+    assert_eq!(
+        owner
+            .root
+            .write_character_last_position(
+                owner.character,
+                owner.holder,
+                fence,
+                saved.write_sequence,
+                saved.record
+            )
+            .await?,
+        crate::durability::character_last_position::LastPositionWrite::Written
+    );
+    // Without Premium reads the admission is unchanged.
+    owner.premium_coordinator = None;
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    owner.premium_coordinator = Some(coordinator);
+    // Current Premium keeps the premium-area town.
+    consumer.prove_for_test(evidence(EntitlementState::Active));
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    assert_eq!(town(h).await?, 11);
+    match entry {
+        PremiumEntry::Stored => {}
+        PremiumEntry::Respawn => {
+            let death = {
+                let mut runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                states
+                    .apply_creature_damage(
+                        &mut runtime,
+                        actor,
+                        session,
+                        100_000,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                            owner.owner_now().get(),
+                        ),
+                    )
+                    .ok_or("damage")?;
+                states
+                    .player_death(&runtime, actor, session)
+                    .ok_or("death")?
+            };
+            assert!(matches!(
+                owner.settle_death(actor, session, death, false).await.0,
+                crate::gameplay_transport::SessionDeath::Durable
+            ));
+        }
+        PremiumEntry::Arrival => {
+            // An interrupted paid trip has this same obligation; seed only its durable input.
+            sqlx::query("INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,14,11,7)")
+                .bind(id(41).as_slice()).bind(id(79).as_slice())
+                .bind(owner.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        }
+    }
+    // An ended entitlement moves the citizen to Thais (town 8) and enters at its temple.
+    consumer.prove_for_test(PremiumEvidence {
+        authority_revision: 8,
+        ..evidence(EntitlementState::Expired)
+    });
+    let thais = MovementLocalPosition {
+        x: 2,
+        y: 11,
+        floor: 7,
+    };
+    assert_eq!(
+        owner.premium_ended_temple(id(40), session).await,
+        Some(thais)
+    );
+    assert_eq!(
+        town(h).await?,
+        11,
+        "a placement decision does not commit citizenship"
+    );
+    let pin = deps.runtime.lock().await.content_pin().clone();
+    let relocated = MovementLocalPosition { x: 3, ..thais };
+    // Interrupt after the runtime placement but before its position write. All durable parts
+    // must roll back together, and a brand-new owner must relocate again on the next login.
+    sqlx::raw_sql("CREATE FUNCTION p20_fail_position() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'P20 injected position failure'; END; $$; CREATE TRIGGER p20_fail_position BEFORE INSERT OR UPDATE ON game_character_last_positions FOR EACH ROW EXECUTE FUNCTION p20_fail_position()")
+        .execute(&h.pool).await?;
+    for attempt in 0..3 {
+        let fresh =
+            Dependencies::with_content(pin.clone(), deps.room.clone(), deps.spells.clone())?;
+        // The nominal temple is occupied. Persist the owner's actual radius fallback cell.
+        {
+            let mut runtime = fresh.runtime.lock().await;
+            let occupant_session =
+                crate::foundation::GameSessionId::decode(&id(82)).map_err(debug)?;
+            let reservation = runtime
+                .reserve_fresh_session(occupant_session)
+                .map_err(debug)?;
+            let occupant = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(occupant)
+                .map_err(debug)?;
+        }
+        let mut login = fresh.owner(h, owner.character);
+        login.active_generation = owner.active_generation;
+        login.movement_cells = owner.movement_cells;
+        login.premium_coordinator = Some(coordinator);
+        let (outcome, _, decided) = Box::pin(login.initialize_first_entry(
+            request,
+            session,
+            crate::foundation::AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+            fresh.actor,
+        ))
+        .await;
+        if attempt < 2 {
+            assert_eq!(
+                outcome,
+                crate::gameplay_transport::connection::FirstEntryOutcome::RefusedUnavailable
+            );
+            // The refusal must reach the injected write, not an unrelated admission preflight.
+            assert_eq!(
+                fresh
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(fresh.actor)
+                    .map_err(debug)?
+                    .position(),
+                relocated
+            );
+            assert_eq!(town(h).await?, 11);
+            let pending: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pending_respawns) + (SELECT count(*) FROM game_character_pending_arrivals)")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(pending, i64::from(!matches!(entry, PremiumEntry::Stored)));
+            let restored = h
+                .root
+                .read_character_last_position(owner.character, owner.holder, fence)
+                .await?
+                .ok_or("old position after interruption")?;
+            assert_eq!(restored.record.cell, saved.record.cell);
+            if attempt == 0 {
+                sqlx::raw_sql("DROP TRIGGER p20_fail_position ON game_character_last_positions; CREATE TRIGGER p20_fail_position BEFORE INSERT ON game_character_home_town_receipts FOR EACH ROW EXECUTE FUNCTION p20_fail_position()")
+                    .execute(&h.pool).await?;
+            } else {
+                sqlx::raw_sql("DROP TRIGGER p20_fail_position ON game_character_home_town_receipts; DROP FUNCTION p20_fail_position()")
+                    .execute(&h.pool).await?;
+            }
+        } else {
+            assert_eq!(
+                outcome,
+                crate::gameplay_transport::connection::FirstEntryOutcome::Positioned
+            );
+            assert_eq!(
+                fresh
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(fresh.actor)
+                    .map_err(debug)?
+                    .position(),
+                relocated
+            );
+            let budget =
+                crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, &h.root);
+            assert!(
+                login
+                    .consume_admitted_newhaven_arrival(
+                        &budget,
+                        session,
+                        fresh.actor,
+                        decided.as_ref()
+                    )
+                    .await
+            );
+        }
+    }
+    assert_eq!(town(h).await?, 8);
+    assert_eq!(owner.home_temple(session).await, Some(thais));
+    // No periodic writer has run: a restarted admission already reads the actual relocation.
+    let restored = owner
+        .root
+        .read_character_last_position(owner.character, owner.holder, fence)
+        .await?
+        .ok_or("durable relocated position")?;
+    assert_eq!(
+        restored.record.cell,
+        crate::durability::character_last_position::LastPositionCell {
+            x: relocated.x,
+            y: relocated.y,
+            floor: relocated.floor,
+        }
+    );
+    let (vitals, rest) = if matches!(entry, PremiumEntry::Respawn) {
+        (None, None)
+    } else {
+        (saved.record.vitals, saved.record.rest)
+    };
+    assert_eq!(restored.record.vitals, vitals);
+    assert_eq!(restored.record.rest, rest);
+    let pending: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pending_respawns) + (SELECT count(*) FROM game_character_pending_arrivals)")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(pending, 0, "the relocation consumed its obligation");
+    // A free-area town stays where it is on the next login.
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    let receipts: Vec<(i32, i32)> = sqlx::query_as(
+        "SELECT town_before, town_after FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid ORDER BY committed_character_revision",
+    ).bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(receipts, vec![(8, 6), (6, 11), (11, 8)]);
+    eprintln!("P20_POSTGRES_EXECUTED: ended Premium, premium-area town 11 -> Thais temple");
+    owner.premium_coordinator = None;
+    Ok(())
+}
+
 async fn revisions(h: &Harness) -> TestResult<(u64, u64)> {
     let (root, progression): (String, String) = sqlx::query_as(
         "SELECT r.character_revision::text,p.character_revision::text \
@@ -305,7 +663,8 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         spawns: Default::default(),
         npcs: Default::default(),
     };
-    let tiles = [(2, 0), (3, 0), (8, 0), (9, 0)]
+    // The P20 restart case saves a real walkable cell in the premium town, Edron (14, 11).
+    let tiles = [(2, 0), (3, 0), (8, 0), (9, 0), (14, 0)]
         .into_iter()
         .map(|(x, flags)| Tile {
             x,

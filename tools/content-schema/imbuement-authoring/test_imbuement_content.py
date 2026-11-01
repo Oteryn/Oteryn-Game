@@ -26,12 +26,13 @@ class ContentImportTests(unittest.TestCase):
 
     def test_unknown_and_unregistered_equipment_are_held(self):
         equipment = json.loads(self.files[importer.PREFIX + "equipment.json"])
-        self.assertEqual(len(equipment["profiles"]), 627)
+        # E06 minted i49160 from the pinned client; only i53192 remains absent.
+        self.assertEqual(len(equipment["profiles"]), 628)
         self.assertTrue(all(r["item_ref"] and r["allowed_types"] for r in equipment["profiles"]))
         held = equipment["held_observations"]
-        self.assertEqual(len(held), 36)
+        self.assertEqual(len(held), 35)
         self.assertEqual({r["client_id"] for r in held if r["status"] == "CANONICAL_ITEM_ABSENT"},
-                         {49160, 53192})
+                         {53192})
         source = self.data["packets"]["imbuement-eligibility.json"]["items"]
         self.assertEqual(sorted(r["client_id"] for r in source),
                          sorted(r["client_id"] for r in held + equipment["profiles"]))

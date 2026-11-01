@@ -26983,7 +26983,7 @@
   ],
   "retained_stats": {
     "path": "imports/tibiawiki/facts/items-stats.json",
-    "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
+    "sha256": "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae"
   },
   "schema": "OTERYN_CLOSED_ENGINE_FAMILY_NAVIGATION/v1",
   "scope": "NAVIGATION_ONLY",

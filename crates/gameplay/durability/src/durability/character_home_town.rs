@@ -1,5 +1,9 @@
 //! C20d-W23: durable citizenship in the global Character revision chain.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_death::PlayerDeathOccurrence;
+use super::character_last_position::{
+    FinalLastPosition, LastPositionKey, LastPositionWrite, upsert_last_position,
+};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
     state_matches_root,
@@ -7,8 +11,16 @@ use super::character_progression::{
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::npc_travel::{ArrivalConsume, TravelOccurrence};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+
+/// P20's actual first-entry placement and the obligation it supersedes, committed with citizenship.
+pub struct HomeTownRelocation {
+    pub placed: FinalLastPosition,
+    pub respawn: Option<PlayerDeathOccurrence>,
+    pub arrival: Option<TravelOccurrence>,
+}
 
 impl DurabilityRoot {
     /// Initialize an absent town from the pinned World, or set citizenship. Every read/write
@@ -21,7 +33,17 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         default_town: u32,
         citizenship: Option<u32>,
+        relocation: Option<HomeTownRelocation>,
     ) -> Result<u32, CharacterProgressionError> {
+        if relocation.as_ref().is_some_and(|r| {
+            citizenship.is_none()
+                || (r.respawn.is_some() && r.arrival.is_some())
+                || !matches!(fence.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. }
+                        if world_id == r.placed.record.world_id)
+        }) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let default_town = i32::try_from(default_town)
             .ok()
             .filter(|id| *id > 0)
@@ -59,6 +81,31 @@ impl DurabilityRoot {
             ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let before = before.unwrap_or(default_town);
             let town = citizenship.unwrap_or(before);
+            if let Some(relocation) = relocation {
+                // The existing owners consume the exact obligation before the position owner
+                // writes. Any missing obligation or superseding write rolls back citizenship too.
+                if let Some(occurrence) = relocation.respawn
+                    && !super::character_death::consume_relocated_respawn(&mut tx, fence, occurrence).await?
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let written = if let Some(occurrence) = relocation.arrival {
+                    super::npc_travel::consume_in_transaction(
+                        &mut tx, &recovery, &node, fence, occurrence, relocation.placed,
+                    ).await.map_err(|_| DurabilityError::InvalidStoredState)? == ArrivalConsume::Consumed
+                } else {
+                    upsert_last_position(
+                        &mut tx, fence.character_id.as_bytes(),
+                        LastPositionKey {
+                            character_lease_generation: fence.character_lease_generation,
+                            write_sequence: relocation.placed.write_sequence,
+                        }, &relocation.placed.record,
+                    ).await? == LastPositionWrite::Written
+                };
+                if !written {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+            }
             // An absent row already means the pinned default. Materialization and repeated
             // citizenship are no-ops; an actual choice is one Character semantic transaction.
             if town != before {

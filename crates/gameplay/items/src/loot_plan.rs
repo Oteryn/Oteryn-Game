@@ -83,15 +83,32 @@ pub struct LootPlanEntry {
     /// Full charges from the admitted Item definition (lazy timed-state default).
     pub charges: Option<u32>,
     pub unique: bool,
+    /// Whether the admitted Item stacks; a stack takes its count and ignores the subtype.
+    pub stackable: bool,
 }
 
 impl LootPlanEntry {
-    /// Whether minting this entry would have to store its loot subtype. The donor drops a charged
-    /// item with its full charges and a stackable one with its count, and applies `subType` only
-    /// to any other item (Crystal `Container:addLoot`, the fluid of a fluid container). Full
-    /// charges are the lazy timed-state default, so only the latter needs state Oteryn lacks.
+    /// The fluid this entry is minted with. The donor drops a stackable item with its count and a
+    /// charged one with its full charges, and applies `subType` only to any other item, the
+    /// fluid of a fluid container; subtype 0 is the empty container (Crystal 201189f8
+    /// `data/libs/functions/container.lua:15-51`). Full charges are the lazy timed-state
+    /// default and an empty container has no fluid row, so both give `None`.
+    pub fn fluid_subtype(&self) -> Option<u8> {
+        match self.subtype {
+            Some(subtype) if self.charges.is_none() && !self.stackable => {
+                u8::try_from(subtype).ok().filter(|fluid| *fluid != 0)
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether the subtype names a fluid beyond the client's one-byte fluid range, which the
+    /// fluid state cannot hold.
     pub fn needs_subtype_state(&self) -> bool {
-        self.subtype.is_some() && self.charges.is_none()
+        self.subtype
+            .is_some_and(|subtype| subtype > u16::from(u8::MAX))
+            && self.charges.is_none()
+            && !self.stackable
     }
 }
 
@@ -123,7 +140,7 @@ pub enum LootPlanError {
     /// The loot table's algorithm is not the one this D2a slice implements
     /// (`IndependentBernoulliPpm`).
     UnsupportedAlgorithm,
-    /// The loot subtype of an uncharged Item (a fluid) needs instance state Oteryn does not store.
+    /// The loot subtype of an uncharged, unstacked Item is beyond the one-byte fluid range.
     UnsupportedItemSubtype,
     /// An entry's `min_count`/`max_count` is zero or out of order.
     InvalidQuantityRange,
@@ -395,6 +412,7 @@ fn roll_entries(
             subtype: entry.details.subtype,
             charges: entry.details.charges,
             unique: entry.details.unique,
+            stackable: entry.details.stackable,
         });
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
@@ -418,6 +436,22 @@ fn roll_entries(
         }
     }
     Ok(())
+}
+
+/// W13: order a boosted boss's table so the entries its bonus rerolls lead, and return their
+/// count (the `boosted_entries` of [`LootSelectionAlgorithm::DailyBoosted`]). The bonus rolls
+/// take equipment only and never a unique entry (Crystal 201189f8
+/// `data/libs/functions/monster.lua:219-221`, `equipmentOnly` returns `not unique and
+/// isEquipment(itemType)`; rolls from `data/scripts/systems/reward_chest.lua:86-103`). The sort
+/// is stable, so replay ordinals stay deterministic.
+pub fn partition_daily_boss_bonus_entries(
+    entries: &mut [LootTableEntry],
+    is_equipment: impl Fn(&str) -> bool,
+) -> usize {
+    let bonus =
+        |entry: &LootTableEntry| !entry.details.unique && is_equipment(&entry.item.production_key);
+    entries.sort_by_key(|entry| !bonus(entry));
+    entries.iter().take_while(|entry| bonus(entry)).count()
 }
 
 // All rolls share the existing per-death draw, Item and plan-byte ceilings.
@@ -451,14 +485,10 @@ fn plan_daily_boosted(
     for roll in 1..=extra_rolls {
         let extra = plan_roll(death_key, table_ref, &ordinary, roll)?;
         let mut remapped = vec![None; extra.entries.len()];
+        // W13: each extra roll is its own donor `generateLootRoll` call, whose unique set starts
+        // empty (Crystal 201189f8 `data/libs/functions/monstertype.lua:10`, `:25`, `:124`;
+        // Canary 47dfd51f `:10`, `:25`, `:74`): uniqueness holds inside one roll, not across.
         for (index, mut entry) in extra.entries.into_iter().enumerate() {
-            if plan
-                .entries
-                .iter()
-                .any(|old| old.unique && old.item == entry.item)
-            {
-                continue;
-            }
             if let Some(parent) = entry.parent {
                 let Some(parent) = remapped[parent] else {
                     continue;
@@ -1081,6 +1111,96 @@ mod daily_boost_tests {
     }
 
     #[test]
+    fn boosted_boss_bonus_rerolls_equipment_but_never_a_unique_entry() -> Result<(), LootPlanError>
+    {
+        let entry = |key: &str, unique: bool| {
+            let details = oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                unique,
+                ..Default::default()
+            };
+            LootTableEntry {
+                item: LootDefinitionRef::new("Item", key, "definition-r1"),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                details,
+            }
+        };
+        let mut entries = vec![
+            entry("oteryn:item.gold", false),
+            entry("oteryn:item.unique_amulet", true),
+            entry("oteryn:item.ring", false),
+        ];
+        let equipment = |key: &str| key != "oteryn:item.gold";
+        let boosted = partition_daily_boss_bonus_entries(&mut entries, equipment);
+        assert_eq!(boosted, 1);
+        assert_eq!(
+            entries
+                .iter()
+                .map(|e| e.item.production_key.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "oteryn:item.ring",
+                "oteryn:item.gold",
+                "oteryn:item.unique_amulet"
+            ]
+        );
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 3,
+                boosted_entries: boosted,
+            },
+            entries,
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.boss", "definition-r1"),
+            &table,
+        )?;
+        let count = |key: &str| {
+            plan.entries
+                .iter()
+                .filter(|e| e.item.production_key == key)
+                .count()
+        };
+        assert_eq!(count("oteryn:item.ring"), 4);
+        assert_eq!(count("oteryn:item.gold"), 1);
+        assert_eq!(count("oteryn:item.unique_amulet"), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn a_boosted_creature_extra_roll_keeps_uniqueness_inside_its_own_roll()
+    -> Result<(), LootPlanError> {
+        // Crystal and Canary `generateLootRoll` start each call with an empty unique set, so the
+        // boosted creature's extra call may drop a unique item its base call already dropped.
+        let unique = LootTableEntry {
+            item: LootDefinitionRef::new("Item", "oteryn:item.unique", "definition-r1"),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: Some(1_000_000),
+            details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                unique: true,
+                ..Default::default()
+            },
+        };
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 1,
+                boosted_entries: 2,
+            },
+            entries: vec![unique.clone(), unique],
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1"),
+            &table,
+        )?;
+        assert_eq!(plan.entries.len(), 2);
+        Ok(())
+    }
+
+    #[test]
     fn daily_boost_uses_independent_rolls_instead_of_doubling_probability()
     -> Result<(), LootPlanError> {
         let reference = LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1");
@@ -1345,30 +1465,43 @@ mod w22a_tests {
     }
 
     #[test]
-    fn only_an_uncharged_subtype_needs_instance_state() -> Result<(), LootPlanError> {
+    fn an_uncharged_unstacked_subtype_is_the_minted_fluid() -> Result<(), LootPlanError> {
         let reference = super::tests::table_ref("oteryn:loot.subtype.table");
         let mut table = super::tests::one_entry_table("oteryn:item.subtype", 1, 1, Some(1_000_000));
+        let plan = |table: &LootTableDefinition| {
+            plan_creature_loot(
+                LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+                &reference,
+                table,
+            )
+        };
         table.entries[0].details.subtype = Some(5);
-        let fluid = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
-        assert!(fluid.entries[0].needs_subtype_state());
+        let fluid = plan(&table)?;
+        assert_eq!(fluid.entries[0].fluid_subtype(), Some(5));
+        assert!(!fluid.entries[0].needs_subtype_state());
+        // Subtype 0 is the empty container: no fluid row.
+        table.entries[0].details.subtype = Some(0);
+        assert_eq!(plan(&table)?.entries[0].fluid_subtype(), None);
+        // A subtype beyond the one-byte fluid range cannot be held and stays refused.
+        table.entries[0].details.subtype = Some(300);
+        let wide = plan(&table)?;
+        assert_eq!(wide.entries[0].fluid_subtype(), None);
+        assert!(wide.entries[0].needs_subtype_state());
+        // A stack takes its count and ignores the subtype (container.lua:15-27).
+        table.entries[0].details.stackable = true;
+        let stack = plan(&table)?;
+        assert_eq!(stack.entries[0].fluid_subtype(), None);
+        assert!(!stack.entries[0].needs_subtype_state());
+        table.entries[0].details.stackable = false;
+        table.entries[0].details.subtype = Some(5);
         table.entries[0].details.charges = Some(5);
-        let charged = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
+        let charged = plan(&table)?;
+        assert_eq!(charged.entries[0].fluid_subtype(), None);
         assert!(!charged.entries[0].needs_subtype_state());
         table.entries[0].details.subtype = None;
         table.entries[0].details.charges = None;
-        let plain = plan_creature_loot(
-            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
-            &reference,
-            &table,
-        )?;
+        let plain = plan(&table)?;
+        assert_eq!(plain.entries[0].fluid_subtype(), None);
         assert!(!plain.entries[0].needs_subtype_state());
         Ok(())
     }

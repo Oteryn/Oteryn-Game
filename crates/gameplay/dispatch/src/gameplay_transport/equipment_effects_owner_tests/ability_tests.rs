@@ -24,6 +24,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("GOLDCONV", 4),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
+    // I05 skill rings: the inactive and active power 3050/3087, sword 3091/3094, axe 3092/3095
+    // and club 3093/3096 forms (tools/content-migration/timed_item_profiles.py), speed_bonus=0.
+    ("I05-SKILL-RINGS", 8),
     // I10a: the podiums 35973/35974, 38707 and 42367/42368
     // (tools/content-migration/podium_item_profiles.py). All have speed_bonus=0.
     ("I10A-PODIUM", 5),
@@ -302,6 +305,33 @@ fn equipment_effects_owner_dwarven_ring_suppresses_drunk_only_in_ring_slot() -> 
             Default::default()
         };
         assert_eq!(effects.suppressions, expected, "slot {slot}");
+    }
+    Ok(())
+}
+
+/// I05: custody keeps a skill ring's inactive form; worn, it takes the active form's skill in the
+/// ring slot only (Crystal 201189f8 `items.xml:7339-7350`, power ring 3087 `skillfist` 6;
+/// `:7422-7457`, sword/axe/club rings 3094/3095/3096 skill 4).
+#[test]
+fn equipment_effects_owner_inactive_skill_rings_take_worn_skill_only_in_ring_slot() -> TestResult {
+    use oteryn_gameplay_content::content::item_abilities::AbilitySkill;
+    let content = native(&input()?)?;
+    for (base, skill, points) in [
+        (3050, AbilitySkill::Fist, 6),
+        (3091, AbilitySkill::Sword, 4),
+        (3092, AbilitySkill::Axe, 4),
+        (3093, AbilitySkill::Club, 4),
+    ] {
+        for slot in 1..=10 {
+            let equipment = snapshot(&content, &format!("oteryn:item.tibia.i{base}"), slot);
+            let effects = equipment_effects(&equipment, &content).ok_or("effects")?;
+            let expected: std::collections::BTreeMap<_, _> = if slot == 8 {
+                [(skill, points)].into_iter().collect()
+            } else {
+                Default::default()
+            };
+            assert_eq!(effects.skills, expected, "{base} slot {slot}");
+        }
     }
     Ok(())
 }

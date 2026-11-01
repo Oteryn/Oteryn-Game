@@ -14,7 +14,7 @@ from lower_wiki_stack_default_packet import raw_parameters
 ROOT = old.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_forge289_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json"
-PROOF_SHA = "f03ef849585a067c2b17c94e7c95dac540f0c361758d2ad995cdd2fad517f3ea"
+PROOF_SHA = "ff1bf51361e8843850f739db559a035aebd7dfe89605219a1546f2dfb3094cbb"
 SNAPSHOT = "imports/tibiawiki/facts/forge289-source-snapshot.json"
 SNAPSHOT_SHA = "cff4df43b6e38255656d56fd1f53a47cf30f6174f09c01e18450cf5e49db32c2"
 PROPOSED = (

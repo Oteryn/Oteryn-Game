@@ -5,7 +5,7 @@ use crate::foundation::WorldId;
 pub(super) fn admitted_rest(decided: &AdmissionPosition, world: WorldId) -> Option<[u32; 4]> {
     match decided {
         AdmissionPosition::Stored(row) if row.record.world_id == world => row.record.rest,
-        AdmissionPosition::Arrival(_, _, rest) => *rest,
+        AdmissionPosition::Arrival(_, _, rest) | AdmissionPosition::Relocated(_, _, rest) => *rest,
         _ => None,
     }
 }

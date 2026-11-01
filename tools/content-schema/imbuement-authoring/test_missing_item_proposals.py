@@ -12,14 +12,15 @@ class MissingItemProposalTests(unittest.TestCase):
     def setUpClass(cls):
         cls.packet = proposals.build()
 
-    def test_both_proposals_pass_owning_validator_with_no_warnings(self):
-        self.assertEqual(len(self.packet["proposals"]), 2)
+    def test_active_proposal_passes_owning_validator_with_no_warnings(self):
+        self.assertEqual(len(self.packet["proposals"]), 1)
+        self.assertEqual({row["source_client_id"] for row in self.packet["proposals"]}, {53192})
         for row in self.packet["proposals"]:
             self.assertEqual(row["identity_state"], "PROPOSED_NOT_REGISTERED")
             self.assertEqual(row["validation"]["errors"], [])
             self.assertEqual(row["validation"]["warnings"], [])
 
-    def test_both_items_are_included_in_current_october_target(self):
+    def test_active_item_is_included_in_current_october_target(self):
         rows = {row["source_client_id"]: row for row in self.packet["proposals"]}
         self.assertEqual(self.packet["target"], "global-tibia-current-2026-10-01")
         self.assertEqual(self.packet["target_date"], "2026-10-01")
@@ -27,8 +28,28 @@ class MissingItemProposalTests(unittest.TestCase):
             self.assertEqual(row["target_time_status"], "PREEXISTING_TARGET_SOURCE_VERSION")
             self.assertTrue(row["current_target_included"])
         self.assertEqual(rows[53192]["source_facts"]["facts"]["introduced_on"], "2026-08-04")
-        self.assertEqual(rows[49160]["authoring_definition"]["container"]["capacity"], 1)
-        self.assertEqual(rows[49160]["source_facts"]["facts"]["introduced_on"], "2024-08-06")
+
+    def test_e06_identity_retires_proposal_without_admitting_its_gameplay_facts(self):
+        self.assertEqual(self.packet["retired_proposals"], [{
+            "source_client_id": 49160,
+            "item_ref": {"family": "Item", "key": "oteryn:item.tibia.i49160",
+                         "revision": "definition-r1"},
+            "identity_state": "RETIRED_CANONICAL_IDENTITY",
+            "reason": "E06 admitted the identity only; proposal gameplay facts remain unadmitted.",
+        }])
+        definition = proposals.canonical_items()["oteryn:item.tibia.i49160"]["definition"]
+        self.assertNotIn("container", definition)
+        self.assertNotIn("equipment", definition)
+        self.assertNotIn("weight", definition.get("physical", {}))
+        source = next(row for row in json.loads(proposals.FACTS.read_bytes())["records"]
+                      if row["client_id"] == 49160)
+        self.assertEqual(source["facts"]["container_capacity"], 1)
+        self.assertEqual(source["facts"]["introduced_on"], "2024-08-06")
+
+    def test_retirement_requires_the_e06_canonical_identity(self):
+        with patch.object(proposals, "canonical_items", return_value={}):
+            with self.assertRaisesRegex(ValueError, "E06 canonical identity is missing"):
+                proposals.build()
 
     def test_future_introduction_cannot_be_qualified_for_current_target(self):
         self.assertEqual(proposals.qualify_current_target("2026-10-01", "2026-10-01"),
@@ -72,7 +93,7 @@ class MissingItemProposalTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     proposals.validate_source_provenance(source)
 
-    def test_raw_client_slot_count_corroborates_both_authored_items(self):
+    def test_raw_client_slot_count_corroborates_active_authored_item(self):
         for row in self.packet["proposals"]:
             self.assertEqual(row["primary_client"]["imbuement_slots"], 1)
             self.assertEqual(row["primary_client"]["imbuement_slots"],
@@ -86,7 +107,9 @@ class MissingItemProposalTests(unittest.TestCase):
         self.assertTrue(errors)
 
     def test_proposal_cannot_silently_overwrite_admitted_identity(self):
-        with patch.object(proposals, "canonical_items", return_value={"oteryn:item.tibia.i49160": {}}):
+        admitted = proposals.canonical_items()
+        admitted["oteryn:item.tibia.i53192"] = {}
+        with patch.object(proposals, "canonical_items", return_value=admitted):
             with self.assertRaisesRegex(ValueError, "already admitted"):
                 proposals.build()
 

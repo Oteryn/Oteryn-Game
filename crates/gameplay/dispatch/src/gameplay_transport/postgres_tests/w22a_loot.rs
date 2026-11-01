@@ -12,9 +12,13 @@ enum Case {
     Nested,
     Outside,
     ChargedSubtype,
+    FluidSubtype,
     Gut,
     DuplexOn,
     DuplexOff,
+    DuplexOfflineIgnored,
+    DuplexOnlineSpent,
+    BoostedBossUnique,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
@@ -40,6 +44,13 @@ fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult 
     })
 }
 #[test]
+fn w22a_fluid_loot_with_a_subtype_mints_the_filled_container() -> TestResult {
+    scenario_thread::run("w22a-fluid-subtype", || {
+        CASE.set(Some(Case::FluidSubtype));
+        scenario()
+    })
+}
+#[test]
 fn w22b_gut_widens_creature_product_rolls_on_the_real_kill_path() -> TestResult {
     scenario_thread::run("w22b-gut", || {
         CASE.set(Some(Case::Gut));
@@ -61,11 +72,31 @@ fn w22c_a_kill_without_wealth_duplex_rolls_its_loot_once() -> TestResult {
     })
 }
 #[test]
+fn w22b_wealth_duplex_ignores_wall_clock_time_spent_offline() -> TestResult {
+    scenario_thread::run("w22b-duplex-offline", || {
+        CASE.set(Some(Case::DuplexOfflineIgnored));
+        scenario()
+    })
+}
+#[test]
+fn w22b_wealth_duplex_ends_after_one_online_hour() -> TestResult {
+    scenario_thread::run("w22b-duplex-online-spent", || {
+        CASE.set(Some(Case::DuplexOnlineSpent));
+        scenario()
+    })
+}
+#[test]
 fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult {
     scenario_thread::run("w22a-outside", || {
         CASE.set(Some(Case::Outside));
         scenario()
     })
+}
+
+/// W13: the next scenario kills a boosted boss whose table holds a unique amulet, a ring and
+/// gold, each at 100%.
+pub(super) fn boosted_boss_unique_case() {
+    CASE.set(Some(Case::BoostedBossUnique));
 }
 
 pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
@@ -87,7 +118,7 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
-        Case::DuplexOn | Case::DuplexOff => {
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
             table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
         }
         Case::ChargedSubtype => {
@@ -96,6 +127,34 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             let mut amulet = entry(3081);
             amulet["subtype"] = json!(5);
             table["entries"] = json!([amulet]);
+        }
+        Case::FluidSubtype => {
+            // Crystal 201189f8 `data/libs/functions/container.lua:48-52`: a vial entry with a
+            // sub-type is minted holding that fluid (1, water); one without stays empty.
+            let mut filled = entry(2874);
+            filled["subtype"] = json!(1);
+            table["entries"] = json!([filled, entry(2874)]);
+            // The vial is not materializable content loot (no Crystal monster drops one by
+            // sub-type), so this case admits it to the loot facts as it admits the table.
+            let vial = section["items"]
+                .as_array_mut()
+                .ok_or("items")?
+                .iter_mut()
+                .find(|row| row["item"]["key"] == "oteryn:item.tibia.i2874");
+            match vial {
+                Some(row) => row["materializable"] = json!(true),
+                None => section["items"].as_array_mut().ok_or("items")?.push(json!({
+                    "container_capacity": null,
+                    "item": {"family":"Item", "key":"oteryn:item.tibia.i2874",
+                        "revision":"definition-r1"},
+                    "materializable": true
+                })),
+            }
+        }
+        Case::BoostedBossUnique => {
+            let mut amulet = entry(3081);
+            amulet["unique"] = json!(true);
+            table["entries"] = json!([entry(3031), amulet, entry(3051)]);
         }
         Case::Gut => {
             // Twenty minotaur leathers, a client "Creature Products" item, at 80% each.
@@ -128,6 +187,10 @@ pub(super) async fn before_kill(
 ) -> TestResult {
     if matches!(CASE.get(), Some(Case::DuplexOn)) {
         return use_wealth_duplex(owner, h, actor, session).await;
+    }
+    if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
+        use_wealth_duplex(owner, h, actor, session).await?;
+        return age_wealth_duplex(h, session, matches!(case, Case::DuplexOnlineSpent)).await;
     }
     if !matches!(CASE.get(), Some(Case::Gut)) {
         return Ok(());
@@ -232,6 +295,57 @@ async fn use_wealth_duplex(
     Ok(())
 }
 
+/// W22b: the activation is moved two hours into the past on the wall clock. With `online`
+/// the current session is moved back as well, so those two hours were spent online; without
+/// it the Character was offline for them. Also proves the terminal stamp ends a session's span.
+async fn age_wealth_duplex(
+    h: &Harness,
+    session: crate::foundation::GameSessionId,
+    online: bool,
+) -> TestResult {
+    const TWO_HOURS_US: i64 = 7_200_000_000;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_concoction_effects SET started_at=started_at-interval '2 hours', expires_at=expires_at-interval '2 hours'")
+        .execute(&mut *tx)
+        .await?;
+    if online {
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET training_created_at_us=training_created_at_us-$1 WHERE character_id=encode($2,'hex')::uuid")
+            .bind(TWO_HOURS_US)
+            .bind(id(41).as_slice())
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    // A terminal session counts only up to its stamp, never up to a later `now` (rolled back).
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3,current_transport_ref=NULL,prepared_attempt_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(session.as_bytes().as_slice())
+        .execute(&mut *tx)
+        .await?;
+    let (stamped, at_end, an_hour_later): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_session_ends \
+                  WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid), \
+                game_character_online_us(encode($2,'hex')::uuid, clock_timestamp()-interval '1 day', clock_timestamp()), \
+                game_character_online_us(encode($2,'hex')::uuid, clock_timestamp()-interval '1 day', clock_timestamp()+interval '1 hour')",
+    )
+    .bind(session.as_bytes().as_slice())
+    .bind(id(41).as_slice())
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.rollback().await?;
+    eprintln!("W22B_ONLINE stamped={stamped} at_end={at_end} an_hour_later={an_hour_later}");
+    assert_eq!(stamped, 1, "the terminal transition stamps the session end");
+    assert!(
+        an_hour_later - at_end < 1_000_000,
+        "an ended session stops counting online time"
+    );
+    assert_eq!(at_end >= TWO_HOURS_US, online, "only online time is counted");
+    Ok(())
+}
+
 /// The draw ordinals the rat's table plans at this death, with `gut` on its creature products.
 fn planned_ordinals(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -303,11 +417,31 @@ pub(super) async fn qualify(
         .await?;
     match case {
         Case::Gut => assert_eq!(nested, 0),
-        Case::DuplexOn | Case::DuplexOff => {
-            let rolls = if matches!(case, Case::DuplexOn) { 2 } else { 1 };
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+            // W22b: two wall-clock hours spent offline leave the online hour live; spent
+            // online, they end it.
+            let rolls = if matches!(case, Case::DuplexOn | Case::DuplexOfflineIgnored) {
+                2
+            } else {
+                1
+            };
             eprintln!("W22C_DUPLEX corpse_entries={direct} rolls={rolls}");
             assert_eq!(direct, i64::try_from(DUPLEX_BASE_ENTRIES * rolls)?);
             assert_eq!(nested, 0);
+        }
+        Case::BoostedBossUnique => {
+            // Crystal 201189f8 `data/libs/functions/monster.lua:219-221`: the boss bonus rolls
+            // take equipment only and never a unique entry, so gold and the unique amulet drop
+            // once from the base roll and the ring once per roll (1 + 2 or 3 bonus rolls).
+            assert_eq!(nested, 0);
+            let rows: Vec<(String, i64)> = sqlx::query_as("SELECT i.definition_production_key, count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) GROUP BY 1 ORDER BY 1")
+                .fetch_all(&h.pool).await?;
+            eprintln!("W13_BOOSTED_BOSS corpse={rows:?}");
+            let count = |key: &str| rows.iter().find(|(k, _)| k == key).map_or(0, |(_, n)| *n);
+            assert_eq!(count("oteryn:item.tibia.i3031"), 1);
+            assert_eq!(count("oteryn:item.tibia.i3081"), 1);
+            assert!(matches!(count("oteryn:item.tibia.i3051"), 3 | 4));
+            assert_eq!(direct, 2 + count("oteryn:item.tibia.i3051"));
         }
         Case::Large => {
             assert_eq!(direct, 20);
@@ -323,6 +457,16 @@ pub(super) async fn qualify(
                 .fetch_one(&h.pool)
                 .await?;
             assert_eq!(partial, 0);
+        }
+        Case::FluidSubtype => {
+            assert_eq!((direct, nested), (2, 0));
+            let fluids: Vec<(i16, bool)> = sqlx::query_as("SELECT s.fluid_subtype, EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.item_instance_id=s.item_instance_id) FROM game_item_fluid_states s JOIN game_item_fluid_loot_mints m ON m.item_instance_id=s.item_instance_id AND m.transaction_id=s.last_transaction_id AND m.fluid_subtype=s.fluid_subtype")
+                .fetch_all(&h.pool).await?;
+            assert_eq!(fluids, vec![(1, true)]);
+            let all: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(all, 1, "the vial without a sub-type stays empty");
         }
         Case::Nested | Case::Outside => {
             assert_eq!(direct, 1);
@@ -428,6 +572,7 @@ async fn outside_container_is_refused(
         placement: CorpseContainerPlacement {
             corpse_item_instance_id: bag.item_instance_id,
             placement_ordinal: 1,
+            fluid_subtype: None,
         },
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),

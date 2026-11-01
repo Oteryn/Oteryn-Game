@@ -286,8 +286,10 @@ class RewardItemAdmissionTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         packet = json.loads((root / EXTRA_PACKET).read_bytes())
         entry = next(e for e in packet["admissions"] if e["item_id"] == 901)
-        shard = json.loads((root / "content/items/definitions/items-32500-32999.json").read_bytes())
-        definition = next(r["definition"] for r in shard["records"]
+        # Shards are positional, so minted Items (E06) move i901 between them; find it by key.
+        index = json.loads((root / "content/items/index.json").read_bytes())
+        definition = next(r["definition"] for shard in index["shards"]
+                          for r in json.loads((root / shard).read_bytes())["records"]
                           if r["definition"]["identity"]["key"] == entry["item_key"])
         frozen = canonical(definition)
         facts = item_facts(entry, {"name": entry["client_name"], "flags": entry["client_flags"]})
