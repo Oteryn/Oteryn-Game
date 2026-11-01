@@ -212,10 +212,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            // Harvest must use the audited item mint owner. Never transform and silently lose
-            // the promised yield while that slice remains unqualified.
+            // M08: a harvest commits through the audited gathering craft owner, which mints
+            // the yield with the same CAS. Never transform here and lose the promised yield.
             if plan.binding.yield_item.is_some() {
-                return Ok(Some(outcome(UseDisposition::NothingToUse)));
+                return Ok(None);
             }
             for state in std::iter::once(plan.binding.transformed)
                 .chain(plan.binding.decay.iter().map(|s| s.state))

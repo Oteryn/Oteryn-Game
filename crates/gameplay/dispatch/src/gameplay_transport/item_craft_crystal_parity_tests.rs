@@ -151,3 +151,37 @@ fn i11_crystal_divergences_are_pinned() {
         );
     }
 }
+
+/// M08 (CLOSE-2): every id a scythe or sickle harvest touches resolves in the active content,
+/// and each yield has the native item profile the gathering craft mint requires. Crystal
+/// data-global/scripts/lib/register_actions.lua:1040-1049, sickle.lua:4-8, items.xml:11477,
+/// :11551-11565, :14996-15027.
+#[test]
+fn m08_harvest_states_and_yields_resolve_in_active_content() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    for (tool, target) in [
+        ("oteryn:item.tibia.i3453", 3653),
+        ("oteryn:item.tibia.i3453", 5464),
+        ("oteryn:item.tibia.i3293", 5463),
+        ("oteryn:item.tibia.i3453", 30623),
+        ("oteryn:item.tibia.i9596", 3653),
+    ] {
+        let plan =
+            oteryn_gameplay_world::terrain_tools::harvest_plan(tool, target).expect("harvest plan");
+        let yield_item = u32::from(plan.attempt.yield_item.expect("yield"));
+        assert!(
+            state.item_policy_for_source_id(yield_item).is_some(),
+            "yield {yield_item} has no native item profile"
+        );
+        for id in std::iter::once(target)
+            .chain(plan.attempt.after.map(u32::from))
+            .chain(plan.decay.iter().map(|(id, _)| *id))
+        {
+            assert!(typed(state, id).is_some(), "state {id} is not in content");
+        }
+    }
+}

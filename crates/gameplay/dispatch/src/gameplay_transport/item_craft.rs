@@ -298,27 +298,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .station
             .as_ref()
             .and_then(|s| item_id(&s.production_key));
-        if let (Some(tool), Some(target_id)) = (tool, target_id)
-            && let Some(tool_id) = item_id(&tool.item.definition.production_key)
-            && (nail_catch
-                || oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some())
-        {
-            let attempt = if nail_catch {
-                oteryn_gameplay_items::fishing::nail_attempt(target_id, fishing_skill, catch_roll)?
-            } else {
-                oteryn_gameplay_items::fishing::gathering_attempt(
-                    tool_id,
-                    target_id,
-                    fishing_skill,
-                    catch_roll,
-                    gathering_roll(
-                        native.source_digest(),
-                        command.game_session_id,
-                        command.command_id,
-                        &request.intent,
-                    )?,
-                )?
-            };
+        let planned = match (tool, target_id) {
+            (Some(tool), Some(target_id)) => {
+                let tool_key = &tool.item.definition.production_key;
+                if let Some(tool_id) = item_id(tool_key)
+                    && (nail_catch
+                        || oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id)
+                            .is_some())
+                {
+                    let attempt = if nail_catch {
+                        oteryn_gameplay_items::fishing::nail_attempt(
+                            target_id,
+                            fishing_skill,
+                            catch_roll,
+                        )?
+                    } else {
+                        oteryn_gameplay_items::fishing::gathering_attempt(
+                            tool_id,
+                            target_id,
+                            fishing_skill,
+                            catch_roll,
+                            gathering_roll(
+                                native.source_digest(),
+                                command.game_session_id,
+                                command.command_id,
+                                &request.intent,
+                            )?,
+                        )?
+                    };
+                    // Crystal items.xml:18875-18881: only spent hole 7237 decays;
+                    // the open 7236 made by a pick has no duration/decayTo.
+                    let decay = if attempt.after == Some(7237) {
+                        vec![(7200, 900_000)]
+                    } else if let Some(fishable) = attempt
+                        .after
+                        .and_then(oteryn_gameplay_items::fishing::nail_spent_water_decays_to)
+                    {
+                        // Crystal items.xml:13998-14004: spent nail water decays after 1200 s.
+                        vec![(
+                            u32::from(fishable),
+                            oteryn_gameplay_items::fishing::NAIL_WATER_DECAY_MS,
+                        )]
+                    } else {
+                        Vec::new()
+                    };
+                    Some((tool, target_id, attempt, decay))
+                } else {
+                    // M08: scythe and sickle harvests, with the decay chain of their catalogue.
+                    oteryn_gameplay_world::terrain_tools::harvest_plan(
+                        tool_key,
+                        u32::from(target_id),
+                    )
+                    .map(|plan| (tool, target_id, plan.attempt, plan.decay))
+                }
+            }
+            _ => None,
+        };
+        if let Some((tool, target_id, attempt, decay)) = planned {
             let (MapEntryKey::Base(key), revision, invalid) = map_target else {
                 return None;
             };
@@ -347,22 +383,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     expected_revision: i64::try_from(revision).ok()?,
                     before: u32::from(target_id),
                     after: attempt.after.map_or(0, u32::from),
-                    // Crystal items.xml:18875-18881: only spent hole 7237 decays;
-                    // the open 7236 made by a pick has no duration/decayTo.
-                    decay: if attempt.after == Some(7237) {
-                        vec![(7200, 900_000)]
-                    } else if let Some(fishable) = attempt
-                        .after
-                        .and_then(oteryn_gameplay_items::fishing::nail_spent_water_decays_to)
-                    {
-                        // Crystal items.xml:13998-14004: spent nail water decays after 1200 s.
-                        vec![(
-                            u32::from(fishable),
-                            oteryn_gameplay_items::fishing::NAIL_WATER_DECAY_MS,
-                        )]
-                    } else {
-                        Vec::new()
-                    },
+                    decay,
                 },
                 attempt,
             });
