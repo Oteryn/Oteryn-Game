@@ -303,6 +303,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import condition_potion_profiles
     condition_potion_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import drome_item_profiles
+    drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -319,6 +321,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     event_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import forge_core_profiles
+    forge_core_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import forge_item_profiles
+    forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
@@ -399,6 +405,9 @@ def main() -> int:
                  if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data]
         if drift:
             raise SystemExit("Spell import drift: " + ", ".join(drift))
+        # Native Forge Content and its immutable SQL admission must agree.
+        import forge_sql_admission
+        forge_sql_admission.check()
     else:
         for path, data in generated.items():
             destination = ROOT / path

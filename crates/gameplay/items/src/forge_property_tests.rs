@@ -25,26 +25,37 @@ fn forge_property_plans_conserve_costs_items_and_bounds() {
             resources: before,
             success_roll: rng.below(100) as u8,
             protection_roll: rng.below(100) as u8,
+            bonus_roll: rng.below(10_001) as u16,
         })
         .map_err(|e| format!("{e:?}"))?;
         assert_eq!(
-            u128::from(plan.resources_after.gold) + u128::from(quote.cost.gold),
+            u128::from(plan.resources_after.gold) + u128::from(plan.cost.gold),
             u128::from(before.gold)
         );
         assert_eq!(
-            plan.resources_after.cores + u64::from(quote.cost.cores),
+            plan.resources_after.cores + u64::from(plan.cost.cores),
             before.cores
         );
         assert_eq!(
-            u32::from(plan.resources_after.dust.balance()) + quote.cost.dust,
+            u32::from(plan.resources_after.dust.balance()) + plan.cost.dust,
             u32::from(before.dust.balance())
         );
         assert_eq!(plan.resources_after.slivers, before.slivers);
         assert!(plan.target_tier.get() <= FORGE_CLASS_CAPS[usize::from(class)]);
         if let Some(source) = plan.source_tier {
-            assert!(!plan.success);
-            assert!(source.get() <= tier);
+            assert!(source.get() <= if plan.bonus == 6 { tier + 1 } else { tier });
+            assert!(matches!(plan.bonus, 4..=6 | 8) || !plan.success);
         }
+        assert_eq!(plan.cost.gold == 0, plan.success && plan.bonus == 3);
+        assert_eq!(plan.cost.dust == 0, plan.success && plan.bonus == 1);
+        assert_eq!(
+            plan.cost.cores,
+            if plan.success && plan.bonus == 2 {
+                0
+            } else {
+                quote.cost.cores
+            }
+        );
         let remaining_items = 1 + usize::from(plan.source_tier.is_some());
         let burned = usize::from(plan.source_tier.is_none());
         assert_eq!(remaining_items + burned, 2);
@@ -108,6 +119,7 @@ fn forge_property_transfers_preserve_unspent_assets_and_dust_limit() {
             resources: before,
             success_roll: 99,
             protection_roll: 99,
+            bonus_roll: 0,
         })
         .map_err(|e| format!("{e:?}"))?;
         assert!(plan.success);

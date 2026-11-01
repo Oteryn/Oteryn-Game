@@ -2249,3 +2249,49 @@ Items require their actual 10 / 300 / 300 second transform stages followed by
 the 60 second terminal stage, through their owning Item/WorldObject contracts.
 The rat's existing 60 second terminal rule remains specific to its accepted
 route. No item-id exception grants Summer settlement before lifecycle admission.
+
+
+### P18 complete native Forge composition (2026-10-31)
+
+[PR2785 answers Q1–Q3](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547490683)
+and the [Q4 allocation correction](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547509519)
+admit the complete existing Forge owner. The retained D1230 shape above is unchanged. Native
+operation19 (`OneItemForgeV1`) and fee cause14 bind operation kind, occurrence, acting Character,
+World, current Content digest, ruleset/simulation revision, frozen server draws and exact result.
+The bounded proof hashes complete immutable input/output/stash snapshots; it does not replace
+those native records or create a second wallet, inventory, dust balance or tier owner.
+
+One physical Type2 transaction commits every tier/quantity/custody effect, Character dust debit,
+carried/stashed material use, native coin/bank fee, terminal reply and applied history row.
+A prior semantic reservation fixes the identities, revision set, cooldown and draws before an
+attempt can become ambiguous. Current session, connection/lease generations, node incarnation
+and scope ownership are independently revalidated; a reservation is never current authority.
+An exact retained reply wins before new evaluation. A changed bound revision yields a terminal
+`REVISION_CHANGED` receipt without any economic effect/event/history. The retry work remains3,
+shared by the legacy DustLimit API and command181; adopting or alternating entry points never
+resets it, and the mutation phase does not charge a second attempt.
+
+[Q7](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547660725) preserves the51-byte
+wire intent with session ItemHandles. Separately frozen native operands are private reservation
+facts. Replay precedes current handle resolution; replies/history contain the original handles,
+never native ItemInstance UUIDs. Unresolvable selections produce retained refusals.
+
+Inputs may be recursively carried but unequipped, with no imbuements. Materials reuse native
+carried items and the existing supply stash. Tier mutation preserves ItemInstance and custody;
+a consumed source is retired and loses its placement, with no Exaltation Chest. No extra slot
+is required for identity-preserving pairs. Fresh conversion outputs require original room before
+source consumption. Gold still uses the established fee owner's eligible direct-main-backpack
+coin stacks, then Account/World bank balance; its existing conservation and custody guards remain.
+
+The full Forge child admits at most109 touched items/location lines, three value lines, two tier
+state transitions,112 participants and331 effect work units. Its proof is bounded4096 bytes.
+Zero-gold operation19 keeps the7936/9216 payload/envelope ceilings. The Forge fee child adds at
+most4096 bytes to the existing25398/25712 fee bounds:29494/29808, below the34816 SQL parent ceiling.
+Other fee shapes retain their original bounds. Native migration guards prove the exact same
+transaction from both sides of every item, tier, dust, fee and stash effect. The old denied SQL
+Forge prototype remains denied and unused.
+
+Every applied action, including failed fusion, enters the shared1000-row history. Refusal
+receipts never alter value or create an audit/history row. Native DustLimit history is preserved
+and contributes to the same budget. Wire history remains at most50 entries/32768 bytes; native
+SQL bounds an individual reply to512 bytes and a maximum-field history test proves the route cap.

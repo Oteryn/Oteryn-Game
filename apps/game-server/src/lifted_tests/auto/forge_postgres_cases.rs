@@ -157,19 +157,36 @@ fn forge_storage_runtime_read_only_audit_immutable_and_no_truncate() -> TestResu
                 .await?;
                 assert_eq!(count, 1);
                 tx.rollback().await?;
-                for statement in [
-                    format!("INSERT INTO {table} DEFAULT VALUES"),
-                    format!("DELETE FROM {table}"),
-                    format!("TRUNCATE {table}"),
-                    format!("UPDATE {table} SET item_instance_id=item_instance_id"),
+                for (statement, row_write) in [
+                    (format!("INSERT INTO {table} DEFAULT VALUES"), true),
+                    (format!("DELETE FROM {table}"), true),
+                    (format!("TRUNCATE {table}"), false),
+                    (
+                        format!("UPDATE {table} SET item_instance_id=item_instance_id"),
+                        true,
+                    ),
                 ] {
+                    // Migration 0724 grants the runtime INSERT, UPDATE and DELETE on
+                    // game_item_tiers behind the game_forge_tier_guard trigger, so a
+                    // runtime row write without its own applied Forge action is
+                    // refused by the trigger (23514) instead of by privileges
+                    // (42501). TRUNCATE is still not granted, and the control role
+                    // and the audit table still have no write privilege at all.
+                    let code = if row_write
+                        && table == "game_item_tiers"
+                        && role.ends_with("oteryn_game_runtime")
+                    {
+                        "23514"
+                    } else {
+                        "42501"
+                    };
                     let mut tx = h.pool.begin().await?;
                     sqlx::query(role).execute(&mut *tx).await?;
                     sqlstate(
                         sqlx::query(sqlx::AssertSqlSafe(statement))
                             .execute(&mut *tx)
                             .await,
-                        "42501",
+                        code,
                     )?;
                     tx.rollback().await?;
                 }

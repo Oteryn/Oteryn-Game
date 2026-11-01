@@ -23,6 +23,45 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    // W09: a committed Cube may have consumed the last source unit. Its original
+    // command still resolves from a receipt even when the view handle no longer exists.
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_ITEM_USE_V1)
+        && let Ok(intent) = &decoded
+        && intent.use_with.is_none()
+        && intent.use_with_map_item.is_none()
+        && intent.use_with_position.is_none()
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+        )
+    {
+        let source = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
+        if let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_drome_cube(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
     if let Ok(intent) = &decoded {
         let source = match intent.target {
             UseTarget::Item(handle) => {

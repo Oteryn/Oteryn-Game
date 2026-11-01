@@ -324,17 +324,17 @@ DECLARE body TEXT;
 BEGIN
     SELECT pg_get_constraintdef(oid) INTO STRICT body FROM pg_constraint
         WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_cause_kind_check';
-    IF body !~ 'cause_kind[[:space:]]*=[[:space:]]*14' THEN
+    IF body !~ 'cause_kind[[:space:]]*=[[:space:]]*15' THEN
         ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check;
         EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK (('
-            ||substr(body,7)||') OR cause_kind=14)';
+            ||substr(body,7)||') OR cause_kind=15)';
     END IF;
     SELECT regexp_replace(pg_get_constraintdef(oid),' NOT VALID$','') INTO STRICT body FROM pg_constraint
         WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_purchase_cause';
     IF position('oteryn:service.quest.rotten-blood.access' IN body)=0 THEN
         ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_purchase_cause;
         EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_purchase_cause CHECK (('
-            ||substr(body,7)||') OR (cause_kind=14 AND charm_key IS NULL '
+            ||substr(body,7)||') OR (cause_kind=15 AND charm_key IS NULL '
             ||'AND purchase_service_key=''oteryn:service.quest.rotten-blood.access'' AND fee_gold_units=5000000)) NOT VALID';
     END IF;
     SELECT pg_get_functiondef('game_item_fee_burn_consistency_guard()'::regprocedure) INTO STRICT body;
@@ -343,7 +343,7 @@ BEGIN
             RAISE EXCEPTION 'Rotten Blood access requires the existing fee Character proof arm';
         END IF;
         EXECUTE replace(body,'(NEW.cause_kind=5 AND EXISTS',
-        '(NEW.cause_kind=14 AND EXISTS(SELECT 1 FROM game_rotten_blood_access_fees a '
+        '(NEW.cause_kind=15 AND EXISTS(SELECT 1 FROM game_rotten_blood_access_fees a '
         ||'JOIN game_character_quest_receipts q USING(character_id,cause_id,cause_ordinal,transition_key) '
         ||'WHERE a.character_id=NEW.character_id AND a.fee_occurrence=NEW.cause_occurrence_id '
         ||'AND q.committed_character_revision=NEW.committed_character_revision '
@@ -363,7 +363,7 @@ BEGIN
         OR cardinality(NEW.values_before)<>1 OR NEW.values_before[1] NOT BETWEEN 0 AND 2
         OR NEW.values_after<>ARRAY[4]::bigint[]
         OR NOT EXISTS(SELECT 1 FROM game_rotten_blood_access_fees a
-            JOIN game_item_fee_burns f ON f.cause_kind=14 AND f.cause_occurrence_id=a.fee_occurrence
+            JOIN game_item_fee_burns f ON f.cause_kind=15 AND f.cause_occurrence_id=a.fee_occurrence
             WHERE a.character_id=NEW.character_id AND a.cause_id=NEW.cause_id
               AND a.cause_ordinal=NEW.cause_ordinal AND a.transition_key=NEW.transition_key
               AND a.created_xact_id=pg_current_xact_id() AND f.created_xact_id=pg_current_xact_id()

@@ -1,9 +1,9 @@
 //! Tier and structural forge eligibility (accepted IMBUE-FORGE-0 §8/§10).
 //! These pure checks consume supplied Content facts, not current authority.
 //! The writer must separately bind them to current Content and recheck distinct
-//! live instances, direct main-backpack placement, imbuements and fences under
-//! its locks. D1230 adds only pure checked dust quotes/conversions below; no
-//! item recipe, roll, current account balance, durable writer or mutation is implemented.
+//! live instances, carried placement, imbuements and fences under its locks.
+//! The item planner checks equipment-slot compatibility from supplied Content.
+//! These value-level checks never grant authority to mutate an item or balance.
 
 use super::item_definition::{ItemDefinitionFacts, ItemStackClass, ProjectV2ItemForgeProfile};
 
@@ -41,6 +41,7 @@ pub enum ForgeShapeError {
     InconsistentDefinitionProfile,
     DifferentTier,
     DifferentClassification,
+    DifferentEquipmentSlot,
     ConvergenceRequiresClassFour,
     TargetAlreadyTiered,
     DonorTierTooLow,
@@ -100,17 +101,30 @@ impl<'a> ForgeItemShape<'a> {
         self.checked_target_tier(self.tier.get() + 1)
     }
 
+    /// Crystal 201189f protocolgame.cpp:6811-6817,6866-6881: convergence
+    /// accepts different class-four definitions at the same tier. The item
+    /// planner additionally checks their normalized equipment slots.
+    pub fn convergence_fusion_target_tier(self, source: Self) -> Result<ItemTier, ForgeShapeError> {
+        if self.profile.classification != 4 || source.profile.classification != 4 {
+            return Err(ForgeShapeError::ConvergenceRequiresClassFour);
+        }
+        if self.tier != source.tier {
+            return Err(ForgeShapeError::DifferentTier);
+        }
+        self.checked_target_tier(self.tier.get() + 1)
+    }
+
     /// Standard transfer's receiver tier (§10). Different definitions are
     /// allowed within one class; the receiver's own Content cap still applies.
     /// Convergence has different rules and must not use this calculation.
     pub fn transfer_target_tier(self, donor: Self) -> Result<ItemTier, ForgeShapeError> {
-        self.validate_transfer_pair(donor)?;
+        self.validate_transfer_pair(donor, 2)?;
         self.checked_target_tier(donor.tier.get() - 1)
     }
 
-    /// Convergence transfer has the same transfer prerequisites (§10), requires
-    /// class four on both definitions, and preserves the donor's tier instead
-    /// of subtracting one. The receiver's Content cap is still enforced.
+    /// Crystal 201189f protocolgame.cpp:6956-6995: class four on both
+    /// definitions, an untiered receiver and donor tier at least one. Unlike
+    /// standard transfer, this preserves the tier and permits different slots.
     pub fn convergence_transfer_target_tier(
         self,
         donor: Self,
@@ -118,18 +132,18 @@ impl<'a> ForgeItemShape<'a> {
         if self.profile.classification != 4 || donor.profile.classification != 4 {
             return Err(ForgeShapeError::ConvergenceRequiresClassFour);
         }
-        self.validate_transfer_pair(donor)?;
+        self.validate_transfer_pair(donor, 1)?;
         self.checked_target_tier(donor.tier.get())
     }
 
-    fn validate_transfer_pair(self, donor: Self) -> Result<(), ForgeShapeError> {
+    fn validate_transfer_pair(self, donor: Self, minimum_tier: u8) -> Result<(), ForgeShapeError> {
         if self.profile.classification != donor.profile.classification {
             return Err(ForgeShapeError::DifferentClassification);
         }
         if self.tier != ItemTier::ZERO {
             return Err(ForgeShapeError::TargetAlreadyTiered);
         }
-        if donor.tier.get() < 2 {
+        if donor.tier.get() < minimum_tier {
             return Err(ForgeShapeError::DonorTierTooLow);
         }
         Ok(())

@@ -33,6 +33,13 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         {
             check_uuid_v7(&cause.occurrence)
         }
+        Some(FeeBurnCauseV1::Forge(cause)) => {
+            let proof=crate::durability::character_forge_dust::live::audit::decode(&cause.proof)?;
+            if !(1..=4).contains(&proof.operation) || proof.character!=value.character_id || proof.world!=value.world_id || proof.gold_spent!=value.fee_gold_units {
+                return Err(AuditError::InvalidInput);
+            }
+            Ok(())
+        }
         Some(FeeBurnCauseV1::QuestAccessPurchase(cause))
             if cause.service_key=="oteryn:service.quest.rotten-blood.access"
                 && value.fee_gold_units==oteryn_gameplay_quests::quest::rotten_blood::ACCESS_PRICE => {
@@ -260,8 +267,8 @@ mod rotten_access_tests {
             assert!(check(&value).is_err());
         }
         let wire=OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause)) };
-        // Internal type-2 audit tag14 is appended without changing older sources.
-        assert_eq!(wire.encode_to_vec().first(),Some(&114));
+        // Internal type-2 audit tag15 is appended without changing older sources.
+        assert_eq!(wire.encode_to_vec().first(),Some(&122));
         assert_eq!(OneItemFeeBurnCauseV1::decode(wire.encode_to_vec().as_slice()), Ok(wire));
         let task_board = OneItemFeeBurnCauseV1 {
             cause: Some(FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {

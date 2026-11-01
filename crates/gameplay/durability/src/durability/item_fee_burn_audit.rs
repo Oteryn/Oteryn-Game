@@ -103,8 +103,10 @@ pub enum FeeBurnCauseV1 {
     PreyListReroll(OneItemNpcPurchaseV1),
     #[prost(message, tag = "13")]
     TaskBoardTalisman(OneItemNpcPurchaseV1),
-    // W11: the fixed-price Quest access source reuses the fee ledger owner.
     #[prost(message, tag = "14")]
+    Forge(super::character_forge_dust::OneItemForgeV1),
+    // W11: the fixed-price Quest access source reuses the fee ledger owner.
+    #[prost(message, tag = "15")]
     QuestAccessPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
@@ -137,7 +139,8 @@ pub struct OneItemFeeBurnCauseV1 {
             11, // GemGradeUp
             12, // PreyListReroll
             13, // TaskBoardTalisman: Crystal NPC purchase, 5000 gold
-            14, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
+            14, // Native Forge
+            15, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
             472, // HirelingService
         )
     )]
@@ -251,6 +254,9 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     let repair = u64::from(matches!(cause, Some(FeeBurnCauseV1::NpcRepair(_))));
     let imbuement = match cause {
         Some(FeeBurnCauseV1::Imbuement(imbuement)) => imbuement_cause::usage(imbuement),
+        Some(FeeBurnCauseV1::Forge(forge)) => {
+            super::character_forge_dust::live::audit::usage(forge)
+        }
         Some(FeeBurnCauseV1::GemReveal(cause) | FeeBurnCauseV1::GemGradeUp(cause)) => {
             purchase_cause::atelier_usage(cause)
         }
@@ -268,8 +274,8 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     TransactionResourceUsage {
         touched_item_instances: count + minted + repair + imbuement.touched_item_instances,
         location_custody_lines: whole + minted + imbuement.location_custody_lines,
-        value_lines: bank,
-        transform_lines: repair,
+        value_lines: bank + imbuement.value_lines,
+        transform_lines: repair + imbuement.transform_lines,
         container_expansion: 0,
         participants: count + minted + bank + repair + imbuement.participants,
         effect_work_units: 3 * whole
@@ -344,6 +350,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                         | FeeBurnCauseV1::HirelingService(_)
                         | FeeBurnCauseV1::Imbuement(_)
                         | FeeBurnCauseV1::NpcTravel(_)
+                        | FeeBurnCauseV1::Forge(_)
                 )
             ) {
                 1
@@ -410,6 +417,11 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     check_change(value)?;
     let usage = fee_burn_usage(value);
     if matches!(
+        value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
+        Some(FeeBurnCauseV1::Forge(_))
+    ) {
+        super::character_forge_dust::live::audit::check_combined_usage(&usage)
+    } else if matches!(
         value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
         Some(FeeBurnCauseV1::NpcRepair(_))
     ) {
@@ -533,16 +545,26 @@ pub fn decode_fee_burn_payload(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditErr
     }
 }
 
-fn fee_bounds(house:bool)->(usize,usize) {
-    if house {(FEE_RL07_PAYLOAD_BYTES_MAX,FEE_RL07_ENVELOPE_BYTES_MAX)}
+/// Size row of one fee shape: a Forge fee keeps its own bounded row, a named-House fee
+/// the RL-07 row and every other channel fee the channel row.
+fn fee_bounds(burn:&OneItemFeeBurnV1)->(usize,usize) {
+    if is_forge_fee(burn) {(super::character_forge_dust::live::audit::FEE_PAYLOAD_BYTES_MAX,super::character_forge_dust::live::audit::FEE_ENVELOPE_BYTES_MAX)}
+    else if burn.house_key.is_some() {(FEE_RL07_PAYLOAD_BYTES_MAX,FEE_RL07_ENVELOPE_BYTES_MAX)}
     else {(CHANNEL_FEE_PAYLOAD_BYTES_MAX,CHANNEL_FEE_ENVELOPE_BYTES_MAX)}
 }
 
 fn decode_fee_burn_payload_within(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditError> {
-    if wire.len() > FEE_RL07_PAYLOAD_BYTES_MAX {
+    if wire.len() > super::character_forge_dust::live::audit::FEE_PAYLOAD_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
-    let value = OneItemTransactionV1::decode(wire).map_err(|_| AuditError::InvalidInput)?;
+    let legacy_oversize = wire.len() > FEE_RL07_PAYLOAD_BYTES_MAX;
+    let value = OneItemTransactionV1::decode(wire).map_err(|_| {
+        if legacy_oversize {
+            AuditError::CapacityExceeded
+        } else {
+            AuditError::InvalidInput
+        }
+    })?;
     if value.encode_to_vec() != wire
         || value.interpretation_revision != mint::INTERPRETATION_REVISION
     {
@@ -551,7 +573,10 @@ fn decode_fee_burn_payload_within(wire: &[u8]) -> Result<OneItemFeeBurnV1, Audit
     let Some(OneItemOperationV1::FeeBurn(burn)) = value.operation else {
         return Err(AuditError::InvalidInput);
     };
-    if wire.len()>fee_bounds(burn.house_key.is_some()).0 {return Err(AuditError::CapacityExceeded)}
+    if legacy_oversize && !is_forge_fee(&burn) {
+        return Err(AuditError::CapacityExceeded);
+    }
+    if wire.len()>fee_bounds(&burn).0 {return Err(AuditError::CapacityExceeded)}
     check_fee_burn(&burn)?;
     Ok(burn)
 }
@@ -570,9 +595,22 @@ pub fn decode_fee_burn_envelope(
 }
 
 fn decode_fee_burn_envelope_within(wire:&[u8])->Result<(EventEnvelopeV1,OneItemFeeBurnV1),AuditError> {
-    let value = mint::decode_common_envelope_within(wire, FEE_RL07_ENVELOPE_BYTES_MAX)?;
+    let value = mint::decode_common_envelope_within(
+        wire,
+        super::character_forge_dust::live::audit::FEE_ENVELOPE_BYTES_MAX,
+    )
+    .map_err(|error| {
+        if wire.len() > FEE_RL07_ENVELOPE_BYTES_MAX {
+            AuditError::CapacityExceeded
+        } else {
+            error
+        }
+    })?;
     let burn = decode_fee_burn_payload(&value.payload)?;
-    if wire.len()>fee_bounds(burn.house_key.is_some()).1 {return Err(AuditError::CapacityExceeded)}
+    if wire.len() > FEE_RL07_ENVELOPE_BYTES_MAX && !is_forge_fee(&burn) {
+        return Err(AuditError::CapacityExceeded);
+    }
+    if wire.len()>fee_bounds(&burn).1 {return Err(AuditError::CapacityExceeded)}
     let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
         .ok_or(AuditError::InvalidInput)?;
     if (tuple == Type2EventTuple::V1 && burn.bank_debit.is_some())
@@ -623,7 +661,7 @@ pub fn encode_fee_burn_event_with(
         return Err(AuditError::InvalidInput);
     }
     let (world_id, channel_id) = (burn.world_id.clone(), burn.channel_id.clone());
-    let (payload_max,envelope_max)=fee_bounds(burn.house_key.is_some());
+    let (payload_max,envelope_max)=fee_bounds(&burn);
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -658,6 +696,13 @@ pub fn encode_fee_burn_event_with(
         return Err(AuditError::InvalidInput);
     }
     Ok(wire)
+}
+
+fn is_forge_fee(value: &OneItemFeeBurnV1) -> bool {
+    matches!(
+        value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
+        Some(FeeBurnCauseV1::Forge(_))
+    )
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]

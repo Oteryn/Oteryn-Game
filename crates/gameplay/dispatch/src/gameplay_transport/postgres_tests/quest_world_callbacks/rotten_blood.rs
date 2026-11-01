@@ -133,7 +133,7 @@ async fn paid(
         super::super::rotten_blood_progression::talk(owner,actor,session,npc,number,text).await?;
     }
     assert_eq!(evidence(h).await?,(0,0,0));
-    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=14")
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=15")
         .fetch_one(&h.pool).await?,0);
     let fence=owner.current_quest_fence(session).await.map_err(|_|"fence")?.ok_or("fence")?;
     let missing=payment(owner,fence,44).await?;
@@ -169,7 +169,7 @@ async fn paid(
         .ok_or("paid NPC receipt")?;
     assert!(matches!(receipt,QuestTransitionOutcome::AlreadyCommitted(_)));
     assert_eq!(evidence(h).await?,(4,0,0));
-    let fee:(i64,i64)=sqlx::query_as("SELECT fee_gold_units,bank_debit_gold_units FROM game_item_fee_burns WHERE cause_kind=14")
+    let fee:(i64,i64)=sqlx::query_as("SELECT fee_gold_units,bank_debit_gold_units FROM game_item_fee_burns WHERE cause_kind=15")
         .fetch_one(&h.pool).await?;
     assert_eq!(fee,(5_000_000,3_000_000));
     let mut slot=owner.revision_sequencer.acquire(before.character_id).await;
@@ -186,7 +186,7 @@ async fn paid(
         advance(owner)?;
         super::super::rotten_blood_progression::talk(owner,actor,session,npc,number,text).await?;
     }
-    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=14")
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=15")
         .fetch_one(&h.pool).await?,1);
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
         .bind(rules::PURCHASE_ACCESS).fetch_one(&h.pool).await?,1);

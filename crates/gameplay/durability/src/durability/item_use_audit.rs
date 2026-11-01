@@ -327,6 +327,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
             | super::item_use::proficiency_orb::ORB_CAUSE
             | super::item_use::concoction::CONCOCTION_CAUSE
+            | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
     ) || command.command_id == 0
@@ -369,7 +370,9 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         ) => ItemUseShape::Burn,
         (ITEM_USE_CAUSE_POTION, None, true) => ItemUseShape::BurnFlaskMissing,
         (
-            ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE,
+            ITEM_USE_CAUSE_POTION
+            | super::item_use::mining::PICK_REFINE_CAUSE
+            | super::item_use::drome_cube::DROME_CUBE_CAUSE,
             Some(flask),
             false,
         ) => check_flask(flask, before, entry.ok_or(AuditError::InvalidInput)?)?,
@@ -950,6 +953,20 @@ mod tests {
         assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
         value.flask = flask_new().flask;
         assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn drome_cube_requires_exactly_one_transformed_reward() {
+        use super::super::item_use::drome_cube::DROME_CUBE_CAUSE;
+        for (mut value, expected) in [
+            (flask_new(), Ok(ItemUseShape::FlaskNew)),
+            (flask_stack(), Ok(ItemUseShape::FlaskStack)),
+            (burn(), Err(AuditError::InvalidInput)),
+            (flask_missing(), Err(AuditError::InvalidInput)),
+        ] {
+            value.cause.as_mut().unwrap().kind = DROME_CUBE_CAUSE;
+            assert_eq!(check_item_use(&value), expected);
+        }
     }
 
     #[test]

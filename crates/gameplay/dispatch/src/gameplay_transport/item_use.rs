@@ -3,6 +3,9 @@
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+#[path = "drome_cube_use.rs"]
+pub(super) mod drome_cube;
+
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 
@@ -70,6 +73,8 @@ struct ItemUseGate {
     unspendable: Vec<[u8; 16]>,
     /// The last decided CommandId and its result: a replay of it returns that result.
     last: Option<(u64, UseDisposition)>,
+    /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
+    cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
 }
 
 impl ItemUseGate {
@@ -113,6 +118,7 @@ impl ItemUseGate {
                 return Ok(());
             }
             ItemUseKind::PickRefine { .. }
+            | ItemUseKind::DromeCube { .. }
             | ItemUseKind::MountTaming
             | ItemUseKind::ProficiencyCatalyst
             | ItemUseKind::ProficiencyOrb => {
@@ -420,8 +426,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            // A pending spell commit or a durable spell reserving this actor refuses the use
-            // before anything is burned.
+            // A pending spell commit or a durable spell reserving this actor's
+            // state refuses the use before anything is burned.
             if states.is_dead(actor)
                 || !states.spell_idle(&runtime, actor, session)
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
@@ -516,7 +522,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
-            None if entry.item.definition.production_key
+            _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
                 (
