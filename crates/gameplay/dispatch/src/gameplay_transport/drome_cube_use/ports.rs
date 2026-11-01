@@ -26,7 +26,8 @@ macro_rules! composed_methods {
             intent: oteryn_protocol_oteryn::world_object::UseIntent,
             source: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()> {
-            self.use_drome_cube_impl(actor, command, intent, source).await
+            self.use_drome_cube_impl(actor, command, intent, source)
+                .await
         }
     };
 }

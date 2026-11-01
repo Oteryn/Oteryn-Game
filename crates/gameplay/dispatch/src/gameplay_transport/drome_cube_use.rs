@@ -4,11 +4,9 @@
 
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_loop_move::ItemLoopContent;
-use crate::durability::item_use::drome_cube::DromeCubeError;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_use::{
-    ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest,
-};
+use crate::durability::item_use::drome_cube::DromeCubeError;
+use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
@@ -54,7 +52,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if intent.use_with.is_some()
             || intent.use_with_map_item.is_some()
             || intent.use_with_position.is_some()
-            || !matches!(intent.target, UseTarget::Item(_) | UseTarget::ItemByDefinition(_))
+            || !matches!(
+                intent.target,
+                UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+            )
         {
             return Ok(None);
         }
@@ -74,7 +75,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(receipt)) => {
-                if self.finish_cube(actor, command, UseDisposition::Committed).await {
+                if self
+                    .finish_cube(actor, command, UseDisposition::Committed)
+                    .await
+                {
                     self.cube_notice(command.game_session_id, receipt.reward_index);
                 }
                 return Ok(Some(outcome(UseDisposition::Committed)));
@@ -226,7 +230,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(plan) => plan,
             Err(error) => return Ok(Some(outcome(refusal(&error)))),
         };
-        if let ItemUseFlaskPlan::Stack { item_instance_id, .. } = flask
+        if let ItemUseFlaskPlan::Stack {
+            item_instance_id, ..
+        } = flask
             && !self
                 .states
                 .player_trades
@@ -235,7 +241,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
         let request = ItemUseRequest {
-            kind: ItemUseKind::DromeCube { wire_binding: binding },
+            kind: ItemUseKind::DromeCube {
+                wire_binding: binding,
+            },
             command_id: command.command_id,
             content_revision: inventory.content_revision.clone(),
             ruleset_revision: inventory.ruleset_revision.clone(),
@@ -290,8 +298,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ItemUseKind::DromeCube { wire_binding } = request.kind else {
             return Err(());
         };
-        let index = reward_index(request.source_item_instance_id, request.source_quantity_before)
-            .ok_or(())?;
+        let index = reward_index(
+            request.source_item_instance_id,
+            request.source_quantity_before,
+        )
+        .ok_or(())?;
         let command_ref = CommandRef::new(
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
@@ -301,8 +312,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .commit_drome_cube(self.character, self.holder, fence, request, content)
             .await;
         #[cfg(test)]
-        if matches!(&written, Ok(crate::durability::item_use::ItemUseOutcome::Written { .. }))
-            && test_faults::take_lost_ack()
+        if matches!(
+            &written,
+            Ok(crate::durability::item_use::ItemUseOutcome::Written { .. })
+        ) && test_faults::take_lost_ack()
         {
             // The storage acknowledgement is lost: keep the PREPARE and both reservations.
             self.mark_cube_unknown(actor, command).await;
@@ -341,7 +354,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn mark_cube_unknown(&self, actor: ExactActorRef, command: UseCommand) {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if let Some(gate) = states.item_uses.gate(&runtime, actor, command.game_session_id) {
+        if let Some(gate) = states
+            .item_uses
+            .gate(&runtime, actor, command.game_session_id)
+        {
             gate.mark_cube_unknown(command.command_id);
         }
     }
@@ -363,10 +379,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     fn cube_notice(&self, session: GameSessionId, index: u8) {
         use crate::content::ReferenceItemField::Known;
         let Some(kind) = reward(index) else { return };
-        let Some(native) = self.active_generation.and_then(crate::content::ActiveGeneration::native_gameplay) else {
+        let Some(native) = self
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay)
+        else {
             return;
         };
-        let Some(revision) = native.item_index().and_then(|index| index.revision(kind.production_key())) else {
+        let Some(revision) = native
+            .item_index()
+            .and_then(|index| index.revision(kind.production_key()))
+        else {
             return;
         };
         if let Some(policy) = native.item_policy(kind.production_key(), revision)
@@ -388,6 +410,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 pub(in crate::gameplay_transport) mod test_faults {
     use std::cell::Cell;
     thread_local! { static LOSE_ACK: Cell<bool> = const { Cell::new(false) }; }
-    pub(crate) fn lose_next_ack() { LOSE_ACK.set(true); }
-    pub(super) fn take_lost_ack() -> bool { LOSE_ACK.replace(false) }
+    pub(crate) fn lose_next_ack() {
+        LOSE_ACK.set(true);
+    }
+    pub(super) fn take_lost_ack() -> bool {
+        LOSE_ACK.replace(false)
+    }
 }

@@ -16,8 +16,12 @@ impl PendingCubeUse {
 
     fn touched(&self) -> Option<[[u8; 16]; 2]> {
         let output = match self.request.flask {
-            ItemUseFlaskPlan::Stack { item_instance_id, .. }
-            | ItemUseFlaskPlan::New { item_instance_id, .. } => item_instance_id,
+            ItemUseFlaskPlan::Stack {
+                item_instance_id, ..
+            }
+            | ItemUseFlaskPlan::New {
+                item_instance_id, ..
+            } => item_instance_id,
             _ => return None,
         };
         Some([self.request.source_item_instance_id, output])
@@ -49,7 +53,10 @@ impl super::super::ItemUseGate {
     }
 
     pub(super) fn mark_cube_unknown(&mut self, command: u64) {
-        if self.cube_pending.as_ref().is_some_and(|pending| pending.request.command_id == command)
+        if self
+            .cube_pending
+            .as_ref()
+            .is_some_and(|pending| pending.request.command_id == command)
             && self.last.is_none_or(|(last, _)| last <= command)
         {
             self.last = Some((command, UseDisposition::Rejected));
@@ -57,9 +64,15 @@ impl super::super::ItemUseGate {
     }
 
     pub(super) fn finish_cube(&mut self, command: u64, result: UseDisposition) -> bool {
-        let Some(pending) = self.cube_pending.as_ref() else { return false };
-        if pending.request.command_id != command { return false; }
-        let Some(touched) = pending.touched() else { return false };
+        let Some(pending) = self.cube_pending.as_ref() else {
+            return false;
+        };
+        if pending.request.command_id != command {
+            return false;
+        }
+        let Some(touched) = pending.touched() else {
+            return false;
+        };
         self.unspendable.retain(|item| !touched.contains(item));
         self.cube_pending = None;
         // An old receipt may settle its own reservation, never a later command's result.
@@ -77,17 +90,30 @@ mod tests {
 
     fn request(command: u64) -> ItemUseRequest {
         let definition = |key: &str| TypedDefinitionRef {
-            family: "Item".into(), production_key: key.into(), revision_ref: "definition-r1".into(),
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: "definition-r1".into(),
         };
         ItemUseRequest {
-            kind: ItemUseKind::DromeCube { wire_binding: [9; 32] }, command_id: command,
-            content_revision: "content-r1".into(), ruleset_revision: "ruleset-r1".into(),
-            sim_revision: "sim-r1".into(), transaction_id: [3; 16], event_id: [4; 16],
-            occurred_at_unix_ms: 1, server_build_id: "test".into(),
-            source_item_instance_id: [1; 16], source_definition: definition(DROME_CUBE_KEY),
+            kind: ItemUseKind::DromeCube {
+                wire_binding: [9; 32],
+            },
+            command_id: command,
+            content_revision: "content-r1".into(),
+            ruleset_revision: "ruleset-r1".into(),
+            sim_revision: "sim-r1".into(),
+            transaction_id: [3; 16],
+            event_id: [4; 16],
+            occurred_at_unix_ms: 1,
+            server_build_id: "test".into(),
+            source_item_instance_id: [1; 16],
+            source_definition: definition(DROME_CUBE_KEY),
             source_quantity_before: 1,
-            flask: ItemUseFlaskPlan::New { item_instance_id: [2; 16],
-                definition: definition("oteryn:item.tibia.i36723"), placement_ordinal: 1 },
+            flask: ItemUseFlaskPlan::New {
+                item_instance_id: [2; 16],
+                definition: definition("oteryn:item.tibia.i36723"),
+                placement_ordinal: 1,
+            },
         }
     }
 
@@ -98,15 +124,25 @@ mod tests {
         assert_eq!(gate.prepare_cube(request.clone(), 10), Ok(()));
         gate.mark_cube_unknown(7);
         assert_eq!(gate.unspendable, [[1; 16], [2; 16]]);
-        assert_eq!(gate.cube_pending.as_ref().map(|pending| &pending.request), Some(&request));
-        assert_eq!(gate.prepare_cube(request.clone(), 10_000), Err(UseDisposition::Exhausted));
+        assert_eq!(
+            gate.cube_pending.as_ref().map(|pending| &pending.request),
+            Some(&request)
+        );
+        assert_eq!(
+            gate.prepare_cube(request.clone(), 10_000),
+            Err(UseDisposition::Exhausted)
+        );
         assert!(gate.finish_cube(7, UseDisposition::Committed));
         assert!(gate.unspendable.is_empty());
         assert!(gate.cube_pending.is_none());
         assert_eq!(gate.in_flight_since_ms, None);
         let mut next = request;
         next.command_id = 8;
-        assert_eq!(gate.prepare_cube(next, 10_001), Ok(()), "no invented Cube cooldown");
+        assert_eq!(
+            gate.prepare_cube(next, 10_001),
+            Ok(()),
+            "no invented Cube cooldown"
+        );
     }
 
     #[test]
@@ -130,7 +166,10 @@ mod tests {
     fn output_reservation_refuses_before_starting_or_replacing_an_attempt() {
         let mut gate = super::super::super::ItemUseGate::default();
         gate.unspendable.push([2; 16]);
-        assert_eq!(gate.prepare_cube(request(7), 10), Err(UseDisposition::StaleState));
+        assert_eq!(
+            gate.prepare_cube(request(7), 10),
+            Err(UseDisposition::StaleState)
+        );
         assert_eq!(gate.in_flight_since_ms, None);
         assert!(gate.cube_pending.is_none());
         assert_eq!(gate.unspendable, [[2; 16]]);
