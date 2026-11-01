@@ -15,8 +15,8 @@ impl PlayView {
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the decoded map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
-        self.world = world;
-        self.map_floor = Some(self.world.center().2);
+        self.map_floor = Some(world.center().2);
+        self.local.set_world(world);
         self.anchor = TileCoord::new(0, 0);
         self.rebuild()
     }
@@ -39,7 +39,7 @@ impl PlayView {
             })
             .collect::<Vec<_>>();
         self.scene = Scene::centered_with(
-            Arc::clone(&self.world),
+            self.local.world(),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
             self.facing,
