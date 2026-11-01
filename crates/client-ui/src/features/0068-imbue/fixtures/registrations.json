@@ -2,18 +2,32 @@
   {
     "mechanic": "0068-imbue",
     "kind": "handlers",
-    "id": "0068-imbue-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0068-imbue-actions",
+    "status": "supported",
     "commands": [
       85
     ],
+    "direction": "client_to_server",
+    "capability": 68,
+    "entry": "mod.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Imbuement state and mutations are server-owned; there are no local settings."
     }
+  },
+  {
+    "mechanic": "0068-imbue",
+    "kind": "keybindings",
+    "id": "0068-imbue-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+I",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0068-imbue",
+    "kind": "panels",
+    "id": "0068-imbue-panel",
+    "status": "supported",
+    "entry": "mod.rs::panel_text"
   }
 ]

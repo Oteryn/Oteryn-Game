@@ -38,12 +38,41 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Guild state and actions.
+#[path = "features/0040-guild/mod.rs"]
+pub mod guild;
 /// Server-confirmed party membership controls.
 #[path = "features/0042-party/mod.rs"]
 pub mod party;
+/// Direct player-trade panel state and controls.
+#[path = "features/0060-player-trade/mod.rs"]
+pub mod player_trade;
+/// Prey slots, candidate selection, bonuses, and automatic reroll controls.
+#[path = "features/0140-prey/mod.rs"]
+pub mod prey;
 /// Wheel allocation, vessels and Gem Atelier controls.
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
+
+/// Weekly Task Board state and controls.
+#[path = "features/0072-task-board/mod.rs"]
+pub mod task_board;
+
+/// Server-owned stash browsing and conversion controls.
+#[path = "features/0062-stash/mod.rs"]
+pub mod stash;
+
+/// NPC shop look and sell-all panel state.
+#[path = "features/0081-npc-shop/mod.rs"]
+pub mod npc_shop;
+
+/// Imbuement shrine state, actions, and plain-text view.
+#[path = "features/0068-imbue/mod.rs"]
+pub mod imbue;
+
+/// VIP list, group, and consent panel state.
+#[path = "features/0043-vip/mod.rs"]
+pub mod vip;
 
 /// House banker hireling status and controls.
 #[path = "features/0165-hireling/mod.rs"]

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0068-imbue",
+  "kind": "keybindings",
+  "id": "0068-imbue-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+I",
+  "entry": "input.rs::open_key"
+}

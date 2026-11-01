@@ -1,17 +1,15 @@
 {
   "mechanic": "0081-npc-shop",
   "kind": "handlers",
-  "id": "0081-npc-shop-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0081-npc-shop-actions",
+  "status": "supported",
   "commands": [
     97
   ],
+  "direction": "client_to_server",
+  "capability": 81,
+  "entry": "mod.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "The server owns NPC catalogue and sale state."
   }
 }

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0043-vip",
+  "kind": "panels",
+  "id": "0043-vip-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

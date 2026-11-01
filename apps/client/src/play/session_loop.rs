@@ -70,6 +70,91 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn task_board_selected(&self) -> bool {
+        false
+    }
+    fn task_board(
+        &mut self,
+        _command: &oteryn_client_runtime::task_board::TaskBoardCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::task_board::TaskBoardResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 72 }) }
+    }
+    fn stash_selected(&self) -> bool {
+        false
+    }
+    fn stash(
+        &mut self,
+        _command: &oteryn_client_runtime::stash::StashCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::stash::StashResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 62 }) }
+    }
+    fn npc_shop_selected(&self) -> bool {
+        false
+    }
+    fn npc_shop(
+        &mut self,
+        _command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError>>
+    + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 81 }) }
+    }
+    fn prey_selected(&self) -> bool {
+        false
+    }
+    fn prey(
+        &mut self,
+        _command: &oteryn_client_runtime::prey::PreyCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
+    }
+    fn imbue_selected(&self) -> bool {
+        false
+    }
+    fn imbue(
+        &mut self,
+        _command: &oteryn_client_runtime::imbue::ImbueCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 68 }) }
+    }
+    fn player_trade_selected(&self) -> bool {
+        false
+    }
+    fn player_trade_state(&self) -> Option<oteryn_session::player_trade::State> {
+        None
+    }
+    fn player_trade(
+        &mut self,
+        _request: &oteryn_client_runtime::player_trade::PlayerTradeCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::player_trade::PlayerTradeResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 60 }) }
+    }
+    fn vip_selected(&self) -> bool {
+        false
+    }
+    fn vip(
+        &mut self,
+        _request: &oteryn_client_runtime::vip::VipCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::vip::VipResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 43 }) }
+    }
+    fn guild_selected(&self) -> bool {
+        false
+    }
+    fn guild(
+        &mut self,
+        _command: &oteryn_client_runtime::guild::GuildCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::guild::GuildReply, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 40 }) }
+    }
     fn party_selected(&self) -> bool {
         false
     }
@@ -161,6 +246,82 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn task_board_selected(&self) -> bool {
+        self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
+    }
+    async fn task_board(
+        &mut self,
+        command: &oteryn_client_runtime::task_board::TaskBoardCommand,
+    ) -> Result<oteryn_client_runtime::task_board::TaskBoardResponse, SessionError> {
+        oteryn_client_runtime::task_board::send(self, command).await
+    }
+    fn stash_selected(&self) -> bool {
+        self.is_selected(oteryn_session::stash::CAPABILITY_STASH_V1)
+    }
+    async fn stash(
+        &mut self,
+        command: &oteryn_client_runtime::stash::StashCommand,
+    ) -> Result<oteryn_client_runtime::stash::StashResponse, SessionError> {
+        oteryn_client_runtime::stash::send(self, command).await
+    }
+    fn npc_shop_selected(&self) -> bool {
+        self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
+    }
+    async fn npc_shop(
+        &mut self,
+        command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
+    ) -> Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError> {
+        oteryn_client_runtime::npc_shop::send(self, command).await
+    }
+    fn prey_selected(&self) -> bool {
+        self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
+    }
+    async fn prey(
+        &mut self,
+        command: &oteryn_client_runtime::prey::PreyCommand,
+    ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
+        oteryn_client_runtime::prey::send(self, command).await
+    }
+    fn imbue_selected(&self) -> bool {
+        self.is_selected(oteryn_session::imbuement::CAPABILITY_IMBUE_V1)
+    }
+    async fn imbue(
+        &mut self,
+        command: &oteryn_client_runtime::imbue::ImbueCommand,
+    ) -> Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError> {
+        oteryn_client_runtime::imbue::send(self, command).await
+    }
+    fn player_trade_selected(&self) -> bool {
+        self.is_selected(oteryn_session::player_trade::CAPABILITY_PLAYER_TRADE_V1)
+    }
+    fn player_trade_state(&self) -> Option<oteryn_session::player_trade::State> {
+        self.gated_snapshot(oteryn_session::player_trade::STATE_DOMAIN_PLAYER_TRADE)
+            .and_then(|snapshot| oteryn_session::player_trade::decode_state(&snapshot.payload).ok())
+    }
+    async fn player_trade(
+        &mut self,
+        request: &oteryn_client_runtime::player_trade::PlayerTradeCommand,
+    ) -> Result<oteryn_client_runtime::player_trade::PlayerTradeResponse, SessionError> {
+        oteryn_client_runtime::player_trade::send(self, request).await
+    }
+    fn vip_selected(&self) -> bool {
+        self.is_selected(oteryn_session::vip::CAPABILITY_VIP_V1)
+    }
+    async fn vip(
+        &mut self,
+        request: &oteryn_client_runtime::vip::VipCommand,
+    ) -> Result<oteryn_client_runtime::vip::VipResponse, SessionError> {
+        oteryn_client_runtime::vip::send(self, request).await
+    }
+    fn guild_selected(&self) -> bool {
+        self.is_selected(oteryn_session::guild::CAPABILITY_GUILD_V1)
+    }
+    async fn guild(
+        &mut self,
+        command: &oteryn_client_runtime::guild::GuildCommand,
+    ) -> Result<oteryn_client_runtime::guild::GuildReply, SessionError> {
+        oteryn_client_runtime::guild::send(self, command).await
+    }
     fn party_selected(&self) -> bool {
         self.is_selected(oteryn_client_runtime::party::party::CAPABILITY_PARTY_V1)
     }
@@ -210,6 +371,17 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.task_board_initialize(session.task_board_selected());
+    outbox.stash_initialize(session.stash_selected());
+    outbox.npc_shop_initialize(session.npc_shop_selected());
+    outbox.prey_initialize(session.prey_selected());
+    outbox.imbue_initialize(session.imbue_selected());
+    outbox.player_trade_initialize(
+        session.player_trade_selected(),
+        session.player_trade_state(),
+    );
+    outbox.vip_initialize(session.vip_selected());
+    outbox.guild_initialize(session.guild_selected());
     outbox.party_initialize(session.party_selected());
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
@@ -255,6 +427,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::Stash(command)) => match session.stash(&command).await {
+                Ok(response) => {
+                    outbox.stash_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Step(direction)) => {
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
@@ -281,6 +461,62 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::TaskBoard(command)) => match session.task_board(&command).await {
+                Ok(response) => {
+                    outbox.task_board_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::NpcShop(command)) => match session.npc_shop(&command).await {
+                Ok(result) => {
+                    outbox.npc_shop_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Prey(command)) => match session.prey(&command).await {
+                Ok(response) => {
+                    outbox.prey_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Imbue(command)) => match session.imbue(&command).await {
+                Ok(response) => {
+                    outbox.imbue_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::PlayerTrade(request)) => match session.player_trade(&request).await {
+                Ok(response) => {
+                    outbox.player_trade_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Vip(request)) => match session.vip(&request).await {
+                Ok(response) => {
+                    outbox.vip_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Guild(command)) => match session.guild(&command).await {
+                Ok(reply) => {
+                    outbox.guild_result(&reply);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

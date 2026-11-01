@@ -11,6 +11,7 @@ impl Application {
         if let Some(play) = &mut self.play {
             if play.link.wheel_input(events)
                 || play.link.exiva_input(events)
+                || play.link.stash_input(events)
                 || play.link.quest_input(events)
             {
                 return;

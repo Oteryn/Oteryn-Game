@@ -1,17 +1,1 @@
-{
-  "mechanic": "0140-prey",
-  "kind": "handlers",
-  "id": "0140-prey-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
-  "commands": [
-    160
-  ],
-  "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
-  }
-}
+{"mechanic":"0140-prey","kind":"handlers","id":"0140-prey-actions","status":"supported","commands":[160],"direction":"client_to_server","capability":140,"entry":"protocol.rs::request","not_applicable":{"settings":"Prey state and actions are server-owned."}}
