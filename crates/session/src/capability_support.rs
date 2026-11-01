@@ -13,7 +13,8 @@ use super::*;
 /// complete their prerequisite closure on shipped bundle Worlds.
 /// 272 adds live Atelier resource queries to the existing 148 panel. The mechanic panels added
 /// by CLIENT-E2E-1 advertise their typed command routes so the shipped session loop and the
-/// qualification client negotiate the same feature set.
+/// qualification client negotiate the same feature set. NPC shop and hireling remain opt-in
+/// until their prerequisite NPC service and staff routes are implemented by the client session.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -31,10 +32,6 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
     chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
-    oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
-    oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
-    wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
-    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     guild::CAPABILITY_GUILD_V1,
     party::CAPABILITY_PARTY_V1,
     vip::CAPABILITY_VIP_V1,
@@ -43,9 +40,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     market::CAPABILITY_MARKET_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
-    npc_shop::CAPABILITY_NPC_SHOP_V1,
+    oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     prey::CAPABILITY_PREY_V1,
-    hireling::CAPABILITY_HIRELING_V1,
+    oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
+    wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

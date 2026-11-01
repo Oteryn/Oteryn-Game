@@ -1,6 +1,13 @@
 use super::*;
 pub(super) async fn npc_shop(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
     use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
+    if !client
+        .selected_capabilities()
+        .contains(&npc_shop::npc_shop::CAPABILITY_NPC_SHOP_V1)
+    {
+        evidence("mechanic=npc_shop skipped=client_prerequisite_routes_not_supported");
+        return Ok(());
+    }
     let value = npc_shop::npc_shop::NpcShopIntent {
         npc_actor: npc_shop::EntityRef {
             identity: [0; 16],
