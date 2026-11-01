@@ -210,7 +210,14 @@ impl FreshAdmissionStore {
                 .committed_activity_origin_in_transaction(tx, character, session)
                 .await?
             {
-                return Err(DurabilityError::Unavailable);
+                let FreshReconciliation::Committed(current) =
+                    self.reconcile_session_locked(tx, &operation, session).await?
+                else {
+                    return Err(DurabilityError::Unavailable);
+                };
+                if self.committed_house_predecessor_locked(tx, current.current_session).await?.is_none() {
+                    return Err(DurabilityError::Unavailable);
+                }
             }
             let valid: bool = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(game_session_id,character_id),false) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
                 .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;

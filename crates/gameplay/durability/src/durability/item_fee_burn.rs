@@ -73,6 +73,12 @@ pub enum FeeBurnCause {
         occurrence: [u8; 16],
         proof: Vec<u8>,
     },
+    /// Crystal bloodshade_sacrifice.lua:69-89; atomic with the access Quest receipt.
+    QuestAccessPurchase {
+        occurrence: [u8; 16],
+    },
+    /// Crystal E12 cooking and imbuement-package purchases.
+    HirelingService { service: String, occurrence: [u8; 16] },
     PreyListReroll {
         slot: u8,
         occurrence: [u8; 16],
@@ -127,7 +133,7 @@ pub enum FeeBurnCause {
 /// One fee. The TransactionId and EventId are fixed by the source before its first attempt and
 /// reused on every retry of the same occurrence (decision §4.3).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FeeBurnRequest {
+pub struct FeeBurnRequest<C = FeeChangeFacts> {
     pub cause: FeeBurnCause,
     /// The fee `F` in gold units, computed by the source from facts read after the root lock.
     pub fee_gold_units: u64,
@@ -135,7 +141,7 @@ pub struct FeeBurnRequest {
     pub event_id: [u8; 16],
     pub occurred_at_unix_ms: i64,
     pub server_build_id: String,
-    pub change: FeeChangeFacts,
+    pub change: C,
 }
 
 /// What the change MINT needs (decision §4.2 step 4, §4.3), supplied by the source.
@@ -152,6 +158,35 @@ pub struct FeeChangeFacts {
     pub crystal: TypedDefinitionRef,
     /// The main backpack's definition: its declared capacity bounds the change.
     pub backpack: ItemDefinitionFacts,
+}
+
+/// Closed Hireling payment PREPARE. BankOnly asserts that no main backpack
+/// exists; the native writer rechecks that fact before debiting the same Bank owner.
+/// Reserved change UUIDs remain unused, as the existing native fee record requires.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HirelingFeeChange {
+    Carried(Box<FeeChangeFacts>),
+    BankOnly { item_instance_ids: [[u8; 16]; 2] },
+}
+impl HirelingFeeChange {
+    fn facts(&self) -> Option<&FeeChangeFacts> {
+        match self { Self::Carried(facts) => Some(facts), Self::BankOnly { .. } => None }
+    }
+    fn item_instance_ids(&self) -> [[u8; 16]; 2] {
+        match self { Self::Carried(facts) => facts.item_instance_ids, Self::BankOnly { item_instance_ids } => *item_instance_ids }
+    }
+}
+trait FeeChangeInput {
+    fn facts(&self) -> Option<&FeeChangeFacts>;
+    fn item_instance_ids(&self) -> [[u8; 16]; 2];
+}
+impl FeeChangeInput for FeeChangeFacts {
+    fn facts(&self) -> Option<&FeeChangeFacts> { Some(self) }
+    fn item_instance_ids(&self) -> [[u8; 16]; 2] { self.item_instance_ids }
+}
+impl FeeChangeInput for HirelingFeeChange {
+    fn facts(&self) -> Option<&FeeChangeFacts> { HirelingFeeChange::facts(self) }
+    fn item_instance_ids(&self) -> [[u8; 16]; 2] { HirelingFeeChange::item_instance_ids(self) }
 }
 
 /// One change output: a fresh live coin stack in a new backpack entry.
@@ -273,6 +308,31 @@ pub async fn burn_fee_in_transaction(
     burn_fee(tx, fence, request, tuple).await
 }
 
+/// Reuses the existing coin/change/bank fee owner under an exact named-House fence.
+/// Only Hireling service callers may supply a House's independently proven origin channel.
+pub(crate) async fn burn_hireling_fee_in_transaction(
+    tx: &mut Type2Transaction<'_>,
+    node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    fence: &CurrentCharacterGameplayFence,
+    origin_channel: crate::foundation::ChannelId,
+    request: &FeeBurnRequest<HirelingFeeChange>,
+) -> Result<FeeBurnOutcome> {
+    if !matches!(request.cause, FeeBurnCause::HirelingService { .. })
+        || !super::house_hireling::fence::assert_house_inventory_fence(
+            tx, node, &fence.item_fence(), *origin_channel.as_bytes(),
+        ).await? {
+        return Err(FeeBurnError::InvalidInput);
+    }
+    let revision: String = sqlx::query_scalar(
+        "SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+    if revision.parse::<u64>().ok() != Some(fence.expected_character_revision.get()) {
+        return Err(FeeBurnError::InvalidInput);
+    }
+    let tuple = tx.tuple().tuple();
+    burn_fee_at_channel(tx, fence, request, tuple, Some(origin_channel)).await
+}
+
 /// The bank part of a fee `fee` whose eligible coins are worth `eligible` (BANK-FEE-0 §3): 0 when
 /// the coins pay; otherwise `fee - eligible`, open only under `(2, V2)` to a payer who is not
 /// junior. Whether the balance covers it is checked under the balance lock.
@@ -304,20 +364,41 @@ async fn burn_fee(
     request: &FeeBurnRequest,
     tuple: Type2EventTuple,
 ) -> Result<FeeBurnOutcome> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(FeeBurnError::InvalidInput);
+    let prepared = FeeBurnRequest {
+        cause: request.cause.clone(), fee_gold_units: request.fee_gold_units,
+        transaction_id: request.transaction_id, event_id: request.event_id,
+        occurred_at_unix_ms: request.occurred_at_unix_ms,
+        server_build_id: request.server_build_id.clone(),
+        change: HirelingFeeChange::Carried(Box::new(request.change.clone())),
     };
+    burn_fee_at_channel(connection, fence, &prepared, tuple, None).await
+}
+
+/// The House-specific caller proves the real House fence before this shared owner
+/// records the original Channel as audit context. It never rewrites the actor scope.
+async fn burn_fee_at_channel(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &FeeBurnRequest<HirelingFeeChange>,
+    tuple: Type2EventTuple,
+    house_origin: Option<crate::foundation::ChannelId>,
+) -> Result<FeeBurnOutcome> {
+    let (world_id, channel_id) = match (fence.runtime_scope, house_origin) {
+        (RuntimeScopeRefV1::Channel { world_id, channel_id }, None) => (world_id, channel_id),
+        (RuntimeScopeRefV1::Instance { world_id, .. }, Some(channel))
+            if matches!(request.cause, FeeBurnCause::HirelingService { .. }) => (world_id, channel),
+        _ => return Err(FeeBurnError::InvalidInput),
+    };
+    let house_key=if house_origin.is_some() {Some(super::house_hireling::audit::read_key(connection,&fence.item_fence()).await?)}else{None};
     request.cause.validate()?;
+    let change_ids = request.change.item_instance_ids();
     let committed = fence
         .expected_character_revision
         .get()
         .checked_add(u64::from(!matches!(
             request.cause,
             FeeBurnCause::NpcRepair { .. }
+                | FeeBurnCause::HirelingService { .. }
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
                 | FeeBurnCause::Forge { .. }
@@ -495,7 +576,7 @@ async fn burn_fee(
     }
     .checked_add(1)
     .unwrap_or(0);
-    let change = change_outputs(request.change.item_instance_ids, plan.change, first_ordinal);
+    let change = change_outputs(change_ids, plan.change, first_ordinal);
     if change.iter().any(|output| output.placement_ordinal == 0) {
         return Err(FeeBurnError::ChangeDoesNotFit);
     }
@@ -571,22 +652,22 @@ async fn burn_fee(
             }
         })
         .collect();
-    let change_revision = |coin: Coin| match coin {
-        Coin::Platinum => request.change.platinum.revision_ref.as_str(),
-        _ => request.change.gold.revision_ref.as_str(),
+    let change_revision = |coin: Coin| -> Result<&str> {
+        let facts = request.change.facts().ok_or(FeeBurnError::InvalidInput)?;
+        Ok(match coin { Coin::Platinum => facts.platinum.revision_ref.as_str(), _ => facts.gold.revision_ref.as_str() })
     };
     let audit_change = change
         .iter()
-        .map(|output| OneItemFeeChangeMintV1 {
+        .map(|output| Ok(OneItemFeeChangeMintV1 {
             after: Some(state(
                 &output.item_instance_id,
                 output.coin,
-                change_revision(output.coin),
+                change_revision(output.coin)?,
                 output.quantity,
             )),
             placement_ordinal: output.placement_ordinal,
-        })
-        .collect();
+        }))
+        .collect::<Result<Vec<_>>>()?;
     // burned - change + bank_debit = fee.
     let burned_gold_units = coin_part
         .checked_add(plan.change)
@@ -613,6 +694,7 @@ async fn burn_fee(
             world_id: world_id.as_bytes().to_vec(),
             channel_id: channel_id.as_bytes().to_vec(),
             runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
+            house_key: house_key.clone(),
             backpack_item_instance_id: backpack.map_or_else(Vec::new, |item| item.to_vec()),
             lines: audit_lines,
             change_gold_units: plan.change,
@@ -642,13 +724,13 @@ async fn burn_fee(
            backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, \
            change_platinum_item_instance_id, change_gold_item_instance_id, \
-           change_placement_ordinal, bank_debit_gold_units, purchase_service_key) \
+           change_placement_ordinal, bank_debit_gold_units, purchase_service_key, house_key) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
            $5, $6, encode($7,'hex')::uuid, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            $10::text::numeric(20,0), $11::text::numeric(20,0), encode($12,'hex')::uuid, \
            $13, $17, $18, $14, $15, sha256($16), \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23)",
+           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23, $24)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -668,8 +750,8 @@ async fn burn_fee(
     .bind(envelope.as_slice())
     .bind(gold_units(burned_gold_units)?)
     .bind(gold_units(plan.change)?)
-    .bind(request.change.item_instance_ids[0].as_slice())
-    .bind(request.change.item_instance_ids[1].as_slice())
+    .bind(change_ids[0].as_slice())
+    .bind(change_ids[1].as_slice())
     .bind(
         change
             .first()
@@ -677,6 +759,7 @@ async fn burn_fee(
     )
     .bind(gold_units(bank_debit_gold_units)?)
     .bind(request.cause.purchase_key())
+    .bind(house_key.as_deref())
     .execute(&mut *connection)
     .await?;
 
@@ -748,9 +831,10 @@ async fn burn_fee(
     }
 
     for output in &change {
+        let facts = request.change.facts().ok_or(FeeBurnError::InvalidInput)?;
         let definition = match output.coin {
-            Coin::Platinum => &request.change.platinum,
-            _ => &request.change.gold,
+            Coin::Platinum => &facts.platinum,
+            _ => &facts.gold,
         };
         sqlx::query(
             "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
@@ -832,21 +916,21 @@ struct BackpackInputs {
 
 async fn lock_coin_inputs(
     connection: &mut PgConnection,
-    request: &FeeBurnRequest,
+    request: &FeeBurnRequest<HirelingFeeChange>,
     backpack: &sqlx::postgres::PgRow,
     world_id: WorldId,
 ) -> Result<BackpackInputs> {
     // The change must fit the backpack's declared capacity (the source's current Content facts
     // of the equipped backpack).
-    let declared = &request.change.backpack.definition;
+    let facts = request.change.facts().ok_or(FeeBurnError::InvalidInput)?;
+    let declared = &facts.backpack.definition;
     if backpack.try_get::<String, _>("definition_family")? != declared.family
         || backpack.try_get::<String, _>("definition_production_key")? != declared.production_key
         || backpack.try_get::<String, _>("definition_revision_ref")? != declared.revision_ref
     {
         return Err(FeeBurnError::InvalidInput);
     }
-    let capacity = request
-        .change
+    let capacity = facts
         .backpack
         .container_capacity
         .and_then(|capacity| usize::try_from(capacity).ok())
@@ -884,9 +968,9 @@ async fn lock_coin_inputs(
         // Decision §4.2: an eligible input is at the compatible definition revision. A stack
         // at another one is not skipped (the database plan guard counts every coin stack).
         let compatible = match coin {
-            Coin::Gold => &request.change.gold,
-            Coin::Platinum => &request.change.platinum,
-            Coin::Crystal => &request.change.crystal,
+            Coin::Gold => &facts.gold,
+            Coin::Platinum => &facts.platinum,
+            Coin::Crystal => &facts.crystal,
         };
         if row.try_get::<String, _>("definition_revision_ref")? != compatible.revision_ref {
             return Err(FeeBurnError::InvalidInput);
@@ -935,28 +1019,24 @@ fn change_outputs(slots: [[u8; 16]; 2], change: u64, first_ordinal: u64) -> Vec<
 
 /// The change facts name distinct fresh slots and the platinum and gold coin definitions, and
 /// the backpack declares a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`.
-fn valid_change_facts(request: &FeeBurnRequest) -> bool {
-    let facts = &request.change;
-    let [platinum_slot, gold_slot] = facts.item_instance_ids;
-    let coin = |definition: &TypedDefinitionRef, coin: Coin| {
-        definition.family == COIN_DEFINITION_FAMILY
-            && definition.production_key == coin.production_key()
+fn valid_change_facts<C: FeeChangeInput>(request: &FeeBurnRequest<C>) -> bool {
+    let slots = request.change.item_instance_ids();
+    let valid_slots = slots.iter().all(|slot| check_uuid_v7(slot).is_ok()
+        && *slot != request.transaction_id && *slot != request.event_id) && slots[0] != slots[1];
+    let Some(facts) = request.change.facts() else {
+        return valid_slots && matches!(request.cause, FeeBurnCause::HirelingService { .. });
     };
-    facts.item_instance_ids.iter().all(|slot| {
-        check_uuid_v7(slot).is_ok() && *slot != request.transaction_id && *slot != request.event_id
-    }) && platinum_slot != gold_slot
-        && coin(&facts.platinum, Coin::Platinum)
-        && coin(&facts.gold, Coin::Gold)
-        && coin(&facts.crystal, Coin::Crystal)
-        && facts
-            .backpack
-            .container_capacity
+    let coin = |definition: &TypedDefinitionRef, coin: Coin| {
+        definition.family == COIN_DEFINITION_FAMILY && definition.production_key == coin.production_key()
+    };
+    valid_slots && coin(&facts.platinum, Coin::Platinum) && coin(&facts.gold, Coin::Gold)
+        && coin(&facts.crystal, Coin::Crystal) && facts.backpack.container_capacity
             .is_some_and(|capacity| (1..=BACKPACK_ENTRIES_MAX as u32).contains(&capacity))
 }
 
 /// SHA-256 over the semantic request: the cause, the Character, its World and the fee. The
 /// TransactionId, EventId, time and build are retry-local and excluded.
-fn request_binding(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRequest) -> Vec<u8> {
+fn request_binding<C>(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRequest<C>) -> Vec<u8> {
     let mut digest = Sha256::new();
     digest.update([REQUEST_BINDING_VERSION]);
     digest.update(request.cause.kind().to_be_bytes());
@@ -1139,6 +1219,45 @@ mod tests {
         for (case, request) in cases {
             assert!(!valid_change_facts(&request), "{case}");
         }
+    }
+
+    #[test]
+    fn bank_only_prepare_is_closed_to_hireling_without_fabricated_item_facts() {
+        let ordinary = request();
+        let mut hireling = FeeBurnRequest {
+            cause: FeeBurnCause::HirelingService {
+                service: "food:29409".into(),
+                occurrence: id(5),
+            },
+            fee_gold_units: 15_000,
+            transaction_id: ordinary.transaction_id,
+            event_id: ordinary.event_id,
+            occurred_at_unix_ms: ordinary.occurred_at_unix_ms,
+            server_build_id: ordinary.server_build_id,
+            change: HirelingFeeChange::BankOnly {
+                item_instance_ids: [id(11), id(12)],
+            },
+        };
+        assert!(valid_change_facts(&hireling));
+        assert!(hireling.change.facts().is_none());
+        assert_eq!(bank_part(hireling.fee_gold_units, 0, Type2EventTuple::V2, false).unwrap(), 15_000);
+        assert!(change_outputs(hireling.change.item_instance_ids(), 0, 1).is_empty());
+
+        // Backpack facts are an execution plan, never part of a historical fee identity.
+        let binding = request_binding(&fence(), &hireling);
+        hireling.change = HirelingFeeChange::Carried(Box::new(change_facts()));
+        assert!(valid_change_facts(&hireling));
+        assert_eq!(request_binding(&fence(), &hireling), binding);
+
+        hireling.change = HirelingFeeChange::BankOnly {
+            item_instance_ids: [id(11), id(11)],
+        };
+        assert!(!valid_change_facts(&hireling));
+        hireling.change = HirelingFeeChange::BankOnly {
+            item_instance_ids: [id(11), id(12)],
+        };
+        hireling.cause = ordinary.cause;
+        assert!(!valid_change_facts(&hireling));
     }
 
     #[test]

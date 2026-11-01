@@ -1,0 +1,5042 @@
+{
+  "schema": "OTERYN_ITEM_COSMETICS/v1",
+  "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "provenance": "crystal-item-cosmetics-201189f-v1",
+  "sources": [
+    {
+      "path": "data-crystal/scripts/special/addon_doll.lua",
+      "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
+    },
+    {
+      "path": "data-crystal/scripts/special/mount_random.lua",
+      "sha256": "a11cbc84f42027ea0ffefbbb3a005400e37399590500ba30ef995f7227e8c037"
+    },
+    {
+      "path": "data/XML/mounts.xml",
+      "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_afflicted_outfit_items.lua",
+      "sha256": "d4a9f639be295771cf2d6f5c19c21435e0ec0ca0cb1684682ce4ad09717cb391"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_mount_items.lua",
+      "sha256": "44971d84c467197db4f7a3b86bdee8bf0088a4ddd72105f16c70a131176284b7"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_phantasmal_jade_items.lua",
+      "sha256": "02abfe649fcc5165a332a697b897ecfc5718aa0d52158bd7f3d2de2787c9eb23"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_singeing_steed_items.lua",
+      "sha256": "4c6c422d25c226caec62cf9d362de26749f80f452e0a5fc78fb8bef366063b9d"
+    },
+    {
+      "path": "data/scripts/actions/items/usable_spirit_of_purity_items.lua",
+      "sha256": "b1972dd042874e48343c652bbc61b3c8b0194d33319965d670ac4a133f176476"
+    },
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+    }
+  ],
+  "grants": [
+    {
+      "key": "oteryn:item-grant.mount.162",
+      "kind": "mount",
+      "mount_id": 162,
+      "look_type": 1269,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:5",
+      "identity_source": "data/XML/mounts.xml:191"
+    },
+    {
+      "key": "oteryn:item-grant.mount.167",
+      "kind": "mount",
+      "mount_id": 167,
+      "look_type": 1321,
+      "donor": "data/scripts/actions/items/usable_phantasmal_jade_items.lua:1",
+      "identity_source": "data/XML/mounts.xml:196"
+    },
+    {
+      "key": "oteryn:item-grant.mount.184",
+      "kind": "mount",
+      "mount_id": 184,
+      "look_type": 1431,
+      "donor": "data/scripts/actions/items/usable_singeing_steed_items.lua:1",
+      "identity_source": "data/XML/mounts.xml:213"
+    },
+    {
+      "key": "oteryn:item-grant.mount.217",
+      "kind": "mount",
+      "mount_id": 217,
+      "look_type": 1682,
+      "donor": "data/scripts/actions/items/usable_spirit_of_purity_items.lua:1",
+      "identity_source": "data/XML/mounts.xml:246"
+    },
+    {
+      "key": "oteryn:item-grant.mount.23",
+      "kind": "mount",
+      "mount_id": 23,
+      "look_type": 426,
+      "donor": "data-crystal/scripts/special/mount_random.lua:3",
+      "identity_source": "data/XML/mounts.xml:52"
+    },
+    {
+      "key": "oteryn:item-grant.mount.232",
+      "kind": "mount",
+      "mount_id": 232,
+      "look_type": 1810,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:6",
+      "identity_source": "data/XML/mounts.xml:261"
+    },
+    {
+      "key": "oteryn:item-grant.mount.24",
+      "kind": "mount",
+      "mount_id": 24,
+      "look_type": 427,
+      "donor": "data-crystal/scripts/special/mount_random.lua:4",
+      "identity_source": "data/XML/mounts.xml:53"
+    },
+    {
+      "key": "oteryn:item-grant.mount.29",
+      "kind": "mount",
+      "mount_id": 29,
+      "look_type": 502,
+      "donor": "data-crystal/scripts/special/mount_random.lua:5",
+      "identity_source": "data/XML/mounts.xml:58"
+    },
+    {
+      "key": "oteryn:item-grant.mount.30",
+      "kind": "mount",
+      "mount_id": 30,
+      "look_type": 503,
+      "donor": "data-crystal/scripts/special/mount_random.lua:6",
+      "identity_source": "data/XML/mounts.xml:59"
+    },
+    {
+      "key": "oteryn:item-grant.mount.31",
+      "kind": "mount",
+      "mount_id": 31,
+      "look_type": 506,
+      "donor": "data-crystal/scripts/special/mount_random.lua:7",
+      "identity_source": "data/XML/mounts.xml:60"
+    },
+    {
+      "key": "oteryn:item-grant.mount.32",
+      "kind": "mount",
+      "mount_id": 32,
+      "look_type": 515,
+      "donor": "data-crystal/scripts/special/mount_random.lua:8",
+      "identity_source": "data/XML/mounts.xml:61"
+    },
+    {
+      "key": "oteryn:item-grant.mount.33",
+      "kind": "mount",
+      "mount_id": 33,
+      "look_type": 521,
+      "donor": "data-crystal/scripts/special/mount_random.lua:9",
+      "identity_source": "data/XML/mounts.xml:62"
+    },
+    {
+      "key": "oteryn:item-grant.mount.34",
+      "kind": "mount",
+      "mount_id": 34,
+      "look_type": 522,
+      "donor": "data-crystal/scripts/special/mount_random.lua:10",
+      "identity_source": "data/XML/mounts.xml:63"
+    },
+    {
+      "key": "oteryn:item-grant.mount.35",
+      "kind": "mount",
+      "mount_id": 35,
+      "look_type": 526,
+      "donor": "data-crystal/scripts/special/mount_random.lua:11",
+      "identity_source": "data/XML/mounts.xml:64"
+    },
+    {
+      "key": "oteryn:item-grant.mount.36",
+      "kind": "mount",
+      "mount_id": 36,
+      "look_type": 546,
+      "donor": "data-crystal/scripts/special/mount_random.lua:12",
+      "identity_source": "data/XML/mounts.xml:65"
+    },
+    {
+      "key": "oteryn:item-grant.mount.37",
+      "kind": "mount",
+      "mount_id": 37,
+      "look_type": 547,
+      "donor": "data-crystal/scripts/special/mount_random.lua:13",
+      "identity_source": "data/XML/mounts.xml:66"
+    },
+    {
+      "key": "oteryn:item-grant.mount.38",
+      "kind": "mount",
+      "mount_id": 38,
+      "look_type": 548,
+      "donor": "data-crystal/scripts/special/mount_random.lua:14",
+      "identity_source": "data/XML/mounts.xml:67"
+    },
+    {
+      "key": "oteryn:item-grant.mount.39",
+      "kind": "mount",
+      "mount_id": 39,
+      "look_type": 559,
+      "donor": "data-crystal/scripts/special/mount_random.lua:15",
+      "identity_source": "data/XML/mounts.xml:68"
+    },
+    {
+      "key": "oteryn:item-grant.mount.40",
+      "kind": "mount",
+      "mount_id": 40,
+      "look_type": 571,
+      "donor": "data-crystal/scripts/special/mount_random.lua:16",
+      "identity_source": "data/XML/mounts.xml:69"
+    },
+    {
+      "key": "oteryn:item-grant.mount.41",
+      "kind": "mount",
+      "mount_id": 41,
+      "look_type": 572,
+      "donor": "data-crystal/scripts/special/mount_random.lua:17",
+      "identity_source": "data/XML/mounts.xml:70"
+    },
+    {
+      "key": "oteryn:item-grant.mount.42",
+      "kind": "mount",
+      "mount_id": 42,
+      "look_type": 580,
+      "donor": "data-crystal/scripts/special/mount_random.lua:18",
+      "identity_source": "data/XML/mounts.xml:71"
+    },
+    {
+      "key": "oteryn:item-grant.mount.43",
+      "kind": "mount",
+      "mount_id": 43,
+      "look_type": 606,
+      "donor": "data-crystal/scripts/special/mount_random.lua:19",
+      "identity_source": "data/XML/mounts.xml:72"
+    },
+    {
+      "key": "oteryn:item-grant.mount.44",
+      "kind": "mount",
+      "mount_id": 44,
+      "look_type": 621,
+      "donor": "data-crystal/scripts/special/mount_random.lua:20",
+      "identity_source": "data/XML/mounts.xml:73"
+    },
+    {
+      "key": "oteryn:item-grant.mount.45",
+      "kind": "mount",
+      "mount_id": 45,
+      "look_type": 622,
+      "donor": "data-crystal/scripts/special/mount_random.lua:21",
+      "identity_source": "data/XML/mounts.xml:74"
+    },
+    {
+      "key": "oteryn:item-grant.mount.46",
+      "kind": "mount",
+      "mount_id": 46,
+      "look_type": 624,
+      "donor": "data-crystal/scripts/special/mount_random.lua:22",
+      "identity_source": "data/XML/mounts.xml:75"
+    },
+    {
+      "key": "oteryn:item-grant.mount.47",
+      "kind": "mount",
+      "mount_id": 47,
+      "look_type": 626,
+      "donor": "data-crystal/scripts/special/mount_random.lua:23",
+      "identity_source": "data/XML/mounts.xml:76"
+    },
+    {
+      "key": "oteryn:item-grant.mount.48",
+      "kind": "mount",
+      "mount_id": 48,
+      "look_type": 627,
+      "donor": "data-crystal/scripts/special/mount_random.lua:24",
+      "identity_source": "data/XML/mounts.xml:77"
+    },
+    {
+      "key": "oteryn:item-grant.mount.49",
+      "kind": "mount",
+      "mount_id": 49,
+      "look_type": 628,
+      "donor": "data-crystal/scripts/special/mount_random.lua:25",
+      "identity_source": "data/XML/mounts.xml:78"
+    },
+    {
+      "key": "oteryn:item-grant.mount.50",
+      "kind": "mount",
+      "mount_id": 50,
+      "look_type": 629,
+      "donor": "data-crystal/scripts/special/mount_random.lua:26",
+      "identity_source": "data/XML/mounts.xml:79"
+    },
+    {
+      "key": "oteryn:item-grant.mount.51",
+      "kind": "mount",
+      "mount_id": 51,
+      "look_type": 630,
+      "donor": "data-crystal/scripts/special/mount_random.lua:27",
+      "identity_source": "data/XML/mounts.xml:80"
+    },
+    {
+      "key": "oteryn:item-grant.mount.52",
+      "kind": "mount",
+      "mount_id": 52,
+      "look_type": 631,
+      "donor": "data-crystal/scripts/special/mount_random.lua:28",
+      "identity_source": "data/XML/mounts.xml:81"
+    },
+    {
+      "key": "oteryn:item-grant.mount.53",
+      "kind": "mount",
+      "mount_id": 53,
+      "look_type": 644,
+      "donor": "data-crystal/scripts/special/mount_random.lua:29",
+      "identity_source": "data/XML/mounts.xml:82"
+    },
+    {
+      "key": "oteryn:item-grant.mount.54",
+      "kind": "mount",
+      "mount_id": 54,
+      "look_type": 647,
+      "donor": "data-crystal/scripts/special/mount_random.lua:30",
+      "identity_source": "data/XML/mounts.xml:83"
+    },
+    {
+      "key": "oteryn:item-grant.mount.55",
+      "kind": "mount",
+      "mount_id": 55,
+      "look_type": 648,
+      "donor": "data-crystal/scripts/special/mount_random.lua:31",
+      "identity_source": "data/XML/mounts.xml:84"
+    },
+    {
+      "key": "oteryn:item-grant.mount.56",
+      "kind": "mount",
+      "mount_id": 56,
+      "look_type": 649,
+      "donor": "data-crystal/scripts/special/mount_random.lua:32",
+      "identity_source": "data/XML/mounts.xml:85"
+    },
+    {
+      "key": "oteryn:item-grant.mount.57",
+      "kind": "mount",
+      "mount_id": 57,
+      "look_type": 650,
+      "donor": "data-crystal/scripts/special/mount_random.lua:33",
+      "identity_source": "data/XML/mounts.xml:86"
+    },
+    {
+      "key": "oteryn:item-grant.mount.58",
+      "kind": "mount",
+      "mount_id": 58,
+      "look_type": 651,
+      "donor": "data-crystal/scripts/special/mount_random.lua:34",
+      "identity_source": "data/XML/mounts.xml:87"
+    },
+    {
+      "key": "oteryn:item-grant.mount.59",
+      "kind": "mount",
+      "mount_id": 59,
+      "look_type": 669,
+      "donor": "data-crystal/scripts/special/mount_random.lua:35",
+      "identity_source": "data/XML/mounts.xml:88"
+    },
+    {
+      "key": "oteryn:item-grant.mount.60",
+      "kind": "mount",
+      "mount_id": 60,
+      "look_type": 670,
+      "donor": "data-crystal/scripts/special/mount_random.lua:36",
+      "identity_source": "data/XML/mounts.xml:89"
+    },
+    {
+      "key": "oteryn:item-grant.mount.61",
+      "kind": "mount",
+      "mount_id": 61,
+      "look_type": 671,
+      "donor": "data-crystal/scripts/special/mount_random.lua:37",
+      "identity_source": "data/XML/mounts.xml:90"
+    },
+    {
+      "key": "oteryn:item-grant.mount.94",
+      "kind": "mount",
+      "mount_id": 94,
+      "look_type": 883,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:2",
+      "identity_source": "data/XML/mounts.xml:123"
+    },
+    {
+      "key": "oteryn:item-grant.mount.98",
+      "kind": "mount",
+      "mount_id": 98,
+      "look_type": 889,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:3",
+      "identity_source": "data/XML/mounts.xml:127"
+    },
+    {
+      "key": "oteryn:item-grant.mount.99",
+      "kind": "mount",
+      "mount_id": 99,
+      "look_type": 890,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:4",
+      "identity_source": "data/XML/mounts.xml:128"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1042-1043.addon1",
+      "kind": "addon",
+      "look_types": [
+        1042,
+        1043
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:14"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1042-1043.addon2",
+      "kind": "addon",
+      "look_types": [
+        1042,
+        1043
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:14"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1042-1043.base",
+      "kind": "outfit",
+      "look_types": [
+        1042,
+        1043
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:13"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1243-1244.addon1",
+      "kind": "addon",
+      "look_types": [
+        1243,
+        1244
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1243-1244.addon2",
+      "kind": "addon",
+      "look_types": [
+        1243,
+        1244
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1243-1244.base",
+      "kind": "outfit",
+      "look_types": [
+        1243,
+        1244
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1270-1271.addon1",
+      "kind": "addon",
+      "look_types": [
+        1270,
+        1271
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1270-1271.addon2",
+      "kind": "addon",
+      "look_types": [
+        1270,
+        1271
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1270-1271.base",
+      "kind": "outfit",
+      "look_types": [
+        1270,
+        1271
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.128-136.addon1",
+      "kind": "addon",
+      "look_types": [
+        128,
+        136
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:4"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.128-136.addon2",
+      "kind": "addon",
+      "look_types": [
+        128,
+        136
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:4"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.128-136.base",
+      "kind": "outfit",
+      "look_types": [
+        128,
+        136
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:4"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.129-137.addon1",
+      "kind": "addon",
+      "look_types": [
+        129,
+        137
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:5"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.129-137.addon2",
+      "kind": "addon",
+      "look_types": [
+        129,
+        137
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:5"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.129-137.base",
+      "kind": "outfit",
+      "look_types": [
+        129,
+        137
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:5"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.130-138.addon1",
+      "kind": "addon",
+      "look_types": [
+        130,
+        138
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:6"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.130-138.addon2",
+      "kind": "addon",
+      "look_types": [
+        130,
+        138
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:6"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.130-138.base",
+      "kind": "outfit",
+      "look_types": [
+        130,
+        138
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:6"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.131-139.addon1",
+      "kind": "addon",
+      "look_types": [
+        131,
+        139
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:7"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.131-139.addon2",
+      "kind": "addon",
+      "look_types": [
+        131,
+        139
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:7"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.131-139.base",
+      "kind": "outfit",
+      "look_types": [
+        131,
+        139
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:7"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.132-140.addon1",
+      "kind": "addon",
+      "look_types": [
+        132,
+        140
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:8"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.132-140.addon2",
+      "kind": "addon",
+      "look_types": [
+        132,
+        140
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:8"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.132-140.base",
+      "kind": "outfit",
+      "look_types": [
+        132,
+        140
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:8"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1322-1323.addon1",
+      "kind": "addon",
+      "look_types": [
+        1322,
+        1323
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1322-1323.addon2",
+      "kind": "addon",
+      "look_types": [
+        1322,
+        1323
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1322-1323.base",
+      "kind": "outfit",
+      "look_types": [
+        1322,
+        1323
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.133-141.addon1",
+      "kind": "addon",
+      "look_types": [
+        133,
+        141
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:9"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.133-141.addon2",
+      "kind": "addon",
+      "look_types": [
+        133,
+        141
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:9"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.133-141.base",
+      "kind": "outfit",
+      "look_types": [
+        133,
+        141
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:9"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.134-142.addon1",
+      "kind": "addon",
+      "look_types": [
+        134,
+        142
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:10"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.134-142.addon2",
+      "kind": "addon",
+      "look_types": [
+        134,
+        142
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:10"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.134-142.base",
+      "kind": "outfit",
+      "look_types": [
+        134,
+        142
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:10"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1371-1372.addon1",
+      "kind": "addon",
+      "look_types": [
+        1371,
+        1372
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:34"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1371-1372.addon2",
+      "kind": "addon",
+      "look_types": [
+        1371,
+        1372
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:34"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1371-1372.base",
+      "kind": "outfit",
+      "look_types": [
+        1371,
+        1372
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:34"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.143-147.addon1",
+      "kind": "addon",
+      "look_types": [
+        143,
+        147
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:11"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.143-147.addon2",
+      "kind": "addon",
+      "look_types": [
+        143,
+        147
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:11"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.143-147.base",
+      "kind": "outfit",
+      "look_types": [
+        143,
+        147
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:11"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.144-148.addon1",
+      "kind": "addon",
+      "look_types": [
+        144,
+        148
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:12"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.144-148.addon2",
+      "kind": "addon",
+      "look_types": [
+        144,
+        148
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:12"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.144-148.base",
+      "kind": "outfit",
+      "look_types": [
+        144,
+        148
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:12"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.145-149.addon1",
+      "kind": "addon",
+      "look_types": [
+        145,
+        149
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:13"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.145-149.addon2",
+      "kind": "addon",
+      "look_types": [
+        145,
+        149
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:13"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.145-149.base",
+      "kind": "outfit",
+      "look_types": [
+        145,
+        149
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:13"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.146-150.addon1",
+      "kind": "addon",
+      "look_types": [
+        146,
+        150
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:14"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.146-150.addon2",
+      "kind": "addon",
+      "look_types": [
+        146,
+        150
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:14"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.146-150.base",
+      "kind": "outfit",
+      "look_types": [
+        146,
+        150
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:14"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1460-1461.addon1",
+      "kind": "addon",
+      "look_types": [
+        1460,
+        1461
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:51"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1460-1461.addon2",
+      "kind": "addon",
+      "look_types": [
+        1460,
+        1461
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:52"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1460-1461.base",
+      "kind": "outfit",
+      "look_types": [
+        1460,
+        1461
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:51"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.151-155.addon1",
+      "kind": "addon",
+      "look_types": [
+        151,
+        155
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:15"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.151-155.addon2",
+      "kind": "addon",
+      "look_types": [
+        151,
+        155
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:15"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.151-155.base",
+      "kind": "outfit",
+      "look_types": [
+        151,
+        155
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:15"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.152-156.addon1",
+      "kind": "addon",
+      "look_types": [
+        152,
+        156
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:16"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.152-156.addon2",
+      "kind": "addon",
+      "look_types": [
+        152,
+        156
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:16"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.152-156.base",
+      "kind": "outfit",
+      "look_types": [
+        152,
+        156
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:16"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.153-157.addon1",
+      "kind": "addon",
+      "look_types": [
+        153,
+        157
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:17"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.153-157.addon2",
+      "kind": "addon",
+      "look_types": [
+        153,
+        157
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:17"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.153-157.base",
+      "kind": "outfit",
+      "look_types": [
+        153,
+        157
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:17"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.154-158.addon1",
+      "kind": "addon",
+      "look_types": [
+        154,
+        158
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.154-158.addon2",
+      "kind": "addon",
+      "look_types": [
+        154,
+        158
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.154-158.base",
+      "kind": "outfit",
+      "look_types": [
+        154,
+        158
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:18"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1568-1569.addon1",
+      "kind": "addon",
+      "look_types": [
+        1568,
+        1569
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1568-1569.addon2",
+      "kind": "addon",
+      "look_types": [
+        1568,
+        1569
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1568-1569.base",
+      "kind": "outfit",
+      "look_types": [
+        1568,
+        1569
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1662-1663.addon1",
+      "kind": "addon",
+      "look_types": [
+        1662,
+        1663
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1662-1663.addon2",
+      "kind": "addon",
+      "look_types": [
+        1662,
+        1663
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1662-1663.base",
+      "kind": "outfit",
+      "look_types": [
+        1662,
+        1663
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1808-1809.addon1",
+      "kind": "addon",
+      "look_types": [
+        1808,
+        1809
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:43"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1808-1809.addon2",
+      "kind": "addon",
+      "look_types": [
+        1808,
+        1809
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:43"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1808-1809.base",
+      "kind": "outfit",
+      "look_types": [
+        1808,
+        1809
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:42"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1860-1861.addon1",
+      "kind": "addon",
+      "look_types": [
+        1860,
+        1861
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:47"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1860-1861.addon2",
+      "kind": "addon",
+      "look_types": [
+        1860,
+        1861
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:47"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1860-1861.base",
+      "kind": "outfit",
+      "look_types": [
+        1860,
+        1861
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:47"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.251-252.addon1",
+      "kind": "addon",
+      "look_types": [
+        251,
+        252
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:19"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.251-252.addon2",
+      "kind": "addon",
+      "look_types": [
+        251,
+        252
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:19"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.251-252.base",
+      "kind": "outfit",
+      "look_types": [
+        251,
+        252
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:19"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.268-269.addon1",
+      "kind": "addon",
+      "look_types": [
+        268,
+        269
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:20"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.268-269.addon2",
+      "kind": "addon",
+      "look_types": [
+        268,
+        269
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:20"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.268-269.base",
+      "kind": "outfit",
+      "look_types": [
+        268,
+        269
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:20"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.270-273.addon1",
+      "kind": "addon",
+      "look_types": [
+        270,
+        273
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:21"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.270-273.addon2",
+      "kind": "addon",
+      "look_types": [
+        270,
+        273
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:21"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.270-273.base",
+      "kind": "outfit",
+      "look_types": [
+        270,
+        273
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:21"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.278-279.addon1",
+      "kind": "addon",
+      "look_types": [
+        278,
+        279
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.278-279.addon2",
+      "kind": "addon",
+      "look_types": [
+        278,
+        279
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.278-279.base",
+      "kind": "outfit",
+      "look_types": [
+        278,
+        279
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:22"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.288-289.addon1",
+      "kind": "addon",
+      "look_types": [
+        288,
+        289
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:23"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.288-289.addon2",
+      "kind": "addon",
+      "look_types": [
+        288,
+        289
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:23"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.288-289.base",
+      "kind": "outfit",
+      "look_types": [
+        288,
+        289
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:23"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.324-325.addon1",
+      "kind": "addon",
+      "look_types": [
+        324,
+        325
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:24"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.324-325.addon2",
+      "kind": "addon",
+      "look_types": [
+        324,
+        325
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:24"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.324-325.base",
+      "kind": "outfit",
+      "look_types": [
+        324,
+        325
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:24"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.328-329.addon1",
+      "kind": "addon",
+      "look_types": [
+        328,
+        329
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:27"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.328-329.addon2",
+      "kind": "addon",
+      "look_types": [
+        328,
+        329
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:27"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.328-329.base",
+      "kind": "outfit",
+      "look_types": [
+        328,
+        329
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:27"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.335-336.addon1",
+      "kind": "addon",
+      "look_types": [
+        335,
+        336
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:25"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.335-336.addon2",
+      "kind": "addon",
+      "look_types": [
+        335,
+        336
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:25"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.335-336.base",
+      "kind": "outfit",
+      "look_types": [
+        335,
+        336
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:25"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.366-367.addon1",
+      "kind": "addon",
+      "look_types": [
+        366,
+        367
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.366-367.addon2",
+      "kind": "addon",
+      "look_types": [
+        366,
+        367
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.366-367.base",
+      "kind": "outfit",
+      "look_types": [
+        366,
+        367
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:26"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.430-431.addon1",
+      "kind": "addon",
+      "look_types": [
+        430,
+        431
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:21"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.430-431.addon2",
+      "kind": "addon",
+      "look_types": [
+        430,
+        431
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:10"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.430-431.base",
+      "kind": "outfit",
+      "look_types": [
+        430,
+        431
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:49-50"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.432-433.addon1",
+      "kind": "addon",
+      "look_types": [
+        432,
+        433
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:29"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.432-433.addon2",
+      "kind": "addon",
+      "look_types": [
+        432,
+        433
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:29"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.432-433.base",
+      "kind": "outfit",
+      "look_types": [
+        432,
+        433
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:29"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.463-464.addon1",
+      "kind": "addon",
+      "look_types": [
+        463,
+        464
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.463-464.addon2",
+      "kind": "addon",
+      "look_types": [
+        463,
+        464
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.463-464.base",
+      "kind": "outfit",
+      "look_types": [
+        463,
+        464
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.465-466.addon1",
+      "kind": "addon",
+      "look_types": [
+        465,
+        466
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:31"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.465-466.addon2",
+      "kind": "addon",
+      "look_types": [
+        465,
+        466
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:31"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.465-466.base",
+      "kind": "outfit",
+      "look_types": [
+        465,
+        466
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:31"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.471-472.addon1",
+      "kind": "addon",
+      "look_types": [
+        471,
+        472
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:32"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.471-472.addon2",
+      "kind": "addon",
+      "look_types": [
+        471,
+        472
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:32"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.471-472.base",
+      "kind": "outfit",
+      "look_types": [
+        471,
+        472
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:32"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.512-513.addon1",
+      "kind": "addon",
+      "look_types": [
+        512,
+        513
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:9"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.512-513.addon2",
+      "kind": "addon",
+      "look_types": [
+        512,
+        513
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:9"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.512-513.base",
+      "kind": "outfit",
+      "look_types": [
+        512,
+        513
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:8"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.514-516.addon1",
+      "kind": "addon",
+      "look_types": [
+        514,
+        516
+      ],
+      "addon": 1,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:4"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.514-516.addon2",
+      "kind": "addon",
+      "look_types": [
+        514,
+        516
+      ],
+      "addon": 2,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:4"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.514-516.base",
+      "kind": "outfit",
+      "look_types": [
+        514,
+        516
+      ],
+      "addon": 0,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:3"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.541-542.addon1",
+      "kind": "addon",
+      "look_types": [
+        541,
+        542
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:35"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.541-542.addon2",
+      "kind": "addon",
+      "look_types": [
+        541,
+        542
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:35"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.541-542.base",
+      "kind": "outfit",
+      "look_types": [
+        541,
+        542
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:35"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.574-575.addon1",
+      "kind": "addon",
+      "look_types": [
+        574,
+        575
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:36"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.574-575.addon2",
+      "kind": "addon",
+      "look_types": [
+        574,
+        575
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:36"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.574-575.base",
+      "kind": "outfit",
+      "look_types": [
+        574,
+        575
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:36"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.578-579.addon1",
+      "kind": "addon",
+      "look_types": [
+        578,
+        579
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:37"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.578-579.addon2",
+      "kind": "addon",
+      "look_types": [
+        578,
+        579
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:37"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.578-579.base",
+      "kind": "outfit",
+      "look_types": [
+        578,
+        579
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:37"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.618-619.addon1",
+      "kind": "addon",
+      "look_types": [
+        618,
+        619
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.618-619.addon2",
+      "kind": "addon",
+      "look_types": [
+        618,
+        619
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.618-619.base",
+      "kind": "outfit",
+      "look_types": [
+        618,
+        619
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:38"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.620-621.addon1",
+      "kind": "addon",
+      "look_types": [
+        620,
+        621
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:39"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.620-621.addon2",
+      "kind": "addon",
+      "look_types": [
+        620,
+        621
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:39"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.620-621.base",
+      "kind": "outfit",
+      "look_types": [
+        620,
+        621
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:39"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.632-633.addon1",
+      "kind": "addon",
+      "look_types": [
+        632,
+        633
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:40"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.632-633.addon2",
+      "kind": "addon",
+      "look_types": [
+        632,
+        633
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:40"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.632-633.base",
+      "kind": "outfit",
+      "look_types": [
+        632,
+        633
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:40"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.634-635.addon1",
+      "kind": "addon",
+      "look_types": [
+        634,
+        635
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:41"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.634-635.addon2",
+      "kind": "addon",
+      "look_types": [
+        634,
+        635
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:41"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.634-635.base",
+      "kind": "outfit",
+      "look_types": [
+        634,
+        635
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:41"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.636-637.addon1",
+      "kind": "addon",
+      "look_types": [
+        636,
+        637
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:42"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.636-637.addon2",
+      "kind": "addon",
+      "look_types": [
+        636,
+        637
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:42"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.636-637.base",
+      "kind": "outfit",
+      "look_types": [
+        636,
+        637
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:42"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.664-665.addon1",
+      "kind": "addon",
+      "look_types": [
+        664,
+        665
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:43"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.664-665.addon2",
+      "kind": "addon",
+      "look_types": [
+        664,
+        665
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:43"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.664-665.base",
+      "kind": "outfit",
+      "look_types": [
+        664,
+        665
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:43"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.666-667.addon1",
+      "kind": "addon",
+      "look_types": [
+        666,
+        667
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:44"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.666-667.addon2",
+      "kind": "addon",
+      "look_types": [
+        666,
+        667
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:44"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.666-667.base",
+      "kind": "outfit",
+      "look_types": [
+        666,
+        667
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:44"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.683-684.addon1",
+      "kind": "addon",
+      "look_types": [
+        683,
+        684
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:45"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.683-684.addon2",
+      "kind": "addon",
+      "look_types": [
+        683,
+        684
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:45"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.683-684.base",
+      "kind": "outfit",
+      "look_types": [
+        683,
+        684
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:45"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.694-695.addon1",
+      "kind": "addon",
+      "look_types": [
+        694,
+        695
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:46"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.694-695.addon2",
+      "kind": "addon",
+      "look_types": [
+        694,
+        695
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:46"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.694-695.base",
+      "kind": "outfit",
+      "look_types": [
+        694,
+        695
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:46"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.696-697.addon1",
+      "kind": "addon",
+      "look_types": [
+        696,
+        697
+      ],
+      "addon": 1,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:47"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.696-697.addon2",
+      "kind": "addon",
+      "look_types": [
+        696,
+        697
+      ],
+      "addon": 2,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:47"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.696-697.base",
+      "kind": "outfit",
+      "look_types": [
+        696,
+        697
+      ],
+      "addon": 0,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:47"
+    }
+  ],
+  "rules": [
+    {
+      "item_id": 6579,
+      "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
+      "mode": "random_outfit",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.128-136.base",
+            "oteryn:item-grant.outfit.128-136.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.128-136.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.128-136.base",
+            "oteryn:item-grant.outfit.128-136.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.128-136.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.129-137.base",
+            "oteryn:item-grant.outfit.129-137.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.129-137.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.129-137.base",
+            "oteryn:item-grant.outfit.129-137.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.129-137.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.130-138.base",
+            "oteryn:item-grant.outfit.130-138.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.130-138.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.130-138.base",
+            "oteryn:item-grant.outfit.130-138.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.130-138.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.131-139.base",
+            "oteryn:item-grant.outfit.131-139.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.131-139.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.131-139.base",
+            "oteryn:item-grant.outfit.131-139.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.131-139.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.132-140.base",
+            "oteryn:item-grant.outfit.132-140.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.132-140.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.132-140.base",
+            "oteryn:item-grant.outfit.132-140.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.132-140.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.133-141.base",
+            "oteryn:item-grant.outfit.133-141.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.133-141.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.133-141.base",
+            "oteryn:item-grant.outfit.133-141.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.133-141.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.134-142.base",
+            "oteryn:item-grant.outfit.134-142.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.134-142.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.134-142.base",
+            "oteryn:item-grant.outfit.134-142.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.134-142.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.143-147.base",
+            "oteryn:item-grant.outfit.143-147.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.143-147.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.143-147.base",
+            "oteryn:item-grant.outfit.143-147.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.143-147.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.144-148.base",
+            "oteryn:item-grant.outfit.144-148.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.144-148.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.144-148.base",
+            "oteryn:item-grant.outfit.144-148.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.144-148.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.145-149.base",
+            "oteryn:item-grant.outfit.145-149.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.145-149.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.145-149.base",
+            "oteryn:item-grant.outfit.145-149.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.145-149.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.146-150.base",
+            "oteryn:item-grant.outfit.146-150.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.146-150.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.146-150.base",
+            "oteryn:item-grant.outfit.146-150.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.146-150.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.151-155.base",
+            "oteryn:item-grant.outfit.151-155.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.151-155.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.151-155.base",
+            "oteryn:item-grant.outfit.151-155.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.151-155.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.152-156.base",
+            "oteryn:item-grant.outfit.152-156.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.152-156.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.152-156.base",
+            "oteryn:item-grant.outfit.152-156.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.152-156.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.153-157.base",
+            "oteryn:item-grant.outfit.153-157.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.153-157.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.153-157.base",
+            "oteryn:item-grant.outfit.153-157.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.153-157.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.154-158.base",
+            "oteryn:item-grant.outfit.154-158.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.154-158.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.154-158.base",
+            "oteryn:item-grant.outfit.154-158.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.154-158.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.251-252.base",
+            "oteryn:item-grant.outfit.251-252.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.251-252.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.251-252.base",
+            "oteryn:item-grant.outfit.251-252.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.251-252.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.268-269.base",
+            "oteryn:item-grant.outfit.268-269.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.268-269.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.268-269.base",
+            "oteryn:item-grant.outfit.268-269.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.268-269.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.270-273.base",
+            "oteryn:item-grant.outfit.270-273.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.270-273.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.270-273.base",
+            "oteryn:item-grant.outfit.270-273.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.270-273.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.278-279.base",
+            "oteryn:item-grant.outfit.278-279.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.278-279.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.278-279.base",
+            "oteryn:item-grant.outfit.278-279.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.278-279.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.288-289.base",
+            "oteryn:item-grant.outfit.288-289.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.288-289.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.288-289.base",
+            "oteryn:item-grant.outfit.288-289.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.288-289.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.324-325.base",
+            "oteryn:item-grant.outfit.324-325.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.324-325.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.324-325.base",
+            "oteryn:item-grant.outfit.324-325.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.324-325.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.335-336.base",
+            "oteryn:item-grant.outfit.335-336.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.335-336.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.335-336.base",
+            "oteryn:item-grant.outfit.335-336.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.335-336.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.366-367.base",
+            "oteryn:item-grant.outfit.366-367.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.366-367.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.366-367.base",
+            "oteryn:item-grant.outfit.366-367.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.366-367.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.328-329.base",
+            "oteryn:item-grant.outfit.328-329.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.328-329.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.328-329.base",
+            "oteryn:item-grant.outfit.328-329.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.328-329.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base",
+            "oteryn:item-grant.outfit.430-431.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base",
+            "oteryn:item-grant.outfit.430-431.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.432-433.base",
+            "oteryn:item-grant.outfit.432-433.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.432-433.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.432-433.base",
+            "oteryn:item-grant.outfit.432-433.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.432-433.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.463-464.base",
+            "oteryn:item-grant.outfit.463-464.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.463-464.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.463-464.base",
+            "oteryn:item-grant.outfit.463-464.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.463-464.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.465-466.base",
+            "oteryn:item-grant.outfit.465-466.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.465-466.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.465-466.base",
+            "oteryn:item-grant.outfit.465-466.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.465-466.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.471-472.base",
+            "oteryn:item-grant.outfit.471-472.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.471-472.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.471-472.base",
+            "oteryn:item-grant.outfit.471-472.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.471-472.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.512-513.base",
+            "oteryn:item-grant.outfit.512-513.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.512-513.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.512-513.base",
+            "oteryn:item-grant.outfit.512-513.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.512-513.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.514-516.base",
+            "oteryn:item-grant.outfit.514-516.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.514-516.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.514-516.base",
+            "oteryn:item-grant.outfit.514-516.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.514-516.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.541-542.base",
+            "oteryn:item-grant.outfit.541-542.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.541-542.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.541-542.base",
+            "oteryn:item-grant.outfit.541-542.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.541-542.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.574-575.base",
+            "oteryn:item-grant.outfit.574-575.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.574-575.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.574-575.base",
+            "oteryn:item-grant.outfit.574-575.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.574-575.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.578-579.base",
+            "oteryn:item-grant.outfit.578-579.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.578-579.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.578-579.base",
+            "oteryn:item-grant.outfit.578-579.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.578-579.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.618-619.base",
+            "oteryn:item-grant.outfit.618-619.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.618-619.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.618-619.base",
+            "oteryn:item-grant.outfit.618-619.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.618-619.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.620-621.base",
+            "oteryn:item-grant.outfit.620-621.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.620-621.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.620-621.base",
+            "oteryn:item-grant.outfit.620-621.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.620-621.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.632-633.base",
+            "oteryn:item-grant.outfit.632-633.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.632-633.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.632-633.base",
+            "oteryn:item-grant.outfit.632-633.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.632-633.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.634-635.base",
+            "oteryn:item-grant.outfit.634-635.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.634-635.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.634-635.base",
+            "oteryn:item-grant.outfit.634-635.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.634-635.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.636-637.base",
+            "oteryn:item-grant.outfit.636-637.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.636-637.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.636-637.base",
+            "oteryn:item-grant.outfit.636-637.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.636-637.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.664-665.base",
+            "oteryn:item-grant.outfit.664-665.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.664-665.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.664-665.base",
+            "oteryn:item-grant.outfit.664-665.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.664-665.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.666-667.base",
+            "oteryn:item-grant.outfit.666-667.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.666-667.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.666-667.base",
+            "oteryn:item-grant.outfit.666-667.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.666-667.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.683-684.base",
+            "oteryn:item-grant.outfit.683-684.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.683-684.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.683-684.base",
+            "oteryn:item-grant.outfit.683-684.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.683-684.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.694-695.base",
+            "oteryn:item-grant.outfit.694-695.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.694-695.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.694-695.base",
+            "oteryn:item-grant.outfit.694-695.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.694-695.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.696-697.base",
+            "oteryn:item-grant.outfit.696-697.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.696-697.addon1",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.696-697.base",
+            "oteryn:item-grant.outfit.696-697.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.696-697.addon2",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 12551,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12552,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12553,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12554,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12555,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12556,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:37",
+      "mode": "pieces",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You have restored an outfit.",
+          "private_speech": true
+        }
+      ],
+      "required_items": [
+        12551,
+        12552,
+        12553,
+        12554,
+        12555,
+        12556
+      ]
+    },
+    {
+      "item_id": 12786,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:10",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You gained a plague mask for your outfit.",
+          "private_speech": true,
+          "achievement_progress": [
+            {
+              "key": "oteryn:achievement/beak_doctor",
+              "target": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 12787,
+      "donor": "data/scripts/actions/items/usable_afflicted_outfit_items.lua:21",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.430-431.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.430-431.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.430-431.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/poff",
+              "effect_id": 3
+            }
+          ],
+          "speech": "You gained a plague bell for your outfit.",
+          "private_speech": true,
+          "achievement_progress": [
+            {
+              "key": "oteryn:achievement/beak_doctor",
+              "target": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16252,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:3",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.514-516.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.514-516.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/green_rings",
+              "effect_id": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16253,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:4",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.514-516.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.514-516.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.514-516.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/green_rings",
+              "effect_id": 9
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/funghitastic",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.514-516.addon1",
+            "oteryn:item-grant.outfit.514-516.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16254,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:5",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.514-516.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.514-516.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.514-516.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/green_rings",
+              "effect_id": 9
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/funghitastic",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.514-516.addon1",
+            "oteryn:item-grant.outfit.514-516.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16255,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:8",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.512-513.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.512-513.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/giantice",
+              "effect_id": 53
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16256,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:9",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.512-513.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.512-513.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.512-513.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/giantice",
+              "effect_id": 53
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/crystal_clear",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.512-513.addon1",
+            "oteryn:item-grant.outfit.512-513.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 16257,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:10",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.512-513.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.512-513.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.512-513.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/giantice",
+              "effect_id": 53
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/crystal_clear",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.512-513.addon1",
+            "oteryn:item-grant.outfit.512-513.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 23538,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:2",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.94"
+          ],
+          "owned": "oteryn:item-grant.mount.94",
+          "required": [],
+          "cues": [],
+          "speech": "You receive the permission to ride a sparkion.",
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy"
+          ],
+          "achievement_progress": [
+            {
+              "key": "oteryn:achievement/vortex_tamer",
+              "target": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 23684,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:3",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.98"
+          ],
+          "owned": "oteryn:item-grant.mount.98",
+          "required": [],
+          "cues": [],
+          "speech": "You receive the permission to ride a neon sparkid.",
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy"
+          ],
+          "achievement_progress": [
+            {
+              "key": "oteryn:achievement/vortex_tamer",
+              "target": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 23685,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:4",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.99"
+          ],
+          "owned": "oteryn:item-grant.mount.99",
+          "required": [],
+          "cues": [],
+          "speech": "You receive the permission to ride a vortexion.",
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy"
+          ],
+          "achievement_progress": [
+            {
+              "key": "oteryn:achievement/vortex_tamer",
+              "target": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 27655,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:13",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1042-1043.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.1042-1043.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "feedback": "By using the plan you knock together a makeshift armour out of wooden planks, rusty nails and leather rags."
+        }
+      ]
+    },
+    {
+      "item_id": 27656,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:15",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1042-1043.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1042-1043.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1042-1043.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/cobbled_and_patched",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1042-1043.addon1",
+            "oteryn:item-grant.outfit.1042-1043.addon2"
+          ],
+          "feedback": "You use the tinged pot as a makeshift helmet."
+        }
+      ]
+    },
+    {
+      "item_id": 27657,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:14",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1042-1043.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1042-1043.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1042-1043.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/cobbled_and_patched",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1042-1043.addon1",
+            "oteryn:item-grant.outfit.1042-1043.addon2"
+          ],
+          "feedback": "You use the wooden planks to knock up a makeshift shield and weapon."
+        }
+      ]
+    },
+    {
+      "item_id": 31737,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:19",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1243-1244.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1243-1244.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1243-1244.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holyarea",
+              "effect_id": 50
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/inquisition_s_arm",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1243-1244.addon1",
+            "oteryn:item-grant.outfit.1243-1244.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 31738,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:18",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1243-1244.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1243-1244.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1243-1244.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holyarea",
+              "effect_id": 50
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/inquisition_s_arm",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1243-1244.addon1",
+            "oteryn:item-grant.outfit.1243-1244.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 32629,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:5",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.162"
+          ],
+          "owned": "oteryn:item-grant.mount.162",
+          "required": [],
+          "cues": [],
+          "speech": "You are now versed to ride the haze!",
+          "achievements": [
+            "oteryn:achievement/nothing_but_hot_air",
+            "oteryn:achievement/natural_born_cowboy"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 32630,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:22",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1270-1271.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1270-1271.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1270-1271.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/blue_ghost",
+              "effect_id": 191
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/mainstreet_nightmare",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1270-1271.addon1",
+            "oteryn:item-grant.outfit.1270-1271.addon2"
+          ],
+          "speech": "The spooky hood is yours!"
+        }
+      ]
+    },
+    {
+      "item_id": 32631,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:23",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1270-1271.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1270-1271.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1270-1271.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/blue_ghost",
+              "effect_id": 191
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/mainstreet_nightmare",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1270-1271.addon1",
+            "oteryn:item-grant.outfit.1270-1271.addon2"
+          ],
+          "speech": "You can use the ghost claw now!"
+        }
+      ]
+    },
+    {
+      "item_id": 34072,
+      "donor": "data/scripts/actions/items/usable_phantasmal_jade_items.lua:1",
+      "mode": "parts",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.167"
+          ],
+          "owned": "oteryn:item-grant.mount.167",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holydamage",
+              "effect_id": 40
+            }
+          ],
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/you_got_horse_power"
+          ],
+          "completion_feedback": "Phantasmal jade is now yours!"
+        }
+      ],
+      "components": [
+        {
+          "item_id": 34072,
+          "key": "spectral-horseshoes",
+          "count": 4
+        },
+        {
+          "item_id": 34073,
+          "key": "spectral-saddle",
+          "count": 1
+        },
+        {
+          "item_id": 34074,
+          "key": "spectral-horse-tac",
+          "count": 1
+        }
+      ],
+      "progress_key": "spectral-horseshoes"
+    },
+    {
+      "item_id": 34073,
+      "donor": "data/scripts/actions/items/usable_phantasmal_jade_items.lua:1",
+      "mode": "parts",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.167"
+          ],
+          "owned": "oteryn:item-grant.mount.167",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holydamage",
+              "effect_id": 40
+            }
+          ],
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/you_got_horse_power"
+          ],
+          "completion_feedback": "Phantasmal jade is now yours!"
+        }
+      ],
+      "components": [
+        {
+          "item_id": 34072,
+          "key": "spectral-horseshoes",
+          "count": 4
+        },
+        {
+          "item_id": 34073,
+          "key": "spectral-saddle",
+          "count": 1
+        },
+        {
+          "item_id": 34074,
+          "key": "spectral-horse-tac",
+          "count": 1
+        }
+      ],
+      "progress_key": "spectral-saddle"
+    },
+    {
+      "item_id": 34074,
+      "donor": "data/scripts/actions/items/usable_phantasmal_jade_items.lua:1",
+      "mode": "parts",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.167"
+          ],
+          "owned": "oteryn:item-grant.mount.167",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holydamage",
+              "effect_id": 40
+            }
+          ],
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/you_got_horse_power"
+          ],
+          "completion_feedback": "Phantasmal jade is now yours!"
+        }
+      ],
+      "components": [
+        {
+          "item_id": 34072,
+          "key": "spectral-horseshoes",
+          "count": 4
+        },
+        {
+          "item_id": 34073,
+          "key": "spectral-saddle",
+          "count": 1
+        },
+        {
+          "item_id": 34074,
+          "key": "spectral-horse-tac",
+          "count": 1
+        }
+      ],
+      "progress_key": "spectral-horse-tac"
+    },
+    {
+      "item_id": 34075,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:26",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1322-1323.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1322-1323.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1322-1323.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holyarea",
+              "effect_id": 50
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/unleash_the_beast",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1322-1323.addon1",
+            "oteryn:item-grant.outfit.1322-1323.addon2"
+          ],
+          "speech": "Now the beast is unleashed!"
+        }
+      ]
+    },
+    {
+      "item_id": 34076,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:27",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1322-1323.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1322-1323.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1322-1323.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holyarea",
+              "effect_id": 50
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/unleash_the_beast",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1322-1323.addon1",
+            "oteryn:item-grant.outfit.1322-1323.addon2"
+          ],
+          "speech": "Wild power flows though your body!"
+        }
+      ]
+    },
+    {
+      "item_id": 35595,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:34",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1371-1372.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1371-1372.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1371-1372.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/honorary_rascoohan",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1371-1372.addon1",
+            "oteryn:item-grant.outfit.1371-1372.addon2"
+          ],
+          "speech": "You feel a bit more raccoonish."
+        }
+      ]
+    },
+    {
+      "item_id": 35695,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:35",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1371-1372.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1371-1372.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1371-1372.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/honorary_rascoohan",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1371-1372.addon1",
+            "oteryn:item-grant.outfit.1371-1372.addon2"
+          ],
+          "speech": "Hmmm, trash cans!!"
+        }
+      ]
+    },
+    {
+      "item_id": 36938,
+      "donor": "data/scripts/actions/items/usable_singeing_steed_items.lua:1",
+      "mode": "parts",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.184"
+          ],
+          "owned": "oteryn:item-grant.mount.184",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/fireattack",
+              "effect_id": 37
+            }
+          ],
+          "achievements": [
+            "oteryn:achievement/hot_on_the_trail"
+          ],
+          "completion_feedback": "Singeing Steed is now yours!"
+        }
+      ],
+      "components": [
+        {
+          "item_id": 36938,
+          "key": "fiery-horseshoe",
+          "count": 4
+        }
+      ],
+      "progress_key": "fiery-horseshoe"
+    },
+    {
+      "item_id": 37604,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:52",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1460-1461.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1460-1461.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1460-1461.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/green_hitarea",
+              "effect_id": 272
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 37605,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:51",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1460-1461.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1460-1461.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1460-1461.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/green_hitarea",
+              "effect_id": 272
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 37746,
+      "donor": "data-crystal/scripts/special/mount_random.lua:44-68",
+      "mode": "random_mount",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.23"
+          ],
+          "owned": "oteryn:item-grant.mount.23",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.24"
+          ],
+          "owned": "oteryn:item-grant.mount.24",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.29"
+          ],
+          "owned": "oteryn:item-grant.mount.29",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.30"
+          ],
+          "owned": "oteryn:item-grant.mount.30",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.31"
+          ],
+          "owned": "oteryn:item-grant.mount.31",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.32"
+          ],
+          "owned": "oteryn:item-grant.mount.32",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.33"
+          ],
+          "owned": "oteryn:item-grant.mount.33",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.34"
+          ],
+          "owned": "oteryn:item-grant.mount.34",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.35"
+          ],
+          "owned": "oteryn:item-grant.mount.35",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.36"
+          ],
+          "owned": "oteryn:item-grant.mount.36",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.37"
+          ],
+          "owned": "oteryn:item-grant.mount.37",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.38"
+          ],
+          "owned": "oteryn:item-grant.mount.38",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.39"
+          ],
+          "owned": "oteryn:item-grant.mount.39",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.40"
+          ],
+          "owned": "oteryn:item-grant.mount.40",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.41"
+          ],
+          "owned": "oteryn:item-grant.mount.41",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.42"
+          ],
+          "owned": "oteryn:item-grant.mount.42",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.43"
+          ],
+          "owned": "oteryn:item-grant.mount.43",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.44"
+          ],
+          "owned": "oteryn:item-grant.mount.44",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.45"
+          ],
+          "owned": "oteryn:item-grant.mount.45",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.46"
+          ],
+          "owned": "oteryn:item-grant.mount.46",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.47"
+          ],
+          "owned": "oteryn:item-grant.mount.47",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.48"
+          ],
+          "owned": "oteryn:item-grant.mount.48",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.49"
+          ],
+          "owned": "oteryn:item-grant.mount.49",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.50"
+          ],
+          "owned": "oteryn:item-grant.mount.50",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.51"
+          ],
+          "owned": "oteryn:item-grant.mount.51",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.52"
+          ],
+          "owned": "oteryn:item-grant.mount.52",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.53"
+          ],
+          "owned": "oteryn:item-grant.mount.53",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.54"
+          ],
+          "owned": "oteryn:item-grant.mount.54",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.55"
+          ],
+          "owned": "oteryn:item-grant.mount.55",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.56"
+          ],
+          "owned": "oteryn:item-grant.mount.56",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.57"
+          ],
+          "owned": "oteryn:item-grant.mount.57",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.58"
+          ],
+          "owned": "oteryn:item-grant.mount.58",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.59"
+          ],
+          "owned": "oteryn:item-grant.mount.59",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.60"
+          ],
+          "owned": "oteryn:item-grant.mount.60",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        },
+        {
+          "grants": [
+            "oteryn:item-grant.mount.61"
+          ],
+          "owned": "oteryn:item-grant.mount.61",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/firework_red",
+              "effect_id": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 39544,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:38",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1568-1569.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1568-1569.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1568-1569.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/friendly_fire",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1568-1569.addon1",
+            "oteryn:item-grant.outfit.1568-1569.addon2"
+          ],
+          "speech": "You feel like fighting a fire!"
+        }
+      ]
+    },
+    {
+      "item_id": 39545,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:39",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1568-1569.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1568-1569.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1568-1569.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/friendly_fire",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1568-1569.addon1",
+            "oteryn:item-grant.outfit.1568-1569.addon2"
+          ],
+          "speech": "The flame engulfs you!"
+        }
+      ]
+    },
+    {
+      "item_id": 43899,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:30",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1662-1663.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1662-1663.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1662-1663.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/fully_decayed",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1662-1663.addon1",
+            "oteryn:item-grant.outfit.1662-1663.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 43900,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:31",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1662-1663.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1662-1663.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1662-1663.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/fully_decayed",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1662-1663.addon1",
+            "oteryn:item-grant.outfit.1662-1663.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 44048,
+      "donor": "data/scripts/actions/items/usable_spirit_of_purity_items.lua:1",
+      "mode": "parts",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.217"
+          ],
+          "owned": "oteryn:item-grant.mount.217",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/holydamage",
+              "effect_id": 40
+            }
+          ],
+          "achievements": [
+            "oteryn:achievement/the_spirit_of_purity"
+          ],
+          "completion_feedback": "Spirit of Purity is now yours!"
+        }
+      ],
+      "components": [
+        {
+          "item_id": 44048,
+          "key": "spiritual-horseshoe",
+          "count": 4
+        }
+      ],
+      "progress_key": "spiritual-horseshoe"
+    },
+    {
+      "item_id": 50060,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:43",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1808-1809.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1808-1809.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1808-1809.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/bite",
+              "effect_id": 217
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/fiend_slayer",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1808-1809.addon1",
+            "oteryn:item-grant.outfit.1808-1809.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 50061,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:44",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1808-1809.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1808-1809.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1808-1809.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/bite",
+              "effect_id": 217
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/fiend_slayer",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1808-1809.addon1",
+            "oteryn:item-grant.outfit.1808-1809.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 50064,
+      "donor": "data/scripts/actions/items/usable_mount_items.lua:6",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.232"
+          ],
+          "owned": "oteryn:item-grant.mount.232",
+          "required": [],
+          "cues": [],
+          "speech": "Bound by ancient magic, the primal demonic beast bows to the will of the boxes owner ... for now.",
+          "achievements": [
+            "oteryn:achievement/natural_born_cowboy"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 50067,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:42",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1808-1809.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.1808-1809.base",
+          "required": [],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/bite",
+              "effect_id": 217
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 51656,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:47",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1860-1861.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1860-1861.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1860-1861.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/illuminator",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1860-1861.addon1",
+            "oteryn:item-grant.outfit.1860-1861.addon2"
+          ],
+          "feedback": "Your illuminator robes look more impressive now."
+        }
+      ]
+    },
+    {
+      "item_id": 51657,
+      "donor": "data/scripts/actions/items/usable_outfit_items.lua:48",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1860-1861.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1860-1861.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1860-1861.base"
+          ],
+          "cues": [
+            {
+              "binding": "canary.appearance:effect/gift_wraps",
+              "effect_id": 28
+            }
+          ],
+          "achievement_when_full": "oteryn:achievement/illuminator",
+          "complete_grants": [
+            "oteryn:item-grant.outfit.1860-1861.addon1",
+            "oteryn:item-grant.outfit.1860-1861.addon2"
+          ],
+          "feedback": "Your illuminator robes look more impressive now."
+        }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,7 @@ mod dawnport_trial;
 mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
+mod endgame_entry;
 mod equipment_move;
 mod equipment_reflection;
 mod field_removal;
@@ -847,6 +848,15 @@ impl TransitionFence {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Result<(), CarrierError> {
+        if runtime.house_actor_state(actor, session).is_ok() {
+            let token = match self {
+                Self::GraceExpiry(epoch) => ChannelRuntimeV1::grace_expiry_fence(epoch),
+                Self::Transition(id) => ChannelRuntimeV1::transition_fence(id),
+            };
+            return runtime
+                .fence_house_player_writes(actor, session, token)
+                .map(|_| ());
+        }
         match self {
             Self::GraceExpiry(epoch) => runtime.fence_player_writes(
                 actor,
@@ -867,6 +877,13 @@ impl TransitionFence {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Result<bool, CarrierError> {
+        if runtime.house_actor_state(actor, session).is_ok() {
+            let token = match self {
+                Self::GraceExpiry(epoch) => ChannelRuntimeV1::grace_expiry_fence(epoch),
+                Self::Transition(id) => ChannelRuntimeV1::transition_fence(id),
+            };
+            return runtime.lift_house_player_fence(actor, session, token);
+        }
         match self {
             Self::GraceExpiry(epoch) => runtime.lift_player_fence(
                 actor,

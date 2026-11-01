@@ -12,6 +12,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
+    # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
+    # apply the same pinned source, exact binding and portability checks below.
+    keys.add('oteryn:item.tibia.i32594')
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:

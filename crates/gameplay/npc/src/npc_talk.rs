@@ -140,6 +140,11 @@ impl NpcTalkBook {
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
                 )
+            } else if let Some(greeting) = endgame_greeting(&reference.key) {
+                // W11: only these four source NPCs have native stateful Quest
+                // consumers. This admits their greeting, not their Lua/script
+                // branches; dispatch owns every confirmation and durable write.
+                (greeting.into(), "Farewell.".into(), None, Vec::new())
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -261,6 +266,26 @@ impl NpcTalkBook {
     pub fn catalogue_revision(&self) -> u64 {
         self.catalogue_revision.max(1)
     }
+}
+
+/// Crystal201189f NPC greeting messages. A script-backed NPC outside this exact
+/// set remains unavailable through the native endgame conversation consumer.
+fn endgame_greeting(key: &str) -> Option<&'static str> {
+    Some(match key {
+        // data-global/npc/flickering_soul.lua:198.
+        "oteryn:npc.flickering_soul" => "Be greeted, living soul!",
+        // data-global/npc/torkada.lua:96.
+        "oteryn:npc.torkada" => "Greetings! This isn't the {time} to chitchat though.",
+        // data-global/npc/bloodshade_rotten.lua:148.
+        "oteryn:npc.bloodshade_rotten" => {
+            "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul."
+        }
+        // data-global/npc/bloodshade_sacrifice.lua:93.
+        "oteryn:npc.bloodshade_sacrifice" => {
+            "Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!"
+        }
+        _ => return None,
+    })
 }
 
 /// FNV-1a over the digest text; 1 in place of 0.
@@ -403,6 +428,62 @@ mod tests {
             let entry = book.get(key).ok_or(key)?;
             assert!(entry.greeting_reply.contains("pilgrimage"));
             assert!(!entry.admitted_dialogue);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn endgame_npcs_have_only_their_source_qualified_native_conversation_entries()
+    -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        for key in [
+            "oteryn:npc.flickering_soul",
+            "oteryn:npc.torkada",
+            "oteryn:npc.bloodshade_rotten",
+            "oteryn:npc.bloodshade_sacrifice",
+        ] {
+            let entry = book
+                .get(key)
+                .ok_or_else(|| format!("missing native conversation: {key}"))?;
+            assert!(!entry.bank());
+            assert!(entry.offers.is_empty());
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "stateful script branches belong to the Quest caller"
+            );
+            let npcs = [TalkNpc {
+                id: 1_u8,
+                position: at(101),
+                entry,
+            }];
+            let mut engaged = None;
+            assert!(talk(at(100), "hi", &npcs, &mut engaged).is_some());
+            assert_eq!(engaged, Some(1));
+            assert!(
+                talk(at(100), "yes", &npcs, &mut engaged).is_none(),
+                "greeting admission alone cannot confirm or grant a Quest action"
+            );
+            assert_eq!(engaged, Some(1));
+        }
+        for key in [
+            "oteryn:npc.flickering_soul_fake",
+            "oteryn:npc.bloodshade",
+            "oteryn:npc.eremo",
+            "",
+        ] {
+            assert!(
+                endgame_greeting(key).is_none(),
+                "the exception is an exact closed set"
+            );
         }
         Ok(())
     }

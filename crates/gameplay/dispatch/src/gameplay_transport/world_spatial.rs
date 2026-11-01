@@ -127,6 +127,9 @@ pub enum VisibleKind {
     /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
     /// carries 100 for it.
     Npc,
+    /// A current House Hireling resolved by the existing scoped NPC slot owner.
+    /// It uses the existing wire NPC kind and the existing appearance dictionary.
+    Hireling,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
     },
@@ -168,7 +171,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
         VisibleKind::Creature => (EntityKind::Creature, actor),
-        VisibleKind::Npc => (
+        VisibleKind::Npc | VisibleKind::Hireling => (
             EntityKind::Npc,
             EntityDetail::Actor {
                 direction: entity.direction,

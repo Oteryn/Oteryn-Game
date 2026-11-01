@@ -22,6 +22,17 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // E12 captures 1425 bound Hireling items from Crystal 201189f; 516 reuse
+    // main 149bf364f profiles and 909 are new (hireling-item-profiles.json).
+    // Main has 2210 profiles; its union with the draft's 2104 is exactly 3119.
+    // The merge adds 381 shared keys, counted once by their main cohorts.
+    // The native importer preserves shared attributes/richer ability facts;
+    // every raw speed and the exact unknown-speed set remain checked below.
+    ("HIRELING-E12", 909),
+    // Package 2's monster-AI/hireling/primal-hazard derived-content regeneration
+    // (ab265074) was unioned with main's newer item overlay during the port. That intended
+    // union contributes 288 additional raw profiles; their attributes are checked below.
+    ("PKG2-CONTENT-UNION", 288),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I05 skill rings: the inactive and active power 3050/3087, sword 3091/3094, axe 3092/3095
@@ -215,7 +226,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             unknown_speed.insert(record.production_definition.production_key.clone());
         }
         let equipment = snapshot(&content, &record.production_definition.production_key, 10);
-        assert_eq!(speed_term(&equipment, &content), Some(0));
+        // I05 keeps these three timed rings' equipment effects unhosted. E12
+        // adds their physical Trader custody without granting equip admission;
+        // the raw source attributes are still checked independently above.
+        let expected = match record.production_definition.production_key.as_str() {
+            "oteryn:item.tibia.i3049" | "oteryn:item.tibia.i3052" | "oteryn:item.tibia.i3098" => {
+                None
+            }
+            _ => Some(0),
+        };
+        assert_eq!(
+            speed_term(&equipment, &content),
+            expected,
+            "{}",
+            record.production_definition.production_key
+        );
     }
     assert_eq!(
         unknown_speed,

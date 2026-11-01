@@ -22,6 +22,9 @@ pub struct HouseTransferRecovery {
     /// use ordinary retained command continuity, never reset this namespace.
     pub started: bool,
     pub placement: super::super::character_last_position::StoredLastPosition,
+    pub house_position: Option<super::super::character_last_position::HouseLastPosition>,
+    /// True only for the closed native fresh-admission restore source (command 0).
+    pub admission_restore: bool,
 }
 
 impl DurabilityRoot {
@@ -167,8 +170,9 @@ impl DurabilityRoot {
                     let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)")
                         .bind(audit.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                     if pending || current.placement != candidate.placement
+                        || current.house_position != candidate.house_position
                         || current.placement.key.character_lease_generation != current.ack.lease_generation
-                        || current.placement.key.write_sequence != 1 {
+                        || current.placement.key.write_sequence == 0 {
                         return Err(DurabilityError::Unavailable);
                     }
                     let row = sqlx::query("SELECT attempt_count FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND account_id=$2::uuid AND prepared_attempt_ref IS NULL FOR UPDATE")
@@ -228,7 +232,7 @@ async fn load(
     root: &DurabilityRoot,
     session: GameSessionId,
 ) -> Result<Option<HouseTransferRecovery>, DurabilityError> {
-    let Some(row)=sqlx::query("SELECT uuid_send(transfer_id) AS transfer,uuid_send(source_game_session_id) AS source,uuid_send(destination_game_session_id) AS session,uuid_send(world_id) AS world,uuid_send(origin_channel_id) AS channel,house_key,direction,destination_scope_generation::text AS generation,source_character_lease_generation::text AS lease,selection,tile_x,tile_y,tile_floor,command_id::text AS command,account_id::text AS account,uuid_send(account_id) AS account_bytes,uuid_send(character_id) AS character FROM game_house_transfer_receipts WHERE state=2 AND destination_game_session_id=(SELECT c.holder_game_session_id FROM game_durability_admission_character_guards c WHERE c.character_id=(SELECT character_id FROM game_house_transfer_receipts WHERE (source_game_session_id=encode($1,'hex')::uuid OR destination_game_session_id=encode($1,'hex')::uuid) AND state=2 LIMIT 1)) LIMIT 1")
+    let Some(row)=sqlx::query("SELECT uuid_send(transfer_id) AS transfer,uuid_send(source_game_session_id) AS source,uuid_send(destination_game_session_id) AS session,uuid_send(world_id) AS world,uuid_send(origin_channel_id) AS channel,house_key,direction,destination_scope_generation::text AS generation,source_character_lease_generation::text AS lease,selection,tile_x,tile_y,tile_floor,command_id::text AS command,admission_restore,account_id::text AS account,uuid_send(account_id) AS account_bytes,uuid_send(character_id) AS character FROM game_house_transfer_receipts WHERE state=2 AND destination_game_session_id=(SELECT c.holder_game_session_id FROM game_durability_admission_character_guards c WHERE c.character_id=(SELECT character_id FROM game_house_transfer_receipts WHERE (source_game_session_id=encode($1,'hex')::uuid OR destination_game_session_id=encode($1,'hex')::uuid) AND state=2 LIMIT 1)) LIMIT 1")
         .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await? else {
             let historical: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_transfer_receipts WHERE source_game_session_id=encode($1,'hex')::uuid OR destination_game_session_id=encode($1,'hex')::uuid)")
                 .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -271,15 +275,18 @@ async fn load(
     started_key.extend_from_slice(&id("session")?);
     let started: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_admission_lifecycle_receipts WHERE operation_key=$1)")
         .bind(started_key).fetch_one(&mut **tx).await?;
+    let placement = super::super::character_last_position::load_scoped_last_position(
+        tx,
+        crate::domain::CharacterId::from_bytes(*character.as_bytes())
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    )
+    .await?
+    .ok_or(DurabilityError::Unavailable)?;
     Ok(Some(HouseTransferRecovery {
         started,
-        placement: super::super::character_last_position::load_last_position(
-            tx,
-            crate::domain::CharacterId::from_bytes(*character.as_bytes())
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
-        .await?
-        .ok_or(DurabilityError::Unavailable)?,
+        placement: placement.position,
+        house_position: placement.house,
+        admission_restore: row.try_get("admission_restore")?,
         ack: HouseTransferAck {
             transfer: id("transfer")?,
             session: id("session")?,

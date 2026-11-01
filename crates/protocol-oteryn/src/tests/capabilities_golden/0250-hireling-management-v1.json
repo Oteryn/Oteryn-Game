@@ -1,0 +1,19 @@
+{
+  "id": 250,
+  "name": "HIRELING_MANAGEMENT_V1",
+  "constant": "hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1",
+  "requires": [
+    165
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    470
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

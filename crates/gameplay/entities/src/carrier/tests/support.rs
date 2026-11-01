@@ -115,6 +115,7 @@ fn corpse_projection_at(
                 floor: 7,
             },
             revision: 1,
+            last_translation_revision: 0,
             facing: None,
         },
     }

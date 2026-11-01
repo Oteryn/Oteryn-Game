@@ -169,6 +169,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Unavailable);
         }
+        if !super::hireling::recover_pending_lamp_ingress(self, &lost).await {
+            return Err(Unavailable);
+        }
         self.states
             .command_ingress
             .recover_trade_continuity(&mut lost)
@@ -188,7 +191,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Unavailable)?;
 
-        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let store = FreshAdmissionStore::from_root(self.root.clone())
+            .with_house_lifecycle_owner(self.holder);
         let session_id = lost.game_session_id;
         let (session, _) = store
             .current_session_at(session_id)
@@ -211,20 +215,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     account_id: account_id.clone(),
                 },
                 AdmissionAuthorityGuardKeyV1::Character(character),
-                AdmissionAuthorityGuardKeyV1::Runtime(scope),
             ])
             .await
             .map_err(|_| Unavailable)?
             .into_iter()
             .collect::<Option<Vec<_>>>()
             .ok_or(Rejected)?;
+        let runtime_publication = store
+            .recovery_runtime_publication(session_id)
+            .await
+            .map_err(|_| Unavailable)?
+            .ok_or(Rejected)?;
+        let AdmissionAuthorityGuardKeyV1::Runtime(policy_scope) = &runtime_publication.key else {
+            return Err(Unavailable);
+        };
+        let policy_scope = *policy_scope;
         let AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation: policy_generation,
             ruleset_revision,
             content_revision,
             map_revision,
             world_policy_revision,
             ..
-        } = &rows[2].state
+        } = &runtime_publication.state
         else {
             return Err(Unavailable);
         };
@@ -279,11 +292,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             barrier.ready.notify_one();
         }
+        // Activities also use Instance scopes. Only a native House resident
+        // resumes through the named-House custody and ACL owner.
+        let house_resume = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session_id)
+            .is_ok();
+        if house_resume && !self.validate_house_resume(actor, session_id).await {
+            return Err(Rejected);
+        }
         let (facts, source_revision) = {
             let runtime = self.runtime.lock().await;
-            let facts = runtime
-                .player_control_facts(actor, session_id)
-                .map_err(|_| Rejected)?;
+            let facts = if house_resume {
+                let house = runtime
+                    .house_actor_state(actor, session_id)
+                    .map_err(|_| Rejected)?;
+                if house.scope != scope
+                    || house.generation != session.current_scope_generation()
+                    || house.lease != session.current_character_lease()
+                {
+                    return Err(Rejected);
+                }
+                runtime.house_player_control_facts(actor, session_id)
+            } else {
+                runtime.player_control_facts(actor, session_id)
+            }
+            .map_err(|_| Rejected)?;
             (facts, runtime.binding().source_revision())
         };
         if facts.control_loss.map(|mark| mark.epoch) != Some(epoch.get()) {
@@ -435,9 +471,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // ADMIT0/D1084: only the authenticated and safely classified owner path may
         // reveal a missing requirement. This precedes both PREPARE and the legacy
         // capability-mismatch release: ADMIT0 refusal preserves all current claims.
+        // A retained House selection still uses its genuine origin policy
+        // publication. Current House ownership/ACL are proved independently;
+        // the origin generation is never installed as House session authority.
         if !self.required_capabilities.matches_current(
-            scope,
-            session.current_scope_generation().get(),
+            policy_scope,
+            *policy_generation,
             &recovery.world_policy_revision,
         ) {
             return Err(Rejected);
@@ -456,8 +495,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })?;
         capabilities
             .revalidate(
-                scope,
-                session.current_scope_generation().get(),
+                policy_scope,
+                *policy_generation,
                 &recovery.world_policy_revision,
             )
             .map_err(|_| Rejected)?;
@@ -584,22 +623,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The durable session is ACTIVE on the candidate connection: the still-present actor
         // is controlled again, from the lost connection's FND-02 continuity. The durable
         // switch stands even if the runtime mark could not be cleared.
+        if house_resume && !self.validate_house_resume(actor, session_id).await {
+            // Current ACL or cell facts may have changed while PREPARE/COMMIT
+            // ran. Retain the native loss/fence until the ordinary terminal
+            // owner proves release; never reactivate on the stale House cell.
+            let released = self.release_abandoned_session(resumed).await;
+            return Err(if released == GraceExpiryResult::Released {
+                Rejected
+            } else {
+                Unavailable
+            });
+        }
         {
             let mut runtime = self.runtime.lock().await;
-            let _ = runtime.restore_control_after_committed_reentry(
-                actor,
-                session_id,
-                epoch.get(),
-                self.owner_now().get(),
-            );
+            if house_resume {
+                runtime
+                    .restore_house_control_after_committed_reentry(
+                        actor,
+                        session_id,
+                        epoch.get(),
+                        self.owner_now().get(),
+                    )
+                    .map_err(|_| Unavailable)?;
+            } else {
+                let _ = runtime.restore_control_after_committed_reentry(
+                    actor,
+                    session_id,
+                    epoch.get(),
+                    self.owner_now().get(),
+                );
+            }
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
-            let _ = self.states.spell_states.lock().await.resume(
-                &runtime,
-                actor,
-                session_id,
-                self.owner_now(),
-            );
+            let mut states = self.states.spell_states.lock().await;
+            if house_resume {
+                let _ = states.resume_house(&runtime, actor, session_id, self.owner_now());
+            } else {
+                let _ = states.resume(&runtime, actor, session_id, self.owner_now());
+            }
         }
         self.forget_lost(session_id, lost.continuity.connection_generation);
         // C2: the resumed session's item fence, from a current durable read of the session the

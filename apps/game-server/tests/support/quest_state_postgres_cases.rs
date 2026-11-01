@@ -1166,10 +1166,11 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
             expect_rejected(pool, case, &script, rule).await?;
         }
         for relation in [
-            // Include the FK-dependent offering evidence and Monk entitlements (0548)
+            // Include the FK-dependent offering evidence, Monk entitlements (0548)
+            // and Rotten Blood access fees (0710)
             // so PostgreSQL reaches the receipt's no-truncate guard first.
             "game_character_quest_receipts, game_quest_callback_consumptions, \
-             game_character_monk_reward_entitlements",
+             game_character_monk_reward_entitlements, game_rotten_blood_access_fees",
             "game_character_quest_tracks",
             "game_character_quest_states",
             "game_character_quest_obligations",

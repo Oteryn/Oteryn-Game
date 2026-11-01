@@ -1001,14 +1001,17 @@ impl RecoverySource {
                     reply["minimum_valid_generation"] = "1".into();
                 } else {
                     use base64::Engine;
-                    reply["issuer"] = "urn:oteryn:platform:game-recovery".into();
-                    reply["profile"] = "oteryn-reauth-recovery-v1".into();
-                    reply["key_purpose"] = "existing_actor_recovery".into();
-                    reply["key_id"] = "house-recovery".into();
+                    reply["issuer"] = if recovery { "urn:oteryn:platform:game-recovery" }
+                        else { "urn:oteryn:platform:game-admission" }.into();
+                    reply["profile"] = if recovery { "oteryn-reauth-recovery-v1" }
+                        else { "oteryn-pre-admission-v1" }.into();
+                    reply["key_purpose"] = if recovery { "existing_actor_recovery" }
+                        else { "fresh_admission" }.into();
+                    reply["key_id"] = if recovery { "house-recovery" } else { "house-fresh" }.into();
                     reply["trusted"] = true.into();
                     reply["public_key"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
                         .encode(
-                            ed25519_dalek::SigningKey::from_bytes(&[23; 32])
+                            ed25519_dalek::SigningKey::from_bytes(&[if recovery { 23 } else { 31 }; 32])
                                 .verifying_key()
                                 .to_bytes(),
                         )
@@ -1052,6 +1055,36 @@ impl RecoverySource {
             "{input}.{}",
             base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())
         ))
+    }
+
+    /// A separately scoped fresh grant from this registered independent test
+    /// producer. The native fresh-admission verifier/publication/commit remain
+    /// unchanged; a recovery credential cannot be reused as a fresh grant.
+    pub(super) fn fresh_token(nonce: u8) -> TestResult<String> {
+        use base64::Engine;
+        use ed25519_dalek::Signer;
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+        let encode = |value: String| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(value);
+        let header = serde_json::json!({"alg":"Ed25519","kid":"house-fresh","typ":"oteryn-admission+jwt"});
+        let payload = serde_json::json!({
+            "iss":"urn:oteryn:platform:game-admission", "aud":"urn:oteryn:game:admission",
+            "iat":now, "nbf":now, "exp":now+10,
+            "jti":base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([nonce;32]),
+            "profile":"oteryn-pre-admission-v1", "purpose":"fresh_entry",
+            "attempt_ref":crate::gameplay_transport::canonical_uuid(&id(nonce)),
+            "account_id":"28020304-0506-7008-800a-0b0c0d0e0f28",
+            "character_id":"29020304-0506-7008-800a-0b0c0d0e0f29",
+            "world_id":"2a020304-0506-7008-800a-0b0c0d0e0f2a",
+            "channel_id":"2b020304-0506-7008-800a-0b0c0d0e0f2b",
+            "account_security_generation":"1", "route_revision":"route-1",
+            "runtime_observation_revision":"runtime-1", "scope_ownership_generation":"1",
+            "protocol_major":1, "transport_profile":1, "ruleset_revision":"ruleset-1",
+            "content_revision":"content-1", "map_revision":"map-1",
+            "world_policy_revision":"policy-1", "offer_revision":"offer-1"
+        });
+        let input = format!("{}.{}", encode(header.to_string()), encode(payload.to_string()));
+        let signature = ed25519_dalek::SigningKey::from_bytes(&[31;32]).sign(input.as_bytes());
+        Ok(format!("{input}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())))
     }
 }
 

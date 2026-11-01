@@ -11,6 +11,25 @@ pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/foundation/src/foundation/condition.rs"]
 pub mod condition;
+// This standalone Ability fixture has no native content authority. Keep the
+// source bridge fail-closed; real native admission is tested by combat and AI.
+mod creature_auto_attack {
+    pub(crate) struct MeleeSource {
+        pub(crate) minimum: u32,
+        pub(crate) maximum: u32,
+    }
+
+    impl MeleeSource {
+        pub(crate) fn admits_bite_definition(
+            &self,
+            _: &crate::foundation::ChannelRuntimeV1,
+            _: crate::foundation::ExactActorRef,
+            _: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+        ) -> bool {
+            false
+        }
+    }
+}
 #[allow(dead_code)]
 mod foundation {
     pub(crate) use crate::ability_data;
@@ -60,8 +79,17 @@ mod foundation {
             MovementPositionContext
         }
     }
+    pub(crate) struct ContentPin;
+    impl ContentPin {
+        pub(crate) const fn server_artifact_digest(&self) -> [u8; 32] {
+            [0; 32]
+        }
+    }
     pub(crate) struct ChannelRuntimeV1;
     impl ChannelRuntimeV1 {
+        pub(crate) const fn content_pin(&self) -> ContentPin {
+            ContentPin
+        }
         pub(crate) fn contains_live_creature(&self, _: ExactActorRef) -> bool {
             false
         }

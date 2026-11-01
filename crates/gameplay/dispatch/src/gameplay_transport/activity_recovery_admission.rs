@@ -196,7 +196,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.activity_runtimes
                 .remember(resumed)
                 .map_err(|_| Unavailable)?;
-            owner.finish_resumed_session(resumed).await;
+            owner.finish_resumed_session(resumed, false).await;
             return Ok(Some(resumed));
         }
         let selected = retained.continuity.selected_capabilities;
@@ -417,7 +417,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(_transition);
         // Keep the cancellation record across the existing reconnect follow-up
         // awaits. Its serving phase still excludes a concurrent room return.
-        owner.finish_resumed_session(next).await;
+        owner.finish_resumed_session(next, false).await;
         self.finish_activity_recovery_record(&pending)
             .map_err(|_| Unavailable)?;
         drop(guard);

@@ -25,6 +25,17 @@ pub(in crate::gameplay_transport) struct IncomingCharm<'a> {
     pub base_damage: u32,
 }
 
+/// Source-qualified secondary effects carried through the existing melee mitigation hooks.
+/// The player owner revalidates this work stamp before the atomic HP/condition transition.
+pub(in crate::gameplay_transport) struct IncomingMeleeConditions {
+    pub source: ExactActorRef,
+    pub definitions: Vec<crate::foundation::ConditionDefinition>,
+    pub root: GameplayDecisionRoot,
+    pub occurrence: DecisionOccurrenceId,
+    pub occurrence_text: String,
+    pub stamp: crate::foundation::RuntimeWorkStamp,
+}
+
 impl ChannelAttackStates {
     /// Spend one of `actor`'s blocks on a creature hit at `now`; the budget is created settled
     /// at the first hit, like a creature's (ATTACK-0 §5). `Some((fight mode, swung within the
@@ -60,6 +71,7 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
     pub(in crate::gameplay_transport) quest_sessions:
         Option<&'a super::monk_shrines::QuestSessions>,
     pub(in crate::gameplay_transport) charm: Option<IncomingCharm<'a>>,
+    pub(in crate::gameplay_transport) conditions: Option<IncomingMeleeConditions>,
     pub(in crate::gameplay_transport) states: &'a mut ChannelSpellStates,
     pub(in crate::gameplay_transport) attack: &'a mut ChannelAttackStates,
     pub(in crate::gameplay_transport) formula: Option<&'a CompiledTrainingFormula>,
@@ -211,6 +223,50 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         magnitude: u32,
         now: OwnerTime,
     ) -> Option<CreatureHit> {
+        // Zero/fully blocked/dodged primary hits do not attach melee conditions.
+        // The admitted source's nonzero primary and secondary state commit together.
+        if magnitude > 0
+            && let Some(source) = &self.conditions
+        {
+            let base_speed = u16::try_from(
+                self.states
+                    .get(runtime, target, target_session)?
+                    .owned_base_speed(),
+            )
+            .ok()?;
+            let facts = crate::foundation::ApplicationFacts {
+                now: now.get(),
+                base_speed,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &source.root,
+                occurrence: source.occurrence,
+            };
+            let receipt =
+                crate::player_lethal::PlayerLethalVitals::apply_composite_attack_damage_current(
+                    self.states,
+                    runtime,
+                    target,
+                    target_session,
+                    magnitude,
+                    &source.occurrence_text,
+                    source.source,
+                    &source.definitions,
+                    &facts,
+                    &[],
+                    source.stamp,
+                )?;
+            return Some(CreatureHit {
+                damage: crate::ability::creature_bite::CreatureDamage {
+                    applied: receipt.applied,
+                    health_after: receipt.health_after,
+                },
+                vitals_revision: receipt.vitals_revision,
+                death: receipt.death.map(|death| death.occurrence_bytes()),
+            });
+        }
         let percent = self.charm.as_ref().map_or(0, |c| {
             self.states
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())

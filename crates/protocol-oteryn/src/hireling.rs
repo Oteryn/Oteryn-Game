@@ -1,4 +1,7 @@
 //! HIRELING-1 bounded summon/query command.
+#[path = "hireling/management.rs"]
+pub mod management;
+
 pub const CAPABILITY_HIRELING_V1: u32 = 165;
 pub const COMMAND_TYPE_HIRELING: u32 = 220;
 

@@ -1,7 +1,8 @@
 //! HOUSE-TRANSFER-1: atomic native handoff / reverse handoff and durable scope ack.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_last_position::{
-    LastPositionKey, LastPositionRecord, LastPositionWrite, upsert_last_position,
+    HouseLastPosition, LastPositionKey, LastPositionRecord, LastPositionWrite, ScopedLastPosition,
+    upsert_scoped_last_position,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -20,7 +21,9 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{AuthenticatedTransportRefV1, ChannelId, GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::house_transfer::{HouseTransferAck, encode_house_transfer_ack};
 use sqlx::{Postgres, Row, Transaction};
+mod admission;
 mod recovery;
+pub use admission::HouseAdmissionRead;
 pub use recovery::HouseTransferRecovery;
 
 /// Native destination facts selected while the source actor is frozen. All
@@ -63,7 +66,16 @@ impl DurabilityRoot {
                     prepare(&mut tx, &node, &mut request).await?;
                     let payload = encode_house_transfer_ack(&request.ack)
                         .map_err(|_| DurabilityError::Unavailable)?;
-                    apply(&mut tx, &root, &node, &request, &payload, &capabilities).await?;
+                    apply(
+                        &mut tx,
+                        &root,
+                        &node,
+                        &request,
+                        &payload,
+                        &capabilities,
+                        None,
+                    )
+                    .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok((request.ack, payload))
                 })
@@ -145,6 +157,7 @@ async fn apply(
     request: &HouseTransferRequest,
     payload: &[u8],
     capabilities: &CurrentCapabilityCheck,
+    admission_restore: Option<&ScopedLastPosition>,
 ) -> Result<(), DurabilityError> {
     let ack = &request.ack;
     let fence = request.fence;
@@ -170,7 +183,8 @@ async fn apply(
             .as_deref()
             .is_some_and(|key| key != request.house.house_key())
         || ack.connection_generation != 1
-        || request.command == 0
+        || (request.command == 0) != admission_restore.is_some()
+        || admission_restore.is_some() && exit
         || fence.character_lease_generation.checked_add(1) != Some(ack.lease_generation)
         || ack.session == *fence.game_session_id.as_bytes()
         || request.last_position.world_id != world
@@ -203,7 +217,7 @@ async fn apply(
     let fact = node.fact();
     // INSERT's 0215 trigger proves source session/transport/lease/claims and both
     // current assignments, before any source authority is terminalized.
-    sqlx::query("INSERT INTO game_house_transfer_receipts(transfer_id,direction,character_id,account_id,world_id,house_key,origin_channel_id,source_game_session_id,command_id,source_connection_generation,source_character_lease_generation,source_scope_generation,source_transport,node_id,node_registration_revision,destination_game_session_id,destination_scope_generation,selection,tile_x,tile_y,tile_floor,state) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::uuid,encode($5,'hex')::uuid,$6,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::text::numeric,$10::text::numeric,$11::text::numeric,$12::text::numeric,$13,encode($14,'hex')::uuid,$15::text::numeric,encode($16,'hex')::uuid,$17::text::numeric,$18,$19,$20,$21,1)")
+    sqlx::query("INSERT INTO game_house_transfer_receipts(transfer_id,direction,character_id,account_id,world_id,house_key,origin_channel_id,source_game_session_id,command_id,source_connection_generation,source_character_lease_generation,source_scope_generation,source_transport,node_id,node_registration_revision,destination_game_session_id,destination_scope_generation,selection,tile_x,tile_y,tile_floor,state,admission_restore,restored_position_lease,restored_position_sequence) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::uuid,encode($5,'hex')::uuid,$6,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::text::numeric,$10::text::numeric,$11::text::numeric,$12::text::numeric,$13,encode($14,'hex')::uuid,$15::text::numeric,encode($16,'hex')::uuid,$17::text::numeric,$18,$19,$20,$21,1,$22,$23::text::numeric,$24::text::numeric)")
         .bind(ack.transfer.as_slice()).bind(if exit {2_i16}else{1_i16})
         .bind(fence.character_id.as_bytes().as_slice()).bind(&account).bind(world.as_bytes().as_slice())
         .bind(request.house.house_key()).bind(request.origin.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
@@ -213,6 +227,9 @@ async fn apply(
         .bind(ack.session.as_slice()).bind(ack.scope_generation.to_string())
         .bind(ack.selection.iter().map(|v| i32::try_from(*v)).collect::<Result<Vec<_>,_>>().map_err(|_| DurabilityError::Unavailable)?)
         .bind(ack.position[0]).bind(ack.position[1]).bind(i16::try_from(ack.position[2]).map_err(|_| DurabilityError::Unavailable)?)
+        .bind(admission_restore.is_some())
+        .bind(admission_restore.map(|s| s.position.key.character_lease_generation.to_string()))
+        .bind(admission_restore.map(|s| s.position.key.write_sequence.to_string()))
         .execute(&mut **tx).await?;
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -228,7 +245,7 @@ async fn apply(
             return Err(DurabilityError::Unavailable);
         }
         let entry: Vec<u8> = sqlx::query_scalar(
-            "SELECT uuid_send(handoff_id) FROM game_house_scope_handoffs WHERE destination_game_session_id=encode($1,'hex')::uuid AND state=2 FOR UPDATE",
+            "SELECT uuid_send(handoff_id) FROM game_house_scope_handoffs WHERE destination_game_session_id=encode($1,'hex')::uuid AND state IN(2,3) FOR UPDATE",
         ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
         release_house_entry_tile_in_transaction(
             tx,
@@ -282,14 +299,32 @@ async fn apply(
     .await?;
     // The native checkpoint/exit location shares the session commit point. A
     // superseded or pending-respawn position cannot be silently called placed.
-    if upsert_last_position(
+    let mut placed_record = request.last_position;
+    let house_position = if exit {
+        None
+    } else {
+        placed_record.cell = super::character_last_position::LastPositionCell {
+            x: ack.position[0],
+            y: ack.position[1],
+            floor: ack.position[2]
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        };
+        Some(HouseLastPosition {
+            house: request.house.clone(),
+            origin_channel: request.origin,
+            origin: request.last_position.cell,
+        })
+    };
+    if upsert_scoped_last_position(
         tx,
         fence.character_id.as_bytes(),
         LastPositionKey {
             character_lease_generation: ack.lease_generation,
             write_sequence: 1,
         },
-        &request.last_position,
+        &placed_record,
+        house_position.as_ref(),
     )
     .await?
         != LastPositionWrite::Written

@@ -1,0 +1,2060 @@
+{
+  "schema": "OTERYN_EVENT_ITEM_REWARDS/v1",
+  "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+    },
+    {
+      "path": "data/scripts/actions/items/surprise_bags.lua",
+      "sha256": "66ba74a2b736e0631776ac7674c21a6838ebd5ecd25d9804b7f9613fefe11e1e"
+    },
+    {
+      "path": "data/scripts/actions/items/christmas_bundle.lua",
+      "sha256": "f7df1ecb2f7b74f39973cb0fead733ae041353587f224a1476e1dd31e62d39b8"
+    },
+    {
+      "path": "data-global/scripts/actions/other/special_boxes.lua",
+      "sha256": "4cb4e9063a8b9a605371f24b16ab0aab4b6ad660b2cb95a023c8beaf4bc25584"
+    },
+    {
+      "path": "data/scripts/actions/items/anniversary_reward_boxes.lua",
+      "sha256": "02667908370817fffb0471a2e6e5ddfab050952050cdddd90fbaf045a03bfc07"
+    },
+    {
+      "path": "data/scripts/actions/items/surprise_music_box.lua",
+      "sha256": "383a6af818c3765b29e349650a612fc57a673b1741b165375840f7df349c7349"
+    },
+    {
+      "path": "data/scripts/actions/items/glooth_bag.lua",
+      "sha256": "4270ccd380b0f30cbdadbcf2d88fa310739977f1e6e19998f7e1ee04c9112391"
+    },
+    {
+      "path": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+      "sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9"
+    }
+  ],
+  "seasonal_item_ids": [
+    12085,
+    12086,
+    12090,
+    12091,
+    12092,
+    12093,
+    12094,
+    12095,
+    12113,
+    12143,
+    12147,
+    12148,
+    12152,
+    12153,
+    12154,
+    12155,
+    14756,
+    20347,
+    20350,
+    28484,
+    28485,
+    28486,
+    48227
+  ],
+  "seasonal_inventory_item_ids": [
+    12143,
+    14756,
+    20347,
+    20350,
+    28484,
+    28485,
+    28486
+  ],
+  "seasonal_map_item_ids": [
+    12085,
+    12086,
+    12090,
+    12091,
+    12092,
+    12093,
+    12094,
+    12095,
+    12113,
+    12147,
+    12148,
+    12152,
+    12153,
+    12154,
+    12155,
+    48227
+  ],
+  "rules": [
+    {
+      "item_id": 6506,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "selection": "without_replacement",
+      "picks": 7,
+      "rewards": [
+        {
+          "item_id": 6569,
+          "minimum": 15,
+          "maximum": 15,
+          "weight": 1
+        },
+        {
+          "item_id": 3585,
+          "minimum": 5,
+          "maximum": 5,
+          "weight": 1
+        },
+        {
+          "item_id": 3586,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 3598,
+          "minimum": 20,
+          "maximum": 20,
+          "weight": 1
+        },
+        {
+          "item_id": 3599,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6500,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6501,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6489,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6503,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6387,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "player",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/christmas_bundle.lua:33"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 6507,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "selection": "without_replacement",
+      "picks": 7,
+      "rewards": [
+        {
+          "item_id": 6569,
+          "minimum": 15,
+          "maximum": 15,
+          "weight": 1
+        },
+        {
+          "item_id": 3585,
+          "minimum": 5,
+          "maximum": 5,
+          "weight": 1
+        },
+        {
+          "item_id": 3586,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 3598,
+          "minimum": 20,
+          "maximum": 20,
+          "weight": 1
+        },
+        {
+          "item_id": 3599,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6500,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6501,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6489,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6505,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6387,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "player",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/christmas_bundle.lua:33"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 6508,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "selection": "without_replacement",
+      "picks": 7,
+      "rewards": [
+        {
+          "item_id": 6569,
+          "minimum": 15,
+          "maximum": 15,
+          "weight": 1
+        },
+        {
+          "item_id": 3585,
+          "minimum": 5,
+          "maximum": 5,
+          "weight": 1
+        },
+        {
+          "item_id": 3586,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 3598,
+          "minimum": 20,
+          "maximum": 20,
+          "weight": 1
+        },
+        {
+          "item_id": 3599,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6500,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6501,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6489,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6502,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6387,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "player",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/christmas_bundle.lua:33"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 6570,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 3598,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6393,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6279,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6574,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6578,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6575,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6577,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6569,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6576,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6572,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 2995,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 14027,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 14681,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "wire_source",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_bags.lua:26"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 6571,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 6574,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3079,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6393,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6576,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6578,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 2995,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 14027,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3036,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5944,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3386,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3420,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3039,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5080,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 2993,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3392,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3057,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5791,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "wire_source",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_bags.lua:26"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 8853,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 3031,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 123,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 2995,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 2397,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 651,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3218,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6574,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6393,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 7377,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3578,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 8778,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "wire_source",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_bags.lua:26"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 12045,
+      "donor": "data/scripts/actions/items/surprise_music_box.lua:1",
+      "selection": "weighted",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 3246,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 10227,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 2
+        },
+        {
+          "item_id": 11588,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 3
+        },
+        {
+          "item_id": 3549,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 4
+        },
+        {
+          "item_id": 3420,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 5
+        },
+        {
+          "item_id": 3043,
+          "minimum": 17,
+          "maximum": 17,
+          "weight": 10
+        },
+        {
+          "item_id": 3031,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 20
+        },
+        {
+          "item_id": 3043,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 30
+        },
+        {
+          "item_id": 3031,
+          "minimum": 50,
+          "maximum": 50,
+          "weight": 40
+        },
+        {
+          "item_id": 3035,
+          "minimum": 15,
+          "maximum": 15,
+          "weight": 50
+        },
+        {
+          "item_id": 3031,
+          "minimum": 80,
+          "maximum": 80,
+          "weight": 90
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/poff",
+          "effect_id": 3
+        },
+        "origin": "player",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_music_box.lua:24"
+        ]
+      },
+      "ground_output": "character",
+      "roll_max": 100
+    },
+    {
+      "item_id": 14751,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 9642,
+          "minimum": 1,
+          "maximum": 15,
+          "weight": 1
+        },
+        {
+          "item_id": 3581,
+          "minimum": 1,
+          "maximum": 15,
+          "weight": 1
+        },
+        {
+          "item_id": 5917,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3273,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 10302,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 9019,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5928,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5926,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5927,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6095,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5918,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6097,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6098,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5461,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 5090,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "wire_source",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_bags.lua:26"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 14759,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 6569,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6541,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6542,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6543,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6544,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6545,
+          "minimum": 1,
+          "maximum": 10,
+          "weight": 1
+        },
+        {
+          "item_id": 6574,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 4839,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6570,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 6571,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 3215,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/gift_wraps",
+          "effect_id": 28
+        },
+        "origin": "wire_source",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/surprise_bags.lua:26"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 21203,
+      "donor": "data/scripts/actions/items/glooth_bag.lua:1",
+      "selection": "weighted",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 21158,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1876
+        },
+        {
+          "item_id": 21183,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1543
+        },
+        {
+          "item_id": 21178,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1515
+        },
+        {
+          "item_id": 21180,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1464
+        },
+        {
+          "item_id": 21179,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1432
+        },
+        {
+          "item_id": 21295,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 633
+        },
+        {
+          "item_id": 21143,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 513
+        },
+        {
+          "item_id": 21144,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 494
+        },
+        {
+          "item_id": 21146,
+          "minimum": 10,
+          "maximum": 10,
+          "weight": 453
+        },
+        {
+          "item_id": 21186,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 78
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/hitbypoison",
+          "effect_id": 17
+        },
+        "origin": "item",
+        "per_reward": false,
+        "donor": [
+          "data/scripts/actions/items/glooth_bag.lua:31"
+        ]
+      },
+      "ground_output": "character",
+      "roll_max": 10001
+    },
+    {
+      "item_id": 37457,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37572,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37573,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37574,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37575,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37576,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37461,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37471,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37472,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37496,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37497,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37498,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37499,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37500,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37501,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37513,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37514,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37515,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37516,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37517,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37518,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37462,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37354,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37357,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37358,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37360,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37362,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37364,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37463,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37543,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37544,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37545,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37465,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37562,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37563,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37564,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37565,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37566,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37567,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37568,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37569,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37570,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37571,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37466,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37540,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37541,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37542,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37467,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37366,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37374,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37375,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37376,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37377,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37378,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37379,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37380,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37382,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37390,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37391,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37392,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37393,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37394,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37395,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37396,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37468,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37448,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37450,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37451,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37452,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37453,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37454,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37455,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37456,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37458,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37459,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37460,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37469,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37502,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37503,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37504,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37505,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37506,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37507,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37508,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37509,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37510,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37511,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37512,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 37614,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "selection": "one",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37463,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37466,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37496,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37717,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "source_or_player",
+        "per_reward": false,
+        "donor": [
+          "data-global/scripts/actions/other/special_boxes.lua:118",
+          "data-global/scripts/actions/other/special_boxes.lua:121"
+        ]
+      },
+      "ground_output": "source"
+    },
+    {
+      "item_id": 39704,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "selection": "all",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37533,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37530,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37531,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37532,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37461,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37463,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37467,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37468,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "player",
+        "per_reward": true,
+        "donor": [
+          "data/scripts/actions/items/anniversary_reward_boxes.lua:67"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 39705,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "selection": "all",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 37530,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37531,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37532,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37533,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37461,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37463,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37467,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37468,
+          "minimum": 3,
+          "maximum": 3,
+          "weight": 1
+        },
+        {
+          "item_id": 37462,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37465,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37457,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37469,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37466,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "player",
+        "per_reward": true,
+        "donor": [
+          "data/scripts/actions/items/anniversary_reward_boxes.lua:67"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 39706,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "selection": "all",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 39671,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39672,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39673,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39674,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39675,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39676,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39677,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39678,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39679,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 39680,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "player",
+        "per_reward": true,
+        "donor": [
+          "data/scripts/actions/items/anniversary_reward_boxes.lua:67"
+        ]
+      },
+      "ground_output": "character"
+    },
+    {
+      "item_id": 39710,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "selection": "all",
+      "picks": 1,
+      "rewards": [
+        {
+          "item_id": 39693,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37530,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37531,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37532,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37533,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37461,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37463,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37467,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37468,
+          "minimum": 3,
+          "maximum": 3,
+          "weight": 1
+        },
+        {
+          "item_id": 37462,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37465,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37457,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        },
+        {
+          "item_id": 37469,
+          "minimum": 2,
+          "maximum": 2,
+          "weight": 1
+        },
+        {
+          "item_id": 37466,
+          "minimum": 1,
+          "maximum": 1,
+          "weight": 1
+        }
+      ],
+      "presentation": {
+        "cue": {
+          "binding": "appearance:effect/prismatic_spark",
+          "effect_id": 203
+        },
+        "origin": "player",
+        "per_reward": true,
+        "donor": [
+          "data/scripts/actions/items/anniversary_reward_boxes.lua:67"
+        ]
+      },
+      "ground_output": "character"
+    }
+  ]
+}

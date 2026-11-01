@@ -1,0 +1,209 @@
+{
+  "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+  "catalog_revision": "store-hireling-crystal-201189f-v1",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/modules/scripts/gamestore/gamestore.lua",
+    "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7"
+  },
+  "offers": [
+    {
+      "key": "store:hireling:1001",
+      "category": "houses.hirelings",
+      "title": "Hireling Banker",
+      "price": 250,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 1001
+      },
+      "source_line": 6366
+    },
+    {
+      "key": "store:hireling:1002",
+      "category": "houses.hirelings",
+      "title": "Hireling Cook",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 1002
+      },
+      "source_line": 6336
+    },
+    {
+      "key": "store:hireling:1003",
+      "category": "houses.hirelings",
+      "title": "Hireling Steward",
+      "price": 250,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 1003
+      },
+      "source_line": 6356
+    },
+    {
+      "key": "store:hireling:1004",
+      "category": "houses.hirelings",
+      "title": "Hireling Trader",
+      "price": 250,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 1004
+      },
+      "source_line": 6346
+    },
+    {
+      "key": "store:hireling:2001",
+      "category": "houses.hireling-dresses",
+      "title": "Banker Dress",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2001
+      },
+      "source_line": 6386
+    },
+    {
+      "key": "store:hireling:2002",
+      "category": "houses.hireling-dresses",
+      "title": "Cook Dress",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2002
+      },
+      "source_line": 6406
+    },
+    {
+      "key": "store:hireling:2003",
+      "category": "houses.hireling-dresses",
+      "title": "Steward Dress",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2003
+      },
+      "source_line": 6416
+    },
+    {
+      "key": "store:hireling:2004",
+      "category": "houses.hireling-dresses",
+      "title": "Trader Dress",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2004
+      },
+      "source_line": 6396
+    },
+    {
+      "key": "store:hireling:2005",
+      "category": "houses.hireling-dresses",
+      "title": "Servant Dress",
+      "price": 300,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2005
+      },
+      "source_line": 6426
+    },
+    {
+      "key": "store:hireling:2006",
+      "category": "houses.hireling-dresses",
+      "title": "Hydra Dress",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2006
+      },
+      "source_line": 6436
+    },
+    {
+      "key": "store:hireling:2007",
+      "category": "houses.hireling-dresses",
+      "title": "Ferumbras Dress",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2007
+      },
+      "source_line": 6446
+    },
+    {
+      "key": "store:hireling:2008",
+      "category": "houses.hireling-dresses",
+      "title": "Bonelord Dress",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2008
+      },
+      "source_line": 6456
+    },
+    {
+      "key": "store:hireling:2009",
+      "category": "houses.hireling-dresses",
+      "title": "Dragon Dress",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "unlock",
+        "source_id": 2009
+      },
+      "source_line": 6466
+    },
+    {
+      "key": "store:hireling:25437",
+      "category": "houses.hirelings",
+      "title": "Hireling Sex Change",
+      "price": 120,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "sex_change",
+        "source_id": 25437
+      },
+      "source_line": 6326
+    },
+    {
+      "key": "store:hireling:25438",
+      "category": "houses.hirelings",
+      "title": "Hireling Name Change",
+      "price": 250,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "rename",
+        "source_id": 25438
+      },
+      "source_line": 6316
+    },
+    {
+      "key": "store:hireling:25440",
+      "category": "houses.hirelings",
+      "title": "Hireling Apprentice",
+      "price": 150,
+      "currency": "TIBIA_COIN",
+      "hireling": {
+        "effect": "hire",
+        "source_id": 25440
+      },
+      "source_line": 6305,
+      "item": {
+        "key": "oteryn:item.tibia.i29432",
+        "revision": "definition-r1",
+        "charges": 0
+      }
+    }
+  ]
+}

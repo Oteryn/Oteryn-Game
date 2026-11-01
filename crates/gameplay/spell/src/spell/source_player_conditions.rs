@@ -130,6 +130,8 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
                 melee: modifier(modifiers.melee),
                 distance: modifier(modifiers.distance),
                 magic_points: modifier(modifiers.magic_points),
+                shielding: modifier(modifiers.shielding),
+                fishing: modifier(modifiers.fishing),
             },
             duration_ms,
         },

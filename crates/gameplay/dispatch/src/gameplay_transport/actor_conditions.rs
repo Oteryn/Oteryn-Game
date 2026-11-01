@@ -238,6 +238,8 @@ impl ChannelSpellStates {
             melee: map(values.melee),
             distance: map(values.distance),
             magic_points: map(values.magic_points),
+            shielding: map(values.shielding),
+            fishing: map(values.fishing),
         })
     }
     pub fn native_actor_invisible(
@@ -433,11 +435,12 @@ impl ChannelSpellStates {
         immunities: &[ConditionType],
         magnitude: Option<u32>,
         kind: crate::player_lethal::PlayerHitKind,
-        fence: &ScopeRuntimeFence,
+        fence: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
     ) -> Option<Option<crate::player_lethal::PlayerDamageReceipt>> {
         use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
-        if !current_owner(runtime, fence, stamp)
+        let current = fence.or_else(|| runtime.owner_fence().ok())?;
+        if !current_owner(runtime, current, stamp)
             || !creature_current(runtime, source)
             || definitions.is_empty()
             || definitions.len() > 16
@@ -601,10 +604,11 @@ impl ChannelSpellStates {
         session: GameSessionId,
         source: ExactActorRef,
         now: u64,
-        fence: &ScopeRuntimeFence,
+        fence: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
     ) -> bool {
-        if !current_owner(runtime, fence, stamp)
+        let current = fence.or_else(|| runtime.owner_fence().ok());
+        if current.is_none_or(|fence| !current_owner(runtime, fence, stamp))
             || !creature_current(runtime, source)
             || !self.condition_player_current(runtime, target, session)
             || self.has_pending_spell_commit(target, session)
@@ -706,6 +710,148 @@ mod native_composite_tests {
         )
         .unwrap()]
     }
+    #[test]
+    fn current_source_conditions_share_atomic_damage_and_replay_then_refuse_retirement() {
+        let (mut runtime, mut states, player, session, source, _, _) = ready(0x7e);
+        let stamp = runtime.issue_owner_work().unwrap();
+        let root = GameplayDecisionRoot::from_bytes([13; 32]);
+        let definitions = definitions();
+        let health = states
+            .get(&runtime, player, session)
+            .unwrap()
+            .vitals()
+            .health;
+        assert!(states.apply_attack_conditions_current(
+            &mut runtime,
+            player,
+            session,
+            "current:secondary",
+            source,
+            &definitions,
+            &facts(&root),
+            &[],
+            stamp,
+        ));
+        assert_eq!(
+            states
+                .get(&runtime, player, session)
+                .unwrap()
+                .vitals()
+                .health,
+            health
+        );
+        assert!(states.source_damage.is_empty());
+        assert!(states.remove_attack_invisibility_current(
+            &mut runtime,
+            player,
+            session,
+            source,
+            0,
+            stamp,
+        ));
+        assert_eq!(
+            states
+                .get(&runtime, player, session)
+                .unwrap()
+                .owned_invisible_at(0),
+            Ok(false)
+        );
+        let receipt = states
+            .apply_composite_attack_damage_current(
+                &mut runtime,
+                player,
+                session,
+                3,
+                "current:composite",
+                source,
+                &definitions,
+                &facts(&root),
+                &[],
+                stamp,
+            )
+            .unwrap();
+        assert_eq!(receipt.health_after, health - 3);
+        assert_eq!(
+            states
+                .get(&runtime, player, session)
+                .unwrap()
+                .owned_invisible_at(0),
+            Ok(true)
+        );
+        let before = states.get(&runtime, player, session).cloned();
+        assert_eq!(
+            states.apply_composite_attack_damage_current(
+                &mut runtime,
+                player,
+                session,
+                3,
+                "current:composite",
+                source,
+                &definitions,
+                &facts(&root),
+                &[],
+                stamp,
+            ),
+            Some(receipt)
+        );
+        assert!(
+            states
+                .apply_composite_attack_damage_current(
+                    &mut runtime,
+                    player,
+                    session,
+                    4,
+                    "current:composite",
+                    source,
+                    &definitions,
+                    &facts(&root),
+                    &[],
+                    stamp,
+                )
+                .is_none()
+        );
+        assert_eq!(states.get(&runtime, player, session).cloned(), before);
+        let memos = states.source_secondary_memos.len();
+        runtime.retire_owner_cycle();
+        assert!(
+            states
+                .apply_composite_attack_damage_current(
+                    &mut runtime,
+                    player,
+                    session,
+                    3,
+                    "current:retired",
+                    source,
+                    &definitions,
+                    &facts(&root),
+                    &[],
+                    stamp,
+                )
+                .is_none()
+        );
+        assert!(!states.apply_attack_conditions_current(
+            &mut runtime,
+            player,
+            session,
+            "current:retired",
+            source,
+            &definitions,
+            &facts(&root),
+            &[],
+            stamp,
+        ));
+        assert!(!states.remove_attack_invisibility_current(
+            &mut runtime,
+            player,
+            session,
+            source,
+            0,
+            stamp,
+        ));
+        assert_eq!(states.source_secondary_memos.len(), memos);
+        assert!(states.deaths.is_empty());
+    }
+
     #[test]
     fn composite_failed_native_mint_keeps_hp_and_slot_then_native_lethal_clears_it() {
         let (mut r, _initial_states, a, g, c, fence, stamp) = ready(0x7c);
@@ -957,6 +1103,92 @@ mod native_composite_tests {
         );
         assert_eq!(states.get(&runtime, actor, session).cloned(), after);
         Ok(())
+    }
+
+    #[test]
+    fn typed_current_composite_replays_once_and_refuses_changed_hit_kind() {
+        use crate::player_lethal::PlayerHitKind;
+        let (mut runtime, mut states, player, session, source, _, _) = ready(0x7f);
+        let stamp = runtime.issue_owner_work().unwrap();
+        let root = GameplayDecisionRoot::from_bytes([13; 32]);
+        let definitions = definitions();
+        let before = states.get(&runtime, player, session).unwrap().clone();
+        let receipt = states
+            .apply_typed_composite_attack_damage_current(
+                &mut runtime,
+                player,
+                session,
+                3,
+                PlayerHitKind::LifeDrain,
+                "current:typed-composite",
+                source,
+                &definitions,
+                &facts(&root),
+                &[],
+                stamp,
+            )
+            .unwrap();
+        assert_eq!(receipt.health_after, before.vitals().health - 3);
+        assert_eq!(
+            states
+                .get(&runtime, player, session)
+                .unwrap()
+                .owned_invisible_at(0),
+            Ok(true)
+        );
+        let after = states.get(&runtime, player, session).cloned();
+        assert_eq!(
+            states.apply_typed_composite_attack_damage_current(
+                &mut runtime,
+                player,
+                session,
+                3,
+                PlayerHitKind::LifeDrain,
+                "current:typed-composite",
+                source,
+                &definitions,
+                &facts(&root),
+                &[],
+                stamp,
+            ),
+            Some(receipt)
+        );
+        assert!(
+            states
+                .apply_typed_composite_attack_damage_current(
+                    &mut runtime,
+                    player,
+                    session,
+                    3,
+                    PlayerHitKind::Mitigated,
+                    "current:typed-composite",
+                    source,
+                    &definitions,
+                    &facts(&root),
+                    &[],
+                    stamp,
+                )
+                .is_none()
+        );
+        assert_eq!(states.get(&runtime, player, session).cloned(), after);
+        runtime.retire_owner_cycle();
+        assert!(
+            states
+                .apply_typed_composite_attack_damage_current(
+                    &mut runtime,
+                    player,
+                    session,
+                    3,
+                    PlayerHitKind::LifeDrain,
+                    "current:typed-composite",
+                    source,
+                    &definitions,
+                    &facts(&root),
+                    &[],
+                    stamp,
+                )
+                .is_none()
+        );
     }
 
     #[test]

@@ -768,6 +768,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // I17a/I17b (0592): read-only EXISTS proof that a managed source
                 // sits in the owner's Inbox Gold Pouch; it never writes Inbox rows.
                 "game_equipment_nested_removal_guard",
+                // HIRELING: unlinks only a consumed lamp, proven by this transaction's
+                // native item-use receipt; the Inbox delete guard still rejects other rows.
+                "game_hireling_inbox_lamp_unlink",
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
@@ -776,6 +779,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_item_loop_line_admit",
                 "game_item_loop_owner",
                 "game_item_transfer_consistency_guard",
+                // HIRELING: verifies the native lamp burn has already removed
+                // its exact Inbox location; this guard never writes Inbox rows.
+                "game_item_use_consistency_guard",
                 // MAIL-1: the posting apply function is the one MAIL Inbox
                 // writer (fenced SECURITY DEFINER, 0271); completion only reads
                 // the delivered Inbox row back as its final-custody proof.

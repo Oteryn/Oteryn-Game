@@ -87,7 +87,11 @@ fn ten_actual_item_appearance_operations_have_no_exact_active_policy_and_are_not
                         || (record["production_definition"]["production_key"] == item.key
                             && record["production_definition"]["revision_ref"] == item.revision)
                 });
-            assert!(!found);
+            // The hireling item closure (hireling-item-profiles.json required_ids)
+            // activates i3058 under its own EXACT Crystal items.xml binding, so
+            // that one target now has an exact profile by key and revision; the
+            // other targets still have none, and none is reached by alias.
+            assert_eq!(found, item.key == "oteryn:item.tibia.i3058", "{}", item.key);
             count += 1;
         }
     }

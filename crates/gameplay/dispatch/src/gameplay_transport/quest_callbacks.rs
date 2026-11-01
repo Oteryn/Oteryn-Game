@@ -6,6 +6,7 @@ use super::{
 };
 mod execute;
 mod rewards;
+mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -44,6 +45,8 @@ struct Pending {
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
+    soul_rewards:
+        std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
     #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
@@ -92,9 +95,11 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && (map
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
-            || (selector.position.is_some()
+            || ((selector.position.is_some()
+                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
                 && selector.appearance.is_some_and(|appearance| {
-                    // Plain placements are omitted from the sparse attribute index. Resolve
+                    // The Crystal plate callback is registered by item appearance. Plain
+                    // placements are omitted from the sparse attribute index. Resolve
                     // their palette through the selected base stack, never a client item id.
                     map.overlay
                         .base()
@@ -137,6 +142,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_soul_war_reward_receipts(session).await {
+            return false;
+        }
         let pending = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
                 .get(&session)
@@ -196,9 +204,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
         self.states
             .quest_callbacks
-            .records
+            .soul_rewards
             .lock()
             .map_or(true, |p| p.contains_key(&session))
+            || self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .map_or(true, |p| p.contains_key(&session))
     }
 
     fn callback_content(&self) -> &[Callback] {
@@ -294,6 +308,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
+            return Some(outcome);
+        }
         let source = super::world_map::MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,

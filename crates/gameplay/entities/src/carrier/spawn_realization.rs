@@ -1035,7 +1035,9 @@ impl ChannelActorCarrier {
                 Slot::CreatureOccupied { position: Some(version), .. }
                     if version.context == position_context && version.position == cell),
             Slot::NpcOccupied {
-                position: version, ..
+                position: version,
+                hireling: None,
+                ..
             } => version.context == position_context && version.position == cell,
             _ => false,
         })

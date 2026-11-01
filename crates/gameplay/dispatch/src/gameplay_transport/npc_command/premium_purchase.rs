@@ -312,6 +312,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     actor: ExactActorRef,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
+    if let Some(outcome) = super::endgame::resume(admission, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::monk::resume(admission, command).await {
         return Some(outcome);
     }

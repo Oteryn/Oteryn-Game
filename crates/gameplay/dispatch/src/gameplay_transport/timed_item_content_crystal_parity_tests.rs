@@ -126,3 +126,50 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         );
     }
 }
+
+/// E12 adds genuine physical Trader stock. That must not grant an equipment
+/// writer or a timed-effect owner the previously withheld I05 mechanics.
+#[test]
+fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
+    use crate::durability::character_equipment::EquipmentMoveContent as _;
+    use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup as _;
+    let controller = native();
+    let native = native_state(&controller);
+    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+    for base in [3049, 3052, 3098] {
+        let definition = typed_of(native, base).expect("source Trader identity");
+        let physical = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+            native,
+            &definition,
+        )
+        .expect("source physical facts");
+        assert_eq!(
+            physical.stack,
+            crate::durability::item_transfer::ItemStackClass::NonStackable
+        );
+        assert!(physical.weight.is_some(), "{base}");
+        assert!(equipped_definition(native, &definition).is_none(), "{base}");
+        assert!(facts(native, &definition).is_none(), "{base}");
+        assert!(
+            weights
+                .equipment_policy(&definition.production_key, &definition.revision_ref)
+                .is_none(),
+            "{base}: no equipment writer grant"
+        );
+        assert!(
+            weights.is_timed_item(&definition.production_key, &definition.revision_ref),
+            "{base}: no ordinary untimed fallback"
+        );
+        assert!(weights.full_timed_values(&definition).is_none(), "{base}");
+    }
+    for admitted in [3053, 3097] {
+        let definition = typed_of(native, admitted).expect("existing hosted ring");
+        assert!(
+            weights
+                .equipment_policy(&definition.production_key, &definition.revision_ref)
+                .is_some()
+        );
+        assert!(!weights.is_timed_item(&definition.production_key, &definition.revision_ref));
+        assert!(weights.full_timed_values(&definition).is_some());
+    }
+}

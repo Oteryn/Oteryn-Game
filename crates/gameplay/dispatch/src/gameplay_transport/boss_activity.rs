@@ -7,6 +7,7 @@ use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterRequest, ActivityHandoffOwner, ActivityParticipant,
     ActivityRefusal, ActivityReturnReason,
 };
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
@@ -81,6 +82,30 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return malformed();
             }
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
+                &intent.boss_key,
+            )
+            .is_some()
+        {
+            use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
+            return match self.endgame_boss_entry(admitted, payload).await {
+                Ok(Err(reason)) => refusal(match reason {
+                    EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
+                    EntryRefusal::Level => ActivityRefusal::Level,
+                    EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
+                        ActivityRefusal::AuthorityRejected
+                    }
+                    EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
+                }),
+                Err(CharacterProgressionError::AuthorityRejected) => {
+                    refusal(ActivityRefusal::AuthorityRejected)
+                }
+                // A successful destination must pass the real scope barrier.
+                // The unqualified endgame consumer cannot publish a handoff.
+                Ok(Ok(())) | Err(_) => None,
+            };
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner

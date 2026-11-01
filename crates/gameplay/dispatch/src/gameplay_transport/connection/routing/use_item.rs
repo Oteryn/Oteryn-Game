@@ -249,11 +249,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with: None,
                 use_with_map_item: None,
                 use_with_position: None,
-            }) => Dispatch::Use(authority.use_item_by_definition(actor, UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: command.command_id,
-                item_fence: admitted.item_fence,
-            }, definition).await),
+            }) => {
+                let outcome = authority.use_item_by_definition(actor, UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                }, definition).await;
+                if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
+                Dispatch::Use(outcome)
+            },
             // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
             // call; opening writes nothing.
             Ok(UseIntent {
@@ -308,6 +312,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                 key,
                             ),
                         ).await.ok().flatten()?;
+                        if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
                         Dispatch::Use(outcome)
                     },
                     (Some(view), Some(key), _) if container.is_some() => {

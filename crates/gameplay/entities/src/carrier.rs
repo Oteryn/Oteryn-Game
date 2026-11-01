@@ -730,14 +730,34 @@ impl std::fmt::Debug for PreProductionPositionContext {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct VersionedPosition {
     actor_local_id: ActorLocalId,
     actor_local_generation: ActorLocalGeneration,
     pub context: PreProductionPositionContext,
     pub position: LocalPosition,
     pub revision: u64,
+    /// The existing position revision of the last coordinate/floor change. Zero at
+    /// admission; turns and same-cell writes retain it. This is derived owner state,
+    /// not a second revision counter or a movement authority.
+    last_translation_revision: u64,
     facing: Option<MovementFacing>,
+}
+
+// Existing spell and relocation bindings use these Debug bytes. The derived
+// translation marker is already bound by the position revision; preserve the
+// established representation while exact snapshot equality includes the marker.
+impl std::fmt::Debug for VersionedPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VersionedPosition")
+            .field("actor_local_id", &self.actor_local_id)
+            .field("actor_local_generation", &self.actor_local_generation)
+            .field("context", &self.context)
+            .field("position", &self.position)
+            .field("revision", &self.revision)
+            .field("facing", &self.facing)
+            .finish()
+    }
 }
 
 /// A value snapshot, never an authority token. Compare-commit revalidates
@@ -803,6 +823,8 @@ pub enum Slot {
         generation: u64,
         key: Arc<str>,
         position: VersionedPosition,
+        /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
+        hireling: Option<Box<npc_actor::HouseHirelingBinding>>,
     },
 }
 
@@ -1940,6 +1962,17 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<(ActorState, usize), CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        self.remove_keeping_indexes_at(continuity, actor_ref, index)
+    }
+
+    /// The common physical removal after the caller has proved its current
+    /// owner and exact slot. Named House retirement supplies its own proof.
+    fn remove_keeping_indexes_at(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        index: usize,
+    ) -> Result<(ActorState, usize), CarrierError> {
         self.assert_slot_spell_unreserved(index)?;
         let (generation, actor) = match &self.slots[index] {
             Slot::Occupied {

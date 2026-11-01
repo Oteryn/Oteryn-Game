@@ -7,6 +7,9 @@ use super::*;
 use prost::Message;
 use sha2::{Digest, Sha256};
 
+const PAYLOAD_BYTES_MAX:usize=34_000;
+const ENVELOPE_BYTES_MAX:usize=36_000;
+
 #[derive(Clone, PartialEq, Message)]
 struct StashItemLineV1 {
     #[prost(bytes = "vec", tag = "1")]
@@ -55,18 +58,46 @@ struct StashOperationV1 {
     items: Vec<StashItemLineV1>,
     #[prost(message, optional, tag = "5")]
     value: Option<StashValueLineV1>,
+    #[prost(string, optional, tag = "6")]
+    house_key: Option<String>,
+    #[prost(uint64, optional, tag = "7")]
+    house_scope_ownership_generation: Option<u64>,
+}
+
+fn check_house_scope(operation:&StashOperationV1)->Result<(),DurabilityError> {
+    match (operation.house_key.as_deref(),operation.house_scope_ownership_generation) {
+        (None,None)=>Ok(()),
+        (Some(house),Some(generation)) if generation>0 && operation.value.as_ref()
+            .is_some_and(|value|super::super::house_hireling::audit::valid(&value.world,house))=>Ok(()),
+        _=>Err(DurabilityError::InvalidStoredState),
+    }
+}
+
+fn decode_operation(payload:&[u8])->Result<StashOperationV1,DurabilityError> {
+    if payload.len()>PAYLOAD_BYTES_MAX {return Err(DurabilityError::InvalidStoredState)}
+    let operation=StashOperationV1::decode(payload).map_err(|_|DurabilityError::InvalidStoredState)?;
+    if operation.encode_to_vec()!=payload {return Err(DurabilityError::InvalidStoredState)}
+    check_house_scope(&operation)?;Ok(operation)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn encode(
     fence: CurrentCharacterItemFence,
+    channel: crate::foundation::ChannelId,
     request: &StashRequest,
     plan: &Plan,
     transaction: &str,
     event: &str,
     occurred: i64,
+    house_key:Option<&str>,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let world = fence.runtime_scope.world_id();
+    match (fence.runtime_scope,house_key) {
+        (crate::foundation::RuntimeScopeRefV1::Channel{..},None)=>{},
+        (crate::foundation::RuntimeScopeRefV1::Instance{instance_id,..},Some(house))
+            if super::super::house_scope_handoff::HouseId::new(world,house).is_some_and(|id|id.instance_id()==instance_id)=>{},
+        _=>return Err(DurabilityError::InvalidStoredState),
+    }
     let stow = matches!(request.intent.action, StashAction::Stow(_));
     let items = plan
         .lines
@@ -118,10 +149,13 @@ pub(super) fn encode(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         items,
         value: Some(value),
+        house_key:house_key.map(str::to_owned),
+        house_scope_ownership_generation:house_key.map(|_|fence.scope_ownership_generation.get()),
     };
     encode_operation(
         fence,
         request.command,
+        channel,
         operation,
         transaction,
         event,
@@ -174,22 +208,27 @@ pub(crate) fn encode_task_board_consumption(
             quantity_after: u64::try_from(after)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         }),
+        house_key: None,
+        house_scope_ownership_generation: None,
     };
-    encode_operation(fence, command, operation, transaction, event, occurred, 2)
+    let (_, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    encode_operation(fence, command, channel, operation, transaction, event, occurred, 2)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn encode_operation(
     fence: CurrentCharacterItemFence,
     command: CommandRef,
+    channel: crate::foundation::ChannelId,
     operation: StashOperationV1,
     transaction: &str,
     event: &str,
     occurred: i64,
     schema_revision: u32,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let payload = envelope::encode_bounded(&operation, 34_000)
+    let world = fence.runtime_scope.world_id();
+    check_house_scope(&operation)?;
+    let payload = envelope::encode_bounded(&operation, PAYLOAD_BYTES_MAX)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let value = EventEnvelopeV1 {
         envelope_revision: 1,
@@ -221,16 +260,18 @@ fn encode_operation(
         payload,
         ..Default::default()
     };
-    let wire = envelope::encode_bounded(&value, 36_000)
+    let wire = envelope::encode_bounded(&value, ENVELOPE_BYTES_MAX)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let decoded = EventEnvelopeV1::decode(wire.as_slice())
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     if decoded != value
-        || StashOperationV1::decode(value.payload.as_slice())
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-            != operation
+        || decode_operation(value.payload.as_slice())? != operation
     {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(wire)
 }
+
+#[cfg(test)]
+#[path="audit/tests.rs"]
+mod tests;

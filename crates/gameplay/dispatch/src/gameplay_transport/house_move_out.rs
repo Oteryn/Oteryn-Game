@@ -114,7 +114,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 binding.runtime_scope(),
                 binding.scope_generation().get(),
             )
-            .await
+            .await?;
+        drop(runtime);
+        drop(permit);
+        super::hireling::recall_lost_houses(self).await.ok_or(HouseDispositionError::Rejected)
     }
 }
 macro_rules! authority_methods {

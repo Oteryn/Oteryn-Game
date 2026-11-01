@@ -14,7 +14,7 @@ from pathlib import Path
 from forge_item_profiles import owners
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / 'apps/game-server/migrations/0726_native_forge_transition_admission.sql'
+MIGRATION = ROOT / 'apps/game-server/migrations/0727_native_forge_profile_admission.sql'
 BEGIN = '-- BEGIN GENERATED FORGE POLICY\n'
 END = '-- END GENERATED FORGE POLICY\n'
 SLOTS = {'WEAPON': 'hand', 'SHIELD': 'hand', 'HEAD': 'head', 'TORSO': 'armor',
@@ -83,7 +83,7 @@ def generated():
     return f"""{BEGIN}-- Producer: tools/content-migration/forge_sql_admission.py --write
 -- Canonical native profiles + crates/gameplay/items/src/forge/prices.rs.
 -- Projection SHA256: {fingerprint}
-CREATE FUNCTION game_forge_admitted_profile(p_key TEXT,p_revision TEXT)
+CREATE OR REPLACE FUNCTION game_forge_admitted_profile(p_key TEXT,p_revision TEXT)
 RETURNS TABLE(classification INT,max_tier INT,equipment_slot TEXT)
 LANGUAGE sql IMMUTABLE AS $$
  SELECT c,m,s FROM (VALUES
@@ -92,7 +92,7 @@ LANGUAGE sql IMMUTABLE AS $$
 $$;
 
 -- Crystal 201189f item_tiers.lua:1-90; result-tier price for transfer.
-CREATE FUNCTION game_forge_admitted_price(p_class INT,p_tier INT)
+CREATE OR REPLACE FUNCTION game_forge_admitted_price(p_class INT,p_tier INT)
 RETURNS TABLE(gold BIGINT,cores INT,convergence_fusion BIGINT,convergence_transfer BIGINT)
 LANGUAGE sql IMMUTABLE AS $$
  SELECT g::bigint,n,f::bigint,t::bigint FROM (VALUES
@@ -100,7 +100,7 @@ LANGUAGE sql IMMUTABLE AS $$
  ) p(c,r,g,n,f,t) WHERE p.c=p_class AND p.r=p_tier
 $$;
 
-CREATE FUNCTION game_forge_admitted_material(p_key TEXT,p_revision TEXT) RETURNS BOOLEAN
+CREATE OR REPLACE FUNCTION game_forge_admitted_material(p_key TEXT,p_revision TEXT) RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE AS $$
  SELECT EXISTS(SELECT 1 FROM (VALUES
 {material_rows}

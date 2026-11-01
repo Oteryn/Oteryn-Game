@@ -38,11 +38,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if result == ControlLossResult::Recorded {
             // §8.2: no command of the actor is accepted until a recovery initializes it again.
             let runtime = self.runtime.lock().await;
-            self.states
-                .spell_states
-                .lock()
-                .await
-                .detach(&runtime, actor, admitted.game_session_id);
+            let mut states = self.states.spell_states.lock().await;
+            if runtime
+                .house_actor_state(actor, admitted.game_session_id)
+                .is_ok()
+            {
+                states.detach_house(&runtime, actor, admitted.game_session_id);
+            } else {
+                states.detach(&runtime, actor, admitted.game_session_id);
+            }
+            drop(states);
             // ATTACK-0 §3: the lost client's target stops swinging; its in-fight deadline runs on.
             self.states
                 .attack
@@ -136,7 +141,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         controller: ControllerBinding,
         cause: ControlLossCauseV1,
     ) -> ControlLossResult {
-        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let store = FreshAdmissionStore::from_root(self.root.clone())
+            .with_house_lifecycle_owner(self.holder);
         // LOGOUT-WIRE-1 (§1.6): a session already TERMINAL ended in a release whose
         // acknowledgement was lost; the lifecycle reconciles it (`reconcile_terminal`).
         match store.current_session(game_session_id).await {
@@ -164,9 +170,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
         // already reconnectable session is not this connection's to lose.
+        let owned_house = {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .house_actor_state(actor, game_session_id)
+                .ok()
+                .is_some_and(|house| {
+                    house.scope == session.current_runtime_scope()
+                        && house.generation == session.current_scope_generation()
+                        && house.lease == session.current_character_lease()
+                })
+        };
         if session.session_state() != GameSessionState::Active
             || session.current_transport() != Some(controller.transport)
-            || session.current_runtime_scope() != actor.runtime_scope()
+            || (!owned_house && session.current_runtime_scope() != actor.runtime_scope())
         {
             return ControlLossResult::NotApplicable;
         }
@@ -217,6 +234,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ..
                     },
                 )) => (history, retained),
+                Ok(None) => match store.transferred_loss_history(game_session_id).await {
+                    Ok(Some(
+                        history @ ControlLossHistoryV1::ScopeTransfer {
+                            protection: retained,
+                            ..
+                        },
+                    )) => (history, retained),
+                    Ok(_) | Err(crate::durability::DurabilityError::InvalidStoredState) => {
+                        return ControlLossResult::ResumedHistory;
+                    }
+                    Err(_) => return ControlLossResult::Unknown,
+                },
                 Ok(_) | Err(crate::durability::DurabilityError::InvalidStoredState) => {
                     return ControlLossResult::ResumedHistory;
                 }
@@ -232,6 +261,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let next_epoch = match &history {
             ControlLossHistoryV1::FreshOrigin | ControlLossHistoryV1::ActivityOrigin { .. } => {
                 Some(1)
+            }
+            ControlLossHistoryV1::ScopeTransfer { entry_epoch, .. } => {
+                entry_epoch.get().checked_add(1)
             }
             ControlLossHistoryV1::Resumed { budget, .. } => budget.epoch().get().checked_add(1),
         };
@@ -251,7 +283,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let observation = {
             let runtime = self.runtime.lock().await;
-            let Ok(facts) = runtime.player_control_facts(actor, game_session_id) else {
+            let facts = if owned_house {
+                let Ok(house) = runtime.house_actor_state(actor, game_session_id) else {
+                    return refused;
+                };
+                if house.scope != session.current_runtime_scope()
+                    || house.generation != session.current_scope_generation()
+                    || house.lease != session.current_character_lease()
+                {
+                    return refused;
+                }
+                runtime.house_player_control_facts(actor, game_session_id)
+            } else {
+                runtime.player_control_facts(actor, game_session_id)
+            };
+            let Ok(facts) = facts else {
                 return refused;
             };
             if facts.control_loss.is_some() {
@@ -324,12 +370,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             epoch: epoch.get(),
             grace_deadline,
         };
-        match self
-            .runtime
-            .lock()
-            .await
-            .record_control_loss(actor, game_session_id, mark)
-        {
+        let recorded = {
+            let mut runtime = self.runtime.lock().await;
+            if owned_house {
+                runtime.record_house_control_loss(actor, game_session_id, mark)
+            } else {
+                runtime.record_control_loss(actor, game_session_id, mark)
+            }
+        };
+        match recorded {
             Ok(()) => ControlLossResult::Recorded,
             Err(_) => ControlLossResult::Unknown,
         }

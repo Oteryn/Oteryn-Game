@@ -323,7 +323,9 @@ fn i14_global_consumables_are_admitted() {
     }
 }
 
-/// Great Mana needs a canonical correction stage; condition effects remain unsupported.
+/// Great Mana consumption still needs its canonical correction stage. E12 admits its
+/// physical Trader item (Crystal hireling.lua:273,1720; items.xml:410), without granting USE.
+/// The separate condition potion 7644 remains outside the native item closure.
 #[test]
 fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     let controller = native();
@@ -331,9 +333,18 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
-    for id in [238, 7644] {
-        assert!(policy_of(state, id).is_none(), "item {id}");
-    }
+    let policy = policy_of(state, 238).expect("the source Trader sells physical item 238");
+    assert!(policy.record().admission.materializable);
+    let item =
+        record(state, &production_ref(policy.record())).expect("the exact native USE lookup");
+    // These are the two action branches consulted before any item-use burn. Unknown
+    // consumption cannot select a Food/Potion effect, and Unknown fluid cannot drink.
+    assert!(matches!(
+        item.semantics.consumption,
+        ReferenceItemField::Unknown
+    ));
+    assert!(matches!(item.semantics.fluid, ReferenceItemField::Unknown));
+    assert!(policy_of(state, 7644).is_none(), "item 7644");
 }
 
 /// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
@@ -363,10 +374,10 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
             admitted.push(id);
         }
     }
-    // TASKBOARD-P04 admits 8074 and 25699 through its source-qualified delivery cohort:
-    // Crystal 201189f task_board_delivery_items.lua:85,281; items.xml:22081-22092,48934-48955.
-    // The basic spellbook 3059 and the other source ids remain unadmitted.
-    assert_eq!(admitted, vec![6120, 8074, 25699]);
+    // E12 admits the five source Trader spellbooks (including Task Board 8074 and 25699):
+    // Crystal hireling.lua:667-670
+    // and 501,1776. The basic spellbook 3059 and the remaining source ids stay absent.
+    assert_eq!(admitted, vec![6120, 8072, 8073, 8074, 8075, 25699]);
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

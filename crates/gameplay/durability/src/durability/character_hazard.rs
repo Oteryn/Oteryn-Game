@@ -1,4 +1,5 @@
 //! Current-session fenced hazard selection. Clients never supply unlocked levels.
+mod house_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -10,6 +11,9 @@ use super::db::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::Row;
+
+mod primal;
+pub use primal::apply_hazard_kill_in_transaction;
 
 impl DurabilityRoot {
     /// Read or select an unlocked level, under the same fence and transaction.

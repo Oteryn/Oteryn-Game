@@ -1,4 +1,6 @@
 use super::*;
+#[path = "house_hireling_view.rs"]
+mod house_hireling_view;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
@@ -31,6 +33,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
     ) -> Option<WorldSpatialObservation> {
         let mut runtime = self.runtime.lock().await;
+        if let Some((_, state)) = runtime.house_observer(actor).ok()? {
+            return Some(Self::observation(
+                &runtime,
+                crate::foundation::MovementLocalPosition {
+                    x: state.position.x,
+                    y: state.position.y,
+                    floor: state.position.floor,
+                },
+            ));
+        }
         let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
         if snapshot.context() != runtime.pinned_movement_context() {
             return None;
@@ -44,6 +56,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<world_spatial::ChannelEntities> {
         use world_spatial::VisibleKind;
         let runtime = self.runtime.lock().await;
+        if let Some(view) =
+            house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
+        {
+            return Some(view);
+        }
         let visible = runtime.visible_entities();
         let entities = (visible
             .players

@@ -80,6 +80,13 @@ pub(super) fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV
             w.bytes(admission_id)?;
             write_protection(w, *protection)?;
         }
+        ControlLossHistoryV1::ScopeTransfer { transfer, entry_epoch, protection } => {
+            // Main's tag 3 is the persisted activity origin; House history is additive.
+            w.tag(4)?;
+            w.bytes(transfer)?;
+            w.u64(entry_epoch.get())?;
+            write_protection(w, *protection)?;
+        }
         ControlLossHistoryV1::Resumed {
             budget,
             original_grace_deadline,
@@ -272,6 +279,11 @@ pub fn decode_fresh_loss(
         1 => ControlLossHistoryV1::FreshOrigin,
         3 if version == 2 => ControlLossHistoryV1::ActivityOrigin {
             admission_id: r.bytes::<16>()?,
+            protection: read_protection(&mut r)?,
+        },
+        4 if version == 2 => ControlLossHistoryV1::ScopeTransfer {
+            transfer: r.bytes::<16>()?,
+            entry_epoch: checked(ControlLossEpochRefV1::new(r.u64()?))?,
             protection: read_protection(&mut r)?,
         },
         2 => ControlLossHistoryV1::Resumed {

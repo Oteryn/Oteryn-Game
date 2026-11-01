@@ -9,6 +9,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        // These sealed native owners retain uncertain Item work, including its
+        // original CommandRef and audit identity, until a known durable result.
+        if !super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await {
+            return false;
+        }
         let access = self.refresh_spell_access(actor, session).await;
         if matches!(
             self.reconcile_pending_native_for_control_loss(actor, session, &access)
@@ -52,8 +57,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        let settled = !states.has_pending_spell_commit(actor, session)
-            && !runtime.actor_spell_reserved(actor);
+        let unreserved = if runtime.house_actor_state(actor, session).is_ok() {
+            runtime
+                .assert_house_actor_spell_unreserved(actor, session)
+                .is_ok()
+        } else {
+            !runtime.actor_spell_reserved(actor)
+        };
+        let settled = !states.has_pending_spell_commit(actor, session) && unreserved;
         drop(states);
         drop(runtime);
         settled

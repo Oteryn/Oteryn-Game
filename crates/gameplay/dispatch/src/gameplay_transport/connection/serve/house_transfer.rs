@@ -75,41 +75,8 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             .ok_or(ServeEnd::Disconnected)?;
         let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
         let selected = admitted.continuity.selected_capabilities;
-        let mut house_items = if selected
-            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
-            && selected
-                .contains(oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1)
-        {
-            let mut view = SessionItemView::resume(admitted.continuity.item_view);
-            if selected.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_EQUIP_DROP_V1) {
-                view = view.with_equip_drop();
-            }
-            if selected
-                .contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1)
-            {
-                view = view.with_container_tree();
-            }
-            Some(view)
-        } else {
-            None
-        };
-        let mut item_domains = Vec::new();
-        if let Some(view) = house_items.as_mut() {
-            let inventory =
-                item_move::observe_inventory(authority, actor, admitted.game_session_id, view)
-                    .await
-                    .ok_or(ServeEnd::Disconnected)?;
-            item_domains.extend(
-                view.snapshot(inventory, None)
-                    .map_err(|_| ServeEnd::Disconnected)?,
-            );
-            if selected
-                .contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1)
-            {
-                item_domains.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
-            }
-            admitted.continuity.item_view = view.continuity();
-        }
+        let (mut services, item_domains) =
+            house_hireling::State::prepare(authority, actor, &mut admitted).await?;
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_HOUSE_SCOPE,
             revision: 1,
@@ -122,6 +89,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             snapshot_type: domain.snapshot_type,
             payload: &domain.payload,
         }));
+        services.appearance_domain(&mut domains);
         let snapshot = encode_single_chunk_snapshot(
             admitted.continuity.connection_generation,
             sequence,
@@ -141,35 +109,42 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
         )
         .ok_or(ServeEnd::Disconnected)?;
         let generation = admitted.continuity.connection_generation;
-        let mut frames = FrameReader::default();
+        let mut queue = house_hireling::step::Queue::default();
         let mut liveness = Liveness::new(policy);
         let mut cadence = tokio::time::interval_at(
             tokio::time::Instant::now() + policy.interval,
             policy.interval,
         );
         cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let mut service_cadence = tokio::time::interval_at(
+            tokio::time::Instant::now() + std::time::Duration::from_secs(1),
+            std::time::Duration::from_secs(1),
+        );
+        service_cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
-            let frame = {
-                let mut read = std::pin::pin!(frames.next(stream));
-                let mut tick = std::pin::pin!(cadence.tick());
-                std::future::poll_fn(|cx| {
-                    if tick.as_mut().poll(cx).is_ready() {
-                        return std::task::Poll::Ready(None);
-                    }
-                    read.as_mut().poll(cx).map(Some)
-                })
-                .await
+            let inbound::Input {
+                frame,
+                arrived_while_buffered,
+                buffered_original,
+            } = match queue
+                .next(stream, generation, &mut cadence, &mut service_cadence)
+                .await?
+            {
+                house_hireling::step::Event::Services => {
+                    services.tick(stream, authority, &mut admitted).await?;
+                    continue;
+                }
+                house_hireling::step::Event::Probe => {
+                    let probe = liveness.tick().map_err(|_| ServeEnd::ControlLost)?;
+                    let frame = encode_liveness_probe(generation, probe)
+                        .map_err(|_| ServeEnd::Disconnected)?;
+                    write_frame(stream, &frame)
+                        .await
+                        .map_err(|_| ServeEnd::Disconnected)?;
+                    continue;
+                }
+                house_hireling::step::Event::Input(input) => input,
             };
-            let Some(frame) = frame else {
-                let probe = liveness.tick().map_err(|_| ServeEnd::ControlLost)?;
-                let frame =
-                    encode_liveness_probe(generation, probe).map_err(|_| ServeEnd::Disconnected)?;
-                write_frame(stream, &frame)
-                    .await
-                    .map_err(|_| ServeEnd::Disconnected)?;
-                continue;
-            };
-            let frame = frame.map_err(|_| ServeEnd::Disconnected)?;
             let envelope = decode_wire_envelope(&frame).map_err(ServeEnd::Closed)?;
             if envelope.connection_generation() != generation {
                 return Err(ServeEnd::Closed(
@@ -190,13 +165,17 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             let command = envelope
                 .client_command(generation)
                 .map_err(ServeEnd::Closed)?;
-            let limited = integrity.admit().await;
+            let limited = if buffered_original {
+                false
+            } else {
+                integrity.admit().await
+            };
             match commands
                 .begin(
                     command.command_id,
                     generation,
                     admitted.continuity.server_sequence,
-                    false,
+                    buffered_original,
                 )
                 .map_err(|(e, _)| ServeEnd::Closed(e))?
             {
@@ -218,6 +197,9 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             if permit.is_some() && !authority.house_transfer_input(admitted).await {
                 return Err(ServeEnd::Disconnected);
             }
+            let mut effects = None;
+            let mut second_logout = false;
+            let mut lost_while_logging_out = false;
             let (next, payload, status) = if permit.is_some()
                 && command.command_type == COMMAND_TYPE_HOUSE_TRANSFER
                 && admitted
@@ -243,6 +225,44 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
                     _ => return Err(ServeEnd::Disconnected),
                 }
+            } else if permit.is_some() {
+                let dispatch = if command.command_type == COMMAND_TYPE_LOGOUT_INTENT
+                    && selected.command_selected(command.command_type)
+                {
+                    if decode_logout_intent(command.payload).is_err() {
+                        Dispatch::Unregistered
+                    } else {
+                        let outcome = queue.logout(stream, authority, admitted).await?;
+                        second_logout = outcome.second;
+                        lost_while_logging_out = outcome.lost;
+                        outcome.dispatch
+                    }
+                } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+                    && selected.command_selected(command.command_type)
+                {
+                    match services
+                        .step(authority, &admitted, command, arrived_while_buffered)
+                        .await
+                    {
+                        route::StepAction::Wait(due) => {
+                            integrity.observe(&Dispatch::Step(StepOutcome::too_early(), 0));
+                            // The reserved original runs once when due. Release the input
+                            // permit while the bounded queue keeps later frames in order.
+                            queue.buffer(frame, due);
+                            continue;
+                        }
+                        route::StepAction::Dispatch(dispatch) => dispatch,
+                    }
+                } else {
+                    services
+                        .route(authority, &mut admitted, command)
+                        .await
+                        .ok_or(ServeEnd::Disconnected)?
+                };
+                integrity.observe(&dispatch);
+                let (status, payload) = house_hireling::result(selected, &dispatch)?;
+                effects = Some(dispatch);
+                (None, payload, status)
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
             };
@@ -263,28 +283,53 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             if let Some(next) = next {
                 admitted = next;
             }
+            if matches!(effects, Some(Dispatch::Logout(LogoutResult::Accepted))) {
+                // The native release already committed. A failed final write
+                // remains a logout, never a second control-loss transition.
+                if write_frame(stream, &result).await.is_ok()
+                    && (!second_logout
+                        || send_error(
+                            stream,
+                            FoundationProtocolError::TooManyOutstandingCommands,
+                            generation,
+                        )
+                        .await
+                        .is_ok())
+                {
+                    let _ = tokio::time::timeout(
+                        policy.interval,
+                        tokio::io::AsyncWriteExt::shutdown(stream),
+                    )
+                    .await;
+                }
+                return Err(ServeEnd::LoggedOut);
+            }
             write_frame(stream, &result)
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
+            if second_logout {
+                return Err(close(
+                    stream,
+                    admitted,
+                    FoundationProtocolError::TooManyOutstandingCommands,
+                )
+                .await);
+            }
+            if lost_while_logging_out {
+                return Err(ServeEnd::Disconnected);
+            }
             if command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
                 && matches!(
                     oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
                     Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
                 )
-                && let Some(view) = house_items.as_mut()
             {
-                let mut sequence = admitted.continuity.server_sequence;
-                item_use_view_refresh::refresh(
-                    stream,
-                    authority,
-                    actor,
-                    &mut admitted,
-                    view,
-                    None,
-                    &mut sequence,
-                )
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+                services.inventory(stream, authority, &mut admitted).await?;
+            }
+            if let Some(effects) = effects {
+                services
+                    .effects(stream, authority, &mut admitted, effects)
+                    .await?;
             }
             if next.is_some() {
                 return Ok(admitted);

@@ -358,6 +358,16 @@ impl ChannelActorCarrier {
             return Err(CarrierError::ControlLossConflict);
         }
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        self.record_player_control_loss_at(index, mark)
+    }
+    pub(super) fn record_player_control_loss_at(
+        &mut self,
+        index: usize,
+        mark: ControlLossMark,
+    ) -> Result<(), CarrierError> {
+        if mark.epoch == 0 {
+            return Err(CarrierError::ControlLossConflict);
+        }
         self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
             Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
@@ -379,13 +389,20 @@ impl ChannelActorCarrier {
         epoch: u64,
     ) -> Result<(), CarrierError> {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        self.restore_player_control_at(index, actor_ref.actor_local_generation.0, epoch)
+    }
+    pub(super) fn restore_player_control_at(
+        &mut self,
+        index: usize,
+        generation: u64,
+        epoch: u64,
+    ) -> Result<(), CarrierError> {
         self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
             Slot::Occupied { lifecycle, .. } => match lifecycle.control_loss {
                 Some(mark) if mark.epoch == epoch => {
                     lifecycle.control_loss = None;
                     // CHARM-DESC-FENCE-LEASE §3 item 3: a resume lifts the fence of its epoch.
-                    let generation = actor_ref.actor_local_generation.0;
                     if let Some(entry) = self
                         .attackers
                         .iter_mut()
@@ -443,6 +460,13 @@ impl ChannelActorCarrier {
     ) -> Result<&mut PlayerAttackerAuthority, CarrierError> {
         let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
         let generation = actor_ref.actor_local_generation.0;
+        self.attacker_authority_at_mut(index, generation)
+    }
+    fn attacker_authority_at_mut(
+        &mut self,
+        index: usize,
+        generation: u64,
+    ) -> Result<&mut PlayerAttackerAuthority, CarrierError> {
         let at = match self.attackers.iter().position(|entry| entry.index == index) {
             Some(at) => {
                 // A recycled slot's stale entry; `remove` normally prunes it first.
@@ -496,22 +520,8 @@ impl ChannelActorCarrier {
             game_session_id: GameSessionId,
             token: WriteFenceToken,
         ) -> Result<WriteFenceSet, CarrierError> {
-            if let WriteFenceToken::ControlLoss(epoch) = token
-                && self
-                    .player_control_loss(continuity, actor_ref, game_session_id)?
-                    .is_none_or(|mark| mark.epoch != epoch)
-            {
-                return Err(CarrierError::ControlLossConflict);
-            }
-            let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
-            match authority.fence {
-                None => {
-                    authority.fence = Some(token);
-                    Ok(WriteFenceSet::Fenced)
-                }
-                Some(set) if set == token => Ok(WriteFenceSet::Joined),
-                Some(_) => Err(CarrierError::WriteFenceBusy),
-            }
+            let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+            self.fence_player_writes_at(index, actor_ref.actor_local_generation.0, token)
         }
     }
     test_support_pub! {
@@ -522,13 +532,44 @@ impl ChannelActorCarrier {
             game_session_id: GameSessionId,
             token: WriteFenceToken,
         ) -> Result<bool, CarrierError> {
-            let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
-            if authority.fence == Some(token) {
-                authority.fence = None;
-                return Ok(true);
-            }
-            Ok(false)
+            let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+            self.lift_player_fence_at(index, actor_ref.actor_local_generation.0, token)
         }
+    }
+    pub(super) fn fence_player_writes_at(
+        &mut self,
+        index: usize,
+        generation: u64,
+        token: WriteFenceToken,
+    ) -> Result<WriteFenceSet, CarrierError> {
+        if let WriteFenceToken::ControlLoss(epoch) = token
+            && !matches!(&self.slots[index], Slot::Occupied { lifecycle, .. }
+                if lifecycle.control_loss.is_some_and(|mark| mark.epoch == epoch))
+        {
+            return Err(CarrierError::ControlLossConflict);
+        }
+        let authority = self.attacker_authority_at_mut(index, generation)?;
+        match authority.fence {
+            None => {
+                authority.fence = Some(token);
+                Ok(WriteFenceSet::Fenced)
+            }
+            Some(set) if set == token => Ok(WriteFenceSet::Joined),
+            Some(_) => Err(CarrierError::WriteFenceBusy),
+        }
+    }
+    pub(super) fn lift_player_fence_at(
+        &mut self,
+        index: usize,
+        generation: u64,
+        token: WriteFenceToken,
+    ) -> Result<bool, CarrierError> {
+        let authority = self.attacker_authority_at_mut(index, generation)?;
+        if authority.fence == Some(token) {
+            authority.fence = None;
+            return Ok(true);
+        }
+        Ok(false)
     }
     pub fn rebind_player_session(
         &mut self,

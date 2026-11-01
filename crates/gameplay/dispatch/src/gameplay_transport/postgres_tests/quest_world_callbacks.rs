@@ -207,7 +207,7 @@ pub(super) async fn input_item(
     Ok(())
 }
 
-fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -476,6 +476,8 @@ pub(super) async fn wire(
 mod actions;
 #[path = "quest_world_callbacks/assertions.rs"]
 mod assertions;
+#[path = "quest_world_callbacks/rotten_blood.rs"]
+mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
 pub(super) use scenario::scenario;

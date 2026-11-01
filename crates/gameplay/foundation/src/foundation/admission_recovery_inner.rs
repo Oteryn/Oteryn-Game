@@ -431,8 +431,9 @@ fn validate_current_authority<T: Copy + Eq>(
     // Ownership generations are ordered only within the same tagged scope.
     // A fresh control-preallocated Instance may have a lower number than its
     // origin Channel; the durable owner separately proves its exact assignment.
-    if snapshot.current_runtime_scope()
-        == RuntimeScopeRefV1::channel(committed.world_id(), committed.channel_id())
+    if (snapshot.replacement_game_session_id.is_none()
+        || snapshot.current_runtime_scope()
+            == RuntimeScopeRefV1::channel(committed.world_id(), committed.channel_id()))
         && snapshot.current_scope_generation().get() < committed.scope_ownership_generation()
     {
         return Err(AdmissionError::StaleRuntime);
@@ -3794,6 +3795,15 @@ pub enum ControlLossHistoryV1 {
         admission_id: [u8; 16],
         protection: RecoveryProtectionContinuityV1,
     },
+    /// The native scope handoff already created the destination session. Its
+    /// entry epoch is provenance, not an earlier loss or a recovery budget.
+    /// The durable owner independently proves this exact immutable transfer and
+    /// retains the source controller's protection continuity.
+    ScopeTransfer {
+        transfer: [u8; 16],
+        entry_epoch: ControlLossEpochRefV1,
+        protection: RecoveryProtectionContinuityV1,
+    },
     Resumed {
         budget: RetainedRecoveryBudgetV1,
         original_grace_deadline: i64,
@@ -3885,6 +3895,18 @@ impl ControlLossObservationV1 {
                     || self.session.current_transport()
                         == Some(self.session.commit().initial_transport())
                     || self.loss_epoch.get() != 1
+                    || self.protection != *protection
+                {
+                    return Err(stale);
+                }
+                protection.validate(self.loss_origin)?;
+            }
+            ControlLossHistoryV1::ScopeTransfer { transfer, entry_epoch, protection } => {
+                if *transfer == [0; 16]
+                    || self.session.current_game_session_id() == self.session.commit().game_session_id()
+                    || self.session.current_control_loss_epoch() != Some(*entry_epoch)
+                    || self.session.current_original_grace_deadline().is_none()
+                    || entry_epoch.get().checked_add(1) != Some(self.loss_epoch.get())
                     || self.protection != *protection
                 {
                     return Err(stale);
