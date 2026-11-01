@@ -80,11 +80,19 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
         (5942, 8744) => (8742, 5905, 6000),
         (5942, 18958) => (18959, 5905, 6000),
         (5942, 18961) => (18959, 5905, 6000),
-        (5908 | 5942, 7441) => {
+        // Crystal data-global/scripts/actions/tools/skinning.lua:3-8 ICE_CONFIG: each stage
+        // advances at 22344/100000 to the next sculpture; 7446 is final.
+        (5908 | 5942, 7441 | 7442 | 7444 | 7445) => {
+            let next = match target {
+                7441 => 7442,
+                7442 => 7444,
+                7444 => 7445,
+                _ => 7446,
+            };
             return Some((
-                GatheringTarget::Ice { spent_item: 7442 },
+                GatheringTarget::Ice { spent_item: next },
                 GatheringYield {
-                    item: 7442,
+                    item: next,
                     threshold: 22_344,
                 },
             ));
@@ -284,6 +292,35 @@ mod tests {
         assert!(nail.is_some_and(|a| is_gathering_bait(NAIL, &a) && is_gathering_bait(WORM, &a)));
         let ice = gathering_attempt(9306, 7236, 10, 1, 1);
         assert!(ice.is_some_and(|a| is_gathering_bait(WORM, &a) && !is_gathering_bait(NAIL, &a)));
+    }
+
+    #[test]
+    fn m09_ice_sculpture_chain_advances_at_22344_per_100000() {
+        // Crystal data-global/scripts/actions/tools/skinning.lua:3-8 ICE_CONFIG.
+        for (from, to) in [(7441, 7442), (7442, 7444), (7444, 7445), (7445, 7446)] {
+            for tool in [5908, 5942] {
+                assert_eq!(
+                    gathering_attempt(tool, from, 10, 1, 22_344),
+                    Some(GatheringAttempt {
+                        after: Some(to),
+                        yield_item: None,
+                        consumes_bait: false,
+                    }),
+                    "{from}"
+                );
+                assert_eq!(
+                    gathering_attempt(tool, from, 10, 1, 22_345),
+                    Some(GatheringAttempt {
+                        after: None,
+                        yield_item: None,
+                        consumes_bait: false,
+                    }),
+                    "{from} miss"
+                );
+            }
+        }
+        // 7446 is the last stage and cannot be carved further.
+        assert!(gathering_rule(5908, 7446).is_none());
     }
 
     #[test]
