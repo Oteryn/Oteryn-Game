@@ -71,8 +71,9 @@ class ImbuementAuthoringTests(unittest.TestCase):
         report = authoring.comparison()["completion"]
         self.assertEqual(report["current_equipment_typed"], 629)
         self.assertEqual(report["target_equipment_typed"], 629)
-        self.assertEqual(report["target_existing_item_refs"], 627)
-        self.assertEqual(report["validated_missing_item_proposals"], 2)
+        # E06 minted i49160, admitting one more existing Item reference.
+        self.assertEqual(report["target_existing_item_refs"], 628)
+        self.assertEqual(report["validated_missing_item_proposals"], 1)
         self.assertEqual(report["gold_token_exchange_bundles"], 9)
 
     def test_basic_punch_uses_wiki_recipe_over_canary(self):

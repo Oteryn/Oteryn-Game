@@ -268,10 +268,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(account) => self.premium_ended_temple(account, game_session_id).await,
             None => None,
         };
-        let decided = match temple {
-            Some(temple) => decided.relocated(temple, self.world_id),
-            None => decided,
-        };
+        let relocated = temple.map(|temple| decided.relocated(temple, self.world_id));
+        let placement = relocated.as_ref().unwrap_or(&decided);
         #[cfg(test)]
         stage("durable_position_read");
         match self.reserve_precondition().await {
@@ -309,7 +307,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // CHAR-POSITION-0 §3.3: initialized and placed at the durable position in this one
         // owner step, before the lock is released and any owner reads the actor's position.
         let outcome = match self
-            .initialize_admitted_position(&mut runtime, actor, game_session_id, &decided)
+            .initialize_admitted_position(&mut runtime, actor, game_session_id, placement)
             .await
         {
             Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
@@ -326,7 +324,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
         // saved its health and mana takes them, capped at its maxima, in this same step.
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
-            .then(|| last_position::admitted_vitals(&decided, self.world_id))
+            .then(|| last_position::admitted_vitals(placement, self.world_id))
             .flatten();
         if self
             .states
@@ -342,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_now(),
                 saved_vitals,
                 (outcome == FirstEntryOutcome::Positioned)
-                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .then(|| bed_regen::admitted_rest(placement, self.world_id))
                     .flatten(),
             )
             .is_none()
@@ -396,7 +394,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .resting_areas
             .install(game_session_id, actor, daily_streak);
+        let relocation = if temple.is_some() {
+            let Ok(position) = runtime.read_actor_position(actor) else {
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
+            };
+            let mut placed = self.placed_record(&runtime, position.position());
+            placed.record.vitals = last_position::admitted_vitals(placement, self.world_id)
+                .and_then(|(health, mana)| {
+                    crate::durability::character_last_position::LastVitals::new(health, mana)
+                });
+            placed.record.rest = bed_regen::admitted_rest(placement, self.world_id);
+            Some(placed)
+        } else {
+            None
+        };
         drop(runtime);
+        if let Some(placed) = relocation
+            && !self
+                .commit_premium_ended_relocation(game_session_id, actor, &decided, placed)
+                .await
+        {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        }
+        let decided = relocated.unwrap_or(decided);
         drop(permit);
         #[cfg(test)]
         stage("runtime_facts_initialized");
@@ -409,9 +429,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .refresh_source_party_presence(actor, game_session_id)
                 .await;
         }
-        if let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
+        // A Character without a vocation has no familiar; its absent build row is valid.
+        if facts.vocation != crate::spell::Vocation::None
+            && let Some(native) = self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
             && let Some(config) = native.familiar_config()
         {
             let access = self

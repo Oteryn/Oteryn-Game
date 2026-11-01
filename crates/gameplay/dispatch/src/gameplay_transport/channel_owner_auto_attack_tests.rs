@@ -427,6 +427,38 @@ fn a_fresh_login_is_no_creature_target_for_crystal_login_protection() {
             .current_player_reentry_protection(player, session, T0),
         Ok(false)
     );
+    // A player can attack during login protection, then lose control while held in fight.
+    // Crystal's checkLoginDelay (player.cpp:6434-6436) keeps the same login deadline even
+    // without a connected client; only the genuine reentry window needs restored control.
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, at(T0));
+    owner
+        .runtime
+        .record_control_loss(
+            player,
+            session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        owner
+            .attack
+            .creature_target_protection(&owner.runtime, player, session, at(T0 + 1)),
+        Some(true)
+    );
+    assert_eq!(
+        owner.attack.creature_target_protection(
+            &owner.runtime,
+            player,
+            session,
+            at(T0 + 10_000_001)
+        ),
+        Some(false)
+    );
 }
 
 #[test]

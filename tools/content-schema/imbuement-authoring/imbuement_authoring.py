@@ -27,7 +27,7 @@ EVIDENCE_PINS = {
     "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",
     "imbuement-combat.json": "5f14f4d9748e956fe36d779dbebcd6daeb90ff27ff0eb6abadbe7237cc7d57e7",
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
-    "missing-item-definitions.json": "0b90ec4d5afe9a8aca3f4838dc0916ba06755a315b745d4dd68f954f91569c30",
+    "missing-item-definitions.json": "50ff6913e158c56b0ef9d91bb5a5317515bd7b5e94dec978b4211768ebb189a3",
     "missing-item-source-facts.json": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
     "current-behavior-answers.json": "1e0d89d2b40d5db0aadb91769d5178c51c6c0475129b8348e7da575ed751f91a",
     "global-observation-plan.json": "a4913ee8dc03ba6fd80e620a44fde56a3610e73b19912247e56a5e3d53d81afb",
@@ -165,9 +165,13 @@ def supporting():
     if errors:
         raise ValueError("current behavior evidence: " + "; ".join(errors))
     proposals = packets["missing-item-definitions.json"]["proposals"]
-    if {p["source_client_id"] for p in proposals} != {49160, 53192} or any(
+    if {p["source_client_id"] for p in proposals} != {53192} or any(
             p["identity_state"] != "PROPOSED_NOT_REGISTERED" for p in proposals):
         raise ValueError("missing Item proposals cannot masquerade as canonical bindings")
+    retired = packets["missing-item-definitions.json"]["retired_proposals"]
+    if (len(retired) != 1 or retired[0]["source_client_id"] != 49160
+            or retired[0]["identity_state"] != "RETIRED_CANONICAL_IDENTITY"):
+        raise ValueError("E06 identity proposal must stay retired")
     return packets
 
 # IMBUE-FORGE-0 sections 3 and 5: 24 types, 20 exclusion categories.

@@ -523,19 +523,24 @@ pub(super) enum AdmissionPosition {
     FirstLogin,
     /// P20: a stored row or a first login moved to this temple cell because the account's
     /// Premium ended in the premium area; the row's vitals and rest of this World still apply.
-    /// Nothing is written for it yet, so the session's first write records the temple.
+    /// The actual placed cell is persisted with citizenship before admission completes.
     Relocated(MovementLocalPosition, Option<LastVitals>, Option<[u32; 4]>),
 }
 
 impl AdmissionPosition {
-    /// P20: `self` relocated to `cell`. A pending respawn or NPC arrival keeps its own placement.
-    pub(super) fn relocated(self, cell: MovementLocalPosition, world_id: WorldId) -> Self {
+    /// P20 overrides pending premium-area respawns and arrivals too; their obligations are
+    /// consumed with the actual placement and citizenship after the first-entry owner step.
+    pub(super) fn relocated(&self, cell: MovementLocalPosition, world_id: WorldId) -> Self {
         match self {
             Self::Stored(row) if row.record.world_id == world_id => {
                 Self::Relocated(cell, row.record.vitals, row.record.rest)
             }
-            Self::Stored(_) | Self::FirstLogin => Self::Relocated(cell, None, None),
-            kept @ (Self::Respawn(_) | Self::Arrival(_, _, _) | Self::Relocated(_, _, _)) => kept,
+            Self::Stored(_) | Self::FirstLogin | Self::Respawn(_) => {
+                Self::Relocated(cell, None, None)
+            }
+            Self::Arrival(_, vitals, rest) | Self::Relocated(_, vitals, rest) => {
+                Self::Relocated(cell, *vitals, *rest)
+            }
         }
     }
 }
@@ -1326,7 +1331,7 @@ mod tests {
     }
 
     /// P20: a relocated login enters at the temple, keeps the row's vitals and rest of this
-    /// World only, and is tracked as unwritten so its first write records the temple.
+    /// World only; the admission commits the actual placement with citizenship.
     #[test]
     fn a_relocated_login_enters_at_the_temple_and_writes_it() {
         let temple = at(2, 11);
@@ -1357,6 +1362,44 @@ mod tests {
         initialize_first_entry_at(&mut runtime, player, session, input, |_| true)
             .expect("first entry");
         assert_eq!(position(&runtime, player), temple);
+    }
+
+    #[test]
+    fn relocation_overrides_pending_respawn_and_arrival_cells() {
+        let temple = at(2, 11);
+        let respawn = AdmissionPosition::Respawn(ConsumedRespawn {
+            occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(v7(
+                0x31,
+            ))
+            .expect("death occurrence"),
+            respawn_position: vec![1, 2, 3],
+        });
+        let vitals = LastVitals::new(40, 3);
+        let rest = Some([1, 2, 3, 4]);
+        let arrival = AdmissionPosition::Arrival(
+            crate::durability::npc_travel::PendingArrival {
+                occurrence: crate::durability::npc_travel::TravelOccurrence::from_bytes(v7(0x32))
+                    .expect("travel occurrence"),
+                world_id: world(1),
+                destination: cell_of(at(14, 11)),
+            },
+            vitals,
+            rest,
+        );
+        for (decided, expected_vitals, expected_rest) in
+            [(respawn, None, None), (arrival, Some((40, 3)), rest)]
+        {
+            let relocated = decided.relocated(temple, world(1));
+            assert_eq!(
+                first_entry_input(&relocated, world(1), [3; 32], |_| false),
+                FirstEntryInput::Recorded(Some(temple))
+            );
+            assert_eq!(admitted_vitals(&relocated, world(1)), expected_vitals);
+            assert_eq!(
+                super::super::bed_regen::admitted_rest(&relocated, world(1)),
+                expected_rest
+            );
+        }
     }
 
     /// Codex 4249667405, §3.3 "it replaces `entry_start` as the input to

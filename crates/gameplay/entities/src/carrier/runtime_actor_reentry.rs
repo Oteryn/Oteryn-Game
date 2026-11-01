@@ -45,7 +45,6 @@ impl ChannelRuntimeV1 {
         session: GameSessionId,
         now_us: u64,
     ) -> Result<bool, CarrierError> {
-        let reentry = self.current_player_reentry_protection(actor, session, now_us)?;
         let index = self
             .carrier
             .player_slot_index(&self.continuity, actor.0, session)?;
@@ -55,7 +54,14 @@ impl ChannelRuntimeV1 {
                 .is_some_and(|until| now_us <= until),
             _ => false,
         };
-        Ok(reentry || login)
+        // Crystal's login delay also protects an actor held in combat after control loss.
+        // The reconnect query requires restored control, so consult it only after login
+        // protection has expired; both reads still prove the exact actor and session.
+        if login {
+            Ok(true)
+        } else {
+            self.current_player_reentry_protection(actor, session, now_us)
+        }
     }
 
     pub fn current_player_reentry_protection(

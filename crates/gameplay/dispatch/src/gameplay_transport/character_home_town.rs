@@ -48,7 +48,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// P20: at login, a Character whose account's Premium entitlement ended and whose home town
     /// is in the premium area becomes a citizen of Thais and enters at its temple (Crystal
     /// `login.lua:8-15`). `None` leaves the admission as it was: Premium current or unknown, a
-    /// free-area town, no hometown catalogue, or a failed citizenship write.
+    /// free-area town, or no hometown catalogue. Citizenship is committed only after placement.
     pub(super) async fn premium_ended_temple(
         &self,
         account: [u8; 16],
@@ -67,20 +67,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !coordinator.premium_entitlement_ended(account) {
             return None;
         }
-        let town = self
-            .commit_home_town(session, None, Some(FREE_ACCOUNT_DEFAULT_TOWN))
-            .await?;
-        if town != FREE_ACCOUNT_DEFAULT_TOWN {
-            return None;
-        }
-        self.states
-            .chat
-            .push_quest_feedback(session, PREMIUM_EXPIRED_TEXT);
         Some(MovementLocalPosition {
             x: i32::from(temple.x),
             y: i32::from(temple.y),
             floor: i16::from(-temple.floor),
         })
+    }
+
+    /// Persist the actual P20 placement and consume its obligation before changing citizenship.
+    pub(super) async fn commit_premium_ended_relocation(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        decided: &last_position::AdmissionPosition,
+        placed: crate::durability::character_last_position::FinalLastPosition,
+    ) -> bool {
+        use last_position::AdmissionPosition;
+        let relocation = crate::durability::character_home_town::HomeTownRelocation {
+            placed,
+            respawn: match decided {
+                AdmissionPosition::Respawn(pending) => Some(pending.occurrence),
+                _ => None,
+            },
+            arrival: match decided {
+                AdmissionPosition::Arrival(pending, _, _) => Some(pending.occurrence),
+                _ => None,
+            },
+        };
+        if self
+            .commit_home_town(
+                session,
+                Some(actor),
+                Some(FREE_ACCOUNT_DEFAULT_TOWN),
+                Some(relocation),
+            )
+            .await
+            != Some(FREE_ACCOUNT_DEFAULT_TOWN)
+        {
+            return false;
+        }
+        self.states
+            .chat
+            .push_quest_feedback(session, PREMIUM_EXPIRED_TEXT);
+        true
     }
 
     pub(super) async fn home_temple(
@@ -144,17 +173,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             session,
             citizenship.map(|(actor, _)| actor),
             citizenship.map(|(_, town)| town),
+            None,
         )
         .await
     }
 
     /// [`Self::home_town`]; a citizenship chosen by an actor's step also proves that actor's
-    /// bound lease, a login relocation (`actor` absent) runs before the lease is bound.
+    /// bound lease. P20 commits only after the first-entry step binds the lease and places it.
     async fn commit_home_town(
         &self,
         session: GameSessionId,
         actor: Option<ExactActorRef>,
         citizenship: Option<u32>,
+        relocation: Option<crate::durability::character_home_town::HomeTownRelocation>,
     ) -> Option<u32> {
         let map = self.bundle_map()?;
         let table = &map.overlay.base().subareas;
@@ -188,7 +219,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
         let outcome = self
             .root
-            .character_home_town(self.character, self.holder, fence, default, citizenship)
+            .character_home_town(
+                self.character,
+                self.holder,
+                fence,
+                default,
+                citizenship,
+                relocation,
+            )
             .await;
         slot.observe_home_town();
         outcome.ok()
