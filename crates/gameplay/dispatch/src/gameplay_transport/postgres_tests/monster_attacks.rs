@@ -158,7 +158,13 @@ async fn field_scenario(harness: &Harness, case: AttackCase) -> TestResult {
     assert!(committed_source_fields(harness, monster, case, &field.ability.key).await?.is_empty());
     owner.clock_origin -= Duration::from_secs(10);
     let mut committed = Vec::new();
-    for _ in 0..64 {
+    // The coalesced scheduler inherited from main advances only 1,000 ms per full
+    // think, regardless of the 2,000 ms owner-clock jumps below. Budget 64 source
+    // interval attempts, not 64 thinks: this pin's first due Firestarter field draw
+    // is sequence 74, beyond the old 64-think cutoff (sequence 66 after movement retries).
+    let think_passes =
+        64 * field.interval_ms.div_ceil(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
+    for _ in 0..think_passes {
         owner.drain_monster_melee().await;
         committed = committed_source_fields(harness, monster, case, &field.ability.key).await?;
         if !committed.is_empty() {
