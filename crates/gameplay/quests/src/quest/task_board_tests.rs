@@ -7,6 +7,21 @@ use crate::quest::{QuestRefusal, QuestTrackChange};
 
 const NOW: i64 = 1_800_000_000;
 
+#[test]
+fn talisman_upgrade_paths_keep_the_accepted_canary_profile() {
+    for path in 0..4 {
+        assert_eq!(talisman_upgrade_cost_for_path(path, 0), Some(5));
+        assert_eq!(talisman_upgrade_cost_for_path(path, 354), Some(4253));
+        assert_eq!(talisman_upgrade_cost_for_path(path, 355), None);
+        assert_eq!(talisman_upgrade_cost_for_path(path, -1), None);
+        assert_eq!(
+            talisman_bonus(path, 355),
+            if path == 3 { 10_000 } else { 5_000 }
+        );
+    }
+    assert_eq!(talisman_upgrade_cost_for_path(4, 0), None);
+}
+
 fn catalogue() -> QuestStateCatalogue {
     let base = QuestStateCatalogue::empty("content-1").expect("empty catalogue");
     extend(&base).expect("the Task Board quest is a valid catalogue")
@@ -153,16 +168,12 @@ fn talisman_curve_and_upgrade_boundaries_match_the_canary_profile() {
 }
 
 #[test]
-fn live_talisman_bonus_requires_equipment_and_the_active_task_race() {
+fn legacy_weekly_selection_does_not_activate_a_bounty_talisman() {
     let tracks = BTreeMap::from([(SELECTED.to_owned(), 1), (TALISMAN_LOOT.to_owned(), 1)]);
-    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, true, 2), 300);
-    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, false, 2), 0);
-    assert_eq!(active_talisman_bonus(&tracks, TASKS[1].race, true, 2), 0);
     assert_eq!(
-        active_talisman_bonus(&BTreeMap::new(), TASKS[0].race, true, 2),
-        0
+        full::TaskBoardData::default().active_talisman_bonuses(&tracks, TASKS[0].race, true),
+        [0; 4]
     );
-    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, true, 4), 0);
 }
 
 #[test]

@@ -421,6 +421,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 state,
             );
         }
+        // A committed fresh admission is a presence transition; reconnect and Channel transfer
+        // use their existing continuity paths and do not emit a login hint.
+        if let Ok(target) = oteryn_protocol_oteryn::CharacterId::decode(character_id.as_bytes()) {
+            self.vip_presence_publish_target(target, true).await;
+        }
         // Login is the repair path for characters created before automatic acquisition and for
         // an earlier level-up whose durable projection could not be written.
         // Both are reads or an idempotent fenced write through the shared holder, so a busy

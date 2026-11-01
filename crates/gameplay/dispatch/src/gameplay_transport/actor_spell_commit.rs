@@ -150,15 +150,20 @@ impl PlayerBatchPreflight {
         &mut self,
         physical: &StagedSpellBatch,
         rates: (u32, u32),
+        bounty: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
-        if rates == (0, 0) {
+        if rates == (0, 0) && bounty.is_empty() {
             return Ok(());
         }
         let damage = self
             .batch
             .effects
             .iter()
-            .filter(|effect| matches!(effect.change, OwnerCombatChange::Damage { .. }))
+            .filter(|effect| {
+                crate::gameplay_transport::task_board::bounty_talisman::damage_effect(
+                    &effect.change,
+                )
+            })
             .collect::<Vec<_>>();
         let affected = damage.len();
         if affected == 0 {
@@ -191,7 +196,16 @@ impl PlayerBatchPreflight {
                     .round()
                     .clamp(0.0, real as f64) as u32
             };
-            gains.0 = gains.0.saturating_add(amount(rates.0));
+            let bonus = bounty
+                .iter()
+                .find(|(target, ordinal, _)| {
+                    *target == effect.target && *ordinal == effect.sub_ordinal
+                })
+                .map_or(0, |(_, _, rate)| u32::from(*rate));
+            // Canary's combat callback adds its rate before the shared round/AoE cap.
+            gains.0 = gains
+                .0
+                .saturating_add(amount(rates.0.saturating_add(bonus)));
             gains.1 = gains.1.saturating_add(amount(rates.1));
         }
         let caster = self

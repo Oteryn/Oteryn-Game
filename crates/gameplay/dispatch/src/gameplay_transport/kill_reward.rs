@@ -1,20 +1,22 @@
 //! ARCH-KILL-REWARD-LOGOUT-1 §1.3: the Channel's unsettled creature kills. A lethal arm (auto
 //! attack, committed cast, fired spell timer) projects the death, captures its facts under the
-//! runtime lock and appends one entry; the drain settles the principal session's entries after
-//! every channel guard is released (§1.2).
+//! runtime lock and appends one entry; the production drain settles entries in death-admission
+//! order after every channel guard is released (§1.2). Shared Task Board completion can affect
+//! the next principal's talisman, so a later death cannot pass an unresolved earlier death.
 //!
 //! Lock order: `runtime → spell_states → attack`, then the queue's own mutex, which is never held
 //! across an await. No channel guard is held while a revision slot is acquired or any durable
 //! call runs, nor across a terminal release transaction.
 //!
-//! §1.3 release handshake: a terminal release drains its session's entries, seals its principal
+//! §1.3 release handshake: a terminal release drains earlier entries, seals its principal
 //! identity `(GameSessionId, lease generation)` as `releasing` once the queue holds none, and
 //! moves the mark to `committing` just before it sends the transaction. An append for a marked
 //! principal is parked under the mark with the mark's phase at that moment.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
+#[cfg(test)]
 use tokio::sync::Mutex as AsyncMutex;
 
 use crate::combat::{
@@ -82,11 +84,32 @@ pub struct PendingKillSettlement {
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
     pub(super) forge: Option<ForgeDeath>,
+    /// Frozen callback facts survive corpse replay and actor-slot reuse.
+    pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
+    pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
+    /// Frozen under the existing party/Character locks before the first commit attempt.
+    /// Clones and a requeued entry retain the original recipients and occurrence IDs.
+    pub(super) task_board_recipients: Arc<OnceLock<Vec<TaskBoardKillRecipient>>>,
+    /// Keep the completing death's loot bonus across partial settlement retries.
+    talisman: Arc<OnceLock<crate::durability::bestiary_progress::CapturedBountyTalismanKill>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct TaskBoardKillRecipient {
+    pub fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    pub occurrence: [u8; 16],
+}
+
 impl PendingKillSettlement {
+    #[cfg(test)]
+    pub(super) fn captured_talisman(
+        &self,
+    ) -> Option<&crate::durability::bestiary_progress::CapturedBountyTalismanKill> {
+        self.talisman.get()
+    }
+
     pub(super) fn for_bosstiary(
         facts: ProjectedCreatureDeathFacts,
         boss: crate::domain::bosstiary::BosstiaryBoss,
@@ -105,6 +128,10 @@ impl PendingKillSettlement {
             activity_at_death: None,
             damage_shares: Vec::new(),
             forge: None,
+            echo: None,
+            callback_loot: Vec::new(),
+            task_board_recipients: Arc::default(),
+            talisman: Arc::default(),
             no_progression_logged: false,
         }
     }
@@ -165,8 +192,15 @@ struct KillQueueState {
     /// One frozen contribution per retained exact corpse projection; pruned on each death.
     prey_loot: Vec<(ExactActorRef, u8)>,
     queued: VecDeque<PendingKillSettlement>,
+    /// Admission order survives retries and release parks. Bounded by KILLRW-RL-01.
+    accepted_order: VecDeque<CreatureDeathOccurrenceKey>,
     /// Each in-flight entry's death, principal and killed actor.
-    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
+    in_flight: Vec<(
+        CreatureDeathOccurrenceKey,
+        Principal,
+        ExactActorRef,
+        Vec<GameSessionId>,
+    )>,
     reserved_loot_mints: usize,
     /// W22c: MINTs an in-flight settle reserved on top of its take (a Wealth Duplex roll).
     extra_loot_mints: Vec<(CreatureDeathOccurrenceKey, usize)>,
@@ -176,8 +210,16 @@ struct KillQueueState {
 }
 
 impl KillQueueState {
+    fn prune_accepted_order(&mut self) {
+        let order = std::mem::take(&mut self.accepted_order);
+        self.accepted_order = order
+            .into_iter()
+            .filter(|death| self.holds(*death))
+            .collect();
+    }
+
     fn holds(&self, death: CreatureDeathOccurrenceKey) -> bool {
-        self.in_flight.iter().any(|(held, _, _)| *held == death)
+        self.in_flight.iter().any(|(held, _, _, _)| *held == death)
             || self.queued.iter().any(|e| e.facts.death == death)
             || self
                 .releasing
@@ -268,6 +310,78 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    /// A parked or in-flight oldest death must settle before any later death can
+    /// change a shared member's bounty and therefore the oldest death's bonus.
+    fn ordered_principal(&self) -> Result<Option<Principal>, ()> {
+        let mut state = self.state();
+        state.prune_accepted_order();
+        let Some(death) = state.accepted_order.front() else {
+            return if state.entries() == 0 {
+                Ok(None)
+            } else {
+                Err(())
+            };
+        };
+        if !state.in_flight.is_empty() {
+            return Err(());
+        }
+        state
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == *death)
+            .map(|entry| Some(principal_of(entry)))
+            .ok_or(())
+    }
+
+    /// A sealed park predates the release commit point, so put it back before
+    /// draining. A committing mark belongs to a release already sent and can only
+    /// be reconciled; its later parks must never be settled for that release.
+    fn prepare_ordered_release(&self, principal: Principal) -> bool {
+        let mut state = self.state();
+        let Some(mark) = state.mark(principal) else {
+            return false;
+        };
+        if mark.phase == ReleasePhase::Committing {
+            return true;
+        }
+        if !mark.parked.is_empty() {
+            let id = mark.id;
+            let parked = state.unmark(id);
+            state.queued.extend(parked);
+        }
+        false
+    }
+
+    /// A Task Board command can affect a non-damaging shared member of any queued
+    /// principal. Include parked and in-flight entries in the same KILLRW-RL-01 census.
+    fn pending_principals(&self) -> Option<Vec<GameSessionId>> {
+        let state = self.state();
+        if state.entries() > KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            return None;
+        }
+        let principals: std::collections::BTreeSet<_> = state
+            .queued
+            .iter()
+            .map(|entry| entry.facts.principal.session)
+            .chain(
+                state
+                    .in_flight
+                    .iter()
+                    .map(|(_, principal, _, _)| principal.0),
+            )
+            .chain(state.releasing.iter().flat_map(|mark| {
+                mark.parked
+                    .iter()
+                    .map(|(entry, _)| entry.facts.principal.session)
+            }))
+            .collect();
+        Some(principals.into_iter().collect())
+    }
+
+    fn has_pending(&self) -> bool {
+        self.state().entries() != 0
+    }
+
     /// Actor-end saves drain deaths to which this session contributed, including another
     /// principal's queue. An in-flight settle must finish before the contributor can save.
     pub(super) fn proficiency_principals(&self, session: GameSessionId) -> Vec<GameSessionId> {
@@ -290,8 +404,9 @@ impl KillSettlementQueue {
             })
             .map(|entry| entry.facts.principal.session)
             .collect();
-        for (_, principal, target) in &state.in_flight {
+        for (_, principal, target, contributors) in &state.in_flight {
             if principal.0 == session
+                || contributors.contains(&session)
                 || state.proficiency_deaths.iter().any(|death| {
                     death.target == *target
                         && death
@@ -449,6 +564,8 @@ impl KillSettlementQueue {
         if state.entries() >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             return AppendOutcome::Full;
         }
+        state.prune_accepted_order();
+        state.accepted_order.push_back(entry.facts.death);
         if let Some(mark) = state.mark(principal_of(&entry)) {
             let phase = mark.phase;
             mark.parked.push((entry, phase));
@@ -466,7 +583,7 @@ impl KillSettlementQueue {
         if state
             .in_flight
             .iter()
-            .any(|(_, held, _)| *held == principal)
+            .any(|(_, held, _, _)| *held == principal)
         {
             return Seal::InFlight;
         }
@@ -631,7 +748,7 @@ impl KillSettlementQueue {
         state
             .in_flight
             .iter()
-            .map(|(_, _, target)| *target)
+            .map(|(_, _, target, _)| *target)
             .chain(state.queued.iter().map(|e| e.target))
             .chain(
                 state
@@ -642,6 +759,7 @@ impl KillSettlementQueue {
             .collect()
     }
 
+    #[cfg(test)]
     pub fn has_session(&self, session: GameSessionId) -> bool {
         self.state()
             .queued
@@ -652,13 +770,36 @@ impl KillSettlementQueue {
     /// One critical section: the first entry of `session` at `lease_generation` reserves its
     /// planned loot MINTs and moves in flight. A plan error reserves nothing; the settle then
     /// reports it.
+    #[cfg(test)]
     pub fn take(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
+        self.take_inner(session, lease_generation, false)
+    }
+
+    fn take_ordered(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
+        self.take_inner(session, lease_generation, true)
+    }
+
+    fn take_inner(
+        &self,
+        session: GameSessionId,
+        lease_generation: u64,
+        ordered: bool,
+    ) -> TakeOutcome {
         let mut state = self.state();
+        state.prune_accepted_order();
+        if ordered && !state.in_flight.is_empty() {
+            return TakeOutcome::CapacityWait;
+        }
         let Some(index) = state.queued.iter().position(|e| {
             e.facts.principal.session == session
                 && e.facts.principal.lease_generation == lease_generation
+                && (!ordered || state.accepted_order.front() == Some(&e.facts.death))
         }) else {
-            return TakeOutcome::Empty;
+            return if ordered && state.entries() != 0 {
+                TakeOutcome::CapacityWait
+            } else {
+                TakeOutcome::Empty
+            };
         };
         let entry = &state.queued[index];
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
@@ -669,6 +810,7 @@ impl KillSettlementQueue {
             )
             // The flattened plan counts descendants as well as direct corpse entries.
             .map_or(0, |plan| plan.entries.len())
+                + entry.callback_loot.len()
                 + if entry.creature == "oteryn:creature.the_corruptor" {
                     3
                 } else {
@@ -690,9 +832,17 @@ impl KillSettlementQueue {
             return TakeOutcome::Empty;
         };
         state.reserved_loot_mints = inflight_before + loot_mints;
-        state
-            .in_flight
-            .push((entry.facts.death, principal_of(&entry), entry.target));
+        state.in_flight.push((
+            entry.facts.death,
+            principal_of(&entry),
+            entry.target,
+            entry.echo.as_ref().map_or_else(Vec::new, |echo| {
+                echo.recipients
+                    .iter()
+                    .map(|recipient| recipient.session)
+                    .collect()
+            }),
+        ));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
             death: entry.facts.death,
@@ -710,7 +860,7 @@ impl KillSettlementQueue {
         extra: usize,
     ) -> bool {
         let mut state = self.state();
-        if !state.in_flight.iter().any(|(held, _, _)| *held == death)
+        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death)
             || check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err()
         {
             return false;
@@ -809,7 +959,9 @@ impl Drop for TakenKillSettlement {
             .sum();
         state.extra_loot_mints.retain(|(held, _)| *held != death);
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(extra);
-        state.in_flight.retain(|(death, _, _)| *death != self.death);
+        state
+            .in_flight
+            .retain(|(death, _, _, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
         }
@@ -863,6 +1015,11 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
+    // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
+    if runtime.soulpit_variant(target).is_some() {
+        return;
+    }
     let snapshot = runtime.companion_snapshot_including_dead(target);
     let forge_kind = snapshot
         .as_ref()
@@ -924,11 +1081,68 @@ pub fn record_creature_kill(
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
     }
+    let Ok(damage_shares) = owner.reward_damage_shares(target) else {
+        refuse("damage_shares_unavailable", &creature);
+        return;
+    };
+    let source = sink.rewards.encounter_facts(&creature);
+    let echo_effect =
+        super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000)
+            .and_then(|draw| {
+                runtime
+                    .record_echo_death(
+                        oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
+                            death: facts.death,
+                            occurrence: facts.occurrence,
+                            bestiary_stars: source.and_then(|source| source.bestiary_stars),
+                            has_boss_race: source.is_some_and(|source| source.has_boss_race),
+                            draw,
+                            now_ms,
+                        },
+                    )
+                    .ok()
+            });
+    let echo = (echo_effect
+        == Some(crate::domain::echo_warden::EchoDeathEffect::FirstSpeciesReward))
+    .then(|| {
+        super::echo_warden::rewards::capture_recipients(
+            runtime,
+            source
+                .and_then(|source| source.bestiary_stars)
+                .unwrap_or(u8::MAX),
+            &damage_shares,
+        )
+    });
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
             let Some(boss) = sink.rewards.boss(&creature) else {
                 refuse(reason.as_str(), &creature);
+                // Echo's first-species callback precedes ordinary loot admission in the
+                // donor. Missing a native corpse row must not lose these points.
+                if echo.is_some() {
+                    accept_kill(
+                        runtime,
+                        sink.queue,
+                        PendingKillSettlement {
+                            facts,
+                            creature,
+                            row: None,
+                            bosstiary_only: None,
+                            ground,
+                            target,
+                            activity_observed_at: observed_at,
+                            activity_at_death: None,
+                            damage_shares,
+                            forge: None,
+                            echo,
+                            callback_loot: Vec::new(),
+                            task_board_recipients: Arc::default(),
+                            talisman: Arc::default(),
+                            no_progression_logged: false,
+                        },
+                    );
+                }
                 return;
             };
             let entry = PendingKillSettlement::for_bosstiary(
@@ -1030,10 +1244,6 @@ pub fn record_creature_kill(
         };
         Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(amount);
     }
-    let Ok(damage_shares) = owner.reward_damage_shares(target) else {
-        refuse("damage_shares_unavailable", &creature);
-        return;
-    };
     sink.queue.freeze_proficiency(
         runtime,
         target,
@@ -1173,8 +1383,41 @@ pub fn record_creature_kill(
         // A proficiency-only entry reserves no loot MINT capacity.
         Arc::make_mut(&mut row).loot_table.entries.clear();
     }
+    let mut callback_loot = Vec::new();
+    if !top.is_gone() {
+        if echo.is_some() {
+            if let Some(scroll) =
+                super::echo_warden::drops::warden_scroll(runtime, sink.rewards, facts.occurrence)
+            {
+                callback_loot.push(scroll);
+            } else {
+                refuse("echo_warden_scroll_inadmissible", &creature);
+            }
+        }
+        let can_receive_loot = sink
+            .prey
+            .and_then(|states| states.live_stamina(principal.actor, principal.session))
+            .is_none_or(oteryn_gameplay_characters::stamina::hunting_loot_allowed);
+        if let Some(items) = super::echo_warden::drops::soul_core_drops(
+            runtime,
+            sink.rewards,
+            &creature,
+            facts.occurrence,
+            matches!(
+                forge_kind,
+                Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _))
+            ),
+            can_receive_loot,
+        ) {
+            callback_loot.extend(items);
+        }
+    }
     let entry = PendingKillSettlement {
         forge,
+        echo,
+        callback_loot,
+        task_board_recipients: Arc::default(),
+        talisman: Arc::default(),
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1293,6 +1536,7 @@ pub trait KillSettle {
 
 /// Settle `session`'s entries at `lease_generation` one at a time. The `attack` guard is held
 /// only to take and to finish or requeue an entry, never across `settler`.
+#[cfg(test)]
 pub async fn drain_session_kills(
     attack: &AsyncMutex<ChannelAttackStates>,
     session: GameSessionId,
@@ -1371,7 +1615,7 @@ pub struct KillReleaseMark {
 
 impl KillReleaseMark {
     /// §1.3 step 5 of the release holding the mark, in one `attack` critical section. Called
-    /// once per [`release_handshake`] that returned the mark.
+    /// once per completed release handshake that returned the mark.
     pub fn settle(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
         match end {
             ReleaseEnd::Committed => queue.release_committed(self, true),
@@ -1400,6 +1644,7 @@ impl KillReleaseMark {
 /// Each return needs a new kill for this principal, so the loop advances with the game. An
 /// entry another drain is settling defers the release, which the caller retries behind its
 /// backoff instead of waiting on that settle. No guard is held across a settle or on return.
+#[cfg(test)]
 pub async fn release_handshake(
     attack: &AsyncMutex<ChannelAttackStates>,
     session: GameSessionId,
@@ -1592,48 +1837,102 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             record_batch_kills(runtime, sink, receipt, now_ms);
         }
     }
-    /// Settle `session`'s queued kills (§1.3), after every channel guard is released. An entry
-    /// whose principal has no live session is freed with `principal_gone`.
-    pub(super) async fn drain_kill_rewards(&self, session: GameSessionId) -> DrainOutcome {
-        if !self.states.attack.lock().await.kills().has_session(session) {
-            return DrainOutcome::Drained;
-        }
-        let fence = match self.current_quest_fence(session).await {
-            Ok(Some(fence)) => fence,
-            Ok(None) => {
-                self.states
-                    .attack
-                    .lock()
-                    .await
-                    .kills()
-                    .discard_gone(session, None);
-                return DrainOutcome::Drained;
-            }
-            Err(()) => return DrainOutcome::Deferred,
-        };
-        self.states
+    /// Settle earlier deaths before a Task Board or EXTRA equipment mutation can
+    /// change active tasks or talisman eligibility. The returned lane closes the gap:
+    /// a death appended during that gap leaves the command unavailable until retried.
+    pub(super) async fn task_board_lane_after_kills(
+        &self,
+    ) -> Option<crate::durability::spell_owner_commit::SpellLanePermit> {
+        let principals = self
+            .states
             .attack
             .lock()
             .await
             .kills()
-            .discard_gone(session, Some(fence.character_lease_generation));
-        drain_session_kills(
-            &self.states.attack,
-            session,
-            fence.character_lease_generation,
-            &DurableKillSettle {
+            .pending_principals()?;
+        for session in principals {
+            if self.drain_kill_rewards(session).await != DrainOutcome::Drained {
+                return None;
+            }
+        }
+        let permit = self.spell_lane_permit().await?;
+        if self.states.attack.lock().await.kills().has_pending() {
+            return None;
+        }
+        Some(permit)
+    }
+
+    /// Drain in death-admission order, including other principals: a shared member's
+    /// bounty may be changed by any earlier kill. Each entry gets its own current
+    /// fence, and no later entry passes an in-flight, parked or retrying predecessor.
+    pub(super) async fn drain_kill_rewards(&self, _session: GameSessionId) -> DrainOutcome {
+        for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            let principal = match self.states.attack.lock().await.kills().ordered_principal() {
+                Ok(Some(principal)) => principal,
+                Ok(None) => return DrainOutcome::Drained,
+                Err(()) => return DrainOutcome::Deferred,
+            };
+            let fence = match self.current_quest_fence(principal.0).await {
+                Ok(Some(fence)) => fence,
+                Ok(None) => {
+                    self.states
+                        .attack
+                        .lock()
+                        .await
+                        .kills()
+                        .discard_gone(principal.0, None);
+                    continue;
+                }
+                Err(()) => return DrainOutcome::Deferred,
+            };
+            let taken = {
+                let attack = self.states.attack.lock().await;
+                attack
+                    .kills()
+                    .discard_gone(principal.0, Some(fence.character_lease_generation));
+                attack
+                    .kills()
+                    .take_ordered(principal.0, fence.character_lease_generation)
+            };
+            let mut taken = match taken {
+                TakeOutcome::Empty => continue,
+                TakeOutcome::CapacityWait => return DrainOutcome::Deferred,
+                TakeOutcome::Taken(taken) => taken,
+            };
+            let Some(entry) = taken.entry() else {
+                return DrainOutcome::Deferred;
+            };
+            let report = DurableKillSettle {
                 admission: self,
                 fence,
-            },
-        )
-        .await
+            }
+            .settle(entry, taken.inflight_before())
+            .await;
+            if report.no_progression
+                && let Some(creature) = taken.mark_no_progression_logged()
+            {
+                refuse("no_progression_binding", &creature);
+            }
+            let _attack = self.states.attack.lock().await;
+            match report.verdict {
+                SettleVerdict::Final => taken.finish(),
+                SettleVerdict::Retry => {
+                    taken.requeue();
+                    return DrainOutcome::Deferred;
+                }
+            }
+        }
+        if self.states.attack.lock().await.kills().has_pending() {
+            DrainOutcome::Deferred
+        } else {
+            DrainOutcome::Drained
+        }
     }
-    /// §1.3 release handshake of `session`, run after its monk save and before its terminal
-    /// release transaction.
+    /// Drain earlier deaths even for a non-damaging shared member before its
+    /// terminal release. A prior committing mark only reconciles its own outcome.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
         let fence = match self.current_quest_fence(session).await {
             Ok(Some(fence)) => fence,
-            // Already terminal: the transaction only reconciles, and nothing settles any more.
             Ok(None) => {
                 self.states
                     .attack
@@ -1645,23 +1944,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(()) => return KillRelease::Deferred,
         };
-        let lease_generation = fence.character_lease_generation;
-        self.states
-            .attack
-            .lock()
-            .await
-            .kills()
-            .discard_gone(session, Some(lease_generation));
-        release_handshake(
-            &self.states.attack,
-            session,
-            lease_generation,
-            &DurableKillSettle {
-                admission: self,
-                fence,
-            },
-        )
-        .await
+        let principal = (session, fence.character_lease_generation);
+        for _ in 0..=KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            {
+                // This guard covers the empty global queue check, seal and commit
+                // point together; another death cannot slip between them.
+                let attack = self.states.attack.lock().await;
+                let queue = attack.kills();
+                queue.discard_gone(session, Some(principal.1));
+                let reconciling = queue.prepare_ordered_release(principal);
+                if reconciling || !queue.has_pending() {
+                    match queue.seal(principal) {
+                        Seal::Sealed(hold) => {
+                            if queue.commit_point(hold) {
+                                return KillRelease::Send(Some(hold));
+                            }
+                        }
+                        Seal::Queued => {}
+                        Seal::InFlight => return KillRelease::Deferred,
+                    }
+                }
+            }
+            if self.drain_kill_rewards(session).await != DrainOutcome::Drained {
+                return KillRelease::Deferred;
+            }
+        }
+        KillRelease::Deferred
     }
     /// §1.3 step 5 for a release that sent its transaction.
     pub(super) async fn settle_kill_release(&self, mark: Option<KillReleaseMark>, end: ReleaseEnd) {
@@ -1735,6 +2043,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let count = |table| {
             plan_creature_loot(seed, &row.loot_table_ref, table)
                 .map_or(0, |plan| plan.entries.len())
+                + entry.callback_loot.len()
         };
         let (before, after) = (count(loot_table), count(&extended));
         let extra = after.saturating_sub(before);
@@ -1767,6 +2076,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        if !admission.credit_echo_warden_death(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if let Some(boss) = &entry.bosstiary_only {
             let Some(_permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -1818,6 +2133,25 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
+        // SPELL-LOCK-2: qualify the party roster and equipment under the existing
+        // lane before acquiring any Character revision slot.
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
+        if entry.row.as_ref().is_some_and(|row| row.race.is_some())
+            && admission
+                .freeze_task_board_recipients(&permit, entry)
+                .await
+                .is_err()
+        {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         let proficiency_only = admission
             .states
             .attack
@@ -1829,6 +2163,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .iter()
             .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
         if proficiency_only {
+            drop(permit);
+            if let Some(race) = entry.row.as_ref().and_then(|row| row.race.as_ref())
+                && !admission
+                    .credit_frozen_task_board_recipients(entry, race.key())
+                    .await
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
             admission.credit_weapon_proficiency_kill(entry).await;
             release_settled_corpse(
                 &mut *admission.runtime.lock().await,
@@ -1840,20 +2185,63 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
-        // Existing fenced equipment is authoritative. Read it before the spell lane and
-        // revision slot; an unavailable snapshot fails closed rather than inventing ownership.
-        let talisman_equipped =
-            super::equipment_move::read_current_equipment(admission, self.fence.game_session_id)
+        if entry.talisman.get().is_none()
+            && let Some(race) = entry.row.as_ref().and_then(|row| row.race.as_ref())
+        {
+            let Ok(occurrence) =
+                crate::durability::bestiary_progress::BestiaryKillOccurrence::from_bytes(
+                    entry.facts.occurrence,
+                )
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            // One drain reuses its admitted identity for several queued deaths. Earlier
+            // descendants can advance the revision, so capture at the sequencer's current
+            // cursor. Release this slot before acquiring the sorted party XP slots below.
+            let mut slot = admission
+                .revision_sequencer
+                .acquire(self.fence.character_id)
+                .await;
+            let Ok(expected_character_revision) =
+                slot.cursor(admission.root, admission.character).await
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+                expected_character_revision,
+                ..self.fence
+            };
+            let Ok(snapshot) = admission
+                .root
+                .capture_bestiary_talisman(
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    occurrence,
+                    race,
+                )
                 .await
-                .is_some_and(|equipment| {
-                    equipment.items.iter().any(|item| {
-                        item.slot == 10
-                            && item.definition.production_key
-                                == oteryn_gameplay_quests::quest::task_board::TALISMAN_ITEM
-                    })
-                });
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            let _ = entry.talisman.set(snapshot);
+        }
         let mut entry = entry.clone();
         let Some(mut row) = entry.row.take() else {
+            release_settled_corpse(
+                &mut *admission.runtime.lock().await,
+                &entry,
+                SettleVerdict::Final,
+            );
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -1878,14 +2266,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             i64::try_from(event_xp).unwrap_or(i64::MAX),
         );
         entry.row = Some(Arc::clone(&row));
-        // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
-        // mint is a key-33 writer. `None` retries with no side effect while the lane is fenced.
-        let Some(permit) = admission.spell_lane_permit().await else {
-            return SettleReport {
-                verdict: SettleVerdict::Retry,
-                no_progression: false,
-            };
-        };
         let party = if admission
             .progression_binding(self.fence.game_session_id)
             .is_some()
@@ -1937,15 +2317,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         };
-        if let Some(race) = &row.race
-            && let Some(tracks) = admission.task_board_tracks(self.fence.game_session_id)
-        {
-            let bonus = oteryn_gameplay_quests::quest::task_board::active_talisman_bonus(
-                &tracks,
-                race.key(),
-                talisman_equipped,
-                2,
-            );
+        if let Some(race) = &row.race {
+            let bonus = entry
+                .talisman
+                .get()
+                .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
             apply_talisman_loot_bonus(&mut loot_table, bonus);
         }
         // The captured reward principal is Global's highest-damage loot owner. Read its live
@@ -1995,6 +2371,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
+        super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
@@ -2019,6 +2396,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let bestiary = CreatureDeathBestiaryInput {
             race: row.race.clone(),
             boss: row.boss.clone(),
+            talisman: entry.talisman.get().cloned(),
         };
         let outcome = if let Some(xp) = party_xp {
             settle_creature_death_rewards_with_party_experience(
@@ -2085,13 +2463,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 marks.mark(self.fence.character_id, TrackerKind::Bosstiary, &boss.key);
             }
         }
-        // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
-        if outcome.is_ok()
+        let mut report = classify(&entry.creature, &outcome);
+        // Never complete the bounty while this death's Bestiary/loot receipt is unresolved.
+        // Crystal creature.cpp:536-590 credits every contributor and enabled shared-XP party.
+        if report.verdict == SettleVerdict::Final
+            && outcome.is_ok()
             && let Some(race) = &row.race
+            && !admission
+                .credit_frozen_task_board_recipients(&entry, race.key())
+                .await
         {
-            admission
-                .credit_task_board_kill(self.fence, race.key(), entry.facts.occurrence)
-                .await;
+            report.verdict = SettleVerdict::Retry;
         }
         if outcome.is_ok() {
             admission.credit_weapon_proficiency_kill(&entry).await;
@@ -2106,13 +2488,47 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 entry.creature
             ));
         }
-        let report = classify(&entry.creature, &outcome);
         release_settled_corpse(&mut runtime, &entry, report.verdict);
         report
     }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn credit_frozen_task_board_recipients(
+        &self,
+        entry: &PendingKillSettlement,
+        race: &str,
+    ) -> bool {
+        let Some(recipients) = entry.task_board_recipients.get() else {
+            return false;
+        };
+        for recipient in recipients {
+            let current = match self
+                .current_quest_fence(recipient.fence.game_session_id)
+                .await
+            {
+                Ok(Some(current)) => current,
+                // D52: never move an original grant to a replacement physical session.
+                Ok(None) => continue,
+                Err(_) => return false,
+            };
+            if current.character_id != recipient.fence.character_id
+                || current.character_lease_generation != recipient.fence.character_lease_generation
+                || current.runtime_scope != recipient.fence.runtime_scope
+                || current.scope_ownership_generation != recipient.fence.scope_ownership_generation
+            {
+                continue;
+            }
+            if !self
+                .credit_task_board_kill(current, race, recipient.occurrence)
+                .await
+            {
+                return false;
+            }
+        }
+        true
+    }
+
     async fn credit_weapon_proficiency_kill(&self, entry: &PendingKillSettlement) {
         let contributors = self
             .states
@@ -2262,6 +2678,46 @@ fn credit_proficiency(
         },
     })
 }
+
+/// Crystal player.cpp:6584-6607,12932-12936: only the non-summon stack-40 kill
+/// awards 1500 weapon points. It uses this existing proficiency owner and its normal
+/// contributor window, current equipment, daily bonus, duplicate and checkpoint rules.
+pub(super) fn credit_soulpit_weapon_proficiency(
+    owner: &mut super::weapon_proficiency::WeaponProficiencyDispatch,
+    reward: &super::soulpit::runtime::SoulpitBossReward,
+    session: GameSessionId,
+    contributor: crate::domain::weapon_proficiency::ProficiencyKillContributor<'_>,
+    daily_streak: u32,
+) -> Option<u32> {
+    if reward.death.tag.stack != crate::domain::soulpit::SoulpitStack::Boss
+        || reward.death.tag.is_summon
+        || !reward.death.damage_shares.iter().any(|share| {
+            share.session == Some(session)
+                && share.total > 0
+                && share.last_damage_at_ms == Some(contributor.last_damage_at_ms)
+        })
+    {
+        return None;
+    }
+    use sha2::{Digest, Sha256};
+    let roll = Sha256::new()
+        .chain_update(b"oteryn:daily-proficiency:v2\0")
+        .chain_update(reward.occurrence)
+        .chain_update(session.as_bytes())
+        .finalize();
+    let roll = (u16::from_be_bytes([roll[0], roll[1]]) % 100) as u8;
+    owner.dispatch_kill(super::weapon_proficiency::KillDispatch {
+        death_occurrence: reward.occurrence,
+        death_at_ms: reward.death_at_ms,
+        creature_is_summon: false,
+        points: daily_proficiency_points(Some(1500), daily_streak, roll),
+        contributor,
+    })
+}
+
+#[cfg(test)]
+#[path = "kill_reward/soulpit_tests.rs"]
+mod soulpit_proficiency_tests;
 
 /// Spoils increases every independent loot chance by its hundredths-of-percent bonus. The
 /// multiplication rounds up, matching Global's combat bonus rounding, and guaranteed drops cap

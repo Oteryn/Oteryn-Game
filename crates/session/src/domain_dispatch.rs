@@ -165,8 +165,36 @@ impl<S: SessionStream> Session<S> {
                             line,
                         ))
                     }
+                    oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
+                        use oteryn_protocol_oteryn::vip_presence as wire;
+                        if !self.is_selected(wire::CAPABILITY_VIP_PRESENCE_V1) {
+                            return Err(SessionError::CapabilityNotSelected {
+                                capability: wire::CAPABILITY_VIP_PRESENCE_V1,
+                            });
+                        }
+                        let batch = wire::decode(delta.payload)?;
+                        self.vip_presence =
+                            Some(vip_presence::VipPresenceStore::new(batch.clone()));
+                        SessionEvent::VipPresence(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            batch,
+                        ))
+                    }
+                    chat::private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1 => {
+                        let list =
+                            private_channels::decode(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatChannelList(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            list,
+                        ))
+                    }
                     chat::DELTA_TYPE_CHAT_ROOMS_V1 => {
                         let rooms = chat::decode_chat_rooms(delta.payload)?;
+                        guild_chat::check_rooms(rooms, &self.selected_capabilities)?;
                         SessionEvent::ChatRooms(applied(
                             server_sequence,
                             base_revision,
@@ -185,6 +213,9 @@ impl<S: SessionStream> Session<S> {
                     match &event {
                         SessionEvent::ChatLine(line) => log.push(line.value.clone()),
                         SessionEvent::ChatRooms(rooms) => log.rooms = rooms.value,
+                        SessionEvent::ChatChannelList(list) => {
+                            log.private_channels = Some(list.value.clone())
+                        }
                         _ => {}
                     }
                 }

@@ -38,7 +38,7 @@ const KEY_BYTES: usize = 32;
 const NONCE_BYTES: usize = 12;
 const TAG_BYTES: usize = 16;
 const ID_BYTES: usize = 16;
-/// kind, message id, sent at, destination (a recipient id, the widest), two length prefixes.
+/// kind, message id, sent at, destination (the Guild or presence target, at most 17 bytes), two length prefixes.
 const PLAINTEXT_MAX_BYTES: usize = 1_188;
 /// `key_id` + nonce + ciphertext + tag: at most 1,217 bytes (CHAT-0 §5).
 pub const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
@@ -58,6 +58,16 @@ pub enum RelayDestination {
     Room {
         room: ChatRoom,
     },
+    /// Advisory presence invalidation. Receivers re-read the VIP consent and privacy owner.
+    Presence {
+        target: CharacterId,
+        online: bool,
+    },
+    /// An opaque World channel incarnation; the epoch never goes to the client.
+    PrivateChannel {
+        channel_id: u16,
+        epoch: u64,
+    },
     Party {
         party_id: [u8; 16],
     },
@@ -72,6 +82,8 @@ impl fmt::Debug for RelayDestination {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Private { .. } => f.debug_struct("Private").finish_non_exhaustive(),
+            Self::Presence { .. } => f.debug_struct("Presence").finish_non_exhaustive(),
+            Self::PrivateChannel { .. } => f.debug_struct("PrivateChannel").finish_non_exhaustive(),
             Self::Party { .. } => f.debug_struct("Party").finish_non_exhaustive(),
             Self::Guild { .. } => f.debug_struct("Guild").finish_non_exhaustive(),
             Self::Room { room } => f.debug_struct("Room").field("room", room).finish(),
@@ -531,3 +543,6 @@ impl ReplayWindow {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod world_extensions_tests;

@@ -295,10 +295,7 @@ where
             if let Some(outcome) = spell {
                 effects::spell(stream, authority, session, outcome).await?;
             }
-            if let Some(rooms) = authority
-                .chat_rooms_changed(session.admitted.game_session_id)
-                .await
-            {
+            if let Some(rooms) = authority.chat_rooms_changed_bound(session.admitted).await {
                 let Some((delta_sequence, frame, chat_revision)) = chat_delta(
                     session.generation,
                     session.sequence,

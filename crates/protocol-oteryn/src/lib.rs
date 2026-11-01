@@ -106,6 +106,7 @@ mod tests;
 pub mod timed_item;
 pub mod tutorial_notices;
 pub mod vip;
+pub mod vip_presence;
 pub mod weapon_proficiency;
 pub mod wheel;
 pub mod world_clock;

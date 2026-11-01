@@ -9,8 +9,8 @@ import json
 import os
 from pathlib import Path
 
-import import_spell_families as spell_import
 import import_current_spell_sources as current_sources
+import import_spell_families as spell_import
 
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY_INDEXES = {
@@ -267,6 +267,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     forge_creature_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import wheel_gem_item_profiles
     wheel_gem_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import soulpit_echo_item_profiles
+    soulpit_echo_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import gathering_item_profiles
     gathering_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles
@@ -303,6 +305,9 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Preserve every earlier owner cohort before adding the missing Task Board policies.
+    import task_board_item_profiles
+    task_board_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)

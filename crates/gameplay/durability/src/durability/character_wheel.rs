@@ -440,10 +440,14 @@ impl DurabilityRoot {
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
                         .fetch_one(&mut *tx).await?;
-                    // Crystal getWheelPoints opens rings; getUnusedPoints adds
-                    // Grade-IV bonuses only after that distinct threshold budget.
+                    let task_points = super::task_board::read_promotion_points_in_transaction(
+                        &mut tx, fence.character_id,
+                    ).await?;
+                    // Crystal getWheelPoints includes task promotion points alongside level
+                    // and pilgrimage points to unlock rings; Grade-IV gem bonuses are added after.
                     let unlock_points = available_points(level)
-                        .checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 })
+                        .checked_add(task_points)
+                        .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
                         .ok_or(DurabilityError::InvalidStoredState)?;
                     let available = unlock_points.checked_add(gem_points)
                         .ok_or(DurabilityError::InvalidStoredState)?;
