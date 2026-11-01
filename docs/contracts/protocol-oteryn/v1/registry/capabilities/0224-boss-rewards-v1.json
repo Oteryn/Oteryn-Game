@@ -1,0 +1,18 @@
+{
+  "id": 224,
+  "name": "BOSS_REWARDS_V1",
+  "owner_decision": "W03; personal reward chest production settlement",
+  "owner": "Existing native combat, boss settlement and Item custody owners",
+  "requires": [
+    4,
+    117
+  ],
+  "command_types": [
+    428,
+    429,
+    430
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. A current admitted player can inspect and collect their own live personal boss entitlements at a source-qualified reward chest. Every mutation uses the existing Item owner and exact current session, lease, scope and node fences."
+}

@@ -96,6 +96,83 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
         self.assertIn("invalid start byte", failures[0])
 
+    def test_foundation_oracle_accepts_both_prepared_closure_layouts(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        condition = "other != index && entry.state == ReconnectAttemptStateV1::Prepared"
+        pattern = (
+            r"any\(\|\(other, entry\)\|\s*(?:\{\s*)?"
+            + re.escape(condition)
+            + r"\s*\}?\s*\)"
+        )
+        for body in (condition, "{\n" + condition + "\n}"):
+            with self.subTest(body=body):
+                rewritten, replacements = re.subn(
+                    pattern, "any(|(other, entry)| " + body + ")", implementation
+                )
+                self.assertEqual(replacements, 1)
+                self.assertTrue(
+                    audit.foundation_reconnect_documents(task, rewritten, verifier)
+                )
+
+    def test_foundation_oracle_rejects_relaxed_layout_sensitive_guards(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for method_name, original, relaxed, label in (
+            (
+                "accept_prepare_completion", "other != index", "other == index",
+                "second live PREPARED",
+            ),
+            (
+                "accept_prepare_completion",
+                "other != index && entry.state", "other != index || entry.state",
+                "second live PREPARED",
+            ),
+            (
+                "accept_prepare_completion",
+                "entry.state == ReconnectAttemptStateV1::Prepared",
+                "entry.state != ReconnectAttemptStateV1::Prepared",
+                "second live PREPARED",
+            ),
+            (
+                "replacement_allowed_after_collision",
+                "self.entries.len() < RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1",
+                "self.entries.len() <= RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1",
+                "collision replacement requires capacity",
+            ),
+            (
+                "replacement_allowed_after_collision", "!self.entries.iter()",
+                "self.entries.iter()", "collision replacement requires capacity",
+            ),
+        ):
+            with self.subTest(method=method_name, mutation=original):
+                method = audit.rust_impl_method(
+                    implementation, "impl ReconnectAttemptBudgetV1 {",
+                    f"pub fn {method_name}(", method_name,
+                )
+                mutated_method = self._replace_compact_fragment(method, original, relaxed)
+                mutated = implementation.replace(method, mutated_method, 1)
+                with self.assertRaisesRegex(SystemExit, label):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_changed_unavailable_retry_requests(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for original, relaxed, count, label in (
+            (
+                "ReconnectPrepareActionV1::RetrySameRequest(self.prepare_request.clone())",
+                "ReconnectPrepareActionV1::RetrySameRequest(completion.request)", 1,
+                "PREPARE unavailable retries the same request",
+            ),
+            (
+                "ReconnectCommitActionV1::RetrySameRequest(completion.request)",
+                "ReconnectCommitActionV1::RetrySameRequest(other_request)", 2,
+                "COMMIT unavailable retries the same request",
+            ),
+        ):
+            with self.subTest(label=label):
+                self.assertEqual(implementation.count(original), count)
+                mutated = implementation.replace(original, relaxed)
+                with self.assertRaisesRegex(SystemExit, label):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
     def test_foundation_oracle_rejects_each_relaxed_authority_term(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         authority_matcher = audit.rust_braced_block(
@@ -884,7 +961,12 @@ impl UnrelatedScannerProbe {
     def _replace_compact_fragment(
         block: str, fragment: str, replacement: str
     ) -> str:
-        pattern = re.sub(r"\\ ", r"\\s+", re.escape(fragment))
+        tokens = re.findall(r"\w+|[^\w\s]", fragment)
+        pattern = r"\s*".join(
+            (r",?\s*" if token in ")}" and index and tokens[index - 1] != "," else "")
+            + re.escape(token)
+            for index, token in enumerate(tokens)
+        )
         mutated, replacements = re.subn(pattern, replacement, block, count=1)
         if replacements != 1:
             raise AssertionError(f"expected exactly one match for {fragment!r}")

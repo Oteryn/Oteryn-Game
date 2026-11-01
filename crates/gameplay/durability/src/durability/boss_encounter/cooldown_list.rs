@@ -10,7 +10,8 @@ use crate::foundation::admission_authority_publication::{
 };
 use oteryn_protocol_oteryn::boss_encounter::{
     BossCooldownEntry, BossRewardChestEntry, BosstiaryProgressEntry, COOLDOWN_PAGE_SIZE,
-    REWARD_CHEST_PAGE_SIZE, decode_cooldown_query, encode_bosstiary_list, encode_reward_chest,
+    REWARD_CHEST_PAGE_SIZE, decode_cooldown_query, decode_reward_chest_query,
+    encode_bosstiary_list, encode_reward_chest,
 };
 
 impl super::super::DurabilityRoot {
@@ -23,7 +24,24 @@ impl super::super::DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
     ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
-        self.read_boss_character_view(authority, node, fence, BossView::Rewards)
+        self.read_boss_character_view(authority, node, fence, BossView::Rewards(None))
+            .await
+    }
+
+    /// The opaque continuation must name this Character's retained group. Even an
+    /// expired or emptied cursor keeps its position; it never grants another owner's
+    /// group or changes the immutable ordering of the remaining live entitlements.
+    pub async fn read_boss_reward_chest_page(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        query: &[u8],
+    ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
+        let Ok(after) = decode_reward_chest_query(query) else {
+            return Ok(None);
+        };
+        self.read_boss_character_view(authority, node, fence, BossView::Rewards(after))
             .await
     }
 
@@ -185,7 +203,7 @@ impl super::super::DurabilityRoot {
 
 #[derive(Clone, Copy)]
 enum BossView {
-    Rewards,
+    Rewards(Option<[u8; 16]>),
 }
 
 impl super::super::DurabilityRoot {
@@ -194,8 +212,9 @@ impl super::super::DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        _view: BossView,
+        view: BossView,
     ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
+        let BossView::Rewards(after) = view;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -227,9 +246,22 @@ impl super::super::DurabilityRoot {
             }
             if assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() { return Ok(None); }
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
+            let after_expires = if let Some(death) = after {
+                let at: Option<i64> = sqlx::query_scalar("SELECT expires_at FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND death_id=encode($3,'hex')::uuid")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                    .bind(death.as_slice()).fetch_optional(&mut *tx).await?;
+                let Some(at) = at else { return Ok(None); };
+                at
+            } else { 0_i64 };
+            // All retained expiries are positive. This server-only first-page
+            // sentinel keeps the same composite index seek on every page.
+            let after_death = after.unwrap_or([0; 16]);
+            // Empty retained groups are history, not selectable rewards. Leaving them in
+            // this bounded page would hide newer live groups until those old groups expire.
             let rows: Vec<(Vec<u8>, String, i64, i64, i32)> = sqlx::query_as(
-                "SELECT decode(replace(death_id::text,'-',''),'hex'),boss_key,minted_at,expires_at,item_count FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND expires_at>$3 ORDER BY minted_at,death_id LIMIT 64"
-            ).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(now).fetch_all(&mut *tx).await?;
+                "SELECT decode(replace(death_id::text,'-',''),'hex'),boss_key,minted_at,expires_at,item_count FROM game_character_boss_reward_chests WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND expires_at>$3 AND item_count>0 AND (expires_at,death_id)>($4,encode($5,'hex')::uuid) ORDER BY expires_at,death_id LIMIT 64"
+            ).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(now)
+                .bind(after_expires).bind(after_death.as_slice()).fetch_all(&mut *tx).await?;
             let entries = rows.into_iter().take(REWARD_CHEST_PAGE_SIZE).map(|(death,boss_key,minted,expires,item_count)| Ok(BossRewardChestEntry {
                 death: death.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, boss_key,
                 minted_at_unix_ms: u64::try_from(minted).map_err(|_| DurabilityError::InvalidStoredState)?,

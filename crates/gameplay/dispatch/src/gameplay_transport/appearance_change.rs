@@ -265,11 +265,7 @@ fn current_runtime(
                     && lease.character_id().as_bytes() == fence.character_id.as_bytes()
             })
         && runtime.content_pin().server_artifact_digest() == content.source_digest()
-        && fence.runtime_scope
-            == RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            )
+        && fence.runtime_scope == runtime.binding().runtime_scope()
         && fence.scope_ownership_generation == runtime.binding().scope_generation()
 }
 

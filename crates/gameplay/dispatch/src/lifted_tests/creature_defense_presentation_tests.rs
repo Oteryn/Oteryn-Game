@@ -10,9 +10,7 @@ use crate::content::{
 use crate::creature_auto_attack::AttackError;
 use crate::creature_damage_spell::{SpellPresentationReader, SpellWorldReader};
 use crate::creature_defense_presentation::*;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1, RuntimeWorkStamp,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeWorkStamp};
 use crate::gameplay_transport::actor_spell::{
     ChannelSpellStates,
     tests::{FACTS, runtime_with_player},
@@ -202,11 +200,9 @@ fn actual_self_defense_schedule_emits_at_caster_without_player_target_or_hp_mp()
         )
         .expect("qualified fixture");
     let b = r.binding();
-    let (mut f, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (mut f, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     let mut policy = TilePolicy { missing: false };
     let event = source
         .produce(&r, &f, stamp, &p, &mut SpellPresentationReader(&mut policy))

@@ -11,7 +11,7 @@ use super::spell_item_transaction::{
 };
 use super::spell_items_abi::CommittedSpellItems;
 use super::{DurabilityError, db};
-use crate::foundation::{ChannelId, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use sqlx::{Postgres, Row, Transaction};
 use std::any::Any;
 use std::sync::Arc;
@@ -23,8 +23,7 @@ use std::time::Instant;
 /// while a Channel guard is held.
 #[derive(Clone)]
 pub struct SpellLane {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    scope: RuntimeScopeRefV1,
     state: Arc<tokio::sync::Mutex<SpellLaneState>>,
 }
 
@@ -49,8 +48,7 @@ impl SpellLaneState {
 /// Proof that the holder owns the spell lane of one World and Channel. Its only constructor
 /// acquires the lane, and it is never handed out while an attempt is parked in `unresolved`.
 pub struct SpellLanePermit {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    scope: RuntimeScopeRefV1,
     guard: tokio::sync::OwnedMutexGuard<SpellLaneState>,
 }
 
@@ -62,19 +60,28 @@ pub struct UnresolvedLane {
 
 impl SpellLane {
     pub fn new(world_id: WorldId, channel_id: ChannelId) -> Self {
+        Self::for_scope(RuntimeScopeRefV1::channel(world_id, channel_id))
+    }
+
+    /// One lane belongs to one exact native scope, including its namespace. An Instance
+    /// cannot acquire a Channel lane merely because their local UUID bytes happen to match.
+    pub fn for_scope(scope: RuntimeScopeRefV1) -> Self {
         Self {
-            world_id,
-            channel_id,
+            scope,
             state: Arc::default(),
         }
     }
 
     pub fn world_id(&self) -> WorldId {
-        self.world_id
+        self.scope.world_id()
     }
 
-    pub fn channel_id(&self) -> ChannelId {
-        self.channel_id
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.scope.channel_id()
+    }
+
+    pub fn runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.scope
     }
 
     /// Waits for the lane. Returns the permit, or the [`UnresolvedLane`] while a committed or
@@ -82,8 +89,7 @@ impl SpellLane {
     pub async fn acquire(&self) -> Result<SpellLanePermit, UnresolvedLane> {
         let guard = Arc::clone(&self.state).lock_owned().await;
         let permit = SpellLanePermit {
-            world_id: self.world_id,
-            channel_id: self.channel_id,
+            scope: self.scope,
             guard,
         };
         if permit.has_unresolved() {
@@ -131,13 +137,11 @@ impl SpellLanePermit {
     pub async fn of_fresh_scope(
         scope: crate::foundation::RuntimeScopeRefV1,
     ) -> Result<Self, DurabilityError> {
-        match scope {
-            crate::foundation::RuntimeScopeRefV1::Channel {
-                world_id,
-                channel_id,
-            } => Ok(Self::of_fresh_lane(world_id, channel_id).await),
-            _ => Err(DurabilityError::InvalidStoredState),
-        }
+        let lane = SpellLane::for_scope(scope);
+        Ok(Self {
+            scope,
+            guard: Arc::clone(&lane.state).lock_owned().await,
+        })
     }
 
     #[cfg(any(test, feature = "test-support"))]
@@ -148,18 +152,21 @@ impl SpellLanePermit {
     pub async fn of_fresh_lane(world_id: WorldId, channel_id: ChannelId) -> Self {
         let lane = SpellLane::new(world_id, channel_id);
         Self {
-            world_id,
-            channel_id,
+            scope: lane.scope,
             guard: Arc::clone(&lane.state).lock_owned().await,
         }
     }
 
     pub fn world_id(&self) -> WorldId {
-        self.world_id
+        self.scope.world_id()
     }
 
-    pub fn channel_id(&self) -> ChannelId {
-        self.channel_id
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.scope.channel_id()
+    }
+
+    pub fn runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.scope
     }
 
     /// Whether an attempt is parked: the holder's own work must then be refused retryably.
@@ -179,13 +186,7 @@ impl SpellLanePermit {
         world_id: WorldId,
         channel_id: ChannelId,
     ) -> Result<(), DurabilityError> {
-        if self.has_unresolved() {
-            Err(DurabilityError::Unavailable)
-        } else if self.world_id == world_id && self.channel_id == channel_id {
-            Ok(())
-        } else {
-            Err(DurabilityError::InvalidStoredState)
-        }
+        self.check_scope(RuntimeScopeRefV1::channel(world_id, channel_id))
     }
 
     /// [`Self::check_channel`] against the stored identifiers of a Ground row (or of a corpse
@@ -197,8 +198,11 @@ impl SpellLanePermit {
     ) -> Result<(), DurabilityError> {
         if self.has_unresolved() {
             Err(DurabilityError::Unavailable)
-        } else if self.world_id.as_bytes().as_slice() == world_id
-            && self.channel_id.as_bytes().as_slice() == channel_id
+        } else if self.scope.world_id().as_bytes().as_slice() == world_id
+            && self
+                .scope
+                .channel_id()
+                .is_some_and(|channel| channel.as_bytes().as_slice() == channel_id)
         {
             Ok(())
         } else {
@@ -206,17 +210,17 @@ impl SpellLanePermit {
         }
     }
 
-    /// [`Self::check_channel`] against a runtime scope; any other scope is refused.
+    /// Compares the complete runtime scope, preserving the Channel/Instance namespace.
     pub fn check_scope(
         &self,
         scope: crate::foundation::RuntimeScopeRefV1,
     ) -> Result<(), DurabilityError> {
-        match scope {
-            crate::foundation::RuntimeScopeRefV1::Channel {
-                world_id,
-                channel_id,
-            } => self.check_channel(world_id, channel_id),
-            _ => Err(DurabilityError::InvalidStoredState),
+        if self.has_unresolved() {
+            Err(DurabilityError::Unavailable)
+        } else if self.scope == scope {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
         }
     }
 
@@ -403,9 +407,7 @@ impl CommittedSpellOwnerTransaction {
     pub fn physical_transaction(&self) -> &str {
         &self.physical_transaction
     }
-    pub fn familiar(
-        &self,
-    ) -> Option<&super::character_familiar::CommittedCharacterFamiliar> {
+    pub fn familiar(&self) -> Option<&super::character_familiar::CommittedCharacterFamiliar> {
         self.familiar.as_ref()
     }
 }
@@ -663,7 +665,7 @@ mod lane_tests {
             drop(permit.open_commit_window(7_u32, park));
             assert!(permit.has_unresolved());
             assert!(matches!(
-                permit.check_channel(lane.world_id(), lane.channel_id()),
+                permit.check_scope(lane.runtime_scope()),
                 Err(DurabilityError::Unavailable)
             ));
             drop(permit);
@@ -850,20 +852,40 @@ mod lane_tests {
             let other = lane(42);
             let permit = permit(&own).await;
             assert!(matches!(
-                permit.check_channel(other.world_id(), other.channel_id()),
+                permit.check_scope(other.runtime_scope()),
                 Err(DurabilityError::InvalidStoredState)
             ));
             assert!(matches!(
-                permit.check_stored_channel(
-                    other.world_id().as_bytes().as_slice(),
-                    other.channel_id().as_bytes().as_slice()
-                ),
+                permit.check_stored_channel(other.world_id().as_bytes().as_slice(), &identity(42)),
                 Err(DurabilityError::InvalidStoredState)
             ));
-            assert!(matches!(
-                permit.check_channel(own.world_id(), own.channel_id()),
-                Ok(())
-            ));
+            assert!(matches!(permit.check_scope(own.runtime_scope()), Ok(())));
+        });
+    }
+
+    #[test]
+    fn activity_lane_separates_same_bytes_from_channel_and_other_instance() {
+        block_on(async {
+            let channel = lane(41);
+            let instance = RuntimeScopeRefV1::Instance {
+                world_id: channel.world_id(),
+                instance_id: identity(41),
+            };
+            let other = RuntimeScopeRefV1::Instance {
+                world_id: channel.world_id(),
+                instance_id: identity(42),
+            };
+            let lane = SpellLane::for_scope(instance);
+            let held = permit(&lane).await;
+            assert_eq!(held.runtime_scope(), instance);
+            assert!(held.channel_id().is_none());
+            assert!(held.check_scope(instance).is_ok());
+            assert!(held.check_scope(channel.runtime_scope()).is_err());
+            assert!(held.check_scope(other).is_err());
+            assert!(
+                held.check_stored_channel(channel.world_id().as_bytes(), &identity(41))
+                    .is_err()
+            );
         });
     }
 

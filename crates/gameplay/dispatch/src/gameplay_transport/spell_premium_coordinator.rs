@@ -22,7 +22,7 @@ use crate::durability::{
     DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore,
     item_transfer::CurrentCharacterItemFence,
 };
-use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 use crate::premium::{PremiumConsumer, TrustedNow};
 use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding, CurrentProjection};
 use std::future::Future;
@@ -608,10 +608,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?;
         let runtime = self.runtime.lock().await;
-        let scope = RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
+        let scope = runtime.binding().runtime_scope();
         if raw.fence.runtime_scope != scope
             || raw.fence.scope_ownership_generation != runtime.binding().scope_generation()
             || runtime.content_pin().server_artifact_digest() != digest
@@ -668,11 +665,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if runtime.content_pin().server_artifact_digest() != current.content_digest
             || runtime.binding().scope_generation() != current.fence.scope_ownership_generation
-            || current.fence.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || current.fence.runtime_scope != runtime.binding().runtime_scope()
         {
             return Err(AccessFactsError::Unavailable(
                 "Premium transition scope/Content changed",

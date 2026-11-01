@@ -162,13 +162,29 @@ impl LoopGroundOverlay {
         channel: ChannelId,
         index: &ItemDefinitionIndex,
         field_pin: ([u8; 32], [u8; 32], u64),
+        items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
+    ) -> Self {
+        Self::build_for_scope(
+            base,
+            crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+            index,
+            field_pin,
+            items,
+        )
+    }
+
+    pub fn build_for_scope(
+        base: Arc<WorldBase>,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        index: &ItemDefinitionIndex,
+        field_pin: ([u8; 32], [u8; 32], u64),
         mut items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
     ) -> Self {
         items.sort_by_key(|item| item.stack_ordinal);
         let revision = map_revision(&base);
         let field_revision = sha256_revision(Sha256::digest(revision.as_bytes()).into());
         let field_content = sha256_revision(field_pin.0);
-        let mut overlay = ChannelOverlay::new(base, world, channel);
+        let mut overlay = ChannelOverlay::for_scope(base, scope);
         let mut facts = HashMap::new();
         for entry in items {
             let mut item = entry.item;
@@ -355,58 +371,68 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
-    let field_pin = {
+    let (scope, field_pin) = {
         let runtime = admission.runtime.lock().await;
         (
-            runtime.content_pin().server_artifact_digest(),
-            runtime.content_pin().frame_binding_digest(),
-            runtime.binding().scope_generation().get(),
+            runtime.binding().runtime_scope(),
+            (
+                runtime.content_pin().server_artifact_digest(),
+                runtime.content_pin().frame_binding_digest(),
+                runtime.binding().scope_generation().get(),
+            ),
         )
     };
     let (epoch, cached) = admission.states.loop_ground.cached();
     if let Some(cached) = cached.filter(|cached| {
-        cached.field_pin == field_pin && cached.overlay.base().digest() == base.digest()
+        cached.field_pin == field_pin
+            && cached.overlay.runtime_scope() == scope
+            && cached.overlay.base().digest() == base.digest()
     }) {
         return Some(cached);
     }
     let index = index?;
     let items = projection_read(
-        || {
-            admission
-                .root
-                .read_item_loop_ground(admission.world_id, admission.channel_id)
-        },
+        || admission.root.read_item_loop_ground_for_scope(scope),
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;
-    let taken = projection_read(
-        || {
-            admission.root.read_map_item_mint_placements(
-                admission.world_id,
-                admission.channel_id,
-                base.digest(),
-                admission.reset_epoch,
-                base.entry_count(),
-            )
-        },
-        |error| {
-            matches!(
-                error,
-                crate::durability::map_item_mint::MapItemMintError::Unavailable(
-                    crate::durability::DurabilityError::RootUnavailable
+    let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = scope
+    {
+        projection_read(
+            || {
+                admission.root.read_map_item_mint_placements(
+                    world_id,
+                    channel_id,
+                    base.digest(),
+                    admission.reset_epoch,
+                    base.entry_count(),
                 )
-            )
-        },
-    )
-    .await?;
-    let mut built = LoopGroundOverlay::build(
-        base.clone(),
-        admission.world_id,
-        admission.channel_id,
-        index,
-        field_pin,
-        items,
-    );
+            },
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::map_item_mint::MapItemMintError::Unavailable(
+                        crate::durability::DurabilityError::RootUnavailable
+                    )
+                )
+            },
+        )
+        .await?
+    } else {
+        Vec::new()
+    };
+    let mut built = match scope {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => LoopGroundOverlay::build(base.clone(), world_id, channel_id, index, field_pin, items),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. } => {
+            LoopGroundOverlay::build_for_scope(base.clone(), scope, index, field_pin, items)
+        }
+    };
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
     let pending: Vec<_> = admission
         .states

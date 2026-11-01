@@ -509,12 +509,84 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let equipment = super::read_current_equipment(self, session)
             .await
             .ok_or(())?;
-        self.load_proficiency_equipment(session, &equipment).await?;
         let fence = self
             .current_quest_fence(session)
             .await
             .map_err(|_| ())?
             .ok_or(())?;
+        self.equipment_effects_from_snapshot(session, equipment, fence, native)
+            .await
+            .map(Some)
+    }
+
+    /// Only the retained native Death return calls this lifecycle reader.
+    /// Its exact Channel successor may be Active or Reconnectable; the durable
+    /// equipment owner independently re-proves its session, lease and scope.
+    pub(in crate::gameplay_transport) async fn read_activity_death_effects(
+        &self,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Option<AdmissionEffects>, ()> {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return Ok(None);
+        };
+        if !matches!(
+            expected.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Err(());
+        }
+        let fence = self
+            .current_quest_fence(expected.game_session_id)
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        if fence.item_fence() != expected {
+            return Err(());
+        }
+        {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| ())?;
+            if runtime.binding().runtime_scope() != expected.runtime_scope
+                || runtime.binding().scope_generation() != expected.scope_ownership_generation
+                || runtime.content_pin().server_artifact_digest() != native.source_digest()
+            {
+                return Err(());
+            }
+        }
+        let read = self
+            .root
+            .read_movement_equipment(
+                self.character,
+                self.holder,
+                &expected,
+                native.source_digest(),
+            )
+            .await
+            .map_err(|_| ())?;
+        if read.fence() != &expected || read.equipment().content_digest != native.source_digest() {
+            return Err(());
+        }
+        self.equipment_effects_from_snapshot(
+            expected.game_session_id,
+            read.equipment().clone(),
+            fence,
+            native,
+        )
+        .await
+        .map(Some)
+    }
+
+    async fn equipment_effects_from_snapshot(
+        &self,
+        session: crate::foundation::GameSessionId,
+        equipment: EquipmentSnapshot,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        native: &NativeGameplayState,
+    ) -> Result<AdmissionEffects, ()> {
+        self.load_proficiency_equipment(session, &equipment).await?;
         let mut imbuements = self
             .root
             .read_worn_imbuements(self.character, self.holder, fence)
@@ -536,14 +608,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let defence = equipped_defence(&equipment, native).ok_or(())?;
         let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
         let offence = equipped_offence_inner(&equipment, native, &imbuements).ok_or(())?;
-        Ok(Some((
-            effects,
-            armor,
-            defence,
-            mana_shield,
-            offence,
-            equipment,
-        )))
+        Ok((effects, armor, defence, mana_shield, offence, equipment))
     }
 
     /// The caller holds the spell lane and runtime; publish equipment before its effects.

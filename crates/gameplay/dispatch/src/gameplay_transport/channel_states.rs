@@ -35,7 +35,7 @@ pub struct ChannelSessionStates {
     /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
-    pub input_gate: input_gate::InputGate,
+    pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).

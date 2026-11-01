@@ -9,8 +9,10 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     step: DecayRetireStep,
     parent: &Admitted,
 ) -> std::result::Result<(), DurabilityError> {
-    if !matches!(step.cause, RetireCause::WorldReset(_))
-        || !step.is_corpse_step()
+    if !matches!(
+        step.cause,
+        RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_)
+    ) || !step.is_corpse_step()
         || !crate::durability::world_reset::ground_step::is_death_container(
             tx,
             step.corpse_item_instance_id,
@@ -36,7 +38,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         };
         let admitted = Admitted {
             world_id: parent.world_id,
-            channel_id: parent.channel_id,
+            runtime_scope: parent.runtime_scope,
             definition: OneItemTypedDefinitionRevisionV1 {
                 family: row.try_get("definition_family")?,
                 production_key: row.try_get("definition_production_key")?,
@@ -46,8 +48,11 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             key_number: u32::try_from(row.try_get::<i64, _>("key_number")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
-            placement_ordinal: Some(row.try_get::<String, _>("placement_ordinal")?.parse()
-                .map_err(|_| DurabilityError::InvalidStoredState)?),
+            placement_ordinal: Some(
+                row.try_get::<String, _>("placement_ordinal")?
+                    .parse()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            ),
             corpse_ground: parent.corpse_ground.clone(),
             deadline_unix_ms: 0,
             database_now_unix_ms: parent.database_now_unix_ms,
@@ -66,7 +71,8 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
             },
             decay_message(child, fence, &admitted),
             tuple.tuple(),
-        ).map_err(|_| DurabilityError::InvalidStoredState)?;
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
         let fact = node.fact();
         let reservation = Reservation {
             cause: step.cause,

@@ -8,7 +8,7 @@ use crate::durability::{
     item_transfer::CurrentCharacterItemFence,
     private_channel::{ChannelView, JoinedChannel, Prepared},
 };
-use crate::foundation::{ChannelRuntimeV1, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{ChannelRuntimeV1, GameSessionId};
 use oteryn_protocol_oteryn::chat::private_channel::{
     CAPABILITY_CHAT_PRIVATE_CHANNEL_V1, ChatChannelList, PrivateChannelIntent,
 };
@@ -179,9 +179,8 @@ fn qualified(
         || fence.game_session_id != admitted.game_session_id
         || fence.connection_generation.get() != admitted.continuity.connection_generation
         || admitted.world_id != binding.world_id()
-        || admitted.channel_id != binding.channel_id()
-        || fence.runtime_scope
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || binding.channel_id() != Some(admitted.channel_id)
+        || fence.runtime_scope != binding.runtime_scope()
         || fence.scope_ownership_generation != binding.scope_generation()
     {
         return None;

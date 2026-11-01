@@ -339,12 +339,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let binding = runtime.binding();
             if runtime.owner_fence().is_err()
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || fence.runtime_scope
-                    != crate::foundation::RuntimeScopeRefV1::channel(
-                        binding.world_id(),
-                        binding.channel_id(),
-                    )
+                || binding.channel_id() != Some(admitted.channel_id)
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || !runtime
                     .player_control_facts(actor, admitted.game_session_id)

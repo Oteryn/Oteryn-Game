@@ -54,6 +54,7 @@ type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const DEATH_BINDING_VERSION: u8 = 1;
 const DEATH_BUILD_BINDING_VERSION: u8 = 2;
 const DEATH_BINDING_DOMAIN: &[u8] = b"oteryn:character-death";
+const INSTANCE_DEATH_BINDING_DOMAIN: &[u8] = b"oteryn:character-death:instance:v1";
 /// 0016 storage bounds.
 const MAX_POSITION_BYTES: usize = 128;
 const MAX_MAP_REVISION_BYTES: usize = 512;
@@ -79,8 +80,7 @@ impl PlayerDeathOccurrence {
 /// The durable destination a resumed DEATH-3 item workflow drops at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeathCell {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
+    pub runtime_scope: RuntimeScopeRefV1,
     pub spatial_position: Vec<u8>,
     pub map_revision: String,
 }
@@ -409,7 +409,7 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// Read the Character's pending respawn (DEATH-0 §3.4) under the same
+    /// Read the Character's pending Channel respawn (DEATH-0 §3.4) under the same
     /// fences as [`Self::consume_pending_respawn`], deleting nothing, so an
     /// admission places the actor at its recorded position before the
     /// obligation is consumed.
@@ -419,8 +419,26 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<ConsumedRespawn>> {
+        if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         self.pending_respawn_under_fence(authority, node, fence, None, false, None)
             .await
+    }
+
+    /// Read only the occurrence needed to resume receipt-selected death item work.
+    /// An exact current Channel or admitted Instance may read under the full
+    /// recovery and gameplay fences. This neither exposes a respawn position nor
+    /// consumes or places the pending respawn; those remain Channel operations.
+    pub async fn pending_player_death_item_occurrence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<Option<PlayerDeathOccurrence>> {
+        self.pending_respawn_under_fence(authority, node, fence, None, false, None)
+            .await
+            .map(|pending| pending.map(|pending| pending.occurrence))
     }
 
     async fn pending_respawn_under_fence(
@@ -433,7 +451,7 @@ impl DurabilityRoot {
         placed: Option<FinalLastPosition>,
     ) -> Result<Option<ConsumedRespawn>> {
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || (consume && !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -653,7 +671,6 @@ fn validate_request<const N: usize>(
             .windows(2)
             .all(|pair| pair[0].as_bytes() < pair[1].as_bytes());
     if fence.character_lease_generation == 0
-        || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
         || !all_revisions(request).all(valid_revision)
         || request.context != request.policy.context
         || request.policy_revision != request.policy.policy_revision
@@ -700,7 +717,10 @@ fn command_binding<const N: usize>(
     request: &CharacterDeathRequest<N>,
 ) -> Result<Vec<u8>> {
     let mut semantic = Vec::new();
-    semantic.extend_from_slice(DEATH_BINDING_DOMAIN);
+    semantic.extend_from_slice(match request.death_cell.runtime_scope {
+        RuntimeScopeRefV1::Channel { .. } => DEATH_BINDING_DOMAIN,
+        RuntimeScopeRefV1::Instance { .. } => INSTANCE_DEATH_BINDING_DOMAIN,
+    });
     semantic.push(DEATH_BINDING_VERSION);
     semantic.extend_from_slice(&request.occurrence.0);
     semantic.extend_from_slice(fence.character_id.as_bytes());
@@ -721,8 +741,17 @@ fn command_binding<const N: usize>(
     // Amulet of Loss state, equipment/backpack snapshot and RNG stream: none
     // until DEATH-3 (death decision §4.4 delivery gap).
     semantic.push(0);
-    semantic.extend_from_slice(request.death_cell.world_id.as_bytes());
-    semantic.extend_from_slice(request.death_cell.channel_id.as_bytes());
+    // The historic Channel digest is byte-for-byte unchanged. Instance has its own
+    // semantic domain, so identical UUID bytes can never alias a Channel death.
+    semantic.extend_from_slice(request.death_cell.runtime_scope.world_id().as_bytes());
+    match request.death_cell.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            semantic.extend_from_slice(channel_id.as_bytes());
+        }
+        RuntimeScopeRefV1::Instance { instance_id, .. } => {
+            semantic.extend_from_slice(&instance_id);
+        }
+    }
     push_bytes(&mut semantic, &request.death_cell.spatial_position)?;
     push_bytes(&mut semantic, request.death_cell.map_revision.as_bytes())?;
     push_bytes(&mut semantic, &request.respawn_position)?;
@@ -975,7 +1004,7 @@ async fn load_receipt(
                 original_character_revision::text, committed_character_revision::text, \
                 level_before, level_after, experience_before, experience_after, \
                 experience_lost, blessings_before, blessings_after, death_world_id::text, \
-                death_channel_id::text, death_spatial_position, death_map_revision, \
+                death_channel_id::text, death_instance_id::text, death_scope_kind, death_spatial_position, death_map_revision, \
                 amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after \
            FROM game_character_death_receipts \
           WHERE death_occurrence_id = encode($1,'hex')::uuid",
@@ -983,6 +1012,26 @@ async fn load_receipt(
     .bind(occurrence.0.as_slice())
     .fetch_optional(&mut **tx)
     .await?)
+}
+
+fn decode_death_scope(
+    world: &str,
+    kind: i16,
+    channel: Option<&str>,
+    instance: Option<&str>,
+) -> std::result::Result<RuntimeScopeRefV1, DurabilityError> {
+    let world =
+        WorldId::decode(&uuid_text(world)?).map_err(|_| DurabilityError::InvalidStoredState)?;
+    match (kind, channel, instance) {
+        (1, Some(channel), None) => Ok(RuntimeScopeRefV1::channel(
+            world,
+            ChannelId::decode(&uuid_text(channel)?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )),
+        (2, None, Some(instance)) => RuntimeScopeRefV1::instance(world, uuid_text(instance)?)
+            .map_err(|_| DurabilityError::InvalidStoredState),
+        _ => Err(DurabilityError::InvalidStoredState),
+    }
 }
 
 fn decode_receipt(
@@ -1015,10 +1064,12 @@ fn decode_receipt(
         blessings_before: row.try_get("blessings_before")?,
         blessings_after: row.try_get("blessings_after")?,
         death_cell: DeathCell {
-            world_id: WorldId::decode(&uuid_text(row.try_get("death_world_id")?)?)
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-            channel_id: ChannelId::decode(&uuid_text(row.try_get("death_channel_id")?)?)
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            runtime_scope: decode_death_scope(
+                row.try_get("death_world_id")?,
+                row.try_get("death_scope_kind")?,
+                row.try_get("death_channel_id")?,
+                row.try_get("death_instance_id")?,
+            )?,
             spatial_position: row.try_get("death_spatial_position")?,
             map_revision: row.try_get("death_map_revision")?,
         },
@@ -1094,8 +1145,10 @@ mod tests {
             },
             held_blessings: vec!["embrace".into(), "spark".into()],
             death_cell: DeathCell {
-                world_id: WorldId::decode(&id(4)).expect("world"),
-                channel_id: ChannelId::decode(&id(5)).expect("channel"),
+                runtime_scope: RuntimeScopeRefV1::channel(
+                    WorldId::decode(&id(4)).expect("world"),
+                    ChannelId::decode(&id(5)).expect("channel"),
+                ),
                 spatial_position: vec![1, 2, 3],
                 map_revision: "map-1".into(),
             },
@@ -1162,6 +1215,60 @@ mod tests {
             command_binding(&revision, &death).expect("revision"),
             binding
         );
+    }
+
+    #[test]
+    fn death_binding_separates_instance_and_channel_with_identical_uuid_bytes() {
+        let channel = request();
+        let mut instance = channel.clone();
+        instance.death_cell.runtime_scope =
+            RuntimeScopeRefV1::instance(WorldId::decode(&id(4)).expect("world"), id(5))
+                .expect("instance");
+        let mut current = fence();
+        current.runtime_scope = instance.death_cell.runtime_scope;
+        validate_request(&current, &instance).expect("current Instance is an admitted death owner");
+        let binding = command_binding(&current, &instance).expect("Instance binding");
+        assert_ne!(
+            binding,
+            command_binding(&fence(), &channel).expect("Channel binding")
+        );
+        let mut retry = current;
+        retry.character_lease_generation += 1;
+        retry.scope_ownership_generation = ScopeOwnershipGeneration::new(2).expect("generation");
+        assert_eq!(binding, command_binding(&retry, &instance).expect("retry"));
+        instance.death_cell.runtime_scope =
+            RuntimeScopeRefV1::instance(WorldId::decode(&id(4)).expect("world"), id(6))
+                .expect("other Instance");
+        assert_ne!(
+            binding,
+            command_binding(&current, &instance).expect("other Instance")
+        );
+    }
+
+    #[test]
+    fn death_receipt_scope_rejects_mixed_missing_and_unknown_tags() {
+        let world = "01020304-0506-7008-800a-0b0c0d0e0f01";
+        let scope = "02020304-0506-7008-800a-0b0c0d0e0f02";
+        assert!(matches!(
+            decode_death_scope(world, 1, Some(scope), None),
+            Ok(RuntimeScopeRefV1::Channel { .. })
+        ));
+        assert!(matches!(
+            decode_death_scope(world, 2, None, Some(scope)),
+            Ok(RuntimeScopeRefV1::Instance { .. })
+        ));
+        for (kind, channel, instance) in [
+            (1, None, None),
+            (2, None, None),
+            (1, None, Some(scope)),
+            (2, Some(scope), None),
+            (1, Some(scope), Some(scope)),
+            (2, Some(scope), Some(scope)),
+            (0, Some(scope), None),
+            (3, None, Some(scope)),
+        ] {
+            assert!(decode_death_scope(world, kind, channel, instance).is_err());
+        }
     }
 
     #[test]
@@ -1692,8 +1799,10 @@ mod death_build_postgres {
             policy,
             held_blessings: vec![],
             death_cell: DeathCell {
-                world_id: WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
-                channel_id: ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+                runtime_scope: RuntimeScopeRefV1::channel(
+                    WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
+                    ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+                ),
                 spatial_position: vec![1, 2, 3, 7],
                 map_revision: "map-1".into(),
             },

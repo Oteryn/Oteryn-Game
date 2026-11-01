@@ -38,9 +38,7 @@ pub(super) async fn check(
             let (owner, runtime, states, permit, admitted) = context;
             let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
             let binding = runtime.binding();
-            let scope = crate::foundation::RuntimeScopeRefV1::channel(
-                binding.world_id(), binding.channel_id(),
-            );
+            let scope = binding.runtime_scope();
             let authority = assert_spell_item_scope_in_transaction(
                 &mut tx, permit, owner.root, owner.character, owner.holder,
                 scope, binding.scope_generation().get(),

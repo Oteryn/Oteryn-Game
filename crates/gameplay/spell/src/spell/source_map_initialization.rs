@@ -54,7 +54,10 @@ impl<'owner> CurrentNativeMapInitialization<'owner> {
         }
         Ok(NativeMapOwnerBinding {
             world: runtime.binding().world_id(),
-            channel: runtime.binding().channel_id(),
+            channel: runtime
+                .binding()
+                .channel_id()
+                .ok_or("source map Item initialization requires Channel custody")?,
             scope_generation: runtime.binding().scope_generation().get(),
             content_digest: pin.server_artifact_digest(),
             map_digest: pin.map_revision_digest(),

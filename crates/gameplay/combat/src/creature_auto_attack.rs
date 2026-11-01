@@ -1370,7 +1370,7 @@ fn require_owner(
     stamp: crate::foundation::RuntimeWorkStamp,
 ) -> Result<(), AttackError> {
     let b = runtime.binding();
-    let scope = crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+    let scope = b.runtime_scope();
     if !fence.is_current_for_scope(scope, b.scope_generation()) || !fence.accepts_stamp(stamp) {
         return Err(AttackError::StaleOwner);
     }

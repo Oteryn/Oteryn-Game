@@ -8,7 +8,6 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementPositionSnapshot,
-    RuntimeScopeRefV1,
 };
 use crate::spell::cast::PlayerSpellState;
 
@@ -36,11 +35,7 @@ impl MovementEquipmentRead {
         if self.actor != actor
             || self.session != session
             || fence.game_session_id != session
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
             || self.read.equipment().content_digest
                 != runtime.content_pin().server_artifact_digest()
@@ -89,10 +84,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 position,
                 states.get(&runtime, actor, session)?.clone(),
                 runtime.content_pin().server_artifact_digest(),
-                RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                ),
+                runtime.binding().runtime_scope(),
                 runtime.binding().scope_generation(),
             )
         };

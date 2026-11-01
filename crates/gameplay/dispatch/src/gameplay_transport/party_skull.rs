@@ -1,7 +1,7 @@
 //! Observer-relative party icons, read under the existing Channel and World owners.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::{DurabilityError, spell_item_transaction as item_tx, world_party};
-use crate::foundation::{PartySnapshot, RuntimeScopeRefV1};
+use crate::foundation::PartySnapshot;
 use oteryn_protocol_oteryn::{party_skull::PartyIcon, world_spatial_entities::EntityRef};
 use sqlx::Row;
 use std::collections::BTreeMap;
@@ -118,7 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let (owner, runtime, states, attack, permit) = ctx;
                 let unavailable = || DurabilityError::Unavailable;
                 let binding = runtime.binding();
-                let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+                let scope = binding.runtime_scope();
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                 let authority = item_tx::assert_spell_item_scope_in_transaction(&mut tx, permit, owner.root, owner.character, owner.holder, scope, binding.scope_generation().get()).await.map_err(|_|unavailable())?;
                 let observer = crate::durability::admission_journal::party_target_binding::current_colocated_party_character_for_scope_in_transaction(&mut tx,owner.root,&authority,runtime,actor,admitted.game_session_id).await.map_err(|_|unavailable())?.ok_or_else(unavailable)?;
@@ -146,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(member) = members.get(&target.character) else { continue };
                     let same = source.party_id.is_some() && source.party_id == target.party_id;
                     // Use the same Channel-local membership and eligibility policy as PARTY-XP-1.
-                    let all = target.members.iter().filter(|m|members.contains_key(&m.character) || m.channel==Some(authority.channel_bytes())).all(|m|eligible(target,&m.character,&members))
+                    let all = target.members.iter().filter(|m|members.contains_key(&m.character) || authority.channel_bytes().is_some_and(|channel| m.channel==Some(channel))).all(|m|eligible(target,&m.character,&members))
                         && target.leader.and_then(|id|members.get(&id)).is_some_and(|leader|!leader.pz);
                     let mut shield = shield(same,target.leader==Some(target.character),target.shared_xp_enabled,all,eligible(target,&target.character,&members),target.party_id.is_some());
                     if !same {

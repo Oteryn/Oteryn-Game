@@ -7,7 +7,7 @@ use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::ItemKey;
 use crate::durability::item_craft::soulpit::SoulCoreCraftRequest;
 use crate::durability::item_mint::GroundPlacement;
-use crate::foundation::{CommandId, CommandRef, ExactActorRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_domain::domain::soulpit::{
     EXALTED_CORE_SOURCE_ID, SOUL_PRISM_SOURCE_ID, is_soul_core,
 };
@@ -108,8 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             let binding = runtime.binding();
             if fence.game_session_id != command.game_session_id
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -199,8 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let states = self.states.spell_states.lock().await;
             let binding = runtime.binding();
             if fence.game_session_id != command.game_session_id
-                || fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || pinned_index(&runtime, self.active_generation).is_none()

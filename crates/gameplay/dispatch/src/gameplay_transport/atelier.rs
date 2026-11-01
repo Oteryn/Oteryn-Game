@@ -126,12 +126,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
                 if admitted.world_id != binding.world_id()
-                    || admitted.channel_id != binding.channel_id()
-                    || expected.runtime_scope
-                        != crate::foundation::RuntimeScopeRefV1::channel(
-                            binding.world_id(),
-                            binding.channel_id(),
-                        )
+                    || binding.channel_id() != Some(admitted.channel_id)
+                    || expected.runtime_scope != binding.runtime_scope()
                     || expected.scope_ownership_generation != binding.scope_generation()
                     || runtime.owner_fence().is_err()
                     || !admitted.runtime_actor.is_some_and(|actor| {

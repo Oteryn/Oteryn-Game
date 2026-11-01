@@ -139,11 +139,9 @@ fn fixture() -> (
         }
     }
     let b = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     (
         r,
         d,
@@ -314,7 +312,8 @@ fn icicle_source_raw_hp_death_ai_clear_and_same_occurrence_replay() {
     );
 }
 #[test]
-fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwritten() {
+fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwritten()
+-> Result<(), String> {
     let (mut r, d, c, p, s, source, proposal, f, stamp) = fixture();
     let a = egg(&mut r, c, 1, 0, 500);
     let b = egg(&mut r, c, 2, 0, 500);
@@ -385,10 +384,14 @@ fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwri
     let current = r.binding();
     let mut foreign = *current.world_id().as_bytes();
     foreign[15] = 99;
+    // W02: preserve the pinned Channel identity while changing only the World.
+    let channel = current
+        .channel_id()
+        .ok_or("qualified fixture requires a Channel")?;
     let (foreign_fence, _) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(
             WorldId::decode(&foreign).expect("qualified fixture"),
-            current.channel_id(),
+            channel,
         ),
         current.scope_generation(),
     )
@@ -427,6 +430,7 @@ fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwri
         )
         .is_err()
     );
+    Ok(())
 }
 #[test]
 fn icicle_rectangle_spectator_outside37cells_clears_ai_without_hp_or_damage_pipeline() {

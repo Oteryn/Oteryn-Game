@@ -42,7 +42,10 @@ fn scenario() -> TestResult {
                 .await?;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         // Exercise the unavailable context explicitly; shipped training is now enabled.
-        owner.states.training.config = None;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = None;
         assert!(owner.states.training.config.is_none());
         owner.admit_loop_training(&mut admitted).await;
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_training_markers")
@@ -54,7 +57,10 @@ fn scenario() -> TestResult {
         ))
         .map_err(debug)?;
         rates.enabled = true;
-        owner.states.training.config = Some(Arc::new(rates));
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = Some(Arc::new(rates));
         owner.admit_loop_training(&mut admitted).await;
         assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
         let first:(String,i32,i32,i16)=sqlx::query_as("SELECT committed_character_revision::text,stamina_minutes,offline_pool_s,offline_skill FROM game_character_build_state").fetch_one(&h.pool).await?;

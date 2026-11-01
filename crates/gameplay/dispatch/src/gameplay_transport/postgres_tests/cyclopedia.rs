@@ -186,10 +186,16 @@ fn scenario() -> TestResult {
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.
-        let commands = std::mem::take(&mut owner.states.command_ingress);
+        let commands = std::mem::take(
+            &mut std::sync::Arc::get_mut(&mut owner.states)
+                .expect("W02: isolated fixture state")
+                .command_ingress,
+        );
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
-        owner.states.command_ingress = commands;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .command_ingress = commands;
         owner.movement_cells = &cells;
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
@@ -300,10 +306,16 @@ fn scenario() -> TestResult {
             1
         );
         // Restart replay cannot charge again, even after the consumed coins disappeared.
-        let commands = std::mem::take(&mut owner.states.command_ingress);
+        let commands = std::mem::take(
+            &mut std::sync::Arc::get_mut(&mut owner.states)
+                .expect("W02: isolated fixture state")
+                .command_ingress,
+        );
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
-        owner.states.command_ingress = commands;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .command_ingress = commands;
         owner.movement_cells = &cells;
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);

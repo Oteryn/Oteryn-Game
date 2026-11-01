@@ -1,5 +1,6 @@
 //! Strict historical fresh-operation storage. No decoded value is a live capability.
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
+mod activity_loss;
 mod retired_holder_release;
 mod terminal_release;
 use super::DurabilityError;
@@ -319,6 +320,11 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
+    // Rare Activity release proofs must not enlarge every ordinary admission
+    // and reconnect future. Clones retain the same immutable, revalidated proof.
+    departed_activity: Option<std::sync::Arc<super::activity_handoff::DepartedActivityRelease>>,
+    offline_activity_mismatch:
+        Option<std::sync::Arc<super::activity_handoff::OfflineActivityMismatchRelease>>,
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
@@ -413,6 +419,29 @@ impl FreshAdmissionStore {
         }
     }
 
+    pub(crate) fn with_offline_activity_mismatch(
+        &self,
+        proof: super::activity_handoff::OfflineActivityMismatchRelease,
+    ) -> Self {
+        Self {
+            offline_activity_mismatch: Some(std::sync::Arc::new(proof)),
+            ..self.clone()
+        }
+    }
+
+    /// A departed activity's sealed offline return uses this same terminal
+    /// writer. The proof is repeated in the deciding transaction; it cannot
+    /// terminalize a current native successor or a newly adopted transport.
+    pub(crate) fn with_departed_activity_release(
+        &self,
+        proof: super::activity_handoff::DepartedActivityRelease,
+    ) -> Self {
+        Self {
+            departed_activity: Some(std::sync::Arc::new(proof)),
+            ..self.clone()
+        }
+    }
+
     #[must_use]
     pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
@@ -421,6 +450,8 @@ impl FreshAdmissionStore {
             training_logout: None,
             final_position: None,
             retired_holder: None,
+            departed_activity: None,
+            offline_activity_mismatch: None,
         }
     }
 
@@ -612,7 +643,7 @@ impl FreshAdmissionStore {
         let operation = request.operation();
         let encoded = encode_fresh_loss(operation)?;
         let observation = &operation.observation;
-        let session_id = observation.session.commit().game_session_id();
+        let session_id = observation.session.current_game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&observation.loss_epoch.get().to_be_bytes());
@@ -630,18 +661,11 @@ impl FreshAdmissionStore {
         if !super::world_reset::loss_binding_current(&mut tx, observation.cause).await? {
             return Ok(ControlLossOutcomeV1::Rejected);
         }
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-        let Some(row) = row else {
+        let Some(original) = store.session_fresh_operation_locked(&mut tx, session_id).await? else {
             return Ok(ControlLossOutcomeV1::Rejected);
         };
-        let original_json: Option<String> = row.try_get("operation_json")?;
-        let original = decode_operation(
-            &original_json.ok_or(DurabilityError::InvalidStoredState)?,
-            store.maximum_operation_bytes,
-        )?;
         let FreshReconciliation::Committed(current) =
-            store.reconcile_locked(&mut tx, &original).await?
+            store.reconcile_session_locked(&mut tx, &original, session_id).await?
         else {
             return Ok(ControlLossOutcomeV1::Rejected);
         };
@@ -679,8 +703,23 @@ impl FreshAdmissionStore {
         {
             return Ok(ControlLossOutcomeV1::Rejected);
         }
-        let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
-            .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        let activity_origin = store.activity_origin_id_locked(&mut tx, current.current_session).await?;
+        let reservation: bool = if activity_origin.is_some() {
+            // The activity's initial transport and any lost-ack recovery are
+            // retained by its own immutable receipts. Resumed control below is
+            // additionally checked against the complete reconnect owner.
+            match &observation.history {
+                ControlLossHistoryV1::ActivityOrigin { admission_id, protection } if Some(*admission_id) == activity_origin =>
+                    store.activity_origin_transport_locked(&mut tx, current.current_session, *admission_id).await?
+                        && store.activity_origin_protection_locked(&mut tx, current.current_session).await? == *protection,
+                ControlLossHistoryV1::Resumed { .. } => true,
+                _ => false,
+            }
+        } else {
+            !matches!(&observation.history, ControlLossHistoryV1::ActivityOrigin { .. }) &&
+            sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
+                .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?
+        };
         let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
             .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
         if !reservation || epoch_exists {
@@ -689,7 +728,7 @@ impl FreshAdmissionStore {
         // A loss after a same-session resume opens the next epoch. Its retained history is
         // re-derived here from the durable receipts, never taken from the observation.
         let resumed_from = match &observation.history {
-            ControlLossHistoryV1::FreshOrigin => None,
+            ControlLossHistoryV1::FreshOrigin | ControlLossHistoryV1::ActivityOrigin { .. } => None,
             ControlLossHistoryV1::Resumed { budget, .. } => {
                 if store
                     .resumed_history_locked(&mut tx, current.current_session)
@@ -776,7 +815,7 @@ impl FreshAdmissionStore {
             .run_pass(issued, |holder, deadline| Box::pin(async move {
         use sqlx::Row;
         let encoded = encode_fresh_loss(&original)?;
-        let session_id = original.observation.session.commit().game_session_id();
+        let session_id = original.observation.session.current_game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&original.observation.loss_epoch.get().to_be_bytes());
@@ -792,16 +831,10 @@ impl FreshAdmissionStore {
         let decided_at: i64 = row.try_get("decided_at")?;
         // The canonical fresh receipt supplies the initial commit; inventing a
         // replay key merely to deserialize the loss DTO would lose provenance.
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+        let fresh = store.session_fresh_operation_locked(&mut tx, session_id).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = row.try_get("operation_json")?;
-        let fresh = decode_operation(
-            &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            store.maximum_operation_bytes,
-        )?;
         let operation = decode_fresh_loss(&stored, checked(fresh.authorization.initial_commit())?)?;
-        if operation.observation.session.commit().game_session_id() != session_id
+        if operation.observation.session.current_game_session_id() != session_id
             || operation.observation.loss_epoch != original.observation.loss_epoch
             || operation.observation.account_presence.account_id() != fresh.authorization.account_id
             || decided_at < operation.authorized_at
@@ -813,7 +846,7 @@ impl FreshAdmissionStore {
             return Ok(FreshLossReconciliation::Conflict);
         }
         let FreshReconciliation::Committed(current) =
-            store.reconcile_locked(&mut tx, &fresh).await?
+            store.reconcile_session_locked(&mut tx, &fresh, session_id).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -1187,6 +1220,11 @@ impl FreshAdmissionStore {
         let Some(row) = row else {
             return Ok(false);
         };
+        let activity_origin: bool = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(encode($1,'hex')::uuid,encode($2,'hex')::uuid),false)")
+            .bind(session.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if !activity_origin {
+            return Ok(false);
+        }
         let Some(replay) = row.try_get::<Option<Vec<u8>>, _>("issued_replay_key")? else {
             return Ok(true);
         };
@@ -1563,6 +1601,53 @@ async fn lifecycle_replay(
 }
 
 impl FreshAdmissionStore {
+    /// Historical one-hop successor lookup for an authenticated handoff retry.
+    /// This never attaches a controller or authorizes a fresh transport. The
+    /// connection must apply its existing current-control/reconnect checks to the
+    /// returned destination before resending the acknowledgement.
+    pub async fn activity_successor_in_transaction(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        character: CharacterId,
+        source: GameSessionId,
+    ) -> Result<Option<GameSessionId>> {
+        if !self.committed_session_use(tx, character, source).await? {
+            return Ok(None);
+        }
+        let rows: Vec<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(destination_game_session_id) FROM (SELECT p.destination_game_session_id FROM game_activity_handoff_participants p JOIN game_activity_handoff_groups g USING(handoff_id) WHERE p.character_id=encode($1,'hex')::uuid AND p.source_game_session_id=encode($2,'hex')::uuid AND g.state=2 UNION ALL SELECT r.destination_game_session_id FROM game_activity_runtime_returns r WHERE r.character_id=encode($1,'hex')::uuid AND r.source_game_session_id=encode($2,'hex')::uuid) destinations LIMIT 2")
+            .bind(character.as_bytes().as_slice()).bind(source.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+        let bytes = match rows.as_slice() {
+            [] => return Ok(None),
+            [one] => one,
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+        let destination = checked(GameSessionId::decode(bytes))?;
+        if !self
+            .committed_activity_origin_in_transaction(tx, character, destination)
+            .await?
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        Ok(Some(destination))
+    }
+
+    /// Retained activity origin under the caller's admission relation locks.
+    /// This proves issuance, lineage and transport history, not current control:
+    /// consumers separately compare the current session/lease/scope and holder.
+    pub async fn committed_activity_origin_in_transaction(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        character: CharacterId,
+        session: GameSessionId,
+    ) -> Result<bool> {
+        let activity: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.character_id=encode($2,'hex')::uuid AND (s.activity_handoff_id IS NOT NULL OR s.activity_return_id IS NOT NULL))")
+            .bind(session.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if !activity {
+            return Ok(false);
+        }
+        self.committed_session_use(tx, character, session).await
+    }
+
     /// Resolve current admission inside the caller's actual owner transaction.
     /// The immutable admission receipt alone never supplies current authority.
     pub async fn current_session_in_transaction(
@@ -1578,6 +1663,11 @@ impl FreshAdmissionStore {
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         session: GameSessionId,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        let activity_origin: Option<bool> = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(s.game_session_id,s.character_id),false) FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        if activity_origin != Some(true) {
+            return Err(DurabilityError::Unavailable);
+        }
         let payload: Option<String> = sqlx::query_scalar("SELECT CASE WHEN octet_length(r.operation_json) <= 65536 THEN r.operation_json END FROM game_durability_reconnect_sessions s JOIN game_durability_fresh_admission_receipts r ON r.replay_key = COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) WHERE s.game_session_id = encode($1,'hex')::uuid")
             .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.flatten();
         let original = decode_operation(
@@ -1834,7 +1924,18 @@ impl FreshAdmissionStore {
         }
         if current.session_state() != GameSessionState::Active
             || current.current_transport() != Some(transport)
-            || current.current_control_loss_epoch().is_none()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        // A native Activity successor can have an unacknowledged adopted
+        // transport without any owning loss yet. Its immutable issuance or
+        // recovery journal must prove the exact current Activity transport;
+        // an ordinary never-lost initial Channel still cannot use this owner.
+        if current.current_control_loss_epoch().is_none()
+            && !matches!(
+                self.activity_loss_origin(session).await?,
+                Some(ControlLossHistoryV1::ActivityOrigin { .. })
+            )
         {
             return Ok(ExpiredLossReleaseV1::NotApplicable);
         }
@@ -1911,6 +2012,8 @@ impl FreshAdmissionStore {
             training_logout: None,
             final_position: None,
             retired_holder: None,
+            departed_activity: None,
+            offline_activity_mismatch: None,
         }
     }
     pub(super) async fn replacement_claim_replay(
@@ -2509,11 +2612,8 @@ impl FreshAdmissionStore {
         {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
-        let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+        let fresh = store.session_fresh_operation_locked(&mut tx, session_id).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
-        let fresh = decode_operation(&fresh_json.ok_or(DurabilityError::InvalidStoredState)?, store.maximum_operation_bytes)?;
         if fresh.authorization.account_id != identity.account_id() {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
@@ -2732,14 +2832,10 @@ impl FreshAdmissionStore {
         };
         let stored: Option<String> = row.try_get("operation_json")?;
         let decided_at: i64 = row.try_get("decided_at")?;
-        let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
+        let fresh = self
+            .session_fresh_operation_locked(tx, session)
+            .await?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
-        let fresh = decode_operation(
-            &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            self.maximum_operation_bytes,
-        )?;
         let loss = decode_fresh_loss(
             &stored.ok_or(DurabilityError::InvalidStoredState)?,
             checked(fresh.authorization.initial_commit())?,
@@ -2789,7 +2885,7 @@ impl FreshAdmissionStore {
         ) else {
             return Ok(None);
         };
-        let session = current.commit().game_session_id();
+        let session = current.current_game_session_id();
         let budget = self.recovery_budget_locked(tx, session, epoch).await?;
         let Some(committed) = budget.entries().iter().find(|entry| {
             entry.disposition == RetainedRecoveryAttemptDispositionV1::Committed

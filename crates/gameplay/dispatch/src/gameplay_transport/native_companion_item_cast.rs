@@ -120,8 +120,7 @@ pub(super) async fn prepare_direct(
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
         || b.content_digest != runtime.content_pin().server_artifact_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(scope.world_id(), scope.channel_id())
+        || authority.runtime_scope() != scope.runtime_scope()
         || authority.scope_generation() != scope.scope_generation().get()
     {
         return reject();
@@ -527,8 +526,7 @@ pub(super) async fn prepare_with_current_restrictions(
         || b.session != command.game_session_id()
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
     {
         return reject();

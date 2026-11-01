@@ -117,7 +117,10 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
         ))
         .map_err(debug)?;
         rates.enabled = true;
-        owner.states.training.config = Some(Arc::new(rates));
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = Some(Arc::new(rates));
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -320,7 +323,10 @@ fn scenario() -> TestResult {
         ))
         .map_err(debug)?;
         rates.enabled = true;
-        owner.states.training.config = Some(Arc::new(rates));
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = Some(Arc::new(rates));
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -513,14 +519,21 @@ fn scenario() -> TestResult {
             "IDLEKICK does not accept a stale trainer fence"
         );
         // An unavailable checkpoint must retain the run before the session is detached.
-        let rates = owner.states.training.config.take();
+        let rates = std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config
+            .take();
         assert!(
             !owner
                 .reconcile_spells_before_control_loss(deps.actor, admitted.game_session_id)
                 .await,
             "unknown training save must block control loss"
         );
-        owner.states.training.config = rates;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = rates;
         assert!(
             !owner.training_activity(stale, 1).await,
             "stale connection cannot stop the current trainer"

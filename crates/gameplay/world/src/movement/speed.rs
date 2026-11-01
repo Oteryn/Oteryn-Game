@@ -369,10 +369,8 @@ impl CreatureMovementCadence {
     ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
         use CreatureCadenceError as E;
         let b = runtime.binding();
-        if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(E::StaleOwner);
         }

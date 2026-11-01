@@ -1,0 +1,19 @@
+{
+  "mechanic": "0224-boss-rewards",
+  "kind": "handlers",
+  "id": "0224-boss-rewards-unsupported",
+  "status": "unsupported",
+  "reason": "The server owns private reward entitlement browse and custody collection; native client presentation remains unsupported.",
+  "commands": [
+    428,
+    429,
+    430
+  ],
+  "not_applicable": {
+    "state": "Server command slice; native client presentation remains unsupported.",
+    "protocol": "Server command slice; native client presentation remains unsupported.",
+    "view": "Server command slice; native client presentation remains unsupported.",
+    "input": "Server command slice; native client presentation remains unsupported.",
+    "settings": "Server command slice; native client presentation remains unsupported."
+  }
+}

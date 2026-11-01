@@ -1,0 +1,10 @@
+name=boss_rewards
+commands=428,429,430
+transport=boss_rewards
+composed=boss_rewards
+authority=boss_rewards
+[route]
+match routing::boss_rewards::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

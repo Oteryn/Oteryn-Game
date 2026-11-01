@@ -95,6 +95,7 @@ pub(super) fn check_inbox(value: &OneItemRewardClaimMintV1) -> Result<(), AuditE
     if value.after.is_some()
         || value.destination.is_some()
         || !value.before_semantically_absent
+        || source.boss_reward.is_some()
         || source.typed_cause != REWARD_CLAIM_MINT_TYPED_CAUSE
         || command.command_id == 0
         || inbox.expected_session_generation == 0
