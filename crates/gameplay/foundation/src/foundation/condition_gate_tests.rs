@@ -615,14 +615,20 @@ fn rl_01_admits_every_exhaustive_key_at_once_and_refuses_past_32() {
         gate,
         duration_ms: 1_000,
     }));
+    assert_eq!(values.len(), 29, "all typed definitions remain represented");
     let mut store = ConditionStore::new();
     for value in values {
+        let replaces_shared_zero_slot =
+            matches!(&value, ConditionValues::SpellSkills { sub_id: 0, .. });
         assert_eq!(
             apply_at(&mut store, &def("cond.any", value), 1, 0).map(|a| a.replaced),
-            Ok(false)
+            Ok(replaces_shared_zero_slot)
         );
     }
-    // The §3.5 exhaustive count: 29 distinct keys, all live at once.
+    // PR #2782 Q9 (6547873726): all 29 typed inputs use 28 physical slots because
+    // Attributes and SpellSkills(0) share one. Crystal src/creatures/creature.cpp:1409-1416;
+    // src/creatures/combat/condition.cpp:436-447,552-592.
+    // Typed reads and all nonzero sub-IDs stay distinct; the 32/33 cap below is unchanged.
     let mut keys: Vec<_> = store
         .instances()
         .iter()
@@ -630,7 +636,9 @@ fn rl_01_admits_every_exhaustive_key_at_once_and_refuses_past_32() {
         .collect();
     keys.sort();
     keys.dedup();
-    assert_eq!(keys.len(), 29);
+    assert_eq!(keys.len(), 28);
+    assert!(store.get(ConflictKey::Attributes).is_none());
+    assert!(store.get(ConflictKey::SpellSkills(0)).is_some());
 
     // The cap itself: a 32nd instance is admitted, a 33rd is refused.
     let mut full = ConditionStore::new();

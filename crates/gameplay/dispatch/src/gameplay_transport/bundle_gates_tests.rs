@@ -753,6 +753,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
+    // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
+    ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),

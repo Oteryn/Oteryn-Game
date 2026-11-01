@@ -187,6 +187,7 @@ async fn live<A: FreshAdmissionAuthority>(
     let snapshot::InitialSnapshot {
         overlay_served,
         notices_selected,
+        achievement_notices,
         vitals,
         ..
     } = initial;
@@ -331,6 +332,7 @@ async fn live<A: FreshAdmissionAuthority>(
         selected_capabilities,
         overlay_served,
         notices_selected,
+        achievement_notices,
         party_view,
         party_icons: Vec::new(),
         team_finder_view: Default::default(),

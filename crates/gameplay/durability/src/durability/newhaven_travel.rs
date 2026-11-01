@@ -91,9 +91,25 @@ pub(super) async fn complete_in_transaction(
     character: crate::domain::CharacterId,
     occurrence: super::npc_travel::TravelOccurrence,
 ) -> Result<(), DurabilityError> {
-    let completed = sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp() WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND arrived_at IS NULL RETURNING route")
+    let completed = sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp() WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND arrived_at IS NULL RETURNING route,request_binding IS NOT NULL AS donor_route")
         .bind(character.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    if completed.is_some_and(|row| {
+    if let Some(row) = &completed
+        && row.try_get::<bool, _>("donor_route")?
+    {
+        // Crystal counts after teleport, not after payment. Only the existing paid
+        // donor-route receipt has a request binding; tutorial departures do not.
+        use oteryn_gameplay_progression::achievement_granters::{SHIPS_KOBOLD, TRAVEL_SOURCE_KIND};
+        super::account_achievement::add_progress(
+            tx,
+            character,
+            SHIPS_KOBOLD.key,
+            SHIPS_KOBOLD.total,
+            TRAVEL_SOURCE_KIND,
+            &occurrence.as_bytes(),
+        )
+        .await?;
+    }
+    if completed.as_ref().is_some_and(|row| {
         row.try_get::<String, _>("route")
             .is_ok_and(|route| matches!(route.as_str(), "rookgaard" | "thais_peninsula"))
     }) && let TutorialProgressOutcome::Read(Some(stored)) =

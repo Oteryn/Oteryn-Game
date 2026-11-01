@@ -2,6 +2,9 @@
 //! `sendCyclopediaCharacter*`, `:4341-5265`). The server owns every fact; the request only
 //! names the tab. Payload schemas: `docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md`.
 
+#[path = "cyclopedia_character/combat.rs"]
+pub mod combat;
+
 pub const CAPABILITY_CYCLOPEDIA_CHARACTER_V1: u32 = 199;
 pub const COMMAND_TYPE_CYCLOPEDIA_BADGES: u32 = 387;
 pub const COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB: u32 = 388;
@@ -211,8 +214,8 @@ pub fn encode_badges(earned: &[Badge]) -> Result<Vec<u8>, BadgesWireError> {
 pub struct BadgesWireError;
 
 /// The character window tabs with a native owner (Crystal `CYCLOPEDIA_CHARACTERINFO_*`).
-/// Offence, Defence and Misc (Crystal `protocolgame.cpp:5016`, `:5197`, `:5265`) are live
-/// combat aggregates with no durable owner and are not admitted.
+/// Offence, Defence and Misc (Crystal `protocolgame.cpp:5016`, `:5197`, `:5265`) retain a
+/// timestamped durable observation of their native owners; unowned fields remain unknown.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CharacterTab {
@@ -223,6 +226,9 @@ pub enum CharacterTab {
     Appearances = 5,
     StoreSummary = 6,
     Inspection = 7,
+    Offence = 8,
+    Defence = 9,
+    Misc = 10,
 }
 
 impl CharacterTab {
@@ -235,6 +241,9 @@ impl CharacterTab {
             Self::Appearances,
             Self::StoreSummary,
             Self::Inspection,
+            Self::Offence,
+            Self::Defence,
+            Self::Misc,
         ]
         .into_iter()
         .find(|tab| *tab as u8 == id)
@@ -332,6 +341,7 @@ pub enum TabView {
     Appearances { total: u16, keys: Vec<String> },
     StoreSummary(StoreSummary),
     Inspection(Vec<EquippedItem>),
+    Combat(combat::CombatStats),
 }
 
 fn push_text(bytes: &mut Vec<u8>, text: &str) -> Result<(), TabWireError> {
@@ -356,6 +366,7 @@ impl TabView {
             Self::Appearances { .. } => CharacterTab::Appearances,
             Self::StoreSummary(_) => CharacterTab::StoreSummary,
             Self::Inspection(_) => CharacterTab::Inspection,
+            Self::Combat(value) => value.tab(),
         }
     }
 
@@ -424,6 +435,7 @@ impl TabView {
                     bytes.extend_from_slice(&item.quantity.to_le_bytes());
                 }
             }
+            Self::Combat(value) => value.encode_body(&mut bytes)?,
         }
         if bytes.len() > MAX_TAB_RESULT_BYTES {
             return Err(TabWireError);
@@ -526,7 +538,7 @@ mod tests {
         for invalid in [
             &[][..],
             &[0, 0, 0, 1],
-            &[8, 0, 0, 1],
+            &[11, 0, 0, 1],
             &[2, 0, 0, 0],
             &[2, 0, 0, 51],
         ] {
