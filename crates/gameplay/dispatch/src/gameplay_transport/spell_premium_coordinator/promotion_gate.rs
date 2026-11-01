@@ -38,6 +38,17 @@ impl crate::durability::character_wheel::WheelPremiumGate for SpellPremiumCoordi
     }
 }
 
+impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for SpellPremiumCoordinator {
+    async fn task_permitted(
+        &self,
+        tx: &mut PremiumGateTx<'_>,
+        account: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        self.transaction_permission(tx, account, |status| status.gate().premium_current())
+            .await
+    }
+}
+
 impl crate::durability::daily_reward_delivery::DailyRewardPremiumGate for DailyRewardPremium<'_> {
     async fn current(
         &self,

@@ -3,6 +3,11 @@
 //! oneof tag 4) in the normative ANL-01 `EventEnvelope`. The legacy CHEST-1
 //! shape places one fresh item in the equipped main backpack. Optional field 5
 //! adds a bounded fresh-output plan in the same CharacterInbox transaction.
+//! W15b reuses the one-item shape for each fresh direct child of a reward
+//! container, with the same USE/claim cause and a separate event identity.
+//! The root reservation/receipt binds their complete ordered identities,
+//! contents, optional key and public authored Text-owner initialization;
+//! deferred guards require all children in the root's physical transaction.
 //!
 //! There is no Ground and no creature-death source. The cause is the actual
 //! player USE CommandRef and the claimed RewardClaim definition. Every

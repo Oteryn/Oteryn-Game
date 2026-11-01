@@ -41,6 +41,7 @@ import json
 import re
 import sys
 from pathlib import Path
+import container_native
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -247,6 +248,8 @@ def charged_source_reward(definition: dict | None, pilot_key: str, position: dic
     if raw_count != charges or charges != proof["source_default_charges"]:
         check.update(reason="SOURCE_CHARGE_MISMATCH", classification="CONFLICT")
         return 1, check
+    if container_native.full_charge_leaf(definition, pilot_key, position, key, raw_count):
+        return 1, None
     check.update(quantity=1, reason="NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED",
                  normalization="ONE_INSTANCE_FROM_DEFINITION_CHARGES")
     return 1, check

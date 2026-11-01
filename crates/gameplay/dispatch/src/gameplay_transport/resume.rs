@@ -160,10 +160,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
-        if !tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            self.reconcile_quest_callback_receipts(lost.game_session_id),
-        )
+        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            self.prepare_grizzly_npc_resume(&lost).await
+                && self
+                    .reconcile_quest_callback_receipts(lost.game_session_id)
+                    .await
+        })
         .await
         .unwrap_or(false)
         {

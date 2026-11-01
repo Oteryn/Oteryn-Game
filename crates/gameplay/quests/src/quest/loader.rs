@@ -201,6 +201,8 @@ pub fn load_embedded_quest_state(
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::grizzly_adams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 

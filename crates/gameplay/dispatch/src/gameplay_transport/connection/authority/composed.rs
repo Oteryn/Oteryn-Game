@@ -818,10 +818,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
-        if !tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            self.reconcile_quest_callbacks(admitted.game_session_id),
-        )
+        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            self.prepare_grizzly_npc_resume(admitted).await
+                && self
+                    .reconcile_quest_callbacks(admitted.game_session_id)
+                    .await
+        })
         .await
         .unwrap_or(false)
         {

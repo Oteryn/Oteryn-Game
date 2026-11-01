@@ -12,7 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
-EXPECTED_DENOMINATOR = 239
+# W15b supports 308 claims; eight have source-selector dispatch PG grant
+# coverage. Every other supported claim keeps its per-World qualification hold.
+EXPECTED_DENOMINATOR = 300
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",
@@ -171,7 +173,7 @@ def validate(ledger_path=LEDGER, coverage_path=COVERAGE, root=ROOT):
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
         return [str(exc)], Counter()
     if coverage.get("counts", {}).get("supported_unqualified") != EXPECTED_DENOMINATOR:
-        errors.append("coverage denominator drift (expected 239 supported_unqualified)")
+        errors.append(f"coverage denominator drift (expected {EXPECTED_DENOMINATOR} supported_unqualified)")
     if ledger.get("denominator") != EXPECTED_DENOMINATOR:
         errors.append("ledger denominator drift")
     if ledger.get("source_revisions") != coverage.get("source_revisions") or ledger.get("source_sha256") != coverage.get("source_sha256"):
