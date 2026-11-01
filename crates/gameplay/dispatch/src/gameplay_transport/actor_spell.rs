@@ -3,6 +3,8 @@
 //! are re-exported here, as `world_spatial` does; this module adds the Channel owner's per-actor
 //! vitals and cooldowns and the owner work item of one cast.
 
+mod activity_transfer;
+pub(in crate::gameplay_transport) use activity_transfer::PreparedActivitySpellStates;
 pub use oteryn_protocol_oteryn::actor_spell::*;
 #[path = "actor_conditions.rs"]
 #[allow(
@@ -486,11 +488,7 @@ impl ChannelSpellStates {
             return Ok(Default::default());
         };
         let binding = runtime.binding();
-        if timer.scope()
-            != crate::foundation::RuntimeScopeRefV1::channel(
-                binding.world_id(),
-                binding.channel_id(),
-            )
+        if timer.scope() != binding.runtime_scope()
             || timer.generation() != binding.scope_generation()
         {
             return Err(Error::StaleOwner);
@@ -557,11 +555,7 @@ impl ChannelSpellStates {
         runtime.player_control_facts(actor, game_session_id).ok()?;
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
-            timers.scope()
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                )
+            timers.scope() != binding.runtime_scope()
                 || timers.generation() != binding.scope_generation()
         }) {
             return None;
@@ -569,10 +563,7 @@ impl ChannelSpellStates {
         if self.spell_timers.is_none() {
             self.spell_timers = Some(
                 crate::spell::delayed_execution::SpellTimerOwner::new(
-                    crate::foundation::RuntimeScopeRefV1::channel(
-                        binding.world_id(),
-                        binding.channel_id(),
-                    ),
+                    binding.runtime_scope(),
                     binding.scope_generation(),
                 )
                 .ok()?,
@@ -1516,10 +1507,8 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         let binding = runtime.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return None;
         }

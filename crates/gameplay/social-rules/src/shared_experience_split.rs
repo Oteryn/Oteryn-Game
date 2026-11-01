@@ -1,12 +1,15 @@
-//! PARTY_PVP0 §5.1: channel-local eligibility and overflow-safe equal shares.
+//! PARTY_PVP0 §5.1: scope-local eligibility and overflow-safe equal shares.
 use crate::shared_experience::{SharedExperienceActivityObservation, shared_experience_active};
 
 pub const SHARED_EXPERIENCE_PRINCIPALS_MAX: usize = 50;
 
 #[derive(Debug, Clone, Copy)]
-pub struct SharedExperienceMember {
+pub struct SharedExperienceMember<Scope = [u8; 16]> {
     pub character: [u8; 16],
-    pub channel: [u8; 16],
+    /// Exact scope equality supplied by the consuming owner. The legacy field name
+    /// and default preserve Channel-only callers; native activity callers use their
+    /// full tagged RuntimeScopeRefV1, including WorldId.
+    pub channel: Scope,
     pub level: u32,
     pub x: i32,
     pub y: i32,
@@ -58,12 +61,12 @@ pub fn damage_experience_pool(
     i64::try_from(quotient + remainder / total).map_err(|_| InvalidSharedExperience)
 }
 
-pub fn shared_experience_share(
+pub fn shared_experience_share<Scope: Copy + Eq>(
     enabled: bool,
     leader: [u8; 16],
-    channel: [u8; 16],
+    channel: Scope,
     leader_pz_blocked: bool,
-    members: &[SharedExperienceMember],
+    members: &[SharedExperienceMember<Scope>],
     pool: SharedExperiencePool,
 ) -> Result<Option<i64>, InvalidSharedExperience> {
     let SharedExperiencePool {

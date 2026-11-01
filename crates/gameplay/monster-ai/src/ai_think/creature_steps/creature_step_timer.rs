@@ -1,6 +1,6 @@
 //! DEADLINE_STATE steps: one pending deadline per exact actor, cancelled on idle/refusal.
 use super::*;
-use crate::foundation::RuntimeScopeRefV1;
+
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, SemanticTimeMicros, VirtualOwnerClock,
 };
@@ -25,7 +25,7 @@ impl CreatureAiTable {
         if self.step_timers.is_none() {
             let b = runtime.binding();
             self.step_timers = OwnerTimerLane::for_generation(
-                RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+                b.runtime_scope(),
                 b.scope_generation(),
                 [(
                     StepFamily,

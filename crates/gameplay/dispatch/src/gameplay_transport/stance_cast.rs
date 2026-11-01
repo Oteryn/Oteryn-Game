@@ -8,9 +8,7 @@ use crate::durability::character_progression::{
 };
 use crate::durability::character_stance::{CommittedCharacterStance, StanceChangeOutcome};
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
 use crate::spell::stance_execution::PreparedStance;
 use crate::spell::{Execution, OperationalCastFacts, SpellDefinition};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -27,8 +25,7 @@ fn current_owner(
 ) -> bool {
     let binding = runtime.binding();
     fence.game_session_id == session
-        && fence.runtime_scope
-            == RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        && fence.runtime_scope == binding.runtime_scope()
         && fence.scope_ownership_generation == binding.scope_generation()
         && runtime
             .player_control_facts(actor, session)

@@ -292,7 +292,7 @@ pub async fn prepare_relocation<'owner, 'database>(
     authority: &crate::durability::spell_item_transaction::SpellItemAuthority,
 ) -> Result<WorldRelocationOutcome<'owner, 'database>, WorldRelocationError> {
     use crate::durability::spell_item_transaction::check_transaction;
-    use crate::foundation::{MovementFacing, RuntimeScopeRefV1};
+    use crate::foundation::MovementFacing;
     check_transaction(tx, authority)
         .await
         .map_err(WorldRelocationError::Items)?;
@@ -303,10 +303,7 @@ pub async fn prepare_relocation<'owner, 'database>(
     if current != expected || current.context() != runtime.pinned_movement_context() {
         return Err(WorldRelocationError::Admission(Error::SnapshotMismatch));
     }
-    let scope = RuntimeScopeRefV1::Channel {
-        world_id: runtime.binding().world_id(),
-        channel_id: runtime.binding().channel_id(),
-    };
+    let scope = runtime.binding().runtime_scope();
     if authority.runtime_scope() != scope
         || authority.scope_generation() != runtime.binding().scope_generation().get()
         || authority.compatible_content_digest() != runtime.content_pin().server_artifact_digest()

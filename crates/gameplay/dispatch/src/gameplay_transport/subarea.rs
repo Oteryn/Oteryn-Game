@@ -44,7 +44,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut runtime = self.runtime.lock().await;
         let binding = runtime.binding();
         if admitted.world_id != binding.world_id()
-            || admitted.channel_id != binding.channel_id()
+            || Some(admitted.channel_id) != binding.channel_id()
             || runtime.owner_fence().is_err()
             || !runtime
                 .player_control_facts(actor, admitted.game_session_id)

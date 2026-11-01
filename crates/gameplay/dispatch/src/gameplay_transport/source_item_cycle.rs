@@ -1,6 +1,6 @@
 //! Bounded source-owned world deadlines in the actual Channel owner cycle.
 use super::ComposedFreshAdmission;
-use crate::foundation::RuntimeScopeRefV1;
+
 use std::future::{Future, poll_fn};
 use std::pin::pin;
 use std::task::Poll;
@@ -221,10 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Failed or uncertain commits also retry on the next bounded owner
         // pass. Immutable SQL deadlines reconcile them without another cause.
         states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
-        let scope = RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
+        let scope = runtime.binding().runtime_scope();
         let mut ground_change = super::loop_move::GroundChange(Some(&self.states.loop_ground));
         let result = self
             .root

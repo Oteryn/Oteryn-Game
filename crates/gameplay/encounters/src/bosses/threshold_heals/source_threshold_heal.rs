@@ -12,7 +12,7 @@ pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
 use oteryn_gameplay_entities::ChannelRuntimeV1;
 use oteryn_gameplay_entities::OwnerDamageResult;
 use oteryn_gameplay_foundation::foundation::ExactActorRef;
-use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
 use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
@@ -234,10 +234,8 @@ impl ThresholdHealSource {
         actor: ExactActorRef,
     ) -> Result<(), ThresholdHealError> {
         let binding = r.binding();
-        if !f.is_current_for_scope(
-            RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !f.accepts_stamp(stamp)
+        if !f.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !f.accepts_stamp(stamp)
             || r.content_pin().server_artifact_digest() != self.content
             || r.content_pin()
                 .world_id()

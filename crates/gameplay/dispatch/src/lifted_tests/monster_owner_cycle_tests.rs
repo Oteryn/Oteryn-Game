@@ -29,11 +29,8 @@ mod tests {
             })
             .expect("creature");
         let b = runtime.binding();
-        let (fence, stamp) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .expect("test-only Foundation grant");
+        let (fence, stamp) = crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("test-only Foundation grant");
         (
             runtime,
             ChannelSpellStates::default(),

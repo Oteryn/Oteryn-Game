@@ -58,7 +58,9 @@ pub async fn drain_due_items_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let channel = authority.channel_bytes();
+    let channel = authority.channel_bytes().ok_or(SpellItemError::Rejected(
+        "Channel Item timer scope required",
+    ))?;
     let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,
        p.target_family,p.target_production_key,p.target_revision,g.stack_ordinal,
        e.character_id::text AS bag_character,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,
@@ -205,7 +207,9 @@ pub async fn drain_due_field_chains_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let channel = authority.channel_bytes();
+    let channel = authority.channel_bytes().ok_or(SpellItemError::Rejected(
+        "Channel Item timer scope required",
+    ))?;
     let mut changed = 0;
     while changed < limit {
         let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,p.source_stage,

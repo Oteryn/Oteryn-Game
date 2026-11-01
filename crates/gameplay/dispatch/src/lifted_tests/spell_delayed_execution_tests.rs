@@ -1,7 +1,7 @@
 use crate::ability::AbilityOccurrence;
 use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::foundation::{
-    ChannelRuntimeV1, CharacterId, CommandRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp,
+    ChannelRuntimeV1, CharacterId, CommandRef, GameSessionId, RuntimeWorkStamp,
 };
 use crate::foundation::{CommandId, MovementLocalPosition};
 use crate::spell::chain::TilePosition;
@@ -89,7 +89,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         cast_snapshot: None,
     };
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -429,7 +429,7 @@ fn stored_familiar_return_is_one_due_entry_per_actor() {
     let admission = runtime.reserve_fresh_session(other_session).unwrap();
     let other = runtime.commit_fresh_session(admission).unwrap();
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -593,7 +593,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
     assert!(commit_familiar_timer(&mut runtime, staged).is_err());
     assert!(runtime.companion_snapshot(familiar).is_ok());
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -754,7 +754,7 @@ fn due_context_observes_prior_commits_and_retains_a_refused_phase() {
         deferred: None,
     };
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();

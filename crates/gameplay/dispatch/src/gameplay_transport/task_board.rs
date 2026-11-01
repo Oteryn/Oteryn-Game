@@ -11,7 +11,7 @@ use crate::durability::character_progression::{
 use crate::durability::quest_state::QuestCause;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::task_board::{TaskBoardCatalogue, TaskBoardCommand, TaskBoardCommit};
-use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::task_board::full::TaskBoardAction;
 use oteryn_protocol_oteryn::task_board as wire;
 
@@ -123,9 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || item_fence.connection_generation.get()
                     != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || item_fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || item_fence.runtime_scope != binding.runtime_scope()
                 || item_fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !admitted.runtime_actor.is_some_and(|actor| {

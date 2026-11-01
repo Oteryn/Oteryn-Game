@@ -52,6 +52,17 @@ pub struct OneItemPlayerDeathItemV1 {
     pub game_session_id: Vec<u8>,
     #[prost(uint64, tag = "15")]
     pub lease_generation: u64,
+    /// Absent for all legacy Channel events. Both Instance drop and AoL burn bind their
+    /// exact source scope, even when the burn has no Ground destination.
+    #[prost(message, optional, tag = "16")]
+    pub instance_scope: Option<OneItemPlayerDeathInstanceV1>,
+}
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemPlayerDeathInstanceV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub instance_id: Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    pub ownership_generation: u64,
 }
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 enum Operation {
@@ -90,6 +101,12 @@ fn check(
     if value.session_generation == 0 || value.lease_generation == 0 {
         return Err(AuditError::InvalidInput);
     }
+    if let Some(scope) = &value.instance_scope {
+        mint::check_uuid_v7(&scope.instance_id)?;
+        if scope.ownership_generation == 0 {
+            return Err(AuditError::InvalidInput);
+        }
+    }
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
     mint::check_uuid_v7(&before.world_id)?;
@@ -122,7 +139,15 @@ fn check(
         }
     } else {
         let ground = value.ground.as_ref().ok_or(AuditError::InvalidInput)?;
-        mint::check_uuid_v7(&ground.channel_id)?;
+        let scope = ground.runtime_scope()?;
+        match (scope, &value.instance_scope) {
+            (crate::foundation::RuntimeScopeRefV1::Channel { .. }, None) => {}
+            (crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. }, Some(source))
+                if instance_id.as_slice() == source.instance_id.as_slice()
+                    && ground.runtime_scope_ownership_generation == source.ownership_generation => {
+            }
+            _ => return Err(AuditError::InvalidInput),
+        }
         mint::check_content_key(&ground.map_revision)?;
         mint::check_technical_bytes(&ground.spatial_position)?;
         if ground.world_id != before.world_id
@@ -177,8 +202,13 @@ pub fn decode(
             .transaction_event
             .as_ref()
             .is_none_or(|t| t.ordinal != 1 || t.count != 1)
-        || (burn && envelope.channel_id.is_some())
-        || (!burn && envelope.channel_id.as_ref() != value.ground.as_ref().map(|g| &g.channel_id))
+        || envelope.instance_id.as_ref() != value.instance_scope.as_ref().map(|s| &s.instance_id)
+        || envelope.channel_id.as_ref()
+            != value
+                .ground
+                .as_ref()
+                .filter(|g| g.instance_id.is_none())
+                .map(|g| &g.channel_id)
     {
         return Err(AuditError::InvalidInput);
     }
@@ -198,7 +228,12 @@ pub(super) fn encode(
         return Err(AuditError::InvalidInput);
     }
     let world = value.before.as_ref().map(|s| s.world_id.clone());
-    let channel = value.ground.as_ref().map(|g| g.channel_id.clone());
+    let channel = value
+        .ground
+        .as_ref()
+        .filter(|g| g.instance_id.is_none())
+        .map(|g| g.channel_id.clone());
+    let instance = value.instance_scope.as_ref().map(|s| s.instance_id.clone());
     let payload = mint::encode_bounded(
         &Payload {
             interpretation_revision: 1,
@@ -221,6 +256,7 @@ pub(super) fn encode(
         occurred_at_unix_ms: request.occurred_at_unix_ms,
         world_id: world,
         channel_id: channel,
+        instance_id: instance,
         transaction_event: Some(mint::TransactionEventRefV1 {
             transaction_id: request.transaction_id.to_vec(),
             ordinal: 1,

@@ -43,11 +43,10 @@ fn scenario(item: u32, family: usize) -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
-            super::death_ml_loss_composed::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
-            )?;
+        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+            deps.admitted.world_id,
+            "content-1",
+        )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -100,7 +99,10 @@ fn scenario(item: u32, family: usize) -> TestResult {
         ))
         .map_err(debug)?;
         rates.enabled = true;
-        owner.states.training.config = Some(Arc::new(rates));
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .training
+            .config = Some(Arc::new(rates));
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -301,13 +303,33 @@ fn scenario(item: u32, family: usize) -> TestResult {
             status.charges, 499,
             "the real dispatch status reports the charge consumed by the elapsed tick"
         );
-        let stopped = crate::gameplay_transport::loop_training::wire::dispatch(&owner, admitted,
-            UseCommand { command_id: 3, ..command }, 67, &[8, 3], Some(&items)).await.ok_or("stop")?;
+        let stopped = crate::gameplay_transport::loop_training::wire::dispatch(
+            &owner,
+            admitted,
+            UseCommand {
+                command_id: 3,
+                ..command
+            },
+            67,
+            &[8, 3],
+            Some(&items),
+        )
+        .await
+        .ok_or("stop")?;
         assert_eq!(stopped.disposition, 2);
         assert_eq!(stopped.charges, 499);
-        let stored: (i64, i64) = sqlx::query_as("SELECT distance_tries,mana_spent FROM game_character_build_state").fetch_one(&h.pool).await?;
-        if family == 5 { assert_eq!(stored.0, 7, "remote bow dummy training is durable"); }
-        else { assert!(stored.1 > 0, "remote wand/rod training is durable"); }
-        drop(owner); drop(authority); drop(seal); h.cleanup().await
+        let stored: (i64, i64) =
+            sqlx::query_as("SELECT distance_tries,mana_spent FROM game_character_build_state")
+                .fetch_one(&h.pool)
+                .await?;
+        if family == 5 {
+            assert_eq!(stored.0, 7, "remote bow dummy training is durable");
+        } else {
+            assert!(stored.1 > 0, "remote wand/rod training is durable");
+        }
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }

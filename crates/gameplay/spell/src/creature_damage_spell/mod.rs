@@ -1191,10 +1191,8 @@ impl DamageSpellOwner {
         let current = fence
             .or_else(|| runtime.owner_fence().ok())
             .ok_or(AttackError::StaleOwner)?;
-        if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -1522,10 +1520,8 @@ impl DamageSpellOwner {
     ) -> Result<SpellOutcome, AttackError> {
         let (source, proposal, session) = pulse.into_owned_parts();
         let b = runtime.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }

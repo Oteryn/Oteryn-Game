@@ -88,8 +88,7 @@ pub async fn prepare_from_owners(
         || authority.command() != command
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
         || b.content_digest != runtime.content_pin().server_artifact_digest()
     {

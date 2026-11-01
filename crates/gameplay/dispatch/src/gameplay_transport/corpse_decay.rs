@@ -12,23 +12,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let fence = {
             let runtime = self.runtime.lock().await;
-            if runtime.binding().world_id() != self.world_id
-                || runtime.binding().channel_id() != self.channel_id
-            {
+            if runtime.binding().world_id() != self.world_id {
                 return;
             }
             let Ok(owner) = runtime.owner_fence() else {
                 return;
             };
             CorpseDecayFence {
-                world_id: self.world_id,
-                channel_id: self.channel_id,
+                runtime_scope: runtime.binding().runtime_scope(),
                 scope_ownership_generation: owner.generation(),
             }
         };
         let schedule = match self
             .root
-            .read_corpse_decay_schedule(self.character, self.world_id, self.channel_id)
+            .read_scoped_corpse_decay_schedule(self.character, fence.runtime_scope)
             .await
         {
             Ok(schedule) => schedule,
@@ -69,6 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime
             .owner_fence()
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
+            && runtime.binding().runtime_scope() == fence.runtime_scope
         {
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {

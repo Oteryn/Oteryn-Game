@@ -53,10 +53,7 @@ mod native_callback_origin_tests {
             .expect("valid native fixture operation must succeed");
         let b = r.binding();
         let (f, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
+            b.runtime_scope(),
             b.scope_generation(),
         )
         .expect("valid native fixture operation must succeed");
@@ -89,10 +86,7 @@ mod native_callback_origin_tests {
             matches!(r.native_summon_origin(child).expect("valid native fixture operation must succeed"),Some(NativeSummonOrigin::SourceCallback{ability,occurrence,..})if ability.as_ref()=="oteryn:ability.spell.gaz_haragoth_summon"&&occurrence.as_ref()=="ai-profile:source-fixture:0:attack:11")
         );
         let (wrong, wrong_stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
+            b.runtime_scope(),
             oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2)
                 .expect("valid native fixture operation must succeed"),
         )
@@ -129,10 +123,7 @@ mod native_callback_origin_tests {
         let mut r = runtime(SUMMONERS * (CHILDREN + 1) + 8);
         let b = r.binding();
         let (f, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
+            b.runtime_scope(),
             b.scope_generation(),
         )
         .expect("the fixture fence is current");

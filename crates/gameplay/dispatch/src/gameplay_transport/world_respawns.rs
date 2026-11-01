@@ -60,7 +60,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let ordinary = async {
             drive(
-                self.runtime,
+                &self.runtime,
                 &MonotonicRespawnWake::from_origin(self.clock_origin),
                 shutdown,
             )
@@ -99,6 +99,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
             (runtime.binding(), runtime.boss_spawns().to_vec())
         };
+        // Lever rooms own a one-shot boss; the open-world spawn clock remains Channel-only.
+        let Some(channel) = binding.channel_id() else {
+            return Ok(true);
+        };
         for spawn in spawns {
             if timers
                 .get(&spawn.key)
@@ -124,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let key = BossClockKey {
                 world: binding.world_id(),
-                channel: binding.channel_id(),
+                channel,
                 spawn: spawn.key.clone(),
             };
             let outcome = self

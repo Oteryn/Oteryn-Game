@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use {
     oteryn_gameplay_entities::{ChannelRuntimeV1, OwnerDamageResult},
     oteryn_gameplay_foundation::foundation::{
-        ExactActorRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+        ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
     },
 };
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,10 +147,8 @@ impl IcicleOwner {
         now: SemanticTimeMicros,
     ) -> Result<IcicleOutcome, IcicleError> {
         let b = r.binding();
-        if !fence.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(IcicleError::Fence);
         }
@@ -274,10 +272,8 @@ impl IcicleOwner {
             }
         }
         let b = r.binding();
-        if !fence.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(IcicleError::Fence);
         }

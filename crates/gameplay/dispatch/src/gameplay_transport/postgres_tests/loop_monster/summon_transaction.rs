@@ -175,10 +175,7 @@ async fn check_scope_replay(
     let mut states = owner.states.spell_states.lock().await;
     let objects = deps.door.lock().await;
     let mut tx = harness.pool.begin().await?;
-    let scope = crate::foundation::RuntimeScopeRefV1::channel(
-        runtime.binding().world_id(),
-        runtime.binding().channel_id(),
-    );
+    let scope = runtime.binding().runtime_scope();
     let scope_authority = assert_spell_item_scope_in_transaction(
         &mut tx,
         &permit,

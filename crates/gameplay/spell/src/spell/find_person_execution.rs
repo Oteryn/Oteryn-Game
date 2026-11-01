@@ -13,7 +13,7 @@ use crate::durability::spell_privacy::{
 };
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
-    MovementPositionSnapshot, RuntimeScopeRefV1,
+    MovementPositionSnapshot,
 };
 use sqlx::{Postgres, Row, Transaction};
 #[derive(Debug)]
@@ -85,10 +85,7 @@ pub async fn plan_find_person_in_transaction(
     if !supports_player_location(spell) {
         return Err(Error::InvalidProfile);
     }
-    let scope = RuntimeScopeRefV1::Channel {
-        world_id: runtime.binding().world_id(),
-        channel_id: runtime.binding().channel_id(),
-    };
+    let scope = runtime.binding().runtime_scope();
     if authority.runtime_scope() != scope
         || authority.scope_generation() != runtime.binding().scope_generation().get()
         || authority.compatible_content_digest() != runtime.content_pin().server_artifact_digest()

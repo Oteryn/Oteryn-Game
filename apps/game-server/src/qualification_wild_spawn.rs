@@ -4,9 +4,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{CollisionClass, LogicalCell, QualifiedNativeEntryRoom};
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::{DurabilityRoot, character_authority::ReconciledCharacterAuthority};
-use crate::foundation::{
-    ChannelRuntimeV1, CompanionSnapshot, MovementLocalPosition, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, CompanionSnapshot, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const POSITION: MovementLocalPosition = MovementLocalPosition {
@@ -68,15 +66,12 @@ pub(super) async fn realize_rat_in_transaction(
         room, runtime, POSITION,
     )
     .map_err(str::to_owned)?;
-    let scope =
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id());
+    let scope = runtime.binding().runtime_scope();
     // Qualification-only spawn: the topology's seam owns the real lane and is out of reach
-    // here, so this test path proves the scope under a fresh lane permit for the same Channel.
-    let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
-        runtime.binding().world_id(),
-        runtime.binding().channel_id(),
-    )
-    .await;
+    // here, so this test path proves the same Channel fixture's exact tagged scope.
+    let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(scope)
+        .await
+        .map_err(|error| format!("qualification spawn scope lane: {error:?}"))?;
     let owned = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
         tx,
         &permit,
