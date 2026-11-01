@@ -90,6 +90,18 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    // Every native action/trade/travel source can grant through the shared account owner.
+    // Passive kill/event grants are observed on the existing liveness cadence as well.
+    let observe_achievements = matches!(
+        &dispatch,
+        Dispatch::Use(UseOutcome {
+            disposition: UseDisposition::Committed,
+            ..
+        }) | Dispatch::Npc(..)
+            | Dispatch::NpcTrade(..)
+            | Dispatch::NpcShop(..)
+            | Dispatch::Reply(crate::foundation::CommandStatus::Accepted, _)
+    );
     match dispatch {
         Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
             use oteryn_protocol_oteryn::zones_nologout::{IN_FIGHT_MESSAGE, NO_LOGOUT_MESSAGE};
@@ -405,6 +417,9 @@ where
     .is_none()
     {
         return Err(ServeEnd::Disconnected);
+    }
+    if observe_achievements {
+        achievement_notices::refresh(stream, authority, session).await?;
     }
     Ok(())
 }

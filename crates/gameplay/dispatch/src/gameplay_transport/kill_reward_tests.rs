@@ -25,6 +25,40 @@ fn session(seed: u8) -> GameSessionId {
     GameSessionId::decode(&id(seed)).expect("session")
 }
 
+#[test]
+fn p12a_completion_refreshes_titles_on_commit_and_reconciliation_only() {
+    use crate::domain::{CharacterId, CharacterRevision};
+    use crate::durability::bestiary_progress::{BestiaryKillOccurrence, CommittedBestiaryKill};
+    let mut kill = CommittedBestiaryKill {
+        occurrence: BestiaryKillOccurrence::from_bytes(id(11)).expect("occurrence"),
+        character_id: CharacterId::from_bytes(id(12)).expect("character"),
+        race_key: "oteryn:creature.rat".into(),
+        race_definition_revision: "definition-r1".into(),
+        original_character_revision: CharacterRevision::new(1).expect("revision"),
+        committed_character_revision: CharacterRevision::new(2).expect("revision"),
+        final_kill_threshold: 25,
+        kill_count_before: 23,
+        kill_count_after: 24,
+    };
+    assert!(!bestiary_completion_affects_titles(
+        &BestiaryKillOutcome::Committed(kill.clone())
+    ));
+    kill.kill_count_before = 24;
+    kill.kill_count_after = 25;
+    assert!(bestiary_completion_affects_titles(
+        &BestiaryKillOutcome::Committed(kill.clone())
+    ));
+    assert!(bestiary_completion_affects_titles(
+        &BestiaryKillOutcome::AlreadyCommitted(kill)
+    ));
+    assert!(!bestiary_completion_affects_titles(
+        &BestiaryKillOutcome::Saturated {
+            race_key: "oteryn:creature.rat".into(),
+            kill_count: 25,
+        }
+    ));
+}
+
 /// A loot table whose every one of `drops` entries always drops: `drops` planned MINTs.
 fn row(drops: usize) -> Arc<CreatureRewardRow> {
     let item = |key: String| LootDefinitionRef::new("Item", key, "definition-r1");

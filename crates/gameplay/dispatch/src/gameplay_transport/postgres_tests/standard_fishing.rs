@@ -146,6 +146,7 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         super::item_look::seed_main_backpack(&harness, &[(rod, 1), ("oteryn:item.tibia.i3492", 3)])
             .await?;
+        super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -197,6 +198,7 @@ fn scenario() -> TestResult {
                     );
                     let bait: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3492'").fetch_one(&harness.pool).await?;
                     assert_eq!(bait, 3);
+                    super::achievement_granters::assert_gathering(&harness, None).await?;
                 }
                 other => return Err(format!("unexpected fishing refusal {other:?}").into()),
             }
@@ -211,6 +213,9 @@ fn scenario() -> TestResult {
             let actual: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(key).fetch_one(&harness.pool).await?;
             assert_eq!(actual, quantity, "{key}");
         }
+        let achievement = super::achievement_granters::assert_gathering(
+            &harness, Some("oteryn:achievement/here_fishy_fishy"),
+        ).await?;
         let (_, replay, _) = exchange(&owner, admitted, command_id, &actual, None).await?;
         assert_eq!(replay, UseDisposition::Committed);
         assert_eq!(
@@ -221,6 +226,10 @@ fn scenario() -> TestResult {
         );
         let fish: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3578' AND lifecycle=1").fetch_one(&harness.pool).await?;
         assert_eq!(fish, 1);
+        assert_eq!(achievement, super::achievement_granters::assert_gathering(
+            &harness, Some("oteryn:achievement/here_fishy_fishy"),
+        ).await?);
+        eprintln!("POSTGRES_CASE_COMPLETED P11 standard fishing grant and replay");
         drop(owner);
         drop(authority);
         drop(seal);
@@ -242,6 +251,17 @@ fn m09_gathering_wire_failed_ice_removes_block() -> TestResult { run_gathering(5
 fn m09_gathering_wire_ice_hole_catches_rare_fish() -> TestResult { run_gathering(3483,7236,Some(7237),Some(7158),true) }
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult { run_gathering(3483,7236,Some(7236),None,false) }
+
+#[test]
+fn p11_ice_fishing_second_rare_species_grants_exquisite_taste() -> TestResult { run_gathering(3483,7236,Some(7237),Some(3580),true) }
+#[test]
+fn p11_ice_fishing_third_rare_species_grants_exquisite_taste() -> TestResult { run_gathering(3483,7236,Some(7237),Some(7159),true) }
+#[test]
+fn p11_ice_fishing_common_fish_counts_here_fishy_fishy() -> TestResult { run_gathering(3483,7236,Some(7237),Some(3578),true) }
+#[test]
+fn p11_mechanical_ice_fishing_grants_exquisite_taste() -> TestResult { run_gathering(9306,7236,Some(7237),Some(7158),true) }
+#[test]
+fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResult { run_gathering(5942,5995,Some(4098),None,true) }
 
 fn run_gathering(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }
@@ -377,6 +397,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         super::item_look::seed_main_backpack(&harness, &[(rod, 1), ("oteryn:item.tibia.i3492", 3)])
             .await?;
+        super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -461,13 +482,22 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         let tool_quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(rod).fetch_one(&harness.pool).await?;
         assert_eq!(tool_quantity,1);
         let bait: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3492'").fetch_one(&harness.pool).await?;
-        assert_eq!(bait,if tool==3483 && committed {2} else {3});
+        assert_eq!(bait,if matches!(tool, 3483 | 9306) && committed {2} else {3});
+        let earned = match (tool, target_id, yield_item) {
+            (5908, 5969, Some(5878)) => Some("oteryn:achievement/skin_deep"),
+            (5942, 5995, Some(5906)) => Some("oteryn:achievement/ashes_to_dust"),
+            (3483 | 9306, 7236, Some(7158 | 3580 | 7159)) => Some("oteryn:achievement/exquisite_taste"),
+            (3483 | 9306, 7236, Some(3578)) => Some("oteryn:achievement/here_fishy_fishy"),
+            _ => None,
+        };
+        let achievement = super::achievement_granters::assert_gathering(&harness, earned).await?;
         if committed {
             let (_, replay, _) = exchange(&owner, next, command_id, &actual, None).await?;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?,1);
             owner.refresh_terrain_tools().await;
         }
+        assert_eq!(achievement, super::achievement_granters::assert_gathering(&harness, earned).await?);
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
             let outcome = owner.root.commit_map_item_mint(&permit,owner.character,owner.holder,fence,candidate).await;
@@ -495,6 +525,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             assert!(tile.entries.iter().any(|e| e.facts.appearance_id == 7200));
         }
         eprintln!("FIXM09_PG_END tool={tool} target={target_id} duration={:?}", started.elapsed());
+        eprintln!("POSTGRES_CASE_COMPLETED P11 gathering tool={tool} target={target_id} earned={earned:?}");
         drop(owner);
         drop(authority);
         drop(seal);

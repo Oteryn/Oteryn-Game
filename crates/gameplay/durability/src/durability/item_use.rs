@@ -48,6 +48,7 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod concoction;
+pub mod condition_potions;
 pub mod fluid;
 pub mod mining;
 pub mod mount_taming;
@@ -371,7 +372,9 @@ impl DurabilityRoot {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
-        ) {
+        ) || oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
+            &request.source_definition.production_key,
+        ).is_some() {
             return Err(ItemUseError::InvalidInput);
         }
         self.commit_use(authority, node, fence, request, None).await

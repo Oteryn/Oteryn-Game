@@ -61,6 +61,16 @@ use oteryn_gameplay_domain::domain::condition::{
 #[cfg(test)]
 use oteryn_gameplay_domain::domain::condition::{ExactSpeedRatio, RationalSpeedRange};
 
+/// Crystal's CONDITION_ATTRIBUTES/COMBAT/subID0 is one mutation slot, whether its
+/// native value carries combat attributes or flat skills (PR #2782 Q9).
+/// creature.cpp:1409-1416; condition.cpp:436-447,552-592. Typed reads stay distinct.
+const fn shared_mutation_slot(key: ConflictKey) -> ConflictKey {
+    match key {
+        ConflictKey::SpellSkills(0) => ConflictKey::Attributes,
+        _ => key,
+    }
+}
+
 /// An item appearance retains the exact activated Item identity and generation.
 /// These historical selection bytes do not grant an Outfit unlock or ownership.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -763,10 +773,19 @@ impl<S: Clone> ConditionStore<S> {
         now.checked_add(u64::from(bound_ms) * MICROS_PER_MS)
             .ok_or(ConditionRefusal::ArithmeticBounds)?;
         let condition_type = definition.condition_type();
-        let key = condition_type.conflict_key();
+        let key = shared_mutation_slot(condition_type.conflict_key());
+        let shared_type = match condition_type {
+            ConditionType::Attributes => Some(ConditionType::SpellSkills(0)),
+            ConditionType::SpellSkills(0) => Some(ConditionType::Attributes),
+            _ => None,
+        };
+        let shared_blocked = shared_type
+            .is_some_and(|kind| immunities.contains(&kind) || self.suppressed.contains(&kind));
         // §3.5: neither creature nor Cleanse immunity refuses `agony`.
         if condition_type != ConditionType::Agony
-            && (immunities.contains(&condition_type) || self.suppressed.contains(&condition_type))
+            && (immunities.contains(&condition_type)
+                || self.suppressed.contains(&condition_type)
+                || shared_blocked)
             || matches!(condition_type, ConditionType::SpellSkills(_))
                 && immunities.contains(&ConditionType::Attributes)
             || matches!(condition_type, ConditionType::SpellRegeneration(_))
@@ -784,10 +803,9 @@ impl<S: Clone> ConditionStore<S> {
         if pve_source_blocked || pve_target_blocked {
             return Err(ConditionRefusal::ReentryProtected);
         }
-        let current = self
-            .instances
-            .iter()
-            .position(|instance| instance.definition.condition_type().conflict_key() == key);
+        let current = self.instances.iter().position(|instance| {
+            shared_mutation_slot(instance.definition.condition_type().conflict_key()) == key
+        });
         if current.is_none() && self.instances.len() >= COND0_RL_01_INSTANCES_PER_ACTOR {
             return Err(ConditionRefusal::InstanceLimit);
         }
@@ -1068,9 +1086,10 @@ impl<S: Clone> ConditionStore<S> {
     /// Remaining immunity on the removed conflict key. CONDITIONS-0 §5 deliberately binds
     /// the key; haste and paralysis therefore share this temporary immunity.
     pub fn cleanse_immunity_remaining(&self, key: ConflictKey, now: u64) -> u64 {
+        let key = shared_mutation_slot(key);
         self.cleanse_immunities
             .iter()
-            .find(|immunity| immunity.key == key)
+            .find(|immunity| shared_mutation_slot(immunity.key) == key)
             .map_or(0, |immunity| immunity.until.saturating_sub(now))
     }
 
@@ -1115,7 +1134,7 @@ impl<S: Clone> ConditionStore<S> {
             .ok_or(ConditionRefusal::TimeOverflow)?;
         Ok(Some(CleansePlan {
             sequence: instance.sequence,
-            key: instance.definition.condition_type().conflict_key(),
+            key: shared_mutation_slot(instance.definition.condition_type().conflict_key()),
             immune_until,
         }))
     }
@@ -1123,17 +1142,18 @@ impl<S: Clone> ConditionStore<S> {
     /// Applies the retained plan once. A removed or replaced instance is never substituted
     /// with another candidate; replay neither removes another condition nor extends immunity.
     pub fn commit_cleanse(&mut self, plan: CleansePlan) -> bool {
+        let key = shared_mutation_slot(plan.key);
         let Some(index) = self.instances.iter().position(|instance| {
             instance.sequence == plan.sequence
-                && instance.definition.condition_type().conflict_key() == plan.key
+                && shared_mutation_slot(instance.definition.condition_type().conflict_key()) == key
         }) else {
             return false;
         };
         self.instances.remove(index);
         self.cleanse_immunities
-            .retain(|immunity| immunity.key != plan.key);
+            .retain(|immunity| shared_mutation_slot(immunity.key) != key);
         self.cleanse_immunities.push(CleanseImmunity {
-            key: plan.key,
+            key,
             until: plan.immune_until,
         });
         true
@@ -1392,12 +1412,14 @@ impl<S: Clone> ConditionStore<S> {
     /// §3.5: the gate families and `agony` end only by their duration, death or the §6.3
     /// lifecycle; no dispel names them.
     pub fn dispel_key(&mut self, key: ConflictKey) -> usize {
+        let key = shared_mutation_slot(key);
         if matches!(key, ConflictKey::Gate(_) | ConflictKey::Agony) {
             return 0;
         }
         let before = self.instances.len();
-        self.instances
-            .retain(|instance| instance.definition.condition_type().conflict_key() != key);
+        self.instances.retain(|instance| {
+            shared_mutation_slot(instance.definition.condition_type().conflict_key()) != key
+        });
         before - self.instances.len()
     }
     pub fn cleanse_negative(&mut self) -> usize {

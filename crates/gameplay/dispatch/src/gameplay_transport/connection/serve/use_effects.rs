@@ -105,58 +105,6 @@ where
         // carries it has actually been transmitted.
         session.admitted.continuity.overlay_revision = entry.revision;
     }
-    // ACHIEVEMENT-0 §5: one delta per committed `Granted`, after the commit, only
-    // with capability 8. The revision advances before the write, so a revision
-    // that may have reached the client is never reused, even if the write fails.
-    // ACH-NOTIFY-2: an `Unknown` notice with capability 8 fails closed after the
-    // result; the resumed connection's snapshot restores the watermark.
-    let notice_revision = session
-        .admitted
-        .continuity
-        .achievement_notice_revision
-        .filter(|_| session.notices_selected);
-    if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
-        return Err(ServeEnd::Disconnected);
-    }
-    if let (EarnedNotice::Earned(earned), Some(from)) = (&outcome.earned, notice_revision) {
-        let (Some(delta_sequence), Some(to)) =
-            (session.sequence.checked_add(1), from.checked_add(1))
-        else {
-            return Err(ServeEnd::Disconnected);
-        };
-        let Ok(payload) = encode_achievement_earned(earned) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        let Ok(delta) = encode_state_delta(
-            session.generation,
-            delta_sequence,
-            STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
-            from,
-            to,
-            DELTA_TYPE_ACHIEVEMENT_EARNED_V1,
-            &payload,
-        ) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        session.sequence = delta_sequence;
-        session.admitted.continuity.server_sequence = session.sequence;
-        session.admitted.continuity.achievement_notice_revision = Some(to);
-        if write_frame(stream, &delta).await.is_err() {
-            return Err(ServeEnd::Disconnected);
-        }
-    }
-    // Crystal src/creatures/players/achievement/player_achievement.cpp:27-42: newly earned
-    // achievements use the ordinary advance/status-text path. `NoneEarned` includes an
-    // already-owned achievement, so it never repeats the message.
-    if let Some(text) = crate::gameplay_transport::achievement_notification(&outcome.earned) {
-        tutorial_notices_transport::emit_notice(
-            stream,
-            &mut session.admitted,
-            &mut session.sequence,
-            &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(text),
-        )
-        .await
-        .ok_or(ServeEnd::Disconnected)?;
-    }
+    achievement_notices::immediate(stream, authority, session, &outcome.earned).await?;
     Ok(())
 }

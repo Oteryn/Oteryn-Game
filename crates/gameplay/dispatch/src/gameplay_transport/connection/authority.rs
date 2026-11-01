@@ -4,6 +4,15 @@ use super::*;
 
 mod composed;
 
+/// One bounded read of the account's immutable achievement facts and its watermark.
+/// Production supplies all keys, with names and points resolved by the active catalogue.
+/// `None` facts retain the watermark-only contract for injected transport authorities.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AchievementNoticeObservation {
+    pub watermark: AchievementWatermark,
+    pub facts: Option<Vec<oteryn_protocol_oteryn::achievement_notices::AchievementEarned>>,
+}
+
 /// Native depot page data from one owner read. Item identities never enter the
 /// ordinal-only depot wire reply. This observation grants neither reach nor custody.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1033,6 +1042,36 @@ pub trait FreshAdmissionAuthority {
         _account_id: [u8; 16],
     ) -> impl Future<Output = Option<AchievementWatermark>> {
         async { None }
+    }
+
+    /// The current controller's complete bounded key set. Join/resync seeds it silently;
+    /// subsequent observations notify only keys absent from that connection's seed.
+    /// A production authority refuses a stale account, connection, transport or actor lease.
+    fn observe_achievement_notice_facts(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<AchievementNoticeObservation>> {
+        async move {
+            let controller = admitted.controller?;
+            let watermark = self
+                .observe_achievement_notices(controller.account_id)
+                .await;
+            let watermark = if admitted
+                .continuity
+                .selected_capabilities
+                .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES)
+            {
+                watermark?
+            } else {
+                // Status-only fixture authorities need no account display owner. Production
+                // overrides this method and never substitutes an unreadable fact set.
+                watermark.unwrap_or_default()
+            };
+            Some(AchievementNoticeObservation {
+                watermark,
+                facts: None,
+            })
+        }
     }
 
     /// The periodic Serene evaluation of the admitted actor (SPELL-D8 §8.2), run every

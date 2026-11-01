@@ -32,7 +32,10 @@ fn canonical_slot(slot: u8) -> Option<(EquipmentSlot, ReferenceEquipmentSlot)> {
 }
 
 /// Mantra is a flat item attribute on body/Extra slots, including Ammo.
-fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState) -> Option<u32> {
+pub(in crate::gameplay_transport) fn equipped_mantra(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<u32> {
     use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
     let mut total = 0_i64;
     for item in &equipment.items {

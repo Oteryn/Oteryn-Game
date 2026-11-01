@@ -8,13 +8,37 @@ use super::character_authority::{
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
+use crate::content::native_gameplay::NativeCosmeticsView;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::PageRequest;
 use oteryn_protocol_oteryn::character_info::{
     CharacterTitle, TRACKED_CREATURES, TitleFacts, TitleLifetime, newly_eligible,
-    qualified_selection, qualify,
+    qualified_selection, qualify, valid_at,
 };
 use sqlx::Row;
+
+#[path = "character_title/charm.rs"]
+mod charm;
+#[path = "character_title/completion.rs"]
+mod completion;
+#[path = "character_title/cosmetics.rs"]
+mod cosmetics;
+
+struct Sources {
+    charm: Option<&'static charm::Source>,
+    completion: Option<&'static completion::Source>,
+    cosmetics: Option<cosmetics::Source>,
+}
+
+impl Sources {
+    fn new(cosmetics: Option<NativeCosmeticsView>) -> Self {
+        Self {
+            charm: charm::source(),
+            completion: completion::source(),
+            cosmetics: cosmetics.map(cosmetics::Source::new),
+        }
+    }
+}
 
 /// Only the fenced quest transaction calls this after persisting the Eternity flag.
 pub(super) async fn grant_pensive_in_transaction(
@@ -61,19 +85,28 @@ async fn read_title_facts(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
     now_unix_ms: i64,
-) -> Result<TitleFacts, sqlx::Error> {
+    sources: &Sources,
+) -> Result<TitleFacts, super::DurabilityError> {
+    // Bestiary/Charm writes serialize on this root through assert_gameplay_fence. Hold a
+    // shared lock until the caller's grant commits, so spending cannot invalidate Beastly's
+    // observed available balance between qualification and insertion.
+    sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     let row = sqlx::query(TITLE_FACTS_SQL)
         .bind(character.as_bytes().as_slice())
         .bind(TRACKED_CREATURES.as_slice())
         .bind(now_unix_ms)
-        .bind(format!("{}eternity", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX))
+        .bind(format!(
+            "{}eternity",
+            oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX
+        ))
         .fetch_one(&mut **tx)
         .await?;
     let count = |value: i64| u32::try_from(value.max(0)).unwrap_or(u32::MAX);
     let leads: Vec<i32> = row.try_get("world_leads")?;
     let bosses: Vec<i64> = row.try_get("bosses_unlocked")?;
     let kills: Vec<i64> = row.try_get("tracked_kills")?;
-    let mut tracked_kills = [0; 4];
+    let mut tracked_kills = [0; TRACKED_CREATURES.len()];
     for (slot, value) in tracked_kills.iter_mut().zip(kills) {
         *slot = count(value);
     }
@@ -81,6 +114,18 @@ async fn read_title_facts(
     for (slot, value) in bosses_unlocked.iter_mut().zip(bosses) {
         *slot = count(value);
     }
+    let available_charm_points = match sources.charm {
+        Some(source) => source.available(tx, character).await?,
+        None => 0,
+    };
+    let cosmetics = match &sources.cosmetics {
+        Some(source) => source.read(tx, character).await?,
+        None => cosmetics::Facts::default(),
+    };
+    let completion = match sources.completion {
+        Some(source) => source.read(tx, character).await?,
+        None => completion::Facts::default(),
+    };
     Ok(TitleFacts {
         monk_pilgrimage: row.try_get("monk_pilgrimage")?,
         weapon_mastery: row.try_get("weapon_mastery")?,
@@ -97,6 +142,14 @@ async fn read_title_facts(
         bosses_unlocked,
         tracked_kills,
         character_decade: row.try_get("character_decade")?,
+        available_charm_points,
+        mounts_unlocked: cosmetics.mounts,
+        full_outfits: cosmetics.full_outfits,
+        outfits_unlocked: cosmetics.outfits,
+        bestiary_classes_complete: completion.bestiary_classes,
+        all_bestiary_complete: completion.all_bestiary,
+        boss_categories_complete: completion.boss_categories,
+        all_bosses_complete: completion.all_bosses,
         ..TitleFacts::default()
     })
 }
@@ -121,24 +174,6 @@ const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_
  FROM me";
 
 impl DurabilityRoot {
-    /// Derives title predicates from their existing durable owners. No title
-    /// qualification is copied into the title tables.
-    pub async fn character_title_facts(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId,
-        now_unix_ms: i64,
-    ) -> Result<TitleFacts, CharacterAuthorityError> {
-        let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            let facts = read_title_facts(&mut tx, character, now_unix_ms).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(facts))
-        })).await?
-    }
-
     /// PAR-P12a automatic unlock (Crystal `PlayerTitle::checkAndUpdateNewTitles`,
     /// `player_title.cpp:123`): in one fenced transaction, grant every newly eligible title
     /// from the native facts, clear a selection that no longer qualifies and revoke the
@@ -149,10 +184,12 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         now_unix_ms: i64,
+        cosmetics: Option<NativeCosmeticsView>,
     ) -> Result<Vec<CharacterTitle>, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let character = fence.character_id;
+        let sources = Sources::new(cosmetics);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -160,7 +197,7 @@ impl DurabilityRoot {
             if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
-            let facts = read_title_facts(&mut tx, character, now_unix_ms).await?;
+            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources).await?;
             let rows: Vec<i16> = sqlx::query_scalar("SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE")
                 .bind(character.as_bytes().as_slice()).bind(now_unix_ms).fetch_all(&mut *tx).await?;
             let mut earned = Vec::with_capacity(rows.len());
@@ -250,20 +287,21 @@ impl DurabilityRoot {
             Ok(Ok(bytes))
         })).await?
     }
-    /// Reads earned state and atomically clears a selection which no longer
-    /// qualifies. The supplied facts are observations from the native owners,
-    /// not persisted copies of their truth.
+    /// Reads native qualification and earned state in the same fenced transaction,
+    /// then clears a selection and conditional award which no longer qualify.
+    /// A page read cannot revoke a newer grant using an earlier facts snapshot.
     pub async fn read_and_requalify_character_titles(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         character: CharacterId,
-        facts: TitleFacts,
         now_unix_ms: i64,
+        cosmetics: Option<NativeCosmeticsView>,
     ) -> Result<CharacterTitleState, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
+        let sources = Sources::new(cosmetics);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -271,6 +309,7 @@ impl DurabilityRoot {
             if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
+            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources).await?;
             let rows = sqlx::query("SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE")
                 .bind(character.as_bytes().as_slice()).bind(now_unix_ms).fetch_all(&mut *tx).await?;
             let revoked = revoked_conditional_titles(facts);
@@ -309,6 +348,50 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Live command seam: qualification and its durable grant share the current session fence
+    /// and transaction. In particular, Charm Points cannot be spent between a separate
+    /// qualification read and this write. Content is prepared before entering the transaction.
+    pub async fn qualify_and_unlock_character_title(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        title: CharacterTitle,
+        now_unix_ms: i64,
+        cosmetics: Option<NativeCosmeticsView>,
+    ) -> Result<bool, CharacterAuthorityError> {
+        if now_unix_ms < 0 {
+            return Err(CharacterAuthorityError::Rejected);
+        }
+        let recovery = authority.record_for(self)?;
+        let node = node.clone();
+        let sources = Sources::new(cosmetics);
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            let facts = read_title_facts(&mut tx, fence.character_id, now_unix_ms, &sources).await?;
+            let qualification = qualify(title, facts);
+            if !valid_at(qualification, now_unix_ms) {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            let expiry = match qualification.lifetime {
+                TitleLifetime::Until(value) => Some(value),
+                _ => None,
+            };
+            let changed = sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms,expires_at_unix_ms) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT DO NOTHING")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(i16::from(title.id()))
+                .bind(now_unix_ms).bind(expiry).execute(&mut *tx).await?.rows_affected() == 1;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(changed))
+        })).await?
+    }
+
+    /// Trusted internal grant seam. Live client commands use
+    /// [`Self::qualify_and_unlock_character_title`] so a request cannot supply qualification.
     pub async fn unlock_character_title(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -412,19 +495,24 @@ mod tests {
         ] {
             assert!(matches!(decode_title(stored), Ok(decoded) if decoded == title));
         }
-        for invalid in [0, 44, -1, 256] {
+        // P12a appended titles widen the valid catalogue; the first unknown id follows it.
+        for invalid in [
+            0,
+            oteryn_protocol_oteryn::character_info::TITLE_COUNT as i16 + 1,
+            -1,
+            256,
+        ] {
             assert!(matches!(
                 decode_title(invalid),
                 Err(CharacterAuthorityError::Rejected)
             ));
         }
-        assert_eq!(
-            revoked_conditional_titles(TitleFacts::default()),
-            [
-                2, 3, 7, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41,
-                42
-            ]
-        );
+        // Q2=B appends the 26 class/category completion titles as conditional IDs 59–84.
+        let mut revoked = vec![
+            2, 3, 7, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41, 42,
+        ];
+        revoked.extend(59..=84);
+        assert_eq!(revoked_conditional_titles(TitleFacts::default()), revoked);
         let all = TitleFacts {
             monk_pilgrimage: true,
             weapon_mastery: true,
@@ -436,6 +524,11 @@ mod tests {
             level: 1000,
             world_leads: u16::MAX,
             guild_leader: true,
+            bestiary_classes_complete: [true;
+                oteryn_protocol_oteryn::character_info::BestiaryClass::COUNT],
+            all_bestiary_complete: true,
+            boss_categories_complete: [true; 3],
+            all_bosses_complete: true,
             ..TitleFacts::default()
         };
         assert!(revoked_conditional_titles(all).is_empty());

@@ -402,21 +402,28 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
         let now = 1_800_000_000_000;
         let granted = h
             .root
-            .refresh_character_titles(&authority, &h.node, fence, now)
+            .refresh_character_titles(&authority, &h.node, fence, now, None)
             .await
             .map_err(debug)?;
         // The fixture's creation receipt is more than ten years before `now` (Aeternal).
         assert_eq!(
             granted,
-            [CharacterTitle::Aeternal, CharacterTitle::CreatureOfHabitGrade1]
+            [
+                CharacterTitle::Aeternal,
+                CharacterTitle::CreatureOfHabitGrade1
+            ]
         );
         let (titles, selected): (Vec<i16>, Option<i16>) = sqlx::query_as("SELECT ARRAY(SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid ORDER BY title),(SELECT title FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid)")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(titles, [6, 14], "streak title granted, Cyclopscamper revoked");
+        assert_eq!(
+            titles,
+            [6, 14],
+            "streak title granted, Cyclopscamper revoked"
+        );
         assert_eq!(selected, None, "the revoked selection is cleared");
         assert!(
             h.root
-                .refresh_character_titles(&authority, &h.node, fence, now)
+                .refresh_character_titles(&authority, &h.node, fence, now, None)
                 .await
                 .map_err(debug)?
                 .is_empty(),
@@ -427,7 +434,7 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
             crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
         assert!(
             h.root
-                .refresh_character_titles(&authority, &h.node, stale, now)
+                .refresh_character_titles(&authority, &h.node, stale, now, None)
                 .await
                 .is_err()
         );

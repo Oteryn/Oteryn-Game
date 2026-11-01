@@ -10,6 +10,7 @@ pub(super) struct InitialSnapshot {
     pub(super) vitals: Option<(u64, ActorVitals)>,
     pub(super) notices_selected: bool,
     pub(super) notices: Option<(u64, Vec<u8>)>,
+    pub(super) achievement_notices: Option<achievement_notices::SeenAchievements>,
 }
 
 pub(super) async fn initial<A: FreshAdmissionAuthority>(
@@ -65,30 +66,38 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         .continuity
         .selected_capabilities
         .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES);
-    let notices = match admitted
+    let notice_revision = admitted
         .continuity
         .achievement_notice_revision
-        .filter(|_| notices_selected)
-    {
-        None => None,
-        Some(notice_revision) => {
-            let watermark = match admitted.controller {
-                Some(controller) => {
-                    authority
-                        .observe_achievement_notices(controller.account_id)
-                        .await
-                }
-                None => None,
-            };
-            let Some(watermark) = watermark else {
-                return Err(ServeEnd::Disconnected);
-            };
-            Some((
-                notice_revision,
-                encode_achievement_notices_snapshot(watermark),
-            ))
-        }
-    };
+        .filter(|_| notices_selected);
+    let status_selected = admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1);
+    let observation =
+        if notice_revision.is_some() || (status_selected && admitted.controller.is_some()) {
+            Some(
+                authority
+                    .observe_achievement_notice_facts(*admitted)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?,
+            )
+        } else {
+            None
+        };
+    let notices = notice_revision
+        .zip(observation.as_ref())
+        .map(|(revision, observed)| {
+            (
+                revision,
+                encode_achievement_notices_snapshot(observed.watermark),
+            )
+        });
+    // Join and every resync/reconnect consume the complete key set silently. Nothing here
+    // replays historical earned deltas or status text, regardless of the stored timestamps.
+    let achievement_notices = observation
+        .and_then(|observation| observation.facts)
+        .map(achievement_notices::SeenAchievements::seed);
     let overlay_payload;
     let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
     if overlay_served {
@@ -163,6 +172,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
         vitals,
         notices_selected,
         notices,
+        achievement_notices,
     })
 }
 

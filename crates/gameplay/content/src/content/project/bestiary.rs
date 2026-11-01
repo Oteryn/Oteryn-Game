@@ -6,6 +6,7 @@ use super::{
     ProjectV2SourceIdentityBinding, parse_strict,
 };
 use crate::domain::bestiary::BestiaryRace;
+use crate::domain::bosstiary::BosstiaryBoss;
 use crate::domain::charm::BestiaryRaceKey;
 use serde::Deserialize;
 
@@ -114,6 +115,46 @@ pub fn canonical_bestiary_difficulties(
         .collect())
 }
 
+/// Canonical identity/class and identity/category input for completion titles. This projects
+/// the same validated Creature source cut as Bestiary/Charm; it grants no activation authority.
+#[derive(Debug, Clone)]
+pub struct CanonicalTitleCatalogue {
+    pub bestiary: Vec<(BestiaryRace, String)>,
+    pub bosstiary: Vec<BosstiaryBoss>,
+}
+
+pub fn canonical_title_catalogue(
+    limits: ProjectEvidenceLimits,
+) -> Result<CanonicalTitleCatalogue, ProjectError> {
+    let decoded = decode_catalogue(INDEX, &SHARDS, limits)?;
+    let bestiary = decoded
+        .classes
+        .into_iter()
+        .map(|(race, class)| {
+            let class =
+                class
+                    .filter(|class| !class.is_empty())
+                    .ok_or(ProjectError::InvalidProject(
+                        "missing Bestiary class for completion title",
+                    ))?;
+            Ok((race, class))
+        })
+        .collect::<Result<Vec<_>, ProjectError>>()?;
+    if decoded
+        .bosses
+        .iter()
+        .any(|boss| crate::domain::bosstiary::kill_thresholds(&boss.category).is_none())
+    {
+        return Err(ProjectError::InvalidProject(
+            "unknown Bosstiary category for completion title",
+        ));
+    }
+    Ok(CanonicalTitleCatalogue {
+        bestiary,
+        bosstiary: decoded.bosses,
+    })
+}
+
 fn decode_sources(
     index_bytes: &[u8],
     shards: &[(&str, &[u8])],
@@ -130,6 +171,20 @@ fn decode_sources_with_difficulty(
     shards: &[(&str, &[u8])],
     limits: ProjectEvidenceLimits,
 ) -> Result<Vec<(BestiaryRace, u32, String)>, ProjectError> {
+    Ok(decode_catalogue(index_bytes, shards, limits)?.rows)
+}
+
+struct DecodedCatalogue {
+    rows: Vec<(BestiaryRace, u32, String)>,
+    classes: Vec<(BestiaryRace, Option<String>)>,
+    bosses: Vec<BosstiaryBoss>,
+}
+
+fn decode_catalogue(
+    index_bytes: &[u8],
+    shards: &[(&str, &[u8])],
+    limits: ProjectEvidenceLimits,
+) -> Result<DecodedCatalogue, ProjectError> {
     let limits = limits.validate()?;
     limits.check(
         "Bestiary source documents",
@@ -174,6 +229,8 @@ fn decode_sources_with_difficulty(
         limits.max_reference_records,
     )?;
     let mut rows = Vec::new();
+    let mut classes = Vec::new();
+    let mut bosses = Vec::new();
     let mut previous = None;
     let mut seen = 0;
     for (ordinal, (_, bytes)) in shards.iter().enumerate() {
@@ -216,6 +273,18 @@ fn decode_sources_with_difficulty(
                     "Bestiary authoring is not Creature",
                 ));
             };
+            // Match the production Creature reward owner's category precedence.
+            if let Some(category) = profile
+                .details
+                .as_ref()
+                .and_then(|details| details.bosstiary.as_ref().map(|boss| &boss.category))
+                .or_else(|| profile.bosstiary.as_ref().map(|boss| &boss.category))
+            {
+                bosses.push(BosstiaryBoss {
+                    key: identity.key.clone(),
+                    category: category.clone(),
+                });
+            }
             if let Some(bestiary) = profile.bestiary {
                 if bestiary.kill_thresholds.len() != 3 {
                     return Err(ProjectError::InvalidProject(
@@ -232,6 +301,11 @@ fn decode_sources_with_difficulty(
                 .map_err(|_| {
                     ProjectError::InvalidProject("invalid Bestiary identity or thresholds")
                 })?;
+                let class = profile
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.bestiary.as_ref().map(|entry| entry.class.clone()));
+                classes.push((race.clone(), class));
                 rows.push((race, u32::from(bestiary.charm_points), bestiary.difficulty));
             }
             seen += 1;
@@ -242,7 +316,11 @@ fn decode_sources_with_difficulty(
             "canonical Bestiary population mismatch",
         ));
     }
-    Ok(rows)
+    Ok(DecodedCatalogue {
+        rows,
+        classes,
+        bosses,
+    })
 }
 
 #[cfg(test)]
@@ -268,6 +346,50 @@ mod tests {
     }
 
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    #[test]
+    fn canonical_title_catalogue_retains_all_classes_and_boss_categories() -> TestResult {
+        let catalogue = canonical_title_catalogue(limits())?;
+        let rows = canonical_bestiary_rows(limits())?;
+        assert_eq!(catalogue.bestiary.len(), 823);
+        for ((race, class), (existing, _)) in catalogue.bestiary.iter().zip(&rows) {
+            assert_eq!(
+                race, existing,
+                "title projection preserves the existing race identity and thresholds"
+            );
+            assert!(
+                oteryn_protocol_oteryn::character_info::BestiaryClass::from_name(class).is_some()
+            );
+        }
+        let classes: std::collections::BTreeSet<_> =
+            catalogue.bestiary.iter().map(|(_, class)| class).collect();
+        assert_eq!(classes.len(), 21);
+        assert_eq!(catalogue.bosstiary.len(), 291);
+        for (category, expected) in [("bane", 72), ("archfoe", 125), ("nemesis", 94)] {
+            assert_eq!(
+                catalogue
+                    .bosstiary
+                    .iter()
+                    .filter(|boss| boss.category == category)
+                    .count(),
+                expected
+            );
+        }
+        assert!(
+            catalogue
+                .bosstiary
+                .iter()
+                .any(|boss| boss.key == "oteryn:creature.ahau" && boss.category == "archfoe")
+        );
+        assert!(
+            catalogue
+                .bosstiary
+                .windows(2)
+                .all(|rows| rows[0].key < rows[1].key),
+            "source identities are unique and ordered"
+        );
+        Ok(())
+    }
 
     fn mutate_first_shard(
         mutator: impl FnOnce(&mut serde_json::Value) -> TestResult,

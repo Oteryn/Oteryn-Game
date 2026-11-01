@@ -38,6 +38,9 @@ use crate::spell::actor_conditions::eat_food;
 use crate::spell::cast::CharacterCastFacts;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[path = "condition_potions.rs"]
+pub(super) mod condition_potions;
+
 /// `ITEMUSE0-RL-01`: item uses per actor per second.
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;
 /// `ITEMUSE0-RL-04`: the ambiguous-commit bound before the in-flight slot is freed.
@@ -239,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
         // item commit and its effect, so no spell stages or commits a successor of this actor's
         // state meanwhile. `None` is retryable with no side effect while the lane is fenced.
-        let _permit = self
+        let mut permit = self
             .spell_lane_permit()
             .await
             .ok_or(UseDisposition::Rejected)?;
@@ -313,6 +316,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
+        if let Some(potion) =
+            oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
+                &entry.item.definition.production_key,
+            )
+        {
+            return self
+                .use_condition_potion(
+                    &mut permit,
+                    actor,
+                    command,
+                    fence,
+                    native,
+                    &inventory,
+                    entry,
+                    record.ok_or(UseDisposition::NothingToUse)?,
+                    potion,
+                )
+                .await;
+        }
         if let Some(record) = record
             && let ReferenceItemField::Known(_) = &record.semantics.fluid
         {

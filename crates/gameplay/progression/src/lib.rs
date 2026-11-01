@@ -2,10 +2,12 @@
 
 pub mod account_achievement;
 pub mod achievement_catalogue;
+pub mod achievement_granters;
 pub mod atelier;
 pub mod bestiary;
 pub mod bestiary_achievement;
 pub mod charm_effects;
+pub mod condition_potions;
 pub mod daily_reward;
 pub mod hit_training;
 pub mod item_use_achievement;
