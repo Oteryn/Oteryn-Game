@@ -32,16 +32,38 @@ def expansion_offer(config: dict) -> dict:
     """Owner-priced permanent Character entitlement; null is a disabled placeholder."""
     if config.get("schema") != "OTERYN_PREY_LIST_EXPANSION_OFFER/v1":
         raise ValueError("invalid Prey expansion offer schema")
-    if config.get("key") != "store:prey-list-expansion" or config.get("unlock_key") != "prey-list-expansion":
+    if (
+        config.get("key") != "store:prey-list-expansion"
+        or config.get("unlock_key") != "prey-list-expansion"
+    ):
         raise ValueError("invalid Prey expansion identity")
-    if config.get("currency") != "TIBIA_COIN" or not isinstance(config.get("enabled"), bool):
+    if config.get("currency") != "TIBIA_COIN" or not isinstance(
+        config.get("enabled"), bool
+    ):
         raise ValueError("invalid Prey expansion currency or enabled flag")
     price = config.get("price")
-    if price is not None and (isinstance(price, bool) or not isinstance(price, int) or not 0 < price <= 100_000):
+    if price is not None and (
+        isinstance(price, bool)
+        or not isinstance(price, int)
+        or not 0 < price <= 100_000
+    ):
         raise ValueError("invalid Prey expansion price")
-    if config["enabled"] and (price is None or config.get("price_status") != "OWNER_APPROVED"):
+    if config["enabled"] and (
+        price is None or config.get("price_status") != "OWNER_APPROVED"
+    ):
         raise ValueError("enabled Prey expansion needs an approved positive price")
-    return {key: config[key] for key in ("key", "category", "title", "price", "enabled", "currency", "unlock_key")} | {"source_line": 0}
+    return {
+        key: config[key]
+        for key in (
+            "key",
+            "category",
+            "title",
+            "price",
+            "enabled",
+            "currency",
+            "unlock_key",
+        )
+    } | {"source_line": 0}
 
 
 def with_expansion(catalogue: dict) -> dict:
@@ -50,7 +72,9 @@ def with_expansion(catalogue: dict) -> dict:
     offers = [row for row in catalogue["offers"] if row["key"] != offer["key"]]
     offers.append(offer)
     offers.sort(key=lambda row: row["key"])
-    digest = hashlib.sha256(json.dumps(offers, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:16]
+    digest = hashlib.sha256(
+        json.dumps(offers, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()[:16]
     # A disabled placeholder must not change existing Platform price quotes.
     revision = f"{REVISION}-prey-{digest}" if offer["enabled"] else REVISION
     return catalogue | {"offers": offers, "catalog_revision": revision}
@@ -117,16 +141,18 @@ def build(lua: str) -> dict:
             }
         )
     offers.sort(key=lambda offer: offer["key"])
-    return with_expansion({
-        "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-        "catalog_revision": REVISION,
-        "source": {
-            "repository": "opentibiabr/canary",
-            "commit": CANARY_COMMIT,
-            "path": SOURCE,
-        },
-        "offers": offers,
-    })
+    return with_expansion(
+        {
+            "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+            "catalog_revision": REVISION,
+            "source": {
+                "repository": "opentibiabr/canary",
+                "commit": CANARY_COMMIT,
+                "path": SOURCE,
+            },
+            "offers": offers,
+        }
+    )
 
 
 def check() -> list[str]:
@@ -163,7 +189,9 @@ def main() -> int:
         OUT.write_text(json.dumps(build(lua), indent=2) + "\n", encoding="utf-8")
     if args.refresh_owner_offers:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
-        OUT.write_text(json.dumps(with_expansion(catalogue), indent=2) + "\n", encoding="utf-8")
+        OUT.write_text(
+            json.dumps(with_expansion(catalogue), indent=2) + "\n", encoding="utf-8"
+        )
     errors = check()
     for error in errors:
         print(error, file=sys.stderr)
