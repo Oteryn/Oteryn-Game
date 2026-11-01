@@ -69,6 +69,8 @@ pub struct PlayView {
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
+    /// Local display intent; it grants no server capability and contains no credentials.
+    preferences: feature_local_reference_preferences::settings::ReferencePreferences,
 }
 
 impl PlayView {
@@ -103,6 +105,8 @@ impl PlayView {
             entities: Vec::new(),
             combat_line: None,
             logout_line: None,
+            preferences:
+                feature_local_reference_preferences::settings::ReferencePreferences::default(),
         };
         for entry in overlay {
             view.set_marker(entry);
