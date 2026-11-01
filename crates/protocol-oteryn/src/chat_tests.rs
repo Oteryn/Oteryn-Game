@@ -433,6 +433,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 schema("ChatChannelListV1"),
                 private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
             ),
+            // PAR-M10 adds negotiated observer presentation to the CHAT revision stream.
+            (
+                u64::from(crate::observer_presentation::DELTA_TYPE_OBSERVER_PRESENTATION_V1),
+                "OBSERVER_PRESENTATION_DELTA_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/observer-presentation-v1.md#update".to_owned(),
+                crate::observer_presentation::MAX_PRESENTATION_BYTES as u64
+            ),
         ]
     );
     assert_eq!(

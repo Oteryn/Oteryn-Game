@@ -196,6 +196,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 for actor in hooks.removed {
                     states.monster_melee.creature_ai.remove(actor);
                 }
+                for (at, effect) in hooks.effects {
+                    states.present_magic_effect(&runtime, at, effect);
+                }
                 hooks.captures
             }
             _ => Vec::new(),

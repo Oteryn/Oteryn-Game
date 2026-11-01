@@ -13,6 +13,7 @@ use oteryn_gameplay_domain::domain::condition::{ConditionType, DotElement, Statu
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind,
 };
+use oteryn_protocol_oteryn::observer_presentation;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -92,6 +93,9 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
 /// Crystal `constants.lua:5-6`.
 const BATHTUB_FILLED: u16 = 26077;
 const BATHTUB_FILLED_NOTMOVABLE: u16 = 26100;
+/// `yellow_pillow.lua:9,14`.
+const YELLOW_PILLOW: u16 = 2397;
+const YELLOW_PILLOW_SAY: &str = "Faaart!";
 /// `items.xml:18277,18283`: every snow footprint 6594..=6608 lasts 10 s.
 const SNOW_FOOTPRINT_DECAY_US: u64 = 10_000_000;
 
@@ -274,6 +278,25 @@ impl ChannelSpellStates {
             };
             if let Some(transformed) = transformed {
                 changed |= transform(map, *key, transformed);
+            }
+            match entry.appearance_id {
+                // bath_tub.lua:13.
+                BATHTUB_FILLED => self.present_magic_effect(
+                    runtime,
+                    destination,
+                    observer_presentation::MAGIC_EFFECT_WATERSPLASH,
+                ),
+                // yellow_pillow.lua:3-12. Oteryn has no ghost mode, so the `isInGhostMode` check
+                // (:5) never returns early.
+                YELLOW_PILLOW => {
+                    self.present_monster_say(runtime, actor, YELLOW_PILLOW_SAY);
+                    self.present_magic_effect(
+                        runtime,
+                        destination,
+                        observer_presentation::MAGIC_EFFECT_POFF,
+                    );
+                }
+                _ => {}
             }
         }
         let to_swimming = ids
@@ -480,8 +503,17 @@ mod tests {
         use crate::map::boot::{self, BundleCollisionIndexExt};
         use std::num::NonZeroU32;
         let (mut runtime, actor, session) = runtime_with_player(0x71);
+        // The player stands on the stepped tile, as after the committed step, so it observes
+        // the presentation there.
         runtime
-            .initialize_first_entry_position(actor)
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 6,
+                    y: 0,
+                    floor: 7,
+                },
+            )
             .map_err(|e| format!("{e:?}"))?;
         let mut states = ChannelSpellStates::default();
         states
@@ -725,6 +757,84 @@ mod tests {
         std::thread::Builder::new()
             .stack_size(64 << 20)
             .spawn(|| movement_case(26077, 26100, false, true))?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
+    /// The observer presentation of one step onto `id` at (6, 0, 7), as the stepping player's
+    /// own session drains it (capability 262).
+    fn presented_on_step(
+        id: u16,
+    ) -> Result<
+        Vec<oteryn_protocol_oteryn::observer_presentation::ObserverPresentation>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
+        let mut presented = Vec::new();
+        movement_map(id, id, false, |states, runtime, map, actor, session| {
+            let at = MovementLocalPosition {
+                x: 6,
+                y: 0,
+                floor: 7,
+            };
+            let away = MovementLocalPosition { x: 1, ..at };
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                1,
+                Some(away),
+                at,
+                Some(false),
+            );
+            while let Some(event) = states.observer_presentations.next(session) {
+                presented.push(event);
+            }
+            Ok(())
+        })?;
+        Ok(presented)
+    }
+
+    /// Crystal yellow_pillow.lua:3-12 and bath_tub.lua:13: the pillow makes its player say
+    /// "Faaart!" (TALKTYPE_MONSTER_SAY) and poffs; the bath tub splashes. Oteryn has no ghost
+    /// mode, so no player is skipped.
+    #[test]
+    fn m10_yellow_pillow_and_bath_tub_present_to_their_observers() -> CaseResult {
+        use oteryn_protocol_oteryn::observer_presentation::ObserverPresentation;
+        use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let position = ActorPosition {
+                    x: 6,
+                    y: 0,
+                    floor: 7,
+                };
+                let pillow = presented_on_step(YELLOW_PILLOW)?;
+                assert_eq!(pillow.len(), 2);
+                assert!(matches!(
+                    &pillow[0],
+                    ObserverPresentation::MonsterSay { position: at, text, .. }
+                        if *at == position && text == "Faaart!"
+                ));
+                assert_eq!(
+                    pillow[1],
+                    ObserverPresentation::MagicEffect {
+                        position,
+                        effect_id: observer_presentation::MAGIC_EFFECT_POFF,
+                    }
+                );
+                assert_eq!(
+                    presented_on_step(BATHTUB_FILLED)?,
+                    [ObserverPresentation::MagicEffect {
+                        position,
+                        effect_id: observer_presentation::MAGIC_EFFECT_WATERSPLASH,
+                    }]
+                );
+                // A plain tile presents nothing.
+                assert!(presented_on_step(419)?.is_empty());
+                Ok(())
+            })?
             .join()
             .map_err(|_| "movement test thread")?
     }

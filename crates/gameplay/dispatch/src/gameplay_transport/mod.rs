@@ -103,6 +103,7 @@ mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod observer_presentation;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;

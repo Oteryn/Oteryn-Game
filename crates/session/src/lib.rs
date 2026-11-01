@@ -652,6 +652,11 @@ pub enum SessionEvent {
     ChatLine(AppliedDelta<ChatLine>),
     /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
     ChatRooms(AppliedDelta<ChatRoomSet>),
+    /// Domain 12 `CHAT`, delta type 6 (capability 262): a transient magic effect or monster
+    /// say. Not stored.
+    ObserverPresentation(
+        AppliedDelta<oteryn_protocol_oteryn::observer_presentation::ObserverPresentation>,
+    ),
     /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
     /// [`Session::inventory`] already holds it.
     Inventory(AppliedDelta<CharacterInventory>),
@@ -674,7 +679,9 @@ impl SessionEvent {
             Self::WorldMap(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
-            Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
+            Self::ChatLine(_) | Self::ChatRooms(_) | Self::ObserverPresentation(_) => {
+                STATE_DOMAIN_CHAT
+            }
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
         }

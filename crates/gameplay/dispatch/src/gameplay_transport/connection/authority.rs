@@ -840,6 +840,16 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// PAR-M10: the oldest world magic effect or monster-say line queued for the session
+    /// (a domain 12 delta type 6, capability 262); `None` when nothing is queued.
+    fn observer_presentation_next(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::observer_presentation::ObserverPresentation>>
+    {
+        std::future::ready(None)
+    }
+
     fn chat_guild_admit(
         &self,
         _admitted: AdmittedSession,

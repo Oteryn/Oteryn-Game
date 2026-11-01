@@ -1,0 +1,14 @@
+{
+  "id": 262,
+  "name": "OBSERVER_PRESENTATION_V1",
+  "owner_decision": "CLOSE-2/M10 lead allocation 2026-11-01; Crystal 201189f8 sendMagicEffect and TALKTYPE_MONSTER_SAY for the M10 movement scripts",
+  "owner": "Game Channel observer presentation owner",
+  "requires": [
+    6,
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Adds transient CHAT domain 12 delta type 6 (a world magic effect or a monster-say line) for the players who see it; peers selecting 6 and 7 without 262 receive neither. No command, no durable state, never replayed."
+}

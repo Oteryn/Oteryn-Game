@@ -162,6 +162,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.chat.take_channel_list(session)
     }
 
+    async fn observer_presentation_next(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::observer_presentation::ObserverPresentation> {
+        self.states
+            .spell_states
+            .lock()
+            .await
+            .observer_presentations
+            .next(session)
+    }
+
     async fn chat_guild_admit(
         &self,
         admitted: AdmittedSession,

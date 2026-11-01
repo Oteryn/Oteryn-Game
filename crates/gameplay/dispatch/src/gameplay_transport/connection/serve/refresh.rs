@@ -95,6 +95,7 @@ where
     A: FreshAdmissionAuthority,
 {
     channel_list(stream, authority, session).await?;
+    presentation(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -171,6 +172,55 @@ where
     session.admitted.continuity.chat_revision = chat_revision;
     if write_frame(stream, &frame).await.is_err() {
         return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+/// PAR-M10: each queued world magic effect or monster-say line is one domain 12 delta type 6,
+/// with capability 262 only; at most one full queue per refresh. A session without 262 drains
+/// nothing, and its owner queue stays bounded.
+pub(super) async fn presentation<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::observer_presentation as wire;
+    if !session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_OBSERVER_PRESENTATION_V1)
+    {
+        return Ok(());
+    }
+    for _ in 0..crate::gameplay_transport::observer_presentation::MAX_PENDING_PRESENTATIONS {
+        let Some(event) = authority
+            .observer_presentation_next(session.admitted.game_session_id)
+            .await
+        else {
+            break;
+        };
+        // An event outside the wire bounds is not presentable; it is dropped, not sent.
+        let Ok(payload) = wire::encode(&event) else {
+            continue;
+        };
+        let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+            session.generation,
+            session.sequence,
+            session.admitted.continuity.chat_revision,
+            wire::DELTA_TYPE_OBSERVER_PRESENTATION_V1,
+            &payload,
+        ) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = delta_sequence;
+        session.admitted.continuity.server_sequence = session.sequence;
+        session.admitted.continuity.chat_revision = chat_revision;
+        if write_frame(stream, &frame).await.is_err() {
+            return Err(ServeEnd::Disconnected);
+        }
     }
     Ok(())
 }

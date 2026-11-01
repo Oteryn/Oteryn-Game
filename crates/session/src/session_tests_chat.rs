@@ -558,3 +558,77 @@ fn a_contradicting_chat_delta_poisons_the_session() -> Result<(), BoxError> {
         Ok(())
     })?
 }
+
+#[test]
+fn an_observer_presentation_applies_only_with_capability_262() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::observer_presentation::{self, ObserverPresentation};
+    const WITH: &[u32] = &[6, CAPABILITY_CHAT_V1, 13, 262];
+    const WITHOUT: &[u32] = &[6, CAPABILITY_CHAT_V1, 13];
+    block_on(async {
+        let effect = ObserverPresentation::MagicEffect {
+            position: ActorPosition {
+                x: 100,
+                y: 200,
+                floor: 7,
+            },
+            effect_id: observer_presentation::MAGIC_EFFECT_POFF,
+        };
+        let payload = observer_presentation::encode(&effect).map_err(|e| format!("{e:?}"))?;
+        for selected in [WITH, WITHOUT] {
+            let push = Step::Send(encode_state_delta(
+                1,
+                41,
+                STATE_DOMAIN_CHAT,
+                3,
+                4,
+                observer_presentation::DELTA_TYPE_OBSERVER_PRESENTATION_V1,
+                &payload,
+            )?);
+            let raw = vec![chat_domain(3, ChatRoomSet::default())];
+            let (client, mut server) = tokio::io::duplex(256 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    selected,
+                    selected,
+                    &[],
+                    entity_snapshot(vec![]),
+                    &raw,
+                )
+                .await?;
+                play_step(&mut server, push).await?;
+                let mut rest = Vec::new();
+                let _ = server.read_to_end(&mut rest).await;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission_with(selected)?).await?;
+            let serviced = session.service_liveness(Duration::from_millis(200)).await;
+            if selected == WITH {
+                serviced?;
+                let events = session.take_events();
+                assert!(matches!(
+                    events.as_slice(),
+                    [SessionEvent::ObserverPresentation(applied)]
+                        if applied.value == effect && applied.new_revision == 4
+                ));
+                // A presentation is never stored in the chat log.
+                assert!(session.chat_log().is_some_and(ChatLog::is_empty));
+            } else {
+                let error = serviced.err().ok_or("delta 6 needs capability 262")?;
+                assert!(
+                    matches!(
+                        error,
+                        SessionError::UnregisteredDeltaType {
+                            domain_id: STATE_DOMAIN_CHAT,
+                            delta_type: 6
+                        }
+                    ),
+                    "{error:?}"
+                );
+            }
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
+}

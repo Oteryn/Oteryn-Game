@@ -1,5 +1,6 @@
 //! Apply typed domain deltas to this connection after envelope validation.
 use super::*;
+use oteryn_protocol_oteryn::observer_presentation;
 
 impl<S: SessionStream> Session<S> {
     /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
@@ -150,8 +151,8 @@ impl<S: SessionStream> Session<S> {
                 Err(SessionError::UnselectedDomain { domain_id })
             }
             STATE_DOMAIN_CHAT if self.chat.is_some() => {
-                // Both delta types are registered for domain 12; each is checked against the
-                // one stored revision and decoded before anything is stored.
+                // Every delta type registered for domain 12 is checked against the one stored
+                // revision and decoded before anything is stored.
                 let delta_type = delta.delta_type;
                 check_delta(&delta, delta_type, self.chat_revision)?;
                 let event = match delta_type {
@@ -172,6 +173,20 @@ impl<S: SessionStream> Session<S> {
                             base_revision,
                             new_revision,
                             rooms,
+                        ))
+                    }
+                    // PAR-M10: delta type 6 is registered only with capability 262.
+                    observer_presentation::DELTA_TYPE_OBSERVER_PRESENTATION_V1
+                        if self.is_selected(
+                            observer_presentation::CAPABILITY_OBSERVER_PRESENTATION_V1,
+                        ) =>
+                    {
+                        let presentation = observer_presentation::decode(delta.payload)?;
+                        SessionEvent::ObserverPresentation(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            presentation,
                         ))
                     }
                     _ => {

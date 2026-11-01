@@ -7,8 +7,9 @@
 //! - `data/scripts/movements/thornfire_wolf.lua:3-14`: a Thornfire Wolf on 12721 is removed and a
 //!   Crystal Wolf is created on its cell.
 //!
-//! Spike-trap damage to monsters (`trap.lua:35-44` for 2145, 2147, 3482, 3944, 44529) and the
-//! STUN / ICEATTACK effects are not part of this owner.
+//! The capture's STUN (`trap.lua:40`) and the replacement's ICEATTACK (`thornfire_wolf.lua:10`)
+//! go to the observers through capability 262 (`observer_presentation`). Spike-trap damage to
+//! monsters (`trap.lua:35-44` for 2145, 2147, 3482, 3944, 44529) is not part of this owner.
 use super::special_movement::{TileEntries, tile_entries};
 use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintRequest, TypedDefinitionRef,
@@ -17,6 +18,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, MovementLocalPosition,
 };
 use crate::map::boot::BundleMap;
+use oteryn_protocol_oteryn::observer_presentation::{MAGIC_EFFECT_ICEATTACK, MAGIC_EFFECT_STUN};
 
 /// `trap.lua:6`: the magic wolf trap.
 const MAGIC_WOLF_TRAP: u16 = 12368;
@@ -42,6 +44,8 @@ const CAPTURE_GROUND_REF: &[u8] = b"creature-step-capture-v1";
 pub(in crate::gameplay_transport) struct CreatureStepHooks {
     pub removed: Vec<ExactActorRef>,
     pub captures: Vec<ItemMintRequest>,
+    /// The magic effects to present at each hook's cell (capability 262), in hook order.
+    pub effects: Vec<(MovementLocalPosition, u32)>,
 }
 
 /// Whether the active content admits the captured wolf 12369 as a native item that may be minted
@@ -96,12 +100,16 @@ pub(in crate::gameplay_transport) fn apply_creature_step_hooks(
                 };
                 hooks.removed.push(actor);
                 hooks.captures.push(capture_request(runtime, end, at));
+                // trap.lua:40.
+                hooks.effects.push((at, MAGIC_EFFECT_STUN));
             }
             THORNFIRE_WOLF if has(THORNFIRE_GROUND) => {
                 let replaced =
                     runtime.remove_stepped_creature(actor, at, THORNFIRE_WOLF, Some(CRYSTAL_WOLF));
                 if replaced.is_ok() {
                     hooks.removed.push(actor);
+                    // thornfire_wolf.lua:10.
+                    hooks.effects.push((at, MAGIC_EFFECT_ICEATTACK));
                 }
             }
             _ => {}
@@ -334,6 +342,7 @@ mod tests {
                 let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], true);
                 assert_eq!(hooks.removed, vec![actor]);
                 assert!(!runtime.contains_live_creature(actor));
+                assert_eq!(hooks.effects, vec![(AT, MAGIC_EFFECT_STUN)]);
                 assert_eq!(hooks.captures.len(), 1);
                 let capture = hooks.captures.first().expect("one capture");
                 assert_eq!(capture.item.production_key, CAPTURED_WOLF_KEY);
@@ -356,6 +365,7 @@ mod tests {
                     let hooks =
                         apply_creature_step_hooks(runtime, map, vec![(actor, AT)], admitted);
                     assert!(hooks.removed.is_empty() && hooks.captures.is_empty());
+                    assert!(hooks.effects.is_empty());
                     assert!(runtime.contains_live_creature(actor));
                 })?;
             }
@@ -447,6 +457,7 @@ mod tests {
                     let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], false);
                     assert_eq!(hooks.removed, vec![actor]);
                     assert!(hooks.captures.is_empty());
+                    assert_eq!(hooks.effects, vec![(AT, MAGIC_EFFECT_ICEATTACK)]);
                     assert!(!runtime.contains_live_creature(actor));
                     let crystal = runtime
                         .visible_entities()

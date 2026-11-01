@@ -76,6 +76,7 @@ pub mod mail;
 pub mod market;
 pub mod npc_service;
 pub mod npc_shop;
+pub mod observer_presentation;
 pub mod party;
 pub mod party_skull;
 pub mod player_report;

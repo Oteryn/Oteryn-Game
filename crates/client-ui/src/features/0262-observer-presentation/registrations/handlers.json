@@ -1,0 +1,15 @@
+{
+  "mechanic": "0262-observer-presentation",
+  "kind": "handlers",
+  "id": "0262-observer-presentation-unsupported",
+  "status": "unsupported",
+  "reason": "M10 is server-first; oteryn-session decodes CHAT delta 6 into SessionEvent::ObserverPresentation, the native effect and speech views are pending.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Native client migration is pending.",
+    "protocol": "Native client migration is pending.",
+    "view": "Native client migration is pending.",
+    "input": "Native client migration is pending.",
+    "settings": "Native client migration is pending."
+  }
+}
