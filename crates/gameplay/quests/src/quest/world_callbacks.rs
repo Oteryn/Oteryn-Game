@@ -170,7 +170,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
+                // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
@@ -251,6 +253,44 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quest_world_callbacks_accept_only_pinned_donor_revisions() -> Result<(), String> {
+        let mut source: serde_json::Value =
+            serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+        source["callbacks"]
+            .as_array_mut()
+            .ok_or("callbacks")?
+            .truncate(1);
+        for (provenance, accepted) in [
+            (
+                "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:script.lua:1",
+                true,
+            ),
+            (
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:script.lua:1",
+                true,
+            ),
+            ("crystal:unverified:script.lua:1", false),
+            (
+                "canary:201189f871d23597b82caf88fd611454a2ddefb8:script.lua:1",
+                false,
+            ),
+            (
+                "crystal:47dfd51f45280a59a1d3e50ba7edd573d7234446:script.lua:1",
+                false,
+            ),
+            (
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb80:script.lua:1",
+                false,
+            ),
+            ("tibiawiki:1203780", false),
+        ] {
+            source["callbacks"][0]["sources"] = serde_json::json!([provenance]);
+            assert_eq!(parse(&source.to_string()).is_ok(), accepted, "{provenance}");
+        }
+        Ok(())
+    }
 
     #[test]
     fn quest_world_callbacks_shortcut_preserves_the_source_storage_gate() -> Result<(), String> {

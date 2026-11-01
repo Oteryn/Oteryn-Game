@@ -84,6 +84,31 @@ fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
                 )
                 .ok_or("initialize current player")?;
         }
+        // ProfileScheduleState credits one think interval per pass, without wall-clock
+        // catch-up. The 12-second origin shift only expires entry protection; the
+        // source's 12-second curse needs twelve real scheduled thinks.
+        for _ in 1..12 {
+            owner.drain_monster_melee().await;
+            {
+                let runtime = deps.runtime.lock().await;
+                let states = owner.states.spell_states.try_lock().map_err(debug)?;
+                let state = states
+                    .get(&runtime, deps.actor, deps.admitted.game_session_id)
+                    .ok_or("current player before curse is due")?;
+                assert!(
+                    state
+                        .owned_conditions()
+                        .instances()
+                        .iter()
+                        .all(|condition| {
+                            condition.definition().key()
+                                != "oteryn:effect.spell.phosphorus_curse.effect-condition-1"
+                        })
+                );
+            }
+            owner.clock_origin -=
+                std::time::Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
+        }
         owner.drain_monster_melee().await;
         let runtime = deps.runtime.lock().await;
         let states = owner.states.spell_states.try_lock().map_err(debug)?;
