@@ -637,7 +637,17 @@ async fn exchange(address: SocketAddr, connector: &TlsConnector, raw: &[u8]) -> 
     let _ = stream.write_all(raw).await;
     let _ = stream.flush().await;
     let mut output = Vec::new();
-    let _ = tokio::time::timeout(Duration::from_secs(20), stream.read_to_end(&mut output)).await;
+    // Keep a deliberately silent admitted socket open past the server's loss decision. The
+    // previous 20 s bound was exactly the production cadence's fourth tick (three missed probes),
+    // so under load this client could win the deadline race, close first, and turn the case into
+    // the slower transport-close path instead of the liveness path it qualifies. One additional
+    // configured cadence leaves the server tick unambiguous without guessing a wall-clock bound.
+    let liveness = crate::gameplay_transport::IDLE_LIVENESS;
+    let server_loss_ticks = liveness.missed_limit.saturating_add(1);
+    let silent_read_deadline = liveness
+        .interval
+        .saturating_mul(server_loss_ticks.saturating_add(1));
+    let _ = tokio::time::timeout(silent_read_deadline, stream.read_to_end(&mut output)).await;
     Ok(frames(&output))
 }
 

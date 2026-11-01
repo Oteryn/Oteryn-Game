@@ -189,7 +189,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
-pub use connection::{GameplayIdlePolicy, quest_log};
+pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
@@ -240,8 +240,8 @@ use crate::foundation::{
 use connection::{
     AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
     ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
-    FreshAdmissionAuthority, GraceExpiryResult, IDLE_LIVENESS, SessionContinuity, StepOutcome,
-    UseOutcome, admit_frame, serve_admitted,
+    FreshAdmissionAuthority, GraceExpiryResult, SessionContinuity, StepOutcome, UseOutcome,
+    admit_frame, serve_admitted,
 };
 pub use fresh_evidence::{EvidenceUnavailable, FreshEvidenceSource};
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
