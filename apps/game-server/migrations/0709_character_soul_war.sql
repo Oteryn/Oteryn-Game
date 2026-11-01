@@ -46,8 +46,8 @@ CREATE INDEX IF NOT EXISTS game_soul_war_death_member_idx
 -- Migration0711 attaches the shared terminal outcome foreign key.
 CREATE INDEX IF NOT EXISTS game_soul_war_terminal_attempt_idx
  ON game_character_soul_war_receipts(source_attempt) WHERE source_attempt IS NOT NULL;
-CREATE OR REPLACE VIEW game_character_soul_war_revision_chain WITH (security_invoker=true) AS
- SELECT * FROM game_character_primal_hazard_revision_chain
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain_soul_war WITH (security_invoker=true) AS
+ SELECT * FROM game_character_hazard_revision_chain_primal
  UNION ALL
  SELECT character_id,original_character_revision,committed_character_revision,
  level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
@@ -55,8 +55,8 @@ CREATE OR REPLACE VIEW game_character_soul_war_revision_chain WITH (security_inv
  FROM game_character_soul_war_receipts WHERE committed_character_revision IS NOT NULL;
 DO $$ DECLARE body TEXT; BEGIN
  SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure) INTO STRICT body;
- IF position('game_character_primal_hazard_revision_chain' IN body)>0 THEN
-  EXECUTE replace(body,'game_character_primal_hazard_revision_chain','game_character_soul_war_revision_chain');
+ IF position('game_character_hazard_revision_chain_primal' IN body)>0 THEN
+  EXECUTE replace(body,'game_character_hazard_revision_chain_primal','game_character_hazard_revision_chain_soul_war');
  END IF; -- Reapplication must preserve later additive chain wrappers, including0710.
 END $$;
 CREATE OR REPLACE FUNCTION game_soul_war_death_source_guard() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -116,10 +116,10 @@ DO $$ BEGIN
    EXECUTE FUNCTION game_character_reject_truncate();
  END IF;
 END $$;
-REVOKE ALL ON game_character_soul_war,game_character_soul_war_receipts,game_character_soul_war_revision_chain FROM PUBLIC,oteryn_game_control;
+REVOKE ALL ON game_character_soul_war,game_character_soul_war_receipts,game_character_hazard_revision_chain_soul_war FROM PUBLIC,oteryn_game_control;
 GRANT SELECT,INSERT,UPDATE ON game_character_soul_war TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_character_soul_war_receipts TO oteryn_game_runtime;
-GRANT SELECT ON game_character_soul_war_revision_chain TO oteryn_game_runtime;
+GRANT SELECT ON game_character_hazard_revision_chain_soul_war TO oteryn_game_runtime;
 REVOKE ALL ON FUNCTION game_soul_war_death_source_guard(),game_soul_war_state_guard() FROM PUBLIC;
 
 -- The first final victory retains a single choice; the existing MINT owner

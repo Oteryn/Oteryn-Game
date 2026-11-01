@@ -62,7 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // NODEBOOT-1: both reads go through the shared holder that background passes also
         // take, so a busy holder is retried briefly instead of refusing the command.
         use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
-        let Ok((fence, stored)) =
+        let Ok((fence, stored, house_scope)) =
             crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
                 .retry_unavailable(async || {
                     let fence = self
@@ -70,10 +70,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                         .map_err(|()| Unavailable)?
                         .ok_or(Rejected)?;
-                    let stored = if matches!(
-                        fence.runtime_scope,
-                        crate::foundation::RuntimeScopeRefV1::Instance { .. }
-                    ) {
+                    // Activities also use Instance scopes. Only a native House
+                    // actor may select the named-House custody reader.
+                    let house_scope = self
+                        .runtime
+                        .lock()
+                        .await
+                        .house_actor_state(actor, session)
+                        .is_ok();
+                    let stored = if house_scope {
                         self.root
                             .read_house_pvp_state(
                                 self.character,
@@ -88,17 +93,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .await
                     }
                     .map_err(|_| Unavailable)?;
-                    Ok((fence, stored))
+                    Ok((fence, stored, house_scope))
                 })
                 .await
         else {
             return false;
         };
         let runtime = self.runtime.lock().await;
-        if matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Instance { .. }
-        ) {
+        if house_scope {
             let Ok(house) = runtime.house_actor_state(actor, session) else {
                 return false;
             };

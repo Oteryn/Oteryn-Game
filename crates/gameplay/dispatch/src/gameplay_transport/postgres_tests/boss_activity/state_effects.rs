@@ -70,6 +70,17 @@ pub(super) fn generation(
         .ok_or("source rat details")?
         .system_eligibility
         .reward_boss = true;
+    // The attack closure embeds the exact Creature root, including this fixture's
+    // reward classification. Keep that copy bound to the overlaid profile.
+    let bound_profile = rat
+        .attack_definitions
+        .as_mut()
+        .ok_or("source rat attack closure")?
+        .profiles
+        .iter_mut()
+        .find(|bound| bound.target == rat.profile.target)
+        .ok_or("source rat attack Creature root")?;
+    bound_profile.clone_from(&rat.profile);
     let bytes = serde_json::to_vec(&creatures)?;
     supplied.creature_profiles = PinnedGameplayBytes {
         sha256: sha2::Sha256::digest(&bytes)

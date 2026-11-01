@@ -45,7 +45,10 @@ CREATE TABLE IF NOT EXISTS game_character_primal_hazard_receipts (
 CREATE INDEX IF NOT EXISTS game_primal_hazard_death ON game_character_primal_hazard_receipts(death_key);
 
 -- Keep every branch of 0337/0534/0539: their latest shared view is the parent.
-CREATE OR REPLACE VIEW game_character_primal_hazard_revision_chain WITH (security_invoker=true) AS
+-- Descendant names retain the historical chain prefix checked by re-runnable
+-- migrations 0332/0337/0534. Replace only the complete relation name below,
+-- never that prefix in an already-installed descendant.
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain_primal WITH (security_invoker=true) AS
  SELECT * FROM game_character_hazard_revision_chain
  UNION ALL
  SELECT character_id,original_character_revision,committed_character_revision,
@@ -58,8 +61,8 @@ CREATE OR REPLACE VIEW game_character_hazard_transition_receipts WITH (security_
  SELECT character_id,committed_character_revision,result,created_xact_id FROM game_character_primal_hazard_receipts;
 DO $$ DECLARE body text; BEGIN
     SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure) INTO STRICT body;
-    IF position('game_character_hazard_revision_chain' IN body)>0 THEN
-        EXECUTE replace(body,'game_character_hazard_revision_chain','game_character_primal_hazard_revision_chain');
+    IF position('game_character_hazard_revision_chain ' IN body)>0 THEN
+        EXECUTE replace(body,'game_character_hazard_revision_chain ','game_character_hazard_revision_chain_primal ');
     END IF; -- Reapplying this migration never rewinds a later additive chain wrapper.
     SELECT pg_get_functiondef('game_hazard_state_guard()'::regprocedure) INTO STRICT body;
     IF position('game_character_hazard_receipts' IN body)>0 THEN
@@ -133,9 +136,9 @@ DO $$ BEGIN
             DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_primal_hazard_receipt_consistent();
     END IF;
 END $$;
-REVOKE ALL ON game_character_primal_hazard_receipts,game_character_primal_hazard_revision_chain,
+REVOKE ALL ON game_character_primal_hazard_receipts,game_character_hazard_revision_chain_primal,
     game_character_hazard_transition_receipts FROM PUBLIC,oteryn_game_control;
 GRANT SELECT,INSERT ON game_character_primal_hazard_receipts TO oteryn_game_runtime;
-GRANT SELECT ON game_character_primal_hazard_revision_chain,game_character_hazard_transition_receipts TO oteryn_game_runtime;
+GRANT SELECT ON game_character_hazard_revision_chain_primal,game_character_hazard_transition_receipts TO oteryn_game_runtime;
 REVOKE ALL ON FUNCTION game_primal_hazard_receipt_admit(),game_primal_hazard_receipt_consistent() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_primal_hazard_receipt_admit(),game_primal_hazard_receipt_consistent() TO oteryn_game_runtime;

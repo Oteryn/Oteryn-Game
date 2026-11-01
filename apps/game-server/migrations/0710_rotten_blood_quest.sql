@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS game_character_rotten_blood_receipts (
             AND source_dealt_damage IS NULL AND source_terminal_attempt IS NOT NULL))
 );
 
-CREATE OR REPLACE VIEW game_character_rotten_blood_revision_chain WITH (security_invoker=true) AS
-    SELECT * FROM game_character_soul_war_revision_chain
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain_rotten_blood WITH (security_invoker=true) AS
+    SELECT * FROM game_character_hazard_revision_chain_soul_war
     UNION ALL
     SELECT character_id,original_character_revision,committed_character_revision,
         level_before,level_after,experience_before,experience_after,
@@ -64,9 +64,9 @@ DECLARE body TEXT;
 BEGIN
     SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure)
         INTO STRICT body;
-    IF position('game_character_soul_war_revision_chain' IN body)>0 THEN
-        EXECUTE replace(body,'game_character_soul_war_revision_chain','game_character_rotten_blood_revision_chain');
-    ELSIF position('game_character_rotten_blood_revision_chain' IN body)=0
+    IF position('game_character_hazard_revision_chain_soul_war' IN body)>0 THEN
+        EXECUTE replace(body,'game_character_hazard_revision_chain_soul_war','game_character_hazard_revision_chain_rotten_blood');
+    ELSIF position('game_character_hazard_revision_chain_rotten_blood' IN body)=0
         AND NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='game_character_rotten_blood_receipts'::regclass
             AND tgname='game_rotten_blood_character_chain') THEN
         RAISE EXCEPTION 'Rotten Blood requires the current Soul War Character receipt chain';
@@ -296,10 +296,10 @@ BEGIN
     END LOOP;
 END $migration$;
 REVOKE ALL ON game_character_rotten_blood,game_character_rotten_blood_receipts,
-    game_character_rotten_blood_revision_chain FROM PUBLIC,oteryn_game_control;
+    game_character_hazard_revision_chain_rotten_blood FROM PUBLIC,oteryn_game_control;
 GRANT SELECT,INSERT,UPDATE ON game_character_rotten_blood TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_character_rotten_blood_receipts TO oteryn_game_runtime;
-GRANT SELECT ON game_character_rotten_blood_revision_chain TO oteryn_game_runtime;
+GRANT SELECT ON game_character_hazard_revision_chain_rotten_blood TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION game_rotten_blood_state_json_valid(JSONB) TO oteryn_game_runtime;
 
 -- The fixed 5m access price uses the established coin/bank fee owner. This

@@ -507,6 +507,12 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|_| "resolve Instance owner")?
             .ok_or("owner actually changed")?;
         let next_actor = admitted.runtime_actor.ok_or("destination actor")?;
+        assert!(
+            destination
+                .refresh_pvp_locks(next_actor, admitted.game_session_id)
+                .await,
+            "activity Instance retains the ordinary PvP reader, without House custody"
+        );
         {
             let runtime = destination.runtime.lock().await;
             assert_eq!(runtime.binding().runtime_scope(), instance);

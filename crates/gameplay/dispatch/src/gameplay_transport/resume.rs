@@ -37,7 +37,7 @@ use crate::foundation::{
     CompleteReconnectSnapshotV1, CompleteReconnectSourceV1, ConnectionGeneration,
     Fnd02ReconciliationFenceV1, Fnd04EvidenceError, GameSessionState, ReconnectAttemptRef,
     ReconnectCandidateBindingV1, ReconnectDurabilityErrorV1, ReconnectIdentityV1,
-    RuntimeScopeRefV1, StateDomainRevisionV1,
+    StateDomainRevisionV1,
 };
 use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
 use oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS;
@@ -292,7 +292,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             barrier.ready.notify_one();
         }
-        let house_resume = matches!(scope, RuntimeScopeRefV1::Instance { .. });
+        // Activities also use Instance scopes. Only a native House resident
+        // resumes through the named-House custody and ACL owner.
+        let house_resume = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session_id)
+            .is_ok();
         if house_resume && !self.validate_house_resume(actor, session_id).await {
             return Err(Rejected);
         }

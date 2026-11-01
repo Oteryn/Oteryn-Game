@@ -223,22 +223,15 @@ fn scenario() -> TestResult {
             bad.is_err(),
             "a state change without a receipt must roll back"
         );
-        // 0708-0710 extend the receipt chain after 0332. Exercise the historical
-        // migration twice with its original chain name inside a rolled-back
-        // transaction, so replay cannot discard the later Prey/Home Town/Quest
-        // branches. Then reapply the new descendants on the current schema.
+        // Historical migrations must recognize the actual endgame chain, without
+        // rewriting the guard back to its old name. Roll back their view changes
+        // so replay cannot discard later Prey/Home Town/Quest branches, then
+        // reapply the new descendants on the current schema.
         let current_guard: String = sqlx::query_scalar(
             "SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure)",
         ).fetch_one(&h.pool).await?;
-        assert!(current_guard.contains("game_character_rotten_blood_revision_chain"));
+        assert!(current_guard.contains("game_character_hazard_revision_chain_rotten_blood"));
         let mut historical = h.pool.begin().await?;
-        sqlx::raw_sql("DO $$ DECLARE body TEXT; BEGIN
-            SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure) INTO STRICT body;
-            IF position('game_character_rotten_blood_revision_chain' IN body)=0 THEN
-                RAISE EXCEPTION 'expected current endgame receipt chain in historical migration fixture';
-            END IF;
-            EXECUTE replace(body,'game_character_rotten_blood_revision_chain','game_character_hazard_revision_chain');
-        END $$").execute(&mut *historical).await?;
         for _ in 0..2 {
             sqlx::raw_sql(include_str!(
                 "../../../../../../apps/game-server/migrations/0332_character_hazard.sql"
