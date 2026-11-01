@@ -9,7 +9,7 @@ use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
 use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_bounds;
 use oteryn_gameplay_content::content::ReferenceResistanceKind;
 use oteryn_gameplay_content::content::spell_data::formula::level_base_damage_healing;
-use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
+use oteryn_gameplay_progression::wheel_effects::{BattleInstinctBonuses, WheelRuntimeEffects};
 use oteryn_protocol_oteryn::cyclopedia_character::combat::{CombatStat as Stat, CombatStats};
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, TabWireError};
 
@@ -153,6 +153,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_only: &equipment_only,
                 offence: &offence,
                 wheel: wheel.as_ref(),
+                battle_instinct: state
+                    .wheel_battle_instinct(&runtime, actor, now.get())
+                    .ok_or(())?,
                 skill_bonuses,
                 mantra,
             };
@@ -205,6 +208,7 @@ struct Observation<'a> {
     equipment_only: &'a EquippedOffence,
     offence: &'a EquippedOffence,
     wheel: Option<&'a WheelRuntimeEffects>,
+    battle_instinct: BattleInstinctBonuses,
     skill_bonuses: [u32; 8],
     mantra: u32,
 }
@@ -399,9 +403,13 @@ impl Observation<'_> {
         out.set(Stat::Armor, i64::from(self.state.equipped_armor()))?;
         out.set(Stat::Mantra, i64::from(self.mantra))?;
         out.set(Stat::DefenceSkillId, 6)?;
-        // Incoming defence consumes the spell state's live skill directly. Attack-only
-        // proficiency adjustments must not inflate this read model.
-        if let Some(skill) = self.state.live_skill(5, self.now_micros) {
+        // Incoming defence adds the current Battle Instinct census to the live skill.
+        // Attack-only proficiency adjustments must not inflate this read model.
+        if let Some(skill) = self
+            .state
+            .live_skill(5, self.now_micros)
+            .and_then(|skill| skill.checked_add(self.battle_instinct.shielding))
+        {
             out.set(Stat::ShieldingSkill, i64::from(skill))?;
         }
         if let Some(hand) = self.state.equipped_defence() {
@@ -414,7 +422,12 @@ impl Observation<'_> {
                     .map(|skills| skills.map_or(constants.starting_skill, |skills| skills.attack)),
                 None => Some(0),
             };
-            if let Some(skill) = skill {
+            let bonus = match hand.skill_index {
+                Some(1..=3) => self.battle_instinct.melee,
+                Some(5) => self.battle_instinct.shielding,
+                _ => 0,
+            };
+            if let Some(skill) = skill.and_then(|skill| skill.checked_add(bonus)) {
                 // getDefense(true) reports the mode's post-swing factor (player.cpp:722-740).
                 if let Some((_, value)) =
                     player_defence_bounds(constants, hand, skill, self.mode, true)

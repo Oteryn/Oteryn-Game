@@ -57,6 +57,9 @@ pub struct ActorCombatState {
     pub(super) party: super::runtime_actor_party::PartyActorState,
     /// Only creature slots use this field; player maxima belong to PlayerSpellState.
     pub maximum_health: i64,
+    pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
+    pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
+    pub(super) echo_death_recorded: bool,
     pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
     pub(super) hazard: Option<(GameSessionId, u16)>,
@@ -465,7 +468,10 @@ fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
         .is_some_and(|at| at.get() / 1000 != batch.now_ms)
         || batch.current_lease_generation == 0
         || batch.binding.is_empty()
-        || (batch.effects.is_empty() && batch.anchor.is_none())
+        // A real timer may execute Combat over an empty area. Its deferred token
+        // is checked against the current scope below, and installation still
+        // requires the canonical player owner's sealed preflight.
+        || (batch.effects.is_empty() && batch.anchor.is_none() && batch.deferred.is_none())
     {
         return Err(Error::InvalidBatch);
     }
@@ -980,7 +986,9 @@ impl ChannelRuntimeV1 {
         }
         Ok(staged)
     }
-    fn qualified_deferred_batch(&self, batch: &OwnerCombatBatch) -> bool {
+    /// Read-only comparison for the joined player owner. Only the actual deferred
+    /// token for this scope and exact batch retains admitted work after control loss.
+    pub fn qualified_deferred_batch(&self, batch: &OwnerCombatBatch) -> bool {
         batch.deferred.as_ref().is_some_and(|authority| {
             authority.phase_ordinal() != 0
                 && authority.matches(
@@ -1053,14 +1061,16 @@ impl ChannelRuntimeV1 {
             });
         }
         let deferred = if let Some(authority) = &batch.deferred {
-            if !authority.matches(
-                batch,
-                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                    self.binding.world_id,
-                    self.binding.channel_id,
-                ),
-                self.binding.scope_generation,
-            ) || authority.admission_sequence() <= caster_state.deferred_high_water
+            if authority.phase_ordinal() == 0
+                || !authority.matches(
+                    batch,
+                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                        self.binding.world_id,
+                        self.binding.channel_id,
+                    ),
+                    self.binding.scope_generation,
+                )
+                || authority.admission_sequence() <= caster_state.deferred_high_water
             {
                 return Err(Error::StaleCommand);
             }

@@ -41,6 +41,7 @@ fn p12c_offence_rates_preserve_combat_saturation_and_unknown_sources() -> Result
         equipment_only: &equipment,
         offence: &offence,
         wheel: Some(&wheel),
+        battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0; 8],
         mantra: 0,
     };
@@ -129,6 +130,7 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
         equipment_only: &offence,
         offence: &offence,
         wheel: None,
+        battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0, 0, 0, 0, 0, 3, 0, 0],
         mantra: 9,
     };
@@ -162,5 +164,20 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
             "unsupported field {key:?} is not zero"
         );
     }
+    let boosted = Observation {
+        battle_instinct: BattleInstinctBonuses {
+            melee: 3,
+            shielding: 6,
+        },
+        ..observation
+    };
+    boosted.defence(&mut value).map_err(|e| format!("{e:?}"))?;
+    let (_, boosted_defence) =
+        player_defence_bounds(constants, hand, 56, FightMode::Balanced, true).ok_or("bounds")?;
+    assert_eq!(value.get(Stat::ShieldingSkill), Some(56));
+    assert_eq!(
+        value.get(Stat::DefenceTotal),
+        Some(i64::from(boosted_defence))
+    );
     Ok(())
 }

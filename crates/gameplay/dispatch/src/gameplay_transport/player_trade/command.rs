@@ -403,7 +403,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         record.items[1].ok_or(ResultCode::Stale)?,
                     ],
                     record.digest,
-                    &NativeItemWeights(native),
+                    &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 )
                 .await
                 .map_err(|_| ResultCode::Rejected)?
@@ -492,7 +492,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.character,
                         self.holder,
                         [fences[1 - side], fences[side]],
-                        &NativeItemWeights(native),
+                        &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                         request,
                     )
                     .await;
@@ -563,7 +563,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.character,
                         self.holder,
                         fences,
-                        &NativeItemWeights(native),
+                        &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                         request,
                     )
                     .await

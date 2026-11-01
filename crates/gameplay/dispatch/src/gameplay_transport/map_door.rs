@@ -32,6 +32,9 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
 /// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
 const WORLD_ACTIONS_PER_TURN: u32 = 512;
+/// Crystal 201189f config.lua.dist:469 and game.cpp:11325-11396: 500 - 10 ms.
+/// PR #2771 ANSWER6544165094 exempts the two read-only native panel projections.
+const WHEEL_EX_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(490);
 
 /// The world-interaction admission gate of one Channel (`WORLD_INTERACTION0` §3.4): the
 /// `world_action` cooldown per actor, started at admission and kept after a refused act, and the
@@ -39,6 +42,9 @@ const WORLD_ACTIONS_PER_TURN: u32 = 512;
 #[derive(Debug, Default)]
 pub struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
+    /// One shared ExAction clock for a session's fresh Wheel and Atelier mutations.
+    /// Kept separate from the existing 200 ms world-action and jewelry clocks.
+    wheel_mutations: Vec<(crate::foundation::GameSessionId, std::time::Duration)>,
     /// D3: necklace and ring equip clocks are independent of ordinary actions.
     jewelry: Vec<(ExactActorRef, u8, std::time::Duration)>,
     /// Interactions admitted since the owner's current turn began ([`Self::begin_turn`]).
@@ -46,6 +52,23 @@ pub struct WorldActionGate {
 }
 
 impl WorldActionGate {
+    /// Called synchronously only after an immutable receipt lookup misses. Refused
+    /// fresh attempts keep the source interval, while an exhausted attempt does not
+    /// extend it. Exact replay and read-only panel projections never call this.
+    pub(super) fn admit_wheel_mutation(
+        &mut self,
+        session: crate::foundation::GameSessionId,
+        now: std::time::Duration,
+    ) -> bool {
+        self.wheel_mutations
+            .retain(|(_, at)| now.saturating_sub(*at) < WHEEL_EX_ACTION_COOLDOWN);
+        if self.wheel_mutations.iter().any(|(who, _)| *who == session) {
+            return false;
+        }
+        self.wheel_mutations.push((session, now));
+        true
+    }
+
     /// Canary 52550d5e game.cpp:4171-4190,4272-4278: jewelry refuses; other
     /// hotkey slots wait for the shared action clock. Slot codes are the durable ABI.
     pub(super) fn equip_delay(
@@ -672,6 +695,31 @@ mod tests {
             .expect("rat");
         assert_eq!(go(&runtime, 1), UseDisposition::Occupied);
         assert!(world.enterable(DOOR_AT));
+    }
+
+    #[test]
+    fn wheel_and_atelier_share_exact_490ms_without_changing_world_action_200ms() {
+        use crate::foundation::GameSessionId;
+        use std::time::Duration;
+        let (_runtime, actor, _) = runtime_beside_the_door();
+        let mut bytes = [1; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        let session = GameSessionId::decode(&bytes).expect("session");
+        bytes[15] = 2;
+        let other = GameSessionId::decode(&bytes).expect("other session");
+        let us = Duration::from_micros;
+        let mut gate = WorldActionGate::default();
+        assert!(gate.admit_wheel_mutation(session, us(1_000_000)));
+        assert!(gate.admit(actor, us(1_000_000)));
+        assert!(!gate.admit(actor, us(1_199_999)));
+        assert!(gate.admit(actor, us(1_200_000)));
+        assert!(gate.admit_wheel_mutation(other, us(1_200_000)));
+        gate.begin_turn();
+        assert!(!gate.admit_wheel_mutation(session, us(1_489_999)));
+        assert!(gate.admit_wheel_mutation(session, us(1_490_000)));
+        assert!(!gate.admit_wheel_mutation(session, us(1_979_999)));
+        assert!(gate.admit_wheel_mutation(session, us(1_980_000)));
     }
 
     #[test]

@@ -203,7 +203,7 @@ pub(super) async fn prepare_inner(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
-        item_spell_leech: item_spell_augments::leech(owned, spell, &before),
+        item_spell_leech: item_spell_augments::leech(owned, spell, &before, now),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -684,8 +684,18 @@ fn prepare_payment(
     caster_position: TilePosition,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PaidPreparation, SpellCastDisposition> {
+    let wheel = crate::spell::wheel_formula::WheelFormulaMagic::from_owners(
+        owned,
+        runtime,
+        spell,
+        book,
+        caster,
+        before,
+        now.get(),
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
     let prepare_paid = |draw: &mut dyn FnMut(i64, i64) -> i64| {
-        let mut paid = prepare_ordinary_owner_cast_with_caster(
+        let mut paid = crate::spell::cast::prepare_ordinary_owner_cast_with_wheel(
             book,
             before,
             spell,
@@ -700,6 +710,7 @@ fn prepare_payment(
                 .as_ref()
                 .map(|_| (world as &dyn ChainWorld, chain_start)),
             draw,
+            wheel,
         )?;
         item_spell_augments::cooldown(owned, spell, &mut paid.next, &mut paid.anchor, now)?;
         paid.resolution.cooldowns = paid.next.cooldowns.clone();
@@ -727,7 +738,7 @@ fn prepare_payment(
         caster.magic_level,
         caster.vocation == before.character_facts().vocation
     );
-    let preview = prepare_paid(&mut |minimum, _| minimum).inspect_err(|_reason| {
+    let mut preview = prepare_paid(&mut |minimum, _| minimum).inspect_err(|_reason| {
         #[cfg(test)]
         eprintln!(
             "SEAM_EVIDENCE ordinary_combat_prepare stage=paid_preview_refused reason={_reason:?}"
@@ -767,6 +778,11 @@ fn prepare_payment(
     })?;
     #[cfg(test)]
     eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=lower_preview_qualified");
+    if let Some(owner) = &preview_output.magnitude {
+        owner
+            .apply_wheel_cast_state(&mut preview.next)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let formula = content
         .training_formula()
         .ok_or(SpellCastDisposition::Rejected)?;
@@ -783,11 +799,8 @@ fn prepare_payment(
             eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=training_or_runtime_preview_refused reason={_reason:?}");
             SpellCastDisposition::Rejected
         })?;
-    stage_player_batch(
-        runtime,
-        states,
-        &preview_output.batch,
-        Some(preview.next.clone()),
+    crate::gameplay_transport::actor_spell::stage_player_batch_with_magnitude(
+        runtime, states, &preview_output.batch, Some(preview.next.clone()), preview_output.magnitude.as_ref(),
     ).inspect_err(|_reason| {
         #[cfg(test)]
         eprintln!("SEAM_EVIDENCE ordinary_combat_prepare stage=player_batch_preview_refused reason={_reason:?}");
@@ -823,7 +836,7 @@ fn prepare_payment(
         )?;
         Some(stamp)
     };
-    let paid = prepare_paid(draw)?;
+    let mut paid = prepare_paid(draw)?;
     let output = lower(
         runtime,
         states,
@@ -848,6 +861,11 @@ fn prepare_payment(
         now,
         draw,
     )?;
+    if let Some(owner) = &output.magnitude {
+        owner
+            .apply_wheel_cast_state(&mut paid.next)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let training = before
         .prepare_paid_training(
             &paid.next,
@@ -857,7 +875,13 @@ fn prepare_payment(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    stage_player_batch(runtime, states, &output.batch, Some(paid.next.clone()))?;
+    crate::gameplay_transport::actor_spell::stage_player_batch_with_magnitude(
+        runtime,
+        states,
+        &output.batch,
+        Some(paid.next.clone()),
+        output.magnitude.as_ref(),
+    )?;
     runtime
         .stage_spell_batch(&output.batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;

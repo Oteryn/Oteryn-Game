@@ -120,6 +120,124 @@ fn committed(outcome: BestiaryKillOutcome) -> TestResult<(u32, u32, u64)> {
 }
 
 #[test]
+fn bounty_talisman_double_kill_keeps_one_receipt_revision_and_completion_cap() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "talisman_double", true).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        // Historical equipped custody and earned upgrades are fixture input. Only
+        // setup disables triggers; every kill below calls the actual fenced writer.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        let body = serde_json::json!({
+            "weekly": null, "expansion": false, "shop_purchases": [], "promotion_points": 0,
+            "bounty": { "state": "Active", "difficulty": 0, "offers": [],
+                "active": { "race": RAT, "required": 25, "current": 24, "experience": 1850,
+                    "points": 25, "grade": 0, "difficulty": 0, "slot": 0 },
+                "lists": [
+                    {"unlocked":true,"preferred":null,"unwanted":null},
+                    {"unlocked":false,"preferred":null,"unwanted":null},
+                    {"unlocked":false,"preferred":null,"unwanted":null},
+                    {"unlocked":false,"preferred":null,"unwanted":null},
+                    {"unlocked":false,"preferred":null,"unwanted":null}],
+                "next_free_reroll_unix": 0 }
+        });
+        sqlx::query("INSERT INTO game_character_task_boards(character_id,world_id,body,committed_character_revision,cause_id,cause_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,2,encode($4,'hex')::uuid,0)")
+            .bind(id(CHARACTER).as_slice()).bind(id(crate::bestiary_postgres_harness::WORLD).as_slice())
+            .bind(body).bind(id(90).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:taskboard/bounty/talisman/bestiary','oteryn:taskboard/weekly',355,2)")
+            .bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i51978','content-1',1,1,encode($3,'hex')::uuid)")
+            .bind(id(91).as_slice()).bind(id(crate::bestiary_postgres_harness::WORLD).as_slice())
+            .bind(id(92).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,7,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(CHARACTER).as_slice()).bind(id(91).as_slice())
+            .bind(id(crate::bestiary_postgres_harness::WORLD).as_slice()).bind(id(93).as_slice())
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        let request = |tag| -> TestResult<BestiaryKillRequest> {
+            let mut request = kill(tag, RAT)?;
+            request.race = BestiaryRace::new(RAT, "definition-r1", vec![1, 2, 10]).map_err(debug)?;
+            Ok(request)
+        };
+        let first = harness.root.commit_bestiary_kill(&authority, &harness.node, fence(1)?, request(60)?).await.map_err(debug)?;
+        let BestiaryKillOutcome::Committed(first) = first else { return Err("missing first receipt".into()); };
+        assert_eq!((first.kill_count_before, first.kill_count_after), (0, 1), "a non-extra slot cannot activate the talisman");
+
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_equipment_slots SET slot=10").execute(&mut *tx).await?;
+        tx.commit().await?;
+        let original = fence(2)?;
+        let resumed_request = request(61)?;
+        let captured = harness.root.capture_bestiary_talisman(&authority, &harness.node,
+            original, resumed_request.occurrence, &resumed_request.race).await.map_err(debug)?;
+        assert_eq!(captured.bonuses(RAT)[3], 10_000);
+        // The existing fence fixture supplies the stored result of a same-session
+        // resume. The real Bestiary owner must admit the successor generation;
+        // this is not a transport/UI handshake qualification.
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1,current_transport_ref=$2 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(id(SESSION).as_slice()).bind(id(94).as_slice()).execute(&harness.pool).await?;
+        let current_fence = |revision| -> TestResult<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+            let mut value = fence(revision)?;
+            value.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+            Ok(value)
+        };
+        let sequencer = crate::durability::character_revision_sequencer::CharacterRevisionSequencer::default();
+        let mut slot = sequencer.acquire(character()?).await;
+        let mut other_session = current_fence(2)?;
+        other_session.game_session_id = crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+        let mut other_lease = current_fence(2)?;
+        other_lease.character_lease_generation += 1;
+        for substituted in [original, other_session, other_lease] {
+            assert!(matches!(slot.commit_bestiary_with_talisman(&harness.root, &authority, &harness.node,
+                substituted, resumed_request.clone(), Some(captured.clone())).await,
+                Err(BestiaryProgressError::AuthorityRejected)),
+                "retained eligibility cannot authorize a stale transport, replacement session or lease");
+        }
+        assert_eq!(harness.root_revision().await?, "2");
+        assert_eq!(harness.count("game_character_bestiary_kill_receipts").await?, 1);
+        let second = slot.commit_bestiary_with_talisman(&harness.root, &authority, &harness.node,
+            current_fence(2)?, resumed_request, Some(captured)).await.map_err(debug)?;
+        drop(slot);
+        let BestiaryKillOutcome::Committed(second) = second else { return Err("missing doubled receipt".into()); };
+        assert_eq!((second.kill_count_before, second.kill_count_after), (1, 3));
+        assert_eq!(second.committed_character_revision.get(), 3, "one doubled kill uses one revision");
+        println!("<BOUNTY_TALISMAN> POSTGRES_CASE_COMPLETED: retained_capture_current_resumed_connection_fenced");
+        assert_eq!(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(3)?, request(60)?).await.map_err(debug)?, BestiaryKillOutcome::AlreadyCommitted(first));
+
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_task_boards SET body=jsonb_set(body,'{bounty,state}','\"Completed\"'::jsonb)").execute(&mut *tx).await?;
+        tx.commit().await?;
+        assert_eq!(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(3)?, request(61)?).await.map_err(debug)?, BestiaryKillOutcome::AlreadyCommitted(second));
+        assert_eq!(committed(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(3)?, request(62)?).await.map_err(debug)?)?, (3, 4, 4));
+        assert_eq!(committed(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(4)?, request(63)?).await.map_err(debug)?)?, (4, 5, 5));
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_task_boards SET body=jsonb_set(body,'{bounty,state}','\"Active\"'::jsonb)").execute(&mut *tx).await?;
+        tx.commit().await?;
+        for (tag, revision, before, after) in [(64, 5, 5, 7), (65, 6, 7, 9), (66, 7, 9, 10)] {
+            assert_eq!(committed(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(revision)?, request(tag)?).await.map_err(debug)?)?, (before, after, revision + 1));
+        }
+        assert_eq!(harness.root.commit_bestiary_kill(&authority, &harness.node, current_fence(8)?, request(67)?).await.map_err(debug)?, BestiaryKillOutcome::Saturated { race_key: RAT.into(), kill_count: 10 });
+        let increments: Vec<i16> = sqlx::query_scalar("SELECT kill_count_increment FROM game_character_bestiary_kill_receipts ORDER BY committed_character_revision")
+            .fetch_all(&harness.pool).await?;
+        assert_eq!(increments, [1, 2, 1, 1, 2, 2, 2]);
+        assert_eq!(harness.root_revision().await?, "8");
+        assert_eq!(harness.count("game_character_bestiary_kill_receipts").await?, 7);
+        println!("<BOUNTY_TALISMAN> POSTGRES_CASE_COMPLETED: extra_slot_double_receipt_replay_completed_and_cap");
+        drop(authority); drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
 fn kills_count_per_race_replay_saturate_and_share_the_revision_chain_with_xp() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());

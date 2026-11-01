@@ -1,4 +1,5 @@
 //! Ordered private phases of an admitted actor connection.
+mod vip_presence;
 
 use super::*;
 
@@ -69,6 +70,7 @@ struct ServeState {
     stash_revision: u64,
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
+    team_finder_view: crate::gameplay_transport::team_finder_members::SessionTeamFinderView,
     market_revision: u64,
     /// P22d: the domain 98 revision this connection has seen; 1 after the join snapshot.
     cyclopedia_tracker_revision: u64,

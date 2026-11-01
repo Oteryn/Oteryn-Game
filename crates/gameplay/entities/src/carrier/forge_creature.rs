@@ -1,5 +1,6 @@
 //! Forge classification lives in the existing spawn and actor owners.
 use super::*;
+use oteryn_gameplay_domain::domain::echo_warden::EchoVariant;
 use oteryn_gameplay_domain::domain::forge_creature::{
     FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate,
     INFLUENCED_SIMULTANEOUS_MAX, plan_fiendish_tick,
@@ -30,17 +31,30 @@ impl ChannelRuntimeV1 {
         if snapshot.state.master.is_some() || snapshot.state.policy.forge_difficulty.is_none() {
             return Err(CarrierError::InvalidCreatureTarget);
         }
+        // Echo's aura can enlist an ordinary spawn before the Forge population owner
+        // classifies it. Crystal echo_warden.lua:85-88 floors its current maximum;
+        // Monster::applyStacks (monster.cpp:2752-2757) then scales that maximum and
+        // fills health. Rebuilding from the immutable species policy loses the aura.
+        let echo_minion = self.echo_variant(actor) == Some(EchoVariant::Minion);
+        let base_maximum = if echo_minion {
+            snapshot.maximum_health
+        } else {
+            snapshot.state.policy.maximum_health
+        };
         let maximum = i64::try_from(
-            (i128::from(snapshot.state.policy.maximum_health) * i128::from(kind.health_percent())
-                + 99)
-                / 100,
+            (i128::from(base_maximum) * i128::from(kind.health_percent()) + 99) / 100,
         )
         .map_err(|_| CarrierError::DamageOverflow)?;
-        let current = i64::try_from(
-            i128::from(snapshot.health) * i128::from(maximum) / i128::from(snapshot.maximum_health),
-        )
-        .map_err(|_| CarrierError::DamageOverflow)?
-        .max(1);
+        let current = if echo_minion {
+            maximum
+        } else {
+            i64::try_from(
+                i128::from(snapshot.health) * i128::from(maximum)
+                    / i128::from(snapshot.maximum_health),
+            )
+            .map_err(|_| CarrierError::DamageOverflow)?
+            .max(1)
+        };
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,

@@ -147,6 +147,15 @@ impl ConditionDefinition {
                             .iter()
                             .all(|v| (-65535..=65535).contains(v))
                 }
+                ConditionValues::IntenseHex {
+                    duration_ms,
+                    damage_dealt_percent,
+                    healing_received_percent,
+                } => {
+                    duration_ms > 0
+                        && (1..=100).contains(&damage_dealt_percent)
+                        && (1..=100).contains(&healing_received_percent)
+                }
                 ConditionValues::Attributes {
                     duration_ms,
                     critical_chance_percent,
@@ -349,6 +358,7 @@ impl ConditionDefinition {
                 ConditionType::Light
             }
             ConditionValues::Attributes { .. } => ConditionType::Attributes,
+            ConditionValues::IntenseHex { .. } => ConditionType::IntenseHex,
             ConditionValues::SpellSkills { sub_id, .. } => ConditionType::SpellSkills(sub_id),
             ConditionValues::Invisible { .. } => ConditionType::Invisible,
             ConditionValues::Outfit { .. } | ConditionValues::ItemOutfit { .. } => {
@@ -419,6 +429,27 @@ pub struct ConditionInstance<S> {
     speed_base: u16,
     mana_shield_capacity: u32,
     mana_shield_remaining: u32,
+    /// Crystal condition.cpp:827-846 saves additive changes at application. Removal
+    /// drops this exact change even when the other independent buff family has expired.
+    buff_delta: ConditionBuffDelta,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ConditionBuffDelta {
+    pub damage_dealt: i32,
+    pub healing_received: i32,
+}
+
+fn source_buff_delta(base: i32, percent: u32) -> Result<i32, ConditionRefusal> {
+    let percent = i32::try_from(percent).map_err(|_| ConditionRefusal::ArithmeticBounds)?;
+    let delta = (base as f32 * ((percent as f32 - 100.0) / 100.0)).trunc();
+    if !delta.is_finite()
+        || f64::from(delta) < f64::from(i32::MIN)
+        || f64::from(delta) > f64::from(i32::MAX)
+    {
+        return Err(ConditionRefusal::ArithmeticBounds);
+    }
+    Ok(delta as i32)
 }
 
 impl<S> ConditionInstance<S> {
@@ -709,6 +740,7 @@ impl<S: Clone> ConditionStore<S> {
                     | ConditionValues::Outfit { .. }
                     | ConditionValues::ItemOutfit { .. }
                     | ConditionValues::Attributes { .. }
+                    | ConditionValues::IntenseHex { .. }
                     | ConditionValues::RationalSpeed { .. }
                     | ConditionValues::Speed { .. }
                     | ConditionValues::Light { .. }
@@ -729,6 +761,21 @@ impl<S: Clone> ConditionStore<S> {
         source_kind: ConditionSourceKind,
         immunities: &[ConditionType],
         facts: &ApplicationFacts<'_>,
+    ) -> Result<Applied, ConditionRefusal> {
+        self.apply_with_external_damage_buff(definition, source, source_kind, immunities, facts, 0)
+    }
+
+    /// The same application owner, with the other real condition store's frozen additive
+    /// damage buff. Swift's player state and the actor's canonical Hex slot are distinct
+    /// existing stores; their current owners supply this observation in one work item.
+    pub fn apply_with_external_damage_buff(
+        &mut self,
+        definition: &ConditionDefinition,
+        source: Option<S>,
+        source_kind: ConditionSourceKind,
+        immunities: &[ConditionType],
+        facts: &ApplicationFacts<'_>,
+        external_damage_delta: i32,
     ) -> Result<Applied, ConditionRefusal> {
         let now = facts.now;
         if matches!(definition.values, ConditionValues::ItemOutfit { .. })
@@ -757,6 +804,7 @@ impl<S: Clone> ConditionStore<S> {
             | ConditionValues::Light { duration_ms, .. }
             | ConditionValues::SpellLight { duration_ms, .. }
             | ConditionValues::Attributes { duration_ms, .. }
+            | ConditionValues::IntenseHex { duration_ms, .. }
             | ConditionValues::SpellSkills { duration_ms, .. }
             | ConditionValues::Invisible { duration_ms }
             | ConditionValues::ItemOutfit { duration_ms }
@@ -849,6 +897,7 @@ impl<S: Clone> ConditionStore<S> {
             speed_base: facts.base_speed,
             mana_shield_capacity: 0,
             mana_shield_remaining: 0,
+            buff_delta: ConditionBuffDelta::default(),
         };
         match definition.values {
             ConditionValues::DamageSchedule { .. } => {
@@ -1030,8 +1079,44 @@ impl<S: Clone> ConditionStore<S> {
                 instance.ends_at = Some(now + ms(duration_ms));
                 instance.next_tick_at = Some(now + ms(health_interval_ms.min(mana_interval_ms)));
             }
-            ConditionValues::Attributes { duration_ms, .. }
-            | ConditionValues::SpellSkills { duration_ms, .. }
+            ConditionValues::Attributes {
+                duration_ms,
+                damage_dealt_percent,
+                ..
+            } => {
+                if existing
+                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                let base = 100_i32
+                    .checked_add(self.intense_hex_delta_at(now).damage_dealt)
+                    .and_then(|base| base.checked_add(external_damage_delta))
+                    .ok_or(ConditionRefusal::ArithmeticBounds)?;
+                instance.buff_delta.damage_dealt = source_buff_delta(base, damage_dealt_percent)?;
+                instance.ends_at = Some(now + ms(duration_ms));
+            }
+            ConditionValues::IntenseHex {
+                duration_ms,
+                damage_dealt_percent,
+                healing_received_percent,
+            } => {
+                if existing
+                    .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                let base = 100_i32
+                    .checked_add(self.attribute_damage_delta_at(now))
+                    .and_then(|base| base.checked_add(external_damage_delta))
+                    .ok_or(ConditionRefusal::ArithmeticBounds)?;
+                instance.buff_delta.damage_dealt =
+                    source_buff_delta(base, u32::from(damage_dealt_percent))?;
+                instance.buff_delta.healing_received =
+                    source_buff_delta(100, u32::from(healing_received_percent))?;
+                instance.ends_at = Some(now + ms(duration_ms));
+            }
+            ConditionValues::SpellSkills { duration_ms, .. }
             | ConditionValues::Invisible { duration_ms } => {
                 if existing
                     .is_some_and(|v| v.ends_at.is_none() || ms(duration_ms) < v.remaining_at(now))
@@ -1588,6 +1673,10 @@ mod reconciled_schedule_tests;
 #[cfg(test)]
 #[path = "condition_gate_tests.rs"]
 mod condition_gate_tests;
+
+#[cfg(test)]
+#[path = "condition_soulpit_hex_tests.rs"]
+mod condition_soulpit_hex_tests;
 
 #[path = "condition_suppression.rs"]
 mod condition_suppression;

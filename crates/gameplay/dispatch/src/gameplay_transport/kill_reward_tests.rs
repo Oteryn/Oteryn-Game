@@ -137,6 +137,11 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     .expect("facts");
     PendingKillSettlement {
         forge: None,
+        // W06 callbacks are absent for this ordinary-kill fixture.
+        echo: None,
+        callback_loot: Vec::new(),
+        task_board_recipients: Arc::default(),
+        talisman: Arc::default(),
         damage_shares: Vec::new(),
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),
@@ -190,6 +195,96 @@ fn a_death_is_queued_once() {
     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Duplicate);
     in_flight.finish();
     assert_eq!(queue.counts(), (0, 0, 0));
+}
+
+#[test]
+fn ordered_drain_keeps_interleaved_principals_behind_the_oldest_retry() {
+    let queue = KillSettlementQueue::default();
+    let entries = [
+        pending(2, 50, 3, 0),
+        pending(3, 51, 3, 0),
+        pending(4, 50, 3, 0),
+    ];
+    let deaths = entries.each_ref().map(|entry| entry.facts.death);
+    for entry in entries {
+        assert_eq!(queue.append(entry), AppendOutcome::Queued);
+    }
+    assert!(matches!(
+        queue.take_ordered(session(51), 3),
+        TakeOutcome::CapacityWait
+    ));
+    let first = taken(queue.take_ordered(session(50), 3));
+    assert_eq!(first.entry().expect("first").facts.death, deaths[0]);
+    assert_eq!(queue.ordered_principal(), Err(()));
+    assert!(matches!(
+        queue.take_ordered(session(51), 3),
+        TakeOutcome::CapacityWait
+    ));
+    first.requeue();
+    assert_eq!(queue.ordered_principal(), Ok(Some((session(50), 3))));
+    taken(queue.take_ordered(session(50), 3)).finish();
+    assert!(matches!(
+        queue.take_ordered(session(50), 3),
+        TakeOutcome::CapacityWait
+    ));
+    let second = taken(queue.take_ordered(session(51), 3));
+    assert_eq!(second.entry().expect("second").facts.death, deaths[1]);
+    second.finish();
+    let third = taken(queue.take_ordered(session(50), 3));
+    assert_eq!(third.entry().expect("third").facts.death, deaths[2]);
+    third.finish();
+    assert_eq!(queue.ordered_principal(), Ok(None));
+    assert!(queue.state().accepted_order.is_empty());
+}
+
+#[test]
+fn ordered_drain_retains_admission_order_when_a_sealed_park_returns_at_the_back() {
+    let queue = KillSettlementQueue::default();
+    let principal = (session(50), 3);
+    let Seal::Sealed(hold) = queue.seal(principal) else {
+        panic!("sealed");
+    };
+    assert_eq!(
+        queue.append(pending(2, 50, 3, 0)),
+        AppendOutcome::Parked(ReleasePhase::Sealed)
+    );
+    assert_eq!(queue.append(pending(3, 51, 3, 0)), AppendOutcome::Queued);
+    assert_eq!(queue.ordered_principal(), Err(()));
+    assert!(!queue.prepare_ordered_release(principal));
+    assert!(
+        !queue.commit_point(hold),
+        "old hold was revoked before draining the sealed park"
+    );
+    assert_eq!(queue.ordered_principal(), Ok(Some(principal)));
+    assert!(matches!(
+        queue.take_ordered(session(51), 3),
+        TakeOutcome::CapacityWait
+    ));
+    taken(queue.take_ordered(session(50), 3)).finish();
+    taken(queue.take_ordered(session(51), 3)).finish();
+    assert_eq!(queue.ordered_principal(), Ok(None));
+}
+
+#[test]
+fn ordered_release_reconciles_committing_before_its_later_park_can_drain() {
+    let queue = KillSettlementQueue::default();
+    let principal = (session(50), 3);
+    let Seal::Sealed(hold) = queue.seal(principal) else {
+        panic!("sealed");
+    };
+    assert!(queue.commit_point(hold));
+    assert_eq!(
+        queue.append(pending(2, 50, 3, 0)),
+        AppendOutcome::Parked(ReleasePhase::Committing)
+    );
+    queue.append(pending(3, 51, 3, 0));
+    assert!(queue.prepare_ordered_release(principal));
+    assert_eq!(queue.ordered_principal(), Err(()));
+    hold.settle(&queue, ReleaseEnd::Retryable);
+    assert_eq!(queue.ordered_principal(), Ok(Some(principal)));
+    taken(queue.take_ordered(session(50), 3)).finish();
+    taken(queue.take_ordered(session(51), 3)).finish();
+    assert_eq!(queue.ordered_principal(), Ok(None));
 }
 
 #[test]
@@ -801,6 +896,44 @@ fn a_held_mark_is_not_an_orphan() {
             Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
         );
     });
+}
+
+#[test]
+fn task_board_gate_includes_queued_inflight_and_parked_deaths() {
+    let queue = KillSettlementQueue::default();
+    assert_eq!(queue.pending_principals(), Some(Vec::new()));
+    assert!(!queue.has_pending());
+    queue.append(pending(3, 50, 3, 0));
+    queue.append(pending(4, 51, 3, 0));
+    assert!(matches!(queue.seal((session(52), 3)), Seal::Sealed(_)));
+    assert_eq!(
+        queue.append(pending(5, 52, 3, 0)),
+        AppendOutcome::Parked(ReleasePhase::Sealed)
+    );
+    let TakeOutcome::Taken(taken) = queue.take(session(50), 3) else {
+        panic!("the first queued death must enter settlement");
+    };
+    assert_eq!(
+        queue.pending_principals(),
+        Some(vec![session(50), session(51), session(52)])
+    );
+    assert!(
+        queue.has_pending(),
+        "a command cannot pass while another drain holds an entry"
+    );
+    taken.finish();
+    queue.discard_gone(session(51), None);
+    assert!(
+        !queue.has_session(session(52)),
+        "parked entries are invisible to the ordinary session drain"
+    );
+    assert_eq!(queue.pending_principals(), Some(vec![session(52)]));
+    assert!(
+        queue.has_pending(),
+        "the post-lane recheck must also reject parked work"
+    );
+    queue.discard_gone(session(52), None);
+    assert!(!queue.has_pending());
 }
 
 #[test]

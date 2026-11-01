@@ -275,7 +275,7 @@ pub async fn prepare_from_owners(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
-        item_spell_leech: item_spell_augments::leech(owned, spell, before),
+        item_spell_leech: item_spell_augments::leech(owned, spell, before, now),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -517,7 +517,7 @@ async fn prepare_spatial(
                 .any(|t| t.position == origin && t.id != caster_id),
         ),
     };
-    let facts = NativeCombatFacts {
+    let mut facts = NativeCombatFacts {
         now_ms: now.get() / 1000,
         stage,
         inputs: FormulaInputs {
@@ -547,6 +547,20 @@ async fn prepare_spatial(
         elemental_stance: elemental,
         incoming_hit: None,
     };
+    // Positional Tactics reads the same complete current spatial census as this plan.
+    crate::spell::wheel_formula::WheelFormulaMagic::from_position(
+        owned,
+        runtime,
+        before,
+        now.get(),
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?
+    .native_inputs(
+        &mut facts.inputs,
+        caster.melee_weapon,
+        parameters["element"].as_str(),
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
     let delayed = if is_delayed {
         Some(delayed_strikes::facts(
             runtime,
@@ -787,6 +801,22 @@ fn prepare_preview(
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
+    if let Some(owner) = preview_magnitude.as_mut() {
+        owner
+            .append_wheel_healing_echo(&mut preview_lowered)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        if !matches!(
+            delayed_plan.as_ref(),
+            Some(crate::spell::native_delayed::NativeDelayedPlan::Cast {
+                immediate: None,
+                ..
+            })
+        ) {
+            owner
+                .apply_wheel_cast_state(&mut preview.next)
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+        }
+    }
     crate::spell::native_cast_commit::finalize_paid_combat_cast(
         before,
         spell,
@@ -838,14 +868,16 @@ fn prepare_preview(
     runtime
         .stage_spell_batch(&preview_lowered.batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    stage_player_batch(
+    crate::gameplay_transport::actor_spell::stage_player_batch_with_magnitude(
         runtime,
         states,
         &preview_lowered.batch,
         Some(preview.next.clone()),
+        preview_magnitude.as_ref(),
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     let preview_requests = delayed_strikes::requests(
+        runtime,
         &preview_lowered,
         delayed_plan.as_ref(),
         delayed,
@@ -986,6 +1018,22 @@ fn prepare_payment(
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
+    if let Some(owner) = magnitude.as_mut() {
+        owner
+            .append_wheel_healing_echo(&mut lowered)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        if !matches!(
+            delayed_plan.as_ref(),
+            Some(crate::spell::native_delayed::NativeDelayedPlan::Cast {
+                immediate: None,
+                ..
+            })
+        ) {
+            owner
+                .apply_wheel_cast_state(&mut paid.next)
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+        }
+    }
     crate::spell::native_cast_commit::finalize_paid_combat_cast(
         before,
         spell,
@@ -1035,6 +1083,7 @@ fn prepare_payment(
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let requests = delayed_strikes::requests(
+        runtime,
         &lowered,
         delayed_plan.as_ref(),
         delayed,
@@ -1087,6 +1136,8 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     book: &SpellBook,
     saved: &crate::spell::delayed_execution::SavedStrike,
     now: SemanticTimeMicros,
+    talisman: &crate::durability::task_board::BountyTalismanSnapshot,
+    decision: oteryn_simulation_determinism::DecisionOccurrenceId,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<Option<crate::spell::delayed_execution::ResolvedStrike>, SpellCastDisposition> {
     use crate::spell::native::CompiledNativeSpellPlanExt;
@@ -1165,8 +1216,9 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .delayed
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
-    // A due callback has no cost to roll back. A current planner refusal or no
-    // remaining victim consumes the pending strike instead of blocking the lane.
+    // A current planner refusal retires the pending strike. A valid empty area
+    // remains a real Combat: Crystal combat.cpp:1525-1527 consumes Focus before
+    // enumerating victims, and its presentation/receipt still belong to this due.
     let Ok(Plan::Delayed(plan)) = saved.binding.spell.plan(Facts::Delayed(facts), draw) else {
         return Ok(None);
     };
@@ -1174,7 +1226,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     else {
         return reject();
     };
-    let Some(strike) = strike.as_ref().filter(|s| !s.hits.is_empty()) else {
+    let Some(strike) = strike.as_ref() else {
         return Ok(None);
     };
     let plan = delayed_strikes::combat(Some(strike), None);
@@ -1200,7 +1252,9 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .select_item_spell(spell)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     if saved.scheduled.captured_raw_bounds.is_some() {
-        magnitude.select_planted_strike(&saved.cast_modifiers);
+        magnitude
+            .select_planted_strike(&saved.cast_modifiers)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     if let Some(stance) = &saved.scheduled.stance {
         magnitude
@@ -1238,6 +1292,14 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     states.apply_prey_spell_damage(runtime, &mut lowered.batch);
+    let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+        runtime,
+        &mut lowered.batch,
+        talisman,
+        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest()),
+        decision,
+    )
+    .ok_or(SpellCastDisposition::Rejected)?;
     let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
     let presentation = states
         .presentations
@@ -1260,6 +1322,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(Some(crate::spell::delayed_execution::ResolvedStrike {
         batch: lowered.batch,
+        bounty_leech,
         presentation: std::sync::Arc::new(presentation),
         magnitude: std::sync::Arc::new(magnitude),
         owned: owned.clone(),

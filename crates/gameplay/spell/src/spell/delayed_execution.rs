@@ -133,6 +133,8 @@ pub struct SavedStrike {
 #[derive(Debug, Clone)]
 pub struct ResolvedStrike {
     pub batch: OwnerCombatBatch,
+    /// First due qualification's talisman rates, keyed by target and effect ordinal.
+    pub bounty_leech: Vec<(ExactActorRef, u16, u16)>,
     pub presentation: std::sync::Arc<super::spell_presentations::PreparedPresentation>,
     pub magnitude: std::sync::Arc<super::magnitude_owner::PreparedMagnitudeOwner>,
     pub owned: super::owned_cast_facts::OwnedCastFacts,
@@ -504,6 +506,22 @@ pub struct FireReport {
     pub lifecycle_blocked: Option<(FamiliarLifecycleOccurrence, Error)>,
     pub familiar_receipts: Vec<super::companion_lifecycle::FamiliarTimerReceipt>,
     pub blocked: Option<(SpellTimerOccurrence, Error)>,
+}
+
+/// Cross-crate seal for the audited owner compositor, following PlayerBatchProof.
+pub mod due_commit_seal {
+    pub trait Sealed {}
+}
+
+/// The actual compositor stages current physical and player predecessors, checks
+/// both, then installs them synchronously. Decoded data cannot provide a receipt.
+pub trait DueCombatCommit: due_commit_seal::Sealed {
+    fn commit_due_combat(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        payload: &TimerPayload,
+        batch: &OwnerCombatBatch,
+    ) -> Result<CombatBatchReceipt, Error>;
 }
 
 impl SpellTimerOwner {
@@ -1336,7 +1354,7 @@ impl SpellTimerOwner {
         clock: &impl OwnerClock,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-        build: impl FnMut(
+        mut build: impl FnMut(
             &ChannelRuntimeV1,
             &TimerPayload,
             SpellTimerOccurrence,
@@ -1344,7 +1362,22 @@ impl SpellTimerOwner {
             RuntimeWorkStamp,
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
-        self.fire_due_impl(runtime, clock, Some(fence), stamp, build)
+        self.fire_due_impl(
+            runtime,
+            clock,
+            Some(fence),
+            stamp,
+            &mut (),
+            |runtime, _, payload, occurrence, due, stamp| {
+                build(runtime, payload, occurrence, due, stamp)
+            },
+            |runtime, _, _, batch| {
+                runtime
+                    .stage_spell_batch(batch)
+                    .and_then(|staged| runtime.commit_spell_batch(staged))
+                    .map_err(Error::Batch)
+            },
+        )
     }
     /// Production route borrows the actual runtime fence only for each check or
     /// mint, releases that borrow, then commits through the same real runtime.
@@ -1353,22 +1386,6 @@ impl SpellTimerOwner {
         runtime: &mut ChannelRuntimeV1,
         clock: &impl OwnerClock,
         stamp: RuntimeWorkStamp,
-        build: impl FnMut(
-            &ChannelRuntimeV1,
-            &TimerPayload,
-            SpellTimerOccurrence,
-            SemanticTimeMicros,
-            RuntimeWorkStamp,
-        ) -> Result<OwnerCombatBatch, Error>,
-    ) -> Result<FireReport, Error> {
-        self.fire_due_impl(runtime, clock, None, stamp, build)
-    }
-    fn fire_due_impl(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        clock: &impl OwnerClock,
-        fence: Option<&ScopeRuntimeFence>,
-        stamp: RuntimeWorkStamp,
         mut build: impl FnMut(
             &ChannelRuntimeV1,
             &TimerPayload,
@@ -1376,6 +1393,76 @@ impl SpellTimerOwner {
             SemanticTimeMicros,
             RuntimeWorkStamp,
         ) -> Result<OwnerCombatBatch, Error>,
+    ) -> Result<FireReport, Error> {
+        self.fire_due_impl(
+            runtime,
+            clock,
+            None,
+            stamp,
+            &mut (),
+            |runtime, _, payload, occurrence, due, stamp| {
+                build(runtime, payload, occurrence, due, stamp)
+            },
+            |runtime, _, _, batch| {
+                runtime
+                    .stage_spell_batch(batch)
+                    .and_then(|staged| runtime.commit_spell_batch(staged))
+                    .map_err(Error::Batch)
+            },
+        )
+    }
+
+    /// The same timer owner may join canonical player successors to its physical
+    /// batch. The compositor stages every successor before either owner writes,
+    /// then installs both synchronously. Each next callback sees those changes.
+    pub fn fire_due_current_with_context<C: DueCombatCommit>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        clock: &impl OwnerClock,
+        stamp: RuntimeWorkStamp,
+        context: &mut C,
+        build: impl FnMut(
+            &ChannelRuntimeV1,
+            &C,
+            &TimerPayload,
+            SpellTimerOccurrence,
+            SemanticTimeMicros,
+            RuntimeWorkStamp,
+        ) -> Result<OwnerCombatBatch, Error>,
+    ) -> Result<FireReport, Error> {
+        self.fire_due_impl(
+            runtime,
+            clock,
+            None,
+            stamp,
+            context,
+            build,
+            |runtime, context, payload, batch| context.commit_due_combat(runtime, payload, batch),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fire_due_impl<C>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        clock: &impl OwnerClock,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        context: &mut C,
+        mut build: impl FnMut(
+            &ChannelRuntimeV1,
+            &C,
+            &TimerPayload,
+            SpellTimerOccurrence,
+            SemanticTimeMicros,
+            RuntimeWorkStamp,
+        ) -> Result<OwnerCombatBatch, Error>,
+        mut commit: impl FnMut(
+            &mut ChannelRuntimeV1,
+            &mut C,
+            &TimerPayload,
+            &OwnerCombatBatch,
+        ) -> Result<CombatBatchReceipt, Error>,
     ) -> Result<FireReport, Error> {
         if !self.current(current_timer_fence(runtime, fence)?, stamp) {
             return Err(Error::StaleOwner);
@@ -1558,14 +1645,20 @@ impl SpellTimerOwner {
                 }
                 batch.clone()
             } else {
-                let mut batch =
-                    match build(runtime, &pending.payload, occurrence, clock.now(), stamp) {
-                        Ok(batch) => batch,
-                        Err(e) => {
-                            report.blocked = Some((occurrence, e));
-                            break;
-                        }
-                    };
+                let mut batch = match build(
+                    runtime,
+                    context,
+                    &pending.payload,
+                    occurrence,
+                    clock.now(),
+                    stamp,
+                ) {
+                    Ok(batch) => batch,
+                    Err(e) => {
+                        report.blocked = Some((occurrence, e));
+                        break;
+                    }
+                };
                 let binding = pending.payload.binding();
                 if batch.caster != binding.caster
                     || batch.attacker != binding.attacker
@@ -1619,13 +1712,10 @@ impl SpellTimerOwner {
                 self.prepared_due = Some((occurrence, batch.clone()));
                 batch
             };
-            let receipt = match runtime
-                .stage_spell_batch(&batch)
-                .and_then(|s| runtime.commit_spell_batch(s))
-            {
+            let receipt = match commit(runtime, context, &pending.payload, &batch) {
                 Ok(receipt) => receipt,
-                Err(e) => {
-                    report.blocked = Some((occurrence, Error::Batch(e)));
+                Err(error) => {
+                    report.blocked = Some((occurrence, error));
                     break;
                 }
             };

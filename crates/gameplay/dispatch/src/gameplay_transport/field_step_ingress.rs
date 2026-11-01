@@ -289,7 +289,7 @@ impl StepIngressRead<'_, '_> {
     }
 }
 #[allow(clippy::too_many_arguments)]
-fn destination(
+pub(super) fn destination(
     runtime: &ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,

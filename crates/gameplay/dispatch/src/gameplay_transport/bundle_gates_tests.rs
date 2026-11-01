@@ -75,6 +75,21 @@ const INVENTORY: &[Entry] = &[
             ),
             ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+            // TASKBOARD-P04: real party kill/capture replay fixture uses the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/party_xp/bounty_talisman.rs",
+                2,
+            ),
+            // The real equipment move must settle a prior death before changing slot 10.
+            (
+                "gameplay_transport/postgres_tests/party_xp/bounty_talisman/equipment.rs",
+                1,
+            ),
+            // TASKBOARD-P04: chronological queued deaths use real target/clear attack calls.
+            (
+                "gameplay_transport/postgres_tests/party_xp/task_board_ordered.rs",
+                2,
+            ),
         ],
     },
     Entry {
@@ -740,7 +755,9 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
-    ("gameplay_transport/postgres_tests/wheel_allocation.rs", 3),
+    // Wheel socket/unsocket fixtures add two explicit empty-room overrides;
+    // the production qualified-room construction remains unchanged.
+    ("gameplay_transport/postgres_tests/wheel_allocation.rs", 5),
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),

@@ -104,7 +104,9 @@ pub(super) async fn apply(
     if let Some((key, count)) = mint {
         if resources.fragment.family != "Item"
             || resources.fragment.production_key != key
-            || !(1..=5).contains(&count)
+            // Crystal 201189f player_wheel.cpp:1308-1318 permits ten regular fragments;
+            // the progression owner and deferred SQL guard enforce the quality-specific range.
+            || !(1..=10).contains(&count)
         {
             return Ok(None);
         }
@@ -137,6 +139,7 @@ pub(super) async fn apply(
         let limit = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
             tx,
             fence.character_id,
+            resources.content,
         )
         .await?;
         if carried
