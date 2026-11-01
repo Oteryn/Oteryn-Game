@@ -48,6 +48,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),
+    // PAR-M10: the captured wolf 12369 the magic wolf trap creates (Crystal 201189f8
+    // trap.lua:39-42, tools/content-migration/captured_wolf_item_profiles.py). Its Canary
+    // items.xml entry has no speed attribute, so speed_bonus=0.
+    ("M10-CAPTURED-WOLF", 1),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.

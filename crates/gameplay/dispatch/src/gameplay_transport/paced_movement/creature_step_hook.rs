@@ -44,6 +44,22 @@ pub(in crate::gameplay_transport) struct CreatureStepHooks {
     pub captures: Vec<ItemMintRequest>,
 }
 
+/// Whether the active content admits the captured wolf 12369 as a native item that may be minted
+/// on the ground; `trap.lua:42` creates it on the trap's tile.
+pub(in crate::gameplay_transport) fn capture_admitted(
+    content: &crate::content::native_gameplay::NativeGameplayState,
+) -> bool {
+    content
+        .item_policy(CAPTURED_WOLF_KEY, CAPTURED_WOLF_REVISION)
+        .is_some_and(|policy| {
+            let admission = &policy.record().admission;
+            admission.materializable
+                && admission
+                    .legal_destinations
+                    .contains(&crate::content::native_gameplay::NativeItemDestination::Ground)
+        })
+}
+
 /// Applies the creature step-in hooks to the committed creature steps of one pass. A capture runs
 /// only when `capture_admitted`, that is, while the active content admits the captured wolf as a
 /// native item: without it the wolf is not removed, so no capture is lost.
@@ -356,6 +372,65 @@ mod tests {
             hook_case(THORNFIRE_GROUND, false, wolf, |runtime, map, actor| {
                 let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], true);
                 assert!(hooks.removed.is_empty() && runtime.contains_live_creature(actor));
+            })
+        })
+    }
+
+    /// The production native content of the accepted entry room, as the owner activates it.
+    fn production_content()
+    -> Result<crate::content::native_gameplay::NativeGameplayState, Box<dyn std::error::Error>>
+    {
+        use crate::content::{
+            ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
+            activate_native_entry_room_with_gameplay,
+        };
+        let mut input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json"),
+        )?;
+        input.source_world = None;
+        let world = crate::foundation::WorldId::decode(&[
+            1, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])?;
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &input)?;
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &input,
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        Ok(controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native state")?
+            .clone())
+    }
+
+    #[test]
+    fn m10_production_content_admits_the_captured_wolf_so_the_trap_captures()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        on_stack(|| {
+            let admitted = capture_admitted(&production_content().map_err(|e| e.to_string())?);
+            assert!(
+                admitted,
+                "production content must admit 12369 on the ground"
+            );
+            let wolf = (STARVING_WOLF, "Starving Wolf", 85);
+            hook_case(MAGIC_WOLF_TRAP, false, wolf, |runtime, map, actor| {
+                let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], admitted);
+                assert_eq!(hooks.removed, vec![actor]);
+                let capture = hooks.captures.first().expect("one capture");
+                assert_eq!(capture.item.production_key, CAPTURED_WOLF_KEY);
             })
         })
     }
