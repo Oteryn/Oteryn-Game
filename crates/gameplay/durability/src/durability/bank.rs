@@ -31,7 +31,7 @@ use super::bank_audit::{
     self as audit, ASSET_GOLD, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX,
     BANK_WITHDRAW_MAX, BankCauseV1, BankCoinLineV1, BankConversionCauseV1, BankEventIdentity,
     BankItemDefinitionV1, BankItemStateV1, BankOperationCauseV1, BankOperationV1,
-    BankTransferCauseV1, BankValueLineV1, COIN_LINE_INPUT, COIN_LINE_OUTPUT, CONVERSION_DEPOSIT,
+    BankTransferCauseV1, BankValueLineV1, BankHirelingHouseV1, COIN_LINE_INPUT, COIN_LINE_OUTPUT, CONVERSION_DEPOSIT,
     CONVERSION_WITHDRAW, LINE_CLASS_CONVERSION, LINE_CLASS_TRANSFER,
 };
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -291,6 +291,8 @@ impl BankRequest {
     }
 }
 
+mod hireling;
+
 /// Historical provenance of a native Bank owner's accepted command. It supplies no current
 /// NPC, session, node, Content or money authority. The NPC owner checks those facts when enqueueing.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -512,7 +514,7 @@ impl DurabilityRoot {
         source: BankNpcSource,
         request: BankRequest,
     ) -> Result<()> {
-        validate_request(&fence, &request)?;
+        validate_request_shape(&request)?;
         if source.command.game_session_id() != fence.game_session_id
             || source.npc_generation == 0
             || source.catalogue_revision == 0
@@ -543,9 +545,9 @@ impl DurabilityRoot {
                             && stored.npc_identity == source.npc_identity && stored.npc_key == source.npc_key && stored.npc_generation == source.npc_generation
                             && stored.catalogue_revision == source.catalogue_revision && stored.prompt_generation == source.prompt_generation { Ok(()) } else { Err(BankError::ConflictingOccurrence) });
             }
-            let Some(acting) = acting_fence(&mut tx, &node, &fence).await? else { return Ok(Err(BankError::AuthorityRejected)); };
+            let Some(acting) = hireling::acting_npc_fence(&mut tx, &node, &fence, Some(&source.npc_key)).await? else { return Ok(Err(BankError::AuthorityRejected)); };
             if let Err(error) = lock_acting_root(&mut tx, &acting).await { return nested_bank_error(error); }
-            let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(Err(BankError::AuthorityRejected)); };
+            let world_id=acting.world_id; let channel_id=acting.channel_id;
             sqlx::query("INSERT INTO game_npc_bank_confirmations (game_session_id, command_id, character_id, world_id, npc_identity, npc_generation, catalogue_revision, prompt_generation, operation_occurrence_id, request_binding, frozen_request, recipient_name, npc_key, origin_channel_id, origin_scope_generation, origin_connection_generation, origin_character_lease_generation, origin_node_id, origin_node_registration_revision) VALUES (encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6::text::numeric,$7::text::numeric,$8::text::numeric,encode($9,'hex')::uuid,$10,$11,$12,$13,encode($14,'hex')::uuid,$15::text::numeric,$16::text::numeric,$17::text::numeric,encode($18,'hex')::uuid,$19::text::numeric)")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(source.command.command_id().get().to_string())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
@@ -587,7 +589,7 @@ impl DurabilityRoot {
             lock_npc_bank_command(&mut tx, command).await?;
             let Some(stored) = read_npc_bank_command(&mut tx, &fence, command).await? else { return Ok(Ok(None)); };
             let request = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
-            let outcome = match bank_operation_in_transaction(&mut tx, &node, &fence, &request).await {
+            let outcome = match bank_operation_with_npc(&mut tx, &node, &fence, &request,Some(&stored.npc_key)).await {
                 Ok(outcome) => outcome, Err(error) => return nested_bank_error(error),
             };
             sqlx::query("UPDATE game_npc_bank_confirmations SET completed = TRUE WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric AND NOT completed")
@@ -618,9 +620,7 @@ async fn read_npc_bank_command(
     let Some(row) = row else {
         return Ok(None);
     };
-    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-        return Err(DurabilityError::InvalidStoredState);
-    };
+    let world_id=fence.runtime_scope.world_id();
     if uuid_text(&row.try_get::<String, _>("character_id")?)? != *fence.character_id.as_bytes()
         || uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes()
     {
@@ -673,6 +673,23 @@ impl DurabilityRoot {
         coins: Option<BankCoinFacts>,
         recipient_name: Option<CharacterName>,
     ) -> Result<BankNpcPreview> {
+        self.preview_bank(authority,node,fence,coins,recipient_name,None).await
+    }
+
+    /// Exact active Hireling and character-wide Banker entitlement, under named House custody.
+    pub async fn preview_hireling_bank(
+        &self, authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
+        fence:CurrentCharacterItemFence,coins:Option<BankCoinFacts>,recipient_name:Option<CharacterName>,
+        npc_key:String,
+    )->Result<BankNpcPreview>{
+        self.preview_bank(authority,node,fence,coins,recipient_name,Some(npc_key)).await
+    }
+
+    async fn preview_bank(
+        &self, authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
+        fence:CurrentCharacterItemFence,coins:Option<BankCoinFacts>,recipient_name:Option<CharacterName>,
+        npc_key:Option<String>,
+    )->Result<BankNpcPreview>{
         let recovery = authority
             .record_for(self)
             .map_err(|_| BankError::AuthorityRejected)?;
@@ -682,7 +699,7 @@ impl DurabilityRoot {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
-                let Some(acting) = acting_fence(&mut tx, &node, &fence).await? else {
+                let Some(acting) = hireling::acting_npc_fence(&mut tx,&node,&fence,npc_key.as_deref()).await? else {
                     return Ok(Err(BankError::AuthorityRejected));
                 };
                 if let Err(error) = lock_acting_root(&mut tx, &acting).await {
@@ -817,6 +834,11 @@ impl DurabilityRoot {
 /// The request's own shape, before any read: identities, the amount within its row, the planned
 /// slots and the coin facts.
 pub fn validate_request(fence: &CurrentCharacterItemFence, request: &BankRequest) -> Result<()> {
+    if !matches!(fence.runtime_scope,RuntimeScopeRefV1::Channel{..}) {return Err(BankError::InvalidInput)}
+    validate_request_shape(request)
+}
+
+fn validate_request_shape(request:&BankRequest)->Result<()> {
     let identity = request.identity();
     let cap = match request {
         BankRequest::Deposit(_) => BANK_DEPOSIT_MAX,
@@ -834,8 +856,7 @@ pub fn validate_request(fence: &CurrentCharacterItemFence, request: &BankRequest
         .iter()
         .enumerate()
         .all(|(index, id)| !identities[..index].contains(id));
-    if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
-        || !amount_within(request.amount(), cap)
+    if !amount_within(request.amount(), cap)
         || identity.occurred_at_unix_ms <= 0
         || check_uuid_v7(&identity.transaction_id).is_err()
         || check_uuid_v7(&identity.event_id).is_err()
@@ -912,6 +933,9 @@ struct Acting {
     world_id: WorldId,
     channel_id: ChannelId,
     scope_ownership_generation: u64,
+    hireling_house: Option<(String,[u8;16])>,
+    // Current deciding fence, distinct from immutable NPC confirmation provenance.
+    hireling_connection_generation: Option<u64>,
 }
 
 /// One operation inside a transaction that already asserted the recovery fence and took the
@@ -923,7 +947,14 @@ pub async fn bank_operation_in_transaction(
     fence: &CurrentCharacterItemFence,
     request: &BankRequest,
 ) -> Result<BankOperationOutcome> {
-    validate_request(fence, request)?;
+    bank_operation_with_npc(tx,node,fence,request,None).await
+}
+
+async fn bank_operation_with_npc(
+    tx:&mut sqlx::Transaction<'_,sqlx::Postgres>,node:&NodeIncarnationProof,
+    fence:&CurrentCharacterItemFence,request:&BankRequest,npc_key:Option<&str>,
+)->Result<BankOperationOutcome>{
+    if npc_key.is_some(){validate_request_shape(request)?}else{validate_request(fence,request)?}
     let binding = request_binding(fence, request);
     let occurrence = request.identity().occurrence;
     sqlx::query(
@@ -936,7 +967,7 @@ pub async fn bank_operation_in_transaction(
     if let Some(record) = load_operation(tx, occurrence, &binding).await? {
         return Ok(BankOperationOutcome::Replayed(record));
     }
-    let Some(acting) = acting_fence(tx, node, fence).await? else {
+    let Some(acting) = hireling::acting_npc_fence(tx,node,fence,npc_key).await? else {
         return Err(BankError::AuthorityRejected);
     };
     let record = match request {
@@ -1049,6 +1080,8 @@ async fn acting_fence(
         world_id,
         channel_id,
         scope_ownership_generation: fence.scope_ownership_generation.get(),
+        hireling_house: None,
+        hireling_connection_generation: None,
     }))
 }
 
@@ -1278,13 +1311,13 @@ async fn insert_operation(
            channel_id, runtime_scope_ownership_generation, amount, recipient_character_id, \
            recipient_name_key, planned_crystal_item_instance_id, \
            planned_platinum_item_instance_id, planned_gold_item_instance_id, \
-           backpack_item_instance_id, outcome, occurred_at, envelope_sha256, committed_at) \
+           backpack_item_instance_id, outcome, occurred_at, envelope_sha256, committed_at, source_house_key, source_hireling_id, source_connection_generation) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, $4, $5, \
            encode($6,'hex')::uuid, encode($7,'hex')::uuid, encode($8,'hex')::uuid, \
            encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, encode($12,'hex')::uuid, $13, \
            encode($14,'hex')::uuid, encode($15,'hex')::uuid, encode($16,'hex')::uuid, \
            encode($17,'hex')::uuid, $18, $19, sha256($20), \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$21,encode($22,'hex')::uuid,$23::text::numeric(20,0))",
     )
     .bind(identity.occurrence.as_bytes().as_slice())
     .bind(identity.transaction_id.as_slice())
@@ -1306,6 +1339,9 @@ async fn insert_operation(
     .bind(result.code())
     .bind(identity.occurred_at_unix_ms)
     .bind(envelope)
+    .bind(acting.hireling_house.as_ref().map(|(house,_)|house.as_str()))
+    .bind(acting.hireling_house.as_ref().map(|(_,id)|id.as_slice()))
+    .bind(acting.hireling_connection_generation.map(|generation|generation.to_string()))
     .execute(&mut *connection)
     .await?;
     Ok(())
@@ -1763,6 +1799,7 @@ fn encode_event(
             backpack_item_instance_id: backpack.map(|id| id.to_vec()).unwrap_or_default(),
             coin_lines,
             value_lines,
+            hireling_house: acting.hireling_house.as_ref().map(|(house,id)|BankHirelingHouseV1{house_key:house.clone(),hireling_id:id.to_vec()}),
             recipient_character_id: recipient
                 .map(|id| id.as_bytes().to_vec())
                 .unwrap_or_default(),

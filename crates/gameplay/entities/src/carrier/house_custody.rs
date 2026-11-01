@@ -2,6 +2,11 @@
 use super::*;
 use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeRuntimeFence};
 
+mod movement;
+pub use movement::HouseMovementSnapshot;
+mod admission;
+mod lifecycle;
+
 #[derive(Debug)]
 pub(super) struct HouseScopeOwner {
     scope: RuntimeScopeRefV1,
@@ -42,6 +47,90 @@ pub struct HouseActorState {
 }
 
 impl ChannelRuntimeV1 {
+    /// Resolve the session from this live slot, then recheck its current House owner.
+    /// A retained actor reference alone never establishes House custody.
+    pub fn house_observer(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<(GameSessionId, HouseActorState)>, CarrierError> {
+        let Some(resident) = self.carrier.house_custody.iter().find(|r| r.actor == actor) else {
+            return Ok(None);
+        };
+        self.house_actor_state(actor, resident.session)
+            .map(|state| Some((resident.session, state)))
+    }
+
+    /// Read lifecycle under actual House custody; generic Channel reads remain closed.
+    pub fn house_player_control_facts(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<PlayerControlFacts, CarrierError> {
+        self.house_actor_state(actor, session)?;
+        let index = usize::try_from(actor.actor_local_id())
+            .ok()
+            .and_then(|i| i.checked_sub(1))
+            .ok_or(CarrierError::InvalidActorIdentity)?;
+        let Slot::Occupied { lifecycle, .. } = &self.carrier.slots[index] else {
+            return Err(CarrierError::WrongScope);
+        };
+        Ok(PlayerControlFacts {
+            placement_identity: actor.placement_identity(),
+            placement_revision: actor.actor_local_generation(),
+            control_loss: lifecycle.control_loss,
+        })
+    }
+
+    /// The current House actor of an authenticated session, for scoped chat and visibility.
+    pub fn house_player_for_session(
+        &self,
+        session: GameSessionId,
+    ) -> Result<Option<(ExactActorRef, HouseActorState)>, CarrierError> {
+        let Some(resident) = self
+            .carrier
+            .house_custody
+            .iter()
+            .find(|r| r.session == session)
+        else {
+            return Ok(None);
+        };
+        self.house_actor_state(resident.actor, session)
+            .map(|state| Some((resident.actor, state)))
+    }
+
+    /// Observe only current residents of the same named House and generation.
+    pub fn house_visible_players(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<Vec<VisibleRuntimeActor>, CarrierError> {
+        let state = self.house_actor_state(actor, session)?;
+        Ok(self
+            .carrier
+            .house_custody
+            .iter()
+            .filter_map(|resident| {
+                let current = self
+                    .house_actor_state(resident.actor, resident.session)
+                    .ok()?;
+                (current.house == state.house
+                    && current.scope == state.scope
+                    && current.generation == state.generation
+                    && current.position.floor == state.position.floor)
+                    .then_some(VisibleRuntimeActor {
+                        actor: resident.actor,
+                        generation: resident.actor.actor_local_generation(),
+                        position: MovementLocalPosition {
+                            x: current.position.x,
+                            y: current.position.y,
+                            floor: current.position.floor,
+                        },
+                        revision: resident.channel_position.revision,
+                    })
+            })
+            .collect())
+    }
+
     /// Reconstruct one committed destination after process-local state was lost.
     /// The composition must first authenticate recovery and prove current durable
     /// session, lease, assignment and node authority. No receipt alone is a grant.
@@ -62,7 +151,16 @@ impl ChannelRuntimeV1 {
         {
             let actor = resident.actor;
             let current = self.house_actor_state(actor, session)?;
-            return if house.as_ref() == Some(&current) {
+            // The transfer receipt records the admitted entry cell. A current
+            // resident may have moved since that receipt; recovery proves the
+            // same named owner/session/lease and preserves its live position.
+            return if house.as_ref().is_some_and(|expected| {
+                expected.house == current.house
+                    && expected.scope == current.scope
+                    && expected.generation == current.generation
+                    && expected.lease == current.lease
+                    && expected.origin_position == current.origin_position
+            }) {
                 Ok(actor)
             } else {
                 Err(CarrierError::WrongScope)
@@ -246,12 +344,13 @@ impl ChannelRuntimeV1 {
         position: LocalPosition,
     ) -> Result<bool, CarrierError> {
         let state = self.house_actor_state(actor, session)?;
-        Ok(self.carrier.house_custody.iter().any(|resident| {
-            resident.actor != actor
-                && resident.scope == state.scope
-                && resident.generation == state.generation
-                && resident.position == position
-        }))
+        Ok(self.house_hireling_cell_occupied(actor, session, position)?
+            || self.carrier.house_custody.iter().any(|resident| {
+                resident.actor != actor
+                    && resident.scope == state.scope
+                    && resident.generation == state.generation
+                    && resident.position == position
+            }))
     }
 
     /// Apply a durably committed same-node transfer while the composition holds
@@ -322,6 +421,13 @@ impl ChannelRuntimeV1 {
                 _ => return Err(CarrierError::WrongScope),
             }
             self.carrier.house_custody.remove(at);
+            if !self.carrier.house_custody.iter().any(|resident| {
+                resident.key == house
+                    && resident.scope == scope
+                    && resident.generation == generation
+            }) {
+                self.retire_house_hireling_projection(house, scope, generation);
+            }
         } else {
             let current = self.bound_attacker_lease(actor, source)?;
             if current.character_id() != lease.character_id()

@@ -21,6 +21,10 @@ use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 use std::sync::Arc;
 
+#[path = "loop_training/house_logout.rs"]
+mod house_logout;
+pub(super) use house_logout::HouseLogout;
+
 #[derive(Clone)]
 pub struct TrainingContext {
     pub rates: Arc<TrainingRates>,
@@ -36,6 +40,9 @@ pub struct TrainingLogout {
     pub node: NodeIncarnationProof,
     pub selected: Option<usize>,
     recovery: crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    admission: super::fresh_admission::FreshAdmissionStore,
+    /// Actual named-House logout only; the channel is immutable routing provenance.
+    origin_channel: Option<crate::foundation::ChannelId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -136,6 +143,7 @@ async fn write_build(
     context: &TrainingContext,
     request: BuildChangeRequest,
     offline: OfflineChange,
+    house: Option<HouseLogout<'_>>,
 ) -> Result<TrainingSettlement, DurabilityError> {
     let binding = Sha256::new()
         .chain_update(b"oteryn:offline-build:v2\0")
@@ -152,18 +160,16 @@ async fn write_build(
         .finalize();
     let mut versioned = vec![2];
     versioned.extend_from_slice(&binding);
-    let outcome = character_build::apply_build_in_transaction(
-        tx,
-        node,
-        &fence,
-        request,
-        context.formula.digest(),
-        context.formula.content_revision().to_owned(),
-        versioned,
-        Some(offline),
-    )
-    .await?
-    .map_err(unavailable)?;
+    let outcome = match house {
+        Some(house) => character_build::apply_house_logout_in_transaction(
+            tx, house, &fence, request, context.formula.digest(),
+            context.formula.content_revision().to_owned(), versioned, offline,
+        ).await?,
+        None => character_build::apply_build_in_transaction(
+            tx, node, &fence, request, context.formula.digest(),
+            context.formula.content_revision().to_owned(), versioned, Some(offline),
+        ).await?,
+    }.map_err(unavailable)?;
     let revision = match outcome {
         character_build::BuildCommitOutcome::Committed(receipt)
         | character_build::BuildCommitOutcome::AlreadyCommitted(receipt) => {
@@ -262,7 +268,7 @@ impl DurabilityRoot {
             let after_offline=OfflineTrainingState { stamina_minutes:u16::try_from(stamina).map_err(unavailable)?, pool_seconds:plan.pool_after,skill:None };
             let occurrence=occurrence(fence.character_id,fence.character_lease_generation,"offline_settlement")?;
             insert_marker(&mut tx,fence,"offline_settlement",None,occurrence).await?;
-            let result=write_build(&mut tx,&node,fence,&context,BuildChangeRequest { occurrence,cause:BuildCause::OfflineSettlement,before,after,pruned_stance:None },OfflineChange {before:offline,after:after_offline}).await?;
+            let result=write_build(&mut tx,&node,fence,&context,BuildChangeRequest { occurrence,cause:BuildCause::OfflineSettlement,before,after,pruned_stance:None },OfflineChange {before:offline,after:after_offline},None).await?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(result)
         }) }).await
@@ -284,6 +290,8 @@ impl TrainingLogout {
             node: node.clone(),
             selected,
             recovery: authority.record_for(root).map_err(unavailable)?,
+            admission: super::fresh_admission::FreshAdmissionStore::from_root(root.clone()),
+            origin_channel: None,
         })
     }
     pub(super) async fn prepare(
@@ -297,9 +305,18 @@ impl TrainingLogout {
         if !self.context.rates.enabled || self.selected.is_some_and(|family| family > 5) {
             return Err(DurabilityError::Unavailable);
         }
-        assert_gameplay_fence(tx, &self.fence, &self.node)
-            .await?
-            .map_err(unavailable)?;
+        let house = self.origin_channel.map(|_| HouseLogout::of(self));
+        match house {
+            Some(house) => match house.fenced_root(tx).await? {
+                Ok(_) => {},
+                // Like the final position and condition checkpoints, known
+                // lost House custody cannot retain the current session's
+                // Account/Character claims. No marker or gain is written.
+                Err(super::character_progression::CharacterProgressionError::AuthorityRejected) => return Ok(()),
+                Err(error) => return Err(unavailable(error)),
+            },
+            None => { assert_gameplay_fence(tx, &self.fence, &self.node).await?.map_err(unavailable)?; },
+        }
         if self.selected.is_some()
             && super::pvp_state::load_pvp_state(tx, self.fence.character_id)
                 .await?
@@ -315,10 +332,7 @@ impl TrainingLogout {
             "logout",
         )?;
         let now = insert_marker(tx, self.fence, "logout", self.selected, occurrence).await?;
-        let created:Option<i64>=sqlx::query_scalar("SELECT s.training_created_at_us FROM game_durability_reconnect_sessions s WHERE \
-                     s.game_session_id=encode($1,'hex')::uuid AND EXISTS(SELECT 1 FROM game_character_training_markers m \
-                     WHERE m.game_session_id=s.game_session_id AND m.cause='offline_settlement')")
-            .bind(self.fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.flatten();
+        let created = self.admission.training_login_clock_locked(tx, self.fence).await?;
         let online = created.map_or(0, |created| now.saturating_sub(created).max(0) / 1_000_000);
         let after = OfflineTrainingState {
             pool_seconds: u32::try_from((i64::from(offline.pool_seconds) + online).min(43200))
@@ -342,6 +356,7 @@ impl TrainingLogout {
                 before: offline,
                 after,
             },
+            house,
         )
         .await?;
         Ok(())

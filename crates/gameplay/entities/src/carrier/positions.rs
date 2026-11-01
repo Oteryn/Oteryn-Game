@@ -263,7 +263,11 @@ impl ChannelRuntimeV1 {
                     Slot::CreatureOccupied { position, .. } => *position,
                     _ => return Err(CarrierError::PlanConflict),
                 },
-                Slot::NpcOccupied { position, .. } => Some(*position),
+                Slot::NpcOccupied {
+                    position,
+                    hireling: None,
+                    ..
+                } => Some(*position),
                 _ => continue,
             }
             .ok_or(CarrierError::PositionSnapshotMismatch)?;
@@ -620,6 +624,7 @@ impl ChannelActorCarrier {
         if let Slot::NpcOccupied {
             generation,
             position,
+            hireling: None,
             ..
         } = &self.slots[index]
         {
@@ -653,6 +658,7 @@ impl ChannelActorCarrier {
         if let Slot::NpcOccupied {
             generation,
             position,
+            hireling: None,
             ..
         } = &self.slots[index]
         {

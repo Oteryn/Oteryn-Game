@@ -523,7 +523,10 @@ impl DurabilityRoot {
     /// or can no longer place it. `node` must hold the house scope at the destination
     /// generation. Placement is proven by the persisted destination session: it was bound to a
     /// transport at least once (its connection generation advanced past the admitted 1), or it
-    /// is terminal. A destination that is still live and unbound is `NotPlaced`; a stale house
+    /// is terminal. The native same-node transfer may bind generation 1 atomically;
+    /// its committed entry plus the existing first-input lifecycle receipt prove
+    /// that the destination crossed the scope barrier on that exact transport.
+    /// A destination that is still live and unbound is `NotPlaced`; a stale house
     /// generation is released by `recover_stale_house_entries` instead.
     pub async fn release_house_entry_tile(
         &self,
@@ -1284,7 +1287,20 @@ pub async fn release_house_entry_tile_in_transaction(
     }
     // The destination row is locked so a concurrent bind is ordered before or after this check.
     let placed: bool = sqlx::query_scalar(
-        "SELECT s.session_state = 3 OR s.current_generation > 1 \
+        "SELECT s.session_state = 3 OR s.current_generation > 1 OR ( \
+            s.session_state=2 AND s.current_generation=1 AND s.current_transport_ref IS NOT NULL \
+            AND EXISTS(SELECT 1 FROM game_house_transfer_receipts r \
+                JOIN game_durability_admission_lifecycle_receipts l \
+                  ON l.operation_key=convert_to('house-transfer-input-v1','UTF8')||uuid_send(s.game_session_id) \
+                WHERE r.transfer_id=h.handoff_id AND r.direction=1 AND r.state=2 \
+                  AND r.source_game_session_id=h.source_game_session_id \
+                  AND r.destination_game_session_id=s.game_session_id \
+                  AND r.character_id=s.character_id AND r.account_id=s.account_id \
+                  AND r.world_id=s.world_id AND r.house_key=s.runtime_scope_house_key \
+                  AND r.origin_channel_id=s.origin_channel_id \
+                  AND r.destination_scope_generation=s.scope_ownership_generation \
+                  AND r.source_character_lease_generation+1=s.character_lease_generation \
+                  AND r.source_transport=s.current_transport_ref)) \
            FROM game_house_scope_handoffs h \
            JOIN game_durability_reconnect_sessions s \
              ON s.game_session_id = h.destination_game_session_id \

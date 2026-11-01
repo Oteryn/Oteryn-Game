@@ -823,6 +823,8 @@ pub enum Slot {
         generation: u64,
         key: Arc<str>,
         position: VersionedPosition,
+        /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
+        hireling: Option<Box<npc_actor::HouseHirelingBinding>>,
     },
 }
 
@@ -1960,6 +1962,17 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<(ActorState, usize), CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        self.remove_keeping_indexes_at(continuity, actor_ref, index)
+    }
+
+    /// The common physical removal after the caller has proved its current
+    /// owner and exact slot. Named House retirement supplies its own proof.
+    fn remove_keeping_indexes_at(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        index: usize,
+    ) -> Result<(ActorState, usize), CarrierError> {
         self.assert_slot_spell_unreserved(index)?;
         let (generation, actor) = match &self.slots[index] {
             Slot::Occupied {

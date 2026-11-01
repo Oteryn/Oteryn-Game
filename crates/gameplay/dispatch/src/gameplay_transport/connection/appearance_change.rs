@@ -1,4 +1,6 @@
 //! One observer connection's appearance dictionary. Never part of resume continuity.
+#[cfg(test)]
+mod hireling_tests;
 mod mapping_refresh;
 use super::*;
 use oteryn_protocol_oteryn::appearance as wire;
@@ -14,9 +16,22 @@ pub(super) struct SessionAppearance {
     high_water: u32,
     catalogue: Option<wire::Catalogue>,
     bindings: BTreeMap<WireEntityRef, wire::Binding>,
+    /// Actual Hirelings selected by the scoped House view; static NPCs stay unchanged.
+    hirelings: std::collections::BTreeSet<WireEntityRef>,
     snapshot: Option<std::sync::Arc<[u8]>>,
 }
 impl SessionAppearance {
+    fn select_hirelings(&mut self, channel: &ChannelEntities) {
+        self.hirelings = channel
+            .entities
+            .iter()
+            .filter(|entity| entity.kind == VisibleKind::Hireling)
+            .map(|entity| WireEntityRef {
+                identity: entity.identity,
+                generation: entity.generation,
+            })
+            .collect();
+    }
     pub(super) fn new(selected: SelectedCapabilities) -> Self {
         Self {
             selected: selected.contains(wire::CAPABILITY_APPEARANCE_V1),
@@ -33,6 +48,7 @@ impl SessionAppearance {
             .iter()
             .filter(|e| {
                 e.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
+                    || self.hirelings.contains(&e.entity)
                     || (self.forge
                         && e.kind
                             == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
@@ -102,6 +118,7 @@ impl SessionAppearance {
     ) -> Option<()> {
         for entity in entities {
             if entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
+                || self.hirelings.contains(&entity.entity)
                 || (self.forge
                     && entity.kind
                         == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
@@ -135,6 +152,7 @@ impl SessionAppearance {
             })
             .ok()?;
         if self.selected {
+            self.select_hirelings(channel);
             let players = self.players(&snapshot.entities);
             let observation = authority
                 .appearance_observation(actor, admitted.game_session_id, players.clone())

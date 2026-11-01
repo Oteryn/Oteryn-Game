@@ -34,8 +34,25 @@ impl PurchaseRequest {
         Sha256::digest(&self.binding).into()
     }
 }
+/// The immutable identity shared by item and Hireling service delivery receipts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeliveryIdentity {
+    pub account_id: [u8; 16],
+    pub character_id: [u8; 16],
+    pub world_id: [u8; 16],
+    pub fulfilment_unit_id: String,
+}
+impl DeliveryIdentity {
+    pub fn validate(&self) -> Result<(), StoreValidationError> {
+        if !uuid_v7(&self.account_id) || !uuid_v7(&self.character_id) || !uuid_v7(&self.world_id) { return Err(StoreValidationError::InvalidUuid); }
+        if self.fulfilment_unit_id.is_empty() || self.fulfilment_unit_id.len() > 512 || self.fulfilment_unit_id.chars().any(char::is_control) { return Err(StoreValidationError::InvalidText); }
+        Ok(())
+    }
+}
+
 /// Server-resolved output facts consumed by the existing native Inbox mint owner.
-/// The command and output identity must remain frozen until delivery reconciliation.
+/// The command and output identity stay frozen within one native attempt. A new Hireling wire
+/// command retains the Store operation/item identity and creates a separate native attempt.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeliveryPlan {
     pub account_id: [u8; 16],
@@ -47,6 +64,9 @@ pub struct DeliveryPlan {
     pub mint: crate::durability::character_inbox::RewardClaimInboxMintRequest,
 }
 impl DeliveryPlan {
+    pub(super) fn identity(&self) -> DeliveryIdentity {
+        DeliveryIdentity { account_id: self.account_id, character_id: self.character_id, world_id: self.world_id, fulfilment_unit_id: self.fulfilment_unit_id.clone() }
+    }
     pub fn validate(&self) -> Result<(), StoreValidationError> {
         if !uuid_v7(&self.account_id)
             || !uuid_v7(&self.character_id)

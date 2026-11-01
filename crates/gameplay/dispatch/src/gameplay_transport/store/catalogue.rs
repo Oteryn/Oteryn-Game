@@ -22,7 +22,8 @@ struct Offer {
     title: String,
     price: u64,
     currency: String,
-    item: Item,
+    item: Option<Item>,
+    hireling: Option<HirelingOffer>,
     #[serde(rename = "source_line")]
     _source_line: u32,
 }
@@ -36,10 +37,18 @@ struct Item {
     _charges: u32,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct HirelingOffer {
+    pub(super) effect: String,
+    pub(super) source_id: u16,
+}
+
 pub(super) struct RuntimeCatalogue {
     pub(super) rules: rules::Catalogue,
     titles: BTreeMap<String, String>,
     item_revisions: BTreeMap<String, String>,
+    hirelings: BTreeMap<String, HirelingOffer>,
 }
 
 impl RuntimeCatalogue {
@@ -51,6 +60,7 @@ impl RuntimeCatalogue {
         }
         let mut titles = BTreeMap::new();
         let mut item_revisions = BTreeMap::new();
+        let mut hirelings = BTreeMap::new();
         let mut offers = Vec::with_capacity(document.offers.len());
         for offer in document.offers {
             if offer.price == 0 || offer.currency != currency_text(rules::CurrencyKind::TibiaCoin)
@@ -58,25 +68,38 @@ impl RuntimeCatalogue {
                 return None;
             }
             titles.insert(offer.key.clone(), offer.title);
-            item_revisions.insert(offer.key.clone(), offer.item.revision);
+            let (kind, delivery) = if let Some(hireling)=offer.hireling {
+                let valid=match hireling.effect.as_str() {
+                    "hire"=>hireling.source_id==25440 && offer.item.as_ref().is_some_and(|item|item.key=="oteryn:item.tibia.i29432" && item.revision=="definition-r1"),
+                    "unlock"=>(1001..=1004).contains(&hireling.source_id) || (2001..=2009).contains(&hireling.source_id),
+                    "rename"=>hireling.source_id==25438,
+                    "sex_change"=>hireling.source_id==25437,
+                    _=>false,
+                };
+                if !valid || (hireling.effect!="hire" && offer.item.is_some()) {return None}
+                hirelings.insert(offer.key.clone(),hireling);
+                (rules::OfferKind::Service,rules::DeliveryKind::Service)
+            } else {
+                let item=offer.item.as_ref()?;
+                (rules::OfferKind::Item,rules::DeliveryKind::Item {item_key:item.key.clone(),count:1})
+            };
+            if let Some(item)=offer.item {item_revisions.insert(offer.key.clone(),item.revision);}
             offers.push(rules::AdmittedOffer {
-                key: offer.key,
-                category: offer.category,
-                kind: rules::OfferKind::Item,
-                price_coins: offer.price,
-                currency: rules::CurrencyKind::TibiaCoin,
-                delivery: rules::DeliveryKind::Item {
-                    item_key: offer.item.key,
-                    count: 1,
-                },
-                eligibility: rules::Eligibility::default(),
+                key: offer.key, category: offer.category, kind,
+                price_coins: offer.price, currency: rules::CurrencyKind::TibiaCoin,
+                delivery, eligibility: rules::Eligibility::default(),
             });
         }
         Some(Self {
             rules: rules::Catalogue::admit(document.catalog_revision, offers).ok()?,
             titles,
             item_revisions,
+            hirelings,
         })
+    }
+
+    pub(super) fn hireling(&self, offer: &str) -> Option<&HirelingOffer> {
+        self.hirelings.get(offer)
     }
 
     pub(super) fn title(&self, offer: &str) -> &str {

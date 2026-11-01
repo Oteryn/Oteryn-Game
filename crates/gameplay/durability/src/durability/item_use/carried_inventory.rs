@@ -163,9 +163,9 @@ pub(in crate::durability) async fn read_use_inventory(
     content_revision: String,
     ruleset_revision: String,
 ) -> Result<ItemUseInventory> {
-    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-        return Err(ItemUseError::AuthorityRejected);
-    };
+    // The public reader proves Channel authority; the Hireling reader independently proves
+    // a named House before calling this storage-only projection.
+    let world_id = fence.runtime_scope.world_id();
     // At most 500 tree items plus nine slots. Read one overflow sentinel and one excess
     // depth level, refusing the whole read rather than silently truncating it.
     let rows = sqlx::query(

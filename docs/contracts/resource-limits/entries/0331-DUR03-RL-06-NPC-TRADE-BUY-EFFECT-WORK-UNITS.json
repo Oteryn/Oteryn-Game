@@ -3,21 +3,25 @@
   "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
   "resource": "Effect work units in one DUR-03 NPC BUY transaction",
   "unit": "work units per logical transaction",
-  "hard_maximum": 66,
+  "hard_maximum": 72,
   "configurable_range": {
     "minimum": 4,
-    "maximum": 66
+    "maximum": 72
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "Checked before any write; never truncated. Whole burn 3 (participant, removal, retirement), partial burn 2, MINT 2; worst case 20 whole coin burns x 3 + 3 MINTs x 2.",
+  "allocation_impact": "The native whole-BURN/partial-BURN/MINT formula remains 3/2/2 work units. Ordinary BUY is bounded at 66. A closed Hireling present adds exactly three nested MINTs (6 work units), giving the overall maximum 72; checked before any write.",
   "client_visible": false,
   "boundary_tests": [
-    "max=66 admitted",
-    "max+1=67 rejected (CAPACITY_EXCEEDED)"
+    "ordinary BUY retains its existing 23 participants / 66 work-unit shape",
+    "hireling_package_resource_and_byte_worst_cases_are_bounded_by_existing_rows",
+    "closed package max=72 admitted; max+1 refused before write",
+    "crates/gameplay/durability/src/durability/npc_trade_audit/tests.rs::furniture_kit_source_metadata_and_worst_case_stay_in_the_existing_buy_rows"
   ],
   "consumers": [
     "apps/game-server/src/durability/npc_trade_audit.rs",
-    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC trade: plan and usage checked before any write; migration 0082 re-proves the lines at commit)"
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC trade: plan and usage checked before any write; migration 0082 re-proves the lines at commit)",
+    "crates/gameplay/durability/src/durability/npc_trade_audit.rs (closed source package shape and existing BUY resource rows)",
+    "crates/gameplay/durability/src/durability/npc_trade/hireling.rs (same native owner and three source child stacks)"
   ],
-  "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
+  "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs. E12 extends these existing BUY entries, without allocating resource IDs: only an admitted current-House Hireling package carrying exactly the donor's three children may use 26 touched items / 26 custody lines / 26 participants / 72 work units. The original 23/23/23/66 limits still apply to ordinary BUY. Container expansion is exactly 3 for a package and 0 otherwise; at most one existing bank value line remains allowed. Payload/envelope bytes map explicitly to existing DUR03-RL-07-NPC-SELL-ALL rows and are measured before mutation. See ../protocol-oteryn/v1/hireling-trade-and-audit-v1.md. The same rows admit the closed native furniture-kit BUY: 20 coin BURNs, two change MINTs and one kit MINT (23 item/custody/participant lines) plus one immutable house_wrap origin metadata write, at most 67 effect work units; the package maxima 26/26/26/72 already cover it. No Ground target receives Inventory admission."
 }

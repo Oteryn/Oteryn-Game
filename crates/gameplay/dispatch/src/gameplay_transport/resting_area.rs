@@ -35,6 +35,55 @@ struct Projection {
 pub(super) struct RestingAreaSessions(Mutex<BTreeMap<GameSessionId, Projection>>);
 
 impl RestingAreaSessions {
+    /// A retained actor reloads only the durable streak. Its partial cadence
+    /// belongs to the existing owner and is not restarted by a House resume.
+    pub(super) fn refresh(&self, session: GameSessionId, actor: ExactActorRef, streak: u32) {
+        if let Ok(mut sessions) = self.0.lock() {
+            match sessions.get_mut(&session) {
+                Some(held) if held.actor == actor => held.streak = streak,
+                _ => {
+                    sessions.insert(
+                        session,
+                        Projection {
+                            actor,
+                            streak,
+                            stamina_seconds: 0,
+                            soul_seconds: 0,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    /// Called only after the same native actor's actual committed handoff.
+    /// Missing data grants no cadence; a conflicting actor fails closed.
+    pub(super) fn transfer_session(
+        &self,
+        source: GameSessionId,
+        destination: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Result<(), ()> {
+        if source == destination {
+            return Err(());
+        }
+        let mut sessions = self.0.lock().map_err(|_| ())?;
+        if sessions
+            .get(&source)
+            .is_some_and(|held| held.actor != actor)
+            || sessions
+                .get(&destination)
+                .is_some_and(|held| held.actor != actor)
+            || (sessions.contains_key(&source) && sessions.contains_key(&destination))
+        {
+            return Err(());
+        }
+        if let Some(held) = sessions.remove(&source) {
+            sessions.insert(destination, held);
+        }
+        Ok(())
+    }
+
     pub(super) fn install(&self, session: GameSessionId, actor: ExactActorRef, streak: u32) {
         if let Ok(mut sessions) = self.0.lock() {
             sessions.insert(
@@ -212,6 +261,37 @@ mod tests {
             owner.cadence(session(), actor(), true, true, 1000, 120);
         }
         assert!(owner.cadence(session(), actor(), true, true, 1000, 120).0);
+    }
+
+    #[test]
+    fn house_handoff_and_retained_refresh_preserve_partial_resting_cadences() {
+        let owner = RestingAreaSessions::default();
+        let destination = GameSessionId::decode(&id(5)).expect("destination");
+        owner.install(session(), actor(), 7);
+        for _ in 0..179 {
+            owner.cadence(session(), actor(), true, true, 1000, 120);
+        }
+        owner
+            .transfer_session(session(), destination, actor())
+            .expect("native handoff");
+        assert_eq!(owner.streak(session(), actor()), None);
+        owner.refresh(destination, actor(), 7);
+        assert_eq!(
+            owner.cadence(destination, actor(), true, true, 1000, 120),
+            (true, false)
+        );
+        owner
+            .transfer_session(session(), destination, actor())
+            .expect("idempotent replay");
+        for _ in 0..59 {
+            assert!(!owner.cadence(destination, actor(), true, true, 1000, 120).1);
+        }
+        assert!(owner.cadence(destination, actor(), true, true, 1000, 120).1);
+        owner
+            .transfer_session(destination, session(), actor())
+            .expect("native return");
+        assert_eq!(owner.streak(destination, actor()), None);
+        assert_eq!(owner.streak(session(), actor()), Some(7));
     }
 
     #[test]

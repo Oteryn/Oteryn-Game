@@ -6,6 +6,7 @@ impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
             Self::TaskBoardTalisman { .. } => 13,
+            Self::HirelingService { .. } => 472,
             Self::PreyListReroll { .. } => 12,
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
@@ -23,6 +24,7 @@ impl FeeBurnCause {
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
             Self::TaskBoardTalisman { occurrence } => occurrence,
+            Self::HirelingService { occurrence, .. } => occurrence,
             Self::PreyListReroll { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
             | Self::GemSwitchDomain { occurrence }
@@ -40,6 +42,7 @@ impl FeeBurnCause {
     pub(super) fn key(&self) -> &str {
         match self {
             Self::TaskBoardTalisman { .. } => "oteryn:taskboard.talisman",
+            Self::HirelingService { service, .. } => service,
             Self::PreyListReroll { slot, .. } => match slot {
                 1 => "oteryn:prey.list_reroll.1",
                 2 => "oteryn:prey.list_reroll.2",
@@ -68,6 +71,7 @@ impl FeeBurnCause {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
             Self::TaskBoardTalisman { .. } => Ok(()),
+            Self::HirelingService { service, .. } if service.starts_with("oteryn:service.hireling.") => Ok(()),
             Self::PreyListReroll { slot: 1..=3, .. } => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
                 Ok(())
@@ -115,6 +119,7 @@ impl FeeBurnCause {
                     atelier_proof: Vec::new(),
                 })
             }
+            Self::HirelingService { service, occurrence } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 { service_key: service.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
             Self::PreyListReroll { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

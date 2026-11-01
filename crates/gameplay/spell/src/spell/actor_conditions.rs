@@ -1587,15 +1587,16 @@ impl OwnedSkillAdjustments {
             .checked_add(self.wheel_magic)
     }
     pub fn adjust_shielding(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.shielding, None)?.checked_add(self.wheel_skills[5])
+        Self::adjust(base, self.native.shielding, self.source.shielding)?
+            .checked_add(self.wheel_skills[5])
     }
     pub fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
         let (native, modifier) = match index {
             0 => (self.native.fist, None),
             1..=3 => (self.native.melee, self.source.melee),
             4 => (self.native.distance, self.source.distance),
-            5 => (self.native.shielding, None),
-            6 => (0, None),
+            5 => (self.native.shielding, self.source.shielding),
+            6 => (0, self.source.fishing),
             _ => return None,
         };
         let value =
@@ -1673,6 +1674,7 @@ mod source_attribute_projection_tests {
                 magic_points: Some(M::PercentOfBase(90)),
                 melee: Some(M::PercentOfBase(40)),
                 distance: Some(M::Add(-15)),
+                ..Default::default()
             },
         );
         let read = state.owned_skill_adjustments(0).unwrap();
@@ -1687,6 +1689,25 @@ mod source_attribute_projection_tests {
         assert_eq!(read.adjust_shielding(53), Some(53));
         assert_eq!(read.adjust_skill(53, 7), None);
     }
+    #[test]
+    fn shielding_combines_source_modifier_with_wheel_bonus_and_expires_source() {
+        let mut state = actor(53);
+        apply(
+            &mut state,
+            AttributeModifiers {
+                shielding: Some(M::Add(7)),
+                ..Default::default()
+            },
+        );
+        let mut read = state.owned_skill_adjustments(0).unwrap();
+        read.wheel_skills[5] = 3;
+        assert_eq!(read.adjust_shielding(53), Some(63));
+        assert_eq!(read.adjust_skill(53, 5), Some(63));
+        let mut expired = state.owned_skill_adjustments(1_000_000).unwrap();
+        expired.wheel_skills[5] = 3;
+        assert_eq!(expired.adjust_shielding(53), Some(56));
+    }
+
     #[test]
     fn current_skills_require_loaded_matching_build_and_apply_live_modifiers() {
         use crate::durability::character_build::DurableBuildState;
@@ -1787,3 +1808,7 @@ mod source_attribute_projection_tests {
 
 #[cfg(test)]
 mod agony_tests;
+
+#[path = "actor_conditions/gourmet_food.rs"]
+mod gourmet_food;
+pub use gourmet_food::{gourmet_conditions, restore_gourmet_food, stage_gourmet_food};

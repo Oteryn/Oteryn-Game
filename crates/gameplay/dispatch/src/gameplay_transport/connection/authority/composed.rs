@@ -520,6 +520,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            return self.house_paced_step(actor, session, direction).await;
+        }
         self.tutorial_paced_step(actor, session, direction).await
     }
 
@@ -723,6 +732,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(self.use_item(actor, command, item).await)
     }
 
+    async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let states = self.states.spell_states.lock().await;
+        states
+            .pending_gourmet
+            .iter()
+            .any(|pending| pending.actor == actor && pending.session == session)
+            || states
+                .pending_hireling_lamps
+                .iter()
+                .any(|pending| pending.actor == actor && pending.session == session)
+    }
+
     async fn use_consume_transform(
         &self,
         actor: ExactActorRef,
@@ -827,12 +848,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        admitted.continuity.next_command_id == 1
-            || self
-                .states
-                .command_ingress
-                .recover_trade_continuity(admitted)
-                .is_some()
+        if !crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
+        {
+            return false;
+        }
+        self.states
+            .command_ingress
+            .recover_trade_continuity(admitted)
+            .is_some()
+            || admitted.continuity.next_command_id == 1
     }
 
     async fn use_object(

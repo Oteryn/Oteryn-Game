@@ -25,6 +25,42 @@ pub(super) struct LiveStamina {
 }
 
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn house_stamina_transfer_ready(
+        &self,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+    ) -> bool {
+        !self
+            .hunting_stamina
+            .iter()
+            .any(|state| state.session == destination)
+            && self
+                .hunting_stamina
+                .iter()
+                .filter(|state| state.actor == actor && state.session == source)
+                .all(|state| {
+                    state.minutes == state.durable
+                        && state.pending_gain.is_none()
+                        && state.pending_debit.is_none()
+                })
+    }
+
+    /// Caller retains native runtime/state ownership and has checked the
+    /// successor handoff. Keep the exact HuntingClock and Prey activity clock.
+    pub(in crate::gameplay_transport) fn move_house_stamina(
+        &mut self,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+    ) {
+        for state in &mut self.hunting_stamina {
+            if state.actor == actor && state.session == source {
+                state.session = destination;
+            }
+        }
+    }
+
     pub(super) fn load_stamina(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -47,36 +83,76 @@ impl ChannelSpellStates {
             runtime
                 .player_control_facts(state.actor, state.session)
                 .is_ok()
+                || runtime
+                    .house_player_control_facts(state.actor, state.session)
+                    .is_ok()
         });
         if self.get(runtime, actor, session).is_some() {
-            if let Some(state) = self
-                .hunting_stamina
-                .iter_mut()
-                .find(|s| s.actor == actor && s.session == session)
+            self.install_admitted_stamina(actor, session, minutes, now);
+        }
+    }
+
+    /// Explicit House admission only; no generic Channel gameplay access is widened.
+    pub(in crate::gameplay_transport) fn load_house_stamina(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        minutes: u16,
+        now: u64,
+    ) -> Option<()> {
+        let house = runtime.house_actor_state(actor, session).ok()?;
+        if fence.game_session_id != session
+            || house.scope != fence.runtime_scope
+            || house.generation != fence.scope_ownership_generation
+            || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+            || house.lease.generation() != fence.character_lease_generation
+            || !self
+                .actors
+                .iter()
+                .any(|(a, s, _)| *a == actor && *s == session)
+        {
+            return None;
+        }
+        self.install_admitted_stamina(actor, session, minutes, now);
+        Some(())
+    }
+
+    fn install_admitted_stamina(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        minutes: u16,
+        now: u64,
+    ) {
+        if let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|s| s.actor == actor && s.session == session)
+        {
+            // Admission settlement may regenerate before the first hunting event.
+            // A same-session reconnect must preserve live spending and replay state.
+            if !state.experience_started
+                && state.pending_gain.is_none()
+                && state.pending_debit.is_none()
+                && state.minutes == state.durable
             {
-                // Admission settlement may regenerate before the first hunting event.
-                // A same-session reconnect must preserve live spending and replay state.
-                if !state.experience_started
-                    && state.pending_gain.is_none()
-                    && state.pending_debit.is_none()
-                    && state.minutes == state.durable
-                {
-                    state.minutes = minutes;
-                    state.durable = minutes;
-                }
-            } else {
-                self.hunting_stamina.push(LiveStamina {
-                    actor,
-                    session,
-                    minutes,
-                    durable: minutes,
-                    clock: HuntingClock::new(now),
-                    experience_started: false,
-                    prey_clock: HuntingActivityClock::default(),
-                    pending_gain: None,
-                    pending_debit: None,
-                });
+                state.minutes = minutes;
+                state.durable = minutes;
             }
+        } else {
+            self.hunting_stamina.push(LiveStamina {
+                actor,
+                session,
+                minutes,
+                durable: minutes,
+                clock: HuntingClock::new(now),
+                experience_started: false,
+                prey_clock: HuntingActivityClock::default(),
+                pending_gain: None,
+                pending_debit: None,
+            });
         }
     }
 
@@ -406,6 +482,42 @@ mod tests {
     use super::*;
     use crate::ability::creature_bite::CreatureBiteVitals;
     use crate::gameplay_transport::actor_spell::tests as fixture;
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn house_handoff_keeps_stamina_minutes_and_the_same_hunting_clock() {
+        let (runtime, actor, source) = fixture::runtime_with_player(144);
+        let destination =
+            GameSessionId::decode(&[0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 198])
+                .expect("destination");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                source,
+                fixture::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(8_000_000),
+            )
+            .expect("player");
+        states.load_stamina_at(&runtime, actor, source, 100, 8_000_000);
+        let instants = [8_000_000, 60_000_000, 68_000_000, 128_000_000];
+        let before = instants.map(|at| states.stamina_after_experience(actor, source, at));
+        assert!(states.house_stamina_transfer_ready(actor, source, destination));
+        states.move_house_stamina(actor, source, destination);
+        assert_eq!(states.live_stamina(actor, source), None);
+        assert_eq!(states.live_stamina(actor, destination), Some(100));
+        assert_eq!(
+            instants.map(|at| states.stamina_after_experience(actor, destination, at)),
+            before
+        );
+        assert!(states.gain_resting_stamina(actor, destination));
+        assert!(
+            !states.house_stamina_transfer_ready(actor, destination, source),
+            "uncheckpointed source gains cannot be stranded in a House"
+        );
+    }
 
     #[test]
     #[allow(clippy::expect_used)]

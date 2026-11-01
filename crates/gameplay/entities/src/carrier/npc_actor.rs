@@ -15,6 +15,11 @@ use super::{
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
+#[path = "npc_actor/hireling.rs"]
+mod hireling;
+#[doc(hidden)]
+pub use hireling::HouseHirelingBinding;
+pub use hireling::{HirelingProjection, HouseHirelingEntity};
 
 /// `NPCPLACE1-RL-01` (= `NPCBEH0-RL-01`): NPC placements, and so NPC actors, per Channel.
 pub const MAX_NPC_PLACEMENTS: usize = 2_048;
@@ -185,6 +190,16 @@ impl ChannelRuntimeV1 {
         let Some((index, generation)) = found else {
             return Ok(());
         };
+        if matches!(
+            &self.carrier.slots[index],
+            Slot::NpcOccupied {
+                hireling: Some(_),
+                ..
+            }
+        ) {
+            return Err(NpcPlacementError::Carrier(CarrierError::WrongScope));
+        }
+
         let free = u32::try_from(index)
             .map_err(|_| NpcPlacementError::Carrier(CarrierError::CapacityArithmeticOverflow))?;
         self.carrier.slots[index] = Slot::VacantReusable {
@@ -312,6 +327,7 @@ impl ChannelRuntimeV1 {
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
+            hireling: None,
             position: VersionedPosition {
                 actor_local_id,
                 actor_local_generation: ActorLocalGeneration(generation),
@@ -332,7 +348,10 @@ impl ChannelRuntimeV1 {
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         match &self.carrier.slots[index] {
             Slot::NpcOccupied {
-                generation, key, ..
+                generation,
+                key,
+                hireling: None,
+                ..
             } if *generation == actor.0.actor_local_generation.0 => Some(key),
             _ => None,
         }

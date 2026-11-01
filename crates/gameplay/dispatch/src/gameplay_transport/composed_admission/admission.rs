@@ -295,6 +295,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .commit_fresh_session(reservation)
             .map_err(|_| Unavailable)?;
+        // Q16: a recorded House is restored through a genuine native admission
+        // handoff before any Channel first-entry participant can replace its cell.
+        // Unknown completion stays fail-closed and recovers through that receipt.
+        let restored_house = match self
+            .restore_fresh_house(attempt, actor, *record.account_id.as_bytes(), &request)
+            .await
+        {
+            Ok(restored) => restored,
+            Err(refusal) => {
+                // A known rolled-back handoff still owns its genuine fresh
+                // source slot. Keep that admitted identity on the existing
+                // refused-first-entry / disconnect-release path. A terminal
+                // source or unknown read belongs to destination recovery instead.
+                Some(
+                    self.refused_fresh_house_source(attempt, actor, *record.account_id.as_bytes())
+                        .await
+                        .ok_or(refusal)?,
+                )
+            }
+        };
+        if let Some(admitted) = restored_house {
+            self.admit_premium(*record.account_id.as_bytes(), admitted.game_session_id);
+            if admitted.game_session_id != attempt.game_session_id {
+                self.release_premium(*record.account_id.as_bytes(), attempt.game_session_id);
+            }
+            if let Some(entry) = premium_entry {
+                entry.retain();
+            }
+            if admitted.game_session_id == attempt.game_session_id {
+                self.admit_promotion(admitted.game_session_id).await;
+                self.refresh_session_titles(admitted.game_session_id).await;
+            }
+            return Ok(admitted);
+        }
         // #935: only after both COMMITs, revalidate current authority and let
         // the Channel owner write the first-entry position. A failure here
         // writes nothing and fabricates no rollback: the committed actor stays

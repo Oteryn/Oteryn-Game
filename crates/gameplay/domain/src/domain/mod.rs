@@ -19,6 +19,7 @@ pub mod equipment_policy_abi;
 pub mod forge;
 pub mod forge_creature;
 pub mod forge_dust;
+pub mod hireling;
 pub mod interaction;
 pub mod item_definition;
 pub mod loot_data;

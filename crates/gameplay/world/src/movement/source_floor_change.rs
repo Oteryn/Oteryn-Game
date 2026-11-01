@@ -1,6 +1,7 @@
 //! Genuine source-map STEP destination rules. Only the explicit Canary map
 //! profile binds source z to native floor=-z; other movement profiles are untouched.
 use super::{CardinalStep, MovementError};
+mod house;
 use crate::content::{
     LogicalCell, NativeEntryMovementCells, QualifiedSpellTile, SourceFloorChange,
     SpellTileLookupError,
@@ -9,6 +10,7 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing, MovementLocalPosition,
     MovementPositionSnapshot,
 };
+pub use house::resolve_house_step;
 
 const FRAME: &str = "oteryn:frame/canary-thalom-spell-r3";
 const MAP: &str = "oteryn:map/canary-thalom-spell-r3";

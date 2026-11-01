@@ -1,4 +1,5 @@
 //! Current-session fenced hazard selection. Clients never supply unlocked levels.
+mod house_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,

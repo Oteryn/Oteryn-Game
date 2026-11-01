@@ -45,6 +45,9 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         revision: &str,
     ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
     {
+        if super::timed_item_content::unhosted_equipment_effect(key) {
+            return None;
+        }
         self.0.equipment_policy(key, revision)
     }
 }
@@ -108,6 +111,9 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
     /// Refuse timed forms the owner cannot host. Supported carried/equipped budgets
     /// are checkpointed by the production move path below.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
+        if super::timed_item_content::unhosted_equipment_effect(production_key) {
+            return true;
+        }
         let Some(policy) = self.0.item_policy(production_key, revision_ref) else {
             return true;
         };
@@ -209,6 +215,63 @@ pub(super) async fn read_current_equipment(
     let read = admission
         .root
         .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+        .await
+        .ok()?;
+    if read.fence() != &fence || read.equipment().content_digest != digest {
+        return None;
+    }
+    Some(read.equipment().clone())
+}
+
+/// Read-only sibling for an admitted named House. The actual scope is retained
+/// through the native equipment reader; no Channel actor ref is manufactured.
+pub(super) async fn read_current_house_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Option<character_equipment::EquipmentSnapshot> {
+    let (current, _) = FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(session)
+        .await
+        .ok()?;
+    if current.session_state() != GameSessionState::Active
+        || super::item_fence_of(current) != Some(fence)
+    {
+        return None;
+    }
+    let digest = {
+        let runtime = admission.runtime.lock().await;
+        let house = runtime.house_actor_state(actor, session).ok()?;
+        if fence.game_session_id != session
+            || house.scope != fence.runtime_scope
+            || house.generation != fence.scope_ownership_generation
+            || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+            || house.lease.generation() != fence.character_lease_generation
+        {
+            return None;
+        }
+        pinned_index(&runtime, admission.active_generation)?;
+        let digest = runtime.content_pin().server_artifact_digest();
+        if admission
+            .active_generation?
+            .native_gameplay()?
+            .source_digest()
+            != digest
+        {
+            return None;
+        }
+        digest
+    };
+    let read = admission
+        .root
+        .read_house_equipment(
+            admission.character,
+            admission.holder,
+            &fence,
+            *admission.channel_id.as_bytes(),
+            digest,
+        )
         .await
         .ok()?;
     if read.fence() != &fence || read.equipment().content_digest != digest {

@@ -17,17 +17,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// never held across an await.
     pub(in crate::gameplay_transport) async fn refresh_due_quest_sessions(&self) {
         let now = std::time::Instant::now();
+        let runtime = self.runtime.lock().await;
         let due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
             Ok(mut sessions) => sessions
                 .iter_mut()
-                .filter(|(_, entry)| entry.retry_at.is_some_and(|at| at <= now))
-                .map(|(session, entry)| {
+                .filter_map(|(session, entry)| {
+                    if !entry.retry_at.is_some_and(|at| at <= now)
+                        || !matches!(runtime.house_player_for_session(*session), Ok(None))
+                    {
+                        // The generic quest owner admits Channel only. Preserve
+                        // the exact pending deadline/data while held in House;
+                        // a genuine return to Channel resumes this cadence.
+                        return None;
+                    }
                     entry.retry_at = None;
-                    *session
+                    Some(*session)
                 })
                 .collect(),
             Err(_) => return,
         };
+        drop(runtime);
         for session in due {
             self.refresh_quest_session(session, false).await;
         }

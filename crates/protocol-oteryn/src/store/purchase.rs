@@ -47,6 +47,12 @@ pub fn encode_purchase_request(value: &StorePurchaseRequest) -> Result<Vec<u8>, 
 }
 
 pub fn decode_purchase_request(input: &[u8]) -> Result<StorePurchaseRequest, StoreWireError> {
+    decode_purchase_request_with_hireling(input).map(|(request, _)| request)
+}
+
+pub fn decode_purchase_request_with_hireling(
+    input: &[u8],
+) -> Result<(StorePurchaseRequest, Option<StoreHirelingCustomization>), StoreWireError> {
     if input.len() > MAX_STORE_REQUEST_BYTES {
         return Err(StoreWireError::LimitExceeded);
     }
@@ -55,6 +61,7 @@ pub fn decode_purchase_request(input: &[u8]) -> Result<StorePurchaseRequest, Sto
     let mut revision = None;
     let mut price = None;
     let mut currency = None;
+    let mut hireling = None;
     let mut at = 0;
     while at < input.len() {
         let tag = read_varint(input, &mut at)?;
@@ -76,6 +83,10 @@ pub fn decode_purchase_request(input: &[u8]) -> Result<StorePurchaseRequest, Sto
                 &mut currency,
                 crate::charm_wire::read_bytes(input, &mut at)?,
             )?,
+            50 => crate::charm_wire::set_once(
+                &mut hireling,
+                StoreHirelingCustomization::decode(crate::charm_wire::read_bytes(input, &mut at)?)?,
+            )?,
             _ => return Err(StoreWireError::Malformed),
         }
     }
@@ -92,13 +103,16 @@ pub fn decode_purchase_request(input: &[u8]) -> Result<StorePurchaseRequest, Sto
     if !valid_key(offer) || !valid_key(revision) || !valid_key(currency) || price == 0 {
         return Err(StoreWireError::Malformed);
     }
-    Ok(StorePurchaseRequest {
-        purchase_request_id: as_uuid(id.ok_or(StoreWireError::Malformed)?)?,
-        offer_key: offer.into(),
-        catalog_revision: revision.into(),
-        price,
-        currency: currency.into(),
-    })
+    Ok((
+        StorePurchaseRequest {
+            purchase_request_id: as_uuid(id.ok_or(StoreWireError::Malformed)?)?,
+            offer_key: offer.into(),
+            catalog_revision: revision.into(),
+            price,
+            currency: currency.into(),
+        },
+        hireling,
+    ))
 }
 
 pub fn encode_purchase_result(value: &StorePurchaseResult) -> Result<Vec<u8>, StoreWireError> {

@@ -48,6 +48,7 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod concoction;
+pub mod gourmet;
 pub mod condition_potions;
 pub mod fluid;
 pub mod mining;
@@ -56,6 +57,7 @@ pub mod proficiency_catalyst;
 pub mod proficiency_orb;
 
 pub use carried_inventory::ItemUseInventory;
+mod hireling_lamp;
 pub(super) use carried_inventory::read_use_inventory;
 use carried_source::lock_use_path;
 
@@ -70,6 +72,9 @@ pub enum ItemUseKind {
     /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
     ProficiencyOrb,
     Concoction,
+    /// E12: native lamp burn under a named House fence, composed with placement.
+    HirelingLamp { origin_channel: [u8; 16] },
+    HirelingFood { origin_channel: [u8; 16] },
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -86,6 +91,8 @@ impl ItemUseKind {
             Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
             Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
             Self::Concoction => concoction::CONCOCTION_CAUSE,
+            Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
+            Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -192,7 +199,7 @@ fn valid_definition(definition: &TypedDefinitionRef) -> bool {
 }
 
 impl ItemUseRequest {
-    fn validate(&self) -> Result<()> {
+    pub(super) fn validate(&self) -> Result<()> {
         if let ItemUseKind::PickRefine {
             tool, percentile, ..
         } = self.kind
@@ -210,7 +217,9 @@ impl ItemUseRequest {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::Concoction
                 | ItemUseKind::ProficiencyCatalyst
-                | ItemUseKind::ProficiencyOrb,
+                | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::HirelingLamp { .. }
+                | ItemUseKind::HirelingFood { .. },
             ) => true,
             (
                 _,
@@ -218,7 +227,9 @@ impl ItemUseRequest {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::Concoction
                 | ItemUseKind::ProficiencyCatalyst
-                | ItemUseKind::ProficiencyOrb,
+                | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::HirelingLamp { .. }
+                | ItemUseKind::HirelingFood { .. },
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -281,6 +292,9 @@ impl ItemUseRequest {
         let mut hasher = Sha256::new();
         hasher.update(b"oteryn.item_use.request.v1");
         hasher.update(self.kind.code().to_be_bytes());
+        if let ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel } = self.kind {
+            hasher.update(origin_channel);
+        }
         if let ItemUseKind::PickRefine {
             tool,
             wire_binding,
@@ -369,6 +383,8 @@ impl DurabilityRoot {
         if matches!(
             request.kind,
             ItemUseKind::PickRefine { .. }
+                | ItemUseKind::HirelingLamp { .. }
+                | ItemUseKind::HirelingFood { .. }
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
@@ -483,7 +499,9 @@ impl DurabilityRoot {
                                 | ItemUseKind::MountTaming
                                 | ItemUseKind::ProficiencyCatalyst
                                 | ItemUseKind::ProficiencyOrb
-                                | ItemUseKind::Concoction => None,
+                                | ItemUseKind::Concoction
+                                | ItemUseKind::HirelingLamp { .. }
+                                | ItemUseKind::HirelingFood { .. } => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(
@@ -630,22 +648,28 @@ async fn lock_stack(
 
 /// The use body, after the fence locked the holder's root in this transaction.
 #[allow(clippy::too_many_lines)]
-async fn write(
+pub(super) async fn write(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     request: &ItemUseRequest,
     tuple: SelectedType2Tuple,
 ) -> Result<ItemUseOutcome> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(ItemUseError::AuthorityRejected);
+    // Only the typed Hireling owner can reach this branch, after its named-House fence.
+    // The original Channel is audit provenance; it does not replace the current House scope.
+    let (world, channel) = match (fence.runtime_scope, request.kind) {
+        (RuntimeScopeRefV1::Channel { world_id, channel_id }, _) =>
+            (*world_id.as_bytes(), *channel_id.as_bytes()),
+        (RuntimeScopeRefV1::Instance { world_id, .. }, ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel }) =>
+            (*world_id.as_bytes(), origin_channel),
+        _ => return Err(ItemUseError::AuthorityRejected),
     };
     let holder = *fence.character_id.as_bytes();
-    let world = *world_id.as_bytes();
     if let Some(outcome) = replay(connection, fence, request).await? {
+        return Ok(outcome);
+    }
+    if matches!(request.kind, ItemUseKind::HirelingLamp { .. })
+        && let Some(outcome) = hireling_lamp::write_if_inbox(connection, fence, request, tuple).await?
+    {
         return Ok(outcome);
     }
     let backpack = sqlx::query(
@@ -769,6 +793,10 @@ async fn write(
         }),
         ItemUseFlaskPlan::None | ItemUseFlaskPlan::Missing => None,
     };
+    let source_house = if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+        && matches!(request.kind, ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. }) {
+        Some(hireling_lamp::house_scope(connection, fence).await?)
+    } else { None };
     let item_use = OneItemUseV1 {
         source_before: Some(state(
             &request.source_item_instance_id,
@@ -802,12 +830,14 @@ async fn write(
         }),
         character_id: holder.to_vec(),
         world_id: world.to_vec(),
-        channel_id: channel_id.as_bytes().to_vec(),
+        channel_id: channel.to_vec(),
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
         expected_session_generation: fence.connection_generation.get(),
         expected_game_session_id: fence.game_session_id.as_bytes().to_vec(),
         flask,
         flask_missing: request.flask == ItemUseFlaskPlan::Missing,
+        source_inbox_ordinal: None,
+        house_key: source_house.clone(),
     };
     let envelope = encode_item_use_event(
         ItemUseEventIdentity {
@@ -834,14 +864,14 @@ async fn write(
            source_placement_ordinal, source_quantity_before, source_quantity_after, \
            flask_item_instance_id, flask_definition_family, flask_definition_production_key, \
            flask_definition_revision_ref, flask_placement_ordinal, flask_quantity_before, \
-           flask_quantity_after, occurred_at, envelope_sha256) \
+           flask_quantity_after, occurred_at, envelope_sha256, source_house_key) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
            $5::text::numeric(20,0), $6, $7, $8, $9, encode($10,'hex')::uuid, \
            encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
            $14::text::numeric(20,0), $15, encode($16,'hex')::uuid, $17, $18, $19, \
            encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23, \
            encode($24,'hex')::uuid, $25, $26, $27, $28::text::numeric(20,0), $29, $30, $31, \
-           sha256($32))",
+           sha256($32), $33)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -854,7 +884,7 @@ async fn write(
     .bind(request.binding().as_slice())
     .bind(holder.as_slice())
     .bind(world.as_slice())
-    .bind(channel_id.as_bytes().as_slice())
+    .bind(channel.as_slice())
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(fence.connection_generation.get().to_string())
     .bind(shape_code(shape))
@@ -894,6 +924,7 @@ async fn write(
     })
     .bind(request.occurred_at_unix_ms)
     .bind(envelope.as_slice())
+    .bind(source_house)
     .execute(&mut *connection)
     .await?;
 

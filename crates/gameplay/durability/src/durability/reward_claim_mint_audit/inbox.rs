@@ -51,6 +51,14 @@ pub struct RewardClaimInboxMintV1 {
     pub mint_intent_sha256: Vec<u8>,
     #[prost(uint64, tag = "8")]
     pub expected_character_lease_generation: u64,
+    /// Optional closed House authority; absent on the existing Channel path.
+    #[prost(string, optional, tag = "9")]
+    pub house_key: Option<String>,
+    #[prost(uint64, optional, tag = "10")]
+    pub house_scope_ownership_generation: Option<u64>,
+    /// 1 live House session, 2 current House recall with historical CommandRef provenance.
+    #[prost(uint32, optional, tag = "11")]
+    pub house_authority_kind: Option<u32>,
 }
 
 /// The bridge's own resource use: one participant and placement per fresh item,
@@ -92,6 +100,23 @@ pub(super) fn check_inbox(value: &OneItemRewardClaimMintV1) -> Result<(), AuditE
     check_content_key(&source.ruleset_revision)?;
     check_content_key(&source.sim_revision)?;
     check_definition(source.reward_claim.as_ref())?;
+    match (&inbox.house_key, inbox.house_scope_ownership_generation, inbox.house_authority_kind) {
+        (None, None, None) => {}
+        (Some(house), Some(generation), Some(1 | 2)) if generation > 0 => {
+            let world = crate::foundation::WorldId::decode(&inbox.world_id)
+                .map_err(|_| AuditError::InvalidInput)?;
+            if crate::durability::house_scope_handoff::HouseId::new(world, house).is_none() {
+                return Err(AuditError::InvalidInput);
+            }
+            if inbox.house_authority_kind == Some(2)
+                && (inbox.outputs.len() != 1 || inbox.outputs[0].after.as_ref().is_none_or(|item|
+                    item.quantity != 1 || item.key_number != 0 || item.definition != source.reward_claim || item.definition.as_ref().is_none_or(|definition|
+                        definition.family != "Item" || definition.production_key != crate::durability::house_hireling::HIRELING_LAMP_KEY))) {
+                return Err(AuditError::InvalidInput);
+            }
+        }
+        _ => return Err(AuditError::InvalidInput),
+    }
     if value.after.is_some()
         || value.destination.is_some()
         || !value.before_semantically_absent

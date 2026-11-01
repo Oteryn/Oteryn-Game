@@ -510,9 +510,37 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
             .ok_or(())?;
-        self.equipment_effects_from_snapshot(session, equipment, fence, native)
+        self.equipment_effects_from_snapshot(session, equipment, fence, native, None)
             .await
             .map(Some)
+    }
+
+    pub(in crate::gameplay_transport) async fn read_house_admission_effects(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Option<AdmissionEffects>, ()> {
+        let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
+            return Ok(None);
+        };
+        let equipment = super::read_current_house_equipment(self, actor, session, fence)
+            .await
+            .ok_or(())?;
+        let fence = self
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        self.equipment_effects_from_snapshot(
+            session,
+            equipment,
+            fence,
+            native,
+            Some(*self.channel_id.as_bytes()),
+        )
+        .await
+        .map(Some)
     }
 
     /// Only the retained native Death return calls this lifecycle reader.
@@ -570,6 +598,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             read.equipment().clone(),
             fence,
             native,
+            None,
         )
         .await
         .map(Some)
@@ -581,13 +610,22 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         equipment: EquipmentSnapshot,
         fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         native: &NativeGameplayState,
+        house_origin: Option<[u8; 16]>,
     ) -> Result<AdmissionEffects, ()> {
         self.load_proficiency_equipment(session, &equipment).await?;
-        let mut imbuements = self
-            .root
-            .read_worn_imbuements(self.character, self.holder, fence)
-            .await
-            .map_err(|_| ())?;
+        let mut imbuements = match house_origin {
+            Some(origin) => {
+                self.root
+                    .read_house_worn_imbuements(self.character, self.holder, fence, origin)
+                    .await
+            }
+            None => {
+                self.root
+                    .read_worn_imbuements(self.character, self.holder, fence)
+                    .await
+            }
+        }
+        .map_err(|_| ())?;
         if self
             .states
             .timed_items
@@ -625,36 +663,76 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 self.equipped_proficiency_defense(session, &equipment)?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
-            state.install_equipped_mantra(mantra);
             state.install_wheel_equipment(wheel_hands);
             state.install_wheel_proficiency(
                 proficiency_weapon.as_deref(),
                 proficiency_defense,
                 proficiency_shield_modifier,
             );
-            state.install_equipped_physical_protection(physical_protection(&effects));
-            use crate::content::ReferenceResistanceKind as Kind;
-            for kind in [
-                Kind::Ice,
-                Kind::Energy,
-                Kind::Fire,
-                Kind::Holy,
-                Kind::Earth,
-                Kind::Death,
-            ] {
-                state.install_equipped_element_protection(
-                    kind,
-                    effects.protections.get(&kind).copied(),
-                );
-            }
-            install_suppressions(state, effects);
-            state.install_equipped_armor(armor);
-            state.install_equipped_defence(defence);
-            state.install_equipped_mana_shield(mana_shield);
-            state.install_equipped_offence(offence);
+            install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
         }
         Some(())
     }
+    /// House admission reuses the exact equipment interpretation after explicit
+    /// current custody proof. Generic Channel projection remains closed.
+    pub(in crate::gameplay_transport) async fn install_house_admission_suppressions(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        effects: Option<AdmissionEffects>,
+    ) -> Option<()> {
+        if let Some((effects, armor, defence, mana_shield, offence, equipment)) = effects {
+            self.install_house_proficiency_equipment(runtime, actor, session, fence, &equipment)
+                .await?;
+            let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let wheel_hands =
+                equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
+            let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
+                self.equipped_proficiency_defense(session, &equipment)?;
+            let mut states = self.states.spell_states.lock().await;
+            let state = states.house_state_mut(runtime, actor, session, fence)?;
+            state.install_wheel_equipment(wheel_hands);
+            state.install_wheel_proficiency(
+                proficiency_weapon.as_deref(),
+                proficiency_defense,
+                proficiency_shield_modifier,
+            );
+            install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+        }
+        Some(())
+    }
+}
+
+/// One native equipment projection shared by both admitted scopes.
+fn install_prepared_effects(
+    state: &mut crate::spell::cast::PlayerSpellState,
+    effects: EquipmentEffects,
+    armor: u32,
+    defence: Option<HandDefence>,
+    mana_shield: bool,
+    offence: EquippedOffence,
+    mantra: u32,
+) {
+    state.install_equipped_mantra(mantra);
+    state.install_equipped_physical_protection(physical_protection(&effects));
+    use crate::content::ReferenceResistanceKind as Kind;
+    for kind in [
+        Kind::Ice,
+        Kind::Energy,
+        Kind::Fire,
+        Kind::Holy,
+        Kind::Earth,
+        Kind::Death,
+    ] {
+        state.install_equipped_element_protection(kind, effects.protections.get(&kind).copied());
+    }
+    install_suppressions(state, effects);
+    state.install_equipped_armor(armor);
+    state.install_equipped_defence(defence);
+    state.install_equipped_mana_shield(mana_shield);
+    state.install_equipped_offence(offence);
 }
 
 /// EQUIP-PROTECTION-1: the summed physical protection of `effects`, installed on admission and

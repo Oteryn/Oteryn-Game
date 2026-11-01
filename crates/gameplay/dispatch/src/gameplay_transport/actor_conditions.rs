@@ -238,6 +238,8 @@ impl ChannelSpellStates {
             melee: map(values.melee),
             distance: map(values.distance),
             magic_points: map(values.magic_points),
+            shielding: map(values.shielding),
+            fishing: map(values.fishing),
         })
     }
     pub fn native_actor_invisible(

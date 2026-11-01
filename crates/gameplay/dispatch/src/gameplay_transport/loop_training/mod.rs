@@ -133,20 +133,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let mut slot = self.revision_sequencer.acquire(item.character_id).await;
-        let Some(fence) = self.training_fence(item).await else {
+        let Some(settled) = self.settle_training_admission(item, context).await else {
             admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             return;
         };
-        let result = self
-            .root
-            .settle_offline_training(self.character, self.holder, fence, context)
-            .await;
         slot.observe_loop_training();
-        #[cfg(test)]
-        if let Err(error) = &result {
-            eprintln!("LOOP-TRAIN-1 admission: {error:?}");
-        }
-        if result.is_err() {
+        if !settled {
             admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             return;
         }
@@ -175,6 +167,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.load_stamina(&runtime, actor, admitted.game_session_id, stamina);
         }
     }
+
+    /// A genuine fresh Channel source settles before its native House handoff.
+    /// This performs no placement and does not invent a first-entry outcome.
+    pub(in crate::gameplay_transport) async fn settle_channel_source_training(
+        &self,
+        item: CurrentCharacterItemFence,
+    ) -> bool {
+        if item.runtime_scope
+            != crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+        {
+            return false;
+        }
+        let Some(context) = self.training_context() else {
+            return true;
+        };
+        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
+        let Some(settled) = self.settle_training_admission(item, context).await else {
+            return false;
+        };
+        slot.observe_loop_training();
+        settled
+    }
+
+    async fn settle_training_admission(
+        &self,
+        item: CurrentCharacterItemFence,
+        context: TrainingContext,
+    ) -> Option<bool> {
+        let fence = self.training_fence(item).await?;
+        let result = self
+            .root
+            .settle_offline_training(self.character, self.holder, fence, context)
+            .await;
+        #[cfg(test)]
+        if let Err(error) = &result {
+            eprintln!("LOOP-TRAIN-1 admission: {error:?}");
+        }
+        Some(result.is_ok())
+    }
     pub(in crate::gameplay_transport) async fn training_release_store(
         &self,
         store: FreshAdmissionStore,
@@ -200,19 +231,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let fence = self.training_fence(item).await?;
-        Some(
-            store.with_training_logout(
-                TrainingLogout::new(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    context,
-                    selected.map(|(_, skill)| skill),
-                )
-                .ok()?,
-            ),
-        )
+        let selected = selected.map(|(_, skill)| skill);
+        let house = if let Some(actor) = admitted.runtime_actor {
+            let runtime = self.runtime.lock().await;
+            if let Ok(house) = runtime.house_actor_state(actor, admitted.game_session_id) {
+                if house.scope != fence.runtime_scope
+                    || house.generation != fence.scope_ownership_generation
+                    || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                    || house.lease.generation() != fence.character_lease_generation
+                {
+                    return None;
+                }
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        let training = if house {
+            TrainingLogout::new_house(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                context,
+                selected,
+                admitted.channel_id,
+            )
+        } else {
+            TrainingLogout::new(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                context,
+                selected,
+            )
+        }
+        .ok()?;
+        Some(store.with_training_logout(training))
     }
 
     async fn training_target(

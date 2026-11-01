@@ -2,6 +2,8 @@
 //! A retry retains its prepared plan; it never replans an old occurrence at a new revision.
 
 use super::*;
+#[path = "runtime_actor_conditions/house_observation.rs"]
+mod house_observation;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, SemanticTimeMicros};
 pub use {
     oteryn_gameplay_domain::domain::condition::{

@@ -57,6 +57,7 @@ impl DurabilityRoot {
                         }
                         Err(error) => return Ok(Err(error)),
                     }
+                    if let Err(error) = super::hireling_reservation::release_refused(&mut tx, &request, &answer).await { return Ok(Err(error)); }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(answer))
                 })
@@ -65,7 +66,7 @@ impl DurabilityRoot {
     }
 }
 
-async fn record_request(
+pub(super) async fn record_request(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     request: &PurchaseRequest,
 ) -> Result<PurchaseRequestState, StoreDurabilityError> {
