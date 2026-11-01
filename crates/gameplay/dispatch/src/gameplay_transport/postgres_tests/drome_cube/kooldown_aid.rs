@@ -73,6 +73,23 @@ pub(super) async fn run(
         "unknown storage acknowledgement must not apply the instant effect"
     );
 
+    // A historical receipt cannot authorize the instant effect under a stale generation.
+    assert!(
+        owner
+            .use_drome_cube(
+                actor,
+                UseCommand {
+                    command_id: 2,
+                    ..stale
+                },
+                intent.clone(),
+                None,
+            )
+            .await
+            .is_err()
+    );
+    assert_eq!(snapshot(owner, actor, session).await?, before);
+
     let replayed = wire::exchange(owner, lost.retained, std::slice::from_ref(&used)).await?;
     assert_eq!(replayed.results, vec![UseDisposition::Committed]);
     assert_eq!(

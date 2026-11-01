@@ -303,15 +303,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(());
         }
         let fence = command.item_fence.ok_or(())?;
-        let current =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(command.game_session_id)
-                .await
-                .map_err(|_| ())?
-                .0;
-        if crate::gameplay_transport::item_fence_of(current) != Some(fence) {
-            return Err(());
-        }
+        // Re-prove the current item fence even when the receipt's source is consumed.
+        // Fresh-admission reconciliation also requires admission-origin receipts;
+        // it is not the item-only continuation contract.
+        self.root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
