@@ -137,7 +137,28 @@ fn scenario() -> TestResult {
             if ordinal == 0 {
                 // A pass deadline can retire the sole holder after a rejected command.
                 // Exercise that state deterministically, without slowing a title read.
-                h.root.try_acquire_ready().map_err(debug)?.close().await?;
+                // Under CI load a background pass may still hold the sole holder, or its
+                // deadline may already have retired it. Wait for a busy holder to return,
+                // then close it; a holder that never returns is already retired.
+                let settle = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+                loop {
+                    match h.root.try_acquire_ready() {
+                        Ok(holder) => {
+                            holder.close().await?;
+                            break;
+                        }
+                        Err(crate::durability::DurabilityError::RootUnavailable)
+                            if tokio::time::Instant::now() < settle =>
+                        {
+                            let now = tokio::time::Instant::now();
+                            h.root
+                                .wait_holder_retry(now, now + std::time::Duration::from_millis(100))
+                                .await;
+                        }
+                        Err(crate::durability::DurabilityError::RootUnavailable) => break,
+                        Err(error) => return Err(debug(error).into()),
+                    }
+                }
                 h.root.request_ready();
                 assert!(!h.root.is_ready(), "the fixture retired its holder");
             }
