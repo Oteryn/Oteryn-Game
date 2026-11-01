@@ -1,4 +1,5 @@
 use super::*;
+use super::super::db::begin_type2_transaction;
 
 impl DurabilityRoot {
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -17,7 +18,7 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner(authority, node, fence, request, catalogue, None)
+        self.commit_quest_inner(authority, node, fence, request, catalogue, None, None)
             .await
     }
 
@@ -40,8 +41,23 @@ impl DurabilityRoot {
             request,
             catalogue,
             Some((permit, context)),
+            None,
         )
         .await
+    }
+
+    /// Bloodshade's fixed access purchase uses the existing fee owner and then
+    /// this same Quest writer in one physical transaction.
+    pub async fn commit_rotten_blood_access_purchase(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        payment: super::rotten_blood_access::RottenBloodAccessPayment,
+        catalogue: Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome> {
+        let request=payment.request();
+        self.commit_quest_inner(authority,node,fence,request,catalogue,None,Some(payment)).await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -56,7 +72,14 @@ impl DurabilityRoot {
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::quest_world_callback::QuestWorldContext,
         )>,
+        payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
     ) -> Result<QuestTransitionOutcome> {
+        // A paid-access state change must be composed with the existing fee
+        // owner; the public generic Quest entry point cannot grant it for free.
+        if (request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::PURCHASE_ACCESS)
+            != payment.is_some() {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let callback = if context.is_some() {
             Some(
                 oteryn_gameplay_quests::quest::world_callbacks::load()
@@ -101,7 +124,9 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        let mut binding = request_binding(fence.character_id, &request);
+        let mut binding = payment.as_ref().map_or_else(
+            ||request_binding(fence.character_id,&request),
+            |payment|payment.binding(fence.character_id));
         if let Some((_, context)) = &context {
             let bytes = serde_json::to_vec(&(context, &callback))
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -118,10 +143,34 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let character = fence.character_id;
+                    let mut tx = if let Some(payment)=&payment {
+                        // The fee owner's activation fence is the first database
+                        // read, before even recovery or admission statements.
+                        let mut tx = begin_type2_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx,&recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        lock_receipt_key(&mut tx,character,&request).await?;
+                        if let Some(row)=load_receipt(&mut tx,character,&request).await? {
+                            if row.try_get::<Vec<u8>,_>("request_binding")? != binding {
+                                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+                            }
+                            let receipt=decode_receipt(&row)?;
+                            tx.commit(deadline).await?;
+                            return Ok(Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)));
+                        }
+                        match assert_gameplay_fence(&mut tx,&fence,&node).await? {
+                            Ok(_) => {}, Err(error) => return Ok(Err(error)),
+                        }
+                        if !super::rotten_blood_access::consume(&mut tx,fence,payment).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        tx.into_inner()
+                    } else {
+                        begin_semantic_transaction(holder, deadline).await?
+                    };
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let character = fence.character_id;
                     lock_receipt_key(&mut tx, character, &request).await?;
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
                         if row.try_get::<Vec<u8>, _>("request_binding")? != binding {
@@ -141,7 +190,7 @@ impl DurabilityRoot {
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(
                         "SELECT character_revision::text, profile_revision, ruleset_revision, \
-                                content_revision \
+                                content_revision, level \
                            FROM game_character_progression_state \
                           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
                     )
@@ -159,6 +208,11 @@ impl DurabilityRoot {
                         || content_revision != catalogue.content_revision()
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                    if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
+                        && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let pending: bool = sqlx::query_scalar(
                         "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
@@ -347,6 +401,11 @@ impl DurabilityRoot {
                         }
                     };
 
+                    if !super::rotten_blood_access::validate_access_changes(
+                        &request.transition_key,&changes,state.try_get("level")?,
+                    )? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if let (Some(callback), Some((permit, context))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }

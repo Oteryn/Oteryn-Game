@@ -103,6 +103,9 @@ pub enum FeeBurnCauseV1 {
     PreyListReroll(OneItemNpcPurchaseV1),
     #[prost(message, tag = "13")]
     TaskBoardTalisman(OneItemNpcPurchaseV1),
+    // W11: the fixed-price Quest access source reuses the fee ledger owner.
+    #[prost(message, tag = "14")]
+    QuestAccessPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
@@ -134,6 +137,7 @@ pub struct OneItemFeeBurnCauseV1 {
             11, // GemGradeUp
             12, // PreyListReroll
             13, // TaskBoardTalisman: Crystal NPC purchase, 5000 gold
+            14, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
             472, // HirelingService
         )
     )]

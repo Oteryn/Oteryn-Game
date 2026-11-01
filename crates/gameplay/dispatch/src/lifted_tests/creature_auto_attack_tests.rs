@@ -152,17 +152,31 @@ fn setup_at(
     AttackFacts,
     GameplayDecisionRoot,
 ) {
+    setup_in_position_context(name, far, origin, false)
+}
+
+fn setup_in_position_context(
+    name: &str,
+    far: bool,
+    origin: MovementLocalPosition,
+    source_pinned: bool,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    MeleeSource,
+    AttackFacts,
+    GameplayDecisionRoot,
+) {
     let (mut runtime, target, session) = runtime_with_player(0x71);
-    runtime
-        .initialize_movement_test_position(
-            target,
-            MovementLocalPosition {
-                x: origin.x,
-                y: origin.y,
-                floor: origin.floor,
-            },
-        )
-        .expect("actual position");
+    if source_pinned {
+        runtime
+            .initialize_source_pinned_lab_player_position(target, session, origin)
+            .expect("source-pinned player position");
+    } else {
+        runtime
+            .initialize_movement_test_position(target, origin)
+            .expect("actual position");
+    }
     let (r, p) = native_data();
     let key = format!("oteryn:creature.{name}");
     let health = p
@@ -172,17 +186,18 @@ fn setup_at(
             _ => None,
         })
         .expect("native source health");
-    let issuer = runtime
-        .admit_monster_lab_creature(
-            MovementLocalPosition {
-                x: origin.x + if far { 10 } else { 1 },
-                y: origin.y,
-                floor: origin.floor,
-            },
-            &key,
-            i64::try_from(health).expect("source health bound"),
-        )
-        .expect("actual native admission");
+    let position = MovementLocalPosition {
+        x: origin.x + if far { 10 } else { 1 },
+        y: origin.y,
+        floor: origin.floor,
+    };
+    let health = i64::try_from(health).expect("source health bound");
+    let issuer = if source_pinned {
+        runtime.admit_source_pinned_lab_creature(position, &key, health)
+    } else {
+        runtime.admit_monster_lab_creature(position, &key, health)
+    }
+    .expect("actual native admission");
     let mut states = ChannelSpellStates::default();
     states
         .initialize(
@@ -1100,14 +1115,53 @@ fn reference_level_melee_native_source_scales_only_in_the_overridden_area() {
     }
 }
 
+// Lab admission intentionally does not install a live CreaturePolicy. Hazard must
+// still prove a current wild monster, so use the existing actual source decoder.
+fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
+    let policies = crate::content::native_gameplay::callback_source_native_test_policies(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/presentations/definitions/spell-native-profiles.json"
+        )),
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("actual native Creature policies");
+    runtime
+        .install_companion_policies(policies)
+        .expect("pinned policy table");
+    runtime
+        .install_creature_policy(actor, key)
+        .expect("actual wild Creature policy");
+    assert!(
+        runtime
+            .companion_snapshot_including_dead(actor)
+            .expect("current monster")
+            .state
+            .master
+            .is_none()
+    );
+}
+
 #[test]
 fn hazard_live_melee_level_scaling_area_exclusion_and_replay() {
     let hit = |level, at| {
         let (mut runtime, mut states, source, facts, root) =
-            setup_at("1st_mate_ratticus", false, at);
+            setup_in_position_context("1st_mate_ratticus", false, at, true);
         runtime
             .install_hazard_level(facts.target, facts.session, level)
             .expect("durable projection");
+        qualify_hazard_monster(
+            &mut runtime,
+            facts.issuer,
+            "oteryn:creature.1st_mate_ratticus",
+        );
+        runtime
+            .install_hazard_world_frame(facts.target, facts.session, "oteryn:frame/world-bundle-v3")
+            .expect("qualified source frame");
         let mut owner = owner(&runtime, &source, facts);
         let first = owner
             .fixture_swing(

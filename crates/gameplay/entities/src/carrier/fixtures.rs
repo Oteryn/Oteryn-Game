@@ -65,6 +65,26 @@ impl ChannelRuntimeV1 {
         definition_key: &str,
         position: MovementLocalPosition,
     ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        self.realize_native_qualification_spawn_for_source(
+            u16::MAX,
+            expected_pin,
+            definition_key,
+            position,
+        )
+    }
+
+    /// The same qualified test admission with an explicit source identity for
+    /// scenarios that capture several distinct native deaths. Existing source,
+    /// capacity, pin, policy and collision checks stay with the spawn owner.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn realize_native_qualification_spawn_for_source(
+        &mut self,
+        source_id: u16,
+        expected_pin: ChannelContentPin,
+        definition_key: &str,
+        position: MovementLocalPosition,
+    ) -> Result<runtime_actor_companion::CompanionSnapshot, CarrierError> {
+        let source = SpawnSourceId(source_id);
         self.owner_fence()?;
         if self.spawn_activation.is_some() {
             return Err(CarrierError::PlanConflict);
@@ -120,15 +140,11 @@ impl ChannelRuntimeV1 {
         let occupied_before = self.carrier.occupied.clone();
         let spawns_before = self.carrier.spawns.clone();
         let result = (|| {
-            self.carrier.realize_spawn(
-                &self.continuity,
-                SpawnSourceId(u16::MAX),
-                definition,
-                context,
-            )?;
+            self.carrier
+                .realize_spawn(&self.continuity, source, definition, context)?;
             let actor = self
                 .carrier
-                .spawn_cell_state(SpawnSourceId(u16::MAX), 0)?
+                .spawn_cell_state(source, 0)?
                 .live
                 .ok_or(CarrierError::PlanConflict)?;
             self.install_creature_policy(actor, definition_key)?;

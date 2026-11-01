@@ -179,17 +179,33 @@ fn setup_named(
     ScopeRuntimeFence,
     RuntimeWorkStamp,
 ) {
-    let (mut r, t, s) = runtime_three_slots();
-    r.initialize_source_pinned_lab_player_position(
-        t,
-        s,
+    setup_named_at(
+        name,
+        index,
         MovementLocalPosition {
             x: 100,
             y: 100,
             floor: 7,
         },
     )
-    .expect("qualified fixture");
+}
+
+fn setup_named_at(
+    name: &str,
+    index: usize,
+    at: MovementLocalPosition,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    SpellSource,
+    ProfileAbilityProposal,
+    CurrentWorld,
+    ScopeRuntimeFence,
+    RuntimeWorkStamp,
+) {
+    let (mut r, t, s) = runtime_three_slots();
+    r.initialize_source_pinned_lab_player_position(t, s, at)
+        .expect("qualified fixture");
     let (records, profiles) = if matches!(
         name,
         "radiant_acolyte" | "radiant_paragon" | "radiant_templar"
@@ -248,11 +264,7 @@ fn setup_named(
         .expect("qualified fixture");
     let issuer = r
         .admit_source_pinned_lab_creature(
-            MovementLocalPosition {
-                x: 101,
-                y: 100,
-                floor: 7,
-            },
+            MovementLocalPosition { x: at.x + 1, ..at },
             &cref.key,
             health as i64,
         )
@@ -404,7 +416,15 @@ fn composed_readonly_preflight_defers_actual_hp_and_rejects_missing_policy() {
     let (mut r, mut states, source, p, mut world, _, stamp) = setup();
     let owner = DamageSpellOwner::default();
     let prepared = owner
-        .prepare_target(&r, &source, &p, &mut world, stamp, None)
+        .prepare_target(
+            &r,
+            &source,
+            &p,
+            &mut world,
+            stamp,
+            None,
+            SemanticTimeMicros::from_micros(0),
+        )
         .expect("qualified fixture");
     assert!(!prepared.targets.is_empty());
     // A real one-point owner probe proves no primary HP was committed during preparation.
@@ -428,7 +448,15 @@ fn composed_readonly_preflight_defers_actual_hp_and_rejects_missing_policy() {
     );
     world.missing = true;
     assert!(matches!(
-        owner.prepare_target(&r, &source, &p, &mut world, stamp, None),
+        owner.prepare_target(
+            &r,
+            &source,
+            &p,
+            &mut world,
+            stamp,
+            None,
+            SemanticTimeMicros::from_micros(0)
+        ),
         Err(AttackError::MissingCombatFacts)
     ));
     assert_eq!(
@@ -1551,7 +1579,23 @@ fn independent_tile_combat_rejection_and_retired_scope() {
 }
 #[test]
 fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
-    let (mut r, mut v, s, p, mut w, f, stamp) = setup_named("abyssador", 1);
+    let (mut r, mut v, s, p, mut w, f, stamp) = setup_named_at(
+        "abyssador",
+        1,
+        MovementLocalPosition {
+            x: 33502,
+            y: 32740,
+            floor: 13,
+        },
+    );
+    r.install_hazard_level(p.target, w.facts.attack.session, 12)
+        .expect("selected level");
+    r.install_hazard_world_frame(
+        p.target,
+        w.facts.attack.session,
+        "oteryn:frame/world-bundle-v3",
+    )
+    .expect("source frame");
     assert_eq!((s.minimum, s.maximum), (0, 0));
     assert!(s.element.is_none());
     assert!(!s.conditions.is_empty());
@@ -1576,6 +1620,10 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
     let target = result.targets[0].1.as_ref().expect("actual store commit");
     assert!(target.condition_only_applied);
     assert!(target.damage.is_none());
+    assert_eq!(
+        r.last_hazard_critical_us(p.target, w.facts.attack.session),
+        None
+    );
     assert_eq!(
         o.execute(
             &mut r,
@@ -2993,6 +3041,262 @@ fn dmg3_earth_death_target_sources_read_protection_and_replay() {
             before
         );
     }
+}
+
+// Lab admission intentionally does not install a live CreaturePolicy. Hazard must
+// still prove a current wild monster, so use the existing actual source decoder.
+fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
+    let policies = crate::content::native_gameplay::callback_source_native_test_policies(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/presentations/definitions/spell-native-profiles.json"
+        )),
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("actual native Creature policies");
+    runtime
+        .install_companion_policies(policies)
+        .expect("pinned policy table");
+    runtime
+        .install_creature_policy(actor, key)
+        .expect("actual wild Creature policy");
+    assert!(
+        runtime
+            .companion_snapshot_including_dead(actor)
+            .expect("current monster")
+            .state
+            .master
+            .is_none()
+    );
+}
+
+/// A native scheduled cast reaches the real HP owner with the session's durable selection
+/// projection. The actual map admission owns frame qualification; this fixture supplies it.
+#[test]
+fn hazard_monster_spell_uses_current_zone_frame_rounding_and_replay() {
+    for (at, frame, expected) in [
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: 13,
+            },
+            "oteryn:frame/world-bundle-v3",
+            5,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: 13,
+            },
+            "engineering-frame",
+            4,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33640,
+                y: 32920,
+                floor: 15,
+            },
+            "oteryn:frame/world-bundle-v3",
+            4,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: -13,
+            },
+            "oteryn:frame/world-bundle-v3",
+            4,
+        ),
+    ] {
+        let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) =
+            setup_named_at("1st_mate_ratticus", 1, at);
+        qualify_hazard_monster(
+            &mut runtime,
+            proposal.issuer,
+            "oteryn:creature.1st_mate_ratticus",
+        );
+        let session = world.facts.attack.session;
+        runtime
+            .install_hazard_level(proposal.target, session, 12)
+            .expect("selected level");
+        runtime
+            .install_hazard_world_frame(proposal.target, session, frame)
+            .expect("frame projection");
+        // A critical from another attack owner suppresses this spell's critical, not its boost.
+        runtime
+            .record_hazard_critical(proposal.target, session, 1_000_000)
+            .expect("shared critical clock");
+        source.minimum = 9;
+        source.maximum = 9;
+        source.reference_level = None;
+        source.critical = None;
+        world.facts.multiplier_ppm = 500_000;
+        let mut owner = DamageSpellOwner::default();
+        let hit = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("native spell cast");
+        let receipt = hit.targets[0]
+            .1
+            .as_ref()
+            .expect("target")
+            .damage
+            .expect("real HP receipt");
+        assert_eq!(receipt.applied, expected);
+        assert_eq!(receipt.health_after, FACTS.max_health - expected);
+        assert_eq!(
+            runtime.last_hazard_critical_us(proposal.target, session),
+            Some(1_000_000)
+        );
+        assert_eq!(
+            owner
+                .execute(
+                    &mut runtime,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000)
+                )
+                .expect("retry"),
+            hit
+        );
+        assert_eq!(
+            runtime.last_hazard_critical_us(proposal.target, session),
+            Some(1_000_000)
+        );
+    }
+}
+
+#[test]
+fn hazard_critical_window_is_shared_and_bound_to_the_exact_player_session() {
+    use oteryn_gameplay_combat::hazard::incoming_damage;
+    let at = MovementLocalPosition {
+        x: 33502,
+        y: 32740,
+        floor: 13,
+    };
+    let (mut runtime, _, _, proposal, world, _, _) = setup_named_at("1st_mate_ratticus", 1, at);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.1st_mate_ratticus",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .install_hazard_level(proposal.target, session, 12)
+        .expect("selected level");
+    runtime
+        .install_hazard_world_frame(proposal.target, session, "oteryn:frame/world-bundle-v3")
+        .expect("source frame");
+    let first =
+        incoming_damage(&runtime, &world.facts.attack, 9, 0, 1_000_000, false).expect("first hit");
+    assert!(first.critical);
+    assert_eq!(first.amount, 18); // ceil(ceil(9 * 1.5275) * 1.24)
+    runtime
+        .record_hazard_critical(proposal.target, session, 1_000_000)
+        .expect("committed hit");
+    let next = incoming_damage(&runtime, &world.facts.attack, 9, 0, 2_999_999, false)
+        .expect("inside interval");
+    assert!(!next.critical);
+    assert_eq!(next.amount, 12);
+    assert!(
+        incoming_damage(&runtime, &world.facts.attack, 9, 0, 3_000_000, false)
+            .expect("exact interval")
+            .critical
+    );
+    assert!(
+        !incoming_damage(&runtime, &world.facts.attack, 9, 0, 3_000_000, true)
+            .expect("already critical")
+            .critical
+    );
+    assert_eq!(
+        incoming_damage(&runtime, &world.facts.attack, 0, 0, 3_000_000, false).expect("zero"),
+        oteryn_gameplay_combat::hazard::IncomingHazardDamage {
+            amount: 0,
+            critical: false
+        }
+    );
+    let stale = GameSessionId::decode(&test_uuid(0x72)).expect("different session");
+    assert!(
+        runtime
+            .record_hazard_critical(proposal.target, stale, 4_000_000)
+            .is_err()
+    );
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, stale),
+        None
+    );
+    assert!(!runtime.hazard_world_frame(proposal.target, stale));
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, session),
+        Some(1_000_000)
+    );
+}
+
+#[test]
+fn hazard_mana_drain_never_gains_hp_damage_or_consumes_critical_window() {
+    let at = MovementLocalPosition {
+        x: 33502,
+        y: 32740,
+        floor: 13,
+    };
+    let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) =
+        setup_named_at("an_astral_glyph", 3, at);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.an_astral_glyph",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .install_hazard_level(proposal.target, session, 12)
+        .expect("selected level");
+    runtime
+        .install_hazard_world_frame(proposal.target, session, "oteryn:frame/world-bundle-v3")
+        .expect("source frame");
+    source.minimum = 9;
+    source.maximum = 9;
+    source.element = Some("mana_drain".into());
+    source.reference_level = None;
+    source.critical = None;
+    let hit = DamageSpellOwner::default()
+        .execute(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("mana drain");
+    let target = hit.targets[0].1.as_ref().expect("target");
+    assert!(target.damage.is_none());
+    assert_eq!(target.mana.expect("MP receipt").applied, 9);
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, session),
+        None
+    );
 }
 
 #[test]

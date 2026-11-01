@@ -68,6 +68,10 @@ pub enum FeeBurnCause {
     TaskBoardTalisman {
         occurrence: [u8; 16],
     },
+    /// Crystal bloodshade_sacrifice.lua:69-89; atomic with the access Quest receipt.
+    QuestAccessPurchase {
+        occurrence: [u8; 16],
+    },
     /// Crystal E12 cooking and imbuement-package purchases.
     HirelingService { service: String, occurrence: [u8; 16] },
     PreyListReroll {

@@ -233,6 +233,10 @@ impl QuestStateCopy {
     /// durable value for the source storage action id grants the door.
     #[must_use]
     pub fn meets_door_storage(&self, action: u16) -> bool {
+        // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
+        if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
+            return self.tracks.get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK) == Some(&1);
+        }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
         #[derive(serde::Deserialize)]
@@ -519,6 +523,9 @@ pub(super) fn report_refused_experience(
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
+pub mod rotten_blood;
+pub mod rotten_blood_access;
+pub mod soul_war;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

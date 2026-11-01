@@ -128,6 +128,12 @@ impl Expect {
 }
 
 impl RevisionSlot {
+    /// Quest/Hazard descendants can follow XP in one transaction. Reload the
+    /// live root after that commit or an unknown outcome, never a receipt cursor.
+    pub fn observe_endgame_progression(&mut self) {
+        *self.cursor = None;
+    }
+
     /// A citizenship choice may advance the root. Reload after success or an unknown outcome.
     pub fn observe_home_town(&mut self) {
         *self.cursor = None;

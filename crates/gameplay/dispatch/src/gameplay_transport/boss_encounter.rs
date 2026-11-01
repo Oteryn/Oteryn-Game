@@ -16,7 +16,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GuildReply::Rejected;
         };
         if id == 0
-            || !matches!(kind, wire::COMMAND_TYPE_BOSS_COOLDOWNS | wire::COMMAND_TYPE_BOSS_REWARD_OPEN)
+            || !matches!(
+                kind,
+                wire::COMMAND_TYPE_BOSS_COOLDOWNS
+                    | wire::COMMAND_TYPE_BOSS_REWARD_OPEN
+            )
             || !admitted
                 .continuity
                 .selected_capabilities

@@ -56,9 +56,12 @@ message BossRewardChestV1 {
   repeated BossRewardGroupV1 entries = 2;
 }
 
-// Reserved staged commands 178 (lever), 179 (defeated), 180 (timeout).
-// Every request remains refused: the activity handoff, InstanceRuntime and
-// return/recovery owner are not installed. Capability 117 also retains hazard 169.
+// Command 178 (lever) uses the shared native activity owner. W10/W11 keys first
+// validate their Character prerequisites and remain unavailable until their source
+// content and Instance death consumers are composed; they allocate no Instance.
+// Commands 179 (defeated) and 180 (timeout) request the native defeat/deadline
+// owner, which independently proves the terminal outcome. Client keys confer no
+// terminal authority. Capability 117 also retains hazard 169.
 // The client supplies no party, policy, position, level, cooldown, death or timeout facts.
 message BossLeverRequestV1 { string boss_key = 1; }
 message BossInstanceReceiptV1 {

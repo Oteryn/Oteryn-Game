@@ -295,6 +295,7 @@ enum Request {
         session: GameSessionId,
         amount: u32,
         heal: bool,
+        hazard_critical: bool,
         occurrence: String,
     },
 }
@@ -437,7 +438,7 @@ impl ComposedOwner {
         let prepared = source
             .primary
             .as_ref()
-            .map(|p| generic.prepare_target(r, p, proposal, reader, stamp, None))
+            .map(|p| generic.prepare_target(r, p, proposal, reader, stamp, None, now))
             .transpose()?;
         // Independently current player state, including immutable maximum, before ANY owner write.
         if let Some(p) = &prepared {
@@ -489,6 +490,19 @@ impl ComposedOwner {
         id.copy_from_slice(&digest[..16]);
         let id = DecisionOccurrenceId::from_bytes(id);
         let mut tasks = Vec::new();
+        // Preflight follows the existing primary-then-callback order. A primary's
+        // planned Hazard critical reserves the same target window for this batch.
+        let mut hazard_critical_targets = Vec::new();
+        hazard_critical_targets
+            .try_reserve(64)
+            .map_err(|_| AttackError::LedgerFull)?;
+        if let Some(primary) = &prepared {
+            for target in &primary.targets {
+                if target.hazard_critical {
+                    hazard_critical_targets.push((target.target, target.session));
+                }
+            }
+        }
         // Primary HP precedes tile callbacks in pinned Combat::CombatFunc. PROJECT batches
         // current snapshot tiles; cross-owner commits retain partial receipts, not atomic fiction.
         if let (Some(primary), Some(prepared)) = (&source.primary, &prepared) {
@@ -671,14 +685,51 @@ impl ComposedOwner {
                         .source_player_health(r, *target, *session)
                         .ok_or(AttackError::MissingVitals)?;
                     let (amount, occurrence) = callback.draw(&root, id, proposal, *target, i)?;
+                    let hazard = if callback.heal {
+                        oteryn_gameplay_combat::hazard::IncomingHazardDamage {
+                            amount,
+                            critical: false,
+                        }
+                    } else {
+                        let digest = Sha256::new()
+                            .chain_update(b"oteryn:callback-hazard:v1")
+                            .chain_update(occurrence.as_bytes())
+                            .finalize();
+                        let mut child = [0; 16];
+                        child.copy_from_slice(&digest[..16]);
+                        let draw = deterministic_decision_u64(
+                            &root,
+                            DecisionOccurrenceId::from_bytes(child),
+                            "hazard_critical",
+                            i as u64,
+                        )
+                        .map_err(|_| AttackError::InvalidPlan)?
+                            % 1_000_000;
+                        oteryn_gameplay_combat::hazard::incoming_damage(
+                            r,
+                            &a,
+                            amount,
+                            draw as u32,
+                            now.get(),
+                            hazard_critical_targets.contains(&(*target, *session)),
+                        )
+                        .map_err(|_| AttackError::NumericOverflow)?
+                    };
+                    if hazard.critical {
+                        if hazard_critical_targets.len() >= 64 {
+                            return Err(AttackError::LedgerFull);
+                        }
+                        hazard_critical_targets.push((*target, *session));
+                    }
                     tasks.try_reserve(1).map_err(|_| AttackError::LedgerFull)?;
                     tasks.push(Task {
                         branch: i + 1,
                         target: *target,
                         request: Request::Player {
                             session: *session,
-                            amount,
+                            amount: hazard.amount,
                             heal: callback.heal,
+                            hazard_critical: hazard.critical,
                             occurrence,
                         },
                     });
@@ -759,6 +810,7 @@ impl ComposedOwner {
                     session,
                     amount,
                     heal,
+                    hazard_critical,
                     occurrence,
                 } => {
                     if heal {
@@ -771,8 +823,14 @@ impl ComposedOwner {
                     } else {
                         vitals
                             .apply_attack_damage(r, target, session, amount, &occurrence, now)
-                            .map(BranchReceipt::PlayerDamage)
                             .ok_or(AttackError::MissingVitals)
+                            .and_then(|receipt| {
+                                if hazard_critical {
+                                    r.record_hazard_critical(target, session, now.get())
+                                        .map_err(|_| AttackError::StaleTarget)?;
+                                }
+                                Ok(BranchReceipt::PlayerDamage(receipt))
+                            })
                     }
                 }
             };

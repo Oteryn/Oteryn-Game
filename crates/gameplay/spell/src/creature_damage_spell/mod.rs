@@ -1122,6 +1122,7 @@ pub struct PreparedPlayerTarget {
     facts: SpellCombatFacts,
     amount: u32,
     blocked: bool,
+    hazard_critical: bool,
     child_id: DecisionOccurrenceId,
     occurrence: String,
 }
@@ -1488,7 +1489,7 @@ impl DamageSpellOwner {
                         runtime, vitals, cast_source, proposal, reader, stamp, now, None,
                     ),
                     None => self
-                        .prepare_target(runtime, cast_source, proposal, reader, stamp, None)
+                        .prepare_target(runtime, cast_source, proposal, reader, stamp, None, now)
                         .and_then(|prepared| {
                             self.commit_prepared(
                                 runtime, vitals, cast_source, proposal, prepared, now, None, stamp,
@@ -2130,7 +2131,8 @@ impl DamageSpellOwner {
         forced: Option<(ExactActorRef, GameSessionId)>,
         fence: &ScopeRuntimeFence,
     ) -> Result<SpellOutcome, AttackError> {
-        let prepared = self.prepare_target(runtime, source, proposal, reader, stamp, forced)?;
+        let prepared =
+            self.prepare_target(runtime, source, proposal, reader, stamp, forced, now)?;
         self.commit_prepared(
             runtime,
             vitals,
@@ -2142,6 +2144,8 @@ impl DamageSpellOwner {
             stamp,
         )
     }
+    // Current time is part of Hazard critical preflight alongside source, actor and policy facts.
+    #[allow(clippy::too_many_arguments)]
     pub fn prepare_target(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -2150,6 +2154,7 @@ impl DamageSpellOwner {
         reader: &mut dyn SpellWorldReader,
         stamp: RuntimeWorkStamp,
         forced: Option<(ExactActorRef, GameSessionId)>,
+        now: SemanticTimeMicros,
     ) -> Result<PreparedPlayerCast, AttackError> {
         let from = runtime
             .read_actor_position(proposal.issuer)
@@ -2374,6 +2379,30 @@ impl DamageSpellOwner {
                     .mitigate_damage(remaining)
                     .ok_or(AttackError::NumericOverflow)?
             };
+            let hazard = if source.element.as_deref() == Some("mana_drain") {
+                oteryn_gameplay_combat::hazard::IncomingHazardDamage {
+                    amount,
+                    critical: false,
+                }
+            } else {
+                let draw = deterministic_decision_u64(
+                    &root,
+                    child_id,
+                    "hazard_critical",
+                    source.entry_index as u64,
+                )
+                .map_err(|_| AttackError::InvalidPlan)?
+                    % 1_000_000;
+                oteryn_gameplay_combat::hazard::incoming_damage(
+                    runtime,
+                    &facts.attack,
+                    amount,
+                    draw as u32,
+                    now.get(),
+                    source_critical.is_some_and(|event| event.critical),
+                )
+                .map_err(|_| AttackError::NumericOverflow)?
+            };
             prepared
                 .try_reserve(1)
                 .map_err(|_| AttackError::LedgerFull)?;
@@ -2381,8 +2410,9 @@ impl DamageSpellOwner {
                 target,
                 session,
                 facts,
-                amount,
+                amount: hazard.amount,
                 blocked,
+                hazard_critical: hazard.critical,
                 child_id,
                 occurrence: child,
             });
@@ -2427,6 +2457,7 @@ impl DamageSpellOwner {
             facts,
             amount,
             blocked,
+            hazard_critical,
             child_id,
             occurrence,
         } in prepared.targets
@@ -2617,6 +2648,11 @@ impl DamageSpellOwner {
                     ),
                 }
             };
+            if hazard_critical && receipt.is_some() {
+                runtime
+                    .record_hazard_critical(target, session, now.get())
+                    .map_err(|_| AttackError::StaleTarget)?;
+            }
             // A missing target vital is reported per target; do not throw away earlier real receipts.
             result.targets.push((
                 target,

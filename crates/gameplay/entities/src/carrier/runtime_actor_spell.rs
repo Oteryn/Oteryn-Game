@@ -63,6 +63,10 @@ pub struct ActorCombatState {
     pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
     pub(super) hazard: Option<(GameSessionId, u16)>,
+    /// Session-bound qualification of unshifted world-bundle donor coordinates.
+    pub(super) hazard_native_frame: Option<GameSessionId>,
+    /// Incoming Hazard critical cooldown shared by monster melee and spell owners.
+    pub(super) hazard_critical: Option<(GameSessionId, u64)>,
     pub paralysed: bool,
     records: Vec<BatchRecord>,
     high_water: Option<(CharacterId, u64, GameSessionId, u64, u16)>,
