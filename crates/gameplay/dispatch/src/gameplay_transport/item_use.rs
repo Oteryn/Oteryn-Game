@@ -252,8 +252,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
-            // A pending spell commit or a durable spell reserving this actor refuses the use
-            // before anything is burned.
+            // A pending spell commit or a durable spell reserving this actor's
+            // state refuses the use before anything is burned.
             if states.is_dead(actor)
                 || !states.spell_idle(&runtime, actor, session)
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
@@ -329,7 +329,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
-            None if entry.item.definition.production_key
+            _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
                 (
