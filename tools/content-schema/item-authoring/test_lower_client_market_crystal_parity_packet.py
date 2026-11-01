@@ -19,7 +19,9 @@ SUPERSEDED_WAVE1_FALSE = {3321}
 
 # Oteryn-only marketable ids: the newer official client defines them, Crystal's appearance
 # file ends below them (its highest market id is 54651), so Crystal cannot confirm them.
-OTERYN_ONLY = {54640: "newer client appearance; absent from the pinned Crystal appearances.dat"}
+OTERYN_ONLY = {
+    54640: "newer client appearance; absent from the pinned Crystal appearances.dat"
+}
 
 
 def content_marketable():
@@ -47,9 +49,13 @@ class MarketCrystalParity(unittest.TestCase):
         defined, known = content_marketable()
         true_ids = {i for i, value in known.items() if value}
         self.assertEqual(true_ids - self.crystal, set(OTERYN_ONLY))
-        self.assertEqual(true_ids & self.crystal, {i for i in self.crystal if i in defined})
+        self.assertEqual(
+            true_ids & self.crystal, {i for i in self.crystal if i in defined}
+        )
         self.assertEqual(self.crystal - defined, set(NO_DEFINITION))
-        self.assertEqual({i for i, value in known.items() if not value} & self.crystal, set())
+        self.assertEqual(
+            {i for i, value in known.items() if not value} & self.crystal, set()
+        )
 
     def test_packet_exceptions_and_counts_match_the_explicit_lists(self):
         reasons = {e["source_item_id"]: e["reason"] for e in self.packet["exceptions"]}

@@ -24,9 +24,7 @@ ROOT = Path(__file__).resolve().parents[3]
 COMPILER = (
     "tools/content-schema/item-authoring/lower_client_market_crystal_parity_packet.py"
 )
-OUTPUT = (
-    ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
-)
+OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
 V2 = "docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 DONOR_REPOSITORY = "zimbadev/crystalserver"
 DONOR_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -47,7 +45,8 @@ def wave1_false_keys(root):
         record["target"]["key"]
         for record in json.loads((root / WAVE1).read_text())["records"]
         for fact in record["definition_facts"]
-        if fact["field_path"] == "trade_restrictions.marketable" and fact["value"] is False
+        if fact["field_path"] == "trade_restrictions.marketable"
+        and fact["value"] is False
     }
 
 

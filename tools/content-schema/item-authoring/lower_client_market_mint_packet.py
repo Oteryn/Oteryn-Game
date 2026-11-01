@@ -26,7 +26,9 @@ OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-client-market-mint-v1.j
 CLIENT_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 REGISTER = "docs/agents/evidence/OTV2-20260929-item-id-1b-q13d-family-decisions.json"
-CITATION = "docs/agents/evidence/monster-optional-field-fill-20261002/decisions-162.json"
+CITATION = (
+    "docs/agents/evidence/monster-optional-field-fill-20261002/decisions-162.json"
+)
 PARITY = "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
 IDS = (
     42085, 42175, 43892, 43893, 43948, 43949, 43950, 44157, 44179, 44755,
@@ -77,7 +79,9 @@ def definition(item_id, obj):
         raise ValueError(f"{item_id}: not a portable client object")
     stackable = flags.get("flags.cumulative", False)
     semantics = {group: dict(UNKNOWN) for group in GROUPS}
-    semantics["presentation"] = known({"description": UNKNOWN, "name": known(obj["name"])})
+    semantics["presentation"] = known(
+        {"description": UNKNOWN, "name": known(obj["name"])}
+    )
     semantics["physical"] = known(
         {"movable": known(True), "pickupable": known(True), "weight": UNKNOWN}
     )
@@ -89,7 +93,11 @@ def definition(item_id, obj):
     )
     return {
         "client_projection": "ClientSafe",
-        "identity": {"family": "Item", "key": item_key(item_id), "revision": "definition-r1"},
+        "identity": {
+            "family": "Item",
+            "key": item_key(item_id),
+            "revision": "definition-r1",
+        },
         "kind": "Item",
         "materializable": False,
         "semantics": semantics,
@@ -130,8 +138,14 @@ def build(root=ROOT):
                 or row["key"] != item_key(item_id)
                 or row["name"] != obj["name"]
             ):
-                raise ValueError(f"{item_id}: register row is not an approved pending mint")
-            basis = {"path": REGISTER, "profile": row["profile"], "status": row["status"]}
+                raise ValueError(
+                    f"{item_id}: register row is not an approved pending mint"
+                )
+            basis = {
+                "path": REGISTER,
+                "profile": row["profile"],
+                "status": row["status"],
+            }
         records.append(
             {
                 "source_item_id": item_id,
