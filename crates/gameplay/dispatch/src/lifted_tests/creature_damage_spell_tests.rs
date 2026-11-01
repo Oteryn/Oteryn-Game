@@ -208,7 +208,7 @@ fn setup_named_at(
         .expect("qualified fixture");
     let (records, profiles) = if matches!(
         name,
-        "radiant_acolyte" | "radiant_paragon" | "radiant_templar"
+        "radiant_acolyte" | "radiant_paragon" | "radiant_templar" | "phosphorus_final"
     ) {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
@@ -221,7 +221,7 @@ fn setup_named_at(
             .into_iter()
             .find(|record| record.profile.target.key == format!("oteryn:creature.{name}"))
             .and_then(|record| record.attack_definitions)
-            .expect("actual Radiant closure");
+            .expect("actual Summer closure");
         (definitions.records, definitions.profiles)
     } else if name == "bony_sea_devil" {
         let packet = native_windup_packet();
@@ -1651,6 +1651,212 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
         .health_after,
         184
     );
+}
+
+#[test]
+fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay() {
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
+    let (mut runtime, _, source, proposal, mut world, _, _) = setup_named("phosphorus_final", 1);
+    let mut vitals = ChannelSpellStates::default();
+    vitals
+        .initialize(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100_000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("living target for the complete source schedule");
+    let base_speed = u16::try_from(
+        vitals
+            .read_owned_player_state_test_snapshot(
+                &runtime,
+                proposal.target,
+                world.facts.attack.session,
+            )
+            .expect("current player")
+            .owned_base_speed(),
+    )
+    .expect("native speed");
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed,
+    });
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut spells = DamageSpellOwner::default();
+    let first = spells
+        .execute_current_target_condition(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("source under runtime fence");
+    let target = first.targets[0].1.as_ref().expect("current target");
+    assert!(target.condition_only_applied);
+    assert!(target.damage.is_none());
+    assert_eq!(
+        vitals
+            .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+            .expect("current health")
+            .0,
+        100_000
+    );
+    let tick_facts = TickFacts {
+        in_protection_zone: false,
+        standing_on_field: None,
+    };
+    assert_eq!(
+        vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([70; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(3_999_999),
+            )
+            .expect("before first delayed tick")
+            .damage,
+        0
+    );
+    // Crystal spells_phosphorus_curse.lua:8-13; floor each emitted float accumulator,
+    // never feed the floored result into the next multiplication.
+    let expected = [
+        300, 345, 396, 456, 524, 603, 693, 798, 917, 1055, 1213, 1395, 1605, 1845, 2122, 2441,
+        2807, 3228, 3712, 4269, 4909,
+    ];
+    // PHOSPHORUS_NATIVE_REGENERATION_ACCOUNTING: source_take_due advances the
+    // same always-on regeneration owner before applying the curse. This hungry
+    // Druid gains one HP per four credited owner seconds. The early call above
+    // credits one second at 3_999_999us; the 4_000_000us call is too early for the
+    // next second. Later two-second observations each credit one owner second,
+    // so the five health credits occur at these exact times (no catch-up burst).
+    let regeneration_due_us = [10_000_000, 18_000_000, 26_000_000, 34_000_000, 42_000_000];
+    let mut regenerated = 0;
+    let mut total = 0;
+    for (index, amount) in expected.into_iter().enumerate() {
+        let now = 4_000_000 + u64::try_from(index).expect("bounded tick") * 2_000_000;
+        let tick = vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([71; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(now),
+            )
+            .expect("existing canonical periodic owner");
+        assert_eq!(tick.damage, amount, "source tick {index}");
+        total += amount;
+        if regeneration_due_us.contains(&now) {
+            regenerated += 1;
+        }
+        assert_eq!(
+            vitals
+                .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+                .expect("current health after source tick")
+                .0,
+            100_000 - total + regenerated,
+            "source tick {index} retains ordinary regeneration"
+        );
+        if index == 2 {
+            assert_eq!(
+                spells
+                    .execute_current_target_condition(
+                        &mut runtime,
+                        stamp,
+                        &mut vitals,
+                        &source,
+                        &proposal,
+                        &mut world,
+                        SemanticTimeMicros::from_micros(now),
+                    )
+                    .expect("same cast does not restart the schedule"),
+                first
+            );
+        }
+    }
+    assert_eq!(
+        vitals
+            .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+            .expect("current health")
+            .0,
+        100_000 - total + regenerated
+    );
+    assert_eq!(
+        vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([72; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(46_000_000),
+            )
+            .expect("no extra tick")
+            .damage,
+        0
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        spells.execute_current_target_condition(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(48_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn summer_phosphorus_curse_qualification_preserves_final_stats_and_rejects_drift() {
+    let document: crate::content::native_gameplay::CreatureProfilesDocument =
+        serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )))
+        .expect("actual pinned Summer provider");
+    let mut record = document
+        .records
+        .into_iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.phosphorus_final")
+        .expect("final profile");
+    let (_, _, source, _, _, _, _) = setup_named("phosphorus_final", 1);
+    use oteryn_gameplay_encounters::bosses::summer_2026::is_phosphorus_curse;
+    assert!(is_phosphorus_curse(&record, &source));
+    assert!(
+        record
+            .source_qualification
+            .as_deref()
+            .expect("source limitation")
+            .contains("W16_ADMISSION_AND_PHASE_SOURCE_MISSING")
+    );
+    assert!(matches!(&record.profile.data, Data::Creature(profile)
+        if profile.health == Some(90_000) && profile.experience == Some(0)));
+    let closure = record.attack_definitions.as_ref().expect("closure");
+    assert!(closure.profiles.contains(&record.profile));
+    let mut wrong = source.clone();
+    wrong.minimum = 1;
+    assert!(!is_phosphorus_curse(&record, &wrong));
+    let mut wrong = source.clone();
+    wrong.conditions.clear();
+    assert!(!is_phosphorus_curse(&record, &wrong));
+    if let Some(Data::Behavior(behavior)) = record.behavior.as_mut().map(|p| &mut p.data) {
+        behavior.attacks[1].interval_ms = 10_000;
+    }
+    assert!(!is_phosphorus_curse(&record, &source));
 }
 
 #[test]

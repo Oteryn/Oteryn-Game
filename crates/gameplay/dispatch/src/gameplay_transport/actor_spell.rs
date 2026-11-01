@@ -1688,6 +1688,31 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         )
         .is_some()
     }
+    fn apply_current_attack_conditions(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_current_conditions(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            stamp,
+        )
+    }
+
     fn apply_composite_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

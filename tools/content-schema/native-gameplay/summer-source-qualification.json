@@ -674,6 +674,36 @@
     {
       "creature": "oteryn:creature.phosphorus_final",
       "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/phosphorus_final.lua","sha256":"23511b2488d62dd81b597552bb270479020f81b7ad61c5b7d4e7539a0ac1b9d4","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/phosphorus_final.lua"},
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1400,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 83,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 12000,
+              "name": "phosphorus curse",
+              "target": true
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          82,
+          85
+        ]
+      },
       "fallback_health": 90000,
       "fallback_experience": 0,
       "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
