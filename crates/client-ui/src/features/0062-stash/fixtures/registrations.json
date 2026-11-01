@@ -2,18 +2,32 @@
   {
     "mechanic": "0062-stash",
     "kind": "handlers",
-    "id": "0062-stash-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0062-stash-actions",
+    "status": "supported",
     "commands": [
       79
     ],
+    "direction": "client_to_server",
+    "capability": 62,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Stash state is server-owned."
     }
+  },
+  {
+    "mechanic": "0062-stash",
+    "kind": "keybindings",
+    "id": "0062-stash-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+S",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0062-stash",
+    "kind": "panels",
+    "id": "0062-stash-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn stash_selected(&self) -> bool {
+        false
+    }
+    fn stash(
+        &mut self,
+        _command: &oteryn_client_runtime::stash::StashCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::stash::StashResponse, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 62 }) }
+    }
     fn npc_shop_selected(&self) -> bool {
         false
     }
@@ -225,6 +235,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn stash_selected(&self) -> bool {
+        self.is_selected(oteryn_session::stash::CAPABILITY_STASH_V1)
+    }
+    async fn stash(
+        &mut self,
+        command: &oteryn_client_runtime::stash::StashCommand,
+    ) -> Result<oteryn_client_runtime::stash::StashResponse, SessionError> {
+        oteryn_client_runtime::stash::send(self, command).await
+    }
     fn npc_shop_selected(&self) -> bool {
         self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
     }
@@ -332,6 +351,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.stash_initialize(session.stash_selected());
     outbox.npc_shop_initialize(session.npc_shop_selected());
     outbox.prey_initialize(session.prey_selected());
     outbox.imbue_initialize(session.imbue_selected());
@@ -381,6 +401,14 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Stash(command)) => match session.stash(&command).await {
+                Ok(response) => {
+                    outbox.stash_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

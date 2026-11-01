@@ -2393,3 +2393,6 @@ pub use oteryn_protocol_oteryn::vip;
 #[cfg(test)]
 #[path = "guild_chat_tests.rs"]
 mod guild_chat_tests;
+
+/// Server-owned stash wire types exposed to client feature adapters.
+pub use oteryn_protocol_oteryn::stash;

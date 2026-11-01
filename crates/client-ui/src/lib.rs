@@ -54,6 +54,10 @@ pub mod party;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// Server-owned stash browsing and conversion controls.
+#[path = "features/0062-stash/mod.rs"]
+pub mod stash;
+
 /// NPC shop look and sell-all panel state.
 #[path = "features/0081-npc-shop/mod.rs"]
 pub mod npc_shop;

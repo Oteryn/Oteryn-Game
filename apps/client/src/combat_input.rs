@@ -13,6 +13,7 @@ pub enum PlayCommand {
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).
     Logout,
+    Stash(oteryn_client_runtime::stash::StashCommand),
     NpcShop(oteryn_client_runtime::npc_shop::NpcShopCommand),
     Prey(oteryn_client_runtime::prey::PreyCommand),
     Imbue(oteryn_client_runtime::imbue::ImbueCommand),
