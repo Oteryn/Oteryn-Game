@@ -45,11 +45,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
-    // M09: 31 gathering profiles from Crystal 201189f
+    // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
-    // CLOSE-2 M09 added the nail 953, mechanical rod 9306 and mechanical fish 9307
-    // (mechanical_fishing.lua:203-248) to the original 28.
-    ("M09-GATHER", 31),
+    // CLOSE-2 M09 adds 16: nail 953, mechanical rod 9306, mechanical fish 9307 and the fishable
+    // waters 4598..=4602, 629..=634, 21312/21314 (mechanical_fishing.lua:203-248, items.xml:13991).
+    ("M09-GATHER", 28 + 16),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.
