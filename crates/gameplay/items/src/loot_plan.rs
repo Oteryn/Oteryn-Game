@@ -4,6 +4,9 @@
 
 use sha2::{Digest, Sha256};
 
+mod boss;
+pub use boss::plan_boss_loot;
+
 /// Source entries per death, including descendants (the native section record bound).
 pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 4096;
 /// Maximum MINTs per death, including nested children and additional daily rolls.
@@ -172,13 +175,33 @@ impl std::error::Error for LootPlanError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LootPlanDeathKey {
     world_id: [u8; 16],
-    channel_id: [u8; 16],
+    scope_id: [u8; 16],
+    instance: bool,
     scope_ownership_generation: u64,
     actor_local_id: u32,
     actor_local_generation: u64,
 }
 
 impl LootPlanDeathKey {
+    /// Instance entropy has a separate namespace; the legacy Channel constructor
+    /// retains its original byte framing and deterministic draws.
+    pub const fn new_instance(
+        world_id: [u8; 16],
+        instance_id: [u8; 16],
+        scope_ownership_generation: u64,
+        actor_local_id: u32,
+        actor_local_generation: u64,
+    ) -> Self {
+        Self {
+            world_id,
+            scope_id: instance_id,
+            instance: true,
+            scope_ownership_generation,
+            actor_local_id,
+            actor_local_generation,
+        }
+    }
+
     pub const fn new(
         world_id: [u8; 16],
         channel_id: [u8; 16],
@@ -188,7 +211,8 @@ impl LootPlanDeathKey {
     ) -> Self {
         Self {
             world_id,
-            channel_id,
+            scope_id: channel_id,
+            instance: false,
             scope_ownership_generation,
             actor_local_id,
             actor_local_generation,
@@ -578,8 +602,11 @@ fn deterministic_draw(
     kind: DrawKind,
 ) -> u64 {
     let mut hasher = Sha256::new();
+    if death_key.instance {
+        hasher.update(b"oteryn:instance-creature-loot:v1\0");
+    }
     hasher.update(death_key.world_id);
-    hasher.update(death_key.channel_id);
+    hasher.update(death_key.scope_id);
     hasher.update(death_key.scope_ownership_generation.to_be_bytes());
     hasher.update(death_key.actor_local_id.to_be_bytes());
     hasher.update(death_key.actor_local_generation.to_be_bytes());
@@ -609,6 +636,20 @@ fn deterministic_draw(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn instance_loot_entropy_is_separate_and_preserves_channel_draws() {
+        let channel = LootPlanDeathKey::new([1; 16], [2; 16], 3, 4, 5);
+        let instance = LootPlanDeathKey::new_instance([1; 16], [2; 16], 3, 4, 5);
+        let table = table_ref("oteryn:loot.fixture");
+        let before = deterministic_draw(channel, &table, 7, DrawKind::Chance);
+        assert_eq!(before, 2203622670569259222);
+        assert_eq!(
+            deterministic_draw(instance, &table, 7, DrawKind::Chance),
+            11225786138931470376
+        );
+        assert_ne!(channel, instance);
+    }
 
     fn item_ref(key: &str) -> LootDefinitionRef {
         LootDefinitionRef::new("Item", key, "definition-r1")

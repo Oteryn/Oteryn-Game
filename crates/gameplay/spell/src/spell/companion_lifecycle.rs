@@ -2307,11 +2307,7 @@ impl FamiliarLifecycleBinding {
         parameters(&spell, "familiar_summon")?;
         let binding = runtime.binding();
         if !runtime.owner_fence()?.accepts_stamp(stamp)
-            || fence.runtime_scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                )
+            || fence.runtime_scope != binding.runtime_scope()
             || fence.scope_ownership_generation != binding.scope_generation()
         {
             return Err(CompanionExecutionError::SnapshotMismatch);

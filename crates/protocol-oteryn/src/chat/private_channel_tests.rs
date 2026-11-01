@@ -122,9 +122,9 @@ fn the_channel_list_is_bounded_and_strict() {
     let mut own_invited = full;
     own_invited.invited[0].channel_id = u16::MAX;
     assert!(encode_channel_list(&own_invited).is_err());
-    // Room bit 4, a zero room set, channel 0 and an alien field fail closed.
+    // S04c admits bits 4..7; bit 8, zero set, channel 0 and an alien field still fail closed.
     for payload in [
-        vec![8, 16],
+        vec![8, 128, 2],
         vec![8, 0],
         vec![16, 0],
         vec![26, 2, 8, 1],

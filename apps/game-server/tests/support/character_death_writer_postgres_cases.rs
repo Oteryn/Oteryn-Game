@@ -70,10 +70,13 @@ fn death(tag: u8, blessings: &[&str]) -> TestResult<CharacterDeathRequest<10>> {
         policy: policy(),
         held_blessings: blessings.iter().map(|key| (*key).to_owned()).collect(),
         death_cell: DeathCell {
-            world_id: crate::foundation::WorldId::decode(&id(42))
-                .map_err(|error| format!("{error:?}"))?,
-            channel_id: crate::foundation::ChannelId::decode(&id(43))
-                .map_err(|error| format!("{error:?}"))?,
+            // W02 typed-scope extension preserves this pinned Channel fixture.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id: crate::foundation::WorldId::decode(&id(42))
+                    .map_err(|error| format!("{error:?}"))?,
+                channel_id: crate::foundation::ChannelId::decode(&id(43))
+                    .map_err(|error| format!("{error:?}"))?,
+            },
             spatial_position: vec![1, 2, 3, 7],
             map_revision: "map-1".into(),
         },
@@ -401,8 +404,13 @@ fn stale_fences_and_mismatched_death_intent_write_nothing() -> TestResult {
             stale_scope.scope_ownership_generation =
                 ScopeOwnershipGeneration::new(2).map_err(|error| format!("{error:?}"))?;
             let mut other_channel = death(83, &["spark"])?;
-            other_channel.death_cell.channel_id = crate::foundation::ChannelId::decode(&id(44))
-                .map_err(|error| format!("{error:?}"))?;
+            // Preserve the original foreign-Channel refusal and the same world.
+            other_channel.death_cell.runtime_scope =
+                crate::foundation::RuntimeScopeRefV1::Channel {
+                    world_id: other_channel.death_cell.runtime_scope.world_id(),
+                    channel_id: crate::foundation::ChannelId::decode(&id(44))
+                        .map_err(|error| format!("{error:?}"))?,
+                };
             let cases: Vec<(
                 crate::durability::character_progression::CurrentCharacterGameplayFence,
                 CharacterDeathRequest<10>,

@@ -28,6 +28,22 @@ where
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
     // that its objects carry their item handles under capability 4.
     let mut payloads = Vec::new();
+    if let Some(payload) = authority
+        .activity_scope_snapshot(*admitted)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?
+    {
+        // Initial/recovery projection is in the already admitted destination
+        // stream. Its receipt binding precedes spatial and item state atomically.
+        payloads.push(
+            crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
+                domain_id: oteryn_protocol_oteryn::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE,
+                revision: admitted.continuity.connection_generation,
+                snapshot_type: 1,
+                payload,
+            },
+        );
+    }
     let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads).await?;
     let mut items = snapshot::items(
         authority,
@@ -317,6 +333,7 @@ async fn live<A: FreshAdmissionAuthority>(
         notices_selected,
         party_view,
         party_icons: Vec::new(),
+        team_finder_view: Default::default(),
         market_revision: 1,
         cyclopedia_tracker_revision: 1,
         item_view,

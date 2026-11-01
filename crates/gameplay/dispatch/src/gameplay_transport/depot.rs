@@ -205,7 +205,7 @@ pub(super) async fn execute(
                     admission.holder,
                     &fence,
                     command_ref,
-                    &NativeItemWeights(native),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                     access,
                     item,
                 )

@@ -82,13 +82,8 @@ impl ChannelRuntimeV1 {
     ) -> Result<ExactActorRef, EncounterSpawnError> {
         use EncounterSpawnError as E;
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(E::StaleOwner);
         }
@@ -165,13 +160,8 @@ impl ChannelRuntimeV1 {
         expected_content: [u8; 32],
     ) -> Result<(), CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }

@@ -5,7 +5,7 @@ use super::{
     item_view::{ItemKey, SessionItemView},
 };
 use crate::durability::character_forge_dust::{ForgeDustLimitError, ForgeResolvedItems};
-use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::item_forge::{CAPABILITY_ITEM_FORGE_V1, Operation, Request};
 
 macro_rules! authority_methods {
@@ -76,9 +76,8 @@ pub(super) async fn execute(
         let runtime = owner.runtime.lock().await;
         let binding = runtime.binding();
         if admitted.world_id != binding.world_id()
-            || admitted.channel_id != binding.channel_id()
-            || fence.runtime_scope
-                != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+            || Some(admitted.channel_id) != binding.channel_id()
+            || fence.runtime_scope != binding.runtime_scope()
             || fence.scope_ownership_generation != binding.scope_generation()
             || runtime.owner_fence().is_err()
         {
@@ -148,6 +147,8 @@ pub(super) async fn execute(
             request,
             resolved_items,
             native,
+            &super::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(owner.premium_coordinator),
         )
         .await
     {

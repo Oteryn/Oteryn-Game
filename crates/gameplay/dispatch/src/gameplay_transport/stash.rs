@@ -82,7 +82,7 @@ pub(super) async fn execute(
                 fence,
                 request.clone(),
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                 true,
             )
             .await
@@ -99,7 +99,7 @@ pub(super) async fn execute(
                     fence,
                     request,
                     native,
-                    &NativeItemWeights(native),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                     false,
                 )
                 .await

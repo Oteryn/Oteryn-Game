@@ -22,7 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             root: self.root,
             character: self.character,
             holder: self.holder,
-            runtime: self.runtime,
+            runtime: &self.runtime,
             revision_sequencer: &self.revision_sequencer,
         }
         .consume_herald_committed_death(
@@ -50,7 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             root: self.root,
             character: self.character,
             holder: self.holder,
-            runtime: self.runtime,
+            runtime: &self.runtime,
             revision_sequencer: &self.revision_sequencer,
         }
         .project_and_consume_crystal_death(

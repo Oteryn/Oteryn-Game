@@ -41,17 +41,16 @@ fn a_respawn_cell_must_be_walkable_unblocked_and_of_the_pinned_generation() {
     .expect("index");
     let doors = BTreeSet::from([LogicalCell { x: 5, y: 4, z: 7 }]);
     let at = |x| MovementLocalPosition { x, y: 4, floor: 7 };
-    let admit = |world, digest, cell| {
-        respawn_cell_admissible(&index, &scope, world, digest, &doors, cell)
-    };
+    let admit =
+        |world, digest, cell| respawn_cell_admissible(&index, &scope, world, digest, &doors, cell);
     assert!(admit(world, [9; 32], at(3)));
     assert!(!admit(world, [9; 32], at(6)), "blocked cell");
     assert!(!admit(world, [9; 32], at(4)), "absent cell");
     assert!(!admit(world, [9; 32], at(5)), "closed door");
     assert!(!admit(world, [8; 32], at(3)), "foreign generation");
     let foreign = WorldId::decode(&[
-        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x72, 0x22, 0x92, 0x22, 0x22, 0x22, 0x22, 0x22,
-        0x22, 0x22,
+        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x72, 0x22, 0x92, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+        0x22,
     ])
     .expect("foreign world");
     assert!(!admit(foreign, [9; 32], at(3)), "foreign World");
@@ -227,7 +226,7 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
     let channel = ChannelId::decode(&CHARACTER).expect("channel");
     let request = player_death_request(
         &progression,
-        (world, channel),
+        crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         [0xab; 32],
         actor_spell::PlayerDeath {
             occurrence,
@@ -247,8 +246,9 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
     assert_eq!(request.policy, progression.policy);
     assert!(request.held_blessings.is_empty());
     assert_eq!(
-        (request.death_cell.world_id, request.death_cell.channel_id),
-        (world, channel)
+        // W02 extends the location tag; this existing death remains exactly in its Channel.
+        request.death_cell.runtime_scope,
+        crate::foundation::RuntimeScopeRefV1::channel(world, channel)
     );
     assert_eq!(
         request.death_cell.spatial_position,

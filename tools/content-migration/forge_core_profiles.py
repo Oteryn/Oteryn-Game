@@ -93,9 +93,20 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                           binding_index(BINDINGS.read_bytes()), {ITEM_ID})
     document = json.loads(generated[profile_path])
-    if any(r['production_definition']['production_key'] == key for r in document['records']):
-        raise ValueError('FORGE_CORE_PROFILE_DUPLICATE')
-    document['records'] = sorted(document['records'] + bound['records'], key=order)
+    existing = [r for r in document['records'] if r['production_definition']['production_key'] == key]
+    if existing:
+        # W06/W07 already admits this same core from the same Crystal capture.
+        # Keep its authoring provenance (including taxonomy), but require every
+        # runtime policy and identity field to agree with the Forge capture.
+        expected = bound['records'][0]
+        if (len(existing) != 1
+                or existing[0]['authoring']['item'] != {
+                    **expected['authoring']['item'], 'revision': 'soulpit-echo-crystal-201189f'}
+                or {k: v for k, v in existing[0].items() if k != 'authoring'}
+                != {k: v for k, v in expected.items() if k != 'authoring'}):
+            raise ValueError('FORGE_CORE_PROFILE_DUPLICATE')
+    else:
+        document['records'] = sorted(document['records'] + bound['records'], key=order)
     raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])

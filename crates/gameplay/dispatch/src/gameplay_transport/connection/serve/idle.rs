@@ -56,7 +56,7 @@ where
         else {
             return Ok(());
         };
-        match authority.logout(session.admitted).await {
+        match authority.logout_idle(session.admitted).await {
             LogoutReply::Result(LogoutResult::Accepted) => return Err(ServeEnd::LoggedOut),
             // Keep the expired timer armed. A NOLOGOUT tile, fight lock or busy release is
             // retried at the next cadence, without repeating the warning.

@@ -17,6 +17,7 @@ class ForgeSqlAdmissionTests(unittest.TestCase):
         self.assertEqual(by_key['oteryn:item.tibia.i3264'], ('definition-r1', 1, 1, 'hand'))
         self.assertEqual(by_key['oteryn:item.tibia.i34082'], ('definition-r1', 4, 10, 'hand'))
         self.assertNotIn('oteryn:item.tibia.i37110', by_key)
+        self.assertNotIn('oteryn:item.tibia.i51475', by_key)
         self.assertEqual(materials, [('oteryn:item.tibia.i37109', 'definition-r1'),
                                      ('oteryn:item.tibia.i37110', 'definition-r1')])
         self.assertIn((4, 1, 8_000_000, 1, 55_000_000, 65_000_000), prices)

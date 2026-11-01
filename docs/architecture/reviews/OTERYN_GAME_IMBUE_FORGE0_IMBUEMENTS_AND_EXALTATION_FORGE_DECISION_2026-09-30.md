@@ -360,7 +360,7 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
 - **DUR-03 amendment (FORGE-1):** §15 admits `ForgeCause` as a sink; §18 names forge dust; §39.3
   admits these shapes (`DUR03-RL-01-FORGE`, `DUR03-RL-03-FORGE`) and the receipt-only
   `REVISION_CHANGED` terminal record. FORGE-1 writes the text.
-- **SQL admission proof:** migration 0723 projects the already admitted native Forge Item
+- **SQL admission proof:** migration 0726 projects the already admitted native Forge Item
   profiles, material revisions and Crystal 201189f prices into immutable SQL proof functions,
   following migration 0070's policy precedent. The producer
   `tools/content-migration/forge_sql_admission.py --check` verifies equality with the owning

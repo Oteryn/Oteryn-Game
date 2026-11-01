@@ -159,10 +159,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             content,
             view: MonsterMap {
                 valid: true,
-                scope: crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                ),
+                scope: binding.runtime_scope(),
                 generation: binding.scope_generation(),
                 context: runtime.pinned_movement_context(),
                 activation: runtime.content_pin().activation_sequence(),
@@ -179,8 +176,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     pub async fn validate_transaction(&mut self, runtime: &ChannelRuntimeV1) -> bool {
         let binding = runtime.binding();
         let valid = self.view.matches(runtime)
-            && self.authority.world_bytes() == *binding.world_id().as_bytes()
-            && self.authority.channel_bytes() == *binding.channel_id().as_bytes()
+            && self.authority.runtime_scope() == binding.runtime_scope()
             && self.authority.generation() == binding.scope_generation().get()
             && crate::durability::spell_item_transaction::check_scope_transaction(
                 self.tx,

@@ -30,21 +30,19 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 /// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
-/// Channel runtime this PostgreSQL case does not own.
+/// Channel runtime this PostgreSQL case does not own. The scoped lane API preserves
+/// that exact Channel death scope; it does not substitute another scope or generation.
 async fn settle_on_fresh_lane<const N: usize>(
     facts: crate::combat::ProjectedCreatureDeathFacts,
     session: &crate::combat::DurabilitySession<'_, '_, '_>,
     slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
     input: crate::combat::CreatureDeathRewardInput<N>,
     bestiary: crate::combat::CreatureDeathBestiaryInput,
-) -> Result<
-    crate::combat::CreatureDeathRewardWithBestiaryOutcome,
-    crate::combat::CreatureDeathRewardAdmissionError,
-> {
-    let permit =
-        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
+) -> TestResult<crate::combat::CreatureDeathRewardWithBestiaryOutcome> {
+    let permit = SpellLanePermit::of_fresh_scope(facts.death.runtime_scope()).await?;
     settle_creature_death_rewards_with_bestiary(&permit, facts, session, slot, input, bestiary)
         .await
+        .map_err(|error| debug(error).into())
 }
 
 const RAT: &str = "oteryn:creature.rat";
@@ -129,6 +127,7 @@ fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInpu
 fn bestiary(race: bool) -> TestResult<CreatureDeathBestiaryInput> {
     Ok(CreatureDeathBestiaryInput {
         boss: None,
+        talisman: None,
         race: if race {
             Some(BestiaryRace::new(RAT, "definition-r1", vec![5, 50, 500]).map_err(debug)?)
         } else {
@@ -426,6 +425,7 @@ async fn settle_kill(
         input_at(RAT_XP, revision)?,
         CreatureDeathBestiaryInput {
             boss: None,
+            talisman: None,
             race: Some(race),
         },
     )

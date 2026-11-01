@@ -1070,7 +1070,9 @@ fn validate_session_claims(
         || lease.character_id() != commit.character_id()
         || lease.generation() < commit.character_lease_generation()
         || snapshot.current_connection_generation().get() < commit.connection_generation().get()
-        || snapshot.current_scope_generation().get() < commit.scope_ownership_generation()
+        || (snapshot.current_runtime_scope()
+            == RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id())
+            && snapshot.current_scope_generation().get() < commit.scope_ownership_generation())
         || snapshot.current_runtime_scope().world_id() != commit.world_id()
         || !matches!(
             (snapshot.session_state(), snapshot.current_transport()),

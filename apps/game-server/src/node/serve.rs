@@ -2601,6 +2601,7 @@ async fn boot_and_serve(
         return Ok(());
     };
     let channel_boot::PreparedChannel {
+        activity_templates,
         active_content,
         qualified_room,
         movement_cells,
@@ -2690,6 +2691,7 @@ async fn boot_and_serve(
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
+        activity_templates: &activity_templates,
         gameplay_idle_policy: config.gameplay_idle,
         emit,
         root,

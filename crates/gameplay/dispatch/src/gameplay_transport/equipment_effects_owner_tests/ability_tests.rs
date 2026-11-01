@@ -84,8 +84,22 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
     // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
     ("REWARD-BAG-2", 36),
+    // Task Board: 436 delivery definitions plus talisman 51978; five were already native.
+    // Crystal 201189f XML/appearance and accepted canonical facts are qualified by
+    // tools/content-migration/task_board_item_profiles.py; no existing cohort is removed.
+    // The package adds 432 keys, but six are already counted by cohorts merged after the
+    // draft base ae4188a9c: 3318, 3333, 3342, 7383 and 7402 by GEMX-I19 and 37110 by
+    // W07-SOULPIT. The merged file holds each once, so this cohort counts 426 new keys.
+    ("TASKBOARD-P04", 426),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
+    // W06/W07: exact Crystal 201189f items.xml/appearances.dat capture in
+    // soulpit-echo-item-profiles.json. All 845 profiles have qualified speed_bonus=0.
+    // W06 contributes the 24 basic scrolls 53751..=53774. W07 contributes the 835
+    // source catalogue minus 15 unbound IDs, plus Exalted Core 37110 (821 profiles).
+    // P18 Forge shares that existing core profile and adds no duplicate.
+    ("W06-ECHO", 24),
+    ("W07-SOULPIT", 821),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),
@@ -99,14 +113,21 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 3370..=3372, 3377, 3381, 3382, 3557, 3558, 5957, 5958, 8063, 8894..=8899 and 9016
     // (tools/content-migration/rust_lottery_profiles.py). All have speed_bonus=0.
     ("W19F-RUST-LOTTERY", 24),
+    // P06/P07: fifteen unrevealed vocation gems and two fragment inputs, from Crystal
+    // 201189f (tools/content-migration/wheel_gem_item_profiles.py). All have speed_bonus=0.
+    ("WHEEL-GEM", 17),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
     // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
     // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
     ("PKG1-AMBER", 1),
-    // P18 admits exalted core37110 from Crystal201189f; material speed_bonus=0.
-    ("P18-FORGE-CORE", 1),
+    // GEMX I19 enchanting (tools/content-migration/enchanting_item_profiles.py): 108 shrine,
+    // gem and enchantable/enchanted item profiles 146..=161, 660..=693, 761..=763, 774,
+    // 779..=798, 801..=810, 3029, 3030, 3032, 3033, 3271, 3279, 3311, 3317, 3318, 3333,
+    // 3342, 7380, 7383, 7384, 7389, 7392, 7402, 7406, 7415 and 8077..=8081.
+    // 8080 (sparking rainbow shield) has speed_bonus=10; the other 107 have speed_bonus=0.
+    ("GEMX-I19", 108),
 ];
 
 #[test]
@@ -118,6 +139,28 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    // This expected set comes from the independently pinned source catalogue and the
+    // explicit Item admission gaps, never from the native profiles being tested.
+    // These are known zero-speed Items, so the pre-existing unknown-speed set below
+    // remains unchanged and continues to reject any accidental loss of qualification.
+    let soulpit_echo_items: std::collections::BTreeSet<_> =
+        crate::domain::soulpit::SOUL_CORE_SOURCE_IDS
+            .iter()
+            .copied()
+            .filter(|id| *id != 47899 && !(53142..=53155).contains(id))
+            .chain(std::iter::once(37110))
+            .chain(53751..=53774)
+            .map(|id| format!("oteryn:item.tibia.i{id}"))
+            .collect();
+    assert_eq!(soulpit_echo_items.len(), 845);
+    for key in soulpit_echo_items {
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified W06/W07 profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {

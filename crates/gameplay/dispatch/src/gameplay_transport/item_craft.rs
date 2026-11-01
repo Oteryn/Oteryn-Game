@@ -15,6 +15,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub(super) mod enchanting;
 mod rope;
 mod terrain;
 
@@ -47,6 +48,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(result) = self
+            .use_enchanting(actor, command, &intent, source, target)
+            .await
+        {
+            return result;
+        }
+        match self
+            .use_soulpit_obelisk(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
+        match self
+            .use_soul_core(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         match self
             .use_terrain_tool(actor, command, &intent, source, target)
             .await
@@ -78,6 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source: [0; 16],
             tool: None,
             gathering: None,
+            enchanting: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -91,7 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request.clone(),
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 true,
             )
             .await
@@ -339,7 +363,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request,
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 false,
             )
             .await

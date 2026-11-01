@@ -19,9 +19,9 @@
   "consumers": [
     "crates/gameplay/durability/src/durability/item_forge_live/audit.rs",
     "crates/gameplay/durability/src/durability/item_fee_burn_audit.rs",
-    "apps/game-server/migrations/0720_native_forge_receipts.sql",
-    "apps/game-server/migrations/0721_native_forge_atomic_proofs.sql",
-    "apps/game-server/migrations/0722_native_forge_resource_composition.sql"
+    "apps/game-server/migrations/0723_native_forge_receipts.sql",
+    "apps/game-server/migrations/0724_native_forge_atomic_proofs.sql",
+    "apps/game-server/migrations/0725_native_forge_resource_composition.sql"
   ],
   "notes": "P18 PR2785 Q2/Q3/Q4: 85 maximum donor cores may occupy85 separate stacks; add2 operands and native20 fee inputs/2 change outputs. Full snapshots remain in immutable native operation rows, hashed by the bounded proof. No additional inventory, resource balance, event type or schema tuple. History1000/retry3 and zero-gold standalone7936/9216 caps stay unchanged. Test names are required cases, not claims that they were run."
 }

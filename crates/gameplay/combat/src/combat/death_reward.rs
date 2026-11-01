@@ -387,13 +387,28 @@ fn to_typed_definition(definition: &LootDefinitionRef) -> TypedDefinitionRef {
 /// `CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` fields as the real death key,
 /// copied out (D2a's documented, deferred production wiring).
 pub fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
-    LootPlanDeathKey::new(
-        *death.world_id().as_bytes(),
-        *death.channel_id().as_bytes(),
-        death.scope_ownership_generation().get(),
-        death.actor_local_id(),
-        death.actor_local_generation(),
-    )
+    match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => LootPlanDeathKey::new(
+            *world_id.as_bytes(),
+            *channel_id.as_bytes(),
+            death.scope_ownership_generation().get(),
+            death.actor_local_id(),
+            death.actor_local_generation(),
+        ),
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id,
+            instance_id,
+        } => LootPlanDeathKey::new_instance(
+            *world_id.as_bytes(),
+            instance_id,
+            death.scope_ownership_generation().get(),
+            death.actor_local_id(),
+            death.actor_local_generation(),
+        ),
+    }
 }
 
 /// A death has no durable placement rule yet (out of scope; owned by a
@@ -406,24 +421,25 @@ fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
-) -> GroundPlacement {
+) -> Result<GroundPlacement, ItemMintError> {
+    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
     let mut corpse_ref = Vec::with_capacity(52);
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(death.channel_id().as_bytes());
+    corpse_ref.extend_from_slice(channel_id.as_bytes());
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
-    GroundPlacement {
+    Ok(GroundPlacement {
         spatial_position,
         corpse_ref,
         map_revision: ground.map_revision.clone(),
         content_revision: ground.content_revision.clone(),
         native_room_placement_context: ground.native_room_placement_context.clone(),
-    }
+    })
 }
 
 /// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan,
@@ -448,6 +464,13 @@ async fn settle_loot(
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+    // Ground custody has no Instance placement contract. This typed refusal does
+    // not suppress the independent XP path or W03's personal reward entitlements.
+    if death.channel_id().is_none() {
+        return Err(CombatDeathRewardLootError::Corpse(
+            ItemMintError::AuthorityRejected,
+        ));
+    }
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: Oteryn stores no fluid state, so a subtype the donor would apply is refused.
@@ -480,10 +503,12 @@ async fn settle_loot(
             corpse_definition.clone(),
             CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
             0,
-        ),
+        )
+        .map_err(CombatDeathRewardLootError::Corpse)?,
         item: corpse_definition,
         quantity: 1,
-        ground: ground_placement(death, corpse, ground),
+        ground: ground_placement(death, corpse, ground)
+            .map_err(CombatDeathRewardLootError::Corpse)?,
         content_revision: ground.content_revision.clone(),
         ruleset_revision: ground.ruleset_revision.clone(),
         sim_revision: ground.sim_revision.clone(),
@@ -513,7 +538,8 @@ async fn settle_loot(
                     to_typed_definition(&plan.loot_table),
                     entry.purpose_key.clone(),
                     entry.draw_ordinal,
-                ),
+                )
+                .map_err(CombatDeathRewardLootError::Corpse)?,
                 item: to_typed_definition(&entry.item),
                 quantity: entry.quantity,
                 placement: CorpseContainerPlacement {
@@ -589,7 +615,8 @@ async fn settle_loot(
                 to_typed_definition(&plan.loot_table),
                 entry.purpose_key.clone(),
                 entry.draw_ordinal,
-            ),
+            )
+            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?,
             item: to_typed_definition(&entry.item),
             quantity: entry.quantity,
             placement: CorpseContainerPlacement {
@@ -822,6 +849,8 @@ pub struct CreatureDeathBestiaryInput {
     /// a creature is never counted.
     pub race: Option<BestiaryRace>,
     pub boss: Option<crate::domain::bosstiary::BosstiaryBoss>,
+    /// Current owner-qualified eligibility, retained with the unresolved death.
+    pub talisman: Option<crate::durability::bestiary_progress::CapturedBountyTalismanKill>,
 }
 
 /// Global Animus Mastery: +2% raw species XP, plus 0.1% per ten completed
@@ -1030,7 +1059,7 @@ async fn settle_bestiary(
     // repeated composition call replays this kill instead of adding one.
     let occurrence = BestiaryKillOccurrence::from_bytes(facts.occurrence)
         .map_err(|_| CombatDeathRewardBestiaryError::InvalidOccurrence)?;
-    slot.commit_bestiary(
+    slot.commit_bestiary_with_talisman(
         session.root,
         session.authority,
         session.node,
@@ -1042,6 +1071,7 @@ async fn settle_bestiary(
             policy_revision: binding.policy_revision.clone(),
             reward_revision: binding.reward_revision.clone(),
         },
+        input.talisman,
     )
     .await
     .map(CombatBestiaryOutcome::Recorded)
@@ -1208,10 +1238,15 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        let placement_a = ground_placement(death_a, corpse, &ground);
-        let placement_b = ground_placement(death_b, corpse, &ground);
+        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
+        // This Channel fixture must still preserve its existing replay identity.
+        let placement_a =
+            ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
+        let placement_b =
+            ground_placement(death_b, corpse, &ground).expect("Channel ground placement");
         assert_ne!(placement_a.corpse_ref, placement_b.corpse_ref);
-        let replayed = ground_placement(death_a, corpse, &ground);
+        let replayed =
+            ground_placement(death_a, corpse, &ground).expect("Channel ground placement replay");
         assert_eq!(placement_a, replayed);
     }
 }

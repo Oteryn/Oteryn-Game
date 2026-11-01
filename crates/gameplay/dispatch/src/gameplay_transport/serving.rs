@@ -35,9 +35,9 @@ pub async fn serve_gameplay(
         channel_id: owners.channel_id,
         premium_only: owners.premium_only,
         required_capabilities: owners.required_capabilities,
-        runtime: owners.runtime,
+        runtime: owners.runtime.into(),
         movement_cells: owners.movement_cells,
-        door: owners.door,
+        door: owners.door.into(),
         chest: owners.chest,
         spells: owners.spells,
         active_generation: owners.active_generation,
@@ -47,12 +47,14 @@ pub async fn serve_gameplay(
         imported_charms: owners.imported_charms,
         proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
-        states: channel_states::ChannelSessionStates {
+        activity_runtimes: Default::default(),
+        states: std::sync::Arc::new(channel_states::ChannelSessionStates {
             gameplay_idle_policy: owners.gameplay_idle_policy,
             ..Default::default()
-        },
+        }),
         revision_sequencer:
-            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
+            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new()
+                .into(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
         quest_log_content: Some(owners.quest_log_content.clone()),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
@@ -75,6 +77,16 @@ pub async fn serve_gameplay(
         // No accepted Store contract names the Platform producer yet: purchases are disabled.
         store: None,
     };
+    authority
+        .register_current_runtime()
+        .await
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    for template in owners.activity_templates {
+        authority
+            .activity_runtimes
+            .register_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
     if let Some(book) = owners.npc_talk {
         authority.states.chat.install_npc_talk(book);
     }
@@ -137,6 +149,8 @@ pub async fn serve_gameplay(
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();
     let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
+    let mut activities = pin!(authority.run_activity_owner_cycles(&cycles_stop));
+    let mut activities_done = false;
     let mut respawns = pin!(authority.run_world_respawns(shutdown));
     let mut respawns_done = false;
     let mut owner_failed = false;
@@ -198,7 +212,10 @@ pub async fn serve_gameplay(
         if !cycles_done && cycles.as_mut().poll(context).is_ready() {
             cycles_done = true;
         }
-        if serving_done && cycles_done {
+        if !activities_done && activities.as_mut().poll(context).is_ready() {
+            activities_done = true;
+        }
+        if serving_done && cycles_done && activities_done {
             Poll::Ready(())
         } else {
             Poll::Pending

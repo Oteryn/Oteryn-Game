@@ -3,7 +3,8 @@
 //! Capability 80 `CHAT_PRIVATE_CHANNEL_V1` requires 7 and adds intent tags 7..=13, disposition 11
 //! `NOT_INVITED`, line kind 6 (fields 4, 7, 11) and domain 12 delta type 3, the channel list.
 //! Without selection every CHAT_V1 byte and behavior is unchanged. A private channel is named by
-//! its Channel-local number, never by its owner's CharacterId.
+//! its World-local number, never by its owner's CharacterId. The server allocates 100..=9999;
+//! the existing u16 wire representation is unchanged.
 use super::*;
 
 pub const CAPABILITY_CHAT_PRIVATE_CHANNEL_V1: u32 = 80;
@@ -13,8 +14,8 @@ pub const DELTA_TYPE_CHAT_CHANNEL_LIST_V1: u32 = 3;
 pub const MAX_PRIVATE_CHANNEL_INVITES: usize = 16;
 /// `CHATPM-RL-02`: the private channels one character can be invited to.
 pub const MAX_INVITED_PRIVATE_CHANNELS: usize = 16;
-/// Public rooms 1 + 1, own channel 1 + 3, 16 invitations of 1 + 1 + (1 + 3) + (1 + 1 + 120).
-pub const MAX_CHAT_CHANNEL_LIST_BYTES: usize = 2_054;
+/// Public rooms 1 + 2 (capability 259), own channel 1 + 3, 16 invitations of 1 + 1 + (1 + 3) + (1 + 1 + 120).
+pub const MAX_CHAT_CHANNEL_LIST_BYTES: usize = 2_055;
 
 const LINE_KIND_PRIVATE_CHANNEL: u32 = 6;
 
@@ -245,7 +246,7 @@ pub fn decode_channel_list(payload: &[u8]) -> WireResult<ChatChannelList> {
         (1, 0) => {
             let bits = u8::try_from(read_uint32(input, cursor)?)
                 .ok()
-                .filter(|bits| *bits != 0 && bits & !ChatRoomSet::ALL_BITS == 0)
+                .filter(|bits| *bits != 0)
                 .ok_or(ChatWireError::Malformed)?;
             set_once(&mut rooms, ChatRoomSet(bits))
         }

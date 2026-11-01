@@ -327,11 +327,8 @@ mod tests {
             )
             .expect("monster_combat_lane.rs:tests:2258: qualified fixture operation must succeed");
         let b = r.binding();
-        let (mut fence, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .expect("monster_combat_lane.rs:tests:2264: qualified fixture operation must succeed");
+        let (mut fence, _) = crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("monster_combat_lane.rs:tests:2264: qualified fixture operation must succeed");
         let mut lane = MonsterCombatLane::new(&r, &fence)
             .expect("monster_combat_lane.rs:tests:2265: qualified fixture operation must succeed");
         let first = lane
@@ -896,7 +893,9 @@ mod tests {
             .expect("monster_combat_lane.rs:tests:2747: qualified fixture operation must succeed");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            base.binding().channel_id(),
+            base.binding()
+                .channel_id()
+                .expect("W02: pinned Channel fixture"),
             node,
             1,
             1,
@@ -1001,11 +1000,8 @@ mod tests {
         )
         .expect("monster_combat_lane.rs:tests:2841: qualified fixture operation must succeed");
         let b = runtime.binding();
-        let (mut fence, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .expect("monster_combat_lane.rs:tests:2847: qualified fixture operation must succeed");
+        let (mut fence, _) = crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("monster_combat_lane.rs:tests:2847: qualified fixture operation must succeed");
         let mut lane = MonsterCombatLane::new(&runtime, &fence)
             .expect("monster_combat_lane.rs:tests:2848: qualified fixture operation must succeed");
         lane.register_native(
@@ -1264,7 +1260,9 @@ mod tests {
             .expect("monster_combat_lane.rs:tests:3064: qualified fixture operation must succeed");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            base.binding().channel_id(),
+            base.binding()
+                .channel_id()
+                .expect("W02: pinned Channel fixture"),
             node,
             1,
             1,
@@ -1384,7 +1382,10 @@ mod tests {
         );
         let binding = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(world, binding.channel_id()),
+            RuntimeScopeRefV1::channel(
+                world,
+                binding.channel_id().expect("W02: pinned Channel fixture"),
+            ),
             binding.scope_generation(),
         )
         .expect("monster_combat_lane.rs:tests:3181: qualified fixture operation must succeed");

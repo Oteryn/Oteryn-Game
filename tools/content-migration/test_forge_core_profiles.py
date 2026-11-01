@@ -74,6 +74,38 @@ class ForgeCoreProfiles(unittest.TestCase):
                                 lambda row: row['production_definition']['production_key'], canonical)
                 self.assertEqual(generated, before)
 
+    def test_shared_soulpit_core_preserves_provenance_and_rejects_policy_conflicts(self):
+        source = json.loads((cores.ROOT / 'tools/content-schema/native-gameplay/soulpit-echo-item-profiles.json').read_bytes())
+        core = next(row for row in source['records']
+                    if row['production_definition']['production_key'] == 'oteryn:item.tibia.i37110')
+        core['authoring']['taxonomy'] = {'primary': 'retained owner-reviewed family'}
+        for field in [None, 'stack', 'physical', 'binding', 'admission']:
+            with self.subTest(field=field):
+                record = copy.deepcopy(core)
+                if field == 'stack':
+                    record['semantics']['stack']['value']['stack_max']['value'] = 101
+                elif field == 'physical':
+                    record['semantics']['physical']['value']['weight']['value'] = 0
+                elif field == 'binding':
+                    record['production_binding']['target']['key'] = 'oteryn:item.tibia.i37109'
+                elif field == 'admission':
+                    record['admission']['materializable'] = False
+                generated = self.generated()
+                generated['profiles'] = canonical({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
+                                                   'records': [record]})
+                before = dict(generated)
+                if field is None:
+                    cores.admit(cores.ROOT, generated, 'profiles', 'manifest',
+                                lambda row: row['production_definition']['production_key'], canonical)
+                    self.assertEqual(json.loads(generated['profiles'])['records'], [core])
+                    self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'],
+                                     hashlib.sha256(generated['profiles']).hexdigest())
+                else:
+                    with self.assertRaisesRegex(ValueError, 'FORGE_CORE_PROFILE_DUPLICATE'):
+                        cores.admit(cores.ROOT, generated, 'profiles', 'manifest',
+                                    lambda row: row['production_definition']['production_key'], canonical)
+                    self.assertEqual(generated, before)
+
 
 if __name__ == '__main__':
     unittest.main()

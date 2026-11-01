@@ -1,5 +1,7 @@
 //! Source-backed rules shared by reward-boss combat and reward settlement.
 
+pub mod reward_chest;
+
 /// Participation accumulated by the combat owner for one character.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct BossParticipation {

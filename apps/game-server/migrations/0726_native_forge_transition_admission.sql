@@ -9,13 +9,38 @@
 -- BEGIN GENERATED FORGE POLICY
 -- Producer: tools/content-migration/forge_sql_admission.py --write
 -- Canonical native profiles + crates/gameplay/items/src/forge/prices.rs.
--- Projection SHA256: 0f291d49dd62878d312fecb1f8e4c94aa3af42e4a7b104de13c65b77cd6451aa
+-- Projection SHA256: f5aeafbc23af318cac95868656cbe69b92864e868b2e5218400027c939a3bb63
 CREATE FUNCTION game_forge_admitted_profile(p_key TEXT,p_revision TEXT)
 RETURNS TABLE(classification INT,max_tier INT,equipment_slot TEXT)
 LANGUAGE sql IMMUTABLE AS $$
  SELECT c,m,s FROM (VALUES
+  ('oteryn:item.tibia.i12683','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i16160','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i17812','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i17824','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i17859','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i21171','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i21174','definition-r1',2,2,'hand'),
   ('oteryn:item.tibia.i3264','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3269','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3271','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3275','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3279','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3291','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3292','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3301','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3306','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3307','definition-r1',1,1,'hand'),
   ('oteryn:item.tibia.i3308','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3311','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3316','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3317','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i3318','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3320','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3322','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3333','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3342','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i3346','definition-r1',2,2,'hand'),
   ('oteryn:item.tibia.i34082','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i34083','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i34084','definition-r1',4,10,'hand'),
@@ -38,7 +63,26 @@ LANGUAGE sql IMMUTABLE AS $$
   ('oteryn:item.tibia.i50159','definition-r1',4,10,'hand'),
   ('oteryn:item.tibia.i50271','definition-r1',1,1,'hand'),
   ('oteryn:item.tibia.i50272','definition-r1',1,1,'hand'),
-  ('oteryn:item.tibia.i50273','definition-r1',1,1,'hand')
+  ('oteryn:item.tibia.i50273','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i7380','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7381','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i7383','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7384','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7386','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7387','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7388','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7389','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7392','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7402','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7406','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7413','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7415','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7425','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i7427','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7428','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7436','definition-r1',2,2,'hand'),
+  ('oteryn:item.tibia.i7449','definition-r1',1,1,'hand'),
+  ('oteryn:item.tibia.i7454','definition-r1',2,2,'hand')
  ) p(k,r,c,m,s) WHERE p.k=p_key AND p.r=p_revision
 $$;
 

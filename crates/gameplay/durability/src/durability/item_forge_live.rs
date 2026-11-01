@@ -126,6 +126,7 @@ impl DurabilityRoot {
         request: Request,
         resolved_items: Option<ForgeResolvedItems>,
         native: &NativeGameplayState,
+        content: &dyn crate::durability::item_loop_move::ItemLoopContent,
     ) -> LimitResult<Value> {
         let intent = request
             .encode()
@@ -143,6 +144,9 @@ impl DurabilityRoot {
             check_uuid_v7(&items.second).map_err(|_| ForgeDustLimitError::InvalidInput)?;
         }
         permit.check_scope(fence.runtime_scope)?;
+        if content.generation_digest() != native.source_digest() {
+            return Err(ForgeDustLimitError::MissingActiveContent);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| ForgeDustLimitError::AuthorityRejected)?;
@@ -244,10 +248,11 @@ impl DurabilityRoot {
             Err(reply) => return Ok(reply),
         };
         let node = node.clone();
-        let mut context = native;
+        let mut context = (native, content);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, native| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
+                    let (native, content) = *context;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -312,7 +317,7 @@ impl DurabilityRoot {
                         let planned = match inventory::read(&mut tx, fence, native).await? {
                             Some(inventory) => {
                                 match actions::plan(
-                                    &mut tx, fence, request, &reserved, native, &inventory,
+                                    &mut tx, fence, request, &reserved, native, &inventory, content,
                                 )
                                 .await?
                                 {

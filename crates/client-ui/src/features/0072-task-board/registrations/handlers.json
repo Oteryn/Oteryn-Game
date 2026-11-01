@@ -3,7 +3,7 @@
   "kind": "handlers",
   "id": "0072-task-board-unsupported",
   "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "reason": "The full server Task Board uses command 89; the native client Task Board view remains unsupported.",
   "commands": [
     89
   ],

@@ -1,7 +1,7 @@
 //! Player periodic effects consume only ticks issued by the actual condition
 //! store during this staged owner turn. They carry no client cast command.
 use super::cast::PlayerSpellState;
-use crate::foundation::{ExactActorRef, GameSessionId, RuntimeWorkStamp};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp};
 use oteryn_gameplay_foundation::foundation::condition::{ConditionTick, TickFacts, TickKind};
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -40,6 +40,7 @@ impl PreparedPlayerPeriodicTurn {
 /// each real store-issued occurrence. Failure preserves the entire predecessor.
 #[allow(clippy::too_many_arguments)]
 pub fn stage_player_periodic_turn(
+    runtime: &ChannelRuntimeV1,
     state: &PlayerSpellState,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -57,6 +58,7 @@ pub fn stage_player_periodic_turn(
     for tick in &cycle.combat_ticks {
         match tick.kind {
             TickKind::Damage {
+                element,
                 amount,
                 refused: false,
                 ..
@@ -64,7 +66,15 @@ pub fn stage_player_periodic_turn(
                 if !damage_legal(tick) {
                     return Err(SpellCastDisposition::TargetIllegal);
                 }
-                next = super::actor_conditions::stage_creature_hit(&next, amount, now.get())?.0;
+                next = super::actor_conditions::stage_typed_hit_in_world(
+                    runtime,
+                    actor,
+                    &next,
+                    amount,
+                    crate::player_lethal::PlayerHitKind::from_dot(element),
+                    now.get(),
+                )?
+                .0;
             }
             TickKind::Damage { refused: true, .. }
             | TickKind::Regeneration {

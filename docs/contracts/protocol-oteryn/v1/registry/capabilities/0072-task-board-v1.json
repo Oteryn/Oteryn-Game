@@ -1,12 +1,13 @@
 {
   "id": 72,
   "name": "TASK_BOARD_V1",
-  "owner_decision": "TASKBOARD-1 scope decision 2026-10-25",
-  "owner": "Weekly Task Board kill tasks on the quest state store; no loaded content beyond the boot quest catalogue. Every world including BUNDLE_WORLD_OFFERED_CAPABILITIES offers it; the session's quest copy and the revision-slot writer decide each action.",
+  "owner_decision": "TASKBOARD-FULL-1: P04/P05 Crystal parity",
+  "owner": "Weekly and bounty Task Board, delivery, calendar reset, shop, soulseals and Bounty Talisman; one fenced durable owner.",
   "requires": [],
   "command_types": [
     89
   ],
   "state_domains": [],
-  "offered": true
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; the active native gameplay catalogue and durable Character/session fence govern every request."
 }

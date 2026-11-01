@@ -42,6 +42,7 @@ pub(super) async fn plan(
     reserved: &storage::Reservation,
     native: &NativeGameplayState,
     inventory: &inventory::Inventory,
+    content: &dyn crate::durability::item_loop_move::ItemLoopContent,
 ) -> NativeResult<std::result::Result<Effects, &'static str>> {
     let before = lock_limit_balance(tx, fence.character_id)
         .await?
@@ -205,7 +206,7 @@ pub(super) async fn plan(
             outputs = match inventory::produce(
                 tx,
                 fence,
-                native,
+                content,
                 inventory,
                 if new_slivers > 0 { &sliver } else { &core },
                 new_slivers + new_cores,

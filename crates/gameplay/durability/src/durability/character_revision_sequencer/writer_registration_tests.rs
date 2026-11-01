@@ -2,9 +2,13 @@
 /// Revision-advancing durable writers and the only non-test source files allowed to call
 /// them. Every other writer reaches them through a [`RevisionSlot`].
 // Keep each registration on one line so parallel additions remain insert-only.
+// TASKBOARD-P04: the sequenced Task Board and Store-delivery entry points share one
+// inner writer. The legacy Bestiary entry delegates to its talisman-aware owner;
+// only that owner-to-owner delegation is admitted outside the revision slot.
 #[rustfmt::skip]
 const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
+    (".commit_bestiary_kill_with_talisman(", "durability/character_revision_sequencer.rs|durability/bestiary_progress.rs"),
     (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
     (".commit_character_build(", "durability/character_revision_sequencer.rs"),
     (".commit_character_death(", "durability/character_revision_sequencer.rs"),
@@ -21,6 +25,9 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
     (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
     (".commit_proficiency_catalyst(", "durability/character_revision_sequencer/proficiency_catalyst.rs"),
+    (".commit_task_board(", "durability/character_revision_sequencer.rs"),
+    (".commit_task_board_inner(", "durability/task_board/writer.rs|durability/task_board/expansion.rs"),
+    (".grant_task_board_expansion(", "durability/character_revision_sequencer.rs"),
     (".reset_character_wheel(", "durability/character_revision_sequencer.rs"),
 ];
 
@@ -37,6 +44,8 @@ const FEE_WRITERS: &[&str] = &[
     "durability/npc_purchase.rs",
     "durability/npc_travel/paid.rs",
     "durability/prey/command.rs",
+    // TASKBOARD-P04: talisman purchase participates in the existing fee owner.
+    "durability/task_board/fee.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other
@@ -136,6 +145,45 @@ fn the_structural_gate_catches_a_bypass_writer() {
     let fee = "burn_fee_in_transaction(&mut tx, &fence, &request).await?;";
     assert_eq!(bypasses("src/durability/item_transfer.rs", fee).len(), 1);
     assert!(bypasses("src/durability/charm_state.rs", fee).is_empty());
+    // New public wrappers and their inner writer cannot become an unsequenced
+    // direct call merely because their spelling differs from an older writer.
+    for (call, allowed) in [
+        (
+            ".commit_task_board(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".grant_task_board_expansion(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_bestiary_kill_with_talisman(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_task_board_inner(",
+            "durability/task_board/writer.rs",
+        ),
+    ] {
+        let writer = format!("root{call}authority, node, fence, request).await;");
+        assert_eq!(bypasses("src/combat/new_writer.rs", &writer).len(), 1);
+        assert!(bypasses(allowed, &writer).is_empty());
+    }
+    assert!(
+        bypasses(
+            "durability/bestiary_progress.rs",
+            "self.commit_bestiary_kill_with_talisman(authority, node, fence, request, None).await",
+        )
+        .is_empty()
+    );
+    assert!(
+        bypasses(
+            "durability/task_board/expansion.rs",
+            "self.commit_task_board_inner(authority, node, fence, request).await",
+        )
+        .is_empty()
+    );
+    assert!(bypasses("durability/task_board/fee.rs", fee).is_empty());
     // Test modules and definitions are not writers.
     let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";
     assert!(bypasses("src/durability/charm_state.rs", tested).is_empty());

@@ -833,6 +833,14 @@ async fn qualify_channel_position_consumers(
         h.root.pending_respawn(authority, &h.node, instance).await,
         Err(CharacterProgressionError::InvalidInput)
     ));
+    // Item recovery may read only an occurrence in its exact admitted scope.
+    // Allocation/readiness cannot let this borrowed Instance read a Channel death.
+    assert!(matches!(
+        h.root
+            .pending_player_death_item_occurrence(authority, &h.node, instance)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
+    ));
     assert!(matches!(
         h.root
             .consume_pending_respawn(authority, &h.node, instance, Some(occurrence))
@@ -941,9 +949,12 @@ async fn qualify_live_respawn_retention(
         held_blessings: vec![],
         pvp_contributors: vec![],
         death_cell: DeathCell {
-            world_id: before.runtime_scope.world_id(),
-            channel_id: crate::foundation::ChannelId::decode(&id(fixture::CHANNEL))
-                .map_err(fixture::debug)?,
+            // W02's tagged death cell retains this existing Channel-death fixture.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                before.runtime_scope.world_id(),
+                crate::foundation::ChannelId::decode(&id(fixture::CHANNEL))
+                    .map_err(fixture::debug)?,
+            ),
             spatial_position: vec![100, 200, 7],
             map_revision: "map-1".into(),
         },
@@ -985,6 +996,14 @@ async fn qualify_live_respawn_retention(
     assert!(matches!(
         h.root.pending_respawn(authority, &h.node, instance).await,
         Err(CharacterProgressionError::InvalidInput)
+    ));
+    // Item recovery may read only an occurrence in its exact admitted scope.
+    // Allocation/readiness cannot let this borrowed Instance read a Channel death.
+    assert!(matches!(
+        h.root
+            .pending_player_death_item_occurrence(authority, &h.node, instance)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
     ));
     for selected in [None, Some(occurrence)] {
         assert!(matches!(

@@ -1,6 +1,6 @@
 //! WHEEL-LIVE-1 client allocation boundary.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::foundation::RuntimeScopeRefV1;
+
 use oteryn_protocol_oteryn::wheel as wire;
 
 #[derive(Debug)]
@@ -41,9 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || item_fence.connection_generation.get()
                     != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || item_fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || item_fence.runtime_scope != binding.runtime_scope()
                 || item_fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !admitted.runtime_actor.is_some_and(|actor| {
@@ -94,6 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     y: position.y,
                                     z: i32::from(position.floor),
                                 },
+                                oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_HORIZONTAL_RANGE,
                                 oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_RADIUS,
                             )
                         })
@@ -115,7 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     occurrence,
                     expected_wheel_revision: request.expected_revision,
                     slots,
-                    vessels: None,
+                    vessels: request.vessels,
                 },
             );
             Some(
@@ -151,10 +151,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(actor) = admitted.runtime_actor {
             self.refresh_wheel_vitals(actor, session).await;
         }
+        // Old allocation clients receive the exact original reply shape. A vessel-aware
+        // save returns the current projection reloaded by the same durable Wheel writer.
+        let vessels = if request.vessels.is_some() {
+            let Ok(sessions) = self.states.atelier_sessions.lock() else {
+                return WheelAllocationReply::Unavailable;
+            };
+            let mut vessels = [None; wire::WHEEL_VESSELS];
+            if let Some(Some(state)) = sessions.get(&session) {
+                for gem in state.gems.values().filter(|gem| gem.vessel) {
+                    let index = match gem.domain {
+                        oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
+                    };
+                    if vessels[index].replace(gem.id.to_be_bytes()).is_some() {
+                        return WheelAllocationReply::Unavailable;
+                    }
+                }
+            }
+            Some(vessels)
+        } else {
+            None
+        };
         wire::encode_wheel_reply(&wire::WheelAllocationReply {
             refused,
             revision: allocation.wheel_revision,
             points: *allocation.slots.points(),
+            vessels,
         })
         .map_or(
             WheelAllocationReply::Unavailable,

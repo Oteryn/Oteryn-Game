@@ -405,6 +405,8 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             payload: chat_snapshot,
         });
     }
+    // S19: only negotiated clients receive typing deltas; a new snapshot drops queued state.
+    authority.player_typing_admit(*admitted).await;
     // NPC-CMD-1a: with capability 3, domain 7 (no conversation: a fresh snapshot ends it) and
     // domain 8 (a closed window), each above its last revision.
     let npc_snapshots: Option<(Vec<u8>, Vec<u8>)> = if admitted

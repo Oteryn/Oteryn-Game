@@ -99,7 +99,9 @@ fn source_error(error: SpellItemError) -> super::DurabilityError {
         SpellItemError::Training(
             super::character_progression::CharacterProgressionError::Unavailable(error),
         ) => error,
-        SpellItemError::Training(_) | SpellItemError::FieldCapabilityRefused => super::DurabilityError::InvalidStoredState,
+        SpellItemError::Training(_) | SpellItemError::FieldCapabilityRefused => {
+            super::DurabilityError::InvalidStoredState
+        }
     }
 }
 
@@ -190,12 +192,9 @@ pub async fn check_ground_cell_root_admission_in_transaction(
     let rows = locked_tile_rows_for_scope(tx, authority, target).await?;
     let world = WorldId::decode(&authority.world_bytes())
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    let channel = ChannelId::decode(&authority.channel_bytes())
-        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    let remaining = native_roots(rows, authority, world, channel)?;
-    check_ground_cell_root_admission(
-        world,
-        channel,
+    let remaining = native_roots(rows, authority, world)?;
+    check_ground_cell_root_admission_for_scope(
+        authority.runtime_scope(),
         authority.generation(),
         target,
         &remaining,
@@ -209,7 +208,6 @@ fn native_roots(
     rows: Vec<sqlx::postgres::PgRow>,
     authority: &SpellItemScopeAuthority,
     world: WorldId,
-    channel: ChannelId,
 ) -> Result<Vec<GroundItemInstance>, SpellItemError> {
     rows.into_iter()
         .map(|row| -> Result<_, SpellItemError> {
@@ -221,7 +219,7 @@ fn native_roots(
             Ok(GroundItemInstance {
                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                 world_id: world,
-                channel_id: channel,
+                runtime_scope: authority.runtime_scope(),
                 definition: TypedDefinitionRef {
                     family: row.try_get("definition_family")?,
                     production_key: row.try_get("definition_production_key")?,
@@ -269,6 +267,22 @@ pub fn check_ground_cell_root_admission(
     remaining: &[GroundItemInstance],
     inserted: &[GroundItemInstance],
 ) -> Result<(), GroundCellLimitError> {
+    check_ground_cell_root_admission_for_scope(
+        RuntimeScopeRefV1::channel(world_id, channel_id),
+        ownership_generation,
+        target,
+        remaining,
+        inserted,
+    )
+}
+
+pub fn check_ground_cell_root_admission_for_scope(
+    scope: RuntimeScopeRefV1,
+    ownership_generation: u64,
+    target: &SpellGroundTarget,
+    remaining: &[GroundItemInstance],
+    inserted: &[GroundItemInstance],
+) -> Result<(), GroundCellLimitError> {
     decode_ground_cell(&target.spatial_position)
         .map_err(|_| GroundCellLimitError::IncompatibleInput)?;
 
@@ -283,8 +297,8 @@ pub fn check_ground_cell_root_admission(
 
     let mut seen = std::collections::BTreeSet::new();
     for item in remaining.iter().chain(inserted) {
-        if item.world_id != world_id
-            || item.channel_id != channel_id
+        if item.world_id != scope.world_id()
+            || item.runtime_scope != scope
             || item.runtime_scope_ownership_generation != ownership_generation
             || item.ground.spatial_position != target.spatial_position
             || item.ground.map_revision != target.map_revision

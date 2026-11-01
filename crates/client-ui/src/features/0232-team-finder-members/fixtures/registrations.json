@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0232-team-finder-members",
+    "kind": "handlers",
+    "id": "0232-team-finder-members-unsupported",
+    "status": "unsupported",
+    "reason": "S14b/S14c implements the negotiated server wire and shared request/reply codecs; the native Team Finder window remains pending.",
+    "commands": [
+      444,
+      445,
+      446
+    ],
+    "not_applicable": {
+      "state": "The native Team Finder window is not implemented.",
+      "protocol": "Shared server/client wire codecs exist in protocol-oteryn; native-client dispatch registration is pending.",
+      "view": "The native Team Finder window is not implemented.",
+      "input": "Native browse, request, cancel and leader decision controls are pending.",
+      "settings": "This mechanic adds no client settings."
+    }
+  }
+]

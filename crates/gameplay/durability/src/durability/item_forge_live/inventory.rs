@@ -3,35 +3,9 @@ use super::*;
 use crate::domain::death::EquipmentSlot;
 use crate::domain::item_definition::{ItemDefinitionFacts, ProjectV2ItemForgeProfile};
 use crate::durability::item_loop_move::{ItemLoopContent, LoopError, carried_weight};
-use crate::durability::item_transfer::{
-    ItemWeightLookup, ItemWeightRefused, read_derived_transfer_capacity_centi_oz,
-};
+use crate::durability::item_transfer::read_derived_transfer_capacity_centi_oz;
 use oteryn_gameplay_content::content::{ReferenceEquipmentSlot, ReferenceItemField};
 use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
-
-pub(super) struct Content<'a>(pub &'a NativeGameplayState);
-impl ItemWeightLookup for Content<'_> {
-    fn generation_digest(&self) -> [u8; 32] {
-        self.0.source_digest()
-    }
-    fn weight_of(
-        &self,
-        definition: &TypedDefinitionRef,
-    ) -> std::result::Result<u32, ItemWeightRefused> {
-        generation_item_facts(self.0, definition)
-            .ok()
-            .and_then(|facts| facts.weight)
-            .ok_or(ItemWeightRefused::Unknown)
-    }
-}
-impl ItemLoopContent for Content<'_> {
-    fn loop_content_digest(&self) -> [u8; 32] {
-        self.0.source_digest()
-    }
-    fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
-        generation_item_facts(self.0, definition).ok()
-    }
-}
 
 #[derive(Debug, Clone)]
 pub(super) struct Item {
@@ -283,13 +257,13 @@ impl Inventory {
 pub(super) async fn produce(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterItemFence,
-    native: &NativeGameplayState,
+    content: &dyn ItemLoopContent,
     inventory: &Inventory,
     definition: &TypedDefinitionRef,
     amount: u32,
     inputs: &mut Vec<Value>,
 ) -> NativeResult<std::result::Result<Vec<Value>, &'static str>> {
-    let Ok(facts) = generation_item_facts(native, definition) else {
+    let Some(facts) = content.loop_facts(definition) else {
         return Ok(Err("UNSUPPORTED_ITEM"));
     };
     let Ok((maximum, _)) = super::super::super::item_transfer::stack_maximum(facts.stack) else {
@@ -327,12 +301,11 @@ pub(super) async fn produce(
             .await?;
         outputs.push(json!({"item":item,"key":definition.production_key,"revision":definition.revision_ref,"count":remaining,"location":{"kind":kind,"parent":parent,"ordinal":ordinal.to_string()}}));
     }
-    let content = Content(native);
     let carried = match carried_weight(
         tx,
         fence.character_id,
         *fence.runtime_scope.world_id().as_bytes(),
-        &content,
+        content,
     )
     .await
     {
@@ -341,7 +314,7 @@ pub(super) async fn produce(
         Err(LoopError::Durability(error)) => return Err(error),
         Err(LoopError::Database(error)) => return Err(error.into()),
     };
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     let mut after = i128::from(carried);
     for line in inputs.iter() {
         let Some(item) = inventory

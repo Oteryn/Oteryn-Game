@@ -1,7 +1,9 @@
 //! Ordered private phases of an admitted actor connection.
+mod vip_presence;
 
 use super::*;
 
+mod activity_transfer;
 mod autowalk;
 mod command;
 mod creature_push;
@@ -69,6 +71,7 @@ struct ServeState {
     stash_revision: u64,
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
+    team_finder_view: crate::gameplay_transport::team_finder_members::SessionTeamFinderView,
     market_revision: u64,
     /// P22d: the domain 98 revision this connection has seen; 1 after the join snapshot.
     cyclopedia_tracker_revision: u64,
@@ -121,7 +124,19 @@ where
     A: FreshAdmissionAuthority,
 {
     let mut integrity = integrity::Integrity::default();
+    let root_authority = authority;
+    let mut scoped_authority: Option<A> = None;
     loop {
+        let authority = scoped_authority.as_ref().unwrap_or(root_authority);
+        match authority.resolve_native_scope(admitted).await {
+            Ok(Some(next)) => scoped_authority = Some(next),
+            Ok(None) => {}
+            Err(()) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+        }
+        let authority = scoped_authority.as_ref().unwrap_or(root_authority);
+        if !authority.remember_activity_connection(admitted) {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
@@ -129,7 +144,9 @@ where
             matches!(
                 fence.runtime_scope,
                 crate::foundation::RuntimeScopeRefV1::Instance { .. }
-            )
+            ) && admitted
+                .runtime_actor
+                .is_none_or(|actor| actor.runtime_scope() != fence.runtime_scope)
         }) {
             admitted =
                 match house_transfer::serve(stream, admitted, authority, policy, &mut integrity)
@@ -164,13 +181,37 @@ where
             Err(end) => return end.finish(admitted),
         };
         loop {
+            if !authority.remember_activity_connection(session.admitted) {
+                return ConnectionEnd::AdmittedThenDisconnected(session.admitted);
+            }
+            match activity_transfer::pending(stream, authority, &mut session).await {
+                Ok(Some(next)) => {
+                    admitted = next;
+                    integrity = std::mem::take(&mut session.integrity);
+                    break;
+                }
+                Ok(None) => {}
+                Err(end) => return end.finish(session.admitted),
+            }
             let next = poll::next(stream, &mut session).await;
+            // A member who did not issue the lever may have changed owner while
+            // waiting for input. Its buffered source command never reaches the
+            // destination's fresh command stream.
+            match activity_transfer::pending(stream, authority, &mut session).await {
+                Ok(Some(next)) => {
+                    admitted = next;
+                    integrity = std::mem::take(&mut session.integrity);
+                    break;
+                }
+                Ok(None) => {}
+                Err(end) => return end.finish(session.admitted),
+            }
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
                 Err(end) => {
                     authority.player_trade_disconnected(session.admitted.game_session_id);
-                    return end.finish(session.admitted);
+                    return end.finish(authority.current_activity_connection(session.admitted));
                 }
             };
             if let Err(end) = command::execute(stream, authority, &mut session, input).await {
@@ -180,7 +221,7 @@ where
                     break;
                 }
                 authority.player_trade_disconnected(session.admitted.game_session_id);
-                return end.finish(session.admitted);
+                return end.finish(authority.current_activity_connection(session.admitted));
             }
         }
     }

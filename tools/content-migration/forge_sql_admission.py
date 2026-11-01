@@ -14,7 +14,7 @@ from pathlib import Path
 from forge_item_profiles import owners
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / 'apps/game-server/migrations/0723_native_forge_transition_admission.sql'
+MIGRATION = ROOT / 'apps/game-server/migrations/0726_native_forge_transition_admission.sql'
 BEGIN = '-- BEGIN GENERATED FORGE POLICY\n'
 END = '-- END GENERATED FORGE POLICY\n'
 SLOTS = {'WEAPON': 'hand', 'SHIELD': 'hand', 'HEAD': 'head', 'TORSO': 'armor',
@@ -37,9 +37,13 @@ def policy():
             continue
         owner = admitted[identity['production_key']]
         if (forge != owner['authoring']['forge']
-                or row['production_binding']['target'] != owner['definition']['identity']
-                or row['admission']['stack_class'] != 'NonStackable'):
+                or row['production_binding']['target'] != owner['definition']['identity']):
             raise ValueError('FORGE_SQL_PROFILE_OWNER')
+        # Shared native cohorts can admit stackable items carrying reference
+        # Forge classifications. ForgeItemShape rejects those items; its SQL
+        # admission must exclude them without changing their existing custody.
+        if row['admission']['stack_class'] != 'NonStackable':
+            continue
         patterns = row['semantics']['equipment']['value']['patterns']['value']
         slots = {SLOTS[p['primary_slot']['value']] for p in patterns}
         if len(slots) != 1:

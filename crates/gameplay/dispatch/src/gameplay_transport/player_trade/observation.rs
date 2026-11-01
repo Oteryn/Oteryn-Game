@@ -3,7 +3,7 @@ use super::super::world_spatial::VisibleKind;
 use super::*;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
-use crate::foundation::RuntimeScopeRefV1;
+
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -87,7 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let binding = runtime.binding();
         if !binding.matches_committed_assignment(
             binding.world_id(),
-            binding.channel_id(),
+            binding.channel_id().ok_or(ResultCode::Rejected)?,
             self.holder.fact().node_id(),
             self.holder.fact().registration_revision(),
             binding.scope_generation().get(),
@@ -165,11 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let fences = self.trade_fences(lives).await?;
         for fence in fences {
-            if fence.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            if fence.runtime_scope != runtime.binding().runtime_scope()
                 || fence.scope_ownership_generation != runtime.binding().scope_generation()
             {
                 return Err(ResultCode::Stale.into());

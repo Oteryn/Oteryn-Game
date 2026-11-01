@@ -9,9 +9,7 @@ use super::actor_spell::ChannelSpellStates;
 use crate::content::QualifiedNativeEntryRoom;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::spell_item_transaction::{SpellItemAuthority, check_transaction};
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementPositionSnapshot, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementPositionSnapshot};
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::owned_cast_facts::{CastFactsBinding, OwnedCastFacts};
 use crate::world_runtime::LocalObjectRuntime;
@@ -138,8 +136,7 @@ pub async fn prepare_current_player_in_transaction(
         || b.player_revision != state.revision()
         || authority.command().game_session_id() != session
         || authority.character_id_bytes() != b.character
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(scope.world_id(), scope.channel_id())
+        || authority.runtime_scope() != scope.runtime_scope()
         || authority.scope_generation() != scope.scope_generation().get()
         || content.source_digest() != b.content_digest
         || authority.compatible_content_digest() != b.content_digest
@@ -365,8 +362,8 @@ mod source_player_owner_regressions {
     #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::foundation::{
-        self as source, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
-        RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence,
+        self as source, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp,
+        ScopeOwnershipGeneration, ScopeRuntimeFence,
     };
     use crate::gameplay_transport::actor_spell::ChannelSpellStates;
     use crate::player_lethal::PlayerLethalVitals;
@@ -414,11 +411,8 @@ mod source_player_owner_regressions {
             )
             .unwrap();
         let b = runtime.binding();
-        let (fence, stamp) = source::crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .unwrap();
+        let (fence, stamp) =
+            source::crystal_timer_fixture(b.runtime_scope(), b.scope_generation()).unwrap();
         (runtime, states, actor, session, caster, fence, stamp)
     }
     fn facts(root: &GameplayDecisionRoot, id: u8) -> source::ApplicationFacts<'_> {
