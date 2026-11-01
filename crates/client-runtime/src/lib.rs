@@ -127,6 +127,9 @@ pub use oteryn_session::animus_mastery;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Loyalty skills wire values owned by the admitted session.
+pub use oteryn_session::loyalty_skills;
+
 /// Wheel and Atelier command execution through the admitted session.
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;

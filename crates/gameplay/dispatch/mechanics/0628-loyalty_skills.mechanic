@@ -1,0 +1,8 @@
+name=loyalty_skills
+commands=488
+transport=loyalty_skills
+composed=loyalty_skills
+authority=loyalty_skills
+offer=628,loyalty_skills::offered,loyalty_skills_available
+[route]
+routing::loyalty_skills::route(authority, &session.admitted, command).await

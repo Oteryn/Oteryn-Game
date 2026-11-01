@@ -53,6 +53,19 @@ pub trait Stepper: Send {
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         oteryn_client_runtime::quest_log::QuestState::default()
     }
+    fn loyalty_skills_selected(&self) -> bool {
+        false
+    }
+    fn loyalty_skills(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async {
+            Err(SessionError::CapabilityNotSelected {
+                capability: oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+            })
+        }
+    }
     fn quest_log(
         &mut self,
         _payload: &[u8],
@@ -118,6 +131,20 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
         self.gated_command(147, 170, payload).await
     }
+    fn loyalty_skills_selected(&self) -> bool {
+        self.is_selected(oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1)
+    }
+    async fn loyalty_skills(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        self.gated_command(
+            oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+            oteryn_session::loyalty_skills::COMMAND_TYPE_LOYALTY_SKILLS_QUERY,
+            payload,
+        )
+        .await
+    }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         super::feature_0016_quest_log::protocol::initial(self)
     }
@@ -179,6 +206,7 @@ pub async fn run_session<T: Stepper>(
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
+    outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
     outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
@@ -225,6 +253,15 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::LoyaltySkills(payload)) => match session.loyalty_skills(&payload).await
+            {
+                Ok(result) => {
+                    outbox.loyalty_skills_result(&result);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

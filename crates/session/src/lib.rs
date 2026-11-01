@@ -73,6 +73,8 @@ mod vip_presence;
 pub use oteryn_protocol_oteryn::exiva;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// Loyalty-adjusted absolute skill levels from the admitted character's owner.
+pub use oteryn_protocol_oteryn::loyalty_skills;
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
     Status as VipPresenceStatus,

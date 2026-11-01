@@ -9,6 +9,7 @@ pub enum PlayCommand {
     /// Capability-16 query encoded by its feature controls.
     QuestLog(Vec<u8>),
     Exiva(Vec<u8>),
+    LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Step(StepDir),
     Combat(CombatCommand),
