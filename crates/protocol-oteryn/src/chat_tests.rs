@@ -128,13 +128,13 @@ fn malformed_intents_fail_closed() {
         &[0x0a, 0x03, 0x12, 0x01, b'x'],                               // say without mode
         &[0x0a, 0x04, 0x08, 0x01, 0x12, 0x00],                         // empty text
         &[0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0xff],                   // invalid UTF-8
-        &[0x22, 0x02, 0x08, 0x05],                                     // unknown room
-        &[0x22, 0x00],                                                 // open_room without room
-        &[0x22, 0x05, 0x08, 0x01, 0x12, 0x01, b'x'],                   // text on open_room
+        &[0x22, 0x02, 0x08, 0x09], // unknown room (5..8 require 259)
+        &[0x22, 0x00],             // open_room without room
+        &[0x22, 0x05, 0x08, 0x01, 0x12, 0x01, b'x'], // text on open_room
         &[0x12, 0x05, 0x08, 0x01, 0x12, 0x01, b'x'], // private with an enum, no name
         &[0x22, 0x02, 0x08, 0x01, 0x22, 0x02, 0x08, 0x02], // two intents
-        &[0x32, 0x02, 0x08, 0x01],                   // field 6
-        &[0x08, 0x01],                               // varint at the top level
+        &[0x32, 0x02, 0x08, 0x01], // field 6
+        &[0x08, 0x01],             // varint at the top level
         &[0x0a, 0x08, 0x08, 0x01, 0x08, 0x01, 0x12, 0x01, b'x', 0x00], // repeated mode, junk
     ] {
         assert_eq!(
@@ -208,7 +208,7 @@ fn results_carry_a_wait_only_with_muted_and_exhausted() {
 }
 
 #[test]
-fn the_room_set_is_four_bits() {
+fn the_room_set_is_eight_bits_for_the_public_channel_extension() {
     let mut rooms = ChatRoomSet::default();
     assert_eq!(encode_chat_rooms(rooms), Vec::<u8>::new());
     assert_eq!(decode_chat_rooms(&[]), Ok(rooms));
@@ -216,15 +216,20 @@ fn the_room_set_is_four_bits() {
         rooms.insert(room);
     }
     let all = encode_chat_rooms(rooms);
-    assert_eq!(all, [0x08, 0x0f]);
+    // S04c adds four gated rooms without changing the original room ids.
+    assert_eq!(all, [0x08, 0xff, 0x01]);
     assert!(all.len() <= MAX_CHAT_ROOMS_BYTES);
     assert_eq!(decode_chat_rooms(&all), Ok(rooms));
     rooms.remove(ChatRoom::English);
     assert!(!rooms.contains(ChatRoom::English));
     assert!(rooms.contains(ChatRoom::Advertising));
-    assert_eq!(encode_chat_rooms(rooms), [0x08, 0x0d]);
-    // A fifth room bit exceeds CHAT0-RL-07; an unknown field is malformed.
-    for payload in [&[0x08, 0x10][..], &[0x08, 0x1f], &[0x08, 0x80, 0x02]] {
+    assert_eq!(encode_chat_rooms(rooms), [0x08, 0xfd, 0x01]);
+    // A ninth room bit exceeds extended CHAT0-RL-07; an unknown field is malformed.
+    for payload in [
+        &[0x08, 0x80, 0x02][..],
+        &[0x08, 0xff, 0x02],
+        &[0x08, 0x80, 0x04],
+    ] {
         assert_eq!(
             decode_chat_rooms(payload),
             Err(ChatWireError::LimitExceeded),
@@ -440,6 +445,14 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 "docs/contracts/protocol-oteryn/v1/player-typing-v1.md#update".to_owned(),
                 crate::player_typing::MAX_UPDATE_BYTES as u64
             ),
+            // VIP presence shares CHAT; its delta requires negotiated capability 258.
+            (
+                u64::from(crate::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1),
+                "VIP_PRESENCE_DELTA_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/vip-presence-v1.proto#VipPresenceBatchV1"
+                    .to_owned(),
+                crate::vip_presence::MAX_BYTES as u64
+            ),
         ]
     );
     assert_eq!(
@@ -570,7 +583,7 @@ fn fuzz_decode_chat_intent_result() {
 fn fuzz_decode_chat_rooms() {
     crate::decoder_fuzz_support::codec(
         "decode_chat_rooms",
-        |rng| ChatRoomSet(rng.below(16) as u8),
+        |rng| ChatRoomSet(rng.below(256) as u8),
         decode_chat_rooms,
         |v| encode_chat_rooms(*v),
     );

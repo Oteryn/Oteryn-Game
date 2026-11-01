@@ -236,7 +236,7 @@ pub mod fresh {
                 },
             )
         }
-        fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
+        pub(crate) fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
             let mut source = Self {
                 now,
                 key: SigningKey::from_bytes(&[31; 32]),
@@ -346,7 +346,19 @@ pub mod fresh {
             identity: Option<(&str, &str)>,
             now: i64,
         ) -> TestResult<FreshAdmissionCommitRequestV1> {
-            self.request_for_nonce(session, transport, identity, None, now)
+            self.request_with_nonce(session, transport, identity, now, None)
+        }
+
+        /// Extra peers use distinct verified grants without changing existing fixture tokens.
+        pub(crate) fn request_with_nonce(
+            &self,
+            session: GameSessionId,
+            transport: AuthenticatedTransportRefV1,
+            identity: Option<(&str, &str)>,
+            now: i64,
+            nonce: Option<[u8; 32]>,
+        ) -> TestResult<FreshAdmissionCommitRequestV1> {
+            self.request_for_nonce(session, transport, identity, nonce, now)
         }
         /// Pager qualification needs independent real admissions in one database.
         /// Reuse this fixture's signed grant, verifier and claim-transition owner;
@@ -385,6 +397,12 @@ pub mod fresh {
                     .into();
                 payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
             }
+            // The shared fixture also admits independently assigned Channels in one World.
+            payload["world_id"] =
+                crate::gameplay_transport::canonical_uuid(self.current.world_id.as_bytes()).into();
+            payload["channel_id"] =
+                crate::gameplay_transport::canonical_uuid(self.current.channel_id.as_bytes())
+                    .into();
             if let Some(nonce) = nonce {
                 payload["jti"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
                     .encode(nonce)

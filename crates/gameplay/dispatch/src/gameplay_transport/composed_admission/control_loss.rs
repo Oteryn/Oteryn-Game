@@ -113,6 +113,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.activity_runtimes
                     .forget_terminal_connection(session, actor);
                 self.states.training.forget(session).await;
+                // Presence is advisory. Resolve the terminal session's canonical character
+                // even when its peer never selected CHAT and has no local chat entry.
+                let store = FreshAdmissionStore::from_root(self.root.clone());
+                if let Ok(current) = store.current_session(session).await
+                    && current.session_state() == GameSessionState::Terminal
+                    && let Ok(target) = oteryn_protocol_oteryn::CharacterId::decode(
+                        current.current_character_lease().character_id().as_bytes(),
+                    )
+                {
+                    self.vip_presence_publish_target(target, false).await;
+                }
                 self.states.forget_session(session);
                 GraceExpiryResult::Released
             }

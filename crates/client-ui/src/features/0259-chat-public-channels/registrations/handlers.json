@@ -1,0 +1,15 @@
+{
+  "mechanic": "0259-chat-public-channels",
+  "kind": "handlers",
+  "id": "0259-chat-public-channels-unsupported",
+  "status": "unsupported",
+  "reason": "S04c is server-first; native public-channel presentation is pending.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Native client migration is pending.",
+    "protocol": "Native client migration is pending.",
+    "view": "Native client migration is pending.",
+    "input": "Native client migration is pending.",
+    "settings": "Native client migration is pending."
+  }
+}

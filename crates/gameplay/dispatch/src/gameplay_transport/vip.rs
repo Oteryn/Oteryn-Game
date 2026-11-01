@@ -1,4 +1,4 @@
-//! VIP-1 server command composition; no presence/UI surface is installed here.
+//! VIP command composition; optional capability 258 adds World presence.
 use super::ComposedFreshAdmission;
 use super::connection::{AdmittedSession, FreshAdmissionAuthority};
 use crate::domain::premium::PremiumStatus;
@@ -7,6 +7,12 @@ use oteryn_protocol_oteryn::vip::{self as wire, Operation};
 
 macro_rules! authority_methods {
     () => {
+        fn vip_presence_refresh(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
         fn vip_command(
             &self,
             _admitted: AdmittedSession,
@@ -21,6 +27,12 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn vip_presence_refresh(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> Option<Vec<u8>> {
+            self.refresh_vip_presence(admitted).await
+        }
         async fn vip_command(
             &self,
             admitted: AdmittedSession,
@@ -72,6 +84,10 @@ pub(super) async fn execute(
     {
         return refused();
     }
+    let is_query = request.operation == Operation::Query;
+    let presence_selected = admitted.continuity.selected_capabilities.contains(
+        oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1,
+    );
     let growth = matches!(
         request.operation,
         Operation::Add | Operation::GroupAdd | Operation::GroupRename
@@ -83,6 +99,12 @@ pub(super) async fn execute(
         .ok()?;
     let result = match prepared {
         VipPrepared::Replayed(result) => result,
+        // Immutable replay above remains available while the relay is down. A new write
+        // cannot grant visibility until this node can observe the World relay again.
+        VipPrepared::Fresh(write) if !is_query && presence_selected
+            && !owner.states.chat.relay().is_some_and(super::chat_relay::ChatRelay::is_ready) => {
+                write.refuse_unavailable().await.ok()?
+            }
         VipPrepared::Fresh(write) if growth => owner
             .with_premium_gate(write.account, move |status, tx| {
                 Box::pin(async move { write.commit(status, tx).await })
@@ -92,6 +114,9 @@ pub(super) async fn execute(
             .ok()?,
         VipPrepared::Fresh(write) => write.commit(PremiumStatus::NotCurrent, None).await.ok()?,
     };
+    if !is_query && result.get("code").and_then(serde_json::Value::as_u64) == Some(1) {
+        owner.states.chat.vip.invalidate();
+    }
     wire::encode_result(
         u8::try_from(result.get("code")?.as_u64()?).ok()?,
         result.get("revision")?.as_u64()?,
