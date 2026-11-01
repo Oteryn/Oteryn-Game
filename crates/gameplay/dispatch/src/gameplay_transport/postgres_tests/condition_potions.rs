@@ -248,13 +248,13 @@ fn scenario(
                 let definition = index
                     .definition_ref("Item", p.key(), index.revision(p.key()).ok_or("revision")?)
                     .ok_or("item index")?;
-                Ok(encode_item_use_intent(&UseIntent {
+                encode_item_use_intent(&UseIntent {
                     target: UseTarget::ItemByDefinition(definition),
                     use_with: None,
                     use_with_map_item: None,
                     use_with_position: None,
                 })
-                .map_err(debug)?)
+                .map_err(debug)
             };
             let valid = payload(potion)?;
             let (status, reply) =

@@ -117,7 +117,11 @@ impl FreshAdmissionAuthority for FactsAuthority {
             // Deliberately repeat the old immediate payload: the new-key gate must also
             // suppress a subsequent observation of the same receipt's fact.
             earned: if self.immediate {
-                EarnedNotice::Earned(self.observation().facts.unwrap()[1].clone())
+                EarnedNotice::Earned(AchievementEarned {
+                    key: FISH.into(),
+                    name: "Here, Fishy Fishy!".into(),
+                    watermark: self.observation().watermark,
+                })
             } else {
                 EarnedNotice::NoneEarned
             },
