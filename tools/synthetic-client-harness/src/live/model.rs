@@ -230,6 +230,10 @@ pub const fn room_name(room: ChatRoom) -> &'static str {
         ChatRoom::English => "English",
         ChatRoom::Help => "Help",
         ChatRoom::Advertising => "Advertising",
+        ChatRoom::AdvertisingRookgaard => "Advertising-Rookgaard",
+        ChatRoom::Tutor => "Tutor",
+        ChatRoom::Gamemaster => "Gamemaster",
+        ChatRoom::GuildLeaders => "Guild Leaders",
     }
 }
 
