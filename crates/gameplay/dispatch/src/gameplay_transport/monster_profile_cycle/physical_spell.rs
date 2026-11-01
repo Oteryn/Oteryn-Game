@@ -190,6 +190,8 @@ pub(super) async fn execute(
         ) else {
             continue;
         };
+        let phosphorus_curse =
+            oteryn_gameplay_encounters::bosses::summer_2026::is_phosphorus_curse(record, &source);
         let elemental_area = matches!(
             (
                 source.element.as_deref(),
@@ -214,12 +216,12 @@ pub(super) async fn execute(
             && source.area.is_none()
             && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
-            || !(elemental_area || target_damage)
+            || !(elemental_area || target_damage || phosphorus_curse)
             || source.needs_direction
             || source.chain.is_some()
             || source.windup.is_some()
             || !source.variants.is_empty()
-            || !source.conditions.is_empty()
+            || (!source.conditions.is_empty() && !phosphorus_curse)
             || !source.appearances.is_empty()
         {
             continue;
@@ -382,6 +384,18 @@ pub(super) async fn execute(
                 _ => continue,
             };
             let protection = state.equipped_element_protection(kind);
+            let condition_policy = if phosphorus_curse {
+                let Ok(base_speed) = u16::try_from(state.owned_base_speed()) else {
+                    continue;
+                };
+                Some(crate::creature_auto_attack::CurrentConditionPolicy {
+                    // Use the player condition policy shared with ordinary_combat.
+                    immunities: Vec::new(),
+                    base_speed,
+                })
+            } else {
+                None
+            };
             facts.push(SpellCombatFacts {
                 attack: AttackFacts {
                     issuer: proposal.issuer,
@@ -406,7 +420,7 @@ pub(super) async fn execute(
                 multiplier_ppm: 1_000_000,
                 equipment_protection: protection,
                 immune: false,
-                condition_policy: None,
+                condition_policy,
             });
             players.push((*target, session));
         }
@@ -426,7 +440,9 @@ pub(super) async fn execute(
             tiles,
         };
         let mut spells = std::mem::take(&mut states.monster_spells);
-        let execute = if elemental_area {
+        let execute = if phosphorus_curse {
+            crate::creature_damage_spell::DamageSpellOwner::execute_current_target_condition
+        } else if elemental_area {
             crate::creature_damage_spell::DamageSpellOwner::execute_current_elemental_area
         } else {
             crate::creature_damage_spell::DamageSpellOwner::execute_current_target_damage

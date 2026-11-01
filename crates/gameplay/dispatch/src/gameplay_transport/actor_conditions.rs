@@ -435,9 +435,77 @@ impl ChannelSpellStates {
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
     ) -> Option<Option<crate::player_lethal::PlayerDamageReceipt>> {
+        if !current_owner(runtime, fence, stamp) {
+            return None;
+        }
+        self.native_composite_conditions_inner(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            magnitude,
+        )
+    }
+
+    /// Use the installed fence without creating a copy of the non-clonable owner authority.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source, actor/session, stamp and application facts are independently checked"
+    )]
+    pub(super) fn native_current_conditions(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[ConditionDefinition],
+        facts: &ApplicationFacts<'_>,
+        immunities: &[ConditionType],
+        stamp: RuntimeWorkStamp,
+    ) -> bool {
+        let Ok(fence) = runtime.owner_fence() else {
+            return false;
+        };
+        if !current_owner(runtime, fence, stamp) {
+            return false;
+        }
+        self.native_composite_conditions_inner(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            None,
+        )
+        .is_some()
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared existing condition commit keeps source, actors and facts explicit"
+    )]
+    fn native_composite_conditions_inner(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[ConditionDefinition],
+        facts: &ApplicationFacts<'_>,
+        immunities: &[ConditionType],
+        magnitude: Option<u32>,
+    ) -> Option<Option<crate::player_lethal::PlayerDamageReceipt>> {
         use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
-        if !current_owner(runtime, fence, stamp)
-            || !creature_current(runtime, source)
+        if !creature_current(runtime, source)
             || definitions.is_empty()
             || definitions.len() > 16
             || !facts.target_is_player

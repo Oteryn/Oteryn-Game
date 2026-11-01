@@ -216,6 +216,27 @@ pub trait PlayerLethalVitals {
         false
     }
 
+    /// Conditions admitted by the runtime's installed owner fence. Implementations recheck
+    /// that fence and the exact player session immediately before the existing condition commit.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "current owner, exact actors, source definitions and application facts remain independent"
+    )]
+    fn apply_current_attack_conditions(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _occurrence: &str,
+        _source: ExactActorRef,
+        _definitions: &[crate::foundation::ConditionDefinition],
+        _facts: &crate::foundation::ApplicationFacts<'_>,
+        _immunities: &[crate::foundation::ConditionType],
+        _stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        false
+    }
+
     /// Secondary definitions require independently current admission facts. Owners which do
     /// not implement atomic conditions must refuse before committing primary damage.
     // Keep apply_composite_attack_damage ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.

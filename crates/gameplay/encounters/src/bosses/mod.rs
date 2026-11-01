@@ -15,6 +15,7 @@ pub mod rum_barrel;
 pub mod seven_encounters;
 pub mod smelly_cheese;
 pub mod source_callbacks;
+pub mod summer_2026;
 pub mod tentacles;
 pub mod the_welter;
 pub mod threshold_heals;
