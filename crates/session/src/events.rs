@@ -9,6 +9,8 @@ pub enum SessionEvent {
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
+    /// Domain 57: one server status, warning or advance message, retained in wire order.
+    ServerMessage(AppliedDelta<ServerMessage>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
     WorldSpatial(AppliedDelta<WorldSpatialObservation>),
     /// Domain 1 with capability 6 selected: the entities that entered, updated and left, and the
@@ -46,6 +48,9 @@ impl SessionEvent {
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
+            Self::ServerMessage(_) => {
+                oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+            }
             Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }

@@ -65,7 +65,9 @@ pub use oteryn_protocol_oteryn::item_view::{
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
 use oteryn_protocol_oteryn::logout;
+mod server_messages;
 mod tutorial_notices;
+pub use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
 mod vip_presence;
 /// Exiva permission-list wire contract.
 pub use oteryn_protocol_oteryn::exiva;
@@ -1258,6 +1260,11 @@ impl<S: SessionStream> Session<S> {
         }
         quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        let events = server_messages::validate_join(
+            &selected_capabilities,
+            &gated_snapshots,
+            begin.target_server_sequence,
+        )?;
         let map_header = map_transport::validate_join(
             &selected_capabilities,
             &gated_snapshots,
@@ -1306,7 +1313,7 @@ impl<S: SessionStream> Session<S> {
             selected_capabilities,
             gated_snapshots,
             gated_revisions,
-            events: Vec::new(),
+            events,
             entities,
             appearance,
             chat_revision,

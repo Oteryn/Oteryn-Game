@@ -11,6 +11,7 @@ use super::*;
 /// 147 edits Exiva settings through command 170. Field runes (91) reuse USE command 2,
 /// existing map/entity updates and the rune refusal decoder; 11, 15, 18, 22 and 30
 /// complete their prerequisite closure on shipped bundle Worlds.
+/// 92 consumes ordered server status, warning and advance messages on domain 57.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -29,6 +30,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
+    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
 ];
@@ -44,6 +46,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     CAPABILITY_BESTIARY_CHARMS_V1,
     CAPABILITY_ACHIEVEMENT_NOTICES_V1,

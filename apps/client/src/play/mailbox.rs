@@ -1,6 +1,6 @@
 //! Bounded, non-blocking mailbox between the session task and the shell.
 
-use super::{StepDir, coalesce_pushed};
+use super::{ServerMessageInbox, StepDir, coalesce_pushed};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_session::{
@@ -32,6 +32,8 @@ pub enum PlayEvent {
 pub struct Pushed {
     /// Transient domain-16 updates, reduced before publication to the shell.
     pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
+    /// Transient domain-57 messages retained in order; they are never coalesced to one value.
+    pub server_messages: ServerMessageInbox,
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
@@ -45,6 +47,7 @@ impl Pushed {
     fn absorb(&mut self, newer: Self) {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
+        self.server_messages.append(newer.server_messages);
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -77,6 +80,22 @@ pub(super) struct Mailbox {
 const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
+impl Mailbox {
+    /// A slow shell may not silently lose an announcement or grow an unbounded event queue.
+    fn check_server_messages(&mut self) {
+        if self.before.server_messages.overflowed()
+            || self.pushed.server_messages.overflowed()
+            || self.before.server_messages.len() + self.pushed.server_messages.len()
+                > oteryn_session::MAX_QUEUED_EVENTS
+        {
+            self.before.server_messages = ServerMessageInbox::default();
+            self.pushed.server_messages = ServerMessageInbox::default();
+            self.ended
+                .get_or_insert(PlayEvent::Ended(PublicClass::SessionUnavailable));
+        }
+    }
+}
+
 pub(super) fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
     mailbox.lock().unwrap_or_else(PoisonError::into_inner)
 }
@@ -90,12 +109,14 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
+        mailbox.check_server_messages();
         mailbox.stepped = Some(Box::new(outcome));
     }
 
     pub(super) fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
         coalesce_pushed(&mut mailbox.pushed, events);
+        mailbox.check_server_messages();
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
     }
