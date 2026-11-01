@@ -1035,6 +1035,33 @@ impl super::cast::PlayerSpellState {
         Some(next)
     }
 
+    /// Crystal enchanting.lua:76-102: the whole stack pays mana and soul;
+    /// mana spent banks through the same owner as an ordinary paid action.
+    fn after_gem_enchanting(&self, count: u32, now: u64) -> Option<Self> {
+        if !(1..=100).contains(&count) || self.soul < 2 * count {
+            return None;
+        }
+        let mut next = self.after_weapon_shot(300 * count, now)?;
+        next.soul -= 2 * count;
+        Some(next)
+    }
+
+    /// Vitals/cooldown proof and the live successor with its ordinary pending mana bank.
+    /// CastCostBinding projects vitals and cooldowns; training keeps its own checkpoint owner.
+    pub fn prepare_gem_enchanting(
+        &self,
+        count: u32,
+        now: u64,
+    ) -> Option<(Self, crate::durability::spell_items_abi::CastCostBinding)> {
+        let after = self.after_gem_enchanting(count, now)?;
+        let mut payment = after.clone();
+        payment.training = self.training.clone();
+        let anchor = payment.payment_anchor_from(self)?;
+        let cost =
+            super::companion_lifecycle::familiar_cost_binding(self, &payment, &anchor).ok()?;
+        Some((after, cost))
+    }
+
     /// W2b: one resolved hit or use trains `family` by the tries `rule` derives from the hit
     /// streaks. Without owned training (no active formula, the production off switch) nothing
     /// trains. While a checkpoint is retained for replay (a save returned `Unknown`) the live
@@ -1214,3 +1241,59 @@ impl super::cast::PlayerSpellState {
 }
 
 mod first_vocation_vitals;
+
+#[cfg(test)]
+mod enchanting_tests {
+    use super::super::cast::{CharacterCastFacts, PlayerSpellState};
+    #[test]
+    fn gem_enchanting_live_cost_scaled_and_refused_without_mutation() -> Result<(), &'static str> {
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation: super::super::Vocation::Druid,
+                level: 100,
+                magic_level: 0,
+                max_health: 185,
+                max_mana: 30_000,
+                max_soul: 200,
+            },
+            0,
+            0,
+        )
+        .ok_or("state")?;
+        state.training = Some(super::LiveManaTraining::from_owned_build(
+            &crate::durability::character_build::DurableBuildState::new(
+                "druid",
+                (0, 0),
+                [(10, 0); 7],
+            )
+            .map_err(|_| "build")?,
+        ));
+        for count in [1, 2, 100] {
+            let (after, cost) = state.prepare_gem_enchanting(count, 1).ok_or("paid")?;
+            assert_eq!(after.vitals().mana, 30_000 - 300 * count);
+            assert_eq!(after.vitals().soul, 200 - 2 * count);
+            assert_eq!(after.revision(), state.revision() + 1);
+            assert_eq!(
+                (cost.mana_after, cost.soul_after),
+                (after.vitals().mana, after.vitals().soul)
+            );
+            assert_eq!(
+                after.training.as_ref().ok_or("training")?.pending_mana(),
+                u64::from(300 * count)
+            );
+        }
+        for count in [0, 101, u32::MAX] {
+            assert!(state.after_gem_enchanting(count, 1).is_none());
+        }
+        let mut poor = state.clone();
+        poor.restore_saved_vitals(185, 599);
+        assert!(poor.after_gem_enchanting(2, 1).is_none());
+        poor.restore_saved_vitals(185, 30_000);
+        poor.restore_bed_rest([3, 0, 0, 0], 1).ok_or("soul")?;
+        assert!(poor.after_gem_enchanting(2, 1).is_none());
+        poor.set_health_for_test(0);
+        assert!(poor.after_gem_enchanting(1, 1).is_none());
+        assert_eq!((state.vitals().mana, state.vitals().soul), (30_000, 200));
+        Ok(())
+    }
+}

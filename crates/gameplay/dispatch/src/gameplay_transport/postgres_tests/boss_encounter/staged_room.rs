@@ -1,4 +1,4 @@
-//! Staged storage/refusal qualification; this does not qualify successful Instance gameplay.
+//! Unqualified-content refusal remains covered alongside the accepted W02 writer privileges.
 use super::*;
 
 #[test]
@@ -11,8 +11,9 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
         .spawn(|| {
             run(async |admin| {
                 reset();
-                let h = Harness::create_with_admission_seed(admin, "boss_lever_staged", true, false)
-                    .await?;
+                let h =
+                    Harness::create_with_admission_seed(admin, "boss_lever_staged", true, false)
+                        .await?;
                 prepare_current_session(&h).await?;
                 eprintln!("Canonical PostgreSQL 18.6: staged boss lever dispatch refusal");
                 for table in [
@@ -36,7 +37,18 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                         .bind(privilege)
                         .fetch_one(&h.pool)
                         .await?;
-                        assert!(!writable, "staged table grants {privilege}: {table}");
+                        // W02 coordinator ANSWER A installs the complete fenced
+                        // writer in 0628. Only its activity/member INSERT is now
+                        // admitted; content, rewards and destructive rights are unchanged.
+                        let expected = privilege == "INSERT"
+                            && matches!(
+                                table,
+                                "game_boss_room_activities" | "game_boss_room_participants"
+                            );
+                        assert_eq!(
+                            writable, expected,
+                            "unexpected table privilege {privilege}: {table}"
+                        );
                     }
                 }
                 let deps = Dependencies::new()?;
@@ -50,7 +62,11 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                 .0;
                 admitted.item_fence = item_fence_of(current);
                 let seal = h.recovery.seal_current().map_err(debug)?;
-                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
                 let owner = deps.owner(&h, &authority);
                 deps.initialize(&owner).await;
                 owner
@@ -65,6 +81,19 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                 )
                 .ok_or("boss capability not offered")?;
                 let unselected = admitted.continuity.selected_capabilities;
+                assert!(selected.contains(CAPABILITY_BOSS_ENCOUNTER_V1));
+                assert!(!unselected.contains(CAPABILITY_BOSS_ENCOUNTER_V1));
+                // ProductionKey rejects a segment named "test". Use and validate
+                // a genuine key shape so only its missing definition is negative.
+                let missing_boss =
+                    crate::content::ProductionKey::new("oteryn:boss.unavailable").map_err(debug)?;
+                let defined: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_boss_room_catalogue WHERE boss_key=$1)",
+                )
+                .bind(missing_boss.as_str())
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(!defined);
                 let before = participant_binding(&h, admitted).await?;
                 let mut id = 1;
                 for capabilities in [selected, unselected] {
@@ -75,11 +104,29 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                         COMMAND_TYPE_BOSS_TIMEOUT,
                     ] {
                         // A valid key and forged extra policy must both refuse without mutation.
-                        for payload in [cursor("oteryn:boss.test"), vec![10, 0, 16, 1]] {
+                        for (payload, valid_key) in [
+                            (cursor(missing_boss.as_str()), true),
+                            (vec![10, 0, 16, 1], false),
+                        ] {
                             let (status, bytes) =
                                 exchange_kind(&owner, &mut admitted, id, kind, &payload).await?;
                             assert_eq!(status, CommandStatus::Rejected, "command {kind}");
-                            assert!(bytes.is_empty());
+                            if valid_key && capabilities.contains(CAPABILITY_BOSS_ENCOUNTER_V1) {
+                                // W02 now routes valid requests to the fenced activity
+                                // owner. This fixture has no authored boss definition,
+                                // so its refusal carries the exact content reason.
+                                assert_eq!(
+                                    decode_boss_activity_reply(&bytes).map_err(debug)?,
+                                    BossActivityReply::Refused(
+                                        BossActivityRefusal::ContentUnavailable
+                                    ),
+                                    "command {kind} must report unavailable boss content"
+                                );
+                            } else {
+                                // Missing capability and forged policy remain wire
+                                // refusals; neither may reach the activity owner.
+                                assert!(bytes.is_empty());
+                            }
                             id += 1;
                         }
                     }

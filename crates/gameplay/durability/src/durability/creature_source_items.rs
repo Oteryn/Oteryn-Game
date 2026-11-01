@@ -86,7 +86,7 @@ where
     check_scope_transaction(tx, authority).await?;
     current_guard()?;
     if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != cause.channel
+        || authority.channel_bytes() != Some(cause.channel)
         || authority.generation() != cause.scope_generation
     {
         return Err(SpellItemError::Rejected("Creature source foreign scope"));
@@ -168,7 +168,7 @@ where
         encoded.push(value);
     }
     let hex = |b: &[u8]| b.iter().map(|v| format!("{v:02x}")).collect::<String>();
-    let intent=serde_json::to_vec(&serde_json::json!({"schema":"OTERYN_CREATURE_GROUND_CAUSE/v1","player":null,"cost":null,"caster_origin":null,"world":hex(&authority.world_bytes()),"channel":hex(&authority.channel_bytes()),"ownership_generation":authority.generation().to_string(),"creature":{"key":cause.creature.production_key,"revision":cause.creature.revision_ref,"placement":hex(&cause.placement),"generation":cause.generation.to_string()},"ability":reference(&cause.ability),"occurrence":cause.occurrence,"content":hex(&cause.content),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":encoded})).map_err(|_|SpellItemError::Rejected("Creature intent encoding"))?;
+    let intent=serde_json::to_vec(&serde_json::json!({"schema":"OTERYN_CREATURE_GROUND_CAUSE/v1","player":null,"cost":null,"caster_origin":null,"world":hex(&authority.world_bytes()),"channel":hex(&cause.channel),"ownership_generation":authority.generation().to_string(),"creature":{"key":cause.creature.production_key,"revision":cause.creature.revision_ref,"placement":hex(&cause.placement),"generation":cause.generation.to_string()},"ability":reference(&cause.ability),"occurrence":cause.occurrence,"content":hex(&cause.content),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":encoded})).map_err(|_|SpellItemError::Rejected("Creature intent encoding"))?;
     if intent.len() > 524288 {
         return Err(SpellItemError::Rejected("Creature audit budget"));
     }
@@ -176,7 +176,7 @@ where
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || ':' || $2 || ':' || $3 || ':' || $4,45))")
         .bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.occurrence).execute(&mut **tx).await?;
     let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding FROM game_spell_item_receipts WHERE cause_kind=1 AND world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND ownership_generation=$3::text::numeric(20,0) AND creature_placement=$4 AND creature_actor_generation=$5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
-        .bind(authority.world_bytes().as_slice()).bind(authority.channel_bytes().as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
+        .bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
     if let Some(row) = prior {
         if row.try_get::<Vec<u8>, _>("binding")?.as_slice() != binding {
             return Err(SpellItemError::Rejected(
@@ -244,7 +244,7 @@ where
         }
     }
     sqlx::query("INSERT INTO game_spell_item_receipts(transaction_id,event_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,occurred_at_unix_ms,cause_kind,creature_placement,creature_actor_generation,creature_definition_key,creature_definition_revision,creature_occurrence,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),'Ability',$6,$7,$8,$9,$10,$11,$12,1,$13,$14::text::numeric(20,0),$15,$16,$17,$18,$19,$20,$21)")
-        .bind(transaction.as_slice()).bind(event.as_slice()).bind(authority.world_bytes().as_slice()).bind(authority.channel_bytes().as_slice()).bind(authority.generation().to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(cause.content.as_slice()).bind(binding.as_slice()).bind(&intent).bind(i32::try_from(operations.len()).map_err(|_|SpellItemError::Rejected("Creature operation count"))?).bind(occurred).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.creature.production_key).bind(&cause.creature.revision_ref).bind(&cause.occurrence).bind(cause.map.as_slice()).bind(cause.frame.as_slice()) .bind(cause.body.as_slice()).bind(cause.cast.as_slice()).execute(&mut **tx).await?;
+        .bind(transaction.as_slice()).bind(event.as_slice()).bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(cause.content.as_slice()).bind(binding.as_slice()).bind(&intent).bind(i32::try_from(operations.len()).map_err(|_|SpellItemError::Rejected("Creature operation count"))?).bind(occurred).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.creature.production_key).bind(&cause.creature.revision_ref).bind(&cause.occurrence).bind(cause.map.as_slice()).bind(cause.frame.as_slice()) .bind(cause.body.as_slice()).bind(cause.cast.as_slice()).execute(&mut **tx).await?;
     for (index, op) in operations.iter().enumerate() {
         match op {
             SpellItemOperation::MintGround {
@@ -520,7 +520,7 @@ where
     check_scope_transaction(tx, authority).await?;
     current_guard()?;
     if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != cause.channel
+        || authority.channel_bytes() != Some(cause.channel)
         || authority.generation() != cause.scope_generation
     {
         return Err(SpellItemError::Rejected("Creature replay foreign scope"));
@@ -528,7 +528,7 @@ where
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || ':' || $2 || ':' || $3 || ':' || $4,45))")
         .bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.occurrence).execute(&mut **tx).await?;
     let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding,catalog_digest,creature_definition_key,creature_definition_revision,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest FROM game_spell_item_receipts WHERE cause_kind=1 AND world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND ownership_generation=$3::text::numeric(20,0) AND creature_placement=$4 AND creature_actor_generation=$5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
-        .bind(authority.world_bytes().as_slice()).bind(authority.channel_bytes().as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
+        .bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
     let Some(row) = prior else {
         return Ok(None);
     };
@@ -586,7 +586,7 @@ async fn prepare_creature_source_fields_in_transaction<
     use crate::foundation::{MovementFacing, MovementLocalPosition as Pos};
     check_scope_transaction(tx, authority).await?;
     if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != cause.channel
+        || authority.channel_bytes() != Some(cause.channel)
         || authority.generation() != cause.scope_generation
         || cause.placement != proposal.issuer.placement_identity()
         || cause.generation != proposal.issuer.actor_local_generation()
@@ -1625,7 +1625,10 @@ impl crate::durability::spell_items_abi::DurableCreatureFieldOrigin {
     ) -> bool {
         self.condition_source_key().is_some()
             && self.world == *runtime.binding().world_id().as_bytes()
-            && self.channel == *runtime.binding().channel_id().as_bytes()
+            && runtime
+                .binding()
+                .channel_id()
+                .is_some_and(|channel| self.channel == *channel.as_bytes())
             && self.source_scope_generation == runtime.binding().scope_generation().get()
             && self.content_digest == runtime.content_pin().server_artifact_digest()
             && native.source_digest() == self.content_digest

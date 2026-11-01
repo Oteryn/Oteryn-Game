@@ -1,7 +1,7 @@
 use crate::ability::AbilityOccurrence;
 use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::foundation::{
-    ChannelRuntimeV1, CharacterId, CommandRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp,
+    ChannelRuntimeV1, CharacterId, CommandRef, GameSessionId, RuntimeWorkStamp,
 };
 use crate::foundation::{CommandId, MovementLocalPosition};
 use crate::spell::chain::TilePosition;
@@ -89,7 +89,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         cast_snapshot: None,
     };
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -429,7 +429,7 @@ fn stored_familiar_return_is_one_due_entry_per_actor() {
     let admission = runtime.reserve_fresh_session(other_session).unwrap();
     let other = runtime.commit_fresh_session(admission).unwrap();
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -593,7 +593,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
     assert!(commit_familiar_timer(&mut runtime, staged).is_err());
     assert!(runtime.companion_snapshot(familiar).is_ok());
     let mut owner = SpellTimerOwner::new(
-        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().runtime_scope(),
         runtime.binding().scope_generation(),
     )
     .unwrap();
@@ -662,4 +662,234 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
         .unwrap();
     assert_eq!(fired.dropped, vec![occurrence]);
     assert!(owner.due_familiar_expiries(caster, session, due).is_empty());
+}
+
+#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+#[test]
+fn due_context_observes_prior_commits_and_retains_a_refused_phase() {
+    let id = |n| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
+    let world = crate::foundation::WorldId::decode(&id(60)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        crate::foundation::ChannelId::decode(&id(61)).unwrap(),
+        crate::foundation::NodeId::decode(&id(62)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        2,
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let session = GameSessionId::decode(&id(91)).unwrap();
+    let admission = runtime.reserve_fresh_session(session).unwrap();
+    let caster = runtime.commit_fresh_session(admission).unwrap();
+    let target = runtime
+        .admit_test_creature(MovementLocalPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        })
+        .unwrap();
+    let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    )))
+    .unwrap();
+    let row = document["profiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "Chivalrous Challenge")
+        .unwrap();
+    let spell = crate::spell::native::spell_from_bundle(
+        &serde_json::json!({"spell": row["spell"]}),
+        &row["dependencies"],
+    )
+    .unwrap();
+    let binding = CastBinding {
+        spell,
+        caster,
+        attacker: CharacterId::decode(&id(92)).unwrap(),
+        command: CommandRef::new(session, CommandId::new(1).unwrap()),
+        occurrence: AbilityOccurrence::new(
+            "spell-timer:joined-context",
+            crate::ability::RevisionSet::new(
+                "rules:1",
+                "content:1",
+                "world:1",
+                "formula:1",
+                "simulation:1",
+            )
+            .unwrap(),
+        )
+        .unwrap(),
+        parent_binding: b"qualified-cast:joined-context".to_vec(),
+        cast_at: SemanticTimeMicros::from_micros(0),
+        cast_position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+        cast_snapshot: None,
+    };
+    let original = OwnerCombatBatch {
+        caster,
+        attacker: binding.attacker,
+        current_lease_generation: 1,
+        command: binding.command,
+        occurrence: binding.occurrence.clone().into(),
+        binding: binding.parent_binding.clone(),
+        anchor: None,
+        now_us: None,
+        now_ms: 0,
+        effects: vec![OwnerCombatEffect {
+            target,
+            sub_ordinal: 0,
+            change: OwnerCombatChange::MonsterAi(MonsterAiState {
+                forced_distance: None,
+                challenged_to: Some((caster, 6000)),
+            }),
+        }],
+        deferred: None,
+    };
+    let mut owner = SpellTimerOwner::new(
+        runtime.binding().runtime_scope(),
+        runtime.binding().scope_generation(),
+    )
+    .unwrap();
+    let stamp = runtime.issue_owner_work().unwrap();
+    let reservation = owner
+        .schedule_reservation(
+            runtime.owner_fence().unwrap(),
+            stamp,
+            (0_u16..3)
+                .map(|phase| ScheduleRequest {
+                    occurrence: SpellTimerOccurrence {
+                        command: binding.command,
+                        phase,
+                    },
+                    due: SemanticTimeMicros::from_micros(100_000 + u64::from(phase) * 10_000),
+                    payload: TimerPayload::NativeOwnerEffect(SavedNativeOwnerEffect {
+                        binding: binding.clone(),
+                        effect: OwnerCombatEffect {
+                            target,
+                            sub_ordinal: 0,
+                            change: OwnerCombatChange::MonsterAi(MonsterAiState {
+                                forced_distance: Some((1, 6000)),
+                                challenged_to: None,
+                            }),
+                        },
+                    }),
+                })
+                .collect(),
+        )
+        .unwrap();
+    let proof = owner
+        .preflight_install(
+            runtime.owner_fence().unwrap(),
+            stamp,
+            &original,
+            reservation,
+        )
+        .unwrap();
+    let staged = runtime.stage_spell_batch(&original).unwrap();
+    assert!(runtime.commit_spell_batch(staged).unwrap().applied);
+    owner.install_preflighted(proof);
+
+    struct Clock;
+    impl OwnerClock for Clock {
+        fn now(&self) -> SemanticTimeMicros {
+            SemanticTimeMicros::from_micros(200_000)
+        }
+    }
+    struct Context {
+        committed: u16,
+        refused_once: bool,
+    }
+    impl due_commit_seal::Sealed for Context {}
+    impl DueCombatCommit for Context {
+        fn commit_due_combat(
+            &mut self,
+            runtime: &mut ChannelRuntimeV1,
+            _: &TimerPayload,
+            batch: &OwnerCombatBatch,
+        ) -> Result<crate::spell::combat_batch::CombatBatchReceipt, Error> {
+            let phase = batch.deferred.as_ref().unwrap().phase_ordinal();
+            if phase == 2 && !self.refused_once {
+                self.refused_once = true;
+                return Err(Error::InvalidPayload);
+            }
+            let staged = runtime.stage_spell_batch(batch).map_err(Error::Batch)?;
+            let receipt = runtime.commit_spell_batch(staged).map_err(Error::Batch)?;
+            if receipt.applied {
+                self.committed += 1;
+            }
+            Ok(receipt)
+        }
+    }
+    let observations = std::cell::RefCell::new(Vec::new());
+    let mut context = Context {
+        committed: 0,
+        refused_once: false,
+    };
+    let mut build = |_: &ChannelRuntimeV1,
+                     context: &Context,
+                     payload: &TimerPayload,
+                     occurrence: SpellTimerOccurrence,
+                     now: SemanticTimeMicros,
+                     _: RuntimeWorkStamp| {
+        // The next callback must see the preceding callback's actual commit,
+        // including another callback committed within this same drain.
+        observations
+            .borrow_mut()
+            .push((occurrence.phase, context.committed));
+        assert_eq!(context.committed, occurrence.phase);
+        let TimerPayload::NativeOwnerEffect(saved) = payload else {
+            return Err(Error::InvalidPayload);
+        };
+        Ok(OwnerCombatBatch {
+            effects: vec![saved.at_due(now)?],
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get())),
+            now_ms: now.get() / 1000,
+            ..original.clone()
+        })
+    };
+    let stamp = runtime.issue_owner_work().unwrap();
+    let first = owner
+        .fire_due_current_with_context(&mut runtime, &Clock, stamp, &mut context, &mut build)
+        .unwrap();
+    assert_eq!(first.receipts.len(), 1);
+    assert!(first.receipts[0].batch.applied);
+    assert!(matches!(
+        first.blocked,
+        Some((SpellTimerOccurrence { phase: 1, .. }, Error::InvalidPayload))
+    ));
+    assert_eq!(context.committed, 1);
+    assert_eq!(owner.pending_len(), 2);
+    assert_eq!(observations.borrow().as_slice(), &[(0, 0), (1, 1)]);
+    assert_eq!(owner.prepared_due.as_ref().unwrap().0.phase, 1);
+
+    let stamp = runtime.issue_owner_work().unwrap();
+    let retry = owner
+        .fire_due_current_with_context(&mut runtime, &Clock, stamp, &mut context, &mut build)
+        .unwrap();
+    assert!(retry.blocked.is_none());
+    assert_eq!(retry.receipts.len(), 2);
+    assert!(retry.receipts.iter().all(|receipt| receipt.batch.applied));
+    assert_eq!(context.committed, 3);
+    // A retained prepared phase is committed without another build; phase2 sees
+    // phase1's committed context in this same retry drain.
+    assert_eq!(observations.borrow().as_slice(), &[(0, 0), (1, 1), (2, 2)]);
+    assert_eq!(owner.pending_len(), 0);
+    assert!(owner.prepared_due.is_none());
+
+    let stamp = runtime.issue_owner_work().unwrap();
+    let repeat = owner
+        .fire_due_current_with_context(&mut runtime, &Clock, stamp, &mut context, &mut build)
+        .unwrap();
+    assert!(repeat.receipts.is_empty());
+    assert!(repeat.blocked.is_none());
+    assert_eq!(context.committed, 3);
+    assert_eq!(observations.borrow().as_slice(), &[(0, 0), (1, 1), (2, 2)]);
 }

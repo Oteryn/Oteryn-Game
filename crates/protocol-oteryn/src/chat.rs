@@ -9,7 +9,7 @@
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
 //! emitted: zero or unknown enums, a local speaker's zero generation, an intent with no or several variants, empty or oversized text
 //! or names, invalid UTF-8, a wait outside `1..=`[`MAX_CHAT_WAIT_SECONDS`] with `MUTED` or
-//! `EXHAUSTED` or any wait with another disposition, room bits outside the four rooms, a floor
+//! `EXHAUSTED` or any wait with another disposition, room bits outside the eight rooms, a floor
 //! outside `0..=15`, a line field that does not belong to its kind, and unknown or repeated fields
 //! all fail closed. Trimming and control characters are the server's text rule (CHAT-0 §4).
 
@@ -18,6 +18,7 @@ use std::num::NonZeroU64;
 pub mod guild_room;
 pub mod party_room;
 pub mod private_channel;
+pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
@@ -47,7 +48,7 @@ pub const MAX_CHAT_NAME_BYTES: usize = 120;
 /// The longest wait a result reports: a mute of 5 s × 16² (`CHAT0-RL-04`).
 pub const MAX_CHAT_WAIT_SECONDS: u32 = 1_280;
 /// `CHAT0-RL-07`: every room can be open at once.
-pub const MAX_CHAT_OPEN_ROOMS: usize = 4;
+pub const MAX_CHAT_OPEN_ROOMS: usize = 8;
 /// A private message: oneof tag 1 + length 2, name 1 + 1 + 120, text 1 + 2 + 1,020.
 pub const MAX_CHAT_INTENT_BYTES: usize = 1_148;
 /// Disposition 1 + 1 and wait 1 + 2 = 5 bytes, with slack.
@@ -85,11 +86,31 @@ pub enum ChatRoom {
     English = 2,
     Help = 3,
     Advertising = 4,
+    /// Capability 259. Existing room ids remain unchanged.
+    AdvertisingRookgaard = 5,
+    Tutor = 6,
+    Gamemaster = 7,
+    GuildLeaders = 8,
 }
 
 impl ChatRoom {
-    pub const ALL: [Self; MAX_CHAT_OPEN_ROOMS] =
-        [Self::World, Self::English, Self::Help, Self::Advertising];
+    pub const ALL: [Self; MAX_CHAT_OPEN_ROOMS] = [
+        Self::World,
+        Self::English,
+        Self::Help,
+        Self::Advertising,
+        Self::AdvertisingRookgaard,
+        Self::Tutor,
+        Self::Gamemaster,
+        Self::GuildLeaders,
+    ];
+
+    pub const fn requires_public_channels(self) -> bool {
+        matches!(
+            self,
+            Self::AdvertisingRookgaard | Self::Tutor | Self::Gamemaster | Self::GuildLeaders
+        )
+    }
 
     fn from_wire(value: u32) -> WireResult<Self> {
         Self::ALL
@@ -181,8 +202,6 @@ pub struct ChatIntentResult {
 pub struct ChatRoomSet(u8);
 
 impl ChatRoomSet {
-    const ALL_BITS: u8 = 0b1111;
-
     pub fn contains(self, room: ChatRoom) -> bool {
         self.0 & room.bit() != 0
     }
@@ -441,7 +460,6 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
     // A bit beyond the four rooms exceeds `CHAT0-RL-07`.
     let bits = u8::try_from(bits)
         .ok()
-        .filter(|bits| bits & !ChatRoomSet::ALL_BITS == 0)
         .ok_or(ChatWireError::LimitExceeded)?;
     Ok(ChatRoomSet(bits))
 }

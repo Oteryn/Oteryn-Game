@@ -195,7 +195,10 @@ fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
         );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
-        reference.binding().channel_id(),
+        reference
+            .binding()
+            .channel_id()
+            .expect("W02: pinned Channel fixture"),
         node,
         1,
         1,

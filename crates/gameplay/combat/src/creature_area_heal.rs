@@ -16,8 +16,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use {
     crate::foundation::{
-        ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1, RuntimeWorkStamp,
-        ScopeRuntimeFence,
+        ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeWorkStamp, ScopeRuntimeFence,
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
@@ -440,10 +439,8 @@ impl AreaHealOwner {
     ) -> Result<AreaHealOutcome, AreaHealError> {
         use AreaHealError as E;
         let binding = r.binding();
-        if !fence.is_current_for_scope(
-            RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(E::StaleOwner);
         }

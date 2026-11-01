@@ -1,11 +1,7 @@
-//! Private channels of capability 80 `CHAT_PRIVATE_CHANNEL_V1` (CHAT-PM-CHANNELS-1).
-//!
-//! A channel lives in the chat state of one Channel, under the same lock as the rest of it: its
-//! owner, invitations and members are admitted sessions of that Channel. It closes when its owner
-//! leaves it or its session ends (Canary `Chat::removeUserFromChannel`), and nothing is stored.
-//! Invitations are bounded per channel (`CHATPM-RL-01`) and per invitee (`CHATPM-RL-02`). A line
-//! passes the CHAT_V1 limiter and text rule and reaches every joined member, the speaker
-//! included (Canary `ChatChannel::talk`).
+//! Historical pure private-channel rule fixture, compiled only for the original unit tests.
+//! Production capability80 dispatch, metadata and delivery are owned by private_channel_world.
+//! Keeping these assertions preserves lifecycle, invitation bounds and flood rule coverage;
+//! the World PostgreSQL and runtime cases verify the current production path separately.
 use super::*;
 use oteryn_protocol_oteryn::chat::private_channel::{
     ChatChannelList, InvitedChannel, MAX_INVITED_PRIVATE_CHANNELS, MAX_PRIVATE_CHANNEL_INVITES,
@@ -88,6 +84,20 @@ fn leave_all(sessions: &mut Sessions, session: GameSessionId) {
 }
 
 impl ChatRuntime {
+    /// Original local rule adapter, deliberately unavailable in production.
+    fn private_channel_test_gate(
+        &self,
+        session: GameSessionId,
+        intent: &PrivateChannelIntent,
+        now: SemanticTimeMicros,
+    ) -> Option<ChatIntentResult> {
+        if matches!(intent, PrivateChannelIntent::Create) {
+            None
+        } else {
+            Some(self.private_channel(session, intent, now))
+        }
+    }
+
     /// Negotiation of `session` (admission, reconnect or transfer): with capability 80 it takes
     /// part and is sent its channel list; without it its channels close and it leaves the others.
     pub fn set_private_channels(&self, session: GameSessionId, selected: bool) {
@@ -124,7 +134,9 @@ impl ChatRuntime {
         let mut public_rooms = ChatRoomSet::default();
         if self.relay().is_some() {
             for room in ChatRoom::ALL {
-                public_rooms.insert(room);
+                if entry.public_rooms.can_join(room) {
+                    public_rooms.insert(room);
+                }
             }
         }
         let mut invited: Vec<InvitedChannel> = sessions

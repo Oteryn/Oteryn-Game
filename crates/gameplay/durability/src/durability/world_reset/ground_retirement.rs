@@ -41,11 +41,18 @@ impl DurabilityRoot {
                             .map(|(channel, step)| {
                                 channels
                                     .into_iter()
-                                    .find(|fence| *fence.channel_id.as_bytes() == channel)
+                                    .find(|fence| fence.runtime_scope.channel_id().is_some_and(|id| *id.as_bytes() == channel))
                                     .map(|fence| (fence, step))
                                     .ok_or(DurabilityError::InvalidStoredState)
                             })
                             .transpose()?;
+                        if next.is_none() {
+                            // Private Instance custody is drained only by its
+                            // actual activity owner, never by a Channel reset.
+                            let instances: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE world_id=encode($1,'hex')::uuid AND scope_kind=2)")
+                                .bind(reset.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                            if instances { return Ok(Ok(None)); }
+                        }
                         commit_semantic_transaction(tx, deadline).await?;
                         Ok(Ok(Some(next)))
                     })
@@ -57,9 +64,13 @@ impl DurabilityRoot {
             let Some((fence, step)) = next else {
                 return Ok(true);
             };
+            let channel = fence
+                .runtime_scope
+                .channel_id()
+                .ok_or(DurabilityError::InvalidStoredState)?;
             let lane = lanes
-                .entry(*fence.channel_id.as_bytes())
-                .or_insert_with(|| SpellLane::new(fence.world_id, fence.channel_id));
+                .entry(*channel.as_bytes())
+                .or_insert_with(|| SpellLane::for_scope(fence.runtime_scope));
             let permit = lane
                 .acquire()
                 .await

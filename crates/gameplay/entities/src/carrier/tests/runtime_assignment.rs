@@ -1,10 +1,120 @@
 #[test]
+fn activity_runtime_uses_private_scope_with_shared_native_owner() {
+    let mut channel = runtime(4);
+    let binding = channel.binding();
+    let local = *binding.channel_id().expect("Channel fixture").as_bytes();
+    let scope = RuntimeScopeRefV1::instance(binding.world_id(), local).expect("UUIDv7 instance");
+    let mut instance = ScopeRuntimeV1::from_committed_scope_assignment(
+        scope,
+        binding.node_id(),
+        binding.node_registration_revision(),
+        binding.scope_generation().get(),
+        binding.source_revision(),
+        &format!("runtime-scope-assignment:{}", binding.source_revision()),
+        4,
+        channel.content_pin().clone(),
+    )
+    .expect("independently assigned Instance runtime");
+    assert_eq!(instance.binding().runtime_scope(), scope);
+    assert_eq!(instance.binding().channel_id(), None);
+    assert!(instance.owner_fence().is_ok());
+    let channel_reservation = channel
+        .reserve_fresh_session(session(80))
+        .expect("channel slot");
+    let channel_actor = channel
+        .commit_fresh_session(channel_reservation)
+        .expect("channel actor");
+    channel
+        .initialize_first_entry_position(channel_actor)
+        .expect("channel position");
+    let instance_reservation = instance
+        .reserve_fresh_session(session(81))
+        .expect("instance slot");
+    let instance_actor = instance
+        .commit_fresh_session(instance_reservation)
+        .expect("instance actor");
+    instance
+        .initialize_first_entry_position(instance_actor)
+        .expect("instance position");
+    assert_eq!(instance_actor.runtime_scope(), scope);
+    assert_eq!(
+        channel_actor.actor_local_id(),
+        instance_actor.actor_local_id()
+    );
+    assert_eq!(
+        channel_actor.actor_local_generation(),
+        instance_actor.actor_local_generation()
+    );
+    assert!(channel.read_actor_position(instance_actor).is_err());
+    assert!(instance.read_actor_position(channel_actor).is_err());
+    assert_eq!(
+        instance
+            .positioned_actor_census()
+            .expect("instance census")
+            .len(),
+        1
+    );
+    assert_eq!(
+        channel
+            .positioned_actor_census()
+            .expect("channel census")
+            .len(),
+        1
+    );
+    instance.retire_owner_cycle();
+    assert!(instance.owner_fence().is_err());
+    assert!(instance.reserve_fresh_session(session(82)).is_err());
+    assert!(channel.read_actor_position(channel_actor).is_ok());
+}
+
+#[test]
+fn activity_runtime_rejects_malformed_scope_and_assignment_before_bootstrap() {
+    let channel = runtime(1);
+    let binding = channel.binding();
+    let invalid = RuntimeScopeRefV1::Instance {
+        world_id: binding.world_id(),
+        instance_id: [0; 16],
+    };
+    assert!(
+        ScopeRuntimeV1::from_committed_scope_assignment(
+            invalid,
+            binding.node_id(),
+            binding.node_registration_revision(),
+            binding.scope_generation().get(),
+            binding.source_revision(),
+            &format!("runtime-scope-assignment:{}", binding.source_revision()),
+            1,
+            channel.content_pin().clone(),
+        )
+        .is_err()
+    );
+    let scope = RuntimeScopeRefV1::instance(
+        binding.world_id(),
+        *binding.channel_id().expect("Channel fixture").as_bytes(),
+    )
+    .expect("UUIDv7 instance");
+    assert!(
+        ScopeRuntimeV1::from_committed_scope_assignment(
+            scope,
+            binding.node_id(),
+            binding.node_registration_revision(),
+            binding.scope_generation().get(),
+            binding.source_revision(),
+            "runtime-scope-assignment:0",
+            1,
+            channel.content_pin().clone(),
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn composed_runtime_binds_assignment_and_reserves_before_commit() {
     let mut runtime = runtime(1);
     let binding = runtime.binding();
     assert!(binding.matches_committed_assignment(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
         node(22),
         7,
         3,
@@ -13,7 +123,7 @@ fn composed_runtime_binds_assignment_and_reserves_before_commit() {
     ));
     assert!(!binding.matches_committed_assignment(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
         node(22),
         7,
         4,
@@ -453,4 +563,347 @@ fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
         184,
         "spell candidate fixed-slot footprint must stay inside the D314 budget"
     );
+}
+
+fn activity_instance_for(channel: &ScopeRuntimeV1, capacity: usize) -> ScopeRuntimeV1 {
+    let binding = channel.binding();
+    let scope =
+        RuntimeScopeRefV1::instance(binding.world_id(), *session(91).as_bytes()).expect("instance");
+    ScopeRuntimeV1::from_committed_scope_assignment(
+        scope,
+        binding.node_id(),
+        binding.node_registration_revision(),
+        binding.scope_generation().get(),
+        binding.source_revision(),
+        &format!("runtime-scope-assignment:{}", binding.source_revision()),
+        capacity,
+        channel.content_pin().clone(),
+    )
+    .expect("native instance")
+}
+
+fn activity_member(
+    channel: &mut ScopeRuntimeV1,
+    id: u8,
+    x: i32,
+) -> activity_transfer::ActivityTransferMember {
+    let source_session = session(u64::from(id));
+    let reservation = channel
+        .reserve_fresh_session(source_session)
+        .expect("source reserve");
+    let actor = channel
+        .commit_fresh_session(reservation)
+        .expect("source commit");
+    channel
+        .initialize_pinned_test_position(actor, MovementLocalPosition { x, y: 0, floor: 0 })
+        .expect("source position");
+    let character = CharacterId::decode(session(u64::from(id) + 30).as_bytes()).expect("character");
+    let source_lease = CharacterLease::new(character, 7).expect("source lease");
+    channel
+        .bind_attacker_lease(actor, source_session, source_lease)
+        .expect("bind source");
+    activity_transfer::ActivityTransferMember {
+        source_actor: actor,
+        source_session,
+        source_lease,
+        destination_session: session(u64::from(id) + 60),
+        destination_lease: CharacterLease::new(character, 8).expect("destination lease"),
+        destination_cell: MovementLocalPosition { x, y: 5, floor: 0 },
+    }
+}
+
+#[test]
+fn activity_transfer_freezes_entire_group_and_abort_restores_only_its_reservations() {
+    let mut channel = runtime(4);
+    let first = activity_member(&mut channel, 10, 1);
+    let second = activity_member(&mut channel, 11, 2);
+    let unrelated = activity_member(&mut channel, 12, 3);
+    let mut instance = activity_instance_for(&channel, 2);
+    let mut reservation = channel
+        .prepare_activity_transfer(&mut instance, &[first, second])
+        .expect("freeze and reserve");
+    assert!(channel.read_actor_position(first.source_actor).is_err());
+    assert!(
+        channel
+            .player_control_facts(second.source_actor, second.source_session)
+            .is_err()
+    );
+    assert!(channel.read_actor_position(unrelated.source_actor).is_ok());
+    assert_eq!(instance.player_slot_counts(), (0, 2));
+    channel
+        .abort_activity_transfer(&mut instance, &mut reservation)
+        .expect("definite noncommit abort");
+    assert_eq!(instance.player_slot_counts(), (0, 0));
+    assert!(channel.read_actor_position(first.source_actor).is_ok());
+    assert!(channel.read_actor_position(second.source_actor).is_ok());
+    assert!(
+        channel
+            .abort_activity_transfer(&mut instance, &mut reservation)
+            .is_err()
+    );
+}
+
+#[test]
+fn activity_transfer_moves_physical_payload_and_retires_old_writer_without_cloning() {
+    let mut channel = runtime(3);
+    let first = activity_member(&mut channel, 13, 1);
+    let unrelated = activity_member(&mut channel, 14, 2);
+    let source_index = channel
+        .carrier
+        .player_slot_index(
+            &channel.continuity,
+            first.source_actor.0,
+            first.source_session,
+        )
+        .expect("source slot");
+    if let Slot::Occupied {
+        actor,
+        spell_combat,
+        ..
+    } = &mut channel.carrier.slots[source_index]
+    {
+        *actor = ActorState(777);
+        spell_combat.paralysed = true;
+    }
+    let mut instance = activity_instance_for(&channel, 1);
+    let mut reservation = channel
+        .prepare_activity_transfer(&mut instance, &[first])
+        .expect("reserve");
+    let moved = channel
+        .commit_activity_transfer(&mut instance, &mut reservation)
+        .expect("committed group install");
+    assert_eq!(moved.len(), 1);
+    let target = moved[0].destination_actor;
+    assert_eq!(target.runtime_scope(), instance.binding().runtime_scope());
+    assert!(channel.read_actor_position(first.source_actor).is_err());
+    assert!(
+        instance
+            .player_control_facts(target, first.source_session)
+            .is_err()
+    );
+    assert_eq!(
+        instance.bound_attacker_lease(target, first.destination_session),
+        Ok(first.destination_lease)
+    );
+    let target_index = instance
+        .carrier
+        .player_slot_index(&instance.continuity, target.0, first.destination_session)
+        .expect("target slot");
+    assert!(
+        matches!(&instance.carrier.slots[target_index], Slot::Occupied { actor: ActorState(777), spell_combat, .. } if spell_combat.paralysed)
+    );
+    assert!(channel.read_actor_position(unrelated.source_actor).is_ok());
+    assert_eq!(channel.player_slot_counts(), (1, 0));
+    assert_eq!(instance.player_slot_counts(), (1, 0));
+    assert!(
+        channel
+            .commit_activity_transfer(&mut instance, &mut reservation)
+            .is_err()
+    );
+    assert_eq!(instance.player_slot_counts(), (1, 0));
+}
+
+#[test]
+fn activity_transfer_capacity_or_lease_failure_never_freezes_a_subset() {
+    let mut channel = runtime(3);
+    let first = activity_member(&mut channel, 15, 1);
+    let second = activity_member(&mut channel, 16, 2);
+    let mut instance = activity_instance_for(&channel, 1);
+    assert!(
+        channel
+            .prepare_activity_transfer(&mut instance, &[first, second])
+            .is_err()
+    );
+    assert_eq!(instance.player_slot_counts(), (0, 0));
+    assert!(channel.read_actor_position(first.source_actor).is_ok());
+    assert!(channel.read_actor_position(second.source_actor).is_ok());
+    let mut invalid = first;
+    invalid.destination_lease = invalid.source_lease;
+    assert!(
+        channel
+            .prepare_activity_transfer(&mut instance, &[invalid])
+            .is_err()
+    );
+    assert_eq!(instance.player_slot_counts(), (0, 0));
+}
+
+#[test]
+fn activity_transfer_rechecks_destination_owner_after_durable_wait() {
+    let mut channel = runtime(1);
+    let first = activity_member(&mut channel, 17, 1);
+    let mut instance = activity_instance_for(&channel, 1);
+    let mut reservation = channel
+        .prepare_activity_transfer(&mut instance, &[first])
+        .expect("reserve");
+    instance.retire_owner_cycle();
+    assert!(
+        channel
+            .commit_activity_transfer(&mut instance, &mut reservation)
+            .is_err()
+    );
+    assert_eq!(channel.player_slot_counts(), (1, 0));
+    assert_eq!(instance.player_slot_counts(), (0, 1));
+    assert!(
+        channel.read_actor_position(first.source_actor).is_err(),
+        "uncertain/stale commit remains frozen for recovery"
+    );
+}
+
+#[test]
+fn activity_authored_boss_entry_stacks_one_group_without_guessing_other_cells() {
+    let mut channel = runtime(3);
+    let first = activity_member(&mut channel, 18, 1);
+    let mut second = activity_member(&mut channel, 19, 2);
+    second.destination_cell = first.destination_cell;
+    let mut instance = activity_instance_for(&channel, 2);
+    assert!(
+        channel
+            .prepare_activity_transfer(&mut instance, &[first, second])
+            .is_err()
+    );
+    assert_eq!(instance.player_slot_counts(), (0, 0));
+    let mut reservation = channel
+        .prepare_activity_group_entry(&mut instance, &[first, second])
+        .expect("authored shared teleport");
+    let moved = channel
+        .commit_activity_transfer(&mut instance, &mut reservation)
+        .expect("one atomic group");
+    assert_eq!(instance.player_slot_counts(), (2, 0));
+    for member in moved {
+        assert_eq!(
+            instance
+                .read_actor_position(member.destination_actor)
+                .expect("position")
+                .position(),
+            MovementLocalPosition {
+                x: first.destination_cell.x,
+                y: first.destination_cell.y,
+                floor: first.destination_cell.floor
+            }
+        );
+    }
+    let third = activity_member(&mut channel, 20, 3);
+    assert!(
+        channel
+            .prepare_activity_group_entry(&mut instance, &[third])
+            .is_err(),
+        "populated instance is never reused"
+    );
+    assert!(channel.read_actor_position(third.source_actor).is_ok());
+}
+
+#[test]
+fn activity_definite_abort_releases_exact_reservations_after_destination_retirement() {
+    let mut channel = runtime(1);
+    let member = activity_member(&mut channel, 21, 1);
+    let mut instance = activity_instance_for(&channel, 1);
+    let mut reservation = channel
+        .prepare_activity_transfer(&mut instance, &[member])
+        .expect("reservation");
+    instance.retire_owner_cycle();
+    assert!(
+        channel
+            .commit_activity_transfer(&mut instance, &mut reservation)
+            .is_err()
+    );
+    channel
+        .abort_activity_transfer(&mut instance, &mut reservation)
+        .expect("known non-commit cleanup");
+    assert!(channel.read_actor_position(member.source_actor).is_ok());
+    assert_eq!(instance.player_slot_counts(), (0, 0));
+    assert!(
+        channel
+            .abort_activity_transfer(&mut instance, &mut reservation)
+            .is_err()
+    );
+}
+
+#[test]
+fn activity_boss_exit_uses_authored_occupied_cell_without_widening_normal_movement() {
+    let mut channel = runtime(3);
+    let member = activity_member(&mut channel, 22, 1);
+    let spectator = activity_member(&mut channel, 23, 2);
+    let mut instance = activity_instance_for(&channel, 1);
+    let mut entry = channel
+        .prepare_activity_group_entry(&mut instance, &[member])
+        .expect("entry");
+    let moved = channel
+        .commit_activity_transfer(&mut instance, &mut entry)
+        .expect("entered")[0];
+    let returning = activity_transfer::ActivityTransferMember {
+        source_actor: moved.destination_actor,
+        source_session: moved.destination_session,
+        source_lease: moved.destination_lease,
+        destination_session: session(110),
+        destination_lease: CharacterLease::new(moved.character_id, 9).expect("return lease"),
+        destination_cell: channel
+            .read_actor_position(spectator.source_actor)
+            .expect("occupied exit")
+            .position(),
+    };
+    assert!(
+        instance
+            .prepare_activity_transfer(&mut channel, &[returning])
+            .is_err()
+    );
+    let mut exit = instance
+        .prepare_activity_boss_return(&mut channel, &[returning])
+        .expect("authored forced exit");
+    let back = instance
+        .commit_activity_transfer(&mut channel, &mut exit)
+        .expect("returned")[0];
+    assert_eq!(
+        channel
+            .read_actor_position(back.destination_actor)
+            .expect("returned position")
+            .position(),
+        returning.destination_cell
+    );
+    assert!(channel.read_actor_position(spectator.source_actor).is_ok());
+}
+
+#[test]
+fn activity_retirement_census_retains_control_lost_players_and_pending_reservations() {
+    let mut channel = runtime(3);
+    let member = activity_member(&mut channel, 24, 1);
+    let mut instance = activity_instance_for(&channel, 2);
+    assert_eq!(instance.activity_retirement_empty(), Ok(true));
+    let mut held = channel
+        .prepare_activity_transfer(&mut instance, &[member])
+        .expect("retained reservation");
+    assert_eq!(instance.activity_retirement_empty(), Ok(false));
+    assert!(
+        instance
+            .activity_participant_sessions()
+            .expect("census")
+            .is_empty()
+    );
+    channel
+        .abort_activity_transfer(&mut instance, &mut held)
+        .expect("known abort");
+    assert_eq!(instance.activity_retirement_empty(), Ok(true));
+    let mut held = channel
+        .prepare_activity_transfer(&mut instance, &[member])
+        .expect("fresh reservation");
+    let moved = channel
+        .commit_activity_transfer(&mut instance, &mut held)
+        .expect("commit")[0];
+    instance
+        .record_control_loss(
+            moved.destination_actor,
+            moved.destination_session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 100,
+            },
+        )
+        .expect("real native loss");
+    assert_eq!(
+        instance
+            .activity_participant_sessions()
+            .expect("lost participant"),
+        vec![moved.destination_session]
+    );
+    assert_eq!(instance.activity_retirement_empty(), Ok(false));
+    assert!(channel.activity_retirement_empty().is_err());
 }

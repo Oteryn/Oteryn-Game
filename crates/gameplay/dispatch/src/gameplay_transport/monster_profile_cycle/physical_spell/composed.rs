@@ -81,7 +81,14 @@ pub(super) async fn execute(
         return;
     };
     if let Some(primary) = outcome.primary {
-        record_hits(runtime, attack, &reader.base.players, primary, now);
+        record_hits(
+            runtime,
+            attack,
+            Some(proposal.issuer),
+            &reader.base.players,
+            primary,
+            now,
+        );
     }
     let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
     for (_, target, branch) in outcome.branches {

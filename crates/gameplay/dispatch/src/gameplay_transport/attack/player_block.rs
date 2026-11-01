@@ -311,6 +311,12 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 .map_or(constants.starting_skill, |skills| skills.attack),
             None => 0,
         };
+        let bonus = state.wheel_battle_instinct(runtime, target, now.get())?;
+        let skill = skill.checked_add(match hand.skill_index {
+            Some(1..=3) => bonus.melee,
+            Some(5) => bonus.shielding,
+            _ => 0,
+        })?;
         let (mode, swung) = self.attack.take_player_block(
             runtime,
             target,

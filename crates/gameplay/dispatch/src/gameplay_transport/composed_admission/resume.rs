@@ -5,6 +5,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
+            return Ok(admitted);
+        }
+        // Directory lookup selects an owner only. The original recovery owner
+        // below still verifies the credential, exact lost epoch, transport,
+        // current guards, attempt budget and generation before any mutation.
+        let scoped =
+            if let Some(registered) = self.activity_runtimes.connection(attempt.game_session_id) {
+                self.resolve_runtime_view(registered)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)?
+            } else {
+                None
+            };
+        let owner = scoped.as_ref().unwrap_or(self);
+        let admitted = owner.resume_session_for_scope(attempt).await?;
+        self.activity_runtimes
+            .remember(admitted)
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
+        Ok(admitted)
+    }
+
+    async fn resume_session_for_scope(
+        &self,
+        attempt: connection::ResumeAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(AdmissionRefusal::Unavailable);
@@ -48,6 +75,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        self.finish_resumed_session(admitted).await;
+        Ok(admitted)
+    }
+
+    pub(in crate::gameplay_transport) async fn finish_resumed_session(
+        &self,
+        admitted: AdmittedSession,
+    ) {
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
             self.states
@@ -61,6 +96,5 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.admit_premium(controller.account_id, admitted.game_session_id);
         }
         self.admit_quest_session(&admitted).await;
-        Ok(admitted)
     }
 }

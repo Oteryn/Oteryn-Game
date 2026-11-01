@@ -336,7 +336,7 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     }
 }
 
-/// I03: Crystal `data/scripts/actions/items/spellbook.lua:25` registers these spellbook ids; using
+/// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
 /// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
 /// requirement, grouped and sorted by level. Oteryn exposes the same server-authored content on
 /// the existing text-bearing LOOK result for the admitted source spellbook.
@@ -363,8 +363,10 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
             admitted.push(id);
         }
     }
-    // Only 6120 is admitted; the basic spellbook 3059 and the other source ids are not.
-    assert_eq!(admitted, vec![6120]);
+    // TASKBOARD-P04 admits 8074 and 25699 through its source-qualified delivery cohort:
+    // Crystal 201189f task_board_delivery_items.lua:85,281; items.xml:22081-22092,48934-48955.
+    // The basic spellbook 3059 and the other source ids remain unadmitted.
+    assert_eq!(admitted, vec![6120, 8074, 25699]);
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

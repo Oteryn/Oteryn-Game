@@ -174,7 +174,7 @@ impl CreatureAiTable {
                 && !forced_target_holds
                 && !current_challenge
                 && state.forced_distance.is_none_or(|until| now_us >= until)
-                && health <= targeting.flee_health;
+                && health <= state.current_flee_health(runtime);
             let Some(sequence) = entry.sequence.checked_add(1) else {
                 continue;
             };

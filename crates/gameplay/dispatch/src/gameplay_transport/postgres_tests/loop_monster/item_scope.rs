@@ -84,10 +84,7 @@ async fn read_cell(
     let runtime = deps.runtime.lock().await;
     let objects = deps.door.lock().await;
     let mut tx = harness.pool.begin().await?;
-    let scope = crate::foundation::RuntimeScopeRefV1::channel(
-        runtime.binding().world_id(),
-        runtime.binding().channel_id(),
-    );
+    let scope = runtime.binding().runtime_scope();
     let authority =
         crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
             &mut tx,

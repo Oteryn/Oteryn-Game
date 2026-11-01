@@ -1,7 +1,7 @@
 //! Delayed source callbacks read fresh real caster owners before the due owner turn.
 use super::super::ComposedFreshAdmission;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::GameSessionState;
 use crate::spell::delayed_execution::{Error, FireReport, NativeAiTimerSource, TimerPayload};
 use crate::spell::ordinary_timer::OrdinaryCastBinding;
 use crate::spell::{Execution, SpellBook};
@@ -308,6 +308,13 @@ fn apply_due_under_current_owners(
             .find(|s| s.binding.command == receipt.occurrence.command)
             .and_then(|s| s.resolved.as_ref())
         {
+            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
+                runtime,
+                states,
+                &resolved.batch,
+                &receipt.batch,
+                &resolved.bounty_leech,
+            );
             states
                 .presentations
                 .as_mut()
@@ -322,6 +329,13 @@ fn apply_due_under_current_owners(
             })
             .and_then(|saved| saved.resolved.as_ref())
         {
+            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
+                runtime,
+                states,
+                &resolved.batch,
+                &receipt.batch,
+                &resolved.bounty_leech,
+            );
             states
                 .presentations
                 .as_mut()
@@ -453,11 +467,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || matches!(source, DueSource::Ordinary(_))
                         && current.session_state() == GameSessionState::Reconnectable)
                 || current.commit().character_id() != source.attacker()
-                || current.current_runtime_scope()
-                    != RuntimeScopeRefV1::channel(
-                        runtime.binding().world_id(),
-                        runtime.binding().channel_id(),
-                    )
+                || current.current_runtime_scope() != runtime.binding().runtime_scope()
                 || current.current_scope_generation() != runtime.binding().scope_generation()
             {
                 strikes::cancel(&runtime, &mut states, source.command())?;
@@ -859,6 +869,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         effect.sub_ordinal = saved.sub_ordinal;
                         batch.effects = vec![effect];
                         states.apply_prey_spell_damage(runtime, &mut batch);
+                        let talisman = crate::durability::task_board::read_talisman_in_item_transaction(&mut tx, **fence).await?;
+                        let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+                            runtime, &mut batch, &talisman, &stream, decision,
+                        ).ok_or(DurabilityError::Unavailable)?;
                         let presentation = states
                             .presentations
                             .as_mut()
@@ -880,6 +894,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_| DurabilityError::Unavailable)?;
                         let resolved = crate::spell::ordinary_timer::ResolvedOrdinaryCombat {
                             batch,
+                            bounty_leech,
                             presentation: std::sync::Arc::new(presentation),
                             magnitude: std::sync::Arc::new(magnitude),
                             owned: owned.clone(),

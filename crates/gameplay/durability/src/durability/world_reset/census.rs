@@ -115,8 +115,7 @@ pub(in crate::durability) async fn drained_channels(
             return Ok(WorldResetDrain::NotCurrent);
         }
         channels.push(CorpseDecayFence {
-            world_id: reset.world,
-            channel_id,
+            runtime_scope: scope,
             scope_ownership_generation: ScopeOwnershipGeneration::new(generation)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         });

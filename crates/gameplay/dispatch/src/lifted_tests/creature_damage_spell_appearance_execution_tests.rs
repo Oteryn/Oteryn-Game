@@ -297,11 +297,8 @@ fn fixture<'a>(
         )
         .unwrap();
     let b = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .unwrap();
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation()).unwrap();
     (
         r,
         states,
@@ -831,7 +828,7 @@ fn appearance_area_late_player_clock_refusal_rolls_back_creature_and_players() {
         assert_eq!(r.actor_conditions(p.issuer, None).unwrap(), &creature);
         let binding = r.binding();
         let (stale, wrong_stamp) = crate::foundation::crystal_timer_fixture(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.runtime_scope(),
             crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
                 .unwrap(),
         )

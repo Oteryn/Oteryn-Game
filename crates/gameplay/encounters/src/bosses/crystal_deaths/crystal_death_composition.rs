@@ -9,6 +9,7 @@ use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
 use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest;
 use oteryn_gameplay_entities::ChannelRuntimeV1;
+#[cfg(test)]
 use oteryn_gameplay_foundation::foundation::ChannelId;
 use oteryn_gameplay_foundation::foundation::ExactActorRef;
 use oteryn_gameplay_foundation::foundation::GameSessionId;
@@ -16,7 +17,6 @@ use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration;
 use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
-use oteryn_gameplay_foundation::foundation::WorldId;
 pub mod speech {
     include!("crystal_death_composition/speech.rs");
 }
@@ -30,8 +30,7 @@ struct PinnedDeathDefinition {
 #[derive(Debug)]
 pub struct QualifiedCrystalDeaths {
     entries: Vec<PinnedDeathDefinition>,
-    world: WorldId,
-    channel: ChannelId,
+    scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     activation: u64,
     server: [u8; 32],
@@ -130,8 +129,7 @@ impl QualifiedCrystalDeaths {
         let pin = runtime.content_pin();
         Ok(Self {
             entries: expected,
-            world,
-            channel: binding.channel_id(),
+            scope: binding.runtime_scope(),
             generation: binding.scope_generation(),
             activation: pin.activation_sequence(),
             server: pin.server_artifact_digest(),
@@ -149,9 +147,8 @@ impl QualifiedCrystalDeaths {
     ) -> Result<(), CrystalDeathCompositionError> {
         let pin = runtime.content_pin();
         let binding = runtime.binding();
-        let scope = RuntimeScopeRefV1::channel(self.world, self.channel);
-        if binding.world_id() != self.world
-            || binding.channel_id() != self.channel
+        let scope = self.scope;
+        if binding.runtime_scope() != self.scope
             || binding.scope_generation() != self.generation
             || pin.activation_sequence() != self.activation
             || pin.server_artifact_digest() != self.server
@@ -294,7 +291,7 @@ mod retained_native_source_tests {
         );
         let registry = QualifiedCrystalDeaths::qualify(&project, &runtime, &native)
             .expect("actual captured15 source memberships");
-        let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
+        let scope = runtime.binding().runtime_scope();
         let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             scope,
             runtime.binding().scope_generation(),
@@ -609,7 +606,7 @@ mod retained_projection_owner_tests {
             native.source_digest(),
         );
         let mut composition = CrystalDeathOwner::bind(&project, &runtime, &native).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
-        let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
+        let scope = runtime.binding().runtime_scope();
         let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             scope,
             runtime.binding().scope_generation(),
@@ -789,7 +786,7 @@ impl CrystalDeathOwner {
         let binding = runtime.binding();
         object
             .apply_scope_operation(
-                RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                binding.runtime_scope(),
                 binding.scope_generation(),
                 operation,
                 occupied,
@@ -821,7 +818,7 @@ impl QualifiedCrystalDeaths {
         catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
     ) -> Result<Option<HeraldQuestRequest>, CrystalDeathCompositionError> {
         self.current_owner(runtime, fence, stamp)?;
-        if character_fence.runtime_scope != RuntimeScopeRefV1::channel(self.world, self.channel)
+        if character_fence.runtime_scope != self.scope
             || character_fence.scope_ownership_generation != self.generation
             || !self
                 .entries
@@ -958,7 +955,7 @@ mod herald_actual_source_tests {
         );
         let mut owner =
             CrystalDeathOwner::bind(&project, &runtime, &native).map_err(|e| format!("{e:?}"))?;
-        let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
+        let scope = runtime.binding().runtime_scope();
         let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             scope,
             runtime.binding().scope_generation(),

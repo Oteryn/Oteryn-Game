@@ -1492,7 +1492,7 @@ fn pkg8_ordinary_virtue_healing_uses_added_and_spent_charges() {
 }
 
 #[test]
-fn c11r_guiding_shared_mantra_expires_and_own_gear_takes_precedence() {
+fn c11r_ascetic_uses_only_equipped_mantra_even_with_party_projection() {
     let mut state = playable_monk(0);
     state
         .install_virtue_party_bonuses(
@@ -1503,11 +1503,11 @@ fn c11r_guiding_shared_mantra_expires_and_own_gear_takes_precedence() {
             100,
         )
         .expect("party projection");
-    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 51);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 0);
     state.install_equipped_mantra(3);
     assert_eq!(state.ascetic_attack_bonus_at(3, 100), 9);
     state.install_equipped_mantra(0);
-    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_099), 51);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_099), 0);
     assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_100), 0);
     assert_eq!(state.ascetic_attack_bonus_at(4, 100), 0);
 }

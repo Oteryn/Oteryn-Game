@@ -5,10 +5,12 @@ include!("core_modules.rs");
 // Keep sorted by module name; insert in order, never append.
 pub mod bed_regen;
 pub mod bed_sleep;
+pub mod boss_difficulty;
 pub mod boss_encounter;
 pub mod character_hazard;
 pub mod character_home_town;
 pub mod character_known_spells;
+pub mod chat_public;
 pub mod creature_source_items;
 pub mod daily_boost;
 pub mod daily_reward;
@@ -35,13 +37,16 @@ pub mod party_kill_xp;
 pub mod player_death_items;
 pub mod player_report;
 pub mod prey;
+pub mod private_channel;
 pub mod quest_monk_rewards;
 pub mod quest_world_callback;
 pub mod raid_runner;
 pub mod raid_schedule;
 pub mod staff;
+pub mod task_board;
 pub mod terrain_tool;
 pub mod vip;
+pub mod vip_presence;
 // End sorted module declarations.
 
 #[cfg(test)]

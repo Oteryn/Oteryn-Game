@@ -35,7 +35,12 @@ message BosstiaryProgressEntryV1 {
 }
 
 // Command 340. Identity and World come exclusively from the admitted session.
-message BossRewardOpenV1 {}
+message BossRewardOpenV1 {
+  // Empty remains the legacy first page. Only when capability 224 is selected,
+  // a full page may be continued with its last death id (exactly 16 nonzero bytes).
+  // The server resolves the retained cursor only within this Character and World.
+  bytes after_death_id = 1;
+}
 message BossRewardGroupV1 {
   bytes death_id = 1;
   string boss_key = 2;
@@ -45,7 +50,9 @@ message BossRewardGroupV1 {
 }
 message BossRewardChestV1 {
   uint64 now_unix_ms = 1;
-  // Oldest first, at most 64 groups. Expired groups are never exposed.
+  // Oldest first, at most 64 live nonempty groups. When 64 are returned, the
+  // last death id can continue the list. Fewer than 64 means currently exhausted.
+  // This is live keyset pagination, not a snapshot; expired groups stay hidden.
   repeated BossRewardGroupV1 entries = 2;
 }
 

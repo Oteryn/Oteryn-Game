@@ -10,10 +10,11 @@ pub(in super::super) async fn snapshot<A: FreshAdmissionAuthority>(
     admitted: AdmittedSession,
     rooms: ChatRoomSet,
 ) -> Option<(u32, Vec<u8>)> {
+    let rooms = authority.public_chat_admit(admitted, rooms).await;
     authority.chat_party_admit(admitted).await;
     authority
-        .chat_private_channels(
-            admitted.game_session_id,
+        .chat_private_admit_bound(
+            admitted,
             admitted
                 .continuity
                 .selected_capabilities
@@ -49,6 +50,18 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
     (),
 > {
     let intent = chat::decode_chat_intent(payload).map_err(|_| ())?;
+    if matches!(&intent, ChatIntent::OpenRoom(room) | ChatIntent::CloseRoom(room) | ChatIntent::Room { room, .. }
+        if room.requires_public_channels() && !admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::chat::public_channels::CAPABILITY_CHAT_PUBLIC_CHANNELS_V1))
+    {
+        return Err(());
+    }
+    if let Some(result) = authority
+        .public_chat_preflight(admitted, command_id, &intent)
+        .await
+    {
+        return Ok(result.map(|result| (result, None)));
+    }
     match intent {
         ChatIntent::Party { text } => {
             if !admitted
@@ -84,6 +97,10 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
         {
             Err(())
         }
+        ChatIntent::PrivateChannel(intent) => Ok(authority
+            .chat_private_intent(admitted, command_id, intent)
+            .await
+            .map(|result| (result, None))),
         intent => Ok(authority
             .chat_intent_completion(actor, admitted.game_session_id, command_id, intent)
             .await),

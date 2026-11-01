@@ -363,10 +363,8 @@ impl ComposedOwner {
         let current = fence
             .or_else(|| r.owner_fence().ok())
             .ok_or(AttackError::StaleOwner)?;
-        if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -808,6 +806,7 @@ impl ComposedSource {
     pub fn details(&self) -> &crate::content::ProjectV2AbilityDetails {
         &self.details
     }
+    #[cfg(any(test, feature = "test-support"))]
     pub fn source_fingerprint(&self) -> [u8; 32] {
         self.fingerprint
     }
@@ -910,9 +909,6 @@ impl ComposedSource {
 impl Callback {
     pub fn filter(&self) -> &ProjectV2EffectAffects {
         &self.filter
-    }
-    pub fn is_heal(&self) -> bool {
-        self.heal
     }
     fn draw(
         &self,

@@ -9,7 +9,9 @@ impl RelayLine {
         match self.destination {
             RelayDestination::Private { .. } => out.push(KIND_PRIVATE),
             RelayDestination::Room { .. } => out.push(KIND_ROOM),
+            RelayDestination::Presence { .. } => out.push(6),
             RelayDestination::Party { .. } => out.push(4),
+            RelayDestination::PrivateChannel { .. } => out.push(5),
             RelayDestination::Guild { .. } => out.push(super::super::guild_room::KIND_GUILD),
         }
         out.extend_from_slice(&self.message_id);
@@ -17,6 +19,17 @@ impl RelayLine {
         match self.destination {
             RelayDestination::Private { recipient } => out.extend_from_slice(recipient.as_bytes()),
             RelayDestination::Room { room } => out.push(room as u8),
+            RelayDestination::Presence { target, online } => {
+                out.extend_from_slice(target.as_bytes());
+                out.push(u8::from(online));
+            }
+            RelayDestination::PrivateChannel { channel_id, epoch } => {
+                if !(100..=9_999).contains(&channel_id) || epoch == 0 {
+                    return Err(RelayError::BadPayload);
+                }
+                out.extend_from_slice(&channel_id.to_be_bytes());
+                out.extend_from_slice(&epoch.to_be_bytes());
+            }
             RelayDestination::Party { party_id } => {
                 CharacterId::decode(&party_id).map_err(|_| RelayError::BadPayload)?;
                 out.extend_from_slice(&party_id);
@@ -41,6 +54,24 @@ impl RelayLine {
                 recipient: CharacterId::decode(&cursor.array::<ID_BYTES>()?)
                     .map_err(|_| RelayError::BadPayload)?,
             },
+            6 => {
+                let target = CharacterId::decode(&cursor.array::<ID_BYTES>()?)
+                    .map_err(|_| RelayError::BadPayload)?;
+                let online = match cursor.take(1)?[0] {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(RelayError::BadPayload),
+                };
+                RelayDestination::Presence { target, online }
+            }
+            5 => {
+                let channel_id = u16::from_be_bytes(cursor.array()?);
+                let epoch = u64::from_be_bytes(cursor.array()?);
+                if !(100..=9_999).contains(&channel_id) || epoch == 0 {
+                    return Err(RelayError::BadPayload);
+                }
+                RelayDestination::PrivateChannel { channel_id, epoch }
+            }
             4 => {
                 let party_id = cursor.array::<ID_BYTES>()?;
                 CharacterId::decode(&party_id).map_err(|_| RelayError::BadPayload)?;

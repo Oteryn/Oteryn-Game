@@ -8,9 +8,7 @@ use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
 use oteryn_gameplay_characters::stamina::{HuntingActivityClock, HuntingClock};
 
 #[derive(Debug)]
@@ -210,11 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
             || runtime.player_control_facts(actor, session).is_err()
-            || item.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || item.runtime_scope != runtime.binding().runtime_scope()
             || item.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return TrainingSave::FencedOut;
@@ -321,11 +315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
             || runtime.player_control_facts(actor, session).is_err()
-            || item.runtime_scope
-                != RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || item.runtime_scope != runtime.binding().runtime_scope()
             || item.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return TrainingSave::FencedOut;
@@ -397,6 +387,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+impl LiveStamina {
+    pub(super) fn activity_matches(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.actor == actor && self.session == session
+    }
+    pub(super) fn activity_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.activity_matches(actor, session)
+            && (self.pending_gain.is_some() || self.pending_debit.is_some())
+    }
+    pub(super) fn rebind_activity(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.actor = actor;
+        self.session = session;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -463,8 +467,14 @@ mod tests {
         let channel = template.binding().channel_id();
         let room = crate::content::qualify_native_entry_room(world).expect("room");
         let (bytes, pins) = teleport_bundle();
-        let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
-            .expect("map");
+        let map = crate::map::boot::boot(
+            &bytes,
+            &floor_pins(pins),
+            world,
+            channel.expect("W02: pinned Channel fixture"),
+            floor_items,
+        )
+        .expect("map");
         let cells = map.movement_cells(room.movement_cells()).expect("cells");
         let mut node = [147; 16];
         node[6] = 0x70;
@@ -480,7 +490,7 @@ mod tests {
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            channel,
+            channel.expect("W02: pinned Channel fixture"),
             NodeId::decode(&node).expect("node"),
             1,
             1,

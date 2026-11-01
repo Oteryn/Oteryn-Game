@@ -500,7 +500,9 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 assert_eq!(mint_and_move_counts(&harness.pool).await?, (1, 0, 1));
                 // Rebuild the cache, just as after process loss: the base stays hidden and the one
                 // minted instance is on Ground. Retain the request's session handle for its resend.
-                owner.states.loop_ground = Default::default();
+                std::sync::Arc::get_mut(&mut owner.states)
+                    .expect("W02: isolated fixture state")
+                    .loop_ground = Default::default();
                 let ground = crate::gameplay_transport::loop_move::loop_ground(
                     &owner,
                     world.base(),

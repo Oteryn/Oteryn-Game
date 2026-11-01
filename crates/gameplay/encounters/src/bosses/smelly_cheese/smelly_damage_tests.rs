@@ -10,12 +10,9 @@ mod tests {
     use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{
         SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse,
     };
+    use oteryn_gameplay_entities::MovementLocalPosition;
     use oteryn_gameplay_foundation::foundation::owner_timer::{
         OwnerClock, SemanticTimeMicros, VirtualOwnerClock,
-    };
-    use {
-        oteryn_gameplay_entities::MovementLocalPosition,
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1,
     };
 
     #[test]
@@ -57,10 +54,7 @@ mod tests {
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
             .expect("smelly_damage.rs:tests:129: qualified fixture operation must succeed");
-        let scope = RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
+        let scope = runtime.binding().runtime_scope();
         let generation = runtime.binding().scope_generation();
         let (fence, stamp) =
             oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation)
@@ -191,7 +185,7 @@ mod tests {
             )
             .expect("smelly_damage.rs:tests:259: qualified fixture operation must succeed");
         let binding = runtime.binding();
-        let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+        let scope = binding.runtime_scope();
         let generation = binding.scope_generation();
         let (mut fence, stamp) =
             oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation)

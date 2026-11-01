@@ -3,6 +3,7 @@
 pub mod egress;
 pub mod party;
 pub mod premium_snapshot;
+pub mod public_channels;
 pub mod relay;
 pub mod release_policy;
 pub mod shared_experience;

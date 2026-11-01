@@ -118,6 +118,26 @@ impl DurabilityRoot {
     }
 }
 impl VipWrite {
+    /// Retain a listener-down refusal through the same per-operation SQL owner.
+    /// The denial-only allowance selector changes no request/hash binding and
+    /// preserves recovery, replay, session, node, lease and scope checks.
+    pub async fn refuse_unavailable(self) -> Result<Value> {
+        if self.operation == Operation::Query {
+            return Err(DurabilityError::Unavailable);
+        }
+        self.root
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = self.execute(&mut tx, false, true).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+
     /// Commit in the Premium owner's physical transaction before delivery, or a fresh native
     /// semantic transaction for a delivered status. A savepoint rolls back every partial write.
     pub async fn commit(
@@ -131,7 +151,7 @@ impl VipWrite {
                 return Err(DurabilityError::Unavailable);
             }
             let mut savepoint = tx.begin().await?;
-            let result = self.execute(&mut savepoint, premium).await;
+            let result = self.execute(&mut savepoint, premium, false).await;
             match result {
                 Ok(result) => {
                     savepoint.commit().await?;
@@ -151,7 +171,7 @@ impl VipWrite {
                 .run(move |holder, deadline| {
                     Box::pin(async move {
                         let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                        let result = self.execute(&mut tx, premium).await?;
+                        let result = self.execute(&mut tx, premium, false).await?;
                         commit_semantic_transaction(tx, deadline).await?;
                         Ok(result)
                     })
@@ -159,7 +179,12 @@ impl VipWrite {
                 .await
         }
     }
-    async fn execute(&self, tx: &mut Transaction<'_, Postgres>, premium: bool) -> Result<Value> {
+    async fn execute(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        premium: bool,
+        unavailable: bool,
+    ) -> Result<Value> {
         assert_recovery_fence(tx, &self.recovery).await?;
         if self.operation != Operation::Query
             && let Some(result) = replay(tx, &self.fence, self.command, &self.request).await?
@@ -207,6 +232,13 @@ impl VipWrite {
             Operation::Status => "status",
             Operation::Query => "query",
         };
+        // Migration 0716 admits zero only as a denial selector for a write. It
+        // cannot grow a list, grant Premium or bypass any original SQL fence.
+        let (cap, groups) = if unavailable {
+            (0, 0)
+        } else {
+            vip_caps(premium)
+        };
         sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT game_vip_{function}($1,$2,$3::text::numeric,$4,$5,$6)"
         )))
@@ -214,8 +246,8 @@ impl VipWrite {
         .bind(fence)
         .bind(self.command.to_string())
         .bind(&self.request)
-        .bind(vip_caps(premium).0)
-        .bind(vip_caps(premium).1)
+        .bind(cap)
+        .bind(groups)
         .fetch_one(&mut **tx)
         .await
         .map_err(Into::into)

@@ -2,7 +2,7 @@
 //! successor, and source FX in the existing outbox, all in one locked turn.
 use super::super::ComposedFreshAdmission;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn tick_familiar_defenses(
         &self,
@@ -41,7 +41,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let(owner,runtime,states)=ctx;
             let mut tx=crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder,deadline).await?;
-            let scope=RuntimeScopeRefV1::channel(runtime.binding().world_id(),runtime.binding().channel_id());
+            let scope=runtime.binding().runtime_scope();
             let generation=runtime.binding().scope_generation().get();
             let _authority=crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,scope,generation).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let current=FreshAdmissionStore::from_root(owner.root.clone()).current_session_in_transaction(&mut tx,session).await?;

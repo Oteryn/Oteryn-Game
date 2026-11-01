@@ -5,9 +5,7 @@ use crate::content::{
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence};
 use crate::source_threshold_heal::*;
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
 use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
@@ -109,11 +107,8 @@ fn proposal(actor: ExactActorRef, s: &ThresholdHealSource, seq: u64) -> ProfileA
 }
 fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
     let b = r.binding();
-    crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture")
+    crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+        .expect("qualified fixture")
 }
 #[test]
 fn three_source_exact_callback_memberships_and_spoofed_encounter_rejected() {

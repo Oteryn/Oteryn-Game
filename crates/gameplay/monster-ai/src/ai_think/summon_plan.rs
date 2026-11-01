@@ -26,10 +26,23 @@ pub(super) struct PreparedCreatureThink {
 }
 
 impl CreatureAiState {
+    pub(super) fn current_flee_health(&self, runtime: &ChannelRuntimeV1) -> u64 {
+        let base_flee = self.profile.behavior().targeting.flee_health;
+        if runtime.echo_variant(self.actor)
+            == Some(oteryn_gameplay_domain::domain::echo_warden::EchoVariant::Warden)
+        {
+            // Crystal's applyEchoWarden scales the absolute flee threshold with HP.
+            base_flee.saturating_mul(4)
+        } else {
+            base_flee
+        }
+    }
+
     pub(super) fn select_think(
         &self,
         sequence: u64,
         facts: &CreatureThinkFacts<'_>,
+        flee_health: u64,
     ) -> Result<PreparedCreatureThink, ThinkError> {
         if self
             .last
@@ -193,7 +206,7 @@ impl CreatureAiState {
         }
         // §2.1 item 6: flee while hurt and no override holds; the strategy draw picks whom
         // to flee from when the target cannot be attacked from here.
-        let fleeing = !self.is_summon && !override_holds && facts.health <= targeting.flee_health;
+        let fleeing = !self.is_summon && !override_holds && facts.health <= flee_health;
         if fleeing
             && target.is_none_or(|actor| !in_range(actor))
             && let Some(found) = strategy_search(4)?
@@ -314,7 +327,8 @@ impl CreatureAiState {
         reader: &mut impl MonsterThinkReader,
         route_hint: Option<(ExactActorRef, Vec<MovementLocalPosition>)>,
     ) -> Result<ThinkReport, ThinkError> {
-        let selected = self.select_think(sequence, facts)?;
+        let flee_health = self.current_flee_health(runtime);
+        let selected = self.select_think(sequence, facts, flee_health)?;
         let summons = if self.profile.behavior().summons.is_some() && !selected.report.over_budget {
             reader
                 .summon_facts(
@@ -349,7 +363,11 @@ impl CreatureAiState {
                 return Ok(last.clone());
             }
         }
-        let selected = self.select_think(sequence, facts)?;
+        let selected = self.select_think(
+            sequence,
+            facts,
+            self.profile.behavior().targeting.flee_health,
+        )?;
         Ok(self.finish_think(selected, facts, None))
     }
 }

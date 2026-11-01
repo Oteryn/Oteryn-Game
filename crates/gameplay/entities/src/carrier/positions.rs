@@ -20,6 +20,26 @@ impl PositionScope {
         }
     }
 
+    // Only immutable runtime bindings validated by `new` reach this non-fallible path.
+    pub(super) const fn from_validated_scope(scope: RuntimeScopeRefV1) -> Self {
+        match scope {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => Self::channel(world_id, channel_id),
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                mut instance_id,
+            } => {
+                instance_id[6] |= 0x80;
+                Self {
+                    world: world_id,
+                    tagged_local: instance_id,
+                }
+            }
+        }
+    }
+
     pub(super) fn new(scope: RuntimeScopeRefV1) -> Result<Self, CarrierError> {
         match scope {
             RuntimeScopeRefV1::Channel {
@@ -409,9 +429,8 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 => (*generation, None),
                 _ => continue,
             };
-            let actor = ExactActorRef(ActorRef::from_owner_parts(
-                self.binding.world_id,
-                self.binding.channel_id,
+            let actor = ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
                 ActorLocalId(
                     u32::try_from(index + 1)
@@ -457,9 +476,8 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 => (*generation, None),
                 _ => continue,
             };
-            let actor = ExactActorRef(ActorRef::from_owner_parts(
-                self.binding.world_id,
-                self.binding.channel_id,
+            let actor = ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
                 ActorLocalId(
                     u32::try_from(index + 1)
@@ -507,9 +525,8 @@ impl ChannelRuntimeV1 {
             if result.is_some() {
                 return Err(CarrierError::PlayerReservationMismatch);
             }
-            let actor = ExactActorRef(ActorRef::from_owner_parts(
-                self.binding.world_id,
-                self.binding.channel_id,
+            let actor = ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
                 ActorLocalId(
                     u32::try_from(index + 1)
@@ -534,10 +551,7 @@ impl ChannelRuntimeV1 {
             ])
         };
         PreProductionPositionContext {
-            scope: positions::PositionScope::channel(
-                self.binding.world_id,
-                self.binding.channel_id,
-            ),
+            scope: positions::PositionScope::from_validated_scope(self.binding.runtime_scope),
             scope_generation: self.binding.scope_generation,
             coordinate_frame_marker: prefix(&self.content.frame_binding_digest()),
             map_revision_marker: prefix(&self.content.map_revision_digest()),

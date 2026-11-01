@@ -109,10 +109,8 @@ impl DefensePresentationSource {
         reader: &mut (impl DefensePresentationWorldReader + ?Sized),
     ) -> Result<SourcePresentationEvent, AttackError> {
         let b = runtime.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }

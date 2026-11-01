@@ -1152,6 +1152,16 @@ impl AutoAttackOwner {
             });
         }
         let requested = draw("damage_draw", source.minimum, source.maximum)?;
+        // Crystal applies Overpower's critical first, then the source Soulpit/Echo
+        // multiplier to the raw request, before the target's armor and protections.
+        let (requested, soulpit_critical) = runtime
+            .encounter_source_damage(
+                facts.issuer,
+                u64::from(requested),
+                draw("soulpit_overpower", 1, 100)? as u8,
+            )
+            .map_err(|_| AttackError::NumericOverflow)?;
+        let requested = u32::try_from(requested).map_err(|_| AttackError::NumericOverflow)?;
         let multiplier = monster_reference_level_damage_multiplier(
             source.reference_level,
             &source.reference_level_overrides,
@@ -1165,14 +1175,27 @@ impl AutoAttackOwner {
                 / u64::from(DAMAGE_MULTIPLIER_SCALE),
         )
         .map_err(|_| AttackError::NumericOverflow)?;
-        let source_critical = source
-            .critical
-            .map(|policy| {
-                policy
-                    .draw(root, id, source.entry_index as u64)
-                    .map_err(|_| AttackError::InvalidPlan)
+        let source_critical = if runtime
+            .soulpit_variant(facts.issuer)
+            .and_then(|tag| tag.boss)
+            .is_some_and(|boss| {
+                boss.ability == oteryn_gameplay_domain::domain::soulpit::BossAbility::Overpower
+            }) {
+            Some(crate::source_critical_baseline::SourceCriticalEvent {
+                critical: soulpit_critical,
+                bonus_basis_points: 2500,
+                qualification: "Crystal201189f.Soulpit.Overpower",
             })
-            .transpose()?;
+        } else {
+            source
+                .critical
+                .map(|policy| {
+                    policy
+                        .draw(root, id, source.entry_index as u64)
+                        .map_err(|_| AttackError::InvalidPlan)
+                })
+                .transpose()?
+        };
         self.hazard_criticals
             .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         let mut hazard_critical = false;
@@ -1386,7 +1409,7 @@ fn require_owner(
     stamp: crate::foundation::RuntimeWorkStamp,
 ) -> Result<(), AttackError> {
     let b = runtime.binding();
-    let scope = crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+    let scope = b.runtime_scope();
     if !fence.is_current_for_scope(scope, b.scope_generation()) || !fence.accepts_stamp(stamp) {
         return Err(AttackError::StaleOwner);
     }

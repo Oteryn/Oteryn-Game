@@ -616,7 +616,11 @@ fn scenario() -> TestResult {
         assert_eq!(state, 4);
         // Account-bound custody survives membership cleanup and owner reconstruction; the
         // Channel keeps each GameSession's command stream (SESSION-INGRESS-1).
-        let commands = std::mem::take(&mut owner.states.command_ingress);
+        let commands = std::mem::take(
+            &mut std::sync::Arc::get_mut(&mut owner.states)
+                .expect("W02: isolated fixture state")
+                .command_ingress,
+        );
         drop(owner);
         drop(authority);
         h.root = fixture::tutorial_vitals_fixture::reopen_root(&h)?;
@@ -634,7 +638,9 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
-        owner.states.command_ingress = commands;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .command_ingress = commands;
         owner.premium_coordinator = Some(&coordinator);
         deps.initialize(&owner).await;
         assert_eq!(query(&owner, &mut leader, g).await?.claim, 797);

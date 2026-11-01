@@ -582,7 +582,7 @@ fn committed_timer_phase_survives_control_loss_but_new_or_substituted_input_does
     let binding = f.runtime.binding();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
     );
     due.deferred = Some(
         DeferredCommitAuthority::from_due(
@@ -1209,7 +1209,7 @@ fn master_assignment_payment_requires_real_player_preflight_and_cannot_be_deferr
     let mut due = original.clone();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         f.runtime.binding().world_id(),
-        f.runtime.binding().channel_id(),
+        f.runtime.binding().channel_id().expect("Channel fixture"),
     );
     let stamp = f.runtime.issue_owner_work().unwrap();
     due.deferred = Some(
@@ -1367,7 +1367,7 @@ fn due_authority_binds_submillisecond_time_and_presence() {
     let binding = f.runtime.binding();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
     );
     let token = DeferredCommitAuthority::from_due(
         f.runtime.owner_fence().expect("current fence"),
@@ -1416,4 +1416,146 @@ fn target_move_turn_is_in_place_and_stale_snapshot_cannot_turn() {
         .expect("roster")
         .expect("entry");
     assert_eq!(after, current);
+}
+
+fn instance_spell_fixture(local: u8, generation: u64) -> Result<Fixture, String> {
+    use oteryn_gameplay_foundation::foundation::{NodeId, WorldId};
+    let world = WorldId::decode(&uuid(0x40)).map_err(|error| format!("{error:?}"))?;
+    let scope =
+        RuntimeScopeRefV1::instance(world, uuid(local)).map_err(|error| format!("{error:?}"))?;
+    let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+        scope,
+        NodeId::decode(&uuid(0x42)).map_err(|error| format!("{error:?}"))?,
+        1,
+        generation,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let session = GameSessionId::decode(&uuid(0x21)).map_err(|error| format!("{error:?}"))?;
+    let reservation = runtime
+        .reserve_fresh_session(session)
+        .map_err(|error| format!("{error:?}"))?;
+    let caster = runtime
+        .commit_fresh_session(reservation)
+        .map_err(|error| format!("{error:?}"))?;
+    runtime
+        .initialize_movement_test_position(caster, position(10))
+        .map_err(|error| format!("{error:?}"))?;
+    let targets = (11..14)
+        .map(|x| runtime.admit_test_creature(position(x)))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(Fixture {
+        runtime,
+        caster,
+        targets,
+        session,
+    })
+}
+
+#[test]
+fn channel_candidate_v1_bytes_remain_pinned() -> Result<(), String> {
+    let f = fixture(1);
+    let candidate = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    let encoded = canonical_binding(&candidate).map_err(|error| format!("{error:?}"))?;
+    // Golden from the accepted Channel candidate-v1 representation: one caster,
+    // one damage target, no anchor or deferred phase. Instance support must not
+    // invalidate a retained Channel reservation or change its replay identity.
+    assert_eq!(encoded.len(), 429);
+    let digest: [u8; 32] = Sha256::digest(&encoded).into();
+    assert_eq!(
+        digest,
+        [
+            0x9a, 0x74, 0x8f, 0xb1, 0x09, 0x94, 0x00, 0x64, 0xc4, 0xee, 0x68, 0x1c, 0x19, 0xd7,
+            0xa9, 0x59, 0xff, 0x84, 0x13, 0xf0, 0x80, 0x0e, 0xf7, 0x16, 0x2a, 0x86, 0x58, 0x60,
+            0x37, 0xe0, 0x64, 0x08,
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn instance_spell_batch_commits_and_replays_without_channel_alias() -> Result<(), String> {
+    let mut instance = instance_spell_fixture(0x41, 1)?;
+    let channel = fixture(1);
+    let candidate = batch(&instance, 1, vec![damage(instance.targets[0], 0, 3)]);
+    let channel_candidate = batch(&channel, 1, vec![damage(channel.targets[0], 0, 3)]);
+    // The local UUID, world and slot generations deliberately match. Only the
+    // actual namespace differs, and it remains part of the canonical identity.
+    assert_eq!(instance.caster.world_id(), channel.caster.world_id());
+    assert_eq!(
+        instance.caster.0.actor_local_id,
+        channel.caster.0.actor_local_id
+    );
+    assert_eq!(
+        instance.caster.0.actor_local_generation,
+        channel.caster.0.actor_local_generation
+    );
+    assert_ne!(
+        canonical_binding(&candidate).map_err(|error| format!("{error:?}"))?,
+        canonical_binding(&channel_candidate).map_err(|error| format!("{error:?}"))?,
+    );
+    let mut staged = instance
+        .runtime
+        .stage_spell_batch(&candidate)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(health(&instance, 0), 20);
+    instance
+        .runtime
+        .reserve_spell_batch(&mut staged)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(instance.runtime.actor_spell_reserved(instance.caster));
+    assert!(instance.runtime.actor_spell_reserved(instance.targets[0]));
+    let receipt = instance
+        .runtime
+        .commit_spell_batch(staged)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(receipt.applied);
+    assert!(!instance.runtime.actor_spell_reserved(instance.caster));
+    assert!(!instance.runtime.actor_spell_reserved(instance.targets[0]));
+    assert_eq!(health(&instance, 0), 17);
+    let staged = instance
+        .runtime
+        .stage_spell_batch(&candidate)
+        .map_err(|error| format!("{error:?}"))?;
+    let replay = instance
+        .runtime
+        .commit_spell_batch(staged)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(!replay.applied);
+    assert_eq!(health(&instance, 0), 17);
+    let changed = batch(&instance, 1, vec![damage(instance.targets[0], 0, 4)]);
+    assert!(matches!(
+        instance.runtime.stage_spell_batch(&changed),
+        Err(Error::CommandConflict)
+    ));
+    assert_eq!(health(&instance, 0), 17);
+
+    let foreign = instance_spell_fixture(0x51, 1)?;
+    let newer = instance_spell_fixture(0x41, 2)?;
+    for runtime in [&channel.runtime, &foreign.runtime, &newer.runtime] {
+        assert!(matches!(
+            runtime.stage_spell_batch(&candidate),
+            Err(Error::Owner(CarrierError::WrongScope))
+        ));
+    }
+    for target in [channel.targets[0], foreign.targets[0]] {
+        let mixed = batch(&instance, 2, vec![damage(target, 0, 3)]);
+        assert!(matches!(
+            canonical_binding(&mixed),
+            Err(Error::Owner(CarrierError::WrongScope))
+        ));
+        assert!(matches!(
+            instance.runtime.stage_spell_batch(&mixed),
+            Err(Error::Owner(CarrierError::WrongScope))
+        ));
+    }
+    assert_eq!(health(&channel, 0), 20);
+    assert_eq!(health(&foreign, 0), 20);
+    assert_eq!(health(&newer, 0), 20);
+    assert_eq!(health(&instance, 0), 17);
+    Ok(())
 }

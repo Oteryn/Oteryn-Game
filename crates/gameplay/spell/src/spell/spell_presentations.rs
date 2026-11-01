@@ -221,10 +221,7 @@ impl SpellPresentationOwner {
         let binding = runtime.binding();
         Self {
             content: runtime.content_pin().server_artifact_digest(),
-            scope: crate::foundation::RuntimeScopeRefV1::channel(
-                binding.world_id(),
-                binding.channel_id(),
-            ),
+            scope: binding.runtime_scope(),
             generation: binding.scope_generation(),
             pending: Vec::new(),
             held: Vec::new(),
@@ -266,11 +263,7 @@ impl SpellPresentationOwner {
         let binding = runtime.binding();
         if runtime.owner_fence().is_err()
             || self.content != runtime.content_pin().server_artifact_digest()
-            || self.scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                )
+            || self.scope != binding.runtime_scope()
             || self.generation != binding.scope_generation()
         {
             return Err(Error::StaleOwner);

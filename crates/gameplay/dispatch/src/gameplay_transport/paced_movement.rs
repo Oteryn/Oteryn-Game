@@ -155,8 +155,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         underwater_drown::underwater(map, snapshot.position()),
                     );
                 }
+                super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
                 drop(states);
                 drop(runtime);
+                if self
+                    .soulpit_exit_step(actor, session, snapshot.position())
+                    .await
+                    .is_err()
+                {
+                    super::operator_event(
+                        "soulpit_return_pending shared_activity_owner_unavailable",
+                    );
+                }
                 let snapshot = match origin {
                     Some(origin) => {
                         let snapshot = self

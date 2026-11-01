@@ -247,7 +247,7 @@ pub(super) async fn drain(
     if let Ok(outcomes) = outcomes {
         for (_, outcome) in outcomes {
             if let Ok(outcome) = outcome {
-                record_hits(runtime, attack, &players, outcome, now);
+                record_hits(runtime, attack, None, &players, outcome, now);
             }
         }
     }
@@ -335,7 +335,7 @@ pub(super) async fn drain(
     if let Ok(outcomes) = outcomes {
         for (_, _, outcome) in outcomes {
             if let Ok(outcome) = outcome {
-                record_hits(runtime, attack, &players, outcome, now);
+                record_hits(runtime, attack, None, &players, outcome, now);
             }
         }
     }

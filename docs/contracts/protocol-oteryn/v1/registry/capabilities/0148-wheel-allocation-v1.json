@@ -4,7 +4,12 @@
   "owner_decision": "WHEEL-LIVE-1",
   "owner": "Game Wheel of Destiny owner",
   "requires": [],
-  "command_types": [161, 308, 309],
+  "command_types": [
+    161,
+    308,
+    309,
+    424
+  ],
   "state_domains": [],
   "offered": true,
   "offer_gate": "Every Wheel and Gem Atelier request requires a current admitted Character session. Mutations require the native Premium allocation gate; reads retain saved state after Premium lapses."

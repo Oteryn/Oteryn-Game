@@ -375,11 +375,9 @@ fn setup_named(
         condition_policy: None,
     };
     let b = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     (
         r,
         states,
@@ -3250,6 +3248,129 @@ fn monster_direct_current_sources_replay_real_damage_and_owned_conditions() {
 }
 
 #[test]
+fn monster_current_composite_keeps_typed_death_resistance_conditions_and_replay() {
+    let (mut runtime, mut vitals, mut source, proposal, mut world, _, _) =
+        setup_named("blightwalker", 3);
+    // Explicit numerical fixture: keep the admitted source/condition path, with
+    // fixed 101 damage so the existing 1.01% Death resistance has a visible effect.
+    source.minimum = 101;
+    source.maximum = 101;
+    source.armor = false;
+    assert_eq!(source.element.as_deref(), Some("death"));
+    assert!(!source.conditions.is_empty());
+    world.facing = Some(Facing::West);
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed: 180,
+    });
+    let session = world.facts.attack.session;
+    let mut player = crate::spell::cast::PlayerSpellState::new(
+        crate::spell::cast::CharacterCastFacts {
+            level: 500,
+            ..FACTS
+        },
+        0,
+        0,
+    )
+    .expect("eligible numerical fixture");
+    player
+        .apply_owner_promotion_transition(true, true, Some(10_000_000))
+        .expect("current promoted Premium player");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .sockets
+        .gem_values_milli
+        .insert(("Death Resistance".into(), "".into()), 1_010);
+    player.install_wheel_effects(effects);
+    assert!(player.wheel_effects_at(2_000_000).is_some());
+    assert_eq!(
+        player.after_player_block(
+            101,
+            crate::player_lethal::PlayerHitKind::Death,
+            0,
+            2_000_000
+        ),
+        Some(99)
+    );
+    world.facts.attack.player_level = 500;
+    world.facts.attack.revision = player.revision();
+    let before_revision = player.revision();
+    let health = player.vitals().health;
+    assert!(vitals.replace_owned_player_state_test_fixture(
+        &runtime,
+        proposal.target,
+        session,
+        player
+    ));
+    let stamp = runtime.issue_owner_work().expect("current work");
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("typed composite through actual damage owner");
+    let receipt = first.targets[0]
+        .1
+        .as_ref()
+        .expect("owned target")
+        .damage
+        .expect("HP receipt");
+    assert_eq!(receipt.applied, 99);
+    assert_eq!(receipt.vitals_revision, before_revision + 1);
+    assert_eq!(receipt.health_after, health - 99);
+    let committed = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("committed player")
+        .clone();
+    assert_eq!(committed.revision(), receipt.vitals_revision);
+    for definition in &source.conditions {
+        assert!(
+            committed
+                .owned_conditions()
+                .get(definition.condition_type().conflict_key())
+                .is_some()
+        );
+    }
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(3_000_000),
+            )
+            .expect("replay"),
+        first
+    );
+    assert_eq!(
+        vitals.read_owned_player_state_test_snapshot(&runtime, proposal.target, session),
+        Some(&committed)
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        owner.execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(4_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
 fn monster_direct_current_missing_policy_and_protection_do_not_mutate_player() {
     for mode in 0..3 {
         let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
@@ -3907,7 +4028,7 @@ fn monster_windup_factory_receives_exact_source_target_and_supplied_work() {
         .expect("prepared current due work");
     let binding = runtime.binding();
     let (_, wrong_stamp) = crate::foundation::crystal_timer_fixture(
-        crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.runtime_scope(),
         crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
             .expect("different generation"),
     )

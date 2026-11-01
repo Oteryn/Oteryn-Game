@@ -315,9 +315,8 @@ impl ChannelRuntimeV1 {
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow,
         )?;
         let actor = ExactActorRef(
-            oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                self.binding.world_id,
-                self.binding.channel_id,
+            oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
                 ActorLocalId(local),
                 ActorLocalGeneration(generation),
@@ -660,7 +659,33 @@ impl ChannelRuntimeV1 {
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if *health <= 0 || spell_combat.maximum_health != policy.maximum_health {
+        // Native profile registration can follow physical encounter admission. Rebinding
+        // the same policy preserves a variant's source-scaled HP and existing conditions.
+        if (spell_combat.echo.is_some() || spell_combat.soulpit.is_some())
+            && let Some(existing) = companion
+        {
+            return if existing.policy.as_ref() == policy.as_ref()
+                && *health > 0
+                && *health <= spell_combat.maximum_health
+            {
+                Ok(())
+            } else {
+                Err(CarrierError::InvalidCreatureHealth)
+            };
+        }
+        let expected_maximum = match spell_combat.soulpit {
+            Some(tag) => tag
+                .stack
+                .scaled_health(
+                    u64::try_from(policy.maximum_health)
+                        .map_err(|_| CarrierError::InvalidCreatureHealth)?,
+                )
+                .ok()
+                .and_then(|maximum| i64::try_from(maximum).ok())
+                .ok_or(CarrierError::DamageOverflow)?,
+            None => policy.maximum_health,
+        };
+        if *health <= 0 || spell_combat.maximum_health != expected_maximum {
             return Err(
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::InvalidCreatureHealth,
             );
@@ -766,8 +791,7 @@ impl ChannelRuntimeV1 {
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if actor.runtime_scope()
-            != RuntimeScopeRefV1::channel(self.binding.world_id, self.binding.channel_id)
+        if actor.runtime_scope() != self.binding.runtime_scope
             || actor.scope_generation() != self.binding.scope_generation
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
@@ -822,9 +846,8 @@ impl ChannelRuntimeV1 {
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow
                 })?;
                 let actor = ExactActorRef(
-                    oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                        self.binding.world_id,
-                        self.binding.channel_id,
+                    oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                        self.binding.runtime_scope,
                         self.binding.scope_generation,
                         ActorLocalId(local),
                         ActorLocalGeneration(*generation),
@@ -860,9 +883,8 @@ impl ChannelRuntimeV1 {
                 && state.policy.is_familiar
                 && *health == 0
             {
-                let actor = ExactActorRef(oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                    self.binding.world_id,
-                    self.binding.channel_id,
+                let actor = ExactActorRef(oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                     self.binding.scope_generation,
                     ActorLocalId(
                         u32::try_from(index + 1)

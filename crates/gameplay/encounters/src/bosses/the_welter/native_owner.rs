@@ -265,9 +265,8 @@ fn commit_welter_consume_inner(
                         _ => return None,
                     };
                     Some((
-                        ExactActorRef(ActorRef::from_owner_parts(
-                            runtime.binding().world_id(),
-                            runtime.binding().channel_id(),
+                        ExactActorRef(ActorRef::from_scoped_owner_parts(
+                            runtime.binding().runtime_scope(),
                             runtime.binding().scope_generation(),
                             ActorLocalId((i + 1) as u32),
                             ActorLocalGeneration(*generation),

@@ -69,7 +69,10 @@ use super::db::{
     begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
     lock_admission_relations,
 };
-use super::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, TypedDefinitionRef, uuid_text};
+use super::item_mint::{
+    CORPSE_MATERIALIZATION_PURPOSE_KEY, TypedDefinitionRef, decode_ground_scope,
+    ground_scope_columns, uuid_text,
+};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
     OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple,
@@ -118,6 +121,11 @@ pub use crate::domain::item_definition::ItemStackClass;
 /// Same admitted Content generation, resolved by the real producer, never a client revision.
 pub trait ItemWeightLookup: Send + Sync {
     fn generation_digest(&self) -> [u8; 32];
+    /// Live Premium authority for the account read from the locked Character root.
+    /// Content-only callers have no authority to activate Wheel capacity.
+    fn wheel_premium_current(&self, _account: [u8; 16]) -> bool {
+        false
+    }
     fn weight_of(
         &self,
         definition: &TypedDefinitionRef,
@@ -372,10 +380,6 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok((request, reservation, binding)));
                     }
-                    let (world_id, channel_id) = match scope_of(&fence) {
-                        Ok(scope) => scope,
-                        Err(error) => return Ok(Err(error)),
-                    };
                     let row = sqlx::query(
                         "SELECT game_character_uuid_v7()::text AS transaction_id, \
                                 game_character_uuid_v7()::text AS event_id, \
@@ -386,8 +390,7 @@ impl DurabilityRoot {
                     .await?;
                     let reservation = Reservation {
                         character_id: fence.character_id,
-                        world_id: *world_id.as_bytes(),
-                        channel_id: *channel_id.as_bytes(),
+                        scope: fence.runtime_scope,
                         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
                         event_id: uuid_text(row.try_get("event_id")?)?,
                         occurred_at_unix_ms: row.try_get("occurred_at")?,
@@ -503,14 +506,6 @@ impl DurabilityRoot {
         candidate: &mut ItemTransferCandidate,
         weights: &dyn ItemWeightLookup,
     ) -> Result<ItemTransferOutcome> {
-        // A non-Channel scope owns no Ground, so its fence is refused as stale authority
-        // before the lane check, as the transaction refused it before SPELL-LOCK-2.
-        if !matches!(
-            fence.runtime_scope,
-            crate::foundation::RuntimeScopeRefV1::Channel { .. }
-        ) {
-            return Err(ItemTransferError::AuthorityRejected);
-        }
         permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
@@ -857,8 +852,7 @@ impl DurabilityRoot {
 /// The durable reservation row of one CommandRef.
 struct Reservation {
     character_id: CharacterId,
-    world_id: [u8; 16],
-    channel_id: [u8; 16],
+    scope: RuntimeScopeRefV1,
     transaction_id: [u8; 16],
     event_id: [u8; 16],
     occurred_at_unix_ms: i64,
@@ -938,6 +932,78 @@ pub(super) async fn character_item_fence_without_root(
     )
 }
 
+/// Scope-general custody fence. Older Channel-only owners keep the strict
+/// wrapper above; full-scope reservations must match the exact tagged owner.
+pub(crate) async fn character_item_fence_for_scope_is_current(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    reserved_character: CharacterId,
+    reserved_scope: RuntimeScopeRefV1,
+) -> std::result::Result<bool, DurabilityError> {
+    if command.game_session_id() != fence.game_session_id
+        || reserved_character != fence.character_id
+        || reserved_scope != fence.runtime_scope
+    {
+        return Ok(false);
+    }
+    Ok(
+        super::character_progression::assert_item_only_fence(tx, fence, node)
+            .await?
+            .is_ok(),
+    )
+}
+
+/// The immutable content binding of the admitted activity, under the current
+/// complete session/node/assignment fence. Origin Channel identity is history,
+/// never authority for private Ground. Instances do not hot-swap their template.
+pub(crate) async fn assert_activity_item_content(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    digest: [u8; 32],
+) -> std::result::Result<bool, DurabilityError> {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
+    if !character_item_fence_for_scope_is_current(
+        tx,
+        node,
+        fence,
+        command,
+        fence.character_id,
+        fence.runtime_scope,
+    )
+    .await?
+    {
+        return Ok(false);
+    }
+    let fact = node.fact();
+    let current: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s \
+         JOIN game_activity_handoff_groups g ON g.handoff_id=s.activity_handoff_id \
+         JOIN game_activity_runtime_entries e USING(handoff_id) \
+         JOIN game_activity_handoff_participants p ON p.handoff_id=g.handoff_id AND p.character_id=s.character_id \
+         WHERE s.game_session_id=encode($1,'hex')::uuid AND s.character_id=encode($2,'hex')::uuid \
+           AND g.world_id=encode($3,'hex')::uuid AND g.instance_id=encode($4,'hex')::uuid \
+           AND g.ownership_generation=$5::text::numeric AND g.state=2 \
+           AND e.destination_server_artifact_digest=$6 \
+           AND e.holder_node_id=encode($7,'hex')::uuid AND e.holder_registration_revision=$8::text::numeric \
+           AND game_activity_session_origin_valid(s.game_session_id,s.character_id))")
+        .bind(fence.game_session_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice())
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+        .bind(fence.scope_ownership_generation.get().to_string()).bind(digest.as_slice())
+        .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+        .fetch_one(&mut **tx).await?;
+    Ok(current)
+}
+
 fn character_item_command_matches(
     fence: &CurrentCharacterItemFence,
     command: CommandRef,
@@ -967,18 +1033,14 @@ async fn admit(
     reservation: &Reservation,
     weights: &dyn ItemWeightLookup,
 ) -> Pass<Admitted> {
-    let (world_id, channel_id) = match scope_of(fence) {
-        Ok(scope) => scope,
-        Err(error) => return Ok(Err(error)),
-    };
-    if !character_item_fence_is_current(
+    let world_id = fence.runtime_scope.world_id();
+    if !character_item_fence_for_scope_is_current(
         tx,
         node,
         fence,
         request.command,
         reservation.character_id,
-        reservation.world_id,
-        reservation.channel_id,
+        reservation.scope,
     )
     .await?
     {
@@ -992,7 +1054,12 @@ async fn admit(
     };
     // DUR-03 §32: the fenced runtime scope owns the source Ground (for a
     // corpse entry, its corpse's Ground).
-    if source.world_id != *world_id.as_bytes() || source.ground.channel_id != channel_id.as_bytes()
+    if source.world_id != *fence.runtime_scope.world_id().as_bytes()
+        || source
+            .ground
+            .runtime_scope()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            != fence.runtime_scope
     {
         return Ok(Err(ItemTransferError::AuthorityRejected));
     }
@@ -1073,7 +1140,9 @@ async fn admit(
         Err(refusal) => return Ok(Err(ItemTransferError::Refused(refusal))),
     };
     if weights.generation_digest() != request.weight_generation_digest {
-        return Ok(Err(ItemTransferError::Refused(ItemTransferRefusal::WeightGenerationMismatch)));
+        return Ok(Err(ItemTransferError::Refused(
+            ItemTransferRefusal::WeightGenerationMismatch,
+        )));
     }
     if let Err(refusal) = check_incoming_capacity(
         tx,
@@ -1128,7 +1197,7 @@ pub(super) async fn check_incoming_capacity(
             ItemTransferRefusal::WeightDefinitionMismatch
         }));
     }
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, character).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, character, weights).await?;
     // UNION ALL with an explicit path reports corrupt cycles instead of hiding them.
     // Every location is retained for duplicate/world validation; every actual instance
     // is locked, including non-container equipment and all backpack descendants.
@@ -1220,24 +1289,25 @@ fn weight_refusal(error: ItemWeightRefused) -> ItemTransferRefusal {
     }
 }
 
-/// D1199 base capacity from the actual locked progression/build, never a client capacity.
-/// Called only after the native current item fence in admit.
+/// Capacity from the actual locked progression/build and current Wheel/Atelier allocation.
+/// Called only after the native current item fence; Premium is read from the live owner.
 pub(super) async fn read_derived_transfer_capacity_centi_oz(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
+    weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<u64, DurabilityError> {
     // The native transfer fence already holds this live root. Reacquire that same row before
     // taking progression/build locks, retaining the native per-Character serialization order.
-    let live: Option<i32> = sqlx::query_scalar(
-        "SELECT 1 FROM game_character_roots \
+    let account: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(account_id) FROM game_character_roots \
          WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE",
     )
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    if live.is_none() {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    let account: [u8; 16] = account
+        .and_then(|bytes| bytes.try_into().ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
     let level: Option<i64> = sqlx::query_scalar(
         "SELECT level FROM game_character_progression_state \
          WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
@@ -1262,8 +1332,15 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
-        .map_err(|_| DurabilityError::InvalidStoredState)
+    let base = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let wheel = if weights.wheel_premium_current(account) {
+        super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
+            .await?
+    } else {
+        0
+    };
+    base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(
@@ -1272,7 +1349,7 @@ async fn load_source(
 ) -> std::result::Result<Option<SourceRow>, DurabilityError> {
     let row = sqlx::query(
         "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
-                i.definition_revision_ref, i.quantity, g.channel_id::text, \
+                i.definition_revision_ref, i.quantity, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
                 g.map_revision, g.content_revision, g.native_room_placement_context, \
                 COALESCE(k.key_number, 0) AS key_number \
@@ -1305,8 +1382,13 @@ fn source_row(
         },
         world_id,
         ground: OneItemGroundV1 {
+            instance_id: ground_scope_columns(decode_ground_scope(row)?)
+                .2
+                .map(|id| id.to_vec()),
             world_id: world_id.to_vec(),
-            channel_id: uuid_text(row.try_get("channel_id")?)?.to_vec(),
+            channel_id: ground_scope_columns(decode_ground_scope(row)?)
+                .1
+                .map_or_else(Vec::new, |id| id.to_vec()),
             spatial_position: row.try_get("spatial_position")?,
             corpse_ref: row.try_get("corpse_ref")?,
             map_revision: row.try_get("map_revision")?,
@@ -1347,7 +1429,7 @@ async fn load_corpse_entry_source(
         "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
                 i.definition_revision_ref, i.quantity, \
                 e.parent_item_instance_id::text AS corpse_id, \
-                e.placement_ordinal::text AS placement_ordinal, g.channel_id::text, \
+                e.placement_ordinal::text AS placement_ordinal, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
                 g.map_revision, g.content_revision, g.native_room_placement_context, \
                 COALESCE(k.key_number, 0) AS key_number \
@@ -1613,7 +1695,12 @@ async fn apply_transfer(
 
     // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of this Ground (or of the
     // corpse entry's Ground root), so the lane must be that Channel's.
-    permit.check_stored_channel(&source.world_id, &source.ground.channel_id)?;
+    permit.check_scope(
+        source
+            .ground
+            .runtime_scope()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    )?;
     let removed = match source.corpse.as_ref() {
         None => {
             sqlx::query(
@@ -1817,7 +1904,7 @@ async fn load_reservation(
     command: CommandRef,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
-        "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
+        "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, scope_kind, instance_id::text, \
                 transaction_id::text, event_id::text, occurred_at, work_units_used \
            FROM game_item_transfer_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
@@ -1836,8 +1923,7 @@ fn decode_reservation(
     Ok(Reservation {
         character_id: CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
-        world_id: uuid_text(row.try_get("world_id")?)?,
-        channel_id: uuid_text(row.try_get("channel_id")?)?,
+        scope: decode_ground_scope(row)?,
         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
         event_id: uuid_text(row.try_get("event_id")?)?,
         occurred_at_unix_ms: row.try_get("occurred_at")?,
@@ -1856,23 +1942,25 @@ async fn insert_reservation(
         "INSERT INTO game_item_transfer_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, source_item_instance_id, destination_kind, \
            intent_binding, transaction_id, event_id, occurred_at, work_units_used, \
-           reserved_at) \
+           reserved_at, scope_kind, instance_id) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7, $8, \
            encode($9,'hex')::uuid, encode($10,'hex')::uuid, $11, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $12, encode($13,'hex')::uuid)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
     .bind(reservation.character_id.as_bytes().as_slice())
-    .bind(reservation.world_id.as_slice())
-    .bind(reservation.channel_id.as_slice())
+    .bind(reservation.scope.world_id().as_bytes().as_slice())
+    .bind(ground_scope_columns(reservation.scope).1.map(|id| id.to_vec()))
     .bind(request.source_item_instance_id.as_slice())
     .bind(destination_kind(request.destination))
     .bind(intent_binding.as_slice())
     .bind(reservation.transaction_id.as_slice())
     .bind(reservation.event_id.as_slice())
     .bind(reservation.occurred_at_unix_ms)
+    .bind(ground_scope_columns(reservation.scope).0)
+    .bind(ground_scope_columns(reservation.scope).2.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
     Ok(())

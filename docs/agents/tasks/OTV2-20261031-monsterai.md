@@ -5,12 +5,12 @@ task_id: OTV2-20261031-monsterai
 title: Data-driven monster targeting, fleeing and attacks
 type: mechanic
 mode: IMPLEMENT
-status: ready
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/monsterai
 pr: 2766
-base_sha: c81c2c9b4333a7c53e362a9bfe32549ef1040ace
+base_sha: 38641fecd4558a4a14e6b15b3874110ffa2dff19
 head_sha: null
 final_head_sha: null
 owner: monsterai-task-owner
@@ -41,6 +41,30 @@ depends_on: []
 blocks: []
 external_repositories: []
 ```
+
+## Takeover checkpoint (2026-11-01)
+
+The local merge of `38641fecd4558a4a14e6b15b3874110ffa2dff19` into
+`8a0d937779bbc10a45f9cbffd8364780b1159442` has resolved file contents and a clean
+`git diff --check`. The Git index is untouched, so its nine unmerged entries
+remain for the owner to stage. No commit, push, reset, checkout, stash, external
+write, workflow edit, migration edit, credential access or Docker action occurred.
+
+**BLOCKER: PostgreSQL qualification.** Every database case returned early even
+through `/home/mole/oteryn-cache/codex-bin/cargo`. The installed wrapper has no
+PostgreSQL environment assignment and the cases report an unset
+`OTERYN_TEST_POSTGRES_ADMIN_URL`. The owner was asked to have the coordinator
+restore that injection outside this worktree; no database URL was requested or
+printed. A second absolute-wrapper Rat-only probe also returned early. These
+harness successes are not database passes. The task remains active and is not
+archived while that required qualification is missing.
+
+The next step is to rerun the three exact filtered PostgreSQL commands below,
+require seven `MONSTER_AI POSTGRES_CASE_COMPLETED` markers for `monster_attacks::`
+and no configuration skips, and repair any actual failures. The future committed
+candidate still needs its own CI/game-gate, independent review and the
+coordinator-owned node-boot result (owner answer 6547138645). No frozen SHA or
+mergeability is claimed for this uncommitted worktree.
 
 ## Outcome
 
@@ -94,8 +118,8 @@ migration, SQL guard or permission is weakened.
 - [x] All native melee slots, source intervals and extra/1500 ms semantics execute.
 - [x] Distance/area attacks and existing owned conditions use current combat owners.
 - [x] Full native projection and melee census execute against actual source data.
-- [x] Six canonical dispatch/PostgreSQL cases pass, including Rat movement and removal.
-- [x] Final summon/Map, eight-library, content/pin and repository checks complete.
+- [ ] Seven canonical dispatch/PostgreSQL cases qualify on the takeover tree, including Rat movement, invisible area recipients and removal.
+- [ ] Final filtered unit, summon/Map PostgreSQL, content/pin and repository qualification completes on the takeover tree.
 
 ## Reference parity
 
@@ -161,34 +185,137 @@ No new dead-code suppression, model identifier, secret or audit-ledger edit.
 
 ## Validation
 
-Actual commands/results are retained in README and the draft PR. Runtime
-9c72fa2558915c417831d3d8d374320e70a3d9fa merges main c81c2c9b4; all eight libraries
-passed (3305 tests, 20 default opt-in ignores).
-The explicit melee, eighteen-Encounter, appearance and full-Content gates passed
-1/1/6/1 tests. The 1870-profile projection and House-exit regression passed.
-Strict eight-crate Clippy, six generator tests, server Content integration,
-World pin-check, server smoke, formatting, governance and diff checks passed.
-Standard regeneration/pin-refresh passed in 629.21 s with no data/pin changes.
-Six canonical monster PostgreSQL cases (316.50 s), one actual EQMOD case plus its
-Content-only regression (98.45 s combined), and four Map/summon cases (183.03 s)
-establish eleven actual database scenarios. Each tested revision is in README;
-an unset PostgreSQL variable in the general library run is never a database pass.
+These results describe the uncommitted takeover tree, not the old HEAD alone.
+Historical implementation results remain in the evidence README. All Cargo
+commands below used the absolute queued wrapper, locked dependencies and offline
+operation. Actual-manifest tests set `OTERYN_FULL_SPELL_TEST_MANIFEST` to this
+worktree's `content/spells.manifest.json`. Default opt-in Content, melee census,
+Encounter refusal and six appearance checks were also run explicitly with
+`--ignored`; the existing RL-17 host measurement remains outside this task.
 
-Node-boot prerequisite inspection found Docker unavailable in the task WSL
-integration. The normal local PostgreSQL cluster is not a substitute for the
-required container/Platform/TLS topology; no node-boot pass is claimed.
+| Command | Result |
+|---|---|
+| `/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check` | PASS, exit 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo check --locked --workspace --all-targets --all-features` | PASS, exit 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-game-server -p oteryn-gameplay-combat -p oteryn-gameplay-content -p oteryn-gameplay-dispatch -p oteryn-gameplay-domain -p oteryn-gameplay-durability -p oteryn-gameplay-entities -p oteryn-gameplay-monster-ai -p oteryn-gameplay-spell --all-targets --all-features -- -D warnings` | PASS, exit 0 |
+| `python3 tools/content-migration/test_bind_monster_source_definitions.py` | PASS, exit 0 |
+| `python3 tools/content-migration/regenerate_content.py --check` | PASS: 5 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo run --locked -p oteryn-architecture-check -- workspace .` | PASS, exit 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .` | PASS, exit 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . /home/mole/oteryn-cache/rs-wt/tk-monsterai/tmp/monsterai-takeover/pin-check` | PASS, exit 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-domain --all-features --lib native_zero_melee -- --nocapture --test-threads=1` | PASS: 1 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-entities --all-features --lib translation -- --nocapture --test-threads=1` | PASS: 5 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-entities --all-features --lib current_session -- --nocapture --test-threads=1` | PASS: 4 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-entities --all-features --lib activity_transfer -- --nocapture --test-threads=1` | PASS: 4 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-entities --all-features --lib echo_warden:: -- --nocapture --test-threads=1` | PASS: 8 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-monster-ai --all-features --lib ai_think:: -- --nocapture --test-threads=1` | PASS: 86 passed, 0 failed, 1 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-monster-ai --all-features --lib ai_monster_melee:: -- --nocapture --test-threads=1` | PASS: 22 passed, 0 failed, 1 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-monster-ai --all-features --lib actual_full_admitted_melee_sources_resolve_every_authored_index -- --nocapture --test-threads=1 --ignored` | PASS: 1 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-combat --all-features --lib creature_ -- --nocapture --test-threads=1` | PASS: 9 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-spell --all-features --lib spell::actor_conditions:: -- --nocapture --test-threads=1` | PASS: 24 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib creature_source_items:: -- --nocapture --test-threads=1` | PASS: 2 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-content --all-features --lib native_gameplay:: -- --nocapture --test-threads=1` | PASS: 58 passed, 0 failed, 1 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-content --all-features --lib actual_full_manifest_qualifies_source_world_and_all_owner_profiles -- --nocapture --test-threads=1 --ignored` | PASS: 1 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib native_composite_tests:: -- --nocapture --test-threads=1` | PASS: 6 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib creature_damage_spell -- --nocapture --test-threads=1` | PASS: 70 passed, 0 failed, 6 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib monster_ai_cycle:: -- --nocapture --test-threads=1` | PASS: 13 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib boss_reward_contribution:: -- --nocapture --test-threads=1` | PASS: 8 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib creature_damage_spell_appearance_execution_tests -- --nocapture --test-threads=1 --ignored` | PASS: 6 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib monster_actual_encounter_attacks_remain_eighteen_explicit_refusals -- --nocapture --test-threads=1 --ignored` | PASS: 1 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib monster_attacks:: -- --nocapture --test-threads=1` | NOT QUALIFIED: 0 database cases executed, 7 returned early (harness exit 0) |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib equipment_mods:: -- --nocapture --test-threads=1` | NOT QUALIFIED: 1 Content-only case passed, 1 database case returned early (harness exit 0) |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib postgres_tests::loop_monster:: -- --nocapture --test-threads=1` | NOT QUALIFIED: 0 database cases executed, 4 returned early (harness exit 0) |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --all-features --test ability_engine '' -- --nocapture --test-threads=1` | PASS: 95 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --all-features --test integration_rest content_ -- --nocapture --test-threads=1` | PASS: 123 passed, 0 failed, 0 ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo run --locked -p oteryn-game-server -- --smoke` | PASS, exit 0 |
+
+- `python3 tools/content-migration/regenerate_content.py --skip-checks`: PASS,
+  non-staging regeneration of the full World/content/authoring chain. The
+  registered `--check` and separate pin refresh/check passed afterward.
+- `bash tools/merge-driver/regen.sh --check`: invocation refused (exit 2), because
+  the wrapper always adds `--resolve`. The direct generator route above avoided
+  its prohibited Git checkout/add operations and ran every registered check.
+- The first direct freshness check hit a read-only sibling temporary directory in
+  the historical Item checker. A local `tempfile.TemporaryDirectory` routing shim
+  under `tmp/monsterai-takeover/temp-routing` redirected that one outside parent
+  to this worktree's scratch directory. No checker, source bytes or assertions
+  changed. The full freshness rerun passed, including 599 Item engine checks,
+  the 33,971-entry Crystal binding check and five Rust World inventory tests.
+- `python3 tools/content-migration/test_bind_monster_source_definitions.py`: PASS,
+  six tests. Regenerated providers retain 1,870 Creature and 2,210 Item records,
+  with matching manifest digests. World pin refresh retained digest
+  `8bf53203d1f8159695f2872937135578903c4ad89067eb19344515de1c904e6c`.
+- The typed composite regression was proved RED by injecting lost element
+  forwarding (0 passed, 1 failed: 101 damage instead of 99), then GREEN with the
+  original production bytes restored (1 passed, 0 failed). Its explicit fixture
+  has a currently promoted Premium level-500 player and 1.01% Death resistance;
+  damage and source conditions share one revision, replay is identical, and a
+  retired owner refuses. An initially ineligible Wheel fixture was corrected;
+  the expected damage assertion stayed 99.
+- The native Content run first reported 57 passed, 1 failed, 1 ignored because
+  main's reward-boss fixture changed the Rat root without refreshing its copied
+  attack root. The existing regression passed after the fixture repair
+  (1 passed, 0 failed), then the full selected Content run passed 58/0/1.
+- `bash .claude/skills/oteryn-dev/scripts/dup-migrations.sh`: PASS, no duplicates.
+- `bash .claude/skills/oteryn-dev/scripts/dup-migrations.sh 38641fecd`: PASS,
+  no duplicates. A separate working-tree prefix census also found none.
+- Migration renumbering: **none needed; this branch adds no migrations**.
+- `python tools/agents/validate_governance.py`: PASS, 22 required policy documents and nine project lanes.
+- `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests, zero failures.
+- Final `git diff --check`: PASS; no conflict markers remain in the nine resolved working files.
 
 ## Self-review
 
-The root reviews the complete change and integrates three disjoint worker packets.
-Concrete source, authority, replay and production integration findings above were
-repaired and their relevant checks rerun. Worker review is not represented as an
-independent protected-integration review.
+The takeover delta was read in full against both the repository checklist and
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Workspace searches covered added
+fields/types, constructors, trait implementations and production callers across
+`apps/`, `crates/` and `tools/`. The activity-transfer position constructor now
+initializes the translation marker. Main's typed damage, Channel/Instance scope,
+boss participation and Echo Warden flee scaling survive alongside the branch's
+current-owner and native-summon behavior; movement retries use the same scaled
+threshold as full thinks. Main's reward-boss classification fixture now refreshes
+its exact copied roots using the same helper as the summon fixtures. Production
+binding validation remains strict.
+
+An unused heal accessor was removed, and the timer/fingerprint convenience APIs
+that have only test callers are confined to test/test-support builds. The new
+current-owner typed bridge has a production spell caller and the real spell-owner
+regression above. No assertion or test was removed or weakened. No remaining
+self-review finding is claimed; PostgreSQL behavior remains unqualified.
+Independent frozen-head review was not requested by this worker. The public PR
+review and inline-comment reads were empty; the earlier standalone Ability
+fixture report is covered by the 95 passing `ability_engine` tests.
 
 ## PR and closeout
 
-Draft https://github.com/Oteryn/Oteryn-Game/pull/2766 opened after first commit.
-No review requested, heavy-tests label, PR merge or deployment. Reserved number blocks
-remain unused. The final scan on main c81c2c9b4 returned exit 1 for duplicate
-reservations between other PRs #2767/#2777; none overlaps this task's blocks. Final exact head belongs in PR/check evidence after the last commit;
-a commit cannot contain its own SHA. The final immutable commit is recorded in the PR after this documentation commit.
+PR: https://github.com/Oteryn/Oteryn-Game/pull/2766. The owner commits after review.
+The task has not reached FREEZE_SHA, CI qualification, merge or archive. No new
+number reservations were consumed. Node boot remains coordinator-owned and
+unqualified under answer 6547138645; the earlier excluded scopes remain unchanged.
+
+## Takeover changed files
+
+This is the delta from the prepared merge's index, including resolved unmerged
+files. Incoming main changes already staged by the owner are preserved. Other
+regenerated outputs matched their prepared merged bytes; the serving manifest
+conflict was regenerated rather than hand-edited.
+
+- `content/spells.manifest.json`
+- `crates/gameplay/combat/src/ability/player_lethal.rs`
+- `crates/gameplay/combat/src/creature_chain_attack.rs`
+- `crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/physical_spell.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/physical_spell/composed.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/physical_spell/timers.rs`
+- `crates/gameplay/dispatch/src/lib.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_appearance_execution_tests.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_tests.rs`
+- `crates/gameplay/entities/src/carrier/activity_transfer.rs`
+- `crates/gameplay/monster-ai/src/ai_think/movement_attack.rs`
+- `crates/gameplay/monster-ai/src/ai_think/summon_plan.rs`
+- `crates/gameplay/spell/src/creature_damage_spell/composed.rs`
+- `crates/gameplay/spell/src/creature_damage_spell/mod.rs`
+- `docs/agents/tasks/OTV2-20261031-monsterai.md`

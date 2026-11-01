@@ -3,15 +3,14 @@
 //! bounded occurrence ordering ledger. A receipt is provenance, never current authority.
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
-    ScopeOwnershipGeneration, WorldId,
+    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerLethalReceipt {
     actor: ExactActorRef,
     session: GameSessionId,
-    world: WorldId,
-    channel: ChannelId,
+    scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     occurrence: [u8; 16],
     revision: u64,
@@ -32,8 +31,7 @@ impl PlayerLethalReceipt {
         Self {
             actor,
             session,
-            world: binding.world_id(),
-            channel: binding.channel_id(),
+            scope: binding.runtime_scope(),
             generation: binding.scope_generation(),
             occurrence,
             revision,
@@ -47,10 +45,13 @@ impl PlayerLethalReceipt {
         self.session
     }
     pub const fn world(self) -> WorldId {
-        self.world
+        self.scope.world_id()
     }
-    pub const fn channel(self) -> ChannelId {
-        self.channel
+    pub const fn channel(self) -> Option<ChannelId> {
+        self.scope.channel_id()
+    }
+    pub const fn runtime_scope(self) -> RuntimeScopeRefV1 {
+        self.scope
     }
     pub const fn generation(self) -> ScopeOwnershipGeneration {
         self.generation
@@ -67,8 +68,7 @@ impl PlayerLethalReceipt {
     /// Independently current carrier facts; never reconstruct current authority from receipt.
     pub fn current(self, runtime: &ChannelRuntimeV1) -> bool {
         let binding = runtime.binding();
-        binding.world_id() == self.world
-            && binding.channel_id() == self.channel
+        binding.runtime_scope() == self.scope
             && binding.scope_generation() == self.generation
             && runtime
                 .player_control_facts(self.actor, self.session)
@@ -111,6 +111,66 @@ pub struct SourceAppearanceTarget<'a> {
     pub facts: crate::foundation::ApplicationFacts<'a>,
     pub immunities: Vec<crate::foundation::ConditionType>,
 }
+/// Crystal creature.cpp:842-845 excludes life drain from baseline mitigation.
+/// Mana drain has its own mana owner and agony has its own staged condition path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayerHitKind {
+    /// Existing source without a qualified element; grants no elemental resistance.
+    Mitigated,
+    Physical,
+    Energy,
+    Fire,
+    Earth,
+    Ice,
+    Holy,
+    Death,
+    LifeDrain,
+    ManaDrain,
+}
+impl PlayerHitKind {
+    pub fn from_element(element: Option<&str>) -> Self {
+        match element {
+            Some("physical") => Self::Physical,
+            Some("energy") => Self::Energy,
+            Some("fire") => Self::Fire,
+            Some("earth") => Self::Earth,
+            Some("ice") => Self::Ice,
+            Some("holy") => Self::Holy,
+            Some("death") => Self::Death,
+            Some("life_drain") => Self::LifeDrain,
+            Some("mana_drain") => Self::ManaDrain,
+            _ => Self::Mitigated,
+        }
+    }
+    pub fn from_dot(element: oteryn_gameplay_domain::domain::condition::DotElement) -> Self {
+        use oteryn_gameplay_domain::domain::condition::DotElement;
+        match element {
+            DotElement::Poison => Self::Earth,
+            DotElement::Fire => Self::Fire,
+            DotElement::Energy => Self::Energy,
+            DotElement::Bleeding => Self::Physical,
+            DotElement::Freezing => Self::Ice,
+            DotElement::Dazzled => Self::Holy,
+            DotElement::Cursed => Self::Death,
+            DotElement::Drown => Self::Mitigated,
+        }
+    }
+    pub const fn resistance_key(self) -> Option<&'static str> {
+        match self {
+            Self::Physical => Some("Physical Resistance"),
+            Self::Energy => Some("Energy Resistance"),
+            Self::Fire => Some("Fire Resistance"),
+            Self::Earth => Some("Earth Resistance"),
+            Self::Ice => Some("Ice Resistance"),
+            Self::Holy => Some("Holy Resistance"),
+            Self::Death => Some("Death Resistance"),
+            Self::LifeDrain => Some("Life Drain Resistance"),
+            Self::ManaDrain => Some("Mana Drain Resistance"),
+            Self::Mitigated => None,
+        }
+    }
+}
+
 pub trait PlayerLethalVitals {
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
@@ -248,10 +308,8 @@ pub trait PlayerLethalVitals {
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> Option<PlayerDamageReceipt> {
         let binding = runtime.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return None;
         }
@@ -268,6 +326,82 @@ pub trait PlayerLethalVitals {
         } else {
             None
         }
+    }
+
+    /// Element-aware forwarding through the same damage/receipt owner.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_attack_damage(runtime, target, session, magnitude, occurrence, now)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_composite_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_composite_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            fence,
+            stamp,
+        )
+    }
+
+    /// Current-owner typed commit keeps each source, policy and work-stamp input explicit.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_composite_attack_damage_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_composite_attack_damage_current(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            stamp,
+        )
     }
 
     /// Current-cycle counterpart; the owning implementation independently reads the

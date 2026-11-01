@@ -198,13 +198,19 @@ fn scenario() -> TestResult {
         );
         // Replace all transport state and the runtime's cached selection, then load the same
         // durable row with deliberately different pools: committed choices are never redrawn.
-        let commands = std::mem::take(&mut owner.states.command_ingress);
+        let commands = std::mem::take(
+            &mut std::sync::Arc::get_mut(&mut owner.states)
+                .expect("W02: isolated fixture state")
+                .command_ingress,
+        );
         drop(owner);
         deps.runtime = tokio::sync::Mutex::new(make_runtime()?);
         let mut owner = deps.owner(&h, &authority);
         owner.movement_cells = &cells;
         owner.active_generation = Some(generation);
-        owner.states.command_ingress = commands;
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .command_ingress = commands;
         deps.initialize(&owner).await;
         let (status, restarted) = support::exchange(
             &owner,

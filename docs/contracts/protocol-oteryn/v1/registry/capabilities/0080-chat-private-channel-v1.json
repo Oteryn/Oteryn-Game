@@ -1,8 +1,8 @@
 {
   "id": 80,
   "name": "CHAT_PRIVATE_CHANNEL_V1",
-  "owner_decision": "CHAT-PM-CHANNELS-1 coordinator lane NIGHT-W1 2026-10-25 (parity audit gap 14): extend chat_v1 with Channel-local private channels",
-  "owner": "World communication (current ChannelRuntime chat state; nothing durable)",
+  "owner_decision": "CHAT-PM-CHANNELS-1 coordinator lane NIGHT-W1 2026-10-25 (parity audit gap 14): extend chat_v1 with Channel-local private channels; S04b extends the same capability across Channels and nodes of one World",
+  "owner": "World communication (existing CHAT owner; session-owned metadata and hashed receipts, encrypted ephemeral World relay, no retained chat text)",
   "requires": [
     7
   ],

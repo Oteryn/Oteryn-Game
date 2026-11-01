@@ -331,7 +331,7 @@ mod map_revision_forms {
 pub struct ChannelOverlay {
     base: Arc<WorldBase>,
     world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: crate::foundation::RuntimeScopeRefV1,
     map_revision: String,
     tiles: HashMap<TilePos, TileOverlay>,
     expiry: BTreeSet<ExpiryKey>,
@@ -355,11 +355,31 @@ impl ChannelOverlay {
         channel_id: ChannelId,
         budget: usize,
     ) -> Self {
+        Self::with_scope_budget(
+            base,
+            crate::foundation::RuntimeScopeRefV1::channel(world_id, channel_id),
+            budget,
+        )
+    }
+
+    pub fn for_scope(
+        base: Arc<WorldBase>,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1,
+    ) -> Self {
+        Self::with_scope_budget(base, runtime_scope, OVERLAY_BUDGET_BYTES)
+    }
+
+    pub fn with_scope_budget(
+        base: Arc<WorldBase>,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1,
+        budget: usize,
+    ) -> Self {
+        let world_id = runtime_scope.world_id();
         let map_revision = map_revision(&base);
         Self {
             base,
             world_id,
-            channel_id,
+            runtime_scope,
             map_revision,
             tiles: HashMap::new(),
             expiry: BTreeSet::new(),
@@ -420,8 +440,12 @@ impl ChannelOverlay {
         self.world_id
     }
 
-    pub fn channel_id(&self) -> ChannelId {
-        self.channel_id
+    pub fn channel_id(&self) -> Option<ChannelId> {
+        self.runtime_scope.channel_id()
+    }
+
+    pub fn runtime_scope(&self) -> crate::foundation::RuntimeScopeRefV1 {
+        self.runtime_scope
     }
 
     pub fn budget(&self) -> usize {
@@ -579,7 +603,7 @@ impl ChannelOverlay {
         if item.world_id != self.world_id {
             return Err(OverlayError::World);
         }
-        if item.channel_id != self.channel_id {
+        if item.runtime_scope != self.runtime_scope {
             return Err(OverlayError::Channel);
         }
         if item.ground.map_revision != self.map_revision {

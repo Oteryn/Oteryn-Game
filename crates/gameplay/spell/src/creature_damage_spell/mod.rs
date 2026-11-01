@@ -1363,10 +1363,8 @@ impl DamageSpellOwner {
         let current = fence
             .or_else(|| runtime.owner_fence().ok())
             .ok_or(AttackError::StaleOwner)?;
-        if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -1660,6 +1658,7 @@ impl DamageSpellOwner {
         )
     }
     /// Use caller-issued work so the prepared reader is bound to this exact current turn.
+    #[cfg(any(test, feature = "test-support"))]
     pub fn run_windup_due_current(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1825,10 +1824,8 @@ impl DamageSpellOwner {
         let current = fence
             .or_else(|| runtime.owner_fence().ok())
             .ok_or(AttackError::StaleOwner)?;
-        if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -2284,15 +2281,36 @@ impl DamageSpellOwner {
             i64::from(source.maximum),
         ))
         .map_err(|_| AttackError::InvalidPlan)?;
-        let source_critical = source
-            .critical
-            .map(|policy| {
-                policy
-                    .draw(&root, id, source.entry_index as u64)
-                    .map_err(|_| AttackError::InvalidPlan)
+        let critical_draw =
+            deterministic_decision_u64(&root, id, "soulpit_overpower", source.entry_index as u64)
+                .map_err(|_| AttackError::InvalidPlan)?;
+        let critical_roll =
+            oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(critical_draw, 1, 100) as u8;
+        let (requested, soulpit_critical) = runtime
+            .encounter_source_damage(proposal.issuer, u64::from(requested), critical_roll)
+            .map_err(|_| AttackError::NumericOverflow)?;
+        let requested = u32::try_from(requested).map_err(|_| AttackError::NumericOverflow)?;
+        let source_critical = if runtime
+            .soulpit_variant(proposal.issuer)
+            .and_then(|tag| tag.boss)
+            .is_some_and(|boss| {
+                boss.ability == oteryn_gameplay_domain::domain::soulpit::BossAbility::Overpower
+            }) {
+            Some(crate::source_critical_baseline::SourceCriticalEvent {
+                critical: soulpit_critical,
+                bonus_basis_points: 2500,
+                qualification: "Crystal201189f.Soulpit.Overpower",
             })
-            .transpose()?;
-        // Source-default critical bonus ZERO: base HP/MP request unchanged. Dynamic boosts/VFX remain qualified gaps.
+        } else {
+            source
+                .critical
+                .map(|policy| {
+                    policy
+                        .draw(&root, id, source.entry_index as u64)
+                        .map_err(|_| AttackError::InvalidPlan)
+                })
+                .transpose()?
+        };
         // Preflight every source/policy/geometry before the first HP mutation. HP commits are
         // independent per target, not a durable all-target transaction. Partial receipts retained.
         let mut prepared = Vec::new();
@@ -2541,7 +2559,15 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_attack_damage(runtime, target, session, amount, &occurrence, now)
+                vitals.apply_typed_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    amount,
+                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
+                    &occurrence,
+                    now,
+                )
             } else {
                 let policy = facts
                     .condition_policy
@@ -2558,11 +2584,14 @@ impl DamageSpellOwner {
                     occurrence: child_id,
                 };
                 match fence {
-                    Some(fence) => vitals.apply_composite_attack_damage(
+                    Some(fence) => vitals.apply_typed_composite_attack_damage(
                         runtime,
                         target,
                         session,
                         amount,
+                        crate::player_lethal::PlayerHitKind::from_element(
+                            source.element.as_deref(),
+                        ),
                         &occurrence,
                         proposal.issuer,
                         &source.conditions,
@@ -2571,11 +2600,14 @@ impl DamageSpellOwner {
                         fence,
                         stamp,
                     ),
-                    None => vitals.apply_composite_attack_damage_current(
+                    None => vitals.apply_typed_composite_attack_damage_current(
                         runtime,
                         target,
                         session,
                         amount,
+                        crate::player_lethal::PlayerHitKind::from_element(
+                            source.element.as_deref(),
+                        ),
                         &occurrence,
                         proposal.issuer,
                         &source.conditions,

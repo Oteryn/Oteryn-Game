@@ -952,3 +952,55 @@ mod crystal_parity_tests;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 pub(super) mod item_use_postgres_tests;
+
+impl ItemUseGates {
+    pub(super) fn activity_ready(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.0
+            .iter()
+            .filter(|(a, s, _)| *a == actor && *s == session)
+            .all(|(_, _, gate)| gate.in_flight_since_ms.is_none() && gate.unspendable.is_empty())
+    }
+    pub(super) fn reserve_activity(&mut self, count: usize) -> Result<(), ()> {
+        self.0.try_reserve(count).map_err(|_| ())
+    }
+    pub(super) fn reserve_activity_token(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<Self, ()> {
+        let mut token = Self::default();
+        if self.0.iter().any(|(a, s, _)| *a == actor && *s == session) {
+            token.reserve_activity(1)?;
+        }
+        Ok(token)
+    }
+    pub(super) fn extract_activity(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        token: &mut Self,
+    ) {
+        if let Some(index) = self
+            .0
+            .iter()
+            .position(|(a, s, _)| *a == actor && *s == session)
+        {
+            token.0.push(self.0.swap_remove(index));
+        }
+    }
+    pub(super) fn restore_activity(&mut self, token: &mut Self) {
+        self.0.append(&mut token.0);
+    }
+    pub(super) fn commit_activity(
+        &mut self,
+        token: &mut Self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        for (_, _, mut gate) in token.0.drain(..) {
+            // Deadlines/rate history survive. A fresh GameSession has a new CommandId sequence.
+            gate.last = None;
+            self.0.push((actor, session, gate));
+        }
+    }
+}

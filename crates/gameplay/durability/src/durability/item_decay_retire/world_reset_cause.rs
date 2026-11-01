@@ -5,36 +5,51 @@ use crate::durability::world_reset::RetiringWorldReset;
 mod death_contents;
 pub(super) use death_contents::retire_death_contents;
 mod ground_admission;
-pub(super) use ground_admission::admit;
+use super::activity_retirement::ActivityRetirementBinding;
+pub(super) use ground_admission::{admit, admit_ground};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RetireCause {
     CorpseDecay,
     WorldReset(RetiringWorldReset),
+    ActivityRetirement(ActivityRetirementBinding),
 }
 
 impl RetireCause {
+    pub(super) fn activity_generation(self) -> Option<u64> {
+        match self {
+            Self::ActivityRetirement(binding) => Some(binding.generation.get()),
+            _ => None,
+        }
+    }
+    pub(super) fn handoff_id(self) -> Option<[u8; 16]> {
+        match self {
+            Self::ActivityRetirement(binding) => Some(binding.handoff_id),
+            _ => None,
+        }
+    }
     pub(super) fn tag(self) -> &'static str {
         match self {
             Self::CorpseDecay => "CORPSE_DECAY",
             Self::WorldReset(_) => "WORLD_RESET",
+            Self::ActivityRetirement(_) => "ACTIVITY_RETIREMENT",
         }
     }
     pub(super) fn epoch(self) -> Option<String> {
         match self {
-            Self::CorpseDecay => None,
+            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.epoch.to_string()),
         }
     }
     pub(super) fn binding(self) -> Option<Vec<u8>> {
         match self {
-            Self::CorpseDecay => None,
+            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.binding.to_vec()),
         }
     }
     pub(super) fn target(self) -> Option<Vec<u8>> {
         match self {
-            Self::CorpseDecay => None,
+            Self::CorpseDecay | Self::ActivityRetirement(_) => None,
             Self::WorldReset(reset) => Some(reset.target.to_vec()),
         }
     }
@@ -61,6 +76,16 @@ pub(super) fn decode_cause(
                 .try_into()
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         })),
+        "ACTIVITY_RETIREMENT" => Ok(RetireCause::ActivityRetirement(ActivityRetirementBinding {
+            handoff_id: uuid_text(row.try_get("activity_handoff_id")?)?,
+            scope: decode_ground_scope(row)?,
+            generation: ScopeOwnershipGeneration::new(
+                row.try_get::<String, _>("activity_ownership_generation")?
+                    .parse()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            )
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        })),
         _ => Err(DurabilityError::InvalidStoredState),
     }
 }
@@ -73,19 +98,38 @@ pub(super) fn receipt_matches(
 }
 
 pub(super) fn bind_message(message: &mut OneItemDecayRetireV1, cause: RetireCause) {
-    let RetireCause::WorldReset(reset) = cause else {
-        return;
-    };
-    message.world_reset = Some(audit::OneItemWorldResetV1 {
-        world_id: reset.world.as_bytes().to_vec(),
-        reset_epoch: reset.epoch,
-        item_instance_id: message
-            .before
-            .as_ref()
-            .map_or_else(Vec::new, |state| state.item_instance_id.clone()),
-        target_digest: reset.target.to_vec(),
-        retirement_binding: reset.binding.to_vec(),
-    });
+    let item_instance_id = message
+        .before
+        .as_ref()
+        .map_or_else(Vec::new, |state| state.item_instance_id.clone());
+    match cause {
+        RetireCause::CorpseDecay => return,
+        RetireCause::WorldReset(reset) => {
+            message.world_reset = Some(audit::OneItemWorldResetV1 {
+                world_id: reset.world.as_bytes().to_vec(),
+                reset_epoch: reset.epoch,
+                item_instance_id,
+                target_digest: reset.target.to_vec(),
+                retirement_binding: reset.binding.to_vec(),
+            })
+        }
+        RetireCause::ActivityRetirement(binding) => {
+            let RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } = binding.scope
+            else {
+                return;
+            };
+            message.activity_retirement = Some(audit::OneItemActivityRetirementV1 {
+                world_id: world_id.as_bytes().to_vec(),
+                instance_id: instance_id.to_vec(),
+                handoff_id: binding.handoff_id.to_vec(),
+                ownership_generation: binding.generation.get(),
+                item_instance_id,
+            });
+        }
+    }
     message.cause = None;
     message.ground_container_entry =
         message

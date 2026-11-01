@@ -75,7 +75,7 @@ impl DelayedOwner {
         fence: &ScopeRuntimeFence,
     ) -> Result<Self, AttackError> {
         let b = runtime.binding();
-        let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        let scope = b.runtime_scope();
         let generation = b.scope_generation();
         if !fence.is_current_for_scope(scope, generation) {
             return Err(AttackError::StaleOwner);
@@ -108,7 +108,7 @@ impl DelayedOwner {
         now: SemanticTimeMicros,
     ) -> Result<(), AttackError> {
         let b = r.binding();
-        if self.scope != RuntimeScopeRefV1::channel(b.world_id(), b.channel_id())
+        if self.scope != b.runtime_scope()
             || self.generation != b.scope_generation()
             || !f.is_current_for_scope(self.scope, self.generation)
         {
