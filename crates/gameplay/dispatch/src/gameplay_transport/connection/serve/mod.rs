@@ -3,8 +3,8 @@ mod vip_presence;
 
 use super::*;
 
-mod activity_transfer;
 mod achievement_notices;
+mod activity_transfer;
 mod autowalk;
 mod command;
 mod creature_push;
