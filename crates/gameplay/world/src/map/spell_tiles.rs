@@ -321,6 +321,13 @@ pub mod tests {
 
     /// One row at legacy `z` 7 (native -7); see [`KEYS`] for the palette.
     fn bundle(custom: Option<Vec<oteryn_world_bundle::writer::Sector>>) -> (Vec<u8>, BundlePins) {
+        bundle_with_extent(custom, None)
+    }
+
+    fn bundle_with_extent(
+        custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
+        extent: Option<oteryn_world_bundle::writer::Extent>,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -357,13 +364,13 @@ pub mod tests {
                 content_revision: "rev-1".into(),
                 ..Identity::default()
             },
-            world: Extent {
+            world: extent.unwrap_or(Extent {
                 min_x: 0,
                 min_y: 0,
                 max_x: if custom.is_some() { 128 } else { 32 },
                 max_y: if custom.is_some() { 128 } else { 32 },
                 floors: vec![-7],
-            },
+            }),
             palette: KEYS
                 .iter()
                 .zip(terrains)
