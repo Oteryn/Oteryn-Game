@@ -38,7 +38,7 @@ fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
         deps.combat_room = Some(deps.room.clone());
-        {
+        let phosphorus = {
             let mut runtime = deps.runtime.lock().await;
             native
                 .install_companion_policies(&mut runtime)
@@ -46,20 +46,23 @@ fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
             runtime
                 .initialize_first_entry_position(deps.actor)
                 .map_err(debug)?;
-            // Test-only placement of the exact admitted final form exercises its spell;
-            // it supplies no production encounter admission or normal-to-final transition.
+            // Qualification installs the admitted native policy as well as position;
+            // a bare lab creature has no policy and is omitted by the AI dispatcher.
+            // This supplies no production encounter admission or phase transition.
+            let pin = runtime.content_pin().clone();
             runtime
-                .admit_source_pinned_lab_creature(
+                .realize_native_qualification_spawn(
+                    pin,
+                    "oteryn:creature.phosphorus_final",
                     MovementLocalPosition {
                         x: 2,
                         y: 12,
                         floor: -7,
                     },
-                    "oteryn:creature.phosphorus_final",
-                    90_000,
                 )
-                .map_err(debug)?;
-        }
+                .map_err(debug)?
+                .actor
+        };
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells();
@@ -85,13 +88,20 @@ fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
                 .ok_or("initialize current player")?;
         }
         // ProfileScheduleState credits one think interval per pass, without wall-clock
-        // catch-up. The 12-second origin shift only expires entry protection; the
-        // source's 12-second curse needs twelve real scheduled thinks.
+        // catch-up. The source's 12-second curse needs twelve real scheduled thinks.
         for _ in 1..12 {
             owner.drain_monster_melee().await;
             {
                 let runtime = deps.runtime.lock().await;
                 let states = owner.states.spell_states.try_lock().map_err(debug)?;
+                // Crystal phosphorus_final.lua:83 supplies the melee magnitude needed
+                // to admit the whole AI profile, including the curse at line 84.
+                let ai = states
+                    .monster_melee
+                    .creature_ai
+                    .state(phosphorus)
+                    .ok_or("native dispatcher admitted the source AI profile")?;
+                assert_eq!(ai.target(), Some(deps.actor));
                 let state = states
                     .get(&runtime, deps.actor, deps.admitted.game_session_id)
                     .ok_or("current player before curse is due")?;
