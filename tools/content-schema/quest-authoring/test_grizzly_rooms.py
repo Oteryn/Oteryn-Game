@@ -1,7 +1,8 @@
 import json
 import unittest
-from pathlib import Path
+
 import grizzly_rooms
+
 
 class GrizzlyRoomTests(unittest.TestCase):
     def test_generated_rooms_match_map_and_preserve_both_source_positions(self):

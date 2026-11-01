@@ -2,9 +2,9 @@
 import copy
 import hashlib
 import json
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import quest_callback_profiles as profiles
@@ -194,9 +194,9 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(self.generated[PROFILE], once)
 
     def test_changed_reference_digest_refuses_admission(self):
-        with patch.object(profiles, 'SOURCE_SHA256', '0' * 64):
-            with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_SOURCE_DIGEST'):
-                self.admit()
+        with (patch.object(profiles, 'SOURCE_SHA256', '0' * 64),
+              self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_SOURCE_DIGEST')):
+            self.admit()
 
 
 if __name__ == '__main__':

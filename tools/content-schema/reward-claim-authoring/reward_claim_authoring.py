@@ -41,6 +41,7 @@ import json
 import re
 import sys
 from pathlib import Path
+
 import container_native
 
 HERE = Path(__file__).resolve().parent
@@ -540,7 +541,8 @@ def committed_errors() -> list[str]:
         row for shard in index["shards"] for row in load_json(ROOT / shard)["records"]
     ]
     source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
-    from reward_claim_variant_authoring import PROFILE, validate as validate_variants, stack_normalization_checks
+    from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
+    from reward_claim_variant_authoring import validate as validate_variants
     plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
@@ -570,7 +572,11 @@ def generate() -> dict[str, str]:
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
-    from reward_claim_variant_authoring import derive, extend_outputs, stack_normalization_checks
+    from reward_claim_variant_authoring import (
+        derive,
+        extend_outputs,
+        stack_normalization_checks,
+    )
     variants = derive(ROOT, items, stack_problem)
     extend_outputs(ROOT, outputs, variants, compact, CONTENT_DIR)
     records += variants

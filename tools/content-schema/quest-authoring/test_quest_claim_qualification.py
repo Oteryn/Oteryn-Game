@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location(
     "qualification", HERE / "check_quest_claim_qualification.py"

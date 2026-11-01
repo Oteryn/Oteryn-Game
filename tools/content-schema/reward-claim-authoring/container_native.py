@@ -7,8 +7,8 @@ empty or partial reward. Source conflicts and other reward formats stay held.
 import copy
 import hashlib
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
 SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
@@ -179,11 +179,12 @@ def derive(definition, items, stack_problem):
             if (item is None or item['identity'] != quantity['item'] or item_id(quantity['item']) != source_id
                     or stack_problem(item, count) is not None):
                 return None
-            if count != raw_count:
+            if (count != raw_count
+                    and (item.get('stack_class') != 'NonStackable' or count != 1
+                         or fact(item, 'charges', 'count') != raw_count)):
                 # A non-stackable charged item is one instance. Its absent native
                 # timed row means full definition values (item_timed_state.rs).
-                if item.get('stack_class') != 'NonStackable' or count != 1 or fact(item, 'charges', 'count') != raw_count:
-                    return None
+                return None
             child_capacity = fact(item, 'container', 'capacity')
             if child_capacity is not None and (type(child_capacity) is not int or not 1 <= child_capacity <= 65535 or count != 1):
                 return None

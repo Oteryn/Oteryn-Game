@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Verify Grizzly room bounds against the repository's map, never guessed coordinates.
 
 Crystal 201189f movements_boss.lua supplies portal/player/spawn positions. Q2 in
@@ -10,6 +9,7 @@ verified component extends them where the donor rectangle clips the actual room.
 The search limits below are tooling limits, never gameplay values.
 """
 from __future__ import annotations
+
 import argparse
 import hashlib
 import json
@@ -68,9 +68,8 @@ def generate(root: Path = ROOT) -> dict:
                 elif row['kind'].get('value') == 'border':
                     if row['walkable'].get('value') is not True:
                         return False
-                elif row['kind'].get('value') == 'wall':
-                    return False
-                elif profiles.get(palette[pi]['key']) is not False:
+                elif (row['kind'].get('value') == 'wall'
+                      or profiles.get(palette[pi]['key']) is not False):
                     return False
             elif item in objects:
                 if objects[item]['collision']['blocks_movement'].get('value') is not False:

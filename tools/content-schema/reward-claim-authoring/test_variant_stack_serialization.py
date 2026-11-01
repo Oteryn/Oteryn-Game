@@ -3,9 +3,11 @@ import copy
 import json
 import unittest
 from unittest.mock import patch
+
 import reward_claim_authoring as plain
 import reward_claim_variant_authoring as variants
 import reward_claim_variant_migration as migration
+
 
 class VariantStackSerializationTests(unittest.TestCase):
     @classmethod

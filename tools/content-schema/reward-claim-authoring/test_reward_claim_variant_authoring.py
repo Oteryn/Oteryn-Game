@@ -1,8 +1,8 @@
 """Offline regressions for typed canonical variant DATA, never native readiness."""
 import copy
 import json
-from pathlib import Path
 import unittest
+
 import jsonschema
 import reward_claim_authoring as plain
 import reward_claim_variant_authoring as variants

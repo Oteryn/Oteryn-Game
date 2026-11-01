@@ -6,8 +6,8 @@ is the independently retrieved pinned items.xml blob, not an inferred name.
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'quest-authoring'))
 import lua_tables

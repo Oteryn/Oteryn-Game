@@ -8,8 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 
-import reward_claim_variant_migration as migration
 import container_native
+import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
 SCHEMA = 'OTERYN_REWARD_CLAIM_VARIANT_SHARD/v1'

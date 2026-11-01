@@ -8,7 +8,6 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
