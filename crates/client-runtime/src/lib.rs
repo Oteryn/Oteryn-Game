@@ -124,6 +124,17 @@ pub mod spell;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Party command execution through the admitted session.
+#[path = "features/0042-party/protocol.rs"]
+pub mod party;
 /// Wheel and Atelier command execution through the admitted session.
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
+
+/// Hireling command execution through the admitted session.
+#[path = "features/0165-hireling/protocol.rs"]
+pub mod hireling;
+
+/// Market queries and settlement intents through the admitted session.
+#[path = "features/0063-market/protocol.rs"]
+pub mod market;

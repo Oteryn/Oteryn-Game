@@ -72,6 +72,10 @@ pub(super) struct Mailbox {
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
+    pub(super) party: oteryn_client_ui::party::PartyPanel,
+    pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
+    pub(super) market: oteryn_client_ui::market::MarketPanel,
+    pub(super) market_shutdown: bool,
 }
 
 const MAX_COMBAT_REPORTS: usize = 8;
@@ -98,6 +102,15 @@ impl Outbox {
         coalesce_pushed(&mut mailbox.pushed, events);
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
+        if let Some(position) = mailbox.pushed.own
+            && let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(position.x),
+                u16::try_from(position.y),
+                i8::try_from(position.floor),
+            )
+        {
+            mailbox.hireling.target = Some((x, y, floor));
+        }
     }
 
     pub(super) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
@@ -188,5 +201,6 @@ impl Drop for PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
+        mailbox.market_shutdown = true;
     }
 }

@@ -163,9 +163,106 @@ pub fn encode_reply(r: &MarketReply) -> Result<Vec<u8>, Error> {
     }
     Ok(out)
 }
+
+pub fn decode_reply(bytes: &[u8]) -> Result<MarketReply, Error> {
+    if bytes.len() > 4096 {
+        return Err(Error::LimitExceeded);
+    }
+    let mut code = None;
+    let mut offer = None;
+    let mut action = None;
+    let mut rows = Vec::new();
+    let mut at = 0;
+    while at < bytes.len() {
+        let tag = read_varint(bytes, &mut at)?;
+        match (tag >> 3, tag & 7) {
+            (1, 0) => set_once(&mut code, read_varint(bytes, &mut at)?)?,
+            (2, 2) => set_once(
+                &mut offer,
+                read_bytes(bytes, &mut at)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?,
+            )?,
+            (3, 2) => {
+                if rows.len() == 32 {
+                    return Err(Error::LimitExceeded);
+                }
+                rows.push(decode_row(read_bytes(bytes, &mut at)?)?);
+            }
+            (4, 0) => set_once(&mut action, read_varint(bytes, &mut at)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let reply = MarketReply {
+        action: u8::try_from(action.ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        code: u8::try_from(code.ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        offer: offer.unwrap_or([0; 16]),
+        rows,
+    };
+    encode_reply(&reply)?;
+    Ok(reply)
+}
+
+fn decode_row(bytes: &[u8]) -> Result<MarketRow, Error> {
+    let mut values = [None; 6];
+    let mut offer = None;
+    let mut at = 0;
+    while at < bytes.len() {
+        let tag = read_varint(bytes, &mut at)?;
+        let field = tag >> 3;
+        if field == 1 && tag & 7 == 2 {
+            set_once(
+                &mut offer,
+                read_bytes(bytes, &mut at)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?,
+            )?;
+        } else if (2..=7).contains(&field) && tag & 7 == 0 {
+            set_once(
+                &mut values[field as usize - 2],
+                read_varint(bytes, &mut at)?,
+            )?;
+        } else {
+            return Err(Error::Malformed);
+        }
+    }
+    let boolean = match values[5].unwrap_or(0) {
+        0 => false,
+        1 => true,
+        _ => return Err(Error::Malformed),
+    };
+    Ok(MarketRow {
+        offer: offer.ok_or(Error::Malformed)?,
+        definition: u32::try_from(values[0].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        side: u8::try_from(values[1].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        amount: u32::try_from(values[2].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        price: values[3].unwrap_or(0),
+        state: u8::try_from(values[4].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        anonymous: boolean,
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn market_reply_round_trips_through_client_decoder() -> Result<(), Error> {
+        let reply = MarketReply {
+            action: 2,
+            code: 1,
+            offer: [7; 16],
+            rows: vec![MarketRow {
+                offer: [8; 16],
+                definition: 42,
+                side: 1,
+                amount: 3,
+                price: 99,
+                state: 2,
+                anonymous: true,
+            }],
+        };
+        assert_eq!(decode_reply(&encode_reply(&reply)?)?, reply);
+        Ok(())
+    }
     #[test]
     fn market_wire_own_projection_reaches_one_thousand_offers_per_side() -> Result<(), Error> {
         let request = MarketRequest {

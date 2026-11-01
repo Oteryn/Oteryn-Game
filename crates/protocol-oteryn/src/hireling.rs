@@ -35,6 +35,20 @@ impl Request {
     }
 }
 
+/// Decodes the server's canonical one-byte active-state reply.
+pub fn decode_reply(bytes: &[u8]) -> Option<bool> {
+    match bytes {
+        [0] => Some(false),
+        [1] => Some(true),
+        _ => None,
+    }
+}
+
+/// Encodes the canonical reply used by the server route.
+pub fn encode_reply(active: bool) -> Vec<u8> {
+    vec![u8::from(active)]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -53,5 +67,13 @@ mod tests {
         }
         assert_eq!(Request::decode(&[1, 0]), None);
         assert_eq!(Request::decode(&[3]), None);
+    }
+
+    #[test]
+    fn canonical_replies_round_trip() {
+        for active in [false, true] {
+            assert_eq!(decode_reply(&encode_reply(active)), Some(active));
+        }
+        assert_eq!(decode_reply(&[2]), None);
     }
 }
