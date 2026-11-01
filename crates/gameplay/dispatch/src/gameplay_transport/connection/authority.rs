@@ -835,6 +835,61 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// The original connection alone may acknowledge its room-set delta.
+    fn chat_rooms_changed_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<ChatRoomSet>> {
+        self.chat_rooms_changed(admitted.game_session_id)
+    }
+
+    /// S04 public-room admission refreshes authoritative roles and preserves legacy wire bits.
+    fn public_chat_admit(
+        &self,
+        _admitted: AdmittedSession,
+        rooms: ChatRoomSet,
+    ) -> impl Future<Output = ChatRoomSet> {
+        std::future::ready(rooms)
+    }
+
+    fn public_chat_preflight(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _intent: &ChatIntent,
+    ) -> impl Future<Output = Option<Option<ChatIntentResult>>> {
+        std::future::ready(None)
+    }
+
+    /// S04b passes the original admitted fence into the World membership owner.
+    fn chat_private_admit_bound(
+        &self,
+        admitted: AdmittedSession,
+        selected: bool,
+    ) -> impl Future<Output = ()> {
+        self.chat_private_channels(admitted.game_session_id, selected)
+    }
+
+    fn chat_channel_list_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList>>
+    {
+        self.chat_channel_list(admitted.game_session_id)
+    }
+
+    fn chat_private_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _intent: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent,
+    ) -> impl Future<Output = Option<ChatIntentResult>> {
+        std::future::ready(Some(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::ChatUnavailable,
+            wait_seconds: 0,
+        }))
+    }
+
     /// CHAT-PM-CHANNELS-1: negotiation of `session`; `selected` is capability 80.
     fn chat_private_channels(
         &self,

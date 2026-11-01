@@ -1,0 +1,16 @@
+syntax = "proto3";
+package oteryn.game.v1;
+
+// Capability 258 extends the existing CHAT domain 12 with delta type 5.
+// A batch replaces the entire list-local presence view. No global ID or location is sent.
+message VipPresenceBatchV1 {
+  repeated VipPresenceEntryV1 entries = 1;
+}
+
+message VipPresenceEntryV1 {
+  uint64 entry = 1;
+  string name = 2;
+  uint32 status = 3; // 0 unconfirmed, 1 offline, 2 online
+  bool announce = 4;
+  uint32 confirmed_for_ms = 5; // online only, 1..10000; zero for other statuses
+}

@@ -1,9 +1,10 @@
-//! Negotiated CHAT_V1 guild extension. Public rooms retain their four-bit encoding.
+//! Negotiated CHAT_V1 guild extension. Legacy room bits retain their encoding;
+//! capability 259 adds four room bits and one byte to the maximal snapshot.
 use super::*;
 
 pub const CAPABILITY_CHAT_GUILD_ROOM_V1: u32 = 36;
 pub const SNAPSHOT_TYPE_GUILD_CHAT_V1: u32 = 2;
-pub const MAX_GUILD_CHAT_SNAPSHOT_BYTES: usize = 1_049;
+pub const MAX_GUILD_CHAT_SNAPSHOT_BYTES: usize = 1_050;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GuildChatLine {

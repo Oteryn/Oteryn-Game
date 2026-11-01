@@ -96,6 +96,7 @@ where
 {
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
+    super::vip_presence::refresh(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -191,10 +192,7 @@ where
     {
         return Ok(());
     }
-    let Some(list) = authority
-        .chat_channel_list(session.admitted.game_session_id)
-        .await
-    else {
+    let Some(list) = authority.chat_channel_list_bound(session.admitted).await else {
         return Ok(());
     };
     let payload =

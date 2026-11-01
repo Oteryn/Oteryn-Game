@@ -318,6 +318,20 @@ impl ChatRelay {
         sender_name: CharacterName,
         text: ChatText,
     ) -> Result<(), ChatDisposition> {
+        let (channel, sealed) = self.seal_line(destination, sender_name, text)?;
+        let notify = notify_quietly(&self.pool, &channel, &sealed);
+        sent_or_unavailable(tokio::time::timeout(SEND_TIMEOUT, notify).await)
+    }
+
+    /// Seal under the existing readiness, clock and key owner. A durable chat writer may
+    /// publish this ciphertext in the same logging-pinned transaction as its receipt.
+    /// Neither returned string may be logged or retained in a receipt.
+    pub(super) fn seal_line(
+        &self,
+        destination: RelayDestination,
+        sender_name: CharacterName,
+        text: ChatText,
+    ) -> Result<(String, String), ChatDisposition> {
         let sent_at_micros = self.db_now().ok_or(ChatDisposition::ChatUnavailable)?;
         let sealed = seal(
             &self.ring,
@@ -333,8 +347,7 @@ impl ChatRelay {
             RelayError::Oversized => ChatDisposition::Rejected,
             _ => ChatDisposition::ChatUnavailable,
         })?;
-        let notify = notify_quietly(&self.pool, &self.channel, &sealed);
-        sent_or_unavailable(tokio::time::timeout(SEND_TIMEOUT, notify).await)
+        Ok((self.channel.clone(), sealed))
     }
 
     /// Listens until `shutdown`, reconnecting after a lost connection; then parks. One replay

@@ -513,14 +513,14 @@ fn a_contradicting_chat_delta_poisons_the_session() -> Result<(), BoxError> {
                 }) as fn(&SessionError) -> bool,
             ),
             (
-                // An unregistered delta type.
-                Step::Send(encode_state_delta(1, 41, STATE_DOMAIN_CHAT, 3, 4, 3, b"x")?),
+                // An unregistered delta type; 3 now belongs to the cap-80 channel list.
+                Step::Send(encode_state_delta(1, 41, STATE_DOMAIN_CHAT, 3, 4, 255, b"x")?),
                 |error| {
                     matches!(
                         error,
                         SessionError::UnregisteredDeltaType {
                             domain_id: STATE_DOMAIN_CHAT,
-                            delta_type: 3
+                            delta_type: 255
                         }
                     )
                 },
