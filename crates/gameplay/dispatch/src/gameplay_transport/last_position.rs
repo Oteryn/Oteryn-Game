@@ -65,7 +65,7 @@ use crate::durability::DB_PASS_DEADLINE;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionRecord,
-    LastPositionWrite, LastVitals, PeriodicLastPosition, StoredLastPosition,
+    LastPositionWrite, LastVitals, PeriodicLastPosition, SavedConditions, StoredLastPosition,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -707,8 +707,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
     ) -> FreshAdmissionStore {
         match self.final_last_position(session, actor).await {
-            Some(position) => store.with_final_position(position),
+            Some(position) => {
+                let store = store.with_final_position(position);
+                match self.final_saved_conditions(session, actor).await {
+                    Some(conditions) => store.with_final_conditions(conditions),
+                    None => store,
+                }
+            }
             None => store.clone(),
+        }
+    }
+
+    /// C08: the persistent conditions the final write of `session`'s fenced actor stores with
+    /// its position (Crystal 201189f8 `iologindata_save_player.cpp:264`). `None` for a dead
+    /// actor, one without spell state, or one with nothing to save.
+    async fn final_saved_conditions(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Option<SavedConditions> {
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor) {
+            return None;
+        }
+        states
+            .get(&runtime, actor, session)?
+            .saved_conditions_snapshot(self.owner_now().get())
+    }
+
+    /// C08: the saved conditions a new runtime actor restores, read under `fence` before the
+    /// first-entry owner step: only those of the stored row that decided the admission (same
+    /// World, same order key), so a later write of the row never restores an earlier logout's
+    /// conditions. `Err` for a failed read, which leaves the admission not playable.
+    pub(super) async fn read_admission_conditions(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        decided: &AdmissionPosition,
+    ) -> Result<Option<SavedConditions>, ()> {
+        let AdmissionPosition::Stored(stored) = decided else {
+            return Ok(None);
+        };
+        if stored.record.world_id != self.world_id {
+            return Ok(None);
+        }
+        match self
+            .root
+            .read_character_saved_conditions(self.character, self.holder, fence)
+            .await
+        {
+            Ok(Some((key, saved))) if key == stored.key => Ok(Some(saved)),
+            Ok(_) => Ok(None),
+            Err(error) => {
+                operator_event(&format!("saved_conditions_read_failed reason={error}"));
+                Err(())
+            }
         }
     }
 

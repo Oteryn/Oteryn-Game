@@ -699,8 +699,10 @@ pub(super) async fn apply_build_in_transaction(
         // Same transaction and replay boundary as the build receipt. No position row means
         // admission already starts at maxima (0084); otherwise keep the cell/rest snapshot.
         // Advance the projection order key so pre-choice captures cannot undo the refill.
+        // C08 (0691): only the logout capture carries saved conditions, so a write with a
+        // newer key clears them.
         sqlx::query(
-            "UPDATE game_character_last_positions SET health = $2, mana = $3, \
+            "UPDATE game_character_last_positions SET health = $2, mana = $3, conditions = NULL, \
              character_lease_generation = $4::text::numeric(20,0), write_sequence = write_sequence + 1 \
              WHERE character_id = encode($1,'hex')::uuid \
              AND character_lease_generation <= $4::text::numeric(20,0)"

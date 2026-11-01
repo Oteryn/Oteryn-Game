@@ -31,7 +31,7 @@ impl FreshAdmissionStore {
             let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
             if let Some(training) = &store.training_logout { training.prepare(&mut tx).await?; }
             if let Some(final_position) = store.final_position {
-                write_final_position(&mut tx, &current, &final_position).await?;
+                write_final_position(&mut tx, &current, &final_position, store.final_conditions.as_ref()).await?;
             }
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;

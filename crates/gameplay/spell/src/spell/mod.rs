@@ -54,6 +54,7 @@ pub mod party;
 #[cfg(test)]
 mod party_tests;
 pub mod plan;
+pub mod saved_conditions;
 pub mod soul_window;
 pub mod spell_presentations;
 pub mod stance_execution;

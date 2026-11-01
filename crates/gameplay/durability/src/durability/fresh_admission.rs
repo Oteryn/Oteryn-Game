@@ -324,6 +324,9 @@ pub struct FreshAdmissionStore {
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
+    /// C08: the persistent conditions the final position write stores with it; written only
+    /// with a final position.
+    final_conditions: Option<super::character_last_position::SavedConditions>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
 }
@@ -401,6 +404,20 @@ impl FreshAdmissionStore {
         }
     }
 
+    /// C08: this store with the persistent conditions its final position write stores in the
+    /// same upsert, under the same key and fence (Crystal 201189f8
+    /// `iologindata_save_player.cpp:264`). Without a final position nothing is written.
+    #[must_use]
+    pub fn with_final_conditions(
+        &self,
+        conditions: super::character_last_position::SavedConditions,
+    ) -> Self {
+        Self {
+            final_conditions: Some(conditions),
+            ..self.clone()
+        }
+    }
+
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
     #[must_use]
     pub fn with_training_logout(
@@ -420,6 +437,7 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             final_position: None,
+            final_conditions: None,
             retired_holder: None,
         }
     }
@@ -1710,6 +1728,7 @@ async fn write_final_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     final_position: &super::character_last_position::FinalLastPosition,
+    conditions: Option<&super::character_last_position::SavedConditions>,
 ) -> Result<()> {
     let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
         current.current_runtime_scope()
@@ -1720,7 +1739,7 @@ async fn write_final_position(
         return Ok(());
     }
     let lease = current.current_character_lease();
-    super::character_last_position::upsert_last_position(
+    super::character_last_position::upsert_last_position_with_conditions(
         tx,
         lease.character_id().as_bytes(),
         super::character_last_position::LastPositionKey {
@@ -1728,6 +1747,7 @@ async fn write_final_position(
             write_sequence: final_position.write_sequence,
         },
         &final_position.record,
+        conditions,
     )
     .await?;
     Ok(())
@@ -1910,6 +1930,7 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             final_position: None,
+            final_conditions: None,
             retired_holder: None,
         }
     }

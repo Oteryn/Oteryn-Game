@@ -26,6 +26,11 @@
 //! session or a lower key overwrites neither. A row without vitals (`None`: a respawn placement,
 //! an actor at its maxima, or a row written before migration 0084) restores the next actor at its
 //! maxima (SPELL-D2).
+//!
+//! C08 (migration 0691): the final logout write also stores the actor's persistent conditions
+//! ([`SavedConditions`], Crystal 201189f8 `iologindata_save_player.cpp:264`) in the same upsert;
+//! every other write stores none, so a fresh login restores them only from the row that the
+//! logout capture itself wrote ([`DurabilityRoot::read_character_saved_conditions`]).
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -80,6 +85,37 @@ impl LastVitals {
     #[must_use]
     pub const fn mana(self) -> u32 {
         self.mana
+    }
+}
+
+/// The most saved conditions one row holds, and the most bytes of their JSON text (the
+/// migration 0691 bounds).
+pub const MAX_SAVED_CONDITIONS: usize = 64;
+pub const MAX_SAVED_CONDITIONS_BYTES: usize = 16_384;
+
+/// C08: the persistent conditions of one logout capture, as a non-empty JSON array within the
+/// migration 0691 bounds. The spell owner encodes and decodes the entries; this store keeps the
+/// text opaque.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SavedConditions(String);
+
+impl SavedConditions {
+    /// `None` for anything but a JSON array of `1..=MAX_SAVED_CONDITIONS` entries in at most
+    /// `MAX_SAVED_CONDITIONS_BYTES` bytes.
+    #[must_use]
+    pub fn new(json: String) -> Option<Self> {
+        if json.len() > MAX_SAVED_CONDITIONS_BYTES {
+            return None;
+        }
+        let entries = serde_json::from_str::<Vec<serde_json::Value>>(&json).ok()?;
+        (1..=MAX_SAVED_CONDITIONS)
+            .contains(&entries.len())
+            .then_some(Self(json))
+    }
+
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -271,6 +307,69 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// C08: the saved conditions of the Character's last-position row with the row's order key,
+    /// read under the session fence of `fence` when a new runtime actor is admitted. `None` when
+    /// no row exists or the row holds none. The caller restores them only when the key is the
+    /// one of the row that decided the admission.
+    pub async fn read_character_saved_conditions(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<Option<(LastPositionKey, SavedConditions)>> {
+        if fence.character_lease_generation == 0
+            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) =
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
+                        return Ok(Err(error));
+                    }
+                    let row = sqlx::query(
+                        "SELECT character_lease_generation::text, write_sequence::text, \
+                                conditions::text AS conditions \
+                           FROM game_character_last_positions \
+                          WHERE character_id = encode($1,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let saved = match row {
+                        Some(row) => match row.try_get::<Option<String>, _>("conditions")? {
+                            Some(json) => Some((
+                                LastPositionKey {
+                                    character_lease_generation: numeric_u64(
+                                        &row,
+                                        "character_lease_generation",
+                                    )?,
+                                    write_sequence: numeric_u64(&row, "write_sequence")?,
+                                },
+                                SavedConditions::new(json)
+                                    .ok_or(DurabilityError::InvalidStoredState)?,
+                            )),
+                            None => None,
+                        },
+                        None => None,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(saved))
+                })
+            })
+            .await?
+    }
 }
 
 /// One write of a batch, inside its transaction (which holds the recovery fence and the
@@ -322,6 +421,18 @@ pub(super) async fn upsert_last_position(
     key: LastPositionKey,
     record: &LastPositionRecord,
 ) -> std::result::Result<LastPositionWrite, DurabilityError> {
+    upsert_last_position_with_conditions(tx, character_id, key, record, None).await
+}
+
+/// [`upsert_last_position`] that also stores `conditions` (C08); only the final logout write
+/// passes `Some`, every other write clears the column.
+pub(super) async fn upsert_last_position_with_conditions(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: &[u8; 16],
+    key: LastPositionKey,
+    record: &LastPositionRecord,
+    conditions: Option<&SavedConditions>,
+) -> std::result::Result<LastPositionWrite, DurabilityError> {
     if key.character_lease_generation == 0 || key.write_sequence == 0 {
         return Err(DurabilityError::InvalidStoredState);
     }
@@ -347,9 +458,10 @@ pub(super) async fn upsert_last_position(
         "INSERT INTO game_character_last_positions AS p \
             (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
              map_revision_digest, server_artifact_digest, character_lease_generation, \
-             write_sequence, health, mana, rest) \
+             write_sequence, health, mana, rest, conditions) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \
-                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, $13) \
+                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, $13, \
+                 $14::text::jsonb) \
          ON CONFLICT (character_id) DO UPDATE SET \
              world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \
              tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \
@@ -358,7 +470,8 @@ pub(super) async fn upsert_last_position(
              server_artifact_digest = EXCLUDED.server_artifact_digest, \
              character_lease_generation = EXCLUDED.character_lease_generation, \
              write_sequence = EXCLUDED.write_sequence, \
-             health = EXCLUDED.health, mana = EXCLUDED.mana, rest = EXCLUDED.rest \
+             health = EXCLUDED.health, mana = EXCLUDED.mana, rest = EXCLUDED.rest, \
+             conditions = EXCLUDED.conditions \
          WHERE (p.character_lease_generation, p.write_sequence) \
              < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)",
     )
@@ -385,6 +498,7 @@ pub(super) async fn upsert_last_position(
             .transpose()
             .map_err(|_| DurabilityError::InvalidStoredState)?,
     )
+    .bind(conditions.map(SavedConditions::as_str))
     .execute(&mut **tx)
     .await?;
     Ok(if written.rows_affected() == 1 {

@@ -262,6 +262,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
+        let Ok(saved_conditions) = self
+            .read_admission_conditions(position_fence, &decided)
+            .await
+        else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         #[cfg(test)]
         stage("durable_position_read");
         match self.reserve_precondition().await {
@@ -318,26 +324,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
             .then(|| last_position::admitted_vitals(&decided, self.world_id))
             .flatten();
-        if self
-            .states
-            .spell_states
-            .lock()
-            .await
-            .initialize_admitted(
-                &runtime,
-                actor,
-                game_session_id,
-                facts,
-                monk,
-                self.owner_now(),
-                saved_vitals,
-                (outcome == FirstEntryOutcome::Positioned)
-                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
-                    .flatten(),
-            )
-            .is_none()
         {
-            return (FirstEntryOutcome::RefusedByChannel, None, None);
+            let mut states = self.states.spell_states.lock().await;
+            let created = states.get(&runtime, actor, game_session_id).is_none();
+            if states
+                .initialize_admitted(
+                    &runtime,
+                    actor,
+                    game_session_id,
+                    facts,
+                    monk,
+                    self.owner_now(),
+                    saved_vitals,
+                    (outcome == FirstEntryOutcome::Positioned)
+                        .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                        .flatten(),
+                )
+                .is_none()
+            {
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
+            }
+            // C08 (Crystal 201189f8 `player.cpp:11565`): a newly created actor re-adds the
+            // persistent conditions its logout saved, in this same owner step.
+            if created
+                && outcome == FirstEntryOutcome::Positioned
+                && let Some(saved) = &saved_conditions
+                && let Some(state) = states.get_mut(&runtime, actor, game_session_id)
+            {
+                let _ = state.restore_saved_conditions(saved, self.owner_now().get());
+            }
         }
         if self
             .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
