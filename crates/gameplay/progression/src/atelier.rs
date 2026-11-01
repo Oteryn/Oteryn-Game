@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{wheel::WheelDomain, wheel_gem_data::WheelGemData};
 
+#[cfg(test)]
+#[path = "atelier/parity_tests.rs"]
+mod parity_tests;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum GemQuality {
     Lesser,

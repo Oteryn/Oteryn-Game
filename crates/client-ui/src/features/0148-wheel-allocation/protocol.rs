@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "../0272-atelier-resources/protocol.rs"]
+mod resource_projection;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Refresh,
@@ -130,7 +133,7 @@ fn prepare(
             let (kind, mod_id) = panel
                 .modifier
                 .filter(|id| panel.modifiers().contains(id))
-                .ok_or("Select a gem modifier first")?;
+                .ok_or("Select a Workshop modifier first")?;
             let grade = panel.grade(kind, mod_id);
             if grade >= 3 {
                 return Err("This modifier is already Grade IV");
@@ -174,6 +177,9 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
         return false;
     };
     panel.synchronized = false;
+    // An absent or malformed optional query must never leave old balances
+    // looking like the current result, or turn an unavailable value into zero.
+    panel.confirmed_resources = None;
     if pending.kind != response.kind {
         if pending.mutation {
             panel.retry = Some(pending);
@@ -245,6 +251,10 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
     panel.vessels = vessels;
     panel.confirmed_wheel = Some(wheel);
     panel.confirmed_atelier = Some(atelier);
+    panel.confirmed_resources = response
+        .resources
+        .as_deref()
+        .and_then(resource_projection::decode_reply);
     panel.synchronized = true;
     if panel.selected_gem().is_none() {
         panel.gem = panel

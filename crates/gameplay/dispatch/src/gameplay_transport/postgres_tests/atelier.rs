@@ -51,6 +51,17 @@ async fn send_atelier(
     kind: u32,
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
+    let (status, bytes) = send_atelier_status(owner, admitted, kind, payload).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    Ok(bytes)
+}
+
+async fn send_atelier_status(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
     let command_id = admitted.continuity.next_command_id;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         admitted.continuity.connection_generation,
@@ -95,11 +106,7 @@ async fn send_atelier(
             let result =
                 oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, command_id);
-            assert_eq!(
-                result.status,
-                oteryn_protocol_oteryn::CommandStatus::Accepted
-            );
-            return Ok(result.payload.to_vec());
+            return Ok((result.status, result.payload.to_vec()));
         }
     }
     Err(format!("Atelier command {kind} result missing: {end:?}").into())
@@ -110,7 +117,8 @@ async fn send_atelier(
 fn advance_ex_action(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult {
-    owner.clock_origin = owner.clock_origin
+    owner.clock_origin = owner
+        .clock_origin
         .checked_sub(std::time::Duration::from_millis(490))
         .ok_or("Atelier fixture clock")?;
     Ok(())
@@ -152,22 +160,41 @@ fn scenario() -> TestResult {
         // Capability 148 is offered before Character eligibility. Opening the panel
         // must be a normal refusal, not Unavailable (which closes the connection).
         let mut query_admitted = dependencies.admitted;
-        query_admitted.item_fence = Some(owner.current_quest_fence(session).await
-            .map_err(|_| "query fence")?.ok_or("query fence")?.item_fence());
+        query_admitted.item_fence = Some(
+            owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| "query fence")?
+                .ok_or("query fence")?
+                .item_fence(),
+        );
         query_admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
                 &[oteryn_protocol_oteryn::atelier::CAPABILITY_WHEEL_ALLOCATION_V1],
-            ).ok_or("Wheel query capability")?;
-        let crate::gameplay_transport::atelier::AtelierWireReply::Payload(query) = owner.atelier_wire(
-            query_admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY, &[],
-        ).await else { return Err("ineligible Atelier query must not close play".into()); };
+            )
+            .ok_or("Wheel query capability")?;
+        let crate::gameplay_transport::atelier::AtelierWireReply::Payload(query) = owner
+            .atelier_wire(
+                query_admitted,
+                oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY,
+                &[],
+            )
+            .await
+        else {
+            return Err("ineligible Atelier query must not close play".into());
+        };
         let query = oteryn_protocol_oteryn::atelier::decode_reply(&query).map_err(debug)?;
         assert!(query.refused);
         assert_eq!(query.revision, 0);
         assert!(query.gems.is_empty() && query.grades.is_empty());
-        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_atelier_state")
-            .fetch_one(&h.pool).await?, 0, "query does not own initialization");
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_atelier_state")
+                .fetch_one(&h.pool)
+                .await?,
+            0,
+            "query does not own initialization"
+        );
         fixture::eligible(&h.pool).await?;
         let request = fixture::prepare(&h).await?;
         let fence = owner
@@ -489,8 +516,27 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
                'game_item_placement_proven()'::regprocedure,
                'game_item_mint_consistency_guard()'::regprocedure,
                'game_atelier_item_admit()'::regprocedure,
-               'game_atelier_assets_guard()'::regprocedure)
-             ORDER BY p.proname LIMIT 7",
+               'game_atelier_assets_guard()'::regprocedure,
+               'game_atelier_item_complete(uuid)'::regprocedure,
+               'game_atelier_carried_parent(uuid,uuid,uuid)'::regprocedure,
+               'game_atelier_input_present(uuid,uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_supplement_complete(uuid)'::regprocedure,
+               'game_stash_admit()'::regprocedure,
+               'game_stash_balance_guard()'::regprocedure,
+               'game_stash_consistent()'::regprocedure,
+               'game_item_nested_entry_proven()'::regprocedure,
+               'game_equipment_slot_proven()'::regprocedure,
+               'game_equipment_state_proven()'::regprocedure,
+               'game_atelier_carried_coin_sources(uuid,uuid)'::regprocedure,
+               'game_atelier_coin_source_present(uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_coin_admit()'::regprocedure,
+               'game_atelier_coin_complete(uuid)'::regprocedure,
+               'game_atelier_coin_consistent()'::regprocedure,
+               'game_atelier_carried_tree_valid(uuid,uuid)'::regprocedure,
+               'game_atelier_output_admit(uuid,uuid,uuid,jsonb)'::regprocedure,
+               'game_atelier_outputs_complete(uuid)'::regprocedure,
+               'game_item_audit_envelope_size_proven()'::regprocedure)
+             ORDER BY p.proname LIMIT 26",
         )
         .fetch_all(&pool)
         .await
@@ -510,8 +556,9 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
         "fixture history must fit the bounded read"
     );
     let before = definitions(h.pool.clone()).await?;
-    // Include both quality-yield guards advanced by 0624 in the idempotence proof.
-    assert_eq!(before.len(), 7);
+    // Reapplication preserves quality yields and every carried, stash and coin
+    // guard added by the Atelier extensions, including their existing owners.
+    assert_eq!(before.len(), 26);
     let mut tx = h.pool.begin().await?;
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -522,6 +569,30 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../apps/game-server/migrations/0624_character_atelier_crystal_fragment_yields.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0744_character_atelier_carried_stash.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0745_character_atelier_carried_coins.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0746_character_atelier_carried_outputs.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0747_character_atelier_audit_bounds.sql"
     )))
     .execute(&mut *tx)
     .await?;

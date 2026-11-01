@@ -19,6 +19,7 @@ pub struct WheelPanel {
     pub synchronized: bool,
     pub confirmed_wheel: Option<wheel::WheelAllocationReply>,
     pub confirmed_atelier: Option<atelier::AtelierReply>,
+    pub confirmed_resources: Option<atelier::resources::ResourceBalances>,
     pub points: [u16; 36],
     pub vessels: wheel::WheelVessels,
     pub slot: usize,
@@ -40,6 +41,7 @@ impl Default for WheelPanel {
             synchronized: false,
             confirmed_wheel: None,
             confirmed_atelier: None,
+            confirmed_resources: None,
             points: [0; 36],
             vessels: [None; 4],
             slot: 14,
@@ -73,13 +75,29 @@ impl WheelPanel {
     }
 
     pub fn modifiers(&self) -> Vec<(u8, u16)> {
-        self.selected_gem().map_or_else(Vec::new, |gem| {
-            gem.modifiers
-                .iter()
-                .enumerate()
-                .map(|(index, id)| (u8::from(index == 2), *id))
-                .collect()
-        })
+        let mut modifiers: Vec<_> =
+            self.confirmed_atelier
+                .as_ref()
+                .map_or_else(Vec::new, |state| {
+                    state
+                        .grades
+                        .iter()
+                        .map(|grade| (grade.kind, grade.mod_id))
+                        .collect()
+                });
+        // Current queries include every compatible Workshop modifier. Older servers
+        // send sparse grades, so the selected gem still supplies its known choices.
+        if let Some(gem) = self.selected_gem() {
+            modifiers.extend(
+                gem.modifiers
+                    .iter()
+                    .enumerate()
+                    .map(|(index, id)| (u8::from(index == 2), *id)),
+            );
+        }
+        modifiers.sort_unstable();
+        modifiers.dedup();
+        modifiers
     }
 
     pub fn grade(&self, kind: u8, mod_id: u16) -> u8 {
@@ -160,6 +178,9 @@ impl WheelPanel {
 
     pub fn select_gem(&mut self, gem: Option<[u8; 16]>) {
         self.gem = gem;
-        self.modifier = self.modifiers().first().copied();
+        let modifiers = self.modifiers();
+        if !self.modifier.is_some_and(|id| modifiers.contains(&id)) {
+            self.modifier = modifiers.first().copied();
+        }
     }
 }

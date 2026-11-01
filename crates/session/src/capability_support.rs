@@ -11,6 +11,7 @@ use super::*;
 /// 147 edits Exiva settings through command 170. Field runes (91) reuse USE command 2,
 /// existing map/entity updates and the rune refusal decoder; 11, 15, 18, 22 and 30
 /// complete their prerequisite closure on shipped bundle Worlds.
+/// 272 adds live Atelier resource queries to the existing 148 panel.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -31,12 +32,14 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,

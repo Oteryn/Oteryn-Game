@@ -57,6 +57,7 @@ use sqlx::postgres::PgConnection;
 
 const REQUEST_BINDING_VERSION: u8 = 1;
 const CAUSE_CHARM_UNASSIGN: i16 = 1;
+mod atelier;
 mod purchase_cause;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
@@ -323,7 +324,12 @@ async fn burn_fee(
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
-    if !(1..=fee_gold_units_max(tuple)).contains(&request.fee_gold_units)
+    let fee_maximum = if atelier::is_cause(&request.cause) {
+        atelier::fee_gold_units_max(tuple)
+    } else {
+        fee_gold_units_max(tuple)
+    };
+    if !(1..=fee_maximum).contains(&request.fee_gold_units)
         || request.occurred_at_unix_ms <= 0
         || check_uuid_v7(&request.transaction_id).is_err()
         || check_uuid_v7(&request.event_id).is_err()
@@ -418,7 +424,12 @@ async fn burn_fee(
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_optional(&mut *connection)
     .await?;
-    // No backpack: no eligible input (`T` = 0), so only the bank can pay.
+    // Atelier includes every carried coin leaf. Other fee owners retain their direct-bag plan.
+    let carried = if atelier::is_cause(&request.cause) {
+        Some(atelier::lock_inputs(connection, fence, request, world_id).await?)
+    } else {
+        None
+    };
     let BackpackInputs {
         backpack,
         capacity,
@@ -428,6 +439,9 @@ async fn burn_fee(
         Some(backpack) => lock_coin_inputs(connection, request, &backpack, world_id).await?,
         None => BackpackInputs::default(),
     };
+    let inputs = carried
+        .as_ref()
+        .map_or(inputs, |carried| carried.inputs.clone());
     let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _, _)| *stack).collect();
     let eligible = stacks.iter().try_fold(0_u64, |total, stack| {
         u64::from(stack.quantity)
@@ -456,6 +470,8 @@ async fn burn_fee(
             change_platinum: 0,
             change_gold: 0,
         }
+    } else if let Some(carried) = &carried {
+        atelier::plan(coin_part, &stacks, carried, entries.len(), capacity)?
     } else {
         match plan_fee_within(coin_part, &stacks, entries.len(), capacity) {
             Ok(plan) => plan,
@@ -575,6 +591,10 @@ async fn burn_fee(
     let burned_gold_units = coin_part
         .checked_add(plan.change)
         .ok_or(FeeBurnError::InvalidInput)?;
+    let audit_cause = match &carried {
+        Some(carried) => carried.audit_cause(fence, request, &plan)?,
+        None => request.cause.audit(),
+    };
     let envelope = encode_fee_burn_event_with(
         FeeBurnEventIdentity {
             event_id: request.event_id,
@@ -584,7 +604,7 @@ async fn burn_fee(
         },
         OneItemFeeBurnV1 {
             cause: Some(OneItemFeeBurnCauseV1 {
-                cause: Some(request.cause.audit()),
+                cause: Some(audit_cause),
             }),
             fee_gold_units: request.fee_gold_units,
             burned_gold_units,
@@ -660,6 +680,14 @@ async fn burn_fee(
     .execute(&mut *connection)
     .await?;
 
+    if let Some(carried) = &carried {
+        carried
+            .record(
+                connection, fence, request, &plan, backpack, capacity, &entries,
+            )
+            .await?;
+    }
+
     for (ordinal, line) in (1_i16..).zip(&lines) {
         sqlx::query(
             "INSERT INTO game_item_fee_burn_lines(transaction_id, line_ordinal, item_instance_id, \
@@ -691,7 +719,11 @@ async fn burn_fee(
         if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState.into());
         }
-        if line.quantity_after == 0 {
+        if line.quantity_after == 0
+            && let Some(carried) = &carried
+        {
+            carried.remove(connection, line).await?;
+        } else if line.quantity_after == 0 {
             let removed = sqlx::query(
                 "DELETE FROM game_item_container_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid \
@@ -708,6 +740,11 @@ async fn burn_fee(
                 return Err(DurabilityError::InvalidStoredState.into());
             }
         }
+    }
+    if let Some(carried) = &carried {
+        carried
+            .advance_equipment(connection, fence, request, &plan)
+            .await?;
     }
 
     for output in &change {

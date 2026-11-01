@@ -1,5 +1,10 @@
 use super::*;
 
+#[path = "resources.rs"]
+mod resources;
+#[path = "workshop.rs"]
+mod workshop;
+
 type Error = Box<dyn std::error::Error>;
 
 fn wire<T>(result: Result<T, impl std::fmt::Debug>) -> Result<T, Error> {
@@ -87,6 +92,7 @@ fn response(
         payload,
         wheel: Some(wire(wheel::encode_wheel_reply(wheel))?),
         atelier: Some(wire(atelier::encode_reply(atelier))?),
+        resources: None,
     })
 }
 
