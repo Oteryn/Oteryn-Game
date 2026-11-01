@@ -141,6 +141,32 @@ async fn health(
         .health)
 }
 
+// The target has no serving connection in this fixture, so its driver must retry death
+// settlement as its production cadence would. The caster's serving cadence shares the
+// max-one durability holder; a busy pass is Retry, not a non-durable death.
+async fn settle_death_when_ready(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    death: crate::gameplay_transport::actor_spell::PlayerDeath,
+) -> TestResult<crate::gameplay_transport::SessionDeath> {
+    use crate::gameplay_transport::SessionDeath;
+    Ok(tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let settled = owner.settle_death(actor, session, death, false).await.0;
+            if settled != SessionDeath::Retry {
+                return settled;
+            }
+            let now = tokio::time::Instant::now();
+            owner
+                .root
+                .wait_holder_retry(now, now + Duration::from_millis(25))
+                .await;
+        }
+    })
+    .await?)
+}
+
 async fn melee_fault(
     client: &mut DuplexStream,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -666,17 +692,11 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     .ok_or("PvP lethal hit records death")?
             };
             assert_eq!(
-                owner
-                    .settle_death(target, target_session, death, false)
-                    .await
-                    .0,
+                settle_death_when_ready(&owner, target, target_session, death).await?,
                 crate::gameplay_transport::SessionDeath::Durable
             );
             assert_eq!(
-                owner
-                    .settle_death(target, target_session, death, false)
-                    .await
-                    .0,
+                settle_death_when_ready(&owner, target, target_session, death).await?,
                 crate::gameplay_transport::SessionDeath::Durable
             );
             // SESSION-INGRESS-1 replays the latest retained CommandId from its durable
