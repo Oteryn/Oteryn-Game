@@ -50,6 +50,12 @@ async fn command(
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    // This fixture drives serve_admitted without the node's root-maintenance loop.
+    // Restore a retired holder before reconnect reconciliation reads durable NPC state.
+    assert!(
+        owner.root.maintain_ready_once().await.map_err(debug)?,
+        "node maintenance must ready the holder before the next client command"
+    );
     let next = admitted.continuity.next_command_id;
     exchange(owner, admitted, next, 113, payload).await
 }
@@ -122,12 +128,19 @@ fn scenario() -> TestResult {
             CharacterTitle::BossExecutioner,
             CharacterTitle::BossSlayer,
         ];
-        for title in titles {
+        for (ordinal, title) in titles.into_iter().enumerate() {
             assert_eq!(
                 command(&owner, &mut admitted, &[2, title.id()]).await?.0,
                 CommandStatus::Rejected,
                 "one missing entry or one kill below mastery must refuse {title:?}"
             );
+            if ordinal == 0 {
+                // A pass deadline can retire the sole holder after a rejected command.
+                // Exercise that state deterministically, without slowing a title read.
+                h.root.try_acquire_ready().map_err(debug)?.close().await?;
+                h.root.request_ready();
+                assert!(!h.root.is_ready(), "the fixture retired its holder");
+            }
         }
         let before: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_titles WHERE title BETWEEN 59 AND 84",
