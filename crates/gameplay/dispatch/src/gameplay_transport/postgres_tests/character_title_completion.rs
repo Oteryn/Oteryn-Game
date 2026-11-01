@@ -56,8 +56,48 @@ async fn command(
         owner.root.maintain_ready_once().await.map_err(debug)?,
         "node maintenance must ready the holder before the next client command"
     );
+    // Under load the previous command's durable tail can still hold the sole holder.
+    // Wait until it is idle again, so a busy holder is not read as a title refusal.
+    let settle = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !owner.root.is_ready() && tokio::time::Instant::now() < settle {
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    let next = admitted.continuity.next_command_id;
+    let reply = exchange(owner, admitted, next, 113, payload).await?;
+    if reply.0 != CommandStatus::Rejected || owner.root.is_ready() {
+        return Ok(reply);
+    }
+    // Under load a pass deadline can retire the sole holder while the command runs. The
+    // node's maintenance loop would ready it again and the client would resend. A rule
+    // refusal leaves the holder ready, so only a refusal by an unavailable root resends once.
+    assert!(
+        owner.root.maintain_ready_once().await.map_err(debug)?,
+        "node maintenance must ready the holder before the resent command"
+    );
     let next = admitted.continuity.next_command_id;
     exchange(owner, admitted, next, 113, payload).await
+}
+
+/// The current quest fence, read the way the node does: with a readied holder, and read
+/// again while the sole holder is still unavailable.
+async fn quest_fence(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+) -> TestResult<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+    let settle = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        assert!(
+            owner.root.maintain_ready_once().await.map_err(debug)?,
+            "node maintenance must ready the holder before the fence read"
+        );
+        match owner.current_quest_fence(session).await {
+            Ok(fence) => return Ok(fence.ok_or("session")?),
+            Err(()) if tokio::time::Instant::now() < settle => {
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            Err(()) => return Err("fence".into()),
+        }
+    }
 }
 
 fn scenario() -> TestResult {
@@ -170,11 +210,7 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(before, 0);
         seed_completed(&h, &amphibic[amphibic.len() - 1..]).await?;
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|()| "fence")?
-            .ok_or("session")?;
+        let fence = quest_fence(&owner, admitted.game_session_id).await?;
         for (ordinal, boss) in catalogue
             .bosstiary
             .iter()
