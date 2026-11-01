@@ -211,7 +211,8 @@ fn tabs_scenario() -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[CAPABILITY_CYCLOPEDIA_CHARACTER_V1])
                 .ok_or("cyclopedia character capability")?;
-        for (command, invalid) in [(2, &[8, 0, 0, 1][..]), (3, &[2, 0, 0, 0]), (4, &[2, 0, 0])] {
+        // P12c admits tabs 8-10; 11 is now the first undefined tab.
+        for (command, invalid) in [(2, &[11, 0, 0, 1][..]), (3, &[2, 0, 0, 0]), (4, &[2, 0, 0])] {
             assert_eq!(
                 exchange(&owner, &mut admitted, command, tab, invalid).await?.0,
                 CommandStatus::Rejected

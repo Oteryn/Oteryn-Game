@@ -70,6 +70,18 @@ fn apply_hunting_stamina_to_loot(
     }
 }
 
+/// A completed Bestiary entry makes its Charm reward available immediately. Reconciled
+/// receipts also mark the title projection, so recovery cannot lose Beastly/class unlocks.
+fn bestiary_completion_affects_titles(outcome: &BestiaryKillOutcome) -> bool {
+    match outcome {
+        BestiaryKillOutcome::Committed(kill) | BestiaryKillOutcome::AlreadyCommitted(kill) => {
+            kill.kill_count_before < kill.final_kill_threshold
+                && kill.kill_count_after >= kill.final_kill_threshold
+        }
+        BestiaryKillOutcome::Saturated { .. } => false,
+    }
+}
+
 /// KILLRW-RL-01: queued plus in-flight unsettled kills of one Channel.
 pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 
@@ -2562,10 +2574,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         {
             leveled.extend(super::level_up_live::leveled_character(xp));
         }
-        // PAR-P12a: a level, a tracked creature or a boss kill can unlock a title.
+        // P12a: completed Bestiary entries can unlock Beastly or a class title even when
+        // the race has no individual kill-count title (PR #2782 Q2).
         let titled = row.race.as_ref().is_some_and(|race| {
             oteryn_protocol_oteryn::character_info::TRACKED_CREATURES.contains(&race.key())
-        }) || row.boss.is_some();
+        }) || row.boss.is_some()
+            || outcome.as_ref().is_ok_and(|settled| {
+                matches!(&settled.bestiary, Ok(CombatBestiaryOutcome::Recorded(kill))
+                    if bestiary_completion_affects_titles(kill))
+            });
         admission.states.title_refresh.mark(
             leveled
                 .iter()

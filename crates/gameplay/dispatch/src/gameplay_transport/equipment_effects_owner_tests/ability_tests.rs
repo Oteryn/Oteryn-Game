@@ -60,6 +60,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
     // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
     ("MONKQUEST", 7),
+    // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
+    // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
+    ("P11-CONDITION-POTIONS", 4),
+    // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
+    // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
+    ("P11-MECHANICAL-FISHING", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),

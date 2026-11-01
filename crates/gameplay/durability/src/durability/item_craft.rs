@@ -375,5 +375,28 @@ async fn write<C: ItemLoopContent>(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
+    // The successful yield, counter and grant share the craft receipt transaction.
+    // Exact replay returned before this writer, so a retry never advances the counter.
+    use oteryn_gameplay_progression::achievement_granters;
+    let achievement = if let Some(gathering) = &request.gathering {
+        achievement_granters::gathering(
+            &gathering.mutation.tool_key,
+            gathering.attempt.yield_item,
+        )
+    } else {
+        (conversion.recipe == "oteryn:fishing.global.standard")
+            .then_some(achievement_granters::HERE_FISHY_FISHY)
+    };
+    if let Some(achievement) = achievement {
+        super::account_achievement::add_progress(
+            tx,
+            fence.character_id,
+            achievement.key,
+            achievement.total,
+            achievement_granters::CRAFT_SOURCE_KIND,
+            event.as_bytes(),
+        )
+        .await?;
+    }
     Ok(UseDisposition::Committed)
 }

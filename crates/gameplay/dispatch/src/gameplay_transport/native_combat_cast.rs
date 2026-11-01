@@ -206,6 +206,7 @@ pub enum UnresolvedSpellCommit {
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
     Ranged(Box<super::super::attack::ranged::PendingShot>),
+    ConditionPotion(Box<super::super::item_use::condition_potions::PendingConditionPotion>),
     Pvp(Box<super::super::pvp_live::PendingPvpHit>),
     Native(Box<PendingNativeCast>),
     WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
@@ -368,6 +369,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             UnresolvedSpellCommit::Ranged(attempt) => {
                 drop(states);
                 self.resolve_ranged_shot(&mut permit, *attempt).await;
+                return permit;
+            }
+            UnresolvedSpellCommit::ConditionPotion(attempt) => {
+                drop(states);
+                self.resolve_condition_potion_attempt(&mut permit, *attempt)
+                    .await;
                 return permit;
             }
             UnresolvedSpellCommit::Pvp(hit) => {
