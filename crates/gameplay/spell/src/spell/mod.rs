@@ -37,6 +37,7 @@ mod harmony_tests;
 pub mod magnitude_owner;
 pub mod mana_training;
 pub mod native;
+pub mod wheel_formula;
 
 pub mod native_cast_commit;
 pub mod native_combat;
@@ -60,6 +61,7 @@ pub mod stance_execution;
 pub mod target;
 #[cfg(test)]
 mod tests;
+pub mod wheel_gift;
 pub mod world_execution;
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -450,6 +452,29 @@ fn resolve(
     facts: Facts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
+    resolve_with_wheel(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        has_target,
+        facts,
+        wheel_formula::WheelFormulaMagic::default(),
+        draw,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolve_with_wheel(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    has_target: bool,
+    facts: Facts<'_>,
+    wheel: wheel_formula::WheelFormulaMagic,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
     // Canary's movement pacification precedes PZ, resource and spell cooldown checks.
     if spell.aggressive {
         check_group(
@@ -587,9 +612,10 @@ fn resolve(
         (Execution::PartyBuff(_), _) => return Err(CastRejection::PartyWorldRequired),
         _ => Vec::new(),
     };
-    let inputs = FormulaInputs {
+    // Rune mastery draws only after the unchanged admission checks above succeeded.
+    let mut inputs = FormulaInputs {
         level: caster.level,
-        magic_level: caster.magic_level,
+        magic_level: wheel.roll_magic_level(caster.magic_level, draw)?,
         base_power: spell.base_power,
         attack_skill: caster.attack_skill,
         attack_value: caster.attack_value,
@@ -597,6 +623,9 @@ fn resolve(
         shielding_skill: caster.shielding_skill,
         shield_defense: caster.shield_defense,
     };
+    wheel
+        .skill_inputs(&mut inputs, caster.melee_weapon)
+        .map_err(CastRejection::Formula)?;
     // §A.2 step 3b: only a spender's damage takes the multiplier.
     let multiplier = match spell.harmony_role {
         Some(HarmonyRole::Spender) => caster.harmony_multiplier,
@@ -630,20 +659,32 @@ fn resolve(
         }]),
         Execution::Effects(effects) => effects
             .iter()
-            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
+            .map(|effect| {
+                wheel
+                    .effect_inputs(effect, &inputs)
+                    .and_then(|inputs| resolve_effect(effect, &inputs, multiplier, draw))
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
         Execution::AbilityVariants(_) => selected_variant
             .ok_or(CastRejection::InvalidVariantDraw)?
             .effects
             .iter()
-            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
+            .map(|effect| {
+                wheel
+                    .effect_inputs(effect, &inputs)
+                    .and_then(|inputs| resolve_effect(effect, &inputs, multiplier, draw))
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
         Execution::PartyBuff(buff) => buff
             .effects
             .iter()
-            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
+            .map(|effect| {
+                wheel
+                    .effect_inputs(effect, &inputs)
+                    .and_then(|inputs| resolve_effect(effect, &inputs, multiplier, draw))
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
         Execution::ActorFocus { .. } | Execution::NativeProfile(_) => Ok(Vec::new()),

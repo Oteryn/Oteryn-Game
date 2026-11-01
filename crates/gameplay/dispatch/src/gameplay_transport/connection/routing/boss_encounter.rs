@@ -8,18 +8,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
 ) -> Option<Dispatch> {
-    // Lever input reaches Quest prerequisites but the unqualified shared owner still refuses.
-    // Client terminal commands cannot manufacture death, timeout or admission authority.
-    if !matches!(
+    if matches!(
         command.command_type,
-        oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS
-            | oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_REWARD_OPEN
-            | oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_LEVER
+        oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_LEVER
+            | oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_DEFEATED
+            | oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_TIMEOUT
     ) {
-        return Some(Dispatch::Reply(
-            crate::foundation::CommandStatus::Rejected,
-            Vec::new(),
-        ));
+        return authority
+            .boss_activity_command(
+                *admitted,
+                command.command_id,
+                command.command_type,
+                command.payload,
+            )
+            .await
+            .map(|(status, payload)| Dispatch::Reply(status, payload));
     }
     Some(
         match authority

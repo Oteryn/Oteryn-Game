@@ -24,17 +24,26 @@ pub(in crate::durability::item_decay_retire) async fn admit(
     if !channels.contains(fence) {
         return Ok(Err(DecayRetireError::AuthorityRejected));
     }
+    admit_ground(tx, fence, step).await
+}
+
+pub(in crate::durability::item_decay_retire) async fn admit_ground(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CorpseDecayFence,
+    step: DecayRetireStep,
+) -> Pass<Admitted> {
+    let scope = fence.runtime_scope;
     let item = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref,quantity,(SELECT coalesce(max(key_number),0)::bigint FROM game_item_keys k WHERE k.item_instance_id=game_item_instances.item_instance_id) AS key_number FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
-        .bind(step.item_instance_id.as_slice()).bind(reset.world.as_bytes().as_slice())
+        .bind(step.item_instance_id.as_slice()).bind(scope.world_id().as_bytes().as_slice())
         .fetch_optional(&mut **tx).await?;
     let Some(item) = item else {
         return Ok(Err(DecayRetireError::Refused(
             DecayRetireRefusal::NotInCorpse,
         )));
     };
-    let ground = sqlx::query("SELECT g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,g.runtime_scope_ownership_generation::text,floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS database_now FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.item_instance_id=encode($1,'hex')::uuid AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
-        .bind(step.corpse_item_instance_id.as_slice()).bind(reset.world.as_bytes().as_slice())
-        .bind(fence.channel_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let ground = sqlx::query("SELECT g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,g.runtime_scope_ownership_generation::text,floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS database_now FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.item_instance_id=encode($1,'hex')::uuid AND g.world_id=encode($2,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.scope_kind=$4 AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
+        .bind(step.corpse_item_instance_id.as_slice()).bind(scope.world_id().as_bytes().as_slice())
+        .bind(scope.channel_id().map(|id| id.as_bytes().to_vec())).bind(scope_kind(scope)).bind(scope.instance_id().map(|id| id.to_vec())).fetch_optional(&mut **tx).await?;
     let Some(ground) = ground else {
         return Ok(Err(DecayRetireError::Refused(
             DecayRetireRefusal::NotACorpse,
@@ -77,8 +86,8 @@ pub(in crate::durability::item_decay_retire) async fn admit(
         )
     };
     Ok(Ok(Admitted {
-        world_id: *reset.world.as_bytes(),
-        channel_id: *fence.channel_id.as_bytes(),
+        world_id: *scope.world_id().as_bytes(),
+        runtime_scope: scope,
         definition: OneItemTypedDefinitionRevisionV1 {
             family: item.try_get("definition_family")?,
             production_key: item.try_get("definition_production_key")?,
@@ -90,8 +99,11 @@ pub(in crate::durability::item_decay_retire) async fn admit(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
         corpse_ground: OneItemGroundV1 {
-            world_id: reset.world.as_bytes().to_vec(),
-            channel_id: fence.channel_id.as_bytes().to_vec(),
+            world_id: scope.world_id().as_bytes().to_vec(),
+            channel_id: scope
+                .channel_id()
+                .map_or_else(Vec::new, |id| id.as_bytes().to_vec()),
+            instance_id: scope.instance_id().map(|id| id.to_vec()),
             spatial_position: ground.try_get("spatial_position")?,
             corpse_ref: ground.try_get("corpse_ref")?,
             map_revision: ground.try_get("map_revision")?,

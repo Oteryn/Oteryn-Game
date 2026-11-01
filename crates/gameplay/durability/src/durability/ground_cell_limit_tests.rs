@@ -47,7 +47,7 @@ fn root(n: u8) -> GroundItemInstance {
     GroundItemInstance {
         item_instance_id: uuid(n),
         world_id: world(1),
-        channel_id: channel(2),
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world(1), channel(2)),
         definition: TypedDefinitionRef {
             family: "Item".into(),
             production_key: "stack".into(),
@@ -112,7 +112,13 @@ fn overfull_no_new_root_still_checks_identity_scope_and_placement() {
     for mutate in [
         |item: &mut GroundItemInstance| item.item_instance_id = uuid(0),
         |item: &mut GroundItemInstance| item.world_id = world(3),
-        |item: &mut GroundItemInstance| item.channel_id = channel(3),
+        // W02 keeps the existing foreign-Channel negative case under the tagged scope.
+        |item: &mut GroundItemInstance| {
+            item.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                item.runtime_scope.world_id(),
+                channel(3),
+            );
+        },
         |item: &mut GroundItemInstance| item.runtime_scope_ownership_generation += 1,
         |item: &mut GroundItemInstance| item.ground.spatial_position[0] ^= 1,
         |item: &mut GroundItemInstance| item.ground.map_revision.push('b'),
@@ -179,7 +185,11 @@ fn supplied_scope_and_generation_are_compared_independently() {
         );
     }
     let mut inserted = root(2);
-    inserted.channel_id = channel(3);
+    // W02 preserves the same Channel mismatch; no Instance or origin alias is substituted.
+    inserted.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+        inserted.runtime_scope.world_id(),
+        channel(3),
+    );
     assert_eq!(
         check(&existing, &[inserted]),
         Err(GroundCellLimitError::IncompatibleInput)
@@ -373,7 +383,10 @@ mod postgres {
         Ok(GroundItemInstance {
             item_instance_id: id(number),
             world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-            channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(WORLD)).map_err(debug)?,
+                ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            ),
             definition: definition(),
             quantity: 100,
             runtime_scope_ownership_generation: 1,

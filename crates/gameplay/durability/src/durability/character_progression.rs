@@ -454,6 +454,17 @@ pub(super) async fn assert_session_fence(
     };
     let account_text: String = session.try_get("account_id")?;
 
+    // A private Instance needs retained group/session/transport provenance as
+    // well as the independent current assignment and publisher fences below.
+    if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+        let origin: bool = sqlx::query_scalar("SELECT COALESCE(game_activity_session_origin_valid(encode($1,'hex')::uuid,encode($2,'hex')::uuid),false)")
+            .bind(fence.game_session_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice())
+            .fetch_one(&mut **tx).await?;
+        if !origin {
+            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+        }
+    }
+
     if !assert_runtime_scope_fence(
         tx,
         fence.runtime_scope,
@@ -732,9 +743,6 @@ pub(super) fn validate_request<const N: usize>(
         || request.policy_revision != request.policy.policy_revision
         || request.reward_revision != request.policy.reward_revision
     {
-        return Err(CharacterProgressionError::InvalidInput);
-    }
-    if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
         return Err(CharacterProgressionError::InvalidInput);
     }
     Ok(())

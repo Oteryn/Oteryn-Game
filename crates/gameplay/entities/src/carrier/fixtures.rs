@@ -48,10 +48,7 @@ impl ChannelRuntimeV1 {
     #[cfg(any(test, feature = "test-support"))]
     const fn test_position_context(&self) -> PreProductionPositionContext {
         PreProductionPositionContext {
-            scope: positions::PositionScope::channel(
-                self.binding.world_id,
-                self.binding.channel_id,
-            ),
+            scope: positions::PositionScope::from_validated_scope(self.binding.runtime_scope),
             scope_generation: self.binding.scope_generation,
             coordinate_frame_marker: 11,
             map_revision_marker: 12,

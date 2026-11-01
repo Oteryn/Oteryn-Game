@@ -384,11 +384,9 @@ fn setup_named_at(
         condition_policy: None,
     };
     let b = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     (
         r,
         states,

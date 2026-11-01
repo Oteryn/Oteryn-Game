@@ -3,6 +3,67 @@ use crate::foundation::{ChannelId, WorldId};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, SessionContinuity};
 use oteryn_protocol_oteryn::{CommandStatus, encode_command_result};
 
+#[test]
+fn activity_recovery_excludes_late_stream_open_and_releases_on_drop()
+-> Result<(), Box<dyn std::error::Error>> {
+    let owner = SessionCommands::default();
+    let admitted = session()?;
+    assert!(
+        owner.reserve_activity_recovery(&admitted).is_none(),
+        "absence is not unused-stream proof"
+    );
+    owner.admit(admitted.game_session_id);
+    let held = owner
+        .reserve_activity_recovery(&admitted)
+        .ok_or("reserve")?;
+    assert!(owner.reserve_activity_recovery(&admitted).is_none());
+    assert!(SessionCommandStream::open(Some(&owner), &admitted).is_none());
+    assert!(!owner.resumable(&admitted));
+    drop(held);
+    let stream =
+        SessionCommandStream::open(Some(&owner), &admitted).ok_or("original stream preserved")?;
+    assert_eq!(stream.next_command_id(), 1);
+    assert!(
+        owner.reserve_activity_recovery(&admitted).is_none(),
+        "live socket keeps its claim"
+    );
+    drop(stream);
+    assert!(owner.reserve_activity_recovery(&admitted).is_some());
+    Ok(())
+}
+
+#[test]
+fn activity_recovery_never_erases_command_or_result_truth() -> Result<(), Box<dyn std::error::Error>>
+{
+    let owner = SessionCommands::default();
+    let mut admitted = session()?;
+    let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
+    assert!(matches!(
+        stream.begin(1, 1, 0, false),
+        Ok(CommandAction::Execute)
+    ));
+    let result = encode_command_result(1, 1, 1, CommandStatus::Accepted, &[9])?;
+    stream.terminalize(1, &result).ok_or("terminal")?;
+    drop(stream);
+    assert!(
+        owner.reserve_activity_recovery(&admitted).is_none(),
+        "forged initial counter cannot erase a result"
+    );
+    admitted.continuity.next_command_id = 2;
+    admitted.continuity.server_sequence = 1;
+    assert!(owner.reserve_activity_recovery(&admitted).is_none());
+    assert!(
+        owner.resumable(&admitted),
+        "ordinary reconnect remains available"
+    );
+    let mut resumed = SessionCommandStream::open(Some(&owner), &admitted).ok_or("resume")?;
+    assert!(matches!(
+        resumed.begin(1, 2, 1, false),
+        Ok(CommandAction::Replay(_))
+    ));
+    Ok(())
+}
+
 fn session() -> Result<AdmittedSession, Box<dyn std::error::Error>> {
     fn id(seed: u8) -> [u8; 16] {
         let mut bytes = [seed; 16];

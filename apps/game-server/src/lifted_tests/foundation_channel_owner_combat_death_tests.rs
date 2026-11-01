@@ -659,7 +659,7 @@ fn key_fields(
 ) -> (WorldId, ChannelId, ScopeOwnershipGeneration, u32, u64) {
     (
         key.world_id(),
-        key.channel_id(),
+        key.channel_id().expect("Channel fixture"),
         key.scope_ownership_generation(),
         key.actor_local_id(),
         key.actor_local_generation(),
@@ -734,7 +734,8 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
     };
     let (world_id, channel_id, generation, local_id, local_generation) = key_fields(first);
     assert_eq!(
-        ItemMintCause::from_creature_death(first, loot.clone(), "fixture:drop".into(), 0),
+        ItemMintCause::from_creature_death(first, loot.clone(), "fixture:drop".into(), 0)
+            .expect("Channel fixture mint cause"),
         ItemMintCause::for_test(
             world_id,
             channel_id,

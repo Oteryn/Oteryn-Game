@@ -64,6 +64,10 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    /// P05: exactly one bounty talisman, at the Crystal NPC price.
+    TaskBoardTalisman {
+        occurrence: [u8; 16],
+    },
     /// Crystal bloodshade_sacrifice.lua:69-89; atomic with the access Quest receipt.
     QuestAccessPurchase {
         occurrence: [u8; 16],

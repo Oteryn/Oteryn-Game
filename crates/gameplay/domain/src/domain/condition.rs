@@ -65,6 +65,8 @@ pub enum ConflictKey {
     ManaShield,
     Light,
     Attributes,
+    /// Crystal INTENSEHEX is an independent attribute condition, not an Avatar replacement.
+    IntenseHex,
     SpellSkills(u8),
     SpellRegeneration(u8),
     Invisible,
@@ -87,6 +89,8 @@ pub enum ConditionType {
     ManaShield,
     Light,
     Attributes,
+    /// Crystal INTENSEHEX is an independent attribute condition, not an Avatar replacement.
+    IntenseHex,
     SpellSkills(u8),
     SpellRegeneration(u8),
     Invisible,
@@ -106,6 +110,7 @@ impl ConditionType {
             Self::ManaShield => ConflictKey::ManaShield,
             Self::Light => ConflictKey::Light,
             Self::Attributes => ConflictKey::Attributes,
+            Self::IntenseHex => ConflictKey::IntenseHex,
             Self::SpellSkills(id) => ConflictKey::SpellSkills(id),
             Self::SpellRegeneration(id) => ConflictKey::SpellRegeneration(id),
             Self::Invisible => ConflictKey::Invisible,
@@ -257,6 +262,11 @@ pub enum ConditionValues {
         critical_extra_percentage_points: u32,
         damage_dealt_percent: u32,
         incoming_reduction_percent: u32,
+    },
+    IntenseHex {
+        duration_ms: u32,
+        damage_dealt_percent: u8,
+        healing_received_percent: u8,
     },
     Invisible {
         duration_ms: u32,

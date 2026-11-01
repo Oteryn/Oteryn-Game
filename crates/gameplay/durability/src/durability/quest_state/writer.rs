@@ -284,15 +284,7 @@ impl DurabilityRoot {
                             )
                         }
                         None => {
-                            let states: i64 = sqlx::query_scalar(
-                                "SELECT count(*) FROM game_character_quest_states \
-                                  WHERE character_id = encode($1,'hex')::uuid",
-                            )
-                            .bind(id)
-                            .fetch_one(&mut *tx)
-                            .await?;
-                            let full = usize::try_from(states).unwrap_or(usize::MAX)
-                                >= QUESTSTATE0_RL_05;
+                            let full = !capacity::new_state_fits(&mut tx, character).await?;
                             (
                                 content_revision.clone(),
                                 current_hash,
@@ -335,26 +327,7 @@ impl DurabilityRoot {
                     let refusal = match refusal {
                         Some(refusal) => Some(refusal),
                         None if rows.len() < keys.len() => {
-                            let (tracks, has_counter, has_flags): (i64, bool, bool) = sqlx::query_as(
-                                "SELECT count(*), coalesce(bool_or(track_key=$2),false), \
-                                  coalesce(bool_or(left(track_key,length($3))=$3),false) \
-                                  FROM game_character_quest_tracks \
-                                  WHERE character_id = encode($1,'hex')::uuid",
-                            )
-                            .bind(id)
-                            .bind(oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK)
-                            .bind(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)
-                            .fetch_one(&mut *tx)
-                            .await?;
-                            // A flag-only character needs one additional counter in its
-                            // read projection. Reserve it before committing any new row.
-                            let has_counter = has_counter || keys.contains(&oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK);
-                            let has_flags = has_flags || keys.iter().any(|key| key.starts_with(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX));
-                            let after = usize::try_from(tracks)
-                                .unwrap_or(usize::MAX)
-                                .saturating_add(keys.len() - rows.len())
-                                .saturating_add(usize::from(has_flags && !has_counter));
-                            (after > QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
+                            (!capacity::tracks_fit(&mut tx, character, &keys, rows.len()).await?)
                                 .then_some(QuestRefusal::CapacityExceeded)
                         }
                         None => None,

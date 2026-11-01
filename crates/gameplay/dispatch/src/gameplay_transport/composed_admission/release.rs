@@ -6,13 +6,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         release: TerminalRelease,
     ) -> GraceExpiryResult {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        if admitted.runtime_actor.is_some_and(|actor| {
+            matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. })
+        }) {
+            return self.release_activity_terminal(admitted, release).await;
+        }
+        self.release_terminal_in_scope(admitted, release).await
+    }
+
+    pub(in crate::gameplay_transport) async fn release_terminal_in_scope(
+        &self,
+        admitted: AdmittedSession,
+        release: TerminalRelease,
+    ) -> GraceExpiryResult {
+        self.release_terminal_with_store(
+            admitted,
+            release,
+            FreshAdmissionStore::from_root(self.root.clone()),
+            true,
+        )
+        .await
+    }
+
+    pub(in crate::gameplay_transport) async fn release_terminal_with_store(
+        &self,
+        admitted: AdmittedSession,
+        release: TerminalRelease,
+        store: FreshAdmissionStore,
+        wait_for_combat: bool,
+    ) -> GraceExpiryResult {
+        let Some(actor) = admitted.runtime_actor else {
             return GraceExpiryResult::NotApplicable;
         };
+        let Some(account) = self.activity_runtimes.account_for(admitted) else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        if admitted.controller.is_none()
+            && !matches!(release, TerminalRelease::CapabilityMismatch(_))
+        {
+            return GraceExpiryResult::NotApplicable;
+        }
         let session = admitted.game_session_id;
-        let store = FreshAdmissionStore::from_root(self.root.clone());
         // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
-        while self.hold_while_in_fight(actor, session).await {}
+        if wait_for_combat {
+            while self.hold_while_in_fight(actor, session).await {}
+        } else if self.terminal_combat_pending(actor, session).await {
+            return GraceExpiryResult::Unknown;
+        }
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
@@ -56,9 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UnendedSettle::Terminal => {
                     self.reconcile_kill_release(kills, ReleaseEnd::Committed)
                         .await;
-                    let result = self
-                        .retire_reconciled(controller.account_id, session, actor)
-                        .await;
+                    let result = self.retire_reconciled(account, session, actor).await;
                     self.forget_kill_release(kills).await;
                     result
                 }
@@ -90,11 +128,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         settled_death: &mut Option<actor_spell::PlayerDeath>,
         kills: &mut Option<KillReleaseMark>,
     ) -> ReleaseAttempt {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        let Some(actor) = admitted.runtime_actor else {
             return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
         };
+        let Some(account) = self.activity_runtimes.account_for(*admitted) else {
+            return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
+        };
+        if admitted.controller.is_none()
+            && !matches!(release, TerminalRelease::CapabilityMismatch(_))
+        {
+            return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
+        }
         let session = admitted.game_session_id;
-        let account_id = canonical_uuid(&controller.account_id);
+        let account_id = canonical_uuid(&account);
         if !self
             .settle_released_death(actor, session, settled_death)
             .await
@@ -124,7 +170,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
         // before the release can end the Character lease.
-        if self.save_monk_state(admitted, actor).await == monk_save::MonkSave::Unknown {
+        if !self.save_wheel_gift(actor, session, true).await
+            || self.save_monk_state(admitted, actor).await == monk_save::MonkSave::Unknown
+        {
             return ReleaseAttempt::Retry;
         }
         if self.save_spell_training(actor, session, true).await
@@ -177,7 +225,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if ends_session(&outcome) {
             // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
             // its Premium pulls stop, as at grace expiry.
-            self.release_premium(controller.account_id, session);
+            self.release_premium(account, session);
         }
         match outcome {
             Ok(ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. }) => {
@@ -188,9 +236,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     UnendedSettle::Terminal => {
                         self.settle_kill_release(kills, ReleaseEnd::Committed).await;
-                        let result = self
-                            .retire_reconciled(controller.account_id, session, actor)
-                            .await;
+                        let result = self.retire_reconciled(account, session, actor).await;
                         self.forget_kill_release(kills).await;
                         ReleaseAttempt::Done(result)
                     }

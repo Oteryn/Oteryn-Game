@@ -1,9 +1,11 @@
 # W10 Hazard / Primal Ordeal and W11 Soul War / Rotten Blood
 
 Task ID: OTV2-20261031-hazard-soulwar
-Status: Implementation and scoped verification complete within the accepted scope; awaiting coordinator composition
+Status: AUTHORING takeover; local checks passed, required PostgreSQL qualification BLOCKED by missing wrapper export
 Branch: `chatgpt/hazard-soulwar`
-Base: `ae4188a9c8d461acb152044814ea23075de02ed4`
+Original base: `ae4188a9c8d461acb152044814ea23075de02ed4`
+Takeover HEAD: `87ba8ddae88f017d056c40d82358aa2625395a25`
+Merged main in worktree: `38641fecd4558a4a14e6b15b3874110ffa2dff19` (owner-started, uncommitted merge)
 Reference: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`
 Secondary reference: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`
 Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/2784
@@ -49,7 +51,7 @@ explicit owner decisions below.
 - Existing Hazard 169, NPC 7, world USE 2 and shared boss entry 178 are reused.
   Commands 179/180 do not gain client-supplied death or terminal authority.
 - Reserved capabilities 254-255, commands 478-481 and ordinals 618-621 remain unused.
-- Fee audit cause 13 is an internal closed audit value, not a wire command.
+- Fee audit cause 14 is an internal closed audit value, not a wire command.
 
 ## Owner decisions
 
@@ -111,10 +113,11 @@ remaining composition dependencies are listed below.
 
 ## Left out and release dependencies
 
-1. **W02 composition and native rooms.** This base lacks the shared native Instance
-   admission and terminal-proof owner. Entry/terminal seams retain typed
-   `ContentUnavailable`. The coordinator must compose participant placement,
-   arena/spawn/attempt ownership, timers, exits and authoritative terminal proof.
+1. **W02 composition and native rooms.** Merged main supplies the shared native
+   activity/admission owner. W10/W11 source qualification, terminal-proof adaptation
+   and Instance death/reward consumer composition remain unavailable. Endgame
+   entry/terminal seams retain typed `ContentUnavailable`; other boss activities
+   preserve main's native owner and scope barrier.
    Current Primal/Soul/Rotten consumers require Channel-scoped native party-XP
    death/member receipts and reject Instance fences. W02 must provide authoritative
    Instance death/admission proof, participant scope handoff and atomic consumer
@@ -146,9 +149,302 @@ remaining composition dependencies are listed below.
 
 ## Delivery and review boundary
 
-The branch remains based on the immutable revision above: no main merge, rebase,
-force push or integration of another worktree. One lead commits and publishes.
-The PR remains draft; no heavy-tests label, review request or merge is performed.
-Independent candidate qualification and protected integration remain with the
-coordinator. The initial coordination commit made no implementation/test claims;
-the entries above describe the subsequent accepted implementation.
+The owner explicitly returned this draft to AUTHORING for takeover. Main was
+already merged with `--no-commit` before this session. This session edits only
+working-tree files; the owner stages, commits and publishes after review. No Git
+index, branch or remote mutation is authorized. The nine original conflicted
+index entries remain until the owner stages their resolved working-tree files.
+Independent candidate review, repository CI and protected integration remain with
+the coordinator. Historical verification above belongs to the original revision;
+the takeover validation below must be read separately.
+
+## Takeover report: 2026-11-01
+
+This is an uncommitted working-tree integration, not a frozen or CI-qualified
+candidate. Required PostgreSQL qualification has **not** executed. Do not count
+missing-environment early returns as passing database evidence.
+
+### Conflict resolution and integration repairs
+
+All nine originally conflicted files have resolved working-tree contents and no
+conflict markers. The Git index still has those nine unmerged paths: the owner
+forbids this worker from staging or changing Git state.
+
+- `creature_auto_attack.rs`: retain main's Soulpit Overpower critical decision;
+  replace the former separate Hazard timer/scaling block with the accepted shared
+  player critical window, applying Hazard once after ordinary blocking.
+- Boss ingress: retain main's activity route for 178–180, authoritative native
+  terminal owner, scope barrier and paged reward/capability checks. Recognized
+  endgame lever keys also reach the W10/W11 prerequisite consumer and use main's
+  typed activity refusals. Their unqualified rooms remain unavailable.
+- Fee cause conflicts: retain Task Board cause/tag 13; move only this branch's
+  unmerged Rotten Blood access cause/tag to 14. Update SQL admission/proof arms,
+  Rust audit encoding, queries and round-trip tests together. No public command
+  or capability is added or renumbered.
+- Main's native death key now distinguishes 52-byte Channel and 53-byte Instance
+  namespaces. Retain that API and adapt the endgame call/fixture sites. Only the
+  existing Channel endgame consumers use a checked fixed-size copy; other native
+  mechanics keep main's tagged Instance format. No Instance endgame authority is
+  fabricated.
+- Resolve `spell-native-profiles.json` and `spells.manifest.json` through the
+  repository generators. Compare against main: exactly Bloody Tear 32594 added;
+  zero preexisting profiles changed or removed. Registrations were placed in
+  sorted module blocks.
+
+Migration renumbering: **none**. Added 0708–0711 do not collide with main or the
+owner-held ranges. Duplicate-number script and embedded-migrator unit check pass.
+The 13 → 14 change is an internal fee audit cause, not a migration renumbering.
+Migration grants retain PUBLIC revocation and the existing runtime/control role
+boundary. No main migration, forbidden workflow/repository-policy path or the
+protected re-audit document was edited.
+
+### Generation and tooling constraints
+
+The ordinary `regen.sh --no-stage --skip-checks` entry point refuses an unmerged
+index even when worktree files are resolved. The complete generation steps were
+therefore executed through `regenerate_content.py`'s repository functions and
+its official no-stage mode, with a local adapter that verifies resolved worktree
+contents while leaving the real index unchanged. No generator or assertion was
+modified. Exact local adapter sources and logs remain in ignored
+`tmp/tk-hazard/` for review.
+
+Executed generation/freshness commands:
+
+- `python3 tools/content-migration/register_spell_families.py`: PASS, 38 files.
+- `python3 tmp/tk-hazard/regenerate_no_index.py`: materializer, inventory repin,
+  content tree and all authoring generators executed; initially stopped at the
+  engine-item harness's forbidden sibling temporary directory. Remaining checks
+  were resumed with that temporary directory relocated inside this worktree.
+- `python3 tools/content-schema/item-authoring/test_engine_items.py`: PASS,
+  599 checks plus its 3/3/4-test cohorts. Original assertions and inputs retained.
+- `python3 tools/content-schema/item-authoring/item_weapon_proficiency.py --check`:
+  PASS; `python3 tools/content-census/g4_item_crystal_binding_generator.py --check`:
+  PASS, 33,971 bindings.
+- `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .`:
+  PASS; `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-check . tmp/tk-hazard/pin-check`:
+  PASS, one World, 30,948,284 bytes. Both use a read-only view of actual worktree
+  hashes for the compiler's diagnostic input listing because the real index
+  remains unmerged. Identity, deterministic builds, content/pin and bundle checks
+  are unchanged. The real Git index/object store is untouched.
+- `python3 tools/content-migration/regenerate_content.py --check`: PASS, the full
+  registered freshness/check list, including the engine cohort and all five
+  content-world repository tests. The same local temporary-directory relocation
+  is applied. The shell wrapper always adds `--resolve`, so an earlier
+  `regen.sh --check` attempt was rejected by argparse and was corrected to this
+  canonical Python check command.
+
+World digest is unchanged from merged main:
+`8bf53203d1f8159695f2872937135578903c4ad89067eb19344515de1c904e6c`.
+
+### Current Rust validation
+
+Every cargo invocation uses `/home/mole/oteryn-cache/codex-bin/cargo`; no dependency
+was downloaded. The following latest commands passed with exit 0. Earlier
+workspace checks failed twice on integration type/ownership mismatches; both
+classes were repaired before the successful final checks.
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check
+```
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo check --locked --workspace --all-targets --all-features
+```
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-game-server -p oteryn-gameplay-combat -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability -p oteryn-gameplay-encounter-rules -p oteryn-gameplay-encounters -p oteryn-gameplay-entities -p oteryn-gameplay-npc -p oteryn-gameplay-quests -p oteryn-gameplay-spell -p oteryn-protocol-oteryn --all-targets --all-features --quiet -- -D warnings
+```
+
+The workspace check covers all targets/features. Clippy covers all 11 touched
+packages with all targets/features and `-D warnings` (two successful Clippy runs).
+Both formatting checks passed. No test or guard was disabled or relaxed.
+
+Filtered test commands and observed results follow. “PG unavailable” means those
+cases returned early and are **not** qualified, despite Cargo's zero exit code.
+Numbers count invocations per filter; overlapping filters can repeat a unit test.
+
+| Exact command | Executed non-PG passed / failed | PG unavailable |
+|---|---:|---:|
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-encounter-rules --all-features --lib hazard -- --nocapture` | 6 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-encounter-rules --all-features --lib primal_unlock -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-quests --all-features --lib soul_war -- --nocapture` | 10 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-quests --all-features --lib rotten_blood -- --nocapture` | 10 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-encounters --all-features --lib endgame_entry -- --nocapture` | 6 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-npc --all-features --lib endgame -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-protocol-oteryn --all-features --lib boss_encounter -- --nocapture` | 7 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib endgame_terminal -- --nocapture` | 5 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib soul_war -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib quest_outfit -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib rotten_access -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib task_board_fee -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-combat --all-features --lib creature_auto_attack -- --nocapture` | 5 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-entities --all-features --lib channel_actor_position -- --nocapture` | 4 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-spell --all-features --lib creature_damage_spell -- --nocapture` | 0 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet` | 5 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test integration_rest content_ --quiet` | 123 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib creature_auto_attack_tests -- --nocapture` | 13 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib creature_damage_spell_tests -- --nocapture` | 49 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib creature_damage_spell_composed_tests -- --nocapture` | 7 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --all-features --lib migration_numbers_are_unique -- --nocapture` | 1 / 0 | 0 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib -- endgame --nocapture` | 2 / 0 | 1 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib -- hazard --nocapture` | 5 / 0 | 2 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib -- soul_war --nocapture` | 2 / 0 | 2 |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib -- rotten_blood --nocapture` | 5 / 0 | 3 |
+
+The spell crate has no matching local `creature_damage_spell` unit tests; its
+changed production code is exercised by the dispatch lifted spell/composed
+filters (49 and 7 passing tests), with the shared entity/Hazard behavior also
+exercised by the dispatch Hazard filter.
+
+Other checks: `cargo run --locked -p oteryn-architecture-check -- workspace .`
+PASS; `python3 tools/contracts/registry_fragments.py` PASS;
+`python3 tools/content-migration/test_quest_callback_profiles.py` PASS, 5 tests;
+`python3 tools/agents/validate_governance.py` PASS (22 documents, 9 lanes);
+`python3 -m unittest discover -s tools/agents/tests` PASS, 129 tests;
+`bash .claude/skills/oteryn-dev/scripts/dup-migrations.sh` PASS, no output;
+`git diff --check 38641fecd` PASS. The whole diff was checked against the owner
+checklist and repository checklist. Workspace `rg` consumer searches covered
+607 added-name tokens, including types, fields, variants and methods; current
+all-target/all-feature compilation verifies the concrete constructors and impls.
+
+### Unfinished / required next steps
+
+1. **Required PostgreSQL qualification:** eight own-mechanic cases remain
+   unexecuted after two absolute-wrapper attempts. The wrapper does not export
+   `OTERYN_TEST_POSTGRES_ADMIN_URL`; explicit skips and the noncanonical missing-
+   environment message were observed. No URL or credentials were read or printed.
+   The owner was asked to restore the wrapper export; modifying that external
+   wrapper is outside this task's write boundary. Then rerun dispatch `--lib --`
+   filters `endgame`, `hazard`, `soul_war`, `rotten_blood` through that absolute
+   wrapper and require every scenario completion marker, fixing any real failure.
+2. **Owner integration:** stage the resolved files, commit the prepared merge,
+   update the PR description's internal fee tag from 13 to 14, qualify the final
+   committed head with independent review and repository `game-gate`/PostgreSQL CI.
+   Plain pin tooling may be rerun after staging; no synthetic worktree input view
+   is needed once the index is resolved. No remote CI or mergeability claim is made.
+3. **CI-only physical node boot:** the node-boot qualification requires Docker,
+   `/srv` writes, service users and a pinned Platform checkout, which this packet
+   forbids. It was not run. The accepted source rooms/corpses/cosmetics and sealed
+   terminal-proof/Instance consumer dependencies above remain release boundaries;
+   this takeover does not expand their scope.
+
+No failing non-PG test remains. The missing database route is a validation blocker,
+not permission to call skipped PostgreSQL cases green.
+
+### Changed files for owner review
+
+Takeover working-tree/index-conflict paths: 27 unique files.
+
+- `apps/game-server/migrations/0710_rotten_blood_quest.sql`
+- `content/content.lock.json`
+- `content/items/definitions/spell-native-profiles.json`
+- `content/items/index.json`
+- `content/manifest.json`
+- `content/spells.manifest.json`
+- `crates/gameplay/combat/src/creature_auto_attack.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection/routing/boss_encounter.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/endgame_entry.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/rotten_blood.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rotten_blood_progression.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn/purchase_cause.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn_audit.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn_audit/purchase_cause.rs`
+- `crates/gameplay/durability/src/durability/quest_state.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war.rs`
+- `crates/gameplay/durability/src/durability/reward_claim_mint.rs`
+- `crates/protocol-oteryn/src/boss_encounter.rs`
+- `crates/protocol-oteryn/src/boss_encounter_staged.rs`
+- `docs/agents/tasks/OTV2-20261031-hazard-soulwar.md`
+- `docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto`
+
+The complete resulting PR delta against merged main has 83 files:
+
+- `apps/game-server/migrations/0708_primal_hazard_unlock.sql`
+- `apps/game-server/migrations/0709_character_soul_war.sql`
+- `apps/game-server/migrations/0710_rotten_blood_quest.sql`
+- `apps/game-server/migrations/0711_endgame_terminal_outcomes.sql`
+- `content/content.lock.json`
+- `content/items/definitions/spell-native-profiles.json`
+- `content/items/index.json`
+- `content/manifest.json`
+- `content/spells.manifest.json`
+- `crates/gameplay/combat/src/creature_auto_attack.rs`
+- `crates/gameplay/combat/src/hazard.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/hazard.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame/payment.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_encounter.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/endgame_entry.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/rotten_blood.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/rotten_blood_progression.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/creature_auto_attack_tests.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_composed_tests.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_tests.rs`
+- `crates/gameplay/durability/src/durability/character_appearance.rs`
+- `crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs`
+- `crates/gameplay/durability/src/durability/character_hazard.rs`
+- `crates/gameplay/durability/src/durability/character_hazard/primal.rs`
+- `crates/gameplay/durability/src/durability/character_revision_sequencer.rs`
+- `crates/gameplay/durability/src/durability/endgame_terminal.rs`
+- `crates/gameplay/durability/src/durability/endgame_terminal/owner.rs`
+- `crates/gameplay/durability/src/durability/endgame_terminal/storage.rs`
+- `crates/gameplay/durability/src/durability/endgame_terminal/tests.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn/purchase_cause.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn_audit.rs`
+- `crates/gameplay/durability/src/durability/item_fee_burn_audit/purchase_cause.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/durability/src/durability/quest_state.rs`
+- `crates/gameplay/durability/src/durability/quest_state/rotten_blood.rs`
+- `crates/gameplay/durability/src/durability/quest_state/rotten_blood_access.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war/native.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war/reward.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war/storage.rs`
+- `crates/gameplay/durability/src/durability/quest_state/soul_war/terminal.rs`
+- `crates/gameplay/durability/src/durability/quest_state/writer.rs`
+- `crates/gameplay/durability/src/durability/quest_world_callback.rs`
+- `crates/gameplay/durability/src/durability/reward_claim_mint.rs`
+- `crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs`
+- `crates/gameplay/encounter-rules/src/hazard.rs`
+- `crates/gameplay/encounters/src/bosses/endgame_entry.rs`
+- `crates/gameplay/encounters/src/bosses/endgame_entry_tests.rs`
+- `crates/gameplay/encounters/src/bosses/mod.rs`
+- `crates/gameplay/entities/src/carrier/fixtures.rs`
+- `crates/gameplay/entities/src/carrier/hazard.rs`
+- `crates/gameplay/entities/src/carrier/runtime_actor_spell.rs`
+- `crates/gameplay/npc/src/npc_talk.rs`
+- `crates/gameplay/quests/src/quest/loader.rs`
+- `crates/gameplay/quests/src/quest/mod.rs`
+- `crates/gameplay/quests/src/quest/rotten_blood.rs`
+- `crates/gameplay/quests/src/quest/rotten_blood_tests.rs`
+- `crates/gameplay/quests/src/quest/soul_war.rs`
+- `crates/gameplay/quests/src/quest/soul_war_tests.rs`
+- `crates/gameplay/quests/src/quest/world_callbacks.rs`
+- `crates/gameplay/spell/src/creature_damage_spell/composed.rs`
+- `crates/gameplay/spell/src/creature_damage_spell/mod.rs`
+- `docs/agents/tasks/OTV2-20261031-hazard-soulwar.md`
+- `docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto`
+- `tools/content-migration/quest_callback_profiles.py`
+- `tools/content-migration/test_quest_callback_profiles.py`

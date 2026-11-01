@@ -5,7 +5,8 @@ use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
 impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
-            Self::QuestAccessPurchase { .. } => 13,
+            Self::TaskBoardTalisman { .. } => 13,
+            Self::QuestAccessPurchase { .. } => 14,
             Self::PreyListReroll { .. } => 12,
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
@@ -22,7 +23,8 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
-            Self::QuestAccessPurchase { occurrence }
+            Self::TaskBoardTalisman { occurrence }
+            | Self::QuestAccessPurchase { occurrence }
             | Self::PreyListReroll { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
             | Self::GemSwitchDomain { occurrence }
@@ -39,6 +41,7 @@ impl FeeBurnCause {
     }
     pub(super) fn key(&self) -> &str {
         match self {
+            Self::TaskBoardTalisman { .. } => "oteryn:taskboard.talisman",
             Self::QuestAccessPurchase { .. } => "oteryn:service.quest.rotten-blood.access",
             Self::PreyListReroll { slot, .. } => match slot {
                 1 => "oteryn:prey.list_reroll.1",
@@ -67,6 +70,7 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
+            Self::TaskBoardTalisman { .. } => Ok(()),
             Self::QuestAccessPurchase { .. } => Ok(()),
             Self::PreyListReroll { slot: 1..=3, .. } => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
@@ -108,6 +112,13 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::TaskBoardTalisman { occurrence } => {
+                FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {
+                    service_key: self.key().into(),
+                    occurrence: occurrence.to_vec(),
+                    atelier_proof: Vec::new(),
+                })
+            }
             Self::QuestAccessPurchase { occurrence } => FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
                 service_key:self.key().into(),occurrence:occurrence.to_vec(),atelier_proof:Vec::new(),
             }),

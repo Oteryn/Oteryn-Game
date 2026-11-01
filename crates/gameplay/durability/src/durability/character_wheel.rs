@@ -54,6 +54,12 @@ const BINDING_VERSION: u8 = 1;
 
 pub use oteryn_gameplay_progression::wheel::*;
 
+#[path = "character_wheel/capacity.rs"]
+mod capacity;
+#[path = "character_wheel/gift.rs"]
+mod gift;
+pub(super) use capacity::read_capacity_bonus_in_transaction;
+
 impl From<WheelInputError> for CharacterProgressionError {
     fn from(_: WheelInputError) -> Self {
         Self::InvalidInput
@@ -65,10 +71,14 @@ impl From<WheelInputError> for CharacterProgressionError {
 pub struct CurrentWheelCastRead {
     raw: super::character_equipment::RawCastDurableFacts,
     allocation: WheelAllocation,
+    atelier: Option<oteryn_gameplay_progression::atelier::AtelierState>,
     ruleset_revision: String,
     promoted: bool,
 }
 impl CurrentWheelCastRead {
+    pub fn atelier(&self) -> Option<&oteryn_gameplay_progression::atelier::AtelierState> {
+        self.atelier.as_ref()
+    }
     pub fn promoted(&self) -> bool {
         self.promoted
     }
@@ -98,9 +108,13 @@ pub async fn read_current_allocation_in_transaction(
         super::character_promotion::read_durable_promotion(tx, raw.fence.character_id).await?;
     let stored = read_wheel_state(tx, raw.fence.character_id, false).await?;
     let allocation = allocation_from_stored(tx, stored, ruleset).await?;
+    // The equipment authority already holds the Character root lock; Atelier writers use
+    // that same lock, so vessel/grade effects and allocation are one current snapshot.
+    let atelier = super::character_atelier::load_in_transaction(tx, raw.fence.character_id).await?;
     Ok(CurrentWheelCastRead {
         raw,
         allocation,
+        atelier,
         ruleset_revision: ruleset.revision().to_owned(),
         promoted,
     })
@@ -121,14 +135,20 @@ pub async fn read_party_guiding_presence_in_transaction(
     }
     let row = sqlx::query("SELECT b.vocation, p.level FROM game_character_build_state b JOIN game_character_progression_state p USING(character_id) WHERE b.character_id=encode($1,'hex')::uuid")
         .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else { return Ok(false); };
+    let Some(row) = row else {
+        return Ok(false);
+    };
     let vocation: String = row.try_get("vocation")?;
-    let level = u32::try_from(row.try_get::<i64, _>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let level = u32::try_from(row.try_get::<i64, _>("level")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let promoted = super::character_promotion::read_durable_promotion(tx, character).await?;
     let stored = read_wheel_state(tx, character, false).await?;
     let allocation = allocation_from_stored(tx, stored, ruleset).await?;
-    Ok(WheelStages::derive(ruleset, &allocation, &vocation, level, promoted)
-        .conviction_count("guiding_presence") > 0)
+    Ok(
+        WheelStages::derive(ruleset, &allocation, &vocation, level, promoted)
+            .conviction_count("guiding_presence")
+            > 0,
+    )
 }
 
 /// The idempotency identity of one allocation change (UUIDv7), issued once by the caller.
@@ -249,6 +269,33 @@ impl DurabilityRoot {
         facts: WheelChangeFacts,
         gate: &G,
     ) -> Result<WheelCommitOutcome> {
+        self.commit_character_wheel_with_admission(
+            authority,
+            node,
+            fence,
+            request,
+            ruleset,
+            facts,
+            gate,
+            &|| true,
+        )
+        .await
+    }
+
+    /// The Channel may refuse a fresh mutation after the locked immutable receipt
+    /// lookup. This hook grants no authority and performs no asynchronous work.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_wheel_with_admission<G: WheelPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: WheelChangeRequest,
+        ruleset: std::sync::Arc<WheelRuleset>,
+        facts: WheelChangeFacts,
+        gate: &G,
+        admit: &(impl Fn() -> bool + Sync),
+    ) -> Result<WheelCommitOutcome> {
         let pilgrimage_points = oteryn_gameplay_quests::quest::monk_shrines::final_points()
             .ok_or(CharacterProgressionError::InvalidInput)?;
         if fence.character_lease_generation == 0
@@ -262,9 +309,10 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
 
-        let mut gate = gate;
+        let mut context = (gate, admit);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut gate, move |holder, deadline, gate| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                let (gate, admit) = *context;
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -283,6 +331,9 @@ impl DurabilityRoot {
                         return Ok(Ok(WheelCommitOutcome::AlreadyCommitted(committed)));
                     }
 
+                    if !admit() {
+                        return Ok(Ok(WheelCommitOutcome::Refused(WheelRefusal::Exhausted)));
+                    }
                     // Match promotion's lock order: the Premium latch precedes the
                     // Character root, so activation cannot deadlock with a purchase that
                     // already holds the shared latch and is waiting for this Character.
@@ -389,13 +440,22 @@ impl DurabilityRoot {
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
                         .fetch_one(&mut *tx).await?;
-                    let available = available_points(level).checked_add(gem_points)
+                    let task_points = super::task_board::read_promotion_points_in_transaction(
+                        &mut tx, fence.character_id,
+                    ).await?;
+                    // Crystal getWheelPoints includes task promotion points alongside level
+                    // and pilgrimage points to unlock rings; Grade-IV gem bonuses are added after.
+                    let unlock_points = available_points(level)
+                        .checked_add(task_points)
                         .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
                         .ok_or(DurabilityError::InvalidStoredState)?;
-                    if let Err(refusal) = ruleset.validate(
+                    let available = unlock_points.checked_add(gem_points)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    if let Err(refusal) = ruleset.validate_with_unlock_points(
                         &before,
                         &request.slots,
                         available,
+                        unlock_points,
                         facts.at_temple,
                     ) {
                         return refuse(refusal);

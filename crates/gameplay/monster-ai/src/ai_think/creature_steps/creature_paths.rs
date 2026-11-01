@@ -85,12 +85,12 @@ pub(super) fn provenance(
     // carrier. These compact markers follow the existing AI snapshot convention.
     let marker = |bytes: [u8; 32]| u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default());
     let identity = actor.placement_identity();
+    let scope_identity = match runtime.binding().runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => *channel_id.as_bytes(),
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => instance_id,
+    };
     AiProvenance::new(AiProvenanceInput {
-        scope_id: u64::from_be_bytes(
-            runtime.binding().channel_id().as_bytes()[..8]
-                .try_into()
-                .unwrap_or_default(),
-        ),
+        scope_id: u64::from_be_bytes(scope_identity[..8].try_into().unwrap_or_default()),
         scope_generation: runtime.binding().scope_generation().get(),
         actor_generation: u64::from_be_bytes(identity[..8].try_into().unwrap_or_default()),
         behavior_revision: marker(motion.content),

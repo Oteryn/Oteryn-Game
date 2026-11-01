@@ -86,6 +86,7 @@ fn event(burn: bool) -> audit::OneItemPlayerDeathItemV1 {
             content_revision: "content-1".into(),
             native_room_placement_context: id(11).to_vec(),
             runtime_scope_ownership_generation: 1,
+            instance_id: None,
         }),
         typed_sink: if burn {
             audit::AMULET_SINK.into()
@@ -98,6 +99,7 @@ fn event(burn: bool) -> audit::OneItemPlayerDeathItemV1 {
         session_generation: 1,
         game_session_id: id(50).to_vec(),
         lease_generation: 1,
+        instance_scope: None,
     }
 }
 #[test]
@@ -202,5 +204,89 @@ fn player_death_audit_maximum_fields_and_oversize_rejection()
         audit::decode(&vec![0; mint::RL07_ENVELOPE_BYTES_MAX + 1]),
         Err(mint::AuditError::CapacityExceeded)
     ));
+    Ok(())
+}
+
+// W02 prerequisite: the new Instance source is explicit; legacy Channel fixtures above
+// keep an absent additive field and retain their original encoded representation.
+#[test]
+fn player_death_instance_drop_and_amulet_audit_bind_the_exact_scope()
+-> std::result::Result<(), mint::AuditError> {
+    use prost::Message;
+    let world =
+        crate::foundation::WorldId::decode(&id(42)).map_err(|_| mint::AuditError::InvalidInput)?;
+    let scope =
+        RuntimeScopeRefV1::instance(world, id(43)).map_err(|_| mint::AuditError::InvalidInput)?;
+    for burn in [false, true] {
+        let legacy = event(burn);
+        let legacy_wire =
+            audit::encode(&request(), burn, legacy.clone(), mint::Type2EventTuple::V1)?;
+        let mut value = legacy;
+        value.instance_scope = Some(audit::OneItemPlayerDeathInstanceV1 {
+            instance_id: id(43).to_vec(),
+            ownership_generation: 1,
+        });
+        if let Some(ground) = value.ground.take() {
+            value.ground = Some(ground.with_runtime_scope(scope));
+        }
+        let wire = audit::encode(&request(), burn, value.clone(), mint::Type2EventTuple::V1)?;
+        assert_ne!(wire, legacy_wire);
+        let (mut envelope, decoded_burn, decoded) = audit::decode(&wire)?;
+        assert_eq!(decoded_burn, burn);
+        assert_eq!(decoded, value);
+        assert_eq!(envelope.instance_id, Some(id(43).to_vec()));
+        assert_eq!(envelope.channel_id, None);
+        envelope.channel_id = Some(id(43).to_vec());
+        assert!(audit::decode(&envelope.encode_to_vec()).is_err());
+        let mut wrong = value.clone();
+        wrong
+            .instance_scope
+            .as_mut()
+            .ok_or(mint::AuditError::InvalidInput)?
+            .ownership_generation = 0;
+        assert!(audit::encode(&request(), burn, wrong, mint::Type2EventTuple::V1).is_err());
+        if !burn {
+            let mut mixed = value.clone();
+            mixed
+                .ground
+                .as_mut()
+                .ok_or(mint::AuditError::InvalidInput)?
+                .channel_id = id(43).to_vec();
+            assert!(audit::encode(&request(), burn, mixed, mint::Type2EventTuple::V1).is_err());
+            let mut other = value;
+            other
+                .instance_scope
+                .as_mut()
+                .ok_or(mint::AuditError::InvalidInput)?
+                .instance_id = id(44).to_vec();
+            assert!(audit::encode(&request(), burn, other, mint::Type2EventTuple::V1).is_err());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn ground_scope_projection_rejects_missing_mixed_and_malformed_identity()
+-> std::result::Result<(), mint::AuditError> {
+    let ground = event(false).ground.ok_or(mint::AuditError::InvalidInput)?;
+    assert!(matches!(
+        ground.runtime_scope(),
+        Ok(RuntimeScopeRefV1::Channel { .. })
+    ));
+    let mut missing = ground.clone();
+    missing.channel_id.clear();
+    assert!(missing.runtime_scope().is_err());
+    let mut mixed = ground.clone();
+    mixed.instance_id = Some(id(43).to_vec());
+    assert!(mixed.runtime_scope().is_err());
+    let mut malformed = missing.clone();
+    malformed.instance_id = Some(vec![0; 16]);
+    assert!(malformed.runtime_scope().is_err());
+    let scope = RuntimeScopeRefV1::instance(
+        crate::foundation::WorldId::decode(&id(42)).map_err(|_| mint::AuditError::InvalidInput)?,
+        id(43),
+    )
+    .map_err(|_| mint::AuditError::InvalidInput)?;
+    assert_eq!(ground.with_runtime_scope(scope).runtime_scope()?, scope);
     Ok(())
 }

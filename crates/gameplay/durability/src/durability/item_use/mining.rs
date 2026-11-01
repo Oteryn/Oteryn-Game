@@ -188,7 +188,7 @@ pub(super) async fn admit(
         .checked_sub(weight(&source.item.definition)?)
         .and_then(|w| w.checked_add(weight(output).ok()?))
         .ok_or(ItemUseError::InvalidInput)?;
-    if after > read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await? {
+    if after > read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await? {
         return Err(ItemUseError::StaleState);
     }
     // All item writers serialize on the Character root; lock both carried paths in the

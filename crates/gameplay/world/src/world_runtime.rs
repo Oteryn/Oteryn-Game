@@ -1936,10 +1936,7 @@ impl crate::native_world_read::NativeWorldObjectRead for LocalObjectRuntime {
         runtime: &crate::foundation::ChannelRuntimeV1,
     ) -> Result<bool, Self::Error> {
         self.check_scope_fence(
-            crate::foundation::RuntimeScopeRefV1::Channel {
-                world_id: runtime.binding().world_id(),
-                channel_id: runtime.binding().channel_id(),
-            },
+            runtime.binding().runtime_scope(),
             runtime.binding().scope_generation(),
         )?;
         let cells = room.movement_cells();

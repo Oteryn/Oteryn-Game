@@ -127,7 +127,7 @@ async fn settle(
     let scope = item_tx::assert_spell_item_scope_in_transaction(&mut tx, &permit, owner.root,
         owner.character, owner.holder, fence.runtime_scope, fence.scope_ownership_generation.get()).await.map_err(debug)?;
     party_kill_xp::commit_in_transaction(&mut tx, &scope, owner.holder, PartyKillXpRequest {
-        death_key: death, principal: fence.character_id, creature: "oteryn:creature.the_primal_menace".into(),
+        death_key: death.to_vec(), principal: fence.character_id, creature: "oteryn:creature.the_primal_menace".into(),
         base_xp: 10, death_at_ms: serial, death_at_us: serial*1000,
         shared: false, party_id: None, party_revision: None,
         members: vec![PartyKillXpMember {

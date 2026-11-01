@@ -24,8 +24,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         // Allocation checks this session's Premium owner too. The spell state's Premium
         // cache can still be unset at entry or stale until the next spell-access refresh.
-        let premium =
-            current_allocation && self.session_premium_gate(session).await.premium_current();
+        let premium = if current_allocation {
+            // Install the same owner-qualified promotion and conservative Premium deadline
+            // that spell casts use. A bool-only gate cannot authorize later combat reads.
+            self.refresh_and_apply_spell_access(actor, session)
+                .await
+                .premium_gate()
+                .premium_current()
+        } else {
+            false
+        };
         // Promotion is a separate permanent Character fact. Buying it does not replace
         // the base vocation stored in the build or in the live spell state.
         let promoted = current_allocation
@@ -62,9 +70,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states
             .get_mut(&runtime, actor, session)
             .is_some_and(|state| {
-                state
+                if state
                     .apply_wheel_maximum_bonus(bonuses.max_health, bonuses.max_mana)
-                    .is_ok()
+                    .is_err()
+                {
+                    return false;
+                }
+                state.install_wheel_effects(bonuses);
+                true
             })
     }
 

@@ -23,6 +23,7 @@ pub(super) fn decay_message(
         });
     let mut message = OneItemDecayRetireV1 {
         world_reset: None,
+        activity_retirement: None,
         ground_container_entry: None,
         before: Some(state(admitted.quantity_before, ITEM_LIFECYCLE_LIVE)),
         after: Some(state(0, ITEM_LIFECYCLE_RETIRED)),

@@ -295,7 +295,7 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
 
 #[test]
 fn boundary_release_retries_not_expired_and_saves_new_remaining_serene() -> TestResult {
-    run(async |admin| {
+    kill_reward_e2e::scenario_thread::run_async(async |admin| {
         reset();
         let harness =
             Harness::create_with_admission_seed(admin, "release_monk_retry", true, false).await?;
@@ -410,7 +410,7 @@ async fn drive_until<F: std::future::Future>(
 
 #[test]
 fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
-    run(async |admin| {
+    kill_reward_e2e::scenario_thread::run_async(async |admin| {
         reset();
         let harness =
             Harness::create_with_admission_seed(admin, "release_monk_unknown", true, false).await?;
@@ -1022,7 +1022,8 @@ mod death_ml_loss_composed {
                 return Err("trained build replayed".into());
             };
             // The owner's revision writer starts after the setup writes, as after an admission.
-            owner.revision_sequencer = CharacterRevisionSequencer::new();
+            // W02 shares the sequencer across native scope views; this fixture still resets it.
+            owner.revision_sequencer = CharacterRevisionSequencer::new().into();
             // The fence a checkpoint prepared before the session's lease moved retains.
             let stale = CurrentCharacterGameplayFence {
                 character_lease_generation: 1,
@@ -1134,7 +1135,8 @@ mod death_ml_loss_composed {
                     .await
                     .map_err(debug)?;
                 assert!(matches!(committed, BuildCommitOutcome::Committed(_)));
-                owner.revision_sequencer = CharacterRevisionSequencer::new();
+                // W02 shares the sequencer across native scope views; this fixture still resets it.
+                owner.revision_sequencer = CharacterRevisionSequencer::new().into();
                 // Every forced replay is fenced out and leaves the checkpoint retained.
                 for _ in 0..2 {
                     assert_eq!(

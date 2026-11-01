@@ -376,7 +376,7 @@ async fn kill_key(
         let death=facts.death;
         let mut death_key=[0;52];
         death_key[..16].copy_from_slice(death.world_id().as_bytes());
-        death_key[16..32].copy_from_slice(death.channel_id().as_bytes());
+        death_key[16..32].copy_from_slice(death.channel_id().ok_or("native Channel death")?.as_bytes());
         death_key[32..40].copy_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
         death_key[40..44].copy_from_slice(&death.actor_local_id().to_be_bytes());
         death_key[44..52].copy_from_slice(&death.actor_local_generation().to_be_bytes());

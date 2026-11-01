@@ -16,9 +16,9 @@ pub use oteryn_gameplay_quests::quest::soul_war::SoulWarState;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-mod storage;
 mod native;
 mod reward;
+mod storage;
 mod terminal;
 pub(crate) use terminal::apply_soul_war_failed_final_in_transaction;
 pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};

@@ -1,0 +1,22 @@
+{
+  "id": 224,
+  "name": "BOSS_REWARDS_V1",
+  "constant": "boss_rewards::CAPABILITY_BOSS_REWARDS_V1",
+  "requires": [
+    4,
+    117
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    428,
+    429,
+    430
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

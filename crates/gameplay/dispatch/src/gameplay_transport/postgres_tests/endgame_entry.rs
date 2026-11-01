@@ -1,5 +1,5 @@
 //! W10/W11 lever ingress reaches real prerequisites without fabricating a W02 admission.
-use super::fixture::{Harness, debug, run};
+use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
@@ -7,7 +7,8 @@ use crate::gameplay_transport::item_fence_of;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::boss_encounter::{
     CAPABILITY_BOSS_ENCOUNTER_V1, COMMAND_TYPE_BOSS_COOLDOWNS, COMMAND_TYPE_BOSS_DEFEATED,
-    COMMAND_TYPE_BOSS_LEVER, COMMAND_TYPE_BOSS_TIMEOUT, encode_boss_key,
+    COMMAND_TYPE_BOSS_LEVER, COMMAND_TYPE_BOSS_TIMEOUT, BossActivityRefusal, BossActivityReply,
+    encode_boss_activity_reply, encode_boss_key,
 };
 
 #[test]
@@ -64,6 +65,9 @@ fn scenario() -> TestResult {
             .0,
             CommandStatus::Accepted
         );
+        let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        assert!(level < 250, "fixture exercises every endgame entrance's minimum level");
         let before = counters(&h).await?;
         for (index, key) in [
             "oteryn:creature.the_primal_menace",
@@ -84,7 +88,9 @@ fn scenario() -> TestResult {
                     &payload
                 )
                 .await?,
-                (CommandStatus::Rejected, vec![])
+                (CommandStatus::Rejected, encode_boss_activity_reply(&BossActivityReply::Refused(
+                    BossActivityRefusal::Level,
+                )).map_err(debug)?)
             );
             assert_eq!(counters(&h).await?, before);
         }
@@ -97,7 +103,9 @@ fn scenario() -> TestResult {
             assert_eq!(
                 super::boss_encounter::exchange_kind(&owner, &mut admitted, id, kind, &payload)
                     .await?,
-                (CommandStatus::Rejected, vec![])
+                (CommandStatus::Rejected, encode_boss_activity_reply(&BossActivityReply::Refused(
+                    BossActivityRefusal::ContentUnavailable,
+                )).map_err(debug)?)
             );
         }
         assert_eq!(counters(&h).await?, before);

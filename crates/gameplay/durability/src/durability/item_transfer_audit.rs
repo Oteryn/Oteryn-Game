@@ -213,8 +213,7 @@ pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditE
     let command = cause.command_ref.as_ref().ok_or(AuditError::InvalidInput)?;
     check_state(before)?;
     check_state(after)?;
-    check_uuid_v7(&ground.world_id)?;
-    check_uuid_v7(&ground.channel_id)?;
+    ground.runtime_scope()?;
     check_technical_bytes(&ground.spatial_position)?;
     check_technical_bytes(&ground.corpse_ref)?;
     check_content_key(&ground.map_revision)?;
@@ -348,7 +347,12 @@ pub fn decode_transfer_envelope(
         })),
     };
     if value.world_id.as_deref() != Some(ground.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
+        || value.channel_id.as_deref()
+            != ground
+                .instance_id
+                .is_none()
+                .then_some(ground.channel_id.as_slice())
+        || value.instance_id != ground.instance_id
         || value.game_session_id.as_deref() != Some(command.game_session_id.as_slice())
         || value.command_id != Some(command.command_id)
         || value.connection_generation != Some(destination.expected_session_generation)
@@ -383,7 +387,12 @@ pub fn encode_transfer_event(
     }
     check_transfer(&transfer)?;
     let ground = source_ground(&transfer)?;
-    let (world_id, channel_id) = (ground.world_id.clone(), ground.channel_id.clone());
+    let world_id = ground.world_id.clone();
+    let channel_id = ground
+        .instance_id
+        .is_none()
+        .then(|| ground.channel_id.clone());
+    let instance_id = ground.instance_id.clone();
     let command = transfer
         .cause
         .as_ref()
@@ -411,7 +420,8 @@ pub fn encode_transfer_event(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
-        channel_id: Some(channel_id),
+        channel_id,
+        instance_id,
         game_session_id: Some(command.game_session_id.clone()),
         connection_generation: Some(connection_generation),
         command_id: Some(command.command_id),
@@ -504,6 +514,7 @@ mod tests {
                 after
             }),
             source: Some(OneItemGroundV1 {
+                instance_id: None,
                 world_id: uuid(1),
                 channel_id: uuid(2),
                 spatial_position: vec![1, 2, 3],
@@ -759,6 +770,50 @@ mod tests {
     }
 
     #[test]
+    fn instance_transfer_envelope_uses_exact_tagged_ground_and_rejects_channel_alias() {
+        for mut transfer in [
+            transfer(TransferShape::NewEntry),
+            corpse_sourced(TransferShape::NewEntry),
+        ] {
+            let ground = if let Some(ground) = transfer.source.as_mut() {
+                ground
+            } else {
+                transfer
+                    .corpse_source
+                    .as_mut()
+                    .unwrap()
+                    .corpse_ground
+                    .as_mut()
+                    .unwrap()
+            };
+            ground.channel_id.clear();
+            ground.instance_id = Some(uuid(73));
+            let wire =
+                encode_transfer_event(identity(), transfer.clone(), mint::Type2EventTuple::V1)
+                    .unwrap();
+            let (envelope, decoded) = decode_transfer_envelope(&wire).unwrap();
+            assert_eq!(decoded, transfer);
+            assert_eq!(envelope.instance_id, Some(uuid(73)));
+            assert!(envelope.channel_id.is_none());
+            for mutate in [
+                |e: &mut EventEnvelopeV1| e.channel_id = Some(uuid(73)),
+                |e: &mut EventEnvelopeV1| e.instance_id = Some(uuid(74)),
+                |e: &mut EventEnvelopeV1| e.instance_id = None,
+            ] {
+                let mut changed = envelope.clone();
+                mutate(&mut changed);
+                assert!(decode_transfer_envelope(&changed.encode_to_vec()).is_err());
+            }
+        }
+        // Channel retains its historical wire fields; no optional Instance tag is emitted.
+        let channel = transfer(TransferShape::NewEntry);
+        let bytes = encode_transfer_event(identity(), channel, mint::Type2EventTuple::V1).unwrap();
+        let (envelope, _) = decode_transfer_envelope(&bytes).unwrap();
+        assert_eq!(envelope.channel_id, Some(uuid(2)));
+        assert!(envelope.instance_id.is_none());
+    }
+
+    #[test]
     fn envelope_scope_and_command_must_equal_the_payload() {
         let wire = encode_transfer_event(
             identity(),
@@ -811,6 +866,7 @@ mod tests {
                 before: Some(item.clone()),
                 after: Some(item),
                 source: Some(OneItemGroundV1 {
+                    instance_id: None,
                     world_id: uuid(0xee),
                     channel_id: uuid(0xee),
                     spatial_position: technical_bytes.clone(),

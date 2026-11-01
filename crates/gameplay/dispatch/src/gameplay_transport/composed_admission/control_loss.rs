@@ -89,6 +89,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> GraceExpiryResult {
+        // The caller already proved TERMINAL. Complete refusal-cache cleanup
+        // before removing the actor, so cancellation still leaves the existing
+        // release owner able to retry; never drop an unknown physical token.
+        if self
+            .prune_refused_activity_attempts(
+                crate::gameplay_transport::activity_runtime::ActivityRefusalPrune::Terminal(
+                    session,
+                ),
+            )
+            .await
+            .is_err()
+        {
+            return GraceExpiryResult::Unknown;
+        }
         let removed = self
             .runtime
             .lock()
@@ -96,7 +110,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_terminal_session(session, actor);
         match removed {
             Ok(()) => {
+                self.activity_runtimes
+                    .forget_terminal_connection(session, actor);
                 self.states.training.forget(session).await;
+                // Presence is advisory. Resolve the terminal session's canonical character
+                // even when its peer never selected CHAT and has no local chat entry.
+                let store = FreshAdmissionStore::from_root(self.root.clone());
+                if let Ok(current) = store.current_session(session).await
+                    && current.session_state() == GameSessionState::Terminal
+                    && let Ok(target) = oteryn_protocol_oteryn::CharacterId::decode(
+                        current.current_character_lease().character_id().as_bytes(),
+                    )
+                {
+                    self.vip_presence_publish_target(target, false).await;
+                }
                 self.states.forget_session(session);
                 GraceExpiryResult::Released
             }
@@ -131,6 +158,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> bool {
         self.hold_step_within(actor, session, Duration::MAX).await
+    }
+
+    /// A release serialized with Activity transitions must never wait for a
+    /// combat deadline while holding that shared lock. This repeats the normal
+    /// hold preflight, including current PvP locks, without sleeping or driving
+    /// a melee pass. Refusal leaves the existing grace owner in charge.
+    pub(in crate::gameplay_transport) async fn terminal_combat_pending(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let recheck = {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err()
+                || runtime.player_control_facts(actor, session).is_err()
+            {
+                return true;
+            }
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            if held_step(
+                &states,
+                &attack,
+                actor,
+                session,
+                self.owner_now(),
+                Duration::MAX,
+            )
+            .is_some()
+            {
+                return true;
+            }
+            !states.is_dead(actor) && pvp_live::tracked(&states, actor, session)
+        };
+        if !recheck {
+            return false;
+        }
+        if !self.refresh_pvp_locks(actor, session).await {
+            return true;
+        }
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() || runtime.player_control_facts(actor, session).is_err() {
+            return true;
+        }
+        let states = self.states.spell_states.lock().await;
+        let attack = self.states.attack.lock().await;
+        held_step(
+            &states,
+            &attack,
+            actor,
+            session,
+            self.owner_now(),
+            Duration::MAX,
+        )
+        .is_some()
     }
 
     /// One hold step of at most `limit`; `false`, without waiting, when nothing holds the actor.

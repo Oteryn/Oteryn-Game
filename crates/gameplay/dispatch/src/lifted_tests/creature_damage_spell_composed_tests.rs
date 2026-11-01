@@ -17,7 +17,7 @@ use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use {
-    crate::foundation::{ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId},
+    crate::foundation::{ChannelId, MovementLocalPosition, NodeId, WorldId},
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft) {
@@ -338,11 +338,9 @@ fn setup_at(
         )
         .expect("qualified fixture");
     let b = r.binding();
-    let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture");
+    let (fence, stamp) =
+        crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+            .expect("qualified fixture");
     (
         r,
         states,

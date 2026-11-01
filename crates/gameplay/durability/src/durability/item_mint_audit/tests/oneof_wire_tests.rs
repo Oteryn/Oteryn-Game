@@ -260,6 +260,16 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
+        // P05 adds the closed Task Board talisman fee without renumbering old sources.
+        (
+            13,
+            "TaskBoardTalisman",
+            FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:taskboard.talisman".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -286,6 +296,10 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         (
             "PreyListReroll",
             "621f0a196f746572796e3a707265792e6c6973745f7265726f6c6c2e3112028107",
+        ),
+        (
+            "TaskBoardTalisman",
+            "6a1f0a196f746572796e3a7461736b626f6172642e74616c69736d616e12028107",
         ),
         ("CharmUnassign", "0a0b0a05636861726d12028107"),
         ("PromotionPurchase", "120f0a0970726f6d6f74696f6e12028107"),
@@ -442,6 +456,8 @@ fn operation_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
 
 #[test]
 fn fee_cause_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
+    // P05 bounty talisman purchase adds only cause tag 13 (exactly 5000 gold).
+    // Keep the golden inventory exact; every admitted tag still needs its wire fixture.
     assert_tag_block(
         include_str!("../../item_fee_burn_audit.rs"),
         "FeeBurnCauseV1",

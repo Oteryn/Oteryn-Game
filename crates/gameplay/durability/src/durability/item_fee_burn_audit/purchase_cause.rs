@@ -18,13 +18,20 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         | FeeBurnCauseV1::NpcTravel(cause)
         | FeeBurnCauseV1::GemSwitchDomain(cause)
         | FeeBurnCauseV1::PreyListReroll(cause)
-        | FeeBurnCauseV1::QuestAccessPurchase(cause),
+        | FeeBurnCauseV1::QuestAccessPurchase(cause)
+        | FeeBurnCauseV1::TaskBoardTalisman(cause),
     ) = value.cause.as_ref().and_then(|v| v.cause.as_ref())
         && !cause.atelier_proof.is_empty()
     {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::TaskBoardTalisman(cause))
+            if cause.service_key == "oteryn:taskboard.talisman"
+                && value.fee_gold_units == oteryn_gameplay_quests::quest::task_board::full::TALISMAN_PURCHASE_GOLD =>
+        {
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::QuestAccessPurchase(cause))
             if cause.service_key=="oteryn:service.quest.rotten-blood.access"
                 && value.fee_gold_units==oteryn_gameplay_quests::quest::rotten_blood::ACCESS_PRICE => {
@@ -171,6 +178,53 @@ pub(super) fn atelier_usage(cause: &OneItemNpcPurchaseV1) -> TransactionResource
 }
 
 #[cfg(test)]
+mod task_board_tests {
+    use super::*;
+
+    #[test]
+    fn task_board_fee_accepts_only_the_donor_talisman_price_and_closed_cause() {
+        let mut id = vec![1; 16];
+        id[6] = 0x71;
+        id[8] = 0x81;
+        let cause = OneItemNpcPurchaseV1 {
+            service_key: "oteryn:taskboard.talisman".into(),
+            occurrence: id,
+            atelier_proof: Vec::new(),
+        };
+        let value = |cause, price| OneItemFeeBurnV1 {
+            cause: Some(OneItemFeeBurnCauseV1 {
+                cause: Some(FeeBurnCauseV1::TaskBoardTalisman(cause)),
+            }),
+            fee_gold_units: price,
+            ..Default::default()
+        };
+        assert_eq!(check(&value(cause.clone(), 5_000)), Ok(()));
+        for price in [0, 4_999, 5_001, 50_000] {
+            assert_eq!(
+                check(&value(cause.clone(), price)),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        for broken in [
+            OneItemNpcPurchaseV1 {
+                service_key: "oteryn:taskboard.expansion".into(),
+                ..cause.clone()
+            },
+            OneItemNpcPurchaseV1 {
+                occurrence: vec![0; 16],
+                ..cause.clone()
+            },
+            OneItemNpcPurchaseV1 {
+                atelier_proof: vec![1],
+                ..cause
+            },
+        ] {
+            assert_eq!(check(&value(broken, 5_000)), Err(AuditError::InvalidInput));
+        }
+    }
+}
+
+#[cfg(test)]
 mod rotten_access_tests {
     use super::*;
 
@@ -204,7 +258,18 @@ mod rotten_access_tests {
             assert!(check(&value).is_err());
         }
         let wire=OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause)) };
-        // Internal type-2 audit tag13 is appended without changing older sources.
-        assert_eq!(wire.encode_to_vec().first(),Some(&106));
+        // Internal type-2 audit tag14 is appended without changing older sources.
+        assert_eq!(wire.encode_to_vec().first(),Some(&114));
+        assert_eq!(OneItemFeeBurnCauseV1::decode(wire.encode_to_vec().as_slice()), Ok(wire));
+        let task_board = OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {
+                service_key: "oteryn:taskboard.talisman".into(),
+                occurrence: vec![1; 16],
+                atelier_proof: Vec::new(),
+            })),
+        };
+        assert_eq!(task_board.encode_to_vec().first(), Some(&106));
+        assert_eq!(OneItemFeeBurnCauseV1::decode(task_board.encode_to_vec().as_slice()), Ok(task_board));
+
     }
 }

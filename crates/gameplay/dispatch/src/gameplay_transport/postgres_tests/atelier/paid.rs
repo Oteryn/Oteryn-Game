@@ -19,7 +19,7 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
 }
 
 pub(super) async fn exercise(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
 ) -> TestResult {
     fixture::paid_assets(h).await?;
@@ -47,6 +47,7 @@ pub(super) async fn exercise(
             mutation: AtelierMutation::Reveal { quality },
             resources: Some(resources.clone()),
         };
+        advance_ex_action(owner)?;
         let outcome = owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
             .await
@@ -105,6 +106,7 @@ pub(super) async fn exercise(
         mutation: AtelierMutation::Dismantle { gem: id(181) },
         resources: Some(resources.clone()),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Atelier(fresh))
         .await
@@ -117,7 +119,8 @@ pub(super) async fn exercise(
         "{outcome:?}"
     );
     let fresh_yield:i64=sqlx::query_scalar("SELECT (outputs->0->>'count')::bigint FROM game_atelier_item_records WHERE occurrence=encode($1,'hex')::uuid").bind(id(178).as_slice()).fetch_one(&h.pool).await?;
-    assert!((2..=5).contains(&fresh_yield));
+    // Crystal 201189f regular revealed gems yield 2..10 basic fragments.
+    assert!((2..=10).contains(&fresh_yield));
     fixture::small_fragment_stacks(h).await?;
     let fp = footprint(h).await?;
     let before = stored(h).await?;
@@ -129,6 +132,7 @@ pub(super) async fn exercise(
         },
         resources: Some(resources.clone()),
     };
+    advance_ex_action(owner)?;
     assert!(matches!(
         owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(stale))
@@ -156,6 +160,7 @@ pub(super) async fn exercise(
         },
         resources: Some(bad),
     };
+    advance_ex_action(owner)?;
     assert!(matches!(
         owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(refused))
@@ -176,6 +181,7 @@ pub(super) async fn exercise(
             },
             resources: Some(resources.clone()),
         };
+        advance_ex_action(owner)?;
         let outcome = owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
             .await
@@ -206,6 +212,7 @@ pub(super) async fn exercise(
         slots: WheelSlots::ZERO,
         vessels: Some([None, Some(green), None, None]),
     };
+    advance_ex_action(owner)?;
     assert!(
         matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(wrong)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
     );
@@ -218,6 +225,7 @@ pub(super) async fn exercise(
         slots: earned,
         vessels: Some([Some(green), None, None, None]),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
         .await
@@ -257,6 +265,7 @@ pub(super) async fn exercise(
         slots: WheelSlots::new(too_many).map_err(debug)?,
         vessels: None,
     };
+    advance_ex_action(owner)?;
     assert!(matches!(
         owner
             .execute_gem_atelier(session, GemBuildCommand::Wheel(over))
@@ -271,6 +280,7 @@ pub(super) async fn exercise(
         mutation: AtelierMutation::SwitchDomain { gem: green },
         resources: Some(resources.clone()),
     };
+    advance_ex_action(owner)?;
     assert!(matches!(
         owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(blocked))
@@ -285,6 +295,7 @@ pub(super) async fn exercise(
         slots: earned,
         vessels: Some([None; 4]),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Wheel(remove))
         .await
@@ -305,6 +316,7 @@ pub(super) async fn exercise(
         },
         resources: None,
     };
+    advance_ex_action(owner)?;
     owner
         .execute_gem_atelier(session, GemBuildCommand::Atelier(unlock))
         .await
@@ -315,6 +327,7 @@ pub(super) async fn exercise(
         mutation: AtelierMutation::SwitchDomain { gem: green },
         resources: Some(resources.clone()),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Atelier(switch))
         .await
@@ -336,6 +349,7 @@ pub(super) async fn exercise(
         mutation: AtelierMutation::Dismantle { gem: id(180) },
         resources: Some(resources),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Atelier(dismantle.clone()))
         .await
@@ -354,7 +368,7 @@ pub(super) async fn exercise(
             .contains_key(&u128::from_be_bytes(id(180)))
     );
     assert!(
-        (57 + fresh_yield..=59 + fresh_yield).contains(&quantity(h, 229).await?),
+        (57 + fresh_yield..=61 + fresh_yield).contains(&quantity(h, 229).await?),
         "dismantle merges into the compatible fragment stack"
     );
     let fp = footprint(h).await?;
@@ -386,6 +400,7 @@ pub(super) async fn exercise(
     let mut wheel = wheel;
     full[14] = 11;
     wheel.slots = WheelSlots::new(full).map_err(debug)?;
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
         .await
@@ -401,12 +416,15 @@ pub(super) async fn exercise(
         .wheel_stat_bonuses(session, "sorcerer", 2_000, true, true)
         .ok_or("gem effects")?;
     assert_eq!(effects.sockets.grade_iv_points, 1);
+    // Crystal 201189f player_wheel.cpp:2735-2752 reads each modifier's own
+    // shared grade. The three upgrades above raised mods[1] to grade 3;
+    // switching domain preserves that modifier and its independently earned grade.
     assert_eq!(
         effects
             .sockets
             .effective_grades
             .get(&u128::from_be_bytes(green)),
-        Some(&vec![0, 0])
+        Some(&vec![0, 3])
     );
     assert!(!effects.sockets.gem_values_milli.is_empty());
     let supreme_mod = stored(h).await?.gems[&u128::from_be_bytes(id(182))].mods[2];
@@ -424,6 +442,7 @@ pub(super) async fn exercise(
                 fragment: definition("oteryn:item.tibia.i46626"),
             })),
         };
+        advance_ex_action(owner)?;
         let outcome = owner
             .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
             .await
@@ -462,6 +481,7 @@ pub(super) async fn exercise(
             fragment: definition("oteryn:item.tibia.i46626"),
         })),
     };
+    advance_ex_action(owner)?;
     let outcome = owner
         .execute_gem_atelier(session, GemBuildCommand::Atelier(dismantle))
         .await
@@ -473,7 +493,7 @@ pub(super) async fn exercise(
         ),
         "{outcome:?}"
     );
-    assert!((51..=53).contains(&quantity(h, 232).await?));
+    assert!((51..=55).contains(&quantity(h, 232).await?));
     let same_transaction:bool=sqlx::query_scalar("SELECT bool_and(fee_transaction_id=item_transaction_id) FROM game_character_atelier_receipts WHERE kind IN ('REVEAL','GRADE_UP')").fetch_one(&h.pool).await?;
     assert!(
         same_transaction,

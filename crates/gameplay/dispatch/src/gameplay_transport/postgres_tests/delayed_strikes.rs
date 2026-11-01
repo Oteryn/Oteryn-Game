@@ -749,6 +749,12 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             continue;
         }
         if plan.case == Case::DepartedTarget {
+            let mana_before_due = owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("before departed target callback")?
+                .1
+                .mana;
             deps.runtime
                 .lock()
                 .await
@@ -760,8 +766,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .ok_or("clock")?;
             let report = owner.drain_native_ai_timers().await.map_err(debug)?;
             assert!(report.blocked.is_none());
-            assert!(report.receipts.is_empty());
-            assert_eq!(report.dropped.len(), 1);
+            // Crystal 201189f combat.cpp:1525-1537, 1630-1670 executes an empty
+            // area Combat and its tile/post effects; only current creatures get hits.
+            // The positional echo therefore commits an empty receipt, not a drop.
+            assert_eq!(report.receipts.len(), 1);
+            let receipt = &report.receipts[0];
+            assert_eq!(receipt.occurrence.phase, 0);
+            assert!(receipt.batch.applied);
+            assert_eq!(receipt.batch.caster, actor);
+            assert!(receipt.batch.effects.is_empty(), "no hit, leech or proc");
+            assert!(report.dropped.is_empty());
+            assert_eq!(
+                owner
+                    .observe_actor_vitals(actor, session)
+                    .await
+                    .ok_or("after departed target callback")?
+                    .1
+                    .mana,
+                mana_before_due
+            );
             assert_eq!(
                 owner
                     .states
@@ -895,7 +918,19 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .ok_or("after vitals")?
             .1
             .mana;
-        assert_eq!(i64::from(before) - i64::from(after), *mana, "{key} mana");
+        // This fixture fills red, including monk slot 12's 0.25% mana leech.
+        // Crystal 201189f player_wheel.cpp:2254-2256 and game.cpp:8585-8617,
+        // 8664-8667 refund rounded actual damage; the delayed callback pays no cost.
+        let mana_leech = if matches!(plan.case, Case::Outburst(_)) {
+            i64::try_from(((u64::try_from(RAT_HEALTH)? - hit) * 25 + 5000) / 10000)?
+        } else {
+            0
+        };
+        assert_eq!(
+            i64::from(before) - i64::from(after) + mana_leech,
+            *mana,
+            "{key} mana payment before wheel leech"
+        );
         let costs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts")
             .fetch_one(&h.pool)
             .await?;

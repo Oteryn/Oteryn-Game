@@ -6,6 +6,15 @@ include!(concat!(env!("OUT_DIR"), "/mechanic_modules.rs"));
 
 // Test mounts, including #[path] mounts, share this block.
 // Keep sorted by module name; insert in order, never append.
+mod activity_content;
+mod activity_cycles;
+mod activity_departed;
+mod activity_lifecycle;
+mod activity_logout;
+mod activity_recovery;
+mod activity_recovery_admission;
+pub mod activity_runtime;
+mod activity_terminal_release;
 pub mod actor_spell;
 pub mod atelier;
 mod attack;
@@ -14,6 +23,7 @@ mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
 mod bed_sleep_production;
+mod boss_activity;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
@@ -49,6 +59,7 @@ mod dawnport_trial;
 #[path = "tests/death_ml_loss_postgres.rs"]
 mod death_ml_loss_postgres;
 mod depot;
+mod echo_warden;
 mod endgame_entry;
 mod equipment_move;
 mod equipment_reflection;
@@ -96,6 +107,8 @@ mod monster_profile_cycle;
 )]
 mod monster_quest_death;
 mod mount_taming;
+mod native_activity;
+mod native_activity_return;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod npc_actor;
@@ -113,6 +126,7 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
@@ -133,6 +147,11 @@ pub mod server_save_countdown;
 mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
+mod soulpit;
+pub use soulpit::runtime as soulpit_runtime;
+pub use soulpit::{
+    BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
+};
 mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;
@@ -155,6 +174,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
 mod world_event;
@@ -313,6 +333,9 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    /// Sealed bounded templates issued by the same existing Content activation owner.
+    pub activity_templates:
+        &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     /// The composition root's leveled diagnostic writer.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
@@ -498,6 +521,7 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// account and world, this holder's #415 assignment decides the Channel, S2
 /// supplies account security and signing trust, and the durable commit
 /// revalidates all of them.
+#[derive(Clone)]
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
@@ -514,12 +538,12 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// See [`GameplaySeamOwners::required_capabilities`].
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
-    pub runtime: &'a Mutex<ChannelRuntimeV1>,
+    pub runtime: activity_runtime::SharedOwner<'a, Mutex<ChannelRuntimeV1>>,
     pub movement_cells: &'a NativeEntryMovementCells,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
-    pub door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
+    pub door: activity_runtime::SharedOwner<'a, Mutex<crate::world_runtime::LocalObjectRuntime>>,
     /// C2: the entry-room Content with the injected reward chest; never locked, read-only.
     pub chest: &'a crate::content::CanonicalReferencePlayableContent,
     pub spells: &'a crate::spell::SpellBook,
@@ -536,11 +560,13 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
-    pub states: channel_states::ChannelSessionStates,
+    pub states: std::sync::Arc<channel_states::ChannelSessionStates>,
+    /// Exact native owners retained for committed activity entry, return and recovery.
+    pub activity_runtimes: std::sync::Arc<activity_runtime::ActivityRuntimeRegistry<'a>>,
     /// One revision-advancing write in flight per Character (CHAR-REV-SEQ-1). Never awaited
     /// while `runtime` is locked.
     pub revision_sequencer:
-        crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
+        std::sync::Arc<crate::durability::character_revision_sequencer::CharacterRevisionSequencer>,
     /// The quest catalogue of the served content revision (QUEST-STATE-0 §4); `None` while no
     /// quest content is loaded.
     pub quest_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
@@ -1507,12 +1533,12 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     }
 }
 
-/// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in this Channel at the
+/// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in its exact scope at the
 /// pinned map revision and the respawn position, both as the big-endian `(x, y, floor)` cell.
 /// No path inserts blessings before DEATH-4, so the held set is empty.
 fn player_death_request<const N: usize>(
     progression: &crate::combat::RewardProgressionBinding<N>,
-    (world_id, channel_id): (WorldId, ChannelId),
+    runtime_scope: crate::foundation::RuntimeScopeRefV1,
     map_revision: [u8; 32],
     death: actor_spell::PlayerDeath,
     respawn: crate::foundation::MovementLocalPosition,
@@ -1530,8 +1556,7 @@ fn player_death_request<const N: usize>(
         policy: progression.policy.clone(),
         held_blessings: Vec::new(),
         death_cell: crate::durability::character_death::DeathCell {
-            world_id,
-            channel_id,
+            runtime_scope,
             spatial_position: cell_bytes(death.cell),
             map_revision: format!("map:{map}"),
         },

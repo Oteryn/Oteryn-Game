@@ -22,6 +22,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub(super) mod fixture;
 #[path = "atelier/paid.rs"]
 mod paid;
+#[path = "atelier/wire_paid.rs"]
+mod wire_paid;
 
 #[test]
 fn atelier_postgres_runtime_grants_grade_json_reload_and_receipt_constraints() -> TestResult {
@@ -33,6 +35,7 @@ fn atelier_postgres_runtime_grants_grade_json_reload_and_receipt_constraints() -
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "atelier PostgreSQL thread panic")??;
+    eprintln!("ATELIER POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 
@@ -102,6 +105,17 @@ async fn send_atelier(
     Err(format!("Atelier command {kind} result missing: {end:?}").into())
 }
 
+// These existing custody/rule tests advance the canonical owner clock between
+// distinct fresh actions. Immediate replays keep their original timing.
+fn advance_ex_action(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult {
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(std::time::Duration::from_millis(490))
+        .ok_or("Atelier fixture clock")?;
+    Ok(())
+}
+
 fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "atelier_dispatch", true, false).await?;
@@ -135,6 +149,25 @@ fn scenario() -> TestResult {
                 .await?,
             0
         );
+        // Capability 148 is offered before Character eligibility. Opening the panel
+        // must be a normal refusal, not Unavailable (which closes the connection).
+        let mut query_admitted = dependencies.admitted;
+        query_admitted.item_fence = Some(owner.current_quest_fence(session).await
+            .map_err(|_| "query fence")?.ok_or("query fence")?.item_fence());
+        query_admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[oteryn_protocol_oteryn::atelier::CAPABILITY_WHEEL_ALLOCATION_V1],
+            ).ok_or("Wheel query capability")?;
+        let crate::gameplay_transport::atelier::AtelierWireReply::Payload(query) = owner.atelier_wire(
+            query_admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY, &[],
+        ).await else { return Err("ineligible Atelier query must not close play".into()); };
+        let query = oteryn_protocol_oteryn::atelier::decode_reply(&query).map_err(debug)?;
+        assert!(query.refused);
+        assert_eq!(query.revision, 0);
+        assert!(query.gems.is_empty() && query.grades.is_empty());
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_atelier_state")
+            .fetch_one(&h.pool).await?, 0, "query does not own initialization");
         fixture::eligible(&h.pool).await?;
         let request = fixture::prepare(&h).await?;
         let fence = owner
@@ -409,6 +442,7 @@ fn scenario() -> TestResult {
         .await?;
         assert!(!query.is_empty());
         for (occurrence, locked) in [(230, false), (231, true)] {
+            advance_ex_action(&mut owner)?;
             let lock = oteryn_protocol_oteryn::atelier::encode_set_lock(
                 &oteryn_protocol_oteryn::atelier::SetLockRequest {
                     occurrence: id(occurrence),
@@ -432,7 +466,7 @@ fn scenario() -> TestResult {
             );
         }
         migration_reapplication(&h).await?;
-        paid::exercise(&owner, &h).await?;
+        paid::exercise(&mut owner, &h).await?;
         migration_reapplication(&h).await?;
         drop(restarted);
         drop(owner);
@@ -453,8 +487,10 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
                'game_item_instance_change_proven()'::regprocedure,
                'game_item_container_entry_removal_proven()'::regprocedure,
                'game_item_placement_proven()'::regprocedure,
-               'game_item_mint_consistency_guard()'::regprocedure)
-             ORDER BY p.proname LIMIT 5",
+               'game_item_mint_consistency_guard()'::regprocedure,
+               'game_atelier_item_admit()'::regprocedure,
+               'game_atelier_assets_guard()'::regprocedure)
+             ORDER BY p.proname LIMIT 7",
         )
         .fetch_all(&pool)
         .await
@@ -474,11 +510,18 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
         "fixture history must fit the bounded read"
     );
     let before = definitions(h.pool.clone()).await?;
-    assert_eq!(before.len(), 5);
+    // Include both quality-yield guards advanced by 0624 in the idempotence proof.
+    assert_eq!(before.len(), 7);
     let mut tx = h.pool.begin().await?;
     sqlx::raw_sql(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../apps/game-server/migrations/0314_character_gem_atelier_paid.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0624_character_atelier_crystal_fragment_yields.sql"
     )))
     .execute(&mut *tx)
     .await?;

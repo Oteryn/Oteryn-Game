@@ -6,7 +6,7 @@ use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 use crate::spell::mana_training::RetainedTrainingCheckpoint;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::gameplay_transport) enum TrainingSave {
@@ -143,8 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let binding = runtime.binding();
-        if current_fence.runtime_scope
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        if current_fence.runtime_scope != binding.runtime_scope()
             || current_fence.scope_ownership_generation != binding.scope_generation()
             || runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
@@ -250,8 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         else {
                             return TrainingSave::FencedOut;
                         };
-                        if current.runtime_scope
-                            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                        if current.runtime_scope != binding.runtime_scope()
                             || current.scope_ownership_generation != binding.scope_generation()
                             || state
                                 .refence_uncommitted_training_checkpoint(&retained, current)

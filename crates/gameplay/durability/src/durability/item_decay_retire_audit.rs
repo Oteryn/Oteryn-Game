@@ -23,7 +23,9 @@ use super::item_mint_audit::{
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
 use prost::Message;
 
+mod activity_retirement;
 mod world_reset;
+pub use activity_retirement::OneItemActivityRetirementV1;
 use sha2::{Digest, Sha256};
 pub use world_reset::{OneItemGroundContainerEntryV1, OneItemWorldResetV1};
 
@@ -60,6 +62,9 @@ pub struct OneItemDecayRetireV1 {
     pub world_reset: Option<OneItemWorldResetV1>,
     #[prost(message, optional, tag = "8")]
     pub ground_container_entry: Option<OneItemGroundContainerEntryV1>,
+    /// Absent in every existing Channel encoding.
+    #[prost(message, optional, tag = "9")]
+    pub activity_retirement: Option<OneItemActivityRetirementV1>,
 }
 
 /// Which of the N+1 steps one event records.
@@ -95,7 +100,7 @@ fn check_state(value: &OneItemStateV1) -> Result<(), AuditError> {
 
 fn check_ground(value: &OneItemGroundV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.world_id)?;
-    check_uuid_v7(&value.channel_id)?;
+    value.runtime_scope()?;
     check_technical_bytes(&value.spatial_position)?;
     check_technical_bytes(&value.corpse_ref)?;
     check_content_key(&value.map_revision)?;
@@ -124,6 +129,9 @@ fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditE
 /// Complete closed `DECAY_RETIRE` shape, conservation (the whole before
 /// quantity retires to exactly 0) and every registered bound.
 pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
+    if value.activity_retirement.is_some() {
+        return activity_retirement::check(value);
+    }
     if value.world_reset.is_some() {
         return world_reset::check(value);
     }
@@ -210,9 +218,11 @@ pub fn decode_decay_retire_envelope(
         .as_ref()
         .map(|cause| cause.deadline_unix_ms)
         .or_else(|| retire.world_reset.as_ref().map(|_| 0))
+        .or_else(|| retire.activity_retirement.as_ref().map(|_| 0))
         .ok_or(AuditError::InvalidInput)?;
     if value.world_id.as_deref() != Some(ground.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
+        || value.channel_id.as_deref() != (!ground.channel_id.is_empty()).then_some(ground.channel_id.as_slice())
+        || value.instance_id != ground.instance_id
         || value.game_session_id.is_some()
         || value.command_id.is_some()
         || value.connection_generation.is_some()
@@ -249,7 +259,9 @@ pub fn encode_decay_retire_event(
     }
     check_decay_retire(&retire)?;
     let ground = scope_ground(&retire)?;
-    let (world_id, channel_id) = (ground.world_id.clone(), ground.channel_id.clone());
+    let world_id = ground.world_id.clone();
+    let channel_id = (!ground.channel_id.is_empty()).then(|| ground.channel_id.clone());
+    let instance_id = ground.instance_id.clone();
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -267,7 +279,8 @@ pub fn encode_decay_retire_event(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
-        channel_id: Some(channel_id),
+        channel_id,
+        instance_id,
         transaction_event: Some(TransactionEventRefV1 {
             transaction_id: identity.transaction_id.to_vec(),
             ordinal: 1,
@@ -337,6 +350,7 @@ mod tests {
 
     fn ground() -> OneItemGroundV1 {
         OneItemGroundV1 {
+            instance_id: None,
             world_id: uuid(1),
             channel_id: uuid(2),
             spatial_position: vec![9, 9, 0],
@@ -351,6 +365,7 @@ mod tests {
     fn entry_step() -> OneItemDecayRetireV1 {
         OneItemDecayRetireV1 {
             world_reset: None,
+            activity_retirement: None,
             ground_container_entry: None,
             before: Some(state(ENTRY, 3, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(ENTRY, 0, ITEM_LIFECYCLE_RETIRED)),
@@ -371,6 +386,7 @@ mod tests {
     fn corpse_step() -> OneItemDecayRetireV1 {
         OneItemDecayRetireV1 {
             world_reset: None,
+            activity_retirement: None,
             ground_container_entry: None,
             before: Some(state(CORPSE, 1, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(CORPSE, 0, ITEM_LIFECYCLE_RETIRED)),

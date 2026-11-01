@@ -522,6 +522,10 @@ pub(super) fn report_refused_experience(
 
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
+pub(super) mod capacity;
+pub mod rotten_blood;
+pub mod rotten_blood_access;
+pub mod soul_war;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -537,8 +541,3 @@ pub(super) async fn inquisition_blessing_eligible(
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
         .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
 }
-
-pub mod rotten_blood;
-pub mod rotten_blood_access;
-
-pub mod soul_war;

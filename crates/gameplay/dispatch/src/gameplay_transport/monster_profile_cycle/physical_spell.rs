@@ -126,8 +126,9 @@ pub(crate) async fn read_reference_parties(
                 Some((position, Some(level)))
                     if member.presence != crate::foundation::PartyPresence::Offline
                         && (member.presence != crate::foundation::PartyPresence::Channel
-                            || member.channel
-                                == Some(*runtime.binding().channel_id().as_bytes())) =>
+                            || runtime.binding().channel_id().is_some_and(|channel| {
+                                member.channel == Some(*channel.as_bytes())
+                            })) =>
                 {
                     members.push((*position, *level));
                 }
@@ -136,7 +137,10 @@ pub(crate) async fn read_reference_parties(
                     break;
                 }
                 None if member.presence == crate::foundation::PartyPresence::Channel
-                    && member.channel == Some(*runtime.binding().channel_id().as_bytes()) =>
+                    && runtime
+                        .binding()
+                        .channel_id()
+                        .is_some_and(|channel| member.channel == Some(*channel.as_bytes())) =>
                 {
                     available = false;
                     break;
@@ -444,10 +448,19 @@ pub(super) async fn execute(
         states.monster_spells = spells;
         if let Ok(outcome) = result {
             for (target, hit) in outcome.targets {
-                if hit.is_ok_and(|hit| hit.damage.is_some_and(|damage| damage.applied > 0))
+                if let Ok(hit) = hit
+                    && let Some(damage) = hit.damage.filter(|damage| damage.applied > 0)
                     && let Some((_, session)) =
                         reader.players.iter().find(|(actor, _)| *actor == target)
                 {
+                    attack.kills().boss_damage_received(
+                        runtime,
+                        proposal.issuer,
+                        target,
+                        *session,
+                        u64::from(damage.applied),
+                        damage.vitals_revision,
+                    );
                     attack.record_hit_taken(runtime, target, *session, semantic_now);
                 }
             }

@@ -21,6 +21,8 @@ impl DurabilityRoot {
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
         let root = self.clone();
         let node = node.clone();
+        let activity_node =
+            matches!(step.cause, RetireCause::ActivityRetirement(_)).then(|| node.clone());
         let reservation = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -29,6 +31,16 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, step.item_instance_id).await?;
+                    if !activity_retirement::replay_current(
+                        &mut tx,
+                        Some(&node),
+                        step.cause,
+                        fence.scope_ownership_generation.get(),
+                    )
+                    .await?
+                    {
+                        return Ok(Err(DecayRetireError::AuthorityRejected));
+                    }
                     if let Some(receipt) = load_receipt(&mut tx, step.item_instance_id).await? {
                         let committed = decode_receipt(&receipt)?;
                         if committed.corpse_item_instance_id != step.corpse_item_instance_id
@@ -58,7 +70,10 @@ impl DurabilityRoot {
                             return Ok(Err(DecayRetireError::ConflictingCause));
                         }
                         if !fence_matches(&reservation, &node)
-                            || !fence_is_live(&mut tx, &fence, &node).await?
+                            || !activity_retirement::cause_fence_is_live(
+                                &mut tx, &node, &fence, step.cause,
+                            )
+                            .await?
                         {
                             return Ok(Err(DecayRetireError::AuthorityRejected));
                         }
@@ -69,7 +84,9 @@ impl DurabilityRoot {
                         return Ok(Ok(reservation));
                     }
 
-                    if !fence_is_live(&mut tx, &fence, &node).await? {
+                    if !activity_retirement::cause_fence_is_live(&mut tx, &node, &fence, step.cause)
+                        .await?
+                    {
                         return Ok(Err(DecayRetireError::AuthorityRejected));
                     }
                     let admitted = match admit(&root, &node, &mut tx, &fence, step).await? {
@@ -132,6 +149,7 @@ impl DurabilityRoot {
             deadline_unix_ms: reservation.deadline_unix_ms,
             envelope: reservation.envelope,
             work_units_used: reservation.work_units_used,
+            activity_node,
         })
     }
 
@@ -148,12 +166,29 @@ impl DurabilityRoot {
         let item = candidate.step.item_instance_id;
         let generation = candidate.fence_generation.to_string();
         let transaction_id = candidate.transaction_id;
+        let activity_node = candidate.activity_node.clone();
+        let cause = candidate.step.cause;
         let charged = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    if matches!(cause, RetireCause::ActivityRetirement(_)) {
+                        lock_admission_relations(&mut tx).await?;
+                        if !activity_retirement::replay_current(
+                            &mut tx,
+                            activity_node.as_ref(),
+                            cause,
+                            generation
+                                .parse()
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        )
+                        .await?
+                        {
+                            return Ok(Err(DecayRetireError::AuthorityRejected));
+                        }
+                    }
                     let used = sqlx::query(
                         "UPDATE game_item_decay_retire_reservations \
                             SET work_units_used = work_units_used + 1 \
@@ -220,7 +255,7 @@ impl DurabilityRoot {
     ) -> Result<DecayRetireOutcome> {
         // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of the corpse's Channel, so
         // the lane is that Channel's and is held to the end of the transaction.
-        permit.check_channel(fence.world_id, fence.channel_id)?;
+        permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -244,6 +279,16 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, step.item_instance_id).await?;
+                    if !activity_retirement::replay_current(
+                        &mut tx,
+                        Some(&node),
+                        step.cause,
+                        fence.scope_ownership_generation.get(),
+                    )
+                    .await?
+                    {
+                        return Ok(Err(DecayRetireError::AuthorityRejected));
+                    }
 
                     if let Some(row) = load_receipt(&mut tx, step.item_instance_id).await? {
                         let committed = decode_receipt(&row)?;
@@ -279,7 +324,10 @@ impl DurabilityRoot {
                         return Ok(Err(DecayRetireError::ConflictingCandidate));
                     }
                     if !fence_matches(&reservation, &node)
-                        || !fence_is_live(&mut tx, &fence, &node).await?
+                        || !activity_retirement::cause_fence_is_live(
+                            &mut tx, &node, &fence, step.cause,
+                        )
+                        .await?
                     {
                         return Ok(Err(DecayRetireError::AuthorityRejected));
                     }
@@ -340,12 +388,27 @@ impl DurabilityRoot {
         self.charge_decay_retire_work_unit(recovery.clone(), candidate)
             .await?;
         let step = candidate.step;
+        let generation = candidate.fence_generation;
+        let activity_node = candidate.activity_node.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    if matches!(step.cause, RetireCause::ActivityRetirement(_)) {
+                        lock_admission_relations(&mut tx).await?;
+                    }
                     lock_cause(&mut tx, step.item_instance_id).await?;
+                    if !activity_retirement::replay_current(
+                        &mut tx,
+                        activity_node.as_ref(),
+                        step.cause,
+                        generation,
+                    )
+                    .await?
+                    {
+                        return Ok(Err(DecayRetireError::AuthorityRejected));
+                    }
                     let Some(row) = load_receipt(&mut tx, step.item_instance_id).await? else {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(None));
@@ -375,6 +438,19 @@ impl DurabilityRoot {
         world_id: WorldId,
         channel_id: ChannelId,
     ) -> Result<CorpseDecaySchedule> {
+        self.read_scoped_corpse_decay_schedule(
+            authority,
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+        )
+        .await
+    }
+
+    /// The same owner recovery query for the exact tagged runtime scope.
+    pub async fn read_scoped_corpse_decay_schedule(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<CorpseDecaySchedule> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -394,16 +470,19 @@ impl DurabilityRoot {
                            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
                            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
                           WHERE g.world_id = encode($1,'hex')::uuid \
-                            AND g.channel_id = encode($2,'hex')::uuid \
+                            AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
+                            AND g.scope_kind = $5 AND g.instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid \
                             AND r.loot_purpose_key = $3 AND r.draw_ordinal = 0 \
                             AND i.lifecycle = 1 \
                           ORDER BY r.materialized_at, g.item_instance_id \
                           LIMIT $4",
                     )
-                    .bind(world_id.as_bytes().as_slice())
-                    .bind(channel_id.as_bytes().as_slice())
+                    .bind(scope.world_id().as_bytes().as_slice())
+                    .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
                     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
                     .bind(i64::try_from(COMBAT01_CORPSES_PER_SCOPE + 1).unwrap_or(i64::MAX))
+                    .bind(scope_kind(scope))
+                    .bind(scope.instance_id().map(|id| id.to_vec()))
                     .fetch_all(&mut *tx)
                     .await?;
                     if rows.len() > COMBAT01_CORPSES_PER_SCOPE {
@@ -450,7 +529,7 @@ impl DurabilityRoot {
         corpse_item_instance_id: [u8; 16],
     ) -> Result<CorpseDecayReport> {
         check_uuid_v7(&corpse_item_instance_id)?;
-        permit.check_channel(fence.world_id, fence.channel_id)?;
+        permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -502,7 +581,7 @@ impl DurabilityRoot {
         Ok(CorpseDecayReport { entries, corpse })
     }
 
-    async fn retire_step(
+    pub(super) async fn retire_step(
         &self,
         permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -532,18 +611,18 @@ pub(super) async fn insert_reservation(
            fence_scope_ownership_generation, corpse_item_instance_id, world_id, channel_id, \
            transaction_id, event_id, quantity_before, placement_ordinal, deadline, occurred_at, \
            envelope, fence_holder_node_id, fence_holder_registration_revision, \
-           work_units_used, reserved_at, type2_schema_revision, cause_kind, reset_epoch, retirement_binding, target_digest, ground_root_item_instance_id) \
+           work_units_used, reserved_at, type2_schema_revision, cause_kind, reset_epoch, retirement_binding, target_digest, ground_root_item_instance_id, scope_kind, instance_id, activity_handoff_id, activity_ownership_generation) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), CASE WHEN $16='CORPSE_DECAY' THEN encode($3,'hex')::uuid END, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, \
            encode($7,'hex')::uuid, $8, $9::text::numeric(20,0), CASE WHEN $16='CORPSE_DECAY' THEN $10 ELSE NULL END, $11, $12, \
            encode($13,'hex')::uuid, $14::text::numeric(20,0), 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $15, $16, $17::text::numeric, $18, $19, CASE WHEN $16='WORLD_RESET' THEN encode($3,'hex')::uuid END)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $15, $16, $17::text::numeric, $18, $19, CASE WHEN $16<>'CORPSE_DECAY' THEN encode($3,'hex')::uuid END, $20, encode($21,'hex')::uuid, encode($22,'hex')::uuid, $23::text::numeric)",
     )
     .bind(step.item_instance_id.as_slice())
     .bind(reservation.fence_generation.to_string())
     .bind(step.corpse_item_instance_id.as_slice())
     .bind(admitted.world_id.as_slice())
-    .bind(admitted.channel_id.as_slice())
+    .bind(admitted.runtime_scope.channel_id().map(|id| id.as_bytes().to_vec()))
     .bind(reservation.transaction_id.as_slice())
     .bind(reservation.event_id.as_slice())
     .bind(i64::from(reservation.quantity_before))
@@ -562,6 +641,10 @@ pub(super) async fn insert_reservation(
     .bind(reservation.cause.epoch())
     .bind(reservation.cause.binding())
     .bind(reservation.cause.target())
+    .bind(scope_kind(admitted.runtime_scope))
+    .bind(admitted.runtime_scope.instance_id().map(|id| id.to_vec()))
+    .bind(reservation.cause.handoff_id().map(|id| id.to_vec()))
+    .bind(reservation.cause.activity_generation().map(|generation| generation.to_string()))
     .execute(&mut **tx)
     .await?;
     Ok(())

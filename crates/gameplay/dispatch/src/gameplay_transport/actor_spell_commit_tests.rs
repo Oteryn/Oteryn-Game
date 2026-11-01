@@ -129,6 +129,354 @@ fn target_health(f: &Fixture) -> i64 {
         .health
 }
 
+fn due_focus_fixture() -> (
+    Fixture,
+    crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+) {
+    use crate::spell::combat_batch::{DeferredCommitAuthority, LiveActorBinding};
+    use crate::spell::magnitude_owner::{
+        MagnitudeOwnedAttributes, MagnitudeOwnerBinding, MagnitudePolicy, PreparedMagnitudeOwner,
+    };
+    use crate::spell::native_combat::{CombatPlan, Element, NativeCombatPlan};
+    let mut f = fixture();
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("committed parent source");
+    let proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("parent player owner");
+    commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)).expect("parent receipt");
+    let parent_binding = f.batch.binding.clone();
+    let mut caster = PlayerSpellState::new(
+        crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::Sorcerer,
+            level: 500,
+            magic_level: 20,
+            max_health: 1_000,
+            max_mana: 500,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("current Character state");
+    caster
+        .apply_owner_promotion_transition(true, true, Some(20_000_000))
+        .expect("current Premium");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.active_unique_perks.insert("focus_mastery".into());
+    caster.install_wheel_effects(effects.clone());
+    caster
+        .complete_wheel_focus_cast(true, 0)
+        .expect("previous Focus Combat");
+    *f.states
+        .get_mut(&f.runtime, f.caster, f.session)
+        .expect("actual caster owner") = caster;
+    f.batch.anchor = None;
+    f.batch.effects.clear();
+    f.batch.binding = b"qualified:atomic-owner-integration:due-empty".to_vec();
+    f.batch.now_us = Some(SemanticTimeMicros::from_micros(1_100_000));
+    f.batch.now_ms = 1_100;
+    let stamp = f.runtime.issue_owner_work().expect("current owner turn");
+    let binding = f.runtime.binding();
+    f.batch.deferred = Some(
+        DeferredCommitAuthority::from_due(
+            f.runtime.owner_fence().expect("current scope fence"),
+            binding.runtime_scope(),
+            binding.scope_generation(),
+            stamp,
+            1,
+            1,
+            parent_binding,
+            &f.batch,
+        )
+        .expect("genuine current deferred authority"),
+    );
+    let state = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("caster");
+    let attributes = MagnitudeOwnedAttributes {
+        policy: MagnitudePolicy::BaselineTest,
+        item_augments: vec![],
+        owner_revisions: Some((1, 1, Some(1))),
+        binding: MagnitudeOwnerBinding {
+            actor: f.caster,
+            session: f.session,
+            character: f.batch.attacker,
+            lease_generation: f.batch.current_lease_generation,
+            player_revision: state.revision(),
+            content_digest: f.runtime.content_pin().server_artifact_digest(),
+        },
+        base_critical_chance_permyriad: None,
+        base_critical_extra_permyriad: None,
+        equipment_critical_chance_permyriad: None,
+        equipment_critical_extra_permyriad: None,
+        fatal_chance_permyriad: None,
+        armor_penetration_permyriad: None,
+        elemental_pierce_permyriad: None,
+        wheel_effects: Some(effects),
+        wheel_flat_damage: None,
+        wheel_flat_healing: None,
+        source_damage_multiplier_percent: None,
+        source_healing_multiplier_percent: None,
+        healing_dealt_percent: None,
+        monster_armor_disabled: None,
+        inactive_extra_stages: None,
+    };
+    let plan = NativeCombatPlan::Combat(CombatPlan {
+        element: Element::Death,
+        area: None,
+        hits: vec![],
+        cooldown_ms: None,
+        shared_cooldown: None,
+        reduce_all_spell_cooldowns_ms: 0,
+        block_armor: false,
+        use_weapon_charges: false,
+        weapon_missile: false,
+        dispel_paralysis_targets: vec![],
+        resolve_critical_and_fatal_once: true,
+    });
+    let mut magnitude = PreparedMagnitudeOwner::qualify(
+        &f.runtime,
+        state,
+        f.caster,
+        f.session,
+        Some(&attributes),
+        &plan,
+        &[LiveActorBinding {
+            source_id: 1,
+            actor: f.caster,
+            target_atom: crate::spell::combat_execution::actor_atom(f.caster),
+        }],
+        &[],
+        f.batch.now_ms,
+    )
+    .expect("qualified empty area with actual caster predecessor");
+    let catalog: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    ))
+    .expect("source spell catalogue");
+    let row = catalog["bundles"]
+        .as_array()
+        .expect("bundles")
+        .iter()
+        .find(|row| row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/death_echo")
+        .expect("actual Death Echo source");
+    let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+        &row["bundle"],
+        &row["dependencies"],
+    )
+    .expect("qualified Death Echo");
+    magnitude
+        .select_item_spell(&spell)
+        .expect("due Combat source");
+    (f, magnitude)
+}
+
+#[test]
+fn empty_due_combat_consumes_focus_with_the_player_owner_and_exact_replay_preserves_rearmed_focus()
+{
+    let (mut f, magnitude) = due_focus_fixture();
+    let before = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("before")
+        .clone();
+    assert_eq!(before.wheel_focus_damage_percent(1_100_000), 35);
+    let mut unqualified = f.batch.clone();
+    unqualified.deferred = None;
+    assert!(
+        f.runtime.stage_spell_batch(&unqualified).is_err(),
+        "empty batches require the actual scheduler token"
+    );
+    let mut substituted = f.batch.clone();
+    substituted.binding.push(1);
+    assert!(
+        f.runtime.stage_spell_batch(&substituted).is_err(),
+        "the token binds the exact due batch"
+    );
+    assert!(
+        stage_due_player_batch(&f.runtime, &f.states, &substituted, &magnitude).is_err(),
+        "the player preflight independently requires the same exact deferred proof"
+    );
+    let mut phase_zero = f.batch.clone();
+    phase_zero.command = CommandRef::new(f.session, CommandId::new(2).expect("fresh command"));
+    phase_zero.deferred = None;
+    let stamp = f.runtime.issue_owner_work().expect("owner stamp");
+    let binding = f.runtime.binding();
+    phase_zero.deferred = Some(
+        crate::spell::combat_batch::DeferredCommitAuthority::from_due(
+            f.runtime.owner_fence().expect("actual fence"),
+            binding.runtime_scope(),
+            binding.scope_generation(),
+            stamp,
+            0,
+            2,
+            f.batch
+                .deferred
+                .as_ref()
+                .expect("source token")
+                .canonical_binding()
+                .to_vec(),
+            &phase_zero,
+        )
+        .expect("data factory does not itself authorize a due phase"),
+    );
+    assert!(
+        f.runtime.stage_spell_batch(&phase_zero).is_err(),
+        "phase zero cannot authorize an empty deferred Combat even for a healthy caster"
+    );
+    assert!(
+        stage_due_player_batch(&f.runtime, &f.states, &phase_zero, &magnitude).is_err(),
+        "phase zero cannot prepare a Focus successor either"
+    );
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("genuine empty due Combat");
+    assert!(
+        f.runtime.commit_spell_batch(staged).is_err(),
+        "physical owner alone cannot consume a player Focus window"
+    );
+    assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&before));
+
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("same still-uncommitted phase");
+    let proof = stage_due_player_batch(&f.runtime, &f.states, &f.batch, &magnitude)
+        .expect("exact current player and numeric owners");
+    let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+        .expect("joined due commit");
+    assert!(receipt.applied);
+    assert!(receipt.effects.is_empty());
+    let after = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("after");
+    assert_eq!(after.wheel_focus_damage_percent(1_100_000), 0);
+    assert_eq!(after.revision(), before.revision() + 1);
+    assert_eq!(
+        after.vitals(),
+        before.vitals(),
+        "empty area consumes no additional resource payment"
+    );
+    f.states
+        .get_mut(&f.runtime, f.caster, f.session)
+        .expect("current caster")
+        .complete_wheel_focus_cast(true, 1_100_000)
+        .expect("later Focus Combat");
+    let rearmed = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("rearmed")
+        .clone();
+    let replay = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("retained exact due receipt");
+    assert!(!replay.will_apply());
+    assert!(
+        !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+            .expect("receipt replay without old numerical proof")
+            .applied
+    );
+    assert_eq!(
+        f.states.get(&f.runtime, f.caster, f.session),
+        Some(&rearmed)
+    );
+    assert_eq!(rearmed.wheel_focus_damage_percent(1_100_000), 35);
+    assert_eq!(
+        target_health(&f),
+        17,
+        "only the original source hit happened"
+    );
+}
+
+#[test]
+fn stale_or_missing_due_caster_refuses_focus_and_the_entire_prepared_commit() {
+    let (mut f, magnitude) = due_focus_fixture();
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical preparation");
+    let proof = stage_due_player_batch(&f.runtime, &f.states, &f.batch, &magnitude)
+        .expect("player preparation");
+    f.states
+        .get_mut(&f.runtime, f.caster, f.session)
+        .expect("actual current caster")
+        .advance_batch_revision()
+        .expect("independent owner change");
+    let current = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("new predecessor")
+        .clone();
+    assert!(matches!(
+        commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+        Err(Error::SnapshotChanged)
+    ));
+    assert_eq!(
+        f.states.get(&f.runtime, f.caster, f.session),
+        Some(&current)
+    );
+    assert_eq!(current.wheel_focus_damage_percent(1_100_000), 35);
+    assert!(stage_due_player_batch(&f.runtime, &f.states, &f.batch, &magnitude).is_err());
+    assert!(
+        f.runtime
+            .stage_spell_batch(&f.batch)
+            .expect("no physical phase receipt was installed")
+            .will_apply()
+    );
+    f.states.actors.clear();
+    assert!(stage_due_player_batch(&f.runtime, &f.states, &f.batch, &magnitude).is_err());
+    assert_eq!(target_health(&f), 17);
+}
+
+#[test]
+fn empty_due_focus_keeps_existing_deferred_authority_after_control_loss() {
+    let (mut f, magnitude) = due_focus_fixture();
+    f.runtime
+        .record_control_loss(
+            f.caster,
+            f.session,
+            crate::foundation::ControlLossMark {
+                epoch: 1,
+                grace_deadline: 500,
+            },
+        )
+        .expect("actual same-actor loss");
+    let mut unsealed = f.batch.clone();
+    unsealed.deferred = None;
+    assert!(f.runtime.stage_spell_batch(&unsealed).is_err());
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("already admitted due Combat");
+    let proof = stage_due_player_batch(&f.runtime, &f.states, &f.batch, &magnitude)
+        .expect("joined player owner recognizes the same exact scheduler token");
+    assert!(
+        commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+            .expect("joined deferred commit")
+            .applied
+    );
+    assert_eq!(
+        f.states
+            .get(&f.runtime, f.caster, f.session)
+            .expect("same physical caster")
+            .wheel_focus_damage_percent(1_100_000),
+        0
+    );
+    assert!(
+        f.runtime
+            .player_control_facts(f.caster, f.session)
+            .expect("physical actor")
+            .control_loss
+            .is_some()
+    );
+}
+
 #[test]
 fn actual_creature_and_player_owners_commit_cost_heal_and_damage_once() {
     let mut f = fixture();

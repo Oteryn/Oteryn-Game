@@ -1,10 +1,10 @@
 //! W10/W11 live lever prerequisites and the existing W02 consumer boundary.
 //!
-//! This base has no qualified native boss Instance. Command 178 still replies REJECTED;
-//! internally the shared-owner seam returns ContentUnavailable, never a fake handoff.
-//! The coordinator composes W02 #2769 (PR #2784, ANSWER 6547426887).
+//! W10/W11 have no qualified native boss Instance. Their command 178 replies REJECTED;
+//! internally the endgame seam returns ContentUnavailable, never a fake handoff.
+//! Other boss activities retain the shared native owner (PR #2784, ANSWER 6547426887).
 
-use super::{ComposedFreshAdmission, connection::AdmittedSession, guild_intent::GuildReply};
+use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::character_progression::CharacterProgressionError;
 use oteryn_gameplay_encounters::bosses::endgame_entry::{
     self, Encounter, EntryFacts, EntryRefusal, QuestFamily,
@@ -12,20 +12,7 @@ use oteryn_gameplay_encounters::bosses::endgame_entry::{
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn endgame_boss_lever_wire(
-        &self,
-        admitted: AdmittedSession,
-        payload: &[u8],
-    ) -> GuildReply {
-        match self.endgame_boss_entry(admitted, payload).await {
-            Ok(Err(_)) | Err(CharacterProgressionError::AuthorityRejected) => GuildReply::Rejected,
-            // A successful destination receipt must go through W02's actual scope barrier.
-            // This base never installs a destination or advertises success.
-            Ok(Ok(())) | Err(_) => GuildReply::Unavailable,
-        }
-    }
-
-    async fn endgame_boss_entry(
+    pub(super) async fn endgame_boss_entry(
         &self,
         admitted: AdmittedSession,
         payload: &[u8],

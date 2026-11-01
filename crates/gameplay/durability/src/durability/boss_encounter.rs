@@ -9,8 +9,6 @@ use super::db::lock_admission_relations;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 #[cfg(test)]
-use crate::content::ProductionKey;
-#[cfg(test)]
 use crate::domain::CharacterId;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use oteryn_simulation_determinism::{
@@ -413,8 +411,13 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
 #[path = "boss_encounter/activity_assignment_tests.rs"]
 mod activity_assignment_tests;
 
+#[path = "boss_encounter/cooldown_storage.rs"]
+pub(crate) mod cooldown_storage;
+
 #[path = "boss_encounter/cooldown_list.rs"]
 mod cooldown_list;
+#[path = "boss_encounter/reward_chest.rs"]
+pub mod reward_chest;
 
 // These private preparation primitives had no production caller in the source file.
 // Keep qualifying them without exposing an unfenced admission/death write API.

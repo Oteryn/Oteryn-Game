@@ -128,7 +128,7 @@ pub(super) async fn settle_captured_endgame_death(
             &source.creature, source.raw_xp).await.map_err(debug)?;
         let binding = owner.progression_binding(session).ok_or("progression policy")?;
         let awards = crate::durability::party_kill_xp::commit_in_transaction(&mut tx, &scope, owner.holder, PartyKillXpRequest {
-            death_key: source.death_key, principal: fence.character_id, creature: source.creature.clone(), base_xp: source.raw_xp,
+            death_key: source.death_key.to_vec(), principal: fence.character_id, creature: source.creature.clone(), base_xp: source.raw_xp,
             death_at_ms: source.death_at_ms, death_at_us: source.death_at_us, shared: false, party_id: None, party_revision: None,
             members: vec![PartyKillXpMember { fence,
                 request: ExperienceAwardRequest {

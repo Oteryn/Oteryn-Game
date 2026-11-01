@@ -275,10 +275,8 @@ impl ComposedOwner {
         now: SemanticTimeMicros,
     ) -> Result<ComposedOutcome, AttackError> {
         let binding = r.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }

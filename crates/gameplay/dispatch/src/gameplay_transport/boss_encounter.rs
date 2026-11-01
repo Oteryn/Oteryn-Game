@@ -1,4 +1,5 @@
 //! Shared boss cooldown query, composed with the admitted Character and native durability.
+use super::connection::FreshAdmissionAuthority;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
@@ -19,7 +20,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 kind,
                 wire::COMMAND_TYPE_BOSS_COOLDOWNS
                     | wire::COMMAND_TYPE_BOSS_REWARD_OPEN
-                    | wire::COMMAND_TYPE_BOSS_LEVER
             )
             || !admitted
                 .continuity
@@ -27,8 +27,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .contains(wire::CAPABILITY_BOSS_ENCOUNTER_V1)
             || (kind == wire::COMMAND_TYPE_BOSS_COOLDOWNS
                 && wire::decode_cooldown_query(payload).is_err())
-            || (kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN && !payload.is_empty())
-            || (kind == wire::COMMAND_TYPE_BOSS_LEVER && wire::decode_boss_key(payload).is_err())
+            || (kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN
+                && (wire::decode_reward_chest_query(payload).is_err()
+                    || (!payload.is_empty()
+                        && (!admitted.continuity.selected_capabilities.contains(
+                                oteryn_protocol_oteryn::boss_rewards::CAPABILITY_BOSS_REWARDS_V1)
+                            || !self.offered_capabilities().iter().any(|capability|
+                                capability.id == oteryn_protocol_oteryn::boss_rewards::CAPABILITY_BOSS_REWARDS_V1)))))
             || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
@@ -37,13 +42,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let runtime = self.runtime.lock().await;
             let binding = runtime.binding();
+            // The admitted Channel id is retained origin metadata after an activity
+            // handoff. The current exact tagged scope is carried by the item fence.
             if admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || fence.runtime_scope
-                    != crate::foundation::RuntimeScopeRefV1::channel(
-                        binding.world_id(),
-                        binding.channel_id(),
-                    )
+                || fence.runtime_scope != binding.runtime_scope()
                 || fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !runtime
@@ -53,12 +55,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GuildReply::Rejected;
             }
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER {
-            return self.endgame_boss_lever_wire(admitted, payload).await;
-        }
         let result = if kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN {
             self.root
-                .read_boss_reward_chest(self.character, self.holder, fence)
+                .read_boss_reward_chest_page(self.character, self.holder, fence, payload)
                 .await
         } else {
             self.root

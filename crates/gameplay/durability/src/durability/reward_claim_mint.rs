@@ -99,7 +99,6 @@ use super::item_transfer::{
     validate_facts,
 };
 use super::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
-use oteryn_gameplay_quests::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use super::reward_claim_mint_audit::{
     self as audit, OneItemRewardClaimCauseV1, OneItemRewardClaimMintV1,
     REWARD_CLAIM_MINT_TYPED_CAUSE, RewardClaimMintEventIdentity,
@@ -109,10 +108,13 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
 use crate::foundation::CommandRef;
+use oteryn_gameplay_quests::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+pub mod boss_reward;
 mod monk;
+mod soul_war;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
@@ -987,6 +989,7 @@ fn claim_message(
                 command_id: request.command.command_id().get(),
             }),
             reward_claim: Some(definition_message(&request.claim)),
+            boss_reward: None,
         }),
         before_semantically_absent: true,
         inbox: None,
@@ -1817,5 +1820,3 @@ mod tests {
         );
     }
 }
-
-mod soul_war;
