@@ -1677,3 +1677,49 @@ fn protection_zone_element_policy_deals_permitted_ticks_and_consumes_all_damage_
         }
     }
 }
+
+#[test]
+fn m10_a_permanent_item_outfit_has_no_deadline_and_needs_its_item() {
+    let root = root();
+    let digest = [5; 32];
+    assert!(
+        ConditionDefinition::new_permanent_item_outfit(
+            "environment.bathtub",
+            1,
+            "item.26087",
+            "1",
+            [0; 32]
+        )
+        .is_none()
+    );
+    assert!(
+        ConditionDefinition::new_permanent_item_outfit("environment.bathtub", 1, "", "1", digest)
+            .is_none()
+    );
+    let definition = ConditionDefinition::new_permanent_item_outfit(
+        "environment.bathtub",
+        1,
+        "item.26087",
+        "1",
+        digest,
+    )
+    .expect("valid permanent item outfit");
+    assert_eq!(definition.condition_type(), ConditionType::Outfit);
+    assert_eq!(
+        definition
+            .source_item_appearance()
+            .map(|item| (item.definition_key.as_str(), item.artifact_digest)),
+        Some(("item.26087", digest))
+    );
+    let mut store = ConditionStore::<u32>::new();
+    apply(
+        &mut store,
+        &definition,
+        ConditionSourceKind::Field,
+        &facts(MS, &root),
+    )
+    .expect("applies");
+    // The ticks -1 outfit survives any later expiry pass.
+    assert!(!store.expire_non_ticking(u64::MAX / 2));
+    assert_eq!(store.instances().len(), 1);
+}

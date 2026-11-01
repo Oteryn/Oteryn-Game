@@ -135,6 +135,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {
+                    let bathtub = self
+                        .active_generation
+                        .and_then(|active| active.native_gameplay())
+                        .and_then(special_movement::bathtub_outfit);
+                    states.stage_bathtub_outfit(
+                        &runtime,
+                        map,
+                        actor,
+                        session,
+                        now,
+                        origin.map(|origin| origin.position()),
+                        snapshot.position(),
+                        bathtub.as_deref(),
+                    );
                     states.stage_special_movement_step(
                         &runtime,
                         map,

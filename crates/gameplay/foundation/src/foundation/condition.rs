@@ -227,6 +227,26 @@ impl ConditionDefinition {
         Some(definition)
     }
 
+    /// Crystal bath_tub.lua:9-11: an item outfit (`lookTypeEx`) with ticks -1 has no expiry
+    /// deadline. The owner resolves and qualifies the Item against the active artifact first,
+    /// exactly as for [`Self::with_item_appearance`].
+    pub fn new_permanent_item_outfit(
+        key: &str,
+        revision: u32,
+        item_key: &str,
+        item_revision: &str,
+        digest: [u8; 32],
+    ) -> Option<Self> {
+        let mut definition = Self::new(
+            key,
+            revision,
+            ConditionValues::ItemOutfit { duration_ms: 1 },
+        )?
+        .with_item_appearance(item_key, item_revision, digest)?;
+        definition.permanent_outfit = true;
+        Some(definition)
+    }
+
     pub fn new_damage_schedule(
         key: &str,
         revision: u32,

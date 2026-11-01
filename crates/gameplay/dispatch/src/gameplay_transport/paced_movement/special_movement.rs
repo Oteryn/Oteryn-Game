@@ -93,6 +93,8 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
 /// Crystal `constants.lua:5-6`.
 const BATHTUB_FILLED: u16 = 26077;
 const BATHTUB_FILLED_NOTMOVABLE: u16 = 26100;
+/// `bath_tub.lua:10`: the bath tub outfit shows Item 26087 (`lookTypeEx`).
+const BATHTUB_OUTFIT_ITEM: &str = "oteryn:item.tibia.i26087";
 /// `yellow_pillow.lua:9,14`.
 const YELLOW_PILLOW: u16 = 2397;
 const YELLOW_PILLOW_SAY: &str = "Faaart!";
@@ -227,7 +229,101 @@ fn swimming_definition() -> Option<ConditionDefinition> {
         })
 }
 
+/// The definition revision of Item 26087 in the active generation, when it holds that Item.
+pub(in crate::gameplay_transport) fn bathtub_outfit(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> Option<String> {
+    native
+        .item_index()?
+        .revision(BATHTUB_OUTFIT_ITEM)
+        .map(str::to_owned)
+}
+
+fn on_tile(map: &BundleMap, at: MovementLocalPosition, id: u16) -> bool {
+    tile_entries(map, at)
+        .is_some_and(|tile| tile.entries.iter().any(|(_, e)| e.appearance_id == id))
+}
+
 impl ChannelSpellStates {
+    /// `bath_tub.lua:3-17,24-32`: stepping into the filled bath tub dresses the player in the
+    /// permanent (ticks -1) Item 26087 outfit, and stepping out of the not-movable form removes
+    /// the outfit condition. It runs before [`Self::stage_special_movement_step`], which owns
+    /// the tub transforms and the watersplash. Without Item 26087 in the active generation the
+    /// step-in fails closed and leaves the current outfit alone.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one movement owner turn binds both positions and actor authority"
+    )]
+    pub(in crate::gameplay_transport) fn stage_bathtub_outfit(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+        origin: Option<MovementLocalPosition>,
+        destination: MovementLocalPosition,
+        item_revision: Option<&str>,
+    ) -> bool {
+        let leaves = origin.is_some_and(|at| on_tile(map, at, BATHTUB_FILLED_NOTMOVABLE));
+        let outfit = on_tile(map, destination, BATHTUB_FILLED)
+            .then_some(item_revision)
+            .flatten()
+            .and_then(|revision| {
+                ConditionDefinition::new_permanent_item_outfit(
+                    "environment.bathtub",
+                    1,
+                    BATHTUB_OUTFIT_ITEM,
+                    revision,
+                    runtime.content_pin().server_artifact_digest(),
+                )
+            });
+        if !leaves && outfit.is_none() {
+            return false;
+        }
+        let Some(current) = self.get(runtime, actor, session).cloned() else {
+            return false;
+        };
+        let mut next = current.clone();
+        // Crystal's ticks -1 outfit replaces any current outfit (`Condition::updateCondition`).
+        next.conditions.remove_type(ConditionType::Outfit);
+        if let Some(definition) = outfit {
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let facts = ApplicationFacts {
+                now,
+                base_speed: 1,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([0x42; 16]),
+            };
+            if next
+                .conditions
+                .apply(
+                    &definition,
+                    Some("environment:bathtub".to_owned()),
+                    ConditionSourceKind::Field,
+                    &[],
+                    &facts,
+                )
+                .is_err()
+            {
+                return false;
+            }
+        }
+        if next == current {
+            return false;
+        }
+        let Some(revision) = current.revision().checked_add(1) else {
+            return false;
+        };
+        next.source_set_batch_revision(revision);
+        self.commit(runtime, actor, session, next)
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "one movement owner turn binds both positions and actor authority"
@@ -798,6 +894,101 @@ mod tests {
     /// Crystal yellow_pillow.lua:3-12 and bath_tub.lua:13: the pillow makes its player say
     /// "Faaart!" (TALKTYPE_MONSTER_SAY) and poffs; the bath tub splashes. Oteryn has no ghost
     /// mode, so no player is skipped.
+    /// bath_tub.lua:9-16,30: the filled tub dresses the player in the ticks -1 Item 26087
+    /// outfit; leaving the not-movable tub removes it.
+    #[test]
+    fn m10_bath_tub_dresses_on_step_in_and_undresses_on_step_out() -> CaseResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                movement_map(
+                    BATHTUB_FILLED,
+                    BATHTUB_FILLED_NOTMOVABLE,
+                    false,
+                    |states, runtime, map, actor, session| {
+                        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+                        let at = MovementLocalPosition {
+                            x: 6,
+                            y: 0,
+                            floor: 7,
+                        };
+                        let away = MovementLocalPosition { x: 1, ..at };
+                        let outfit = |states: &ChannelSpellStates| {
+                            states.get(runtime, actor, session).and_then(|player| {
+                                player.conditions.get(ConflictKey::Outfit).map(|outfit| {
+                                    (
+                                        outfit.definition().condition_type(),
+                                        outfit
+                                            .definition()
+                                            .source_item_appearance()
+                                            .map(|item| item.definition_key().to_owned()),
+                                    )
+                                })
+                            })
+                        };
+                        // A generation without Item 26087 fails closed.
+                        assert!(!states.stage_bathtub_outfit(
+                            runtime,
+                            map,
+                            actor,
+                            session,
+                            1,
+                            Some(away),
+                            at,
+                            None
+                        ));
+                        assert_eq!(outfit(states), None);
+                        assert!(states.stage_bathtub_outfit(
+                            runtime,
+                            map,
+                            actor,
+                            session,
+                            1,
+                            Some(away),
+                            at,
+                            Some("definition-r1")
+                        ));
+                        assert_eq!(
+                            outfit(states),
+                            Some((ConditionType::Outfit, Some(BATHTUB_OUTFIT_ITEM.to_owned())))
+                        );
+                        states.stage_special_movement_step(
+                            runtime,
+                            map,
+                            actor,
+                            session,
+                            1,
+                            Some(away),
+                            at,
+                            Some(false),
+                        );
+                        // Ticks -1: the outfit survives any later expiry pass.
+                        let mut later = states
+                            .get(runtime, actor, session)
+                            .ok_or("player")?
+                            .conditions
+                            .clone();
+                        assert!(!later.expire_non_ticking(u64::MAX / 2));
+                        assert!(later.get(ConflictKey::Outfit).is_some());
+                        assert!(states.stage_bathtub_outfit(
+                            runtime,
+                            map,
+                            actor,
+                            session,
+                            2,
+                            Some(at),
+                            away,
+                            Some("definition-r1")
+                        ));
+                        assert_eq!(outfit(states), None);
+                        Ok(())
+                    },
+                )
+            })?
+            .join()
+            .map_err(|_| "movement test thread")?
+    }
+
     #[test]
     fn m10_yellow_pillow_and_bath_tub_present_to_their_observers() -> CaseResult {
         use oteryn_protocol_oteryn::observer_presentation::ObserverPresentation;
