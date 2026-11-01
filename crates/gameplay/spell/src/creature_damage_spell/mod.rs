@@ -1776,6 +1776,7 @@ impl DamageSpellOwner {
             reader,
             stamp,
             Some((proposal.target, session)),
+            now,
         )?;
         self.commit_prepared(
             runtime, vitals, &source, &proposal, prepared, now, fence, stamp,
@@ -1844,6 +1845,7 @@ impl DamageSpellOwner {
             reader,
             stamp,
             Some((proposal.target, session)),
+            now,
         )?;
         self.commit_prepared(
             runtime, vitals, &source, &proposal, prepared, now, fence, stamp,
