@@ -64,6 +64,19 @@ pub struct TerrainTransformPlan<'a> {
     pub first_deadline_unix_ms: Option<i64>,
 }
 
+/// The squeezing gear of girlpower. Crystal data/scripts/actions/tools/squeezing_gear_of_girlpower.lua
+/// :19-31 tries the scythe, sickle, rope, shovel, pick and machete in that order; the targets of
+/// those tools are disjoint, so the first matching binding is the donor's. The 1% jam roll at
+/// :16-17 and :34-40 needs an item transform and decay owner and is not applied here.
+const TOOL_GEAR: &str = "oteryn:item.tibia.i9596";
+const TOOL_GEAR_TOOLS: [TerrainTool; 5] = [
+    TerrainTool::Scythe,
+    TerrainTool::Sickle,
+    TerrainTool::Shovel,
+    TerrainTool::Pick,
+    TerrainTool::Machete,
+];
+
 /// Fail-closed item-use dispatch. The caller must additionally prove current carried custody and
 /// target revision; this function proves the tool/target pair and computes the durable deadline.
 pub fn dispatch<'a>(
@@ -75,7 +88,7 @@ pub fn dispatch<'a>(
 ) -> Option<TerrainTransformPlan<'a>> {
     let tool = TerrainTool::from_production_key(tool_key)?;
     let binding = catalogue.iter().find(|binding| {
-        binding.tool == tool
+        (binding.tool == tool || (tool_key == TOOL_GEAR && TOOL_GEAR_TOOLS.contains(&binding.tool)))
             && binding.target == target_state
             && binding.required_action == target_action
     })?;
@@ -233,6 +246,15 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             required_action: None,
             transformed: 5463,
             yield_item: Some(5466),
+            decay: Vec::new(),
+        },
+        // data-global register_actions.lua:1049-1052; items.xml:57736 gives reed no decay.
+        TerrainToolBinding {
+            tool: TerrainTool::Scythe,
+            target: 30623,
+            required_action: None,
+            transformed: 30624,
+            yield_item: Some(30975),
             decay: Vec::new(),
         },
         TerrainToolBinding {
@@ -427,6 +449,42 @@ mod tests {
         assert!(harvest_plan("oteryn:item.tibia.i3456", 593).is_none());
         assert!(harvest_plan("oteryn:item.tibia.i3293", 3653).is_none());
         assert!(harvest_plan("oteryn:item.tibia.i3453", 3651).is_none());
+    }
+
+    /// M08 follow-up: Crystal data/scripts/actions/tools/squeezing_gear_of_girlpower.lua:19-31
+    /// tries onUseScythe, onUseSickle, onUseRope, onUseShovel, onUsePick, onUseMachete for 9596;
+    /// data-global/scripts/lib/register_actions.lua:1049-1052 gives the scythe reed 30623 ->
+    /// 30624 + 30975 (items.xml:57736 has no duration for either reed state). The golden sickle
+    /// 3306 appears only in the unregistered data-crystal list: sickle.lua:14 registers 3293 only.
+    #[test]
+    fn m08_tool_gear_resolves_every_donor_tool_and_reed_is_harvested() {
+        let gear = "oteryn:item.tibia.i9596";
+        let catalogue = crystal_core_bindings();
+        for (target, transformed) in [
+            (3653, 3651),
+            (5464, 5463),
+            (5463, 5462),
+            (867, 868),
+            (593, 594),
+            (3696, 3695),
+        ] {
+            let plan = dispatch(&catalogue, gear, target, None, 0).expect("gear binding");
+            assert_eq!(plan.binding.transformed, transformed, "{target}");
+        }
+        assert_eq!(
+            harvest_plan(gear, 3653),
+            harvest_plan("oteryn:item.tibia.i3453", 3653)
+        );
+        for tool in ["oteryn:item.tibia.i3453", gear] {
+            let reed = harvest_plan(tool, 30623).expect("reed harvest");
+            assert_eq!(reed.attempt.after, Some(30624));
+            assert_eq!(reed.attempt.yield_item, Some(30975));
+            assert!(reed.decay.is_empty());
+        }
+        assert!(harvest_plan("oteryn:item.tibia.i3293", 30623).is_none());
+        assert!(harvest_plan("oteryn:item.tibia.i3306", 5464).is_none());
+        // The plain machete keeps only the machete targets.
+        assert!(dispatch(&catalogue, "oteryn:item.tibia.i3308", 3653, None, 0).is_none());
     }
 
     #[test]

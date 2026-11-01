@@ -167,6 +167,8 @@ fn m08_harvest_states_and_yields_resolve_in_active_content() {
         ("oteryn:item.tibia.i3453", 3653),
         ("oteryn:item.tibia.i3453", 5464),
         ("oteryn:item.tibia.i3293", 5463),
+        ("oteryn:item.tibia.i3453", 30623),
+        ("oteryn:item.tibia.i9596", 3653),
     ] {
         let plan =
             oteryn_gameplay_world::terrain_tools::harvest_plan(tool, target).expect("harvest plan");
