@@ -38,6 +38,9 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Guild state and actions.
+#[path = "features/0040-guild/mod.rs"]
+pub mod guild;
 /// Server-confirmed party membership controls.
 #[path = "features/0042-party/mod.rs"]
 pub mod party;

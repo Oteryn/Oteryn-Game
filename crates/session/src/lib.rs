@@ -26,6 +26,8 @@ mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+/// Guild command and query wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::guild;
 /// Hireling wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::hireling;
 pub use oteryn_protocol_oteryn::hotkey_equip;

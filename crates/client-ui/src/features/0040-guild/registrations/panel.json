@@ -1,0 +1,7 @@
+{
+  "mechanic": "0040-guild",
+  "kind": "panels",
+  "id": "0040-guild-panel",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

@@ -63,6 +63,7 @@ pub(super) struct Mailbox {
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
+    pub(super) guild: oteryn_client_ui::guild::GuildPanel,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,

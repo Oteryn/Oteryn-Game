@@ -124,6 +124,9 @@ pub mod spell;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Guild command execution through the admitted session.
+#[path = "features/0040-guild/protocol.rs"]
+pub mod guild;
 /// Party command execution through the admitted session.
 #[path = "features/0042-party/protocol.rs"]
 pub mod party;

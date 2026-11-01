@@ -70,6 +70,16 @@ pub trait Stepper: Send {
     fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn guild_selected(&self) -> bool {
+        false
+    }
+    fn guild(
+        &mut self,
+        _command: &oteryn_client_runtime::guild::GuildCommand,
+    ) -> impl Future<Output = Result<oteryn_client_runtime::guild::GuildReply, SessionError>> + Send
+    {
+        async { Err(SessionError::CapabilityNotSelected { capability: 40 }) }
+    }
     fn party_selected(&self) -> bool {
         false
     }
@@ -161,6 +171,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
     }
+    fn guild_selected(&self) -> bool {
+        self.is_selected(oteryn_session::guild::CAPABILITY_GUILD_V1)
+    }
+    async fn guild(
+        &mut self,
+        command: &oteryn_client_runtime::guild::GuildCommand,
+    ) -> Result<oteryn_client_runtime::guild::GuildReply, SessionError> {
+        oteryn_client_runtime::guild::send(self, command).await
+    }
     fn party_selected(&self) -> bool {
         self.is_selected(oteryn_client_runtime::party::party::CAPABILITY_PARTY_V1)
     }
@@ -210,6 +229,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
+    outbox.guild_initialize(session.guild_selected());
     outbox.party_initialize(session.party_selected());
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
@@ -281,6 +301,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Ok(refused) => {
                     outbox.logout_refused(refused);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Guild(command)) => match session.guild(&command).await {
+                Ok(reply) => {
+                    outbox.guild_result(&reply);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
