@@ -24,7 +24,7 @@
     "Effect": 5797,
     "Encounter": 108,
     "Formula": 6126,
-    "Item": 34043,
+    "Item": 34111,
     "Loot": 1290,
     "Mount": 252,
     "NPC": 1282,
@@ -48,18 +48,18 @@
   "legacy_blobs": {
     "declarations": "64dbc962d8e20470c6441aa04b11c21fbbd74a38",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "9f7a56d6b15c9e262c63aabc0dee1b70a2159ade",
-    "reference": "77950d77f3d7025d326c63a66033ead43baf8119",
+    "imports": "7d2cdbab407bdf194711f98cd61e2bd430ec1181",
+    "reference": "8b2ff5864b1b81b75febf0d06bc089e933c4933c",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
     "Imbuements": {
-      "bound_equipment_profiles": 627,
+      "bound_equipment_profiles": 628,
       "families": 24,
-      "held_equipment_observations": 36,
+      "held_equipment_observations": 35,
       "tiers": 72,
-      "unregistered_equipment_items": 2
+      "unregistered_equipment_items": 1
     }
   },
   "ruleset_files": {
@@ -70,15 +70,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "ff5a5810fb1fb03734800c007252829a6e4e621a62f9f0753716c5f9d3d8d3df"
+        "sha256": "aae562c7c0850aa96931ec25813c1dd7ec0de7a5cba725a8f35aea662c43a2c1"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "5be65305cdbf02e022168dac14ac63cb6347148451ad3a44f1bf4974f845879b"
+        "sha256": "5716bf54116b7949f17572c6164600183a9ded7f4654a629b1fa64ceea62c691"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "9ef796ea4a10d964acc664327ea3472f381f8f69ac014fff5de82d08c044ff80"
+        "sha256": "cf1fe981751007b303528bd7f4486bcf83e479d9c3e84bfe2bde11c506188106"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -162,7 +162,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "b8f9efe84b53013d6ef5a09a10087f22aa33c14395570bf5fd08dde550f78792"
+          "sha256": "3a84baf14d1f4ecbf58419f366041fb4b6474abb4df6dea669358366b472f744"
         },
         {
           "creates_canonical_identities": false,

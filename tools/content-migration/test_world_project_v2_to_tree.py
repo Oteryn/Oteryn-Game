@@ -131,7 +131,7 @@ creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1863
 assert lock["family_counts"] == {
-    "Item": 34043, "Mount": 252,
+    "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,

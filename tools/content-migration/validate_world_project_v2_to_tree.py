@@ -285,6 +285,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         (("Item", row["item_key"], "definition-r1"), content_path.get(row["field_path"], row["field_path"])): row["typed_value"]["value"]
         for row in stats["promotions"]
     }
+    # E06 (owner decision 2026-10-31): Crystal's market flag supersedes a Wave 1 Wiki
+    # `marketable: false`; the parity row names the fact it supersedes.
+    parity = load(ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json")
+    superseding.update({
+        (("Item", row["item_key"], "definition-r1"), "trade_restrictions.marketable"): True
+        for row in parity["promotions"] if row.get("supersedes") == "WAVE1_WIKI_MARKETABLE_FALSE"
+    })
     assignments = load(ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json")["family_assignments"]
     authoring_rows = declarations.get("item_authoring", [])
     legacy_authoring = {target_id(row["item"]): row for row in authoring_rows}
@@ -690,7 +697,8 @@ def main() -> int:
     if quest_families:
         require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
-    require(lock["family_counts"] == {"Item": 34043, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+    # E06 (owner decision 2026-10-31) minted the 68 client-only Crystal market Items: 34043 + 68.
+    require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
@@ -698,7 +706,7 @@ def main() -> int:
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 34043 and len(item_index["shards"]) == 69, "ITEM_INDEX")
+    require(item_index["record_count"] == 34111 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -732,7 +740,7 @@ def main() -> int:
     # I19: the 72 source-qualified enchanting results now admit stacks/charges in the tree.
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(legacy_items)
-    require(migrated_items == legacy_items and expected_start == 34043, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -764,7 +772,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 34043, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34111, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -855,7 +863,7 @@ def main() -> int:
         starter_kit_keys |= {(row["definition"]["template"], row["definition"]["identity"]["key"]) for row in shard["records"]}
     require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=34043 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 "
+        "PASS items=34111 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

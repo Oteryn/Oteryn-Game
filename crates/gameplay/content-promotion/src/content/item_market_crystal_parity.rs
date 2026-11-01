@@ -1,7 +1,8 @@
 //! Crystal market parity: Items whose Crystal appearance carries the market flag are marketable.
 //!
 //! Successor of the Market-true v2 promotion. Crystal's `flags.market` wins over the Wiki and
-//! name evidence that held these Items back.
+//! name evidence that held these Items back. A row that names the Wave 1 Wiki `marketable: false`
+//! it supersedes (owner decision 2026-10-31) may flip that one known false to true.
 use super::{
     ProjectReferenceRecord, ProjectV2Draft, ReferenceItemField, ReferenceItemTradeRestrictions,
     world_project_sha256,
@@ -15,8 +16,9 @@ pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET: &[u8] = include_bytes!(
 // Regenerate with `lower_client_market_crystal_parity_packet.py --donor <crystal checkout>`;
 // the generator prints this digest. The packet follows the pinned Crystal market list.
 pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET_SHA256: &str =
-    "437ecd4406c0f1415ddb61024575072d35442bd157281aa5a83794060d2123d9";
-const PROMOTIONS: usize = 134;
+    "0ea1fbee37110cdf3fa81a8db8e1ff75167653055926cfc1b3b4ec4ff5b1114d";
+const PROMOTIONS: usize = 205;
+const SUPERSEDES_WAVE1_FALSE: &str = "WAVE1_WIKI_MARKETABLE_FALSE";
 
 type TradeGroup = ReferenceItemField<ReferenceItemTradeRestrictions>;
 
@@ -34,6 +36,8 @@ struct Counts {
 struct Row {
     item_key: String,
     marketable: bool,
+    #[serde(default)]
+    supersedes: Option<String>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct MarketCrystalParity {
@@ -93,6 +97,11 @@ fn apply_rows<'a>(
     })?;
     let (mut seen, mut changed) = (BTreeSet::new(), 0);
     for row in &packet.promotions {
+        let supersedes_false = match row.supersedes.as_deref() {
+            None => false,
+            Some(SUPERSEDES_WAVE1_FALSE) => true,
+            Some(_) => return Err("unknown Market Crystal parity supersession".into()),
+        };
         if !row.marketable || !seen.insert(&row.item_key) {
             return Err("invalid or duplicate Market Crystal parity row".into());
         }
@@ -100,8 +109,8 @@ fn apply_rows<'a>(
             .get(row.item_key.as_str())
             .ok_or("Market Crystal parity has no native Item")?;
         match current(group)? {
-            Some(false) => return Err("known marketable conflict".into()),
-            None => changed += 1,
+            Some(false) if !supersedes_false => return Err("known marketable conflict".into()),
+            Some(false) | None => changed += 1,
             Some(true) => (),
         }
     }
@@ -186,6 +195,26 @@ mod tests {
                 .is_err()
             );
             assert_eq!((first, second), (first_before, second_before));
+        }
+    }
+    #[test]
+    fn flips_known_false_only_for_a_superseding_row() {
+        let superseding = serde_json::json!([{"item_key":"item","marketable":true,"supersedes":SUPERSEDES_WAVE1_FALSE}]);
+        let mut item = trade(Known(false));
+        let applied = apply_rows(
+            std::iter::once(("item", &mut item)),
+            &packet(superseding),
+            1,
+        )
+        .expect("superseded");
+        assert_eq!((applied.changed, item), (1, trade(Known(true))));
+        for rows in [
+            serde_json::json!([row("item")]),
+            serde_json::json!([{"item_key":"item","marketable":true,"supersedes":"OTHER"}]),
+        ] {
+            let mut item = trade(Known(false));
+            assert!(apply_rows(std::iter::once(("item", &mut item)), &packet(rows), 1).is_err());
+            assert_eq!(item, trade(Known(false)));
         }
     }
     #[test]

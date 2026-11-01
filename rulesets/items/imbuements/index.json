@@ -38,7 +38,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-eligibility.json",
-      "sha256": "ea57daaf3d519e10f05f3b63fbb5e4b9d08bf17277af2d1b8d4ec14e98bdaf34"
+      "sha256": "5105ed179c0b994b663a88527046ebb02cdc8ab567a624e515098b1bdd47f1c6"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuement-sources-2026-10-01.json",
@@ -46,7 +46,7 @@
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json",
-      "sha256": "d2256c4e1c5cf29d7af69b66504cf645a4ad916d593d4523862c29be891791b5"
+      "sha256": "f44c62d1b81710b037c64d213e00739757e2ab776f9926288d01c3aaf934bba2"
     },
     {
       "path": "tools/content-schema/imbuement-authoring/samples/missing-item-definitions.json",
@@ -63,11 +63,11 @@
   ],
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
   "counts": {
-    "bound_equipment_profiles": 627,
+    "bound_equipment_profiles": 628,
     "families": 24,
-    "held_equipment_observations": 36,
+    "held_equipment_observations": 35,
     "tiers": 72,
-    "unregistered_equipment_items": 2
+    "unregistered_equipment_items": 1
   },
   "kind": "ruleset",
   "notes": "Static data imported; runtime, quest state and Item projection separately qualified.",
@@ -80,11 +80,11 @@
     },
     {
       "path": "rulesets/items/imbuements/catalogue.json",
-      "sha256": "ff5a5810fb1fb03734800c007252829a6e4e621a62f9f0753716c5f9d3d8d3df"
+      "sha256": "aae562c7c0850aa96931ec25813c1dd7ec0de7a5cba725a8f35aea662c43a2c1"
     },
     {
       "path": "rulesets/items/imbuements/equipment.json",
-      "sha256": "5be65305cdbf02e022168dac14ac63cb6347148451ad3a44f1bf4974f845879b"
+      "sha256": "5716bf54116b7949f17572c6164600183a9ded7f4654a629b1fa64ceea62c691"
     },
     {
       "path": "rulesets/items/imbuements/owner-policy.json",

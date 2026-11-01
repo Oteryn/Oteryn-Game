@@ -4,8 +4,10 @@ The accepted owner rule is that Crystal's market list wins over Canary and Wiki 
 Crystal's truth is `flags.market` in `data/items/appearances.dat` at the pinned revision. This
 packet is the successor of the Market-true v2 packet: it promotes `trade_restrictions.marketable`
 for each Crystal market id that has an Oteryn Item definition and that v2 held back (name
-conflict, Wiki opposition, missing binding). Ids that cannot be promoted (no Oteryn definition,
-sealed definition, pinned known-false) are recorded as exceptions with their reason.
+conflict, Wiki opposition, missing binding). Ids that cannot be promoted (no Oteryn definition)
+are recorded as exceptions with their reason. Owner decision 2026-10-31: the D289/D310 sealed
+Items (i901, i3450) are re-sealed and promoted here, and a Wave 1 Wiki `marketable: false`
+(i3321) is superseded by Crystal; the row says so, so the materializer may flip that one false.
 
 The Crystal checkout is an input of this generator only (`--donor`); the packet carries the full
 Crystal market id list so the parity test needs no donor.
@@ -15,7 +17,6 @@ import argparse
 import json
 from pathlib import Path
 
-import d289_holds
 from engine_items import decode_appearance_object, protobuf_fields
 from lower_wiki_stack_default_packet import sha
 
@@ -32,29 +33,36 @@ DONOR_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 DONOR_PATH = "data/items/appearances.dat"
 DONOR_SHA = "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
 NO_DEFINITION = "NO_OTERYN_ITEM_DEFINITION"
-# D289/D310: these Items' accepted definitions are digest-sealed by other evidence (the quest
-# reward admission and the reward stack proof). A marketable fact would break the seal, so they
-# stay as they are until the owner re-seals them.
-SEALED = "SEALED_NATIVE_STATE_D289_D310"
-SEALED_KEYS = d289_holds.NATIVE_CORE_HOLD_KEYS | d289_holds.SEALED_STATE_MARKET_KEYS
-# i3321 carries an explicit Wiki `marketable: false` that Crystal contradicts. The Market-true v2
-# hold list reads that false, and the sealed successor8 current-parent receipt pins the v2 bytes,
-# so flipping it needs an owner re-seal of that receipt.
-KNOWN_FALSE_PINNED = "KNOWN_FALSE_PINNED_BY_MARKET_V2_RECEIPT"
-KNOWN_FALSE_KEYS = frozenset({"oteryn:item.tibia.i3321"})
+WAVE1 = "imports/tibiawiki/facts/items-wave1.json"
+SUPERSEDES_WAVE1_FALSE = "WAVE1_WIKI_MARKETABLE_FALSE"
 
 
 def item_key(item_id):
     return f"oteryn:item.tibia.i{item_id}"
 
 
+def wave1_false_keys(root):
+    """Items whose Wave 1 Wiki fact is `marketable: false`; Crystal's market flag wins over it."""
+    return {
+        record["target"]["key"]
+        for record in json.loads((root / WAVE1).read_text())["records"]
+        for fact in record["definition_facts"]
+        if fact["field_path"] == "trade_restrictions.marketable" and fact["value"] is False
+    }
+
+
+MINT = "docs/agents/evidence/OTV2-20261031-item-client-market-mint-v1.json"
+
+
 def defined_keys(root):
+    """Item keys in the content tree plus the client-only Items the E06 mint packet adds."""
     index = json.loads((root / "content/items/index.json").read_text())
+    minted = json.loads((root / MINT).read_text())["records"]
     return {
         r["definition"]["identity"]["key"]
         for shard in index["shards"]
         for r in json.loads((root / shard).read_text())["records"]
-    }
+    } | {r["definition"]["identity"]["key"] for r in minted}
 
 
 def crystal_market_objects(data):
@@ -76,6 +84,7 @@ def build(data, root=ROOT):
     v2 = json.loads((root / V2).read_bytes())
     promoted = {r["item_key"] for r in v2["promotions"]}
     defined = defined_keys(root)
+    wave1_false = wave1_false_keys(root)
     rows, exceptions = [], []
     for item_id in sorted(market):
         key = item_key(item_id)
@@ -84,20 +93,15 @@ def build(data, root=ROOT):
         if key not in defined:
             exceptions.append({"source_item_id": item_id, "reason": NO_DEFINITION})
             continue
-        if key in SEALED_KEYS:
-            exceptions.append({"source_item_id": item_id, "reason": SEALED})
-            continue
-        if key in KNOWN_FALSE_KEYS:
-            exceptions.append({"source_item_id": item_id, "reason": KNOWN_FALSE_PINNED})
-            continue
-        rows.append(
-            {
-                "source_item_id": item_id,
-                "item_key": key,
-                "object_sha256": market[item_id],
-                "marketable": True,
-            }
-        )
+        row = {
+            "source_item_id": item_id,
+            "item_key": key,
+            "object_sha256": market[item_id],
+            "marketable": True,
+        }
+        if key in wave1_false:
+            row["supersedes"] = SUPERSEDES_WAVE1_FALSE
+        rows.append(row)
     return {
         "schema": "OTERYN_ITEM_MARKET_CRYSTAL_PARITY/v1",
         "compiler": {"path": COMPILER, "sha256": sha((root / COMPILER).read_bytes())},

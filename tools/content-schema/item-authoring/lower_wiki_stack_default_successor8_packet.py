@@ -18,9 +18,9 @@ PROOF = (
 PROOF_SHA = "fb3564beb17a6e8aafd55eaadfe9a48aeedd7b2fdf2aa4827f533123f4fb7940"
 RECEIPT = (
     "docs/agents/evidence/"
-    "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v8.json"
+    "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v9.json"
 )
-RECEIPT_SHA = "5a50ee6e5bca6325937a29087d8bbd6ba7d1e8f5e34fa78a886015a76285ff38"
+RECEIPT_SHA = "d3814e5d92b67ec08a92427db839aecf075803140774aac3d4bc449fde352e0c"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )

@@ -18,7 +18,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         427,
-        "1f2c1c8bff0d0c363cf7d91658ad4c6cb8f783a785f58af244da0953bdc936e2",
+        "52da115106fb32831aad6f73b78bda77ac23bccbaab452ec0d010ed46b59c267",
     ),
     (
         "definitions/declarations.json",
@@ -27,8 +27,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_304_151,
-        "7695dd95988a972d80f7fd2567e1f1c008a634ed932bf3687ab93266547c717e",
+        27_389_422,
+        "cf1339a1fc7be6184c3df48a95130cacce07adf9f034e7f6a8b34b9e940458e8",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1960,
-        "522c10da25a9e420332911b9999f4f9a3aae059cb167620ec0b19a1878eee701",
+        "5274d10f2052ada6779fbb8cb6458f9876bf7190f52e08b5a599392487330b3b",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         411,
-        "f556c3c303e7f670d10d60d18e32f1327576b04bd6c73465becaf0daea780552",
+        "e1ee8152deefc4688846bfcc9a2cec0d3bc177cb77576a2332569c4464692940",
     ),
     (
         "provenance/imports.json",
-        6_772_686,
-        "a364d2cd16ca7936ec153542875f6e207ce1bc622158c0a0c0d04e796b581b4d",
+        6_773_322,
+        "e79934424eb7aa4ff43d5a2fb7a624fd365b17cedd4cddad901363652159d662",
     ),
     (
         "provenance/sources.json",
@@ -140,10 +140,11 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "04dce6d7d0a6fbc8b9f13bfd8d4ff8fd32afce97760f7292bd8b84746c5347a7";
+const TREE_SHA256: &str = "db1d461d2ec258d6db2ab8324c288b7d2091a96349134c5cb57fa24c88b8b497";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
-/// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
-const ITEMS: usize = 34_043;
+/// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
+/// plus the 68 client-only Crystal market Items minted by E06.
+const ITEMS: usize = 34_111;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
@@ -394,7 +395,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         project.project_revision(),
         "e06-market-crystal-parity-20261031-r1"
     );
-    assert_eq!(project.imports().len(), 34);
+    // E06 adds the client market mint batch ahead of the Crystal parity batch.
+    assert_eq!(project.imports().len(), 35);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -405,6 +407,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
                 && b.batch_id != "item-drown-protection-5460-13995"
                 && b.batch_id != "item-market-crystal-parity-201189f"
+                && b.batch_id != "item-client-market-mint-2dfa943b"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -2044,11 +2047,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
     // Source-qualified portal25051 adds one newly known presentation.name atom.
     // D3-7 admits the rat corpse (i5964) with a container capacity.
-    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1 + 1);
+    // E06 mints 68 client-only Crystal market Items, each with promoted client atoms.
+    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1 + 1 + 68);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
     // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
+    // E06 adds one client name atom on each of the 68 minted Items.
     assert_eq!(
         promoted_fields,
         ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204
@@ -2060,6 +2065,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             + 1
             + 1
             + 1
+            + 68
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -2088,14 +2094,19 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // D3-7 adds one explicit `stackable: false` leaf on the corpse, which had no atom here.
     // E06 Crystal market parity adds 134 leaves (135 rows; i3321 only flips false to true) on 72
     // Items that had no atom here.
+    // E06 re-seal (owner decision 2026-10-31): i901 and i3450 leave their D289/D310 holds; i901
+    // enters this census through its new marketable leaf, i3450 already had atoms; each adds one
+    // leaf, and i3321's known false only flips.
     assert_eq!(
         wave1_items,
         // Portal25051 + ten exact Tentacle Item identities add eleven explicit false stackability facts.
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11 + 1 + 72
+        // E06 mints 68 Items whose marketable leaf comes from the Crystal parity packet; 42 of
+        // them also carry the client's `stackable: false` (the other 26 are cumulative).
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11 + 1 + 72 + 1 + 68
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11 + 1 + 134
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11 + 1 + 134 + 2 + 68 + 42
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
@@ -2300,9 +2311,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     // D3-8 admits cheese (i3607) with a Known stack of 100: one more positive stack.
     // ITEM-SEM-USE-2 adds 144 stack-capable consumables, none of them positive before.
+    // E06 mints 68 pickupable client Items, 26 of them cumulative (stack 100), weight unknown.
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6755, 40 + 144, 6513 + 4)
+        (6755 + 68, 40 + 144 + 26, 6513 + 4)
     );
     // ITEM-SEM-USE-2 lowers 137 edible foods and 12 restore potions, all on materializable
     // Items, and the use requirements only on potions.
@@ -2315,7 +2327,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (137, 12, 9)
     );
     // Portal25051 and ten exact Tentacle source Items add eleven immovable facts.
-    assert_eq!((movable_true, movable_false), (5691, 11));
+    // E06 mints 68 movable client Items.
+    assert_eq!((movable_true, movable_false), (5691 + 68, 11));
     assert_eq!(
         (
             document_groups,

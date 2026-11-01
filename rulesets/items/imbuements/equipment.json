@@ -1696,56 +1696,6 @@
         "featherweight": 3
       },
       "binding_status": "CANONICAL_ITEM_ABSENT",
-      "client_id": 49160,
-      "community_comparison": {
-        "tibiopedia_i49160": {
-          "allowed_types": {
-            "featherweight": 3
-          },
-          "slots": 1
-        },
-        "wiki_backpacks": {
-          "allowed_types": {
-            "featherweight": 3
-          },
-          "slots": 1
-        }
-      },
-      "discrepancies": [],
-      "eligibility_sources": [
-        "wiki_backpacks",
-        "tibiopedia_i49160"
-      ],
-      "engine_comparison": {
-        "canary": {
-          "status": "NO_ENGINE_ENTRY"
-        },
-        "crystal": {
-          "status": "NO_ENGINE_ENTRY"
-        }
-      },
-      "evidence_status": "COMMUNITY_CORROBORATED",
-      "identity_evidence": {},
-      "independent_field_corroborations": [],
-      "item_ref": null,
-      "name": "bursa obscura",
-      "selected_eligibility_source": "tibiopedia_i49160",
-      "selected_type_amendments": [],
-      "slot_source": "primary_client",
-      "slots": 1,
-      "status": "CANONICAL_ITEM_ABSENT",
-      "target_time_evidence": {
-        "date": "2024-08-06",
-        "source_id": "tibiopedia_release_13_40_e15431",
-        "version": "13.40.e15431"
-      },
-      "target_time_status": "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED"
-    },
-    {
-      "allowed_types": {
-        "featherweight": 3
-      },
-      "binding_status": "CANONICAL_ITEM_ABSENT",
       "client_id": 53192,
       "community_comparison": {
         "tibiopedia_i53192": {
@@ -12762,7 +12712,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "60cd26405c32a9087b0c0de10dbae2b6c6184dfdab861cdff30059d835568787",
         "canonical_name": "jewelled backpack",
-        "canonical_path": "content/items/definitions/items-29000-29499.json",
+        "canonical_path": "content/items/definitions/items-29500-29999.json",
         "wiki_observations": [
           {
             "content_sha256": "c939440b09f1b27d8d151d2fefd6b08c757c416f5d2ce422671d8c773975e302",
@@ -19758,7 +19708,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "0533c79dc20624981c348293f53939a2067aad323976cb838e4d887b6657560f",
         "canonical_name": "master archer's armor",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "b5063ac3c23cc47e9647a1e0d4b47be87e1afab9e7c4eb126499f69862aba7e4",
@@ -19869,7 +19819,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "9fdec082f961d4a923cd85af96d0ff9a856e6d5028a5bd741d4a6af0a6234e3a",
         "canonical_name": "paladin armor",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "c0d2c6063ec047e13e39ca3c71db58bdfcc3feb3bdb8e9e2c8370b239506d026",
@@ -19980,7 +19930,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "f551c04949e6c5b001e320116354f323d45c04f5de8472347e4714a5bb9aba11",
         "canonical_name": "spellbook of enlightenment",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "ba3e98a866c704b6589630e826e516c91946fafac0886108c5f3af4f14967566",
@@ -20091,7 +20041,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "8d3e343afc795a70842ac234290442c2fef7d9d5c7a60c10336cd4b75fc284d0",
         "canonical_name": "spellbook of warding",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "c6f8fa6bbd1cdac70e3dafef593f5e173c474c9c0acc3c99047a9c3a57fb114e",
@@ -20205,7 +20155,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "33fc509820cb0b6d14552e9bff6e21cb8ebe23fedee3570ea092b1c7936c2fcb",
         "canonical_name": "underworld rod",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "24074156877bf7aee7dd95d3c314b4be8a5ed6ef29d9e90ce1257f6f596bac58",
@@ -20319,7 +20269,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "b5b7d36b0e809a471b4d62f0b8d7b12ff4bffc8308b07425cb75d58ca989cb20",
         "canonical_name": "northwind rod",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "3e2e5c862a775654f29fbbf834b20ef20910112e9bc878e92fbf6ad6533a9295",
@@ -20433,7 +20383,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "9256decf1dda6f14bb17ebb7f0578cd2766832cb05606dbd85ecae2baf169830",
         "canonical_name": "wand of starstorm",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "a28a54535f4230d2a1c50805734d95436efa5b1d28583a48a517dae9e0bb7c1b",
@@ -20547,7 +20497,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "3e5a3bb90e821f4868f5d778b2fc0d3559dcf53867230031c945b30a108b43f2",
         "canonical_name": "wand of draconia",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "0d2f55f6f717b2292fc5c058e0d954cdacd08b31b07020ab92a48301eec0f9bc",
@@ -20661,7 +20611,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "1c2507e1c37d58ab1e52ec90b9bae6e98ce7f8f604c058f9c1074a9f8c555604",
         "canonical_name": "wand of voodoo",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "98133f18858fb641c7563108a0f6e3f71c65f79e0b1f16c569b1639155fb9ce6",
@@ -20782,7 +20732,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "ae29f2a620401e72f7f34f0751e7cd413dc1f861918a188dbaf3d9f22248937a",
         "canonical_name": "hellforged axe",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "dfb3d0adc9d093e4c41252b4c77d7554ad61a6edbb583203713a895ab0881494",
@@ -20888,7 +20838,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "0a11ff5cf4c4b58ea494ed14b53591ced5e9cdae5ed64c3a39652dfbea83284d",
         "canonical_name": "solar axe",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "c4f6d8917225af9059f34c54e109ed1dbbf8da2599475dfb344d8d68085df2c4",
@@ -21009,7 +20959,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "e4677565ae3eb9dc57e84456e1e2bd33b4da00305451ce4b91d11eef7dc90615",
         "canonical_name": "demonwing axe",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "54e8807aaa43655ed7ddf782480557c43bee71486c87a6a5d1ffb4ea873a79ef",
@@ -21130,7 +21080,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "938a990b0063f3ff12aa20e372fbd6c9b588c68d31599b6394f02be5fdf5c50f",
         "canonical_name": "obsidian truncheon",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "fce4d2824a9ac656ecbcefde12910408c7739f7209f0634095348d55a6f3ff73",
@@ -21229,7 +21179,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "9fd13f39761d610f3da431f76855888275abd750ac4a60d05f8601b9ac692c40",
         "canonical_name": "stomper",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "709f41f883abb8a9e492aaabb24349b6c719a5be3b08c41500f4530d49b65da6",
@@ -21350,7 +21300,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "32086e0c89b57bc9debe0d3b7f7b35999dbcc6938c3b42907f86007fe481b82e",
         "canonical_name": "emerald sword",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "b53809108731c4648a905523d8380d34bacec8f92859046339f662d170969d3f",
@@ -21434,7 +21384,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "41fa5ca3706bb43b083c637a93e64b82cbcd72b23df19bcf70dd12af65ee4f0e",
         "canonical_name": "epiphany",
-        "canonical_path": "content/items/definitions/items-31500-31999.json",
+        "canonical_path": "content/items/definitions/items-32000-32499.json",
         "wiki_observations": [
           {
             "content_sha256": "67c94c5bbbb9644bea368b0ad48f8fde30219c5c38c6b10c614ae7313745dea9",
@@ -21738,7 +21688,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "c6dac8ef77d3b50537323758dbea38a6271e5c33bfd5499b0e0134621bf87cd0",
         "canonical_name": "coconut shoes",
-        "canonical_path": "content/items/definitions/items-32500-32999.json",
+        "canonical_path": "content/items/definitions/items-33000-33499.json",
         "wiki_observations": [
           {
             "content_sha256": "081dba86a756c6e26f93af4891985885206704962d10ffb608f148a1da80c538",
@@ -56200,6 +56150,64 @@
     },
     {
       "allowed_types": {
+        "featherweight": 3
+      },
+      "binding_status": "CLIENT_AND_CANONICAL_NAME",
+      "client_id": 49160,
+      "community_comparison": {
+        "tibiopedia_i49160": {
+          "allowed_types": {
+            "featherweight": 3
+          },
+          "slots": 1
+        },
+        "wiki_backpacks": {
+          "allowed_types": {
+            "featherweight": 3
+          },
+          "slots": 1
+        }
+      },
+      "discrepancies": [],
+      "eligibility_sources": [
+        "wiki_backpacks",
+        "tibiopedia_i49160"
+      ],
+      "engine_comparison": {
+        "canary": {
+          "status": "NO_ENGINE_ENTRY"
+        },
+        "crystal": {
+          "status": "NO_ENGINE_ENTRY"
+        }
+      },
+      "evidence_status": "COMMUNITY_CORROBORATED",
+      "identity_evidence": {
+        "canonical_definition_sha256": "74053395bbe8101aede6ff192885995f3a6f55ec635868fb941f8e9e477797e6",
+        "canonical_name": "bursa obscura",
+        "canonical_path": "content/items/definitions/items-27000-27499.json"
+      },
+      "independent_field_corroborations": [],
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i49160",
+        "revision": "definition-r1"
+      },
+      "name": "bursa obscura",
+      "selected_eligibility_source": "tibiopedia_i49160",
+      "selected_type_amendments": [],
+      "slot_source": "primary_client",
+      "slots": 1,
+      "status": "COMMUNITY_CORROBORATED",
+      "target_time_evidence": {
+        "date": "2024-08-06",
+        "source_id": "tibiopedia_release_13_40_e15431",
+        "version": "13.40.e15431"
+      },
+      "target_time_status": "PRE_TARGET_RELEASE_CONTINUITY_UNVERIFIED"
+    },
+    {
+      "allowed_types": {
         "electrify": 3,
         "frost": 3,
         "precision": 3,
@@ -71362,7 +71370,7 @@
   "runtime_admission": "BLOCKED",
   "schema": "OTERYN_IMBUEMENT_EQUIPMENT_DATA/v1",
   "source_summary": {
-    "canonical_bound_items": 661,
+    "canonical_bound_items": 662,
     "community_named_matches": 629,
     "community_table_rows": 1160,
     "discrepancy_counts": {
@@ -71396,7 +71404,7 @@
       "dragon_hide": 108,
       "electrify": 209,
       "epiphany": 87,
-      "featherweight": 48,
+      "featherweight": 49,
       "frost": 209,
       "lich_shroud": 117,
       "precision": 108,
@@ -71414,15 +71422,15 @@
       "void": 389
     },
     "status_counts": {
-      "CANONICAL_ITEM_ABSENT": 2,
-      "COMMUNITY_CORROBORATED": 429,
+      "CANONICAL_ITEM_ABSENT": 1,
+      "COMMUNITY_CORROBORATED": 430,
       "COMMUNITY_SINGLE_SOURCE": 96,
       "COMMUNITY_SINGLE_SOURCE_WITH_CORROBORATED_FIELD": 1,
       "DERIVED_SELECTED_OVER_STALE_HELPER": 101,
       "MISSING_ELIGIBILITY_EVIDENCE": 4,
       "RETIRED_SOURCE_ITEM_EXCLUDED": 30
     },
-    "target_candidate_bound_items": 627,
+    "target_candidate_bound_items": 628,
     "target_candidate_typed_items": 629,
     "target_time_status_counts": {
       "PRE_TARGET_DERIVED_NAMED_RECORD_CONTINUITY_UNVERIFIED": 2,
