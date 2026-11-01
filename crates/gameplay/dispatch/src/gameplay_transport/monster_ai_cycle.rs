@@ -192,7 +192,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(map) if !landed.is_empty() => {
                 use super::paced_movement::creature_step_hook as hook;
                 let admitted = hook::capture_admitted(content);
-                let hooks = hook::apply_creature_step_hooks(&mut runtime, map, landed, admitted);
+                let hooks = hook::apply_creature_step_hooks(
+                    &mut runtime,
+                    &states,
+                    map,
+                    landed,
+                    admitted,
+                    now.get(),
+                );
                 for actor in hooks.removed {
                     states.monster_melee.creature_ai.remove(actor);
                 }

@@ -150,7 +150,7 @@ pub(super) fn tile_entries(
     })
 }
 
-fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };

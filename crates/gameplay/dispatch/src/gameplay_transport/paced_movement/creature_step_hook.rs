@@ -7,18 +7,34 @@
 //! - `data/scripts/movements/thornfire_wolf.lua:3-14`: a Thornfire Wolf on 12721 is removed and a
 //!   Crystal Wolf is created on its cell.
 //!
+//! - `data/scripts/movements/trap.lua:23-44`: any other creature on a spike trap (2145, 2147,
+//!   3482, 3944, 44529) outside a protection zone, with at most one 3482, closes it (`:35`) and
+//!   takes `doTargetCombatHealth(0, ...)` (`:44`): physical, or earth for 3944, drawn in the
+//!   trap's range with no effect (`CONST_ME_NONE`). The hit is one unsourced field-entry
+//!   condition through the creature condition owner (`commit_creature_field_entry` and
+//!   `tick_source_creature_conditions`, the field damage path), so creature damage immunities,
+//!   mitigation, resistances and death apply as for a field.
+//!
 //! The capture's STUN (`trap.lua:40`) and the replacement's ICEATTACK (`thornfire_wolf.lua:10`)
-//! go to the observers through capability 262 (`observer_presentation`). Spike-trap damage to
-//! monsters (`trap.lua:35-44` for 2145, 2147, 3482, 3944, 44529) is not part of this owner.
-use super::special_movement::{TileEntries, tile_entries};
+//! go to the observers through capability 262 (`observer_presentation`).
+use super::special_movement::{TileEntries, Trap, tile_entries, transform, trap};
+use crate::content::ReferenceResistanceKind;
 use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintRequest, TypedDefinitionRef,
 };
 use crate::foundation::{
     ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, MovementLocalPosition,
 };
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
+use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
+use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
+use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 use oteryn_protocol_oteryn::observer_presentation::{MAGIC_EFFECT_ICEATTACK, MAGIC_EFFECT_STUN};
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
 
 /// `trap.lua:6`: the magic wolf trap.
 const MAGIC_WOLF_TRAP: u16 = 12368;
@@ -66,12 +82,15 @@ pub(in crate::gameplay_transport) fn capture_admitted(
 
 /// Applies the creature step-in hooks to the committed creature steps of one pass. A capture runs
 /// only when `capture_admitted`, that is, while the active content admits the captured wolf as a
-/// native item: without it the wolf is not removed, so no capture is lost.
+/// native item: without it the wolf is not removed, so no capture is lost. A creature that is not
+/// removed then closes and takes the hit of each spike trap on its cell.
 pub(in crate::gameplay_transport) fn apply_creature_step_hooks(
     runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     map: &BundleMap,
     steps: Vec<(ExactActorRef, MovementLocalPosition)>,
     capture_admitted: bool,
+    now: u64,
 ) -> CreatureStepHooks {
     let mut hooks = CreatureStepHooks::default();
     for (actor, at) in steps {
@@ -114,8 +133,100 @@ pub(in crate::gameplay_transport) fn apply_creature_step_hooks(
             }
             _ => {}
         }
+        if hooks.removed.contains(&actor) || protection_zone || stacked > 1 {
+            continue;
+        }
+        for (key, entry) in &entries {
+            // The magic wolf trap 12368 neither transforms nor damages (`trap.lua:6`).
+            let Some(rule) = trap(entry.appearance_id).filter(|rule| rule.maximum_damage > 0)
+            else {
+                continue;
+            };
+            // trap.lua:35 transforms before the hit (:44).
+            if transform(map, *key, rule.closed) {
+                spike_trap_hit(runtime, states, actor, *key, rule, now);
+            }
+        }
     }
     hooks
+}
+
+/// `trap.lua:44` on a creature: one draw in the trap's range, dealt at once as an unsourced
+/// field-entry damage condition on the creature's current cell.
+fn spike_trap_hit(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    key: u64,
+    rule: Trap,
+    now: u64,
+) {
+    let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+        return;
+    };
+    if !snapshot.state.conditions.accepts_time(now) {
+        return;
+    }
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:creature-spike-trap:v1")
+        .chain_update(actor.placement_identity())
+        .chain_update(snapshot.position_revision.to_be_bytes())
+        .chain_update(key.to_be_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let Ok(draw) = deterministic_decision_u64(&root, occurrence, "movement.trap.damage", 0) else {
+        return;
+    };
+    let damage = crate::spell::uniform_draw(
+        draw,
+        i64::from(rule.minimum_damage),
+        i64::from(rule.maximum_damage),
+    );
+    let Ok(damage) = u32::try_from(damage) else {
+        return;
+    };
+    let element = match rule.element {
+        ReferenceResistanceKind::Earth => DotElement::Poison,
+        _ => DotElement::Bleeding,
+    };
+    let Some(definition) = ConditionDefinition::new(
+        "environment.spike_trap",
+        1,
+        ConditionValues::DamageOverTime {
+            element,
+            total_min: damage,
+            total_max: damage,
+            per_tick: damage,
+            interval_ms: 2_000,
+            delayed: false,
+        },
+    ) else {
+        return;
+    };
+    let entry = CreatureFieldEntry {
+        definition,
+        source: None,
+        lineage: None,
+        occurrence,
+    };
+    if runtime
+        .commit_creature_field_entry(actor, now, Some(&entry))
+        .is_err()
+    {
+        return;
+    }
+    let _ = states.tick_source_creature_conditions(
+        runtime,
+        actor,
+        crate::foundation::TickFacts {
+            in_protection_zone: false,
+            standing_on_field: None,
+        },
+        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+    );
 }
 
 fn capture_request(
@@ -187,9 +298,13 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
 mod tests {
     use super::*;
     use crate::content::creature_policy::{
-        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
     };
     use crate::map::overlay::TilePos;
+    use crate::map::view::MapFacts;
+
+    const RAT: &str = "oteryn:creature.rat";
+    const EARTH_IMMUNE: &str = "oteryn:creature.earth_immune";
 
     fn policy(key: &str, name: &str, health: i64) -> CompiledCreaturePolicy {
         CompiledCreaturePolicy {
@@ -248,6 +363,21 @@ mod tests {
                     policy(STARVING_WOLF, "Starving Wolf", 85),
                     policy(THORNFIRE_WOLF, "Thornfire Wolf", 600),
                     policy(CRYSTAL_WOLF, "Crystal Wolf", 750),
+                    CompiledCreaturePolicy {
+                        mitigation: Some(CreatureExactRatio {
+                            numerator: 0,
+                            denominator: 1,
+                        }),
+                        ..policy(RAT, "Rat", 200)
+                    },
+                    CompiledCreaturePolicy {
+                        mitigation: Some(CreatureExactRatio {
+                            numerator: 0,
+                            denominator: 1,
+                        }),
+                        damage_immunities: vec!["earth".to_owned()],
+                        ..policy(EARTH_IMMUNE, "Earth Immune", 200)
+                    },
                 ],
             )?)
             .map_err(|e| format!("{e:?}"))?;
@@ -266,9 +396,13 @@ mod tests {
                 .display_name,
             creature.1
         );
+        // A trap's closed form is in the palette, so its transform resolves.
+        let closed = trap(id)
+            .map(|rule| rule.closed)
+            .filter(|closed| *closed != id);
         let keys = (
             format!("oteryn:item.tibia.i{id}"),
-            "oteryn:item.tibia.i100".to_owned(),
+            format!("oteryn:item.tibia.i{}", closed.unwrap_or(100)),
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&keys.0, 0), (&keys.1, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
@@ -339,7 +473,14 @@ mod tests {
         on_stack(|| {
             let wolf = (STARVING_WOLF, "Starving Wolf", 85);
             hook_case(MAGIC_WOLF_TRAP, false, wolf, |runtime, map, actor| {
-                let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], true);
+                let hooks = apply_creature_step_hooks(
+                    runtime,
+                    &ChannelSpellStates::default(),
+                    map,
+                    vec![(actor, AT)],
+                    true,
+                    1,
+                );
                 assert_eq!(hooks.removed, vec![actor]);
                 assert!(!runtime.contains_live_creature(actor));
                 assert_eq!(hooks.effects, vec![(AT, MAGIC_EFFECT_STUN)]);
@@ -362,8 +503,14 @@ mod tests {
             // wolf item the wolf stays, so nothing is lost.
             for (pz, admitted) in [(true, true), (false, false)] {
                 hook_case(MAGIC_WOLF_TRAP, pz, wolf, |runtime, map, actor| {
-                    let hooks =
-                        apply_creature_step_hooks(runtime, map, vec![(actor, AT)], admitted);
+                    let hooks = apply_creature_step_hooks(
+                        runtime,
+                        &ChannelSpellStates::default(),
+                        map,
+                        vec![(actor, AT)],
+                        admitted,
+                        1,
+                    );
                     assert!(hooks.removed.is_empty() && hooks.captures.is_empty());
                     assert!(hooks.effects.is_empty());
                     assert!(runtime.contains_live_creature(actor));
@@ -375,12 +522,26 @@ mod tests {
                 false,
                 (THORNFIRE_WOLF, "Thornfire Wolf", 600),
                 |runtime, map, actor| {
-                    let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], true);
+                    let hooks = apply_creature_step_hooks(
+                        runtime,
+                        &ChannelSpellStates::default(),
+                        map,
+                        vec![(actor, AT)],
+                        true,
+                        1,
+                    );
                     assert!(hooks.removed.is_empty() && runtime.contains_live_creature(actor));
                 },
             )?;
             hook_case(THORNFIRE_GROUND, false, wolf, |runtime, map, actor| {
-                let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], true);
+                let hooks = apply_creature_step_hooks(
+                    runtime,
+                    &ChannelSpellStates::default(),
+                    map,
+                    vec![(actor, AT)],
+                    true,
+                    1,
+                );
                 assert!(hooks.removed.is_empty() && runtime.contains_live_creature(actor));
             })
         })
@@ -437,7 +598,14 @@ mod tests {
             );
             let wolf = (STARVING_WOLF, "Starving Wolf", 85);
             hook_case(MAGIC_WOLF_TRAP, false, wolf, |runtime, map, actor| {
-                let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], admitted);
+                let hooks = apply_creature_step_hooks(
+                    runtime,
+                    &ChannelSpellStates::default(),
+                    map,
+                    vec![(actor, AT)],
+                    admitted,
+                    1,
+                );
                 assert_eq!(hooks.removed, vec![actor]);
                 let capture = hooks.captures.first().expect("one capture");
                 assert_eq!(capture.item.production_key, CAPTURED_WOLF_KEY);
@@ -454,7 +622,14 @@ mod tests {
                 false,
                 (THORNFIRE_WOLF, "Thornfire Wolf", 600),
                 |runtime, map, actor| {
-                    let hooks = apply_creature_step_hooks(runtime, map, vec![(actor, AT)], false);
+                    let hooks = apply_creature_step_hooks(
+                        runtime,
+                        &ChannelSpellStates::default(),
+                        map,
+                        vec![(actor, AT)],
+                        false,
+                        1,
+                    );
                     assert_eq!(hooks.removed, vec![actor]);
                     assert!(hooks.captures.is_empty());
                     assert_eq!(hooks.effects, vec![(AT, MAGIC_EFFECT_ICEATTACK)]);
@@ -469,6 +644,55 @@ mod tests {
                     assert_eq!(crystal.position, AT);
                 },
             )
+        })
+    }
+
+    /// Crystal trap.lua:23-44 on a creature: a spike trap outside a protection zone closes and
+    /// hits once in its range (2145: 50..=100 physical, 3944: 15..=30 earth); an earth-immune
+    /// creature takes nothing from 3944, which still closes; inside a protection zone nothing
+    /// happens.
+    #[test]
+    fn m10_a_creature_on_a_spike_trap_closes_it_and_takes_its_hit()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        on_stack(|| {
+            let pos = TilePos {
+                x: 6,
+                y: 0,
+                floor: -7,
+            };
+            let rat = (RAT, "Rat", 200);
+            let step = move |runtime: &mut ChannelRuntimeV1, map: &BundleMap, actor| {
+                let states = ChannelSpellStates::default();
+                let hooks =
+                    apply_creature_step_hooks(runtime, &states, map, vec![(actor, AT)], true, 1);
+                assert!(hooks.removed.is_empty() && hooks.effects.is_empty());
+                let health = runtime.companion_snapshot(actor).expect("creature").health;
+                (
+                    health,
+                    map.facts.base_entry(pos, 1, 0).map(|e| e.appearance_id),
+                )
+            };
+            hook_case(2145, false, rat, |runtime, map, actor| {
+                let (health, item) = step(runtime, map, actor);
+                assert!((100..=150).contains(&health), "{health}");
+                assert_eq!(item, Some(2146));
+            })?;
+            hook_case(2145, true, rat, |runtime, map, actor| {
+                assert_eq!(step(runtime, map, actor), (200, Some(2145)));
+            })?;
+            hook_case(
+                3944,
+                false,
+                (EARTH_IMMUNE, "Earth Immune", 200),
+                |runtime, map, actor| {
+                    assert_eq!(step(runtime, map, actor), (200, Some(3945)));
+                },
+            )?;
+            hook_case(3944, false, rat, |runtime, map, actor| {
+                let (health, item) = step(runtime, map, actor);
+                assert!((170..=185).contains(&health), "{health}");
+                assert_eq!(item, Some(3945));
+            })
         })
     }
 }
