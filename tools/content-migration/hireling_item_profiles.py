@@ -88,8 +88,14 @@ def merge_record(existing, source):
     merged = copy.deepcopy(existing)
     qualified = qualified_source_values(existing, source)
     for group in VALUE_GROUPS:
-        merged["semantics"][group] = merge_fact(existing["semantics"][group],
-                                               qualified["semantics"][group], f"{key}:{group}")
+        if group not in existing["semantics"]:
+            merged["semantics"][group] = copy.deepcopy(qualified["semantics"][group])
+            continue
+        fact = merge_fact(existing["semantics"][group], qualified["semantics"][group], f"{key}:{group}")
+        # Validate known conflicts in every group, but only enrich physical.
+        # Existing owners retain even UNKNOWN stack, container and charge facts.
+        if group == "physical":
+            merged["semantics"][group] = fact
     old, new = existing["admission"], source["admission"]
     if old["stack_class"] != new["stack_class"]:
         raise ValueError(f"HIRELING_NATIVE_STACK_CLASS_CONFLICT:{key}")

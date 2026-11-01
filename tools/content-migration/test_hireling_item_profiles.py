@@ -42,11 +42,12 @@ class HirelingItemProfiles(unittest.TestCase):
                 self.assertEqual(destinations, ["Ground"], key)
             self.assertEqual(row["admission"]["stack_class"], source["admission"]["stack_class"])
             qualified = hireling.qualified_source_values(row, source)
-            for group in hireling.VALUE_GROUPS:
-                # Known facts agree except Q14A and merged main weights and
-                # the one virtual GoldPouch movable pair approved in Q15A.
-                self.assertEqual(hireling.merge_fact(row["semantics"][group],
-                    qualified["semantics"][group], f"{key}:{group}"), row["semantics"][group])
+            # Physical facts agree except Q14A and merged main weights and
+            # the one virtual GoldPouch movable pair approved in Q15A.
+            self.assertEqual(hireling.merge_fact(row["semantics"]["physical"],
+                qualified["semantics"]["physical"], f"{key}:physical"), row["semantics"]["physical"])
+            # Every earlier owner's other facts survive another application.
+            self.assertEqual(hireling.merge_record(row, source), row)
         manifest = json.loads((ROOT / "content/spells.manifest.json").read_bytes())
         self.assertEqual(manifest["item_profiles"]["sha256"], hashlib.sha256(self.raw).hexdigest())
         print(f"HIRELING_NATIVE_PROFILE_CLOSURE items={len(self.overlay['required_ids'])} "
@@ -82,11 +83,41 @@ class HirelingItemProfiles(unittest.TestCase):
         existing["attributes"]["speed_bonus"] = 83
         existing["admission"]["legal_destinations"] = ["CharacterInventory"]
         existing["semantics"]["physical"]["value"]["weight"] = {"state": "UNKNOWN"}
+        for group in ("stack", "charges", "container"):
+            existing["semantics"][group] = {"state": "UNKNOWN"}
         merged = hireling.merge_record(existing, source)
         self.assertEqual(merged["attributes"], existing["attributes"])
         self.assertEqual(merged["authoring"], existing["authoring"])
         self.assertEqual(merged["admission"]["legal_destinations"], ["CharacterInventory"])
         self.assertEqual(merged["semantics"]["physical"], source["semantics"]["physical"])
+        for group in ("stack", "charges", "container"):
+            self.assertEqual(merged["semantics"][group], existing["semantics"][group])
+
+    def test_merge_preserves_mail_owned_semantics(self):
+        world = {row["identity"]["key"]: row for row in json.loads(
+            (ROOT / "content/world/definitions/reference.json").read_bytes())["records"]}
+        sources = {row["production_definition"]["production_key"]: row
+                   for row in self.overlay["records"]}
+        for number in (3503, 3505, 3507):
+            key = f"oteryn:item.tibia.i{number}"
+            with self.subTest(key=key):
+                existing = copy.deepcopy(self.profiles[key])
+                existing["semantics"] = copy.deepcopy(world[key]["semantics"])
+                before = copy.deepcopy(existing)
+                source = copy.deepcopy(sources[key])
+                merged = hireling.merge_record(existing, source)
+                for group in ("stack", "charges", "container"):
+                    self.assertEqual(merged["semantics"][group], existing["semantics"][group])
+                self.assertEqual(existing, before)
+                self.assertEqual(source, sources[key])
+
+    def test_merge_fills_absent_value_groups(self):
+        source = self.profiles[hireling.LAMP]
+        for group in ("stack", "charges", "container"):
+            with self.subTest(group=group):
+                existing = copy.deepcopy(source)
+                del existing["semantics"][group]
+                self.assertEqual(hireling.merge_record(existing, source), source)
 
     def test_nonportable_offer_never_gains_inventory_admission(self):
         source = next(row for row in self.overlay["records"]

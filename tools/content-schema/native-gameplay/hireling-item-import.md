@@ -79,7 +79,9 @@ stack, container or charge conflict aborts registration; this does not create a
 second item policy or a physical Hireling pouch sale.
 
 Existing richer authoring and unrelated semantic groups remain intact. An
-identity without World-authored semantics gains only the pinned native facts;
+existing record keeps its stack, container and charge groups, including UNKNOWN
+facts; the capture supplies these groups only when they are absent.
+An identity without World-authored semantics gains only the pinned native facts;
 absence of an older optional semantic group is not evidence for a fabricated
 value. Existing specialized destinations, including the Inventory-only gold
 pouch, stay with their existing owner.
