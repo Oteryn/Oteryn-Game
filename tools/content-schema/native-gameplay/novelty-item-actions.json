@@ -1,0 +1,967 @@
+{
+  "schema": "OTERYN_NOVELTY_ITEM_ACTIONS/v1",
+  "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/monster/aquatics/quara_hydromancer.lua",
+      "sha256": "ef40f2c6e43afc6e8dd7ee49963c92bb261461fec1ba613dc7d7a34e0d435f98"
+    },
+    {
+      "path": "data-global/monster/demons/demon.lua",
+      "sha256": "4bd0339f82eead4d05d7ac20727aa7e88eda3697b1e829056dc97d8f9612b9da"
+    },
+    {
+      "path": "data-global/monster/demons/diabolic_imp.lua",
+      "sha256": "8744cdad481b6fe012dac9fc5c06ed0335743d3344fe7391a66fa439faf4e2e4"
+    },
+    {
+      "path": "data-global/monster/demons/grimeleech.lua",
+      "sha256": "4b6a6225ac5f61c7d620c6e598b5f3b875b8a6bd889559817e3e33594f3238ac"
+    },
+    {
+      "path": "data-global/monster/demons/hellflayer.lua",
+      "sha256": "dc7d0bdc2b18ed3c850d5262e471b51cfea0487c25f10f234fa0b4b9919fe4b5"
+    },
+    {
+      "path": "data-global/monster/demons/juggernaut.lua",
+      "sha256": "866d89da8d91f3f82c765822794a17521d5cbc34fc3f00d27b13e061d84ccc0f"
+    },
+    {
+      "path": "data-global/monster/demons/vexclaw.lua",
+      "sha256": "4d77abdedc30b2d4db8449580b1d025651f03d8365d3c92c381c8dcbf5ff8bbd"
+    },
+    {
+      "path": "data-global/monster/giants/behemoth.lua",
+      "sha256": "0cd2005203e36274fd1ce4e03e145ee3f7a9b4b48af3c70fb8fd71b0fbf33b6d"
+    },
+    {
+      "path": "data-global/monster/giants/frost_giant.lua",
+      "sha256": "eed3d2345c2a8b8e09a435f229534bf6654e007cf1e12ae05f71756e5de2c2d8"
+    },
+    {
+      "path": "data-global/monster/giants/ogre_brute.lua",
+      "sha256": "66c0f00d8868df6002eb258688dd5c8b4f55b40cedc4e0670e07cb4e4be44dfe"
+    },
+    {
+      "path": "data-global/monster/giants/ogre_shaman.lua",
+      "sha256": "41549d2700b5833e5e537bc9a0099b3667ad702032cf5d74d961003c44f0f2e5"
+    },
+    {
+      "path": "data-global/monster/humanoids/dwarf_guard.lua",
+      "sha256": "754cc6ed7a67cf1c258bff8b8d12724ede886cad621a0bd60ed076c40042bce8"
+    },
+    {
+      "path": "data-global/monster/humanoids/dworc_voodoomaster.lua",
+      "sha256": "ff1c7115de38039a3e6974a4dab2a1e67563089525bdf80968953b1911b1d370"
+    },
+    {
+      "path": "data-global/monster/humanoids/minotaur_mage.lua",
+      "sha256": "4a5f5c4f8d8557301dea20158f41332da5709a2278b19bb83212b310dc8b0db6"
+    },
+    {
+      "path": "data-global/monster/humanoids/orc_warrior.lua",
+      "sha256": "8eda127b95b97a999e5d08b292cbd51862b0a2cf3cd453441d9602162b312a65"
+    },
+    {
+      "path": "data-global/monster/humans/pirate_cutthroat.lua",
+      "sha256": "5dc470b3c0d5c0a965c867e549fd0db6b0785ad0634f8ac37a196bb651df814f"
+    },
+    {
+      "path": "data-global/monster/mammals/black_sheep.lua",
+      "sha256": "3b79f46b7a035f7789567d80efe7f9c555322bea6f0a96fdd062e3c3dccbcc85"
+    },
+    {
+      "path": "data-global/monster/mammals/pig.lua",
+      "sha256": "58f12b95cbe15f55c07f12c20cc7924b669cf3fdb650c7e7b99b6999d7df5085"
+    },
+    {
+      "path": "data-global/monster/mammals/rat.lua",
+      "sha256": "29b62008555472ee20fc611eb739887cd63bac5be68824c41b3131f82f5e2c1c"
+    },
+    {
+      "path": "data-global/monster/nostalgia/old_bonelord.lua",
+      "sha256": "650898f95ed725a26f57551a08151c3a40c507f79d699299ed28dc0f0bbb7349"
+    },
+    {
+      "path": "data-global/monster/nostalgia/old_bug.lua",
+      "sha256": "32db8775094a9dde3f56158ad37aaf7ebe6c0ae340fd90c084ebdd92cb005db4"
+    },
+    {
+      "path": "data-global/monster/nostalgia/old_giant_spider.lua",
+      "sha256": "9506b450cde04c47bb4ee8e6553a5cc75247381ca8036038717ba81f56e69f76"
+    },
+    {
+      "path": "data-global/monster/nostalgia/old_wolf.lua",
+      "sha256": "211833f1ffa781842101f492560c72778de69aa6d7e4155baa0b43afb00a3de7"
+    },
+    {
+      "path": "data-global/monster/quests/ancient_tombs/ashmunrah.lua",
+      "sha256": "cacf68c9e10009e094efa680cf3a1d288350c2bc27e932e2276a2c82011c3794"
+    },
+    {
+      "path": "data-global/monster/reptiles/serpent_spawn.lua",
+      "sha256": "d3187041985915f0a6b5f825dc887775ebc82ecba40a49eddee5799133efe926"
+    },
+    {
+      "path": "data-global/monster/undeads/banshee.lua",
+      "sha256": "c245da35e8363cf02e78ea166631cb6c5d663d4831509a9efb09fa5d9cfd94a6"
+    },
+    {
+      "path": "data-global/monster/undeads/lich.lua",
+      "sha256": "5e0496ea4ea925c8d0975ced04bbc8902b6aa2dab5101b0913f349ae0ac3867d"
+    },
+    {
+      "path": "data-global/scripts/globalevents/others/horse_station.lua",
+      "sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0"
+    },
+    {
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "data/scripts/actions/items/anniversary_balloons.lua",
+      "sha256": "bbb317de5fc2f38e19bacc1eab7cee1ba85e392a78e9b521618f8b0bc201a951"
+    },
+    {
+      "path": "data/scripts/actions/items/blueberry_bush.lua",
+      "sha256": "0f00962876b7cbb68a566503992b2a481c64a3d49955afe6bacdb1568d282487"
+    },
+    {
+      "path": "data/scripts/actions/items/costume_bags.lua",
+      "sha256": "c9d7d1f0d9b0140ab755416fdb3a47e9c7648bfcae42b30837c85628df1ad186"
+    },
+    {
+      "path": "data/scripts/actions/items/die.lua",
+      "sha256": "4299f49643e1af2b76fbf17249142a0fc4aa1b2e5abe28891447501db61f3f2f"
+    },
+    {
+      "path": "data/scripts/actions/items/explosive_present.lua",
+      "sha256": "a9d367381c4a012239f2604f51e018504e37113334cab248ef5053c2144965ae"
+    },
+    {
+      "path": "data/scripts/actions/items/fireworks_rocket.lua",
+      "sha256": "bb3ba9cd9e7b18351461f39714a858555dfe4aa92697b3472ba87840a3725bfc"
+    },
+    {
+      "path": "data/scripts/actions/items/ice_flower.lua",
+      "sha256": "527d5e1fff6d05592353a1ef78b22129b161e24efe88b16b32e8459676cd7f6b"
+    },
+    {
+      "path": "data/scripts/actions/items/ice_flower_seeds.lua",
+      "sha256": "d315703fd8c4fb0a3cff0e7fc0d0deff76243f5b18e149ef92ffcdde6bf914ac"
+    },
+    {
+      "path": "data/scripts/actions/items/party_hat.lua",
+      "sha256": "2f7e10857f9022ffacdc47e6e39e0e7d8192bf077a0e3721ff04abfbc308a51a"
+    },
+    {
+      "path": "data/scripts/actions/items/party_trumpet.lua",
+      "sha256": "830c0b34ab72f857b562dd6b88ce24f2874c825182413fd4df2357c0287838eb"
+    },
+    {
+      "path": "data/scripts/actions/items/voodoo_doll.lua",
+      "sha256": "9cc43cdd9d553b07ef2ec4d4336faba239081e6c28033dcf9b1a566d64e82a17"
+    },
+    {
+      "path": "data/scripts/movements/seeds.lua",
+      "sha256": "2999951cd75177625f8440dc913bd6b839b62170805be01d45f70e2eadc682d7"
+    },
+    {
+      "path": "src/lua/functions/core/game/game_functions.cpp",
+      "sha256": "e75c5a941e9ae67e10a768920b0c508c296c30824834afe90c84c640ef6293c0"
+    },
+    {
+      "path": "src/map/map_const.hpp",
+      "sha256": "6023943af02d0becf40f394f3488a034f43ab314a48ad7ada39220cdcf3c80a0"
+    },
+    {
+      "path": "src/map/spectators.cpp",
+      "sha256": "d9f2d6efdea9e35d11236caa24e7e9b9b6f3af032dc46663ff813d78153bcbe7"
+    },
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+    }
+  ],
+  "map_item_ids": [
+    306,
+    324,
+    330,
+    647,
+    3588,
+    3699,
+    3700,
+    13842,
+    13843,
+    13844,
+    14029,
+    14031,
+    14032,
+    31159
+  ],
+  "map_action_item_ids": [
+    306,
+    324,
+    330,
+    647,
+    3588,
+    3699,
+    3700,
+    13842,
+    13843,
+    13844,
+    14029,
+    14031,
+    14032
+  ],
+  "house_transforms": [
+    {
+      "item_id": 37414,
+      "target": 37471,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37416,
+      "target": 37472,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37417,
+      "target": 37491,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37418,
+      "target": 37496,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37419,
+      "target": 37497,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37420,
+      "target": 37498,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37421,
+      "target": 37499,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37422,
+      "target": 37500,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37423,
+      "target": 37501,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37424,
+      "target": 37502,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37425,
+      "target": 37503,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37426,
+      "target": 37504,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37427,
+      "target": 37505,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37428,
+      "target": 37506,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37429,
+      "target": 37507,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37430,
+      "target": 37508,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37431,
+      "target": 37509,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37432,
+      "target": 37510,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37433,
+      "target": 37511,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37434,
+      "target": 37512,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37435,
+      "target": 37513,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37436,
+      "target": 37514,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37437,
+      "target": 37515,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37438,
+      "target": 37516,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37439,
+      "target": 37517,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37440,
+      "target": 37518,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37471,
+      "target": 37414,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37472,
+      "target": 37416,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37491,
+      "target": 37417,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37496,
+      "target": 37418,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37497,
+      "target": 37419,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37498,
+      "target": 37420,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37499,
+      "target": 37421,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37500,
+      "target": 37422,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37501,
+      "target": 37423,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37502,
+      "target": 37424,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37503,
+      "target": 37425,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37504,
+      "target": 37426,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37505,
+      "target": 37427,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37506,
+      "target": 37428,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37507,
+      "target": 37429,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37508,
+      "target": 37430,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37509,
+      "target": 37431,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37510,
+      "target": 37432,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37511,
+      "target": 37433,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37512,
+      "target": 37434,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37513,
+      "target": 37435,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37514,
+      "target": 37436,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37515,
+      "target": 37437,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37516,
+      "target": 37438,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37517,
+      "target": 37439,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 37518,
+      "target": 37440,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39669,
+      "target": 39681,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39670,
+      "target": 39682,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39671,
+      "target": 39683,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39672,
+      "target": 39684,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39673,
+      "target": 39685,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39674,
+      "target": 39686,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39675,
+      "target": 39687,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39676,
+      "target": 39688,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39677,
+      "target": 39689,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39678,
+      "target": 39690,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39679,
+      "target": 39691,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39680,
+      "target": 39692,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39681,
+      "target": 39669,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39682,
+      "target": 39670,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39683,
+      "target": 39671,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39684,
+      "target": 39672,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39685,
+      "target": 39673,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39686,
+      "target": 39674,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39687,
+      "target": 39675,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39688,
+      "target": 39676,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39689,
+      "target": 39677,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39690,
+      "target": 39678,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39691,
+      "target": 39679,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    },
+    {
+      "item_id": 39692,
+      "target": 39680,
+      "donor": "data/scripts/actions/items/anniversary_balloons.lua:1"
+    }
+  ],
+  "rules": [
+    {
+      "item_ids": [
+        653
+      ],
+      "donor": "data/scripts/actions/items/costume_bags.lua:1",
+      "kind": "costume",
+      "costumes": [
+        {
+          "monster": "orc warrior",
+          "look_type": 7,
+          "donor": "data-global/monster/humanoids/orc_warrior.lua:6"
+        },
+        {
+          "monster": "pirate cutthroat",
+          "look_type": 96,
+          "donor": "data-global/monster/humans/pirate_cutthroat.lua:6"
+        },
+        {
+          "monster": "dworc voodoomaster",
+          "look_type": 214,
+          "donor": "data-global/monster/humanoids/dworc_voodoomaster.lua:6"
+        },
+        {
+          "monster": "dwarf guard",
+          "look_type": 70,
+          "donor": "data-global/monster/humanoids/dwarf_guard.lua:6"
+        },
+        {
+          "monster": "minotaur mage",
+          "look_type": 23,
+          "donor": "data-global/monster/humanoids/minotaur_mage.lua:6"
+        },
+        {
+          "monster": "ogre shaman",
+          "look_type": 859,
+          "donor": "data-global/monster/giants/ogre_shaman.lua:6"
+        },
+        {
+          "monster": "ogre brute",
+          "look_type": 857,
+          "donor": "data-global/monster/giants/ogre_brute.lua:6"
+        },
+        {
+          "monster": "rat",
+          "look_type": 21,
+          "donor": "data-global/monster/mammals/rat.lua:6"
+        }
+      ],
+      "duration_ms": 3000000,
+      "cues": [
+        "appearance:effect/magic_red"
+      ],
+      "achievement_progress": {
+        "key": "oteryn:achievement/masquerader",
+        "target": 100
+      },
+      "effect_ids": [
+        14
+      ]
+    },
+    {
+      "item_ids": [
+        654
+      ],
+      "donor": "data/scripts/actions/items/costume_bags.lua:1",
+      "kind": "costume",
+      "costumes": [
+        {
+          "monster": "quara hydromancer",
+          "look_type": 47,
+          "donor": "data-global/monster/aquatics/quara_hydromancer.lua:6"
+        },
+        {
+          "monster": "diabolic imp",
+          "look_type": 237,
+          "donor": "data-global/monster/demons/diabolic_imp.lua:6"
+        },
+        {
+          "monster": "banshee",
+          "look_type": 78,
+          "donor": "data-global/monster/undeads/banshee.lua:6"
+        },
+        {
+          "monster": "frost giant",
+          "look_type": 257,
+          "donor": "data-global/monster/giants/frost_giant.lua:6"
+        },
+        {
+          "monster": "lich",
+          "look_type": 99,
+          "donor": "data-global/monster/undeads/lich.lua:6"
+        },
+        {
+          "monster": "vexclaw",
+          "look_type": 854,
+          "donor": "data-global/monster/demons/vexclaw.lua:6"
+        },
+        {
+          "monster": "grimeleech",
+          "look_type": 855,
+          "donor": "data-global/monster/demons/grimeleech.lua:6"
+        },
+        {
+          "monster": "hellflayer",
+          "look_type": 856,
+          "donor": "data-global/monster/demons/hellflayer.lua:6"
+        },
+        {
+          "monster": "ogre shaman",
+          "look_type": 859,
+          "donor": "data-global/monster/giants/ogre_shaman.lua:6"
+        },
+        {
+          "monster": "ogre brute",
+          "look_type": 857,
+          "donor": "data-global/monster/giants/ogre_brute.lua:6"
+        },
+        {
+          "monster": "pig",
+          "look_type": 60,
+          "donor": "data-global/monster/mammals/pig.lua:6"
+        }
+      ],
+      "duration_ms": 3000000,
+      "cues": [
+        "appearance:effect/magic_red"
+      ],
+      "achievement_progress": {
+        "key": "oteryn:achievement/masquerader",
+        "target": 100
+      },
+      "effect_ids": [
+        14
+      ]
+    },
+    {
+      "item_ids": [
+        655
+      ],
+      "donor": "data/scripts/actions/items/costume_bags.lua:1",
+      "kind": "costume",
+      "costumes": [
+        {
+          "monster": "serpent spawn",
+          "look_type": 220,
+          "donor": "data-global/monster/reptiles/serpent_spawn.lua:6"
+        },
+        {
+          "monster": "demon",
+          "look_type": 35,
+          "donor": "data-global/monster/demons/demon.lua:6"
+        },
+        {
+          "monster": "juggernaut",
+          "look_type": 244,
+          "donor": "data-global/monster/demons/juggernaut.lua:6"
+        },
+        {
+          "monster": "behemoth",
+          "look_type": 55,
+          "donor": "data-global/monster/giants/behemoth.lua:6"
+        },
+        {
+          "monster": "ashmunrah",
+          "look_type": 91,
+          "donor": "data-global/monster/quests/ancient_tombs/ashmunrah.lua:6"
+        },
+        {
+          "monster": "vexclaw",
+          "look_type": 854,
+          "donor": "data-global/monster/demons/vexclaw.lua:6"
+        },
+        {
+          "monster": "grimeleech",
+          "look_type": 855,
+          "donor": "data-global/monster/demons/grimeleech.lua:6"
+        },
+        {
+          "monster": "hellflayer",
+          "look_type": 856,
+          "donor": "data-global/monster/demons/hellflayer.lua:6"
+        },
+        {
+          "monster": "black sheep",
+          "look_type": 13,
+          "donor": "data-global/monster/mammals/black_sheep.lua:6"
+        }
+      ],
+      "duration_ms": 3000000,
+      "cues": [
+        "appearance:effect/magic_red"
+      ],
+      "achievement_progress": {
+        "key": "oteryn:achievement/masquerader",
+        "target": 100
+      },
+      "effect_ids": [
+        14
+      ]
+    },
+    {
+      "item_ids": [
+        906
+      ],
+      "kind": "consume_effect",
+      "cues": [
+        "appearance:effect/firearea"
+      ],
+      "speech": "KABOOOOOOOOOOM!",
+      "achievement": "oteryn:achievement/joke_s_on_you",
+      "donor": "data/scripts/actions/items/explosive_present.lua:3",
+      "effect_ids": [
+        7
+      ]
+    },
+    {
+      "item_ids": [
+        3002
+      ],
+      "kind": "player_target_effect",
+      "success_percent": 5,
+      "cues": [
+        "appearance:effect/drawblood"
+      ],
+      "success_text": "You concentrate on your victim and hit the needle in the doll.",
+      "failure_text": "You concentrate on your victim, hit the needle in the doll.......but nothing happens.",
+      "achievement": "oteryn:achievement/dark_voodoo_priest",
+      "donor": "data/scripts/actions/items/voodoo_doll.lua:3",
+      "effect_ids": [
+        1
+      ]
+    },
+    {
+      "item_ids": [
+        5792,
+        5793,
+        5794,
+        5795,
+        5796,
+        5797
+      ],
+      "kind": "dice",
+      "dice_speech_range": [
+        3,
+        3,
+        11,
+        11
+      ],
+      "cues": [
+        "appearance:effect/craps"
+      ],
+      "donor": "data/scripts/actions/items/die.lua:3",
+      "effect_ids": [
+        27
+      ]
+    },
+    {
+      "item_ids": [
+        6572
+      ],
+      "kind": "transform",
+      "cue_origin": "wire_source",
+      "output": 6573,
+      "duration_ms": 4000,
+      "decay_to": 6572,
+      "cues": [
+        "appearance:effect/sound_blue"
+      ],
+      "speech": "TOOOOOOT!",
+      "donor": "data/scripts/actions/items/party_trumpet.lua:3",
+      "effect_ids": [
+        24
+      ]
+    },
+    {
+      "item_ids": [
+        6576
+      ],
+      "kind": "firework",
+      "cues": [
+        "appearance:effect/firearea",
+        "appearance:effect/hitbyfire"
+      ],
+      "ground_cues": [
+        "appearance:effect/firework_yellow",
+        "appearance:effect/firework_red",
+        "appearance:effect/firework_blue"
+      ],
+      "speech": "Ouch! Rather place it on the ground next time.",
+      "damage": 10,
+      "secondary_achievement_progress": {
+        "key": "oteryn:achievement/rocket_in_pocket",
+        "target": 3
+      },
+      "achievement_progress": {
+        "key": "oteryn:achievement/fireworks_in_the_sky",
+        "target": 250
+      },
+      "donor": "data/scripts/actions/items/fireworks_rocket.lua:3",
+      "effect_ids": [
+        7,
+        16
+      ],
+      "ground_effect_ids": [
+        29,
+        30,
+        31
+      ]
+    },
+    {
+      "item_ids": [
+        6578
+      ],
+      "kind": "equipped_effect",
+      "cues": [
+        "appearance:effect/gift_wraps"
+      ],
+      "achievement_progress": {
+        "key": "oteryn:achievement/party_animal",
+        "target": 200
+      },
+      "donor": "data/scripts/actions/items/party_hat.lua:3",
+      "effect_ids": [
+        28
+      ]
+    },
+    {
+      "item_ids": [
+        24949
+      ],
+      "donor": "data/scripts/actions/items/costume_bags.lua:1",
+      "kind": "costume",
+      "costumes": [
+        {
+          "monster": "old beholder",
+          "look_type": 924,
+          "donor": "data-global/monster/nostalgia/old_bonelord.lua:7"
+        },
+        {
+          "monster": "old bug",
+          "look_type": 920,
+          "donor": "data-global/monster/nostalgia/old_bug.lua:7"
+        },
+        {
+          "monster": "old wolf",
+          "look_type": 918,
+          "donor": "data-global/monster/nostalgia/old_wolf.lua:7"
+        },
+        {
+          "monster": "old giant spider",
+          "look_type": 910,
+          "donor": "data-global/monster/nostalgia/old_giant_spider.lua:7"
+        }
+      ],
+      "duration_ms": 3000000,
+      "cues": [
+        "appearance:effect/magic_red"
+      ],
+      "achievement_progress": {
+        "key": "oteryn:achievement/masquerader",
+        "target": 100
+      },
+      "effect_ids": [
+        14
+      ]
+    }
+  ]
+}
