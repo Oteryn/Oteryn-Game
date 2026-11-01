@@ -327,7 +327,11 @@ BEGIN
         IF begin_at=0 THEN RAISE EXCEPTION 'unexpected Task Board custody guard shape: %',n; END IF;
         CASE n
         WHEN 'game_stash_admit' THEN arm:=$arm$
-            IF TG_TABLE_NAME='game_character_stash_entries' AND EXISTS(
+            -- This trigger also runs on stash operations and item lines, which have no
+            -- entry_id. PL/pgSQL resolves every NEW field of an IF expression before it
+            -- evaluates AND, so the table test is its own IF around the entry lookup.
+            IF TG_TABLE_NAME='game_character_stash_entries' THEN
+            IF EXISTS(
                 SELECT 1 FROM game_task_board_stash_sources s WHERE s.transaction_id=NEW.transaction_id
                   AND s.entry_id=NEW.entry_id AND s.created_xact_id=pg_current_xact_id()) THEN
                 IF NOT EXISTS(SELECT 1 FROM game_task_board_stash_sources s JOIN game_character_stash_balances b
@@ -342,6 +346,7 @@ BEGIN
                     RAISE EXCEPTION 'Task Board stash entry does not consume current balance' USING ERRCODE='23514';
                 END IF;
                 NEW.created_xact_id:=pg_current_xact_id(); RETURN NEW;
+            END IF;
             END IF;
 $arm$;
         WHEN 'game_stash_balance_guard' THEN arm:=$arm$
