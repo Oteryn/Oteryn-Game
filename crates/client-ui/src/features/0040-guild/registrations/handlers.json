@@ -1,18 +1,5 @@
 {
-  "mechanic": "0040-guild",
-  "kind": "handlers",
-  "id": "0040-guild-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
-  "commands": [
-    40,
-    41
-  ],
-  "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
-  }
+  "mechanic":"0040-guild","kind":"handlers","id":"0040-guild-intent","status":"supported",
+  "commands":[40],"direction":"client_to_server","capability":40,"entry":"mod.rs::request",
+  "not_applicable":{"settings":"Guild state is persisted by the server; no local authority settings."}
 }

@@ -1,5 +1,10 @@
 //! Native dispatch boundary for Gem Atelier/Fragment Workshop commands.
 
+#[path = "atelier/resources.rs"]
+mod resources;
+#[path = "atelier/workshop.rs"]
+mod workshop;
+
 pub use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierCommit, AtelierRefusal, AtelierState,
 };
@@ -54,6 +59,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             || expected.connection_generation.get() != admitted.continuity.connection_generation
         {
             return AtelierWireReply::Rejected;
+        }
+        if kind == wire::resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY {
+            return self
+                .atelier_resources_wire(admitted, expected, payload)
+                .await;
         }
         let request = match kind {
             wire::COMMAND_TYPE_ATELIER_QUERY => {
@@ -167,7 +177,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     Some(expected),
                 )
                 .await;
-            drop(permit);
             match result {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Refused,
@@ -181,6 +190,37 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
                 _ => return AtelierWireReply::Unavailable,
             }
+            if kind == wire::COMMAND_TYPE_ATELIER_MUTATE
+                && !refused
+                && let Some(actor) = admitted.runtime_actor
+            {
+                // Carried payment may consume an equipped leaf. Keep the spell lane
+                // until the current equipment owner has replaced cached combat facts;
+                // receipt replay reads today's equipment, never the old payment proof.
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .forget_weapon(actor, admitted.game_session_id);
+                let Ok(effects) = self.read_admission_effects(admitted.game_session_id).await
+                else {
+                    return AtelierWireReply::Unavailable;
+                };
+                let runtime = self.runtime.lock().await;
+                if self
+                    .install_admission_suppressions(
+                        &runtime,
+                        actor,
+                        admitted.game_session_id,
+                        effects,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return AtelierWireReply::Unavailable;
+                }
+            }
+            drop(permit);
             if let Some(actor) = admitted.runtime_actor {
                 self.refresh_wheel_vitals(actor, admitted.game_session_id)
                     .await;
@@ -228,6 +268,25 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             // derived vessel flags come from a subsequent live query.
             (Vec::new(), Vec::new())
         };
+        let grades = if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
+            let Some(grades) = workshop::grades_for_query(&state) else {
+                return AtelierWireReply::Unavailable;
+            };
+            grades
+        } else {
+            state
+                .grades
+                .iter()
+                .map(|(&(kind, mod_id), &grade)| wire::GradeView {
+                    kind: match kind {
+                        oteryn_gameplay_progression::atelier::FragmentKind::Basic => 0,
+                        oteryn_gameplay_progression::atelier::FragmentKind::Supreme => 1,
+                    },
+                    mod_id,
+                    grade,
+                })
+                .collect()
+        };
         let gems = state
             .gems
             .values()
@@ -253,18 +312,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             refused,
             revision: state.revision,
             gems,
-            grades: state
-                .grades
-                .iter()
-                .map(|(&(kind, mod_id), &grade)| wire::GradeView {
-                    kind: match kind {
-                        oteryn_gameplay_progression::atelier::FragmentKind::Basic => 0,
-                        oteryn_gameplay_progression::atelier::FragmentKind::Supreme => 1,
-                    },
-                    mod_id,
-                    grade,
-                })
-                .collect(),
+            grades,
             quality_quotes,
             grade_quotes,
         })

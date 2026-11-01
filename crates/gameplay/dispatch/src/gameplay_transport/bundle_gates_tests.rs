@@ -751,6 +751,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
+    // Atelier resource fixtures bind a real Bundle with qualified room None.
+    ("gameplay_transport/postgres_tests/atelier/wire_paid.rs", 1),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.

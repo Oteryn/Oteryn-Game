@@ -124,12 +124,41 @@ pub mod spell;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+/// Guild command execution through the admitted session.
+#[path = "features/0040-guild/protocol.rs"]
+pub mod guild;
 /// Party command execution through the admitted session.
 #[path = "features/0042-party/protocol.rs"]
 pub mod party;
+/// Player-trade command execution through the admitted session.
+#[path = "features/0060-player-trade/protocol.rs"]
+pub mod player_trade;
+/// Prey command execution through the admitted session.
+#[path = "features/0140-prey/protocol.rs"]
+pub mod prey;
 /// Wheel and Atelier command execution through the admitted session.
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
+
+/// Task Board command execution through the admitted session.
+#[path = "features/0072-task-board/protocol.rs"]
+pub mod task_board;
+
+/// Stash command execution through the admitted session.
+#[path = "features/0062-stash/protocol.rs"]
+pub mod stash;
+
+/// Capability-81 NPC shop command execution through the admitted session.
+#[path = "features/0081-npc-shop/protocol.rs"]
+pub mod npc_shop;
+
+/// Imbuement commands executed through the admitted session.
+#[path = "features/0068-imbue/protocol.rs"]
+pub mod imbue;
+
+/// VIP list, groups and consent commands.
+#[path = "features/0043-vip/protocol.rs"]
+pub mod vip;
 
 /// Hireling command execution through the admitted session.
 #[path = "features/0165-hireling/protocol.rs"]

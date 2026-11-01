@@ -63,6 +63,8 @@ pub(super) struct Mailbox {
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
+    pub(super) stash: oteryn_client_ui::stash::StashPanel,
+    pub(super) guild: oteryn_client_ui::guild::GuildPanel,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
@@ -72,6 +74,14 @@ pub(super) struct Mailbox {
     /// The latest refused logout not yet polled.
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
+    pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
+    pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
+    pub(super) prey: oteryn_client_ui::prey::PreyPanel,
+    pub(super) prey_shutdown: bool,
+    pub(super) imbue: oteryn_client_ui::imbue::ImbuePanel,
+    pub(super) imbue_shutdown: bool,
+    pub(super) player_trade: oteryn_client_ui::player_trade::PlayerTradePanel,
+    pub(super) vip: oteryn_client_ui::vip::VipPanel,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
@@ -201,6 +211,8 @@ impl Drop for PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
+        mailbox.prey_shutdown = true;
+        mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
     }
 }

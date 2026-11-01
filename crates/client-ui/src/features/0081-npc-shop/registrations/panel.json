@@ -1,0 +1,7 @@
+{
+  "mechanic": "0081-npc-shop",
+  "kind": "panels",
+  "id": "0081-npc-shop-panel",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

@@ -51,6 +51,23 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
         look: String::new(),
     };
     let encoded = encode_state(&state)?;
+    assert_eq!(decode_state(&encoded)?, state);
+    for code in [
+        ResultCode::Offered,
+        ResultCode::Accepted,
+        ResultCode::Completed,
+        ResultCode::Cancelled,
+        ResultCode::TooFar,
+        ResultCode::NotTradeable,
+        ResultCode::PartnerBusy,
+        ResultCode::NoRoom,
+        ResultCode::NoBackpack,
+        ResultCode::Stale,
+        ResultCode::NotSupported,
+        ResultCode::Rejected,
+    ] {
+        assert_eq!(decode_result(&code.payload())?, code);
+    }
     let fixture = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/fixtures/player_trade_ready_v1.bin"

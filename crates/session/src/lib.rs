@@ -26,6 +26,8 @@ mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+/// Guild command and query wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::guild;
 /// Hireling wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::hireling;
 pub use oteryn_protocol_oteryn::hotkey_equip;
@@ -33,6 +35,8 @@ pub use oteryn_protocol_oteryn::hotkey_equip;
 pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
+/// Player-trade wire values for the selected native-client feature.
+pub use oteryn_protocol_oteryn::player_trade;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
 /// Wheel and Atelier wire values for the selected client feature.
@@ -75,8 +79,16 @@ mod tutorial_notices;
 mod vip_presence;
 /// Exiva permission-list wire contract.
 pub use oteryn_protocol_oteryn::exiva;
+/// Imbuement shrine wire values used by the native client adapter.
+pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// Shared NPC trade enums carried by capability-81 shop messages.
+pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
+/// Capability-81 NPC shop wire values consumed by the native client adapter.
+pub use oteryn_protocol_oteryn::npc_shop;
+/// Prey slot wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::prey;
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
     Status as VipPresenceStatus,
@@ -2375,6 +2387,15 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests;
 
+/// VIP request and result codec used by session-layer clients.
+pub use oteryn_protocol_oteryn::vip;
+
 #[cfg(test)]
 #[path = "guild_chat_tests.rs"]
 mod guild_chat_tests;
+
+/// Task Board wire values exposed to admitted client features.
+pub use oteryn_protocol_oteryn::task_board;
+
+/// Server-owned stash wire types exposed to client feature adapters.
+pub use oteryn_protocol_oteryn::stash;

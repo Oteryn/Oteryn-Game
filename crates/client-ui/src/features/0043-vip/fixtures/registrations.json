@@ -2,20 +2,62 @@
   {
     "mechanic": "0043-vip",
     "kind": "handlers",
-    "id": "0043-vip-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0043-vip-consent",
+    "status": "supported",
     "commands": [
-      48,
-      49,
+      49
+    ],
+    "direction": "client_to_server",
+    "capability": 43,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "VIP state is persisted by the server."
+    }
+  },
+  {
+    "mechanic": "0043-vip",
+    "kind": "handlers",
+    "id": "0043-vip-list",
+    "status": "supported",
+    "commands": [
+      48
+    ],
+    "direction": "client_to_server",
+    "capability": 43,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "VIP state is persisted by the server."
+    }
+  },
+  {
+    "mechanic": "0043-vip",
+    "kind": "keybindings",
+    "id": "0043-vip-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+V",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0043-vip",
+    "kind": "panels",
+    "id": "0043-vip-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0043-vip",
+    "kind": "handlers",
+    "id": "0043-vip-query",
+    "status": "supported",
+    "commands": [
       50
     ],
+    "direction": "client_to_server",
+    "capability": 43,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "VIP state is persisted by the server."
     }
   }
 ]

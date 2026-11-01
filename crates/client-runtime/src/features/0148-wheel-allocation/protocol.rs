@@ -47,6 +47,8 @@ pub struct WheelResponse {
     /// Current queries issued after the operation, including after receipt replay.
     pub wheel: Option<Vec<u8>>,
     pub atelier: Option<Vec<u8>>,
+    /// Separately negotiated live balances; never part of a mutation receipt.
+    pub resources: Option<Vec<u8>>,
 }
 
 fn accepted_payload(result: GatedCommandResult) -> Option<Vec<u8>> {
@@ -88,11 +90,29 @@ pub async fn send<S: SessionStream>(
             &[],
         )
         .await?;
+    let resources = if session.is_selected(atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1) {
+        accepted_payload(
+            session
+                .gated_command(
+                    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
+                    atelier::resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY,
+                    &atelier::resources::encode_query(),
+                )
+                .await?,
+        )
+    } else {
+        None
+    };
     Ok(WheelResponse {
         kind: request.kind,
         status: result.status,
         payload: result.payload,
         wheel: accepted_payload(wheel),
         atelier: accepted_payload(atelier),
+        resources,
     })
 }
+
+#[cfg(test)]
+#[path = "tests/resources.rs"]
+mod resource_tests;

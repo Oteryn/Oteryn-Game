@@ -92,6 +92,20 @@ pub fn panel_text(panel: &WheelPanel) -> String {
         lines.push(format!("{} vessel: {name}", domain_name(domain as u8)));
     }
     if let Some(atelier) = &panel.confirmed_atelier {
+        if let Some(resources) = &panel.confirmed_resources {
+            lines.push(format!(
+                "Gold: {} carried; {} in bank.",
+                resources.carried_gold, resources.bank_gold
+            ));
+            lines.push(format!(
+                "Unrevealed gems carried: {} lesser; {} regular; {} greater.",
+                resources.lesser_gems, resources.regular_gems, resources.greater_gems
+            ));
+            lines.push(format!(
+                "Fragments carried and in Supply Stash: {} basic; {} supreme.",
+                resources.basic_fragments, resources.supreme_fragments
+            ));
+        }
         if let Some(quote) = atelier
             .quality_quotes
             .iter()
@@ -117,6 +131,17 @@ pub fn panel_text(panel: &WheelPanel) -> String {
                 quote.fragment_max,
                 fragment_name(quote.fragment_kind)
             ));
+        }
+        if let Some(gem) = panel.selected_gem()
+            && !gem.modifiers.is_empty()
+        {
+            let modifiers = gem
+                .modifiers
+                .iter()
+                .enumerate()
+                .map(|(index, id)| modifier_label(panel, u8::from(index == 2), *id))
+                .collect::<Vec<_>>();
+            lines.push(format!("Selected gem modifiers: {}.", modifiers.join("; ")));
         }
         if let Some((kind, mod_id)) = panel.modifier {
             let grade = panel.grade(kind, mod_id);

@@ -1,0 +1,1 @@
+{"mechanic":"0062-stash","kind":"keybindings","id":"0062-stash-open","status":"supported","context":"gameplay","chord":"CTRL+S","entry":"input.rs::open_key"}

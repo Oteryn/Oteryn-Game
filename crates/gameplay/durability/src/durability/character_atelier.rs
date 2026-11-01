@@ -25,6 +25,9 @@ use sqlx::Row;
 mod actions;
 #[path = "character_atelier/custody.rs"]
 pub(crate) mod custody;
+#[path = "character_atelier/resources.rs"]
+mod resources;
+pub use resources::ResourceBalances;
 
 /// Server-resolved content and coin change facts. Never decoded from a client request.
 #[derive(Clone)]
@@ -115,8 +118,15 @@ impl DurabilityRoot {
         gate: &G,
     ) -> Result<AtelierOutcome> {
         self.commit_character_atelier_with_admission(
-            authority, node, fence, request, ruleset, gate, &|| true,
-        ).await
+            authority,
+            node,
+            fence,
+            request,
+            ruleset,
+            gate,
+            &|| true,
+        )
+        .await
     }
 
     /// A fresh client mutation may be refused by the Channel's existing owner.

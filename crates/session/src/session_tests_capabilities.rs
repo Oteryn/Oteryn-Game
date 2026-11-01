@@ -22,6 +22,8 @@ fn derived_gated_routes_match_previous_table() {
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424], &[]),
+        // Live balances use their own selected capability without changing Atelier V1.
+        (272, &[484], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
