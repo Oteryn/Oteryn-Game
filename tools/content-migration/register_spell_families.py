@@ -238,7 +238,7 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
-def outputs(root: Path = ROOT) -> dict[str, bytes]:
+def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
     Legacy shard counts describe legacy definitions only. Imported collections have
@@ -346,6 +346,12 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
         native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+
+    # The model bootstraps from this same fresh provider without recursively
+    # requiring the very Prey results it is about to produce.
+    if include_prey:
+        import prey_difficulty
+        prey_difficulty.apply_native(root, generated, spell_import.canonical_bytes)
 
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():

@@ -668,6 +668,10 @@ def main() -> int:
             ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
             if family not in quest_families],
     })
+    # Model against the source shards just written, then register the same fresh
+    # native provider with its generated Prey rules and value table.
+    import prey_difficulty
+    prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.
     from register_spell_families import outputs as spell_outputs
     for relative, data in spell_outputs(ROOT).items():

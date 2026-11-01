@@ -1,0 +1,5327 @@
+{
+  "creatures": {
+    "oteryn:creature.abyssal_calamary": {
+      "kills_per_hour_micros": 492307692,
+      "loot_per_kill_micros": 10694960,
+      "tier": 2
+    },
+    "oteryn:creature.acid_blob": {
+      "kills_per_hour_micros": 685714285,
+      "loot_per_kill_micros": 4826675,
+      "tier": 2
+    },
+    "oteryn:creature.acolyte_of_darkness": {
+      "kills_per_hour_micros": 420437956,
+      "loot_per_kill_micros": 13000000,
+      "tier": 2
+    },
+    "oteryn:creature.acolyte_of_the_cult": {
+      "kills_per_hour_micros": 357763975,
+      "loot_per_kill_micros": 49128402,
+      "tier": 2
+    },
+    "oteryn:creature.adept_of_the_cult": {
+      "kills_per_hour_micros": 276923076,
+      "loot_per_kill_micros": 105123235,
+      "tier": 2
+    },
+    "oteryn:creature.adult_goanna": {
+      "kills_per_hour_micros": 45247446,
+      "loot_per_kill_micros": 1354398310,
+      "tier": 4
+    },
+    "oteryn:creature.afflicted_strider": {
+      "kills_per_hour_micros": 39972241,
+      "loot_per_kill_micros": 3519455885,
+      "tier": 4
+    },
+    "oteryn:creature.amazon": {
+      "kills_per_hour_micros": 1597116,
+      "loot_per_kill_micros": 15943249,
+      "tier": 1
+    },
+    "oteryn:creature.ancient_scarab": {
+      "kills_per_hour_micros": 96806722,
+      "loot_per_kill_micros": 241597350,
+      "tier": 2
+    },
+    "oteryn:creature.angry_sugar_fairy": {
+      "kills_per_hour_micros": 129729729,
+      "loot_per_kill_micros": 906264750,
+      "tier": 3
+    },
+    "oteryn:creature.animated_feather": {
+      "kills_per_hour_micros": 34062684,
+      "loot_per_kill_micros": 3760156055,
+      "tier": 4
+    },
+    "oteryn:creature.animated_snowman": {
+      "kills_per_hour_micros": 275598086,
+      "loot_per_kill_micros": 352029250,
+      "tier": 2
+    },
+    "oteryn:creature.arachnophobica": {
+      "kills_per_hour_micros": 78260869,
+      "loot_per_kill_micros": 1032564080,
+      "tier": 3
+    },
+    "oteryn:creature.arctic_faun": {
+      "kills_per_hour_micros": 334883720,
+      "loot_per_kill_micros": 229712801,
+      "tier": 2
+    },
+    "oteryn:creature.armadile": {
+      "kills_per_hour_micros": 91573926,
+      "loot_per_kill_micros": 885324500,
+      "tier": 3
+    },
+    "oteryn:creature.askarak_demon": {
+      "kills_per_hour_micros": 86098654,
+      "loot_per_kill_micros": 227188125,
+      "tier": 2
+    },
+    "oteryn:creature.askarak_lord": {
+      "kills_per_hour_micros": 192642140,
+      "loot_per_kill_micros": 209164500,
+      "tier": 3
+    },
+    "oteryn:creature.askarak_prince": {
+      "kills_per_hour_micros": 149610389,
+      "loot_per_kill_micros": 384252700,
+      "tier": 3
+    },
+    "oteryn:creature.assassin": {
+      "kills_per_hour_micros": 789041095,
+      "loot_per_kill_micros": 40864291,
+      "tier": 2
+    },
+    "oteryn:creature.azure_frog": {
+      "kills_per_hour_micros": 39916839,
+      "loot_per_kill_micros": 4104633,
+      "tier": 1
+    },
+    "oteryn:creature.badger": {
+      "kills_per_hour_micros": 279611650,
+      "loot_per_kill_micros": 2032900,
+      "tier": 1
+    },
+    "oteryn:creature.baleful_bunny": {
+      "kills_per_hour_micros": 207942238,
+      "loot_per_kill_micros": 394503325,
+      "tier": 2
+    },
+    "oteryn:creature.bandit": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 23622606,
+      "tier": 1
+    },
+    "oteryn:creature.bane_bringer": {
+      "kills_per_hour_micros": 76190476,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.bane_of_light": {
+      "kills_per_hour_micros": 84581497,
+      "loot_per_kill_micros": 84151500,
+      "tier": 2
+    },
+    "oteryn:creature.banshee": {
+      "kills_per_hour_micros": 130022573,
+      "loot_per_kill_micros": 97011595,
+      "tier": 2
+    },
+    "oteryn:creature.barbarian_bloodwalker": {
+      "kills_per_hour_micros": 484033613,
+      "loot_per_kill_micros": 60025405,
+      "tier": 2
+    },
+    "oteryn:creature.barbarian_brutetamer": {
+      "kills_per_hour_micros": 46791226,
+      "loot_per_kill_micros": 32275339,
+      "tier": 1
+    },
+    "oteryn:creature.barbarian_headsplitter": {
+      "kills_per_hour_micros": 79778393,
+      "loot_per_kill_micros": 27168857,
+      "tier": 1
+    },
+    "oteryn:creature.barbarian_skullhunter": {
+      "kills_per_hour_micros": 40967283,
+      "loot_per_kill_micros": 139703346,
+      "tier": 1
+    },
+    "oteryn:creature.barkless_devotee": {
+      "kills_per_hour_micros": 144000000,
+      "loot_per_kill_micros": 66960700,
+      "tier": 3
+    },
+    "oteryn:creature.barkless_fanatic": {
+      "kills_per_hour_micros": 125764192,
+      "loot_per_kill_micros": 99087646,
+      "tier": 3
+    },
+    "oteryn:creature.bashmu": {
+      "kills_per_hour_micros": 47485572,
+      "loot_per_kill_micros": 2706946750,
+      "tier": 4
+    },
+    "oteryn:creature.bat": {
+      "kills_per_hour_micros": 227667984,
+      "loot_per_kill_micros": 537200,
+      "tier": 1
+    },
+    "oteryn:creature.bear": {
+      "kills_per_hour_micros": 11513092,
+      "loot_per_kill_micros": 5762340,
+      "tier": 1
+    },
+    "oteryn:creature.behemoth": {
+      "kills_per_hour_micros": 81126760,
+      "loot_per_kill_micros": 607764805,
+      "tier": 3
+    },
+    "oteryn:creature.berserker_chicken": {
+      "kills_per_hour_micros": 369230769,
+      "loot_per_kill_micros": 33442716,
+      "tier": 2
+    },
+    "oteryn:creature.betrayed_wraith": {
+      "kills_per_hour_micros": 86098654,
+      "loot_per_kill_micros": 1356689715,
+      "tier": 3
+    },
+    "oteryn:creature.biting_book": {
+      "kills_per_hour_micros": 34388059,
+      "loot_per_kill_micros": 4808316000,
+      "tier": 4
+    },
+    "oteryn:creature.black_sphinx_acolyte": {
+      "kills_per_hour_micros": 47329498,
+      "loot_per_kill_micros": 893907700,
+      "tier": 4
+    },
+    "oteryn:creature.blemished_spawn": {
+      "kills_per_hour_micros": 49188727,
+      "loot_per_kill_micros": 3106799218,
+      "tier": 4
+    },
+    "oteryn:creature.blightwalker": {
+      "kills_per_hour_micros": 61868958,
+      "loot_per_kill_micros": 1955075610,
+      "tier": 4
+    },
+    "oteryn:creature.bloated_man_maggot": {
+      "kills_per_hour_micros": 8748481,
+      "loot_per_kill_micros": 6920280300,
+      "tier": 5
+    },
+    "oteryn:creature.blood_beast": {
+      "kills_per_hour_micros": 239004149,
+      "loot_per_kill_micros": 146652900,
+      "tier": 3
+    },
+    "oteryn:creature.blood_crab": {
+      "kills_per_hour_micros": 366878980,
+      "loot_per_kill_micros": 20262832,
+      "tier": 2
+    },
+    "oteryn:creature.blood_hand": {
+      "kills_per_hour_micros": 142928039,
+      "loot_per_kill_micros": 222922500,
+      "tier": 2
+    },
+    "oteryn:creature.blood_priest": {
+      "kills_per_hour_micros": 112280701,
+      "loot_per_kill_micros": 256512005,
+      "tier": 2
+    },
+    "oteryn:creature.blue_djinn": {
+      "kills_per_hour_micros": 408510638,
+      "loot_per_kill_micros": 62411997,
+      "tier": 2
+    },
+    "oteryn:creature.bluebeak": {
+      "kills_per_hour_micros": 148071979,
+      "loot_per_kill_micros": 774422764,
+      "tier": 3
+    },
+    "oteryn:creature.boar": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 2626942,
+      "tier": 1
+    },
+    "oteryn:creature.boar_man": {
+      "kills_per_hour_micros": 42825278,
+      "loot_per_kill_micros": 1741106870,
+      "tier": 4
+    },
+    "oteryn:creature.bog_raider": {
+      "kills_per_hour_micros": 135211267,
+      "loot_per_kill_micros": 94203545,
+      "tier": 2
+    },
+    "oteryn:creature.bonebeast": {
+      "kills_per_hour_micros": 201398601,
+      "loot_per_kill_micros": 71468747,
+      "tier": 2
+    },
+    "oteryn:creature.bonelord": {
+      "kills_per_hour_micros": 626086956,
+      "loot_per_kill_micros": 64188286,
+      "tier": 2
+    },
+    "oteryn:creature.bony_sea_devil": {
+      "kills_per_hour_micros": 13956869,
+      "loot_per_kill_micros": 6234853800,
+      "tier": 4
+    },
+    "oteryn:creature.boogy": {
+      "kills_per_hour_micros": 71199011,
+      "loot_per_kill_micros": 411199005,
+      "tier": 2
+    },
+    "oteryn:creature.brachiodemon": {
+      "kills_per_hour_micros": 13527477,
+      "loot_per_kill_micros": 5735811600,
+      "tier": 4
+    },
+    "oteryn:creature.brain_squid": {
+      "kills_per_hour_micros": 24625908,
+      "loot_per_kill_micros": 2942446650,
+      "tier": 4
+    },
+    "oteryn:creature.braindeath": {
+      "kills_per_hour_micros": 112941176,
+      "loot_per_kill_micros": 102460911,
+      "tier": 2
+    },
+    "oteryn:creature.bramble_wyrmling": {
+      "kills_per_hour_micros": 146938775,
+      "loot_per_kill_micros": 751618791,
+      "tier": 3
+    },
+    "oteryn:creature.branchy_crawler": {
+      "kills_per_hour_micros": 12535364,
+      "loot_per_kill_micros": 6661073500,
+      "tier": 4
+    },
+    "oteryn:creature.breach_brood": {
+      "kills_per_hour_micros": 104347826,
+      "loot_per_kill_micros": 935898260,
+      "tier": 3
+    },
+    "oteryn:creature.bride_of_night": {
+      "kills_per_hour_micros": 436363636,
+      "loot_per_kill_micros": 39390000,
+      "tier": 2
+    },
+    "oteryn:creature.brimstone_bug": {
+      "kills_per_hour_micros": 93964110,
+      "loot_per_kill_micros": 361649325,
+      "tier": 2
+    },
+    "oteryn:creature.brinebrute_inferniarch": {
+      "kills_per_hour_micros": 16433666,
+      "loot_per_kill_micros": 7496645950,
+      "tier": 5
+    },
+    "oteryn:creature.broken_shaper": {
+      "kills_per_hour_micros": 164571428,
+      "loot_per_kill_micros": 424949735,
+      "tier": 3
+    },
+    "oteryn:creature.broodrider_inferniarch": {
+      "kills_per_hour_micros": 50526315,
+      "loot_per_kill_micros": 1540890000,
+      "tier": 4
+    },
+    "oteryn:creature.bug": {
+      "kills_per_hour_micros": 235102040,
+      "loot_per_kill_micros": 1807482,
+      "tier": 1
+    },
+    "oteryn:creature.bulltaur_alchemist": {
+      "kills_per_hour_micros": 38735709,
+      "loot_per_kill_micros": 1546769850,
+      "tier": 3
+    },
+    "oteryn:creature.bulltaur_brute": {
+      "kills_per_hour_micros": 27376425,
+      "loot_per_kill_micros": 1378672500,
+      "tier": 3
+    },
+    "oteryn:creature.bulltaur_forgepriest": {
+      "kills_per_hour_micros": 47840531,
+      "loot_per_kill_micros": 1760386050,
+      "tier": 4
+    },
+    "oteryn:creature.burning_book": {
+      "kills_per_hour_micros": 24870466,
+      "loot_per_kill_micros": 4266441690,
+      "tier": 4
+    },
+    "oteryn:creature.burning_gladiator": {
+      "kills_per_hour_micros": 34042553,
+      "loot_per_kill_micros": 1815709560,
+      "tier": 4
+    },
+    "oteryn:creature.burster_spectre": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 612330880,
+      "tier": 4
+    },
+    "oteryn:creature.candy_floss_elemental": {
+      "kills_per_hour_micros": 60952380,
+      "loot_per_kill_micros": 900061735,
+      "tier": 3
+    },
+    "oteryn:creature.candy_horror": {
+      "kills_per_hour_micros": 122814498,
+      "loot_per_kill_micros": 753700360,
+      "tier": 3
+    },
+    "oteryn:creature.capricious_phantom": {
+      "kills_per_hour_micros": 12478336,
+      "loot_per_kill_micros": 6063043600,
+      "tier": 4
+    },
+    "oteryn:creature.carniphila": {
+      "kills_per_hour_micros": 500869565,
+      "loot_per_kill_micros": 29077586,
+      "tier": 2
+    },
+    "oteryn:creature.carnivostrich": {
+      "kills_per_hour_micros": 60125260,
+      "loot_per_kill_micros": 1716149175,
+      "tier": 4
+    },
+    "oteryn:creature.carrion_worm": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 17091655,
+      "tier": 1
+    },
+    "oteryn:creature.cave_chimera": {
+      "kills_per_hour_micros": 55066921,
+      "loot_per_kill_micros": 4878078550,
+      "tier": 4
+    },
+    "oteryn:creature.cave_devourer": {
+      "kills_per_hour_micros": 85714285,
+      "loot_per_kill_micros": 618631500,
+      "tier": 3
+    },
+    "oteryn:creature.cave_rat": {
+      "kills_per_hour_micros": 227667984,
+      "loot_per_kill_micros": 1888367,
+      "tier": 1
+    },
+    "oteryn:creature.centipede": {
+      "kills_per_hour_micros": 6299212,
+      "loot_per_kill_micros": 9245992,
+      "tier": 1
+    },
+    "oteryn:creature.chakoya_toolshaper": {
+      "kills_per_hour_micros": 11513092,
+      "loot_per_kill_micros": 12492550,
+      "tier": 1
+    },
+    "oteryn:creature.chakoya_tribewarden": {
+      "kills_per_hour_micros": 6454504,
+      "loot_per_kill_micros": 10359345,
+      "tier": 1
+    },
+    "oteryn:creature.chakoya_windcaller": {
+      "kills_per_hour_micros": 10919431,
+      "loot_per_kill_micros": 12525944,
+      "tier": 1
+    },
+    "oteryn:creature.chasm_spawn": {
+      "kills_per_hour_micros": 84333821,
+      "loot_per_kill_micros": 888871395,
+      "tier": 3
+    },
+    "oteryn:creature.chocolate_blob": {
+      "kills_per_hour_micros": 13733905,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.choking_fear": {
+      "kills_per_hour_micros": 55384615,
+      "loot_per_kill_micros": 1062505580,
+      "tier": 3
+    },
+    "oteryn:creature.cinder_wyrmling": {
+      "kills_per_hour_micros": 146938775,
+      "loot_per_kill_micros": 701337832,
+      "tier": 3
+    },
+    "oteryn:creature.clay_guardian": {
+      "kills_per_hour_micros": 130612244,
+      "loot_per_kill_micros": 74346970,
+      "tier": 2
+    },
+    "oteryn:creature.cliff_strider": {
+      "kills_per_hour_micros": 38945233,
+      "loot_per_kill_micros": 2165081985,
+      "tier": 4
+    },
+    "oteryn:creature.cloak_of_terror": {
+      "kills_per_hour_micros": 11399168,
+      "loot_per_kill_micros": 7161901000,
+      "tier": 4
+    },
+    "oteryn:creature.clomp": {
+      "kills_per_hour_micros": 121008403,
+      "loot_per_kill_micros": 78569850,
+      "tier": 2
+    },
+    "oteryn:creature.cobra": {
+      "kills_per_hour_micros": 110133843,
+      "loot_per_kill_micros": 784875,
+      "tier": 1
+    },
+    "oteryn:creature.cobra_assassin": {
+      "kills_per_hour_micros": 37597911,
+      "loot_per_kill_micros": 1600899733,
+      "tier": 4
+    },
+    "oteryn:creature.cobra_scout": {
+      "kills_per_hour_micros": 45786963,
+      "loot_per_kill_micros": 1646935550,
+      "tier": 4
+    },
+    "oteryn:creature.cobra_vizier": {
+      "kills_per_hour_micros": 40392706,
+      "loot_per_kill_micros": 1791250515,
+      "tier": 4
+    },
+    "oteryn:creature.converter": {
+      "kills_per_hour_micros": 20667384,
+      "loot_per_kill_micros": 8985470700,
+      "tier": 5
+    },
+    "oteryn:creature.coral_frog": {
+      "kills_per_hour_micros": 39916839,
+      "loot_per_kill_micros": 4171684,
+      "tier": 1
+    },
+    "oteryn:creature.corrupted_ghost": {
+      "kills_per_hour_micros": 182278481,
+      "loot_per_kill_micros": 8196755,
+      "tier": 1
+    },
+    "oteryn:creature.corrupted_skeleton": {
+      "kills_per_hour_micros": 53531598,
+      "loot_per_kill_micros": 10508200,
+      "tier": 1
+    },
+    "oteryn:creature.corym_charlatan": {
+      "kills_per_hour_micros": 564705882,
+      "loot_per_kill_micros": 33799287,
+      "tier": 2
+    },
+    "oteryn:creature.corym_skirmisher": {
+      "kills_per_hour_micros": 301570680,
+      "loot_per_kill_micros": 48051855,
+      "tier": 2
+    },
+    "oteryn:creature.corym_vanguard": {
+      "kills_per_hour_micros": 188235294,
+      "loot_per_kill_micros": 116438135,
+      "tier": 2
+    },
+    "oteryn:creature.courage_leech": {
+      "kills_per_hour_micros": 11201866,
+      "loot_per_kill_micros": 7519103500,
+      "tier": 4
+    },
+    "oteryn:creature.crab": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 11364578,
+      "tier": 1
+    },
+    "oteryn:creature.crape_man": {
+      "kills_per_hour_micros": 39533287,
+      "loot_per_kill_micros": 1840217400,
+      "tier": 4
+    },
+    "oteryn:creature.crawler": {
+      "kills_per_hour_micros": 265437788,
+      "loot_per_kill_micros": 216496200,
+      "tier": 3
+    },
+    "oteryn:creature.crazed_beggar": {
+      "kills_per_hour_micros": 4457169,
+      "loot_per_kill_micros": 6998694,
+      "tier": 1
+    },
+    "oteryn:creature.crazed_summer_rearguard": {
+      "kills_per_hour_micros": 73846153,
+      "loot_per_kill_micros": 1149676075,
+      "tier": 3
+    },
+    "oteryn:creature.crazed_summer_vanguard": {
+      "kills_per_hour_micros": 83478260,
+      "loot_per_kill_micros": 901968450,
+      "tier": 4
+    },
+    "oteryn:creature.crazed_winter_rearguard": {
+      "kills_per_hour_micros": 68982035,
+      "loot_per_kill_micros": 883791725,
+      "tier": 3
+    },
+    "oteryn:creature.crazed_winter_vanguard": {
+      "kills_per_hour_micros": 79668049,
+      "loot_per_kill_micros": 1095954600,
+      "tier": 4
+    },
+    "oteryn:creature.cream_blob": {
+      "kills_per_hour_micros": 47920133,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.creepy_crawler": {
+      "kills_per_hour_micros": 17609293,
+      "loot_per_kill_micros": 6270976250,
+      "tier": 5
+    },
+    "oteryn:creature.crimson_frog": {
+      "kills_per_hour_micros": 39916839,
+      "loot_per_kill_micros": 4533150,
+      "tier": 1
+    },
+    "oteryn:creature.crocodile": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 8194246,
+      "tier": 1
+    },
+    "oteryn:creature.crusader": {
+      "kills_per_hour_micros": 89164086,
+      "loot_per_kill_micros": 863063441,
+      "tier": 3
+    },
+    "oteryn:creature.crustacea_gigantica": {
+      "kills_per_hour_micros": 187012987,
+      "loot_per_kill_micros": 69760000,
+      "tier": 3
+    },
+    "oteryn:creature.crypt_construct": {
+      "kills_per_hour_micros": 14197683,
+      "loot_per_kill_micros": 5947351100,
+      "tier": 4
+    },
+    "oteryn:creature.crypt_defiler": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 22997489,
+      "tier": 1
+    },
+    "oteryn:creature.crypt_fiend": {
+      "kills_per_hour_micros": 8458149,
+      "loot_per_kill_micros": 5360790500,
+      "tier": 4
+    },
+    "oteryn:creature.crypt_mage": {
+      "kills_per_hour_micros": 22857142,
+      "loot_per_kill_micros": 2129099250,
+      "tier": 4
+    },
+    "oteryn:creature.crypt_shambler": {
+      "kills_per_hour_micros": 349090909,
+      "loot_per_kill_micros": 35523562,
+      "tier": 2
+    },
+    "oteryn:creature.crypt_warden": {
+      "kills_per_hour_micros": 45390070,
+      "loot_per_kill_micros": 1102920170,
+      "tier": 4
+    },
+    "oteryn:creature.crypt_warrior": {
+      "kills_per_hour_micros": 62135922,
+      "loot_per_kill_micros": 1614653685,
+      "tier": 4
+    },
+    "oteryn:creature.crystal_spider": {
+      "kills_per_hour_micros": 109923664,
+      "loot_per_kill_micros": 245484469,
+      "tier": 2
+    },
+    "oteryn:creature.crystal_wolf": {
+      "kills_per_hour_micros": 203533568,
+      "loot_per_kill_micros": 629890990,
+      "tier": 2
+    },
+    "oteryn:creature.crystalcrusher": {
+      "kills_per_hour_micros": 190099009,
+      "loot_per_kill_micros": 115299041,
+      "tier": 2
+    },
+    "oteryn:creature.cult_believer": {
+      "kills_per_hour_micros": 92903225,
+      "loot_per_kill_micros": 68972700,
+      "tier": 2
+    },
+    "oteryn:creature.cult_enforcer": {
+      "kills_per_hour_micros": 283743842,
+      "loot_per_kill_micros": 82078949,
+      "tier": 3
+    },
+    "oteryn:creature.cult_scholar": {
+      "kills_per_hour_micros": 183439490,
+      "loot_per_kill_micros": 70441600,
+      "tier": 3
+    },
+    "oteryn:creature.cunning_werepanther": {
+      "kills_per_hour_micros": 81241184,
+      "loot_per_kill_micros": 888873528,
+      "tier": 3
+    },
+    "oteryn:creature.cursed_ape": {
+      "kills_per_hour_micros": 228571428,
+      "loot_per_kill_micros": 143150050,
+      "tier": 3
+    },
+    "oteryn:creature.cursed_book": {
+      "kills_per_hour_micros": 21976344,
+      "loot_per_kill_micros": 4111572100,
+      "tier": 4
+    },
+    "oteryn:creature.cursed_prospector": {
+      "kills_per_hour_micros": 44616576,
+      "loot_per_kill_micros": 996513150,
+      "tier": 4
+    },
+    "oteryn:creature.cyclops": {
+      "kills_per_hour_micros": 492307692,
+      "loot_per_kill_micros": 30718276,
+      "tier": 2
+    },
+    "oteryn:creature.cyclops_drone": {
+      "kills_per_hour_micros": 391836734,
+      "loot_per_kill_micros": 23988886,
+      "tier": 2
+    },
+    "oteryn:creature.cyclops_smith": {
+      "kills_per_hour_micros": 269158878,
+      "loot_per_kill_micros": 64432517,
+      "tier": 2
+    },
+    "oteryn:creature.cyclursus": {
+      "kills_per_hour_micros": 25486725,
+      "loot_per_kill_micros": 2483611000,
+      "tier": 4
+    },
+    "oteryn:creature.damaged_worker_golem": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 33456710,
+      "tier": 1
+    },
+    "oteryn:creature.dark_apprentice": {
+      "kills_per_hour_micros": 600000000,
+      "loot_per_kill_micros": 17264122,
+      "tier": 2
+    },
+    "oteryn:creature.dark_carnisylvan": {
+      "kills_per_hour_micros": 51566696,
+      "loot_per_kill_micros": 1696527330,
+      "tier": 3
+    },
+    "oteryn:creature.dark_faun": {
+      "kills_per_hour_micros": 56140350,
+      "loot_per_kill_micros": 328299025,
+      "tier": 2
+    },
+    "oteryn:creature.dark_magician": {
+      "kills_per_hour_micros": 426666666,
+      "loot_per_kill_micros": 22029964,
+      "tier": 2
+    },
+    "oteryn:creature.dark_monk": {
+      "kills_per_hour_micros": 654545454,
+      "loot_per_kill_micros": 14990212,
+      "tier": 2
+    },
+    "oteryn:creature.dark_torturer": {
+      "kills_per_hour_micros": 51336898,
+      "loot_per_kill_micros": 2090010397,
+      "tier": 3
+    },
+    "oteryn:creature.darklight_construct": {
+      "kills_per_hour_micros": 16886543,
+      "loot_per_kill_micros": 6928945900,
+      "tier": 5
+    },
+    "oteryn:creature.darklight_emitter": {
+      "kills_per_hour_micros": 19374369,
+      "loot_per_kill_micros": 9274992700,
+      "tier": 5
+    },
+    "oteryn:creature.darklight_matter": {
+      "kills_per_hour_micros": 12376450,
+      "loot_per_kill_micros": 5680906400,
+      "tier": 4
+    },
+    "oteryn:creature.darklight_source": {
+      "kills_per_hour_micros": 10414030,
+      "loot_per_kill_micros": 5836300175,
+      "tier": 4
+    },
+    "oteryn:creature.darklight_striker": {
+      "kills_per_hour_micros": 9305331,
+      "loot_per_kill_micros": 5673223050,
+      "tier": 4
+    },
+    "oteryn:creature.dawnfire_asura": {
+      "kills_per_hour_micros": 132110091,
+      "loot_per_kill_micros": 932862777,
+      "tier": 3
+    },
+    "oteryn:creature.day_night_harpy": {
+      "kills_per_hour_micros": 38971583,
+      "loot_per_kill_micros": 1392750000,
+      "tier": 5
+    },
+    "oteryn:creature.death_blob": {
+      "kills_per_hour_micros": 374025974,
+      "loot_per_kill_micros": 5725620,
+      "tier": 2
+    },
+    "oteryn:creature.death_priest": {
+      "kills_per_hour_micros": 149610389,
+      "loot_per_kill_micros": 216565000,
+      "tier": 2
+    },
+    "oteryn:creature.deathling_scout": {
+      "kills_per_hour_micros": 57029702,
+      "loot_per_kill_micros": 1326119765,
+      "tier": 4
+    },
+    "oteryn:creature.deathling_spellsinger": {
+      "kills_per_hour_micros": 57029702,
+      "loot_per_kill_micros": 1700849020,
+      "tier": 4
+    },
+    "oteryn:creature.deepling_brawler": {
+      "kills_per_hour_micros": 369230769,
+      "loot_per_kill_micros": 68939533,
+      "tier": 2
+    },
+    "oteryn:creature.deepling_elite": {
+      "kills_per_hour_micros": 115895372,
+      "loot_per_kill_micros": 599550130,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_guard": {
+      "kills_per_hour_micros": 190728476,
+      "loot_per_kill_micros": 513146360,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_master_librarian": {
+      "kills_per_hour_micros": 227667984,
+      "loot_per_kill_micros": 590392050,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_scout": {
+      "kills_per_hour_micros": 640000000,
+      "loot_per_kill_micros": 37836052,
+      "tier": 2
+    },
+    "oteryn:creature.deepling_spellsinger": {
+      "kills_per_hour_micros": 423529411,
+      "loot_per_kill_micros": 320389085,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_tyrant": {
+      "kills_per_hour_micros": 79229711,
+      "loot_per_kill_micros": 1021065810,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_warrior": {
+      "kills_per_hour_micros": 243037974,
+      "loot_per_kill_micros": 297235040,
+      "tier": 3
+    },
+    "oteryn:creature.deepling_worker": {
+      "kills_per_hour_micros": 778378378,
+      "loot_per_kill_micros": 26827678,
+      "tier": 2
+    },
+    "oteryn:creature.deepsea_blood_crab": {
+      "kills_per_hour_micros": 338823529,
+      "loot_per_kill_micros": 21967161,
+      "tier": 2
+    },
+    "oteryn:creature.deepworm": {
+      "kills_per_hour_micros": 109090909,
+      "loot_per_kill_micros": 630881150,
+      "tier": 3
+    },
+    "oteryn:creature.defiler": {
+      "kills_per_hour_micros": 104159132,
+      "loot_per_kill_micros": 894034730,
+      "tier": 3
+    },
+    "oteryn:creature.demon": {
+      "kills_per_hour_micros": 43049327,
+      "loot_per_kill_micros": 2195530400,
+      "tier": 4
+    },
+    "oteryn:creature.demon_outcast": {
+      "kills_per_hour_micros": 59627329,
+      "loot_per_kill_micros": 1115627731,
+      "tier": 4
+    },
+    "oteryn:creature.demon_parrot": {
+      "kills_per_hour_micros": 381456953,
+      "loot_per_kill_micros": 40355913,
+      "tier": 2
+    },
+    "oteryn:creature.demon_skeleton": {
+      "kills_per_hour_micros": 293877551,
+      "loot_per_kill_micros": 75150894,
+      "tier": 2
+    },
+    "oteryn:creature.destroyer": {
+      "kills_per_hour_micros": 86746987,
+      "loot_per_kill_micros": 640203002,
+      "tier": 3
+    },
+    "oteryn:creature.devoted_radiant_acolyte": {
+      "kills_per_hour_micros": 12601181,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devoted_radiant_inquisitor": {
+      "kills_per_hour_micros": 12598425,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devoted_radiant_paragon": {
+      "kills_per_hour_micros": 19532044,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devoted_radiant_templar": {
+      "kills_per_hour_micros": 9512799,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devoted_radiant_warden": {
+      "kills_per_hour_micros": 9291821,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devoted_radiant_zealot": {
+      "kills_per_hour_micros": 13727359,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.devourer": {
+      "kills_per_hour_micros": 204255319,
+      "loot_per_kill_micros": 515715113,
+      "tier": 3
+    },
+    "oteryn:creature.diabolic_imp": {
+      "kills_per_hour_micros": 208695652,
+      "loot_per_kill_micros": 223854940,
+      "tier": 3
+    },
+    "oteryn:creature.diamond_servant": {
+      "kills_per_hour_micros": 131207289,
+      "loot_per_kill_micros": 148438020,
+      "tier": 2
+    },
+    "oteryn:creature.diamond_servant_replica": {
+      "kills_per_hour_micros": 193939393,
+      "loot_per_kill_micros": 276922034,
+      "tier": 3
+    },
+    "oteryn:creature.dire_penguin": {
+      "kills_per_hour_micros": 757894736,
+      "loot_per_kill_micros": 20400002,
+      "tier": 2
+    },
+    "oteryn:creature.diremaw": {
+      "kills_per_hour_micros": 106864564,
+      "loot_per_kill_micros": 947193375,
+      "tier": 3
+    },
+    "oteryn:creature.distorted_phantom": {
+      "kills_per_hour_micros": 14389208,
+      "loot_per_kill_micros": 7174436400,
+      "tier": 4
+    },
+    "oteryn:creature.doom_deer": {
+      "kills_per_hour_micros": 295384615,
+      "loot_per_kill_micros": 29898929,
+      "tier": 2
+    },
+    "oteryn:creature.doomsday_cultist": {
+      "kills_per_hour_micros": 929032258,
+      "loot_per_kill_micros": 15700000,
+      "tier": 2
+    },
+    "oteryn:creature.dragolisk": {
+      "kills_per_hour_micros": 36386607,
+      "loot_per_kill_micros": 1939514295,
+      "tier": 3
+    },
+    "oteryn:creature.dragon": {
+      "kills_per_hour_micros": 124675324,
+      "loot_per_kill_micros": 111089696,
+      "tier": 2
+    },
+    "oteryn:creature.dragon_hatchling": {
+      "kills_per_hour_micros": 397241379,
+      "loot_per_kill_micros": 27940936,
+      "tier": 2
+    },
+    "oteryn:creature.dragon_lord": {
+      "kills_per_hour_micros": 202105263,
+      "loot_per_kill_micros": 244595902,
+      "tier": 3
+    },
+    "oteryn:creature.dragon_lord_hatchling": {
+      "kills_per_hour_micros": 177777777,
+      "loot_per_kill_micros": 67088898,
+      "tier": 2
+    },
+    "oteryn:creature.dragonling": {
+      "kills_per_hour_micros": 150785340,
+      "loot_per_kill_micros": 110236590,
+      "tier": 3
+    },
+    "oteryn:creature.draken_abomination": {
+      "kills_per_hour_micros": 62270270,
+      "loot_per_kill_micros": 634980300,
+      "tier": 3
+    },
+    "oteryn:creature.draken_elite": {
+      "kills_per_hour_micros": 59689119,
+      "loot_per_kill_micros": 848949532,
+      "tier": 3
+    },
+    "oteryn:creature.draken_spellweaver": {
+      "kills_per_hour_micros": 93053311,
+      "loot_per_kill_micros": 752326433,
+      "tier": 3
+    },
+    "oteryn:creature.draken_warmaster": {
+      "kills_per_hour_micros": 87537993,
+      "loot_per_kill_micros": 356910639,
+      "tier": 3
+    },
+    "oteryn:creature.draptor": {
+      "kills_per_hour_micros": 155256064,
+      "loot_per_kill_micros": 500650000,
+      "tier": 3
+    },
+    "oteryn:creature.dread_intruder": {
+      "kills_per_hour_micros": 78904109,
+      "loot_per_kill_micros": 1135216735,
+      "tier": 3
+    },
+    "oteryn:creature.drillworm": {
+      "kills_per_hour_micros": 250434782,
+      "loot_per_kill_micros": 298585930,
+      "tier": 3
+    },
+    "oteryn:creature.druid_s_apparition": {
+      "kills_per_hour_micros": 24636441,
+      "loot_per_kill_micros": 6886549000,
+      "tier": 5
+    },
+    "oteryn:creature.dryad": {
+      "kills_per_hour_micros": 472131147,
+      "loot_per_kill_micros": 43467894,
+      "tier": 2
+    },
+    "oteryn:creature.duskbringer": {
+      "kills_per_hour_micros": 95840266,
+      "loot_per_kill_micros": 98493000,
+      "tier": 3
+    },
+    "oteryn:creature.dwarf": {
+      "kills_per_hour_micros": 4891719,
+      "loot_per_kill_micros": 21731412,
+      "tier": 1
+    },
+    "oteryn:creature.dwarf_geomancer": {
+      "kills_per_hour_micros": 384000000,
+      "loot_per_kill_micros": 47337152,
+      "tier": 2
+    },
+    "oteryn:creature.dwarf_guard": {
+      "kills_per_hour_micros": 411428571,
+      "loot_per_kill_micros": 32929452,
+      "tier": 2
+    },
+    "oteryn:creature.dwarf_henchman": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.dwarf_soldier": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 21204417,
+      "tier": 1
+    },
+    "oteryn:creature.dworc_fleshhunter": {
+      "kills_per_hour_micros": 34636199,
+      "loot_per_kill_micros": 11124900,
+      "tier": 1
+    },
+    "oteryn:creature.dworc_shadowstalker": {
+      "kills_per_hour_micros": 43308270,
+      "loot_per_kill_micros": 1980228145,
+      "tier": 4
+    },
+    "oteryn:creature.dworc_venomsniper": {
+      "kills_per_hour_micros": 36363636,
+      "loot_per_kill_micros": 9106544,
+      "tier": 1
+    },
+    "oteryn:creature.dworc_voodoomaster": {
+      "kills_per_hour_micros": 36363636,
+      "loot_per_kill_micros": 10709163,
+      "tier": 1
+    },
+    "oteryn:creature.earth_elemental": {
+      "kills_per_hour_micros": 104727272,
+      "loot_per_kill_micros": 56481110,
+      "tier": 2
+    },
+    "oteryn:creature.efreet": {
+      "kills_per_hour_micros": 242016806,
+      "loot_per_kill_micros": 100659720,
+      "tier": 2
+    },
+    "oteryn:creature.elder_bonelord": {
+      "kills_per_hour_micros": 313043478,
+      "loot_per_kill_micros": 109956612,
+      "tier": 2
+    },
+    "oteryn:creature.elder_mummy": {
+      "kills_per_hour_micros": 131207289,
+      "loot_per_kill_micros": 151535971,
+      "tier": 2
+    },
+    "oteryn:creature.elder_wyrm": {
+      "kills_per_hour_micros": 134894613,
+      "loot_per_kill_micros": 493942515,
+      "tier": 3
+    },
+    "oteryn:creature.elephant": {
+      "kills_per_hour_micros": 357763975,
+      "loot_per_kill_micros": 7368950,
+      "tier": 2
+    },
+    "oteryn:creature.elf": {
+      "kills_per_hour_micros": 9272376,
+      "loot_per_kill_micros": 23421708,
+      "tier": 1
+    },
+    "oteryn:creature.elf_arcanist": {
+      "kills_per_hour_micros": 626086956,
+      "loot_per_kill_micros": 24970775,
+      "tier": 2
+    },
+    "oteryn:creature.elf_overseer": {
+      "kills_per_hour_micros": 303157894,
+      "loot_per_kill_micros": 75535928,
+      "tier": 2
+    },
+    "oteryn:creature.elf_scout": {
+      "kills_per_hour_micros": 5663716,
+      "loot_per_kill_micros": 25162938,
+      "tier": 1
+    },
+    "oteryn:creature.emerald_damselfly": {
+      "kills_per_hour_micros": 10160522,
+      "loot_per_kill_micros": 14255526,
+      "tier": 1
+    },
+    "oteryn:creature.emerald_tortoise": {
+      "kills_per_hour_micros": 11820233,
+      "loot_per_kill_micros": 4154871550,
+      "tier": 4
+    },
+    "oteryn:creature.energetic_book": {
+      "kills_per_hour_micros": 23752577,
+      "loot_per_kill_micros": 4480490280,
+      "tier": 4
+    },
+    "oteryn:creature.energuardian_of_tales": {
+      "kills_per_hour_micros": 31805632,
+      "loot_per_kill_micros": 2361500390,
+      "tier": 4
+    },
+    "oteryn:creature.energy_elemental": {
+      "kills_per_hour_micros": 187622149,
+      "loot_per_kill_micros": 106927040,
+      "tier": 2
+    },
+    "oteryn:creature.enfeebled_silencer": {
+      "kills_per_hour_micros": 329142857,
+      "loot_per_kill_micros": 269135770,
+      "tier": 3
+    },
+    "oteryn:creature.enlightened_of_the_cult": {
+      "kills_per_hour_micros": 168421052,
+      "loot_per_kill_micros": 99327634,
+      "tier": 2
+    },
+    "oteryn:creature.enraged_crystal_golem": {
+      "kills_per_hour_micros": 140487804,
+      "loot_per_kill_micros": 137406000,
+      "tier": 2
+    },
+    "oteryn:creature.enslaved_dwarf": {
+      "kills_per_hour_micros": 98630136,
+      "loot_per_kill_micros": 694369287,
+      "tier": 3
+    },
+    "oteryn:creature.eternal_guardian": {
+      "kills_per_hour_micros": 113385826,
+      "loot_per_kill_micros": 429807067,
+      "tier": 3
+    },
+    "oteryn:creature.evil_prospector": {
+      "kills_per_hour_micros": 17071724,
+      "loot_per_kill_micros": 758696175,
+      "tier": 4
+    },
+    "oteryn:creature.evil_sheep": {
+      "kills_per_hour_micros": 309677419,
+      "loot_per_kill_micros": 20367003,
+      "tier": 2
+    },
+    "oteryn:creature.evil_sheep_lord": {
+      "kills_per_hour_micros": 276923076,
+      "loot_per_kill_micros": 24478720,
+      "tier": 2
+    },
+    "oteryn:creature.execowtioner": {
+      "kills_per_hour_micros": 97959183,
+      "loot_per_kill_micros": 436611280,
+      "tier": 3
+    },
+    "oteryn:creature.exotic_bat": {
+      "kills_per_hour_micros": 249350649,
+      "loot_per_kill_micros": 427677600,
+      "tier": 3
+    },
+    "oteryn:creature.exotic_cave_spider": {
+      "kills_per_hour_micros": 195918367,
+      "loot_per_kill_micros": 315711500,
+      "tier": 3
+    },
+    "oteryn:creature.eyeless_devourer": {
+      "kills_per_hour_micros": 48040033,
+      "loot_per_kill_micros": 4114463000,
+      "tier": 4
+    },
+    "oteryn:creature.falcon_knight": {
+      "kills_per_hour_micros": 28828828,
+      "loot_per_kill_micros": 1756809630,
+      "tier": 4
+    },
+    "oteryn:creature.falcon_paladin": {
+      "kills_per_hour_micros": 44824902,
+      "loot_per_kill_micros": 2546886265,
+      "tier": 4
+    },
+    "oteryn:creature.faun": {
+      "kills_per_hour_micros": 79558011,
+      "loot_per_kill_micros": 378429403,
+      "tier": 2
+    },
+    "oteryn:creature.feral_sphinx": {
+      "kills_per_hour_micros": 36363636,
+      "loot_per_kill_micros": 1184407625,
+      "tier": 4
+    },
+    "oteryn:creature.feral_werecrocodile": {
+      "kills_per_hour_micros": 52268602,
+      "loot_per_kill_micros": 2201985106,
+      "tier": 4
+    },
+    "oteryn:creature.feverish_citizen": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 5373990,
+      "tier": 1
+    },
+    "oteryn:creature.feversleep": {
+      "kills_per_hour_micros": 64501679,
+      "loot_per_kill_micros": 1321219400,
+      "tier": 4
+    },
+    "oteryn:creature.filth_toad": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 14171240,
+      "tier": 1
+    },
+    "oteryn:creature.fire_devil": {
+      "kills_per_hour_micros": 677647058,
+      "loot_per_kill_micros": 18262480,
+      "tier": 2
+    },
+    "oteryn:creature.fire_elemental": {
+      "kills_per_hour_micros": 476033057,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.firestarter": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 32937246,
+      "tier": 1
+    },
+    "oteryn:creature.flimsy_lost_soul": {
+      "kills_per_hour_micros": 41319942,
+      "loot_per_kill_micros": 536870940,
+      "tier": 3
+    },
+    "oteryn:creature.floating_savant": {
+      "kills_per_hour_micros": 55922330,
+      "loot_per_kill_micros": 3467903630,
+      "tier": 4
+    },
+    "oteryn:creature.flying_book": {
+      "kills_per_hour_micros": 143283582,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.foam_stalker": {
+      "kills_per_hour_micros": 70588235,
+      "loot_per_kill_micros": 3884221351,
+      "tier": 3
+    },
+    "oteryn:creature.forest_fury": {
+      "kills_per_hour_micros": 285148514,
+      "loot_per_kill_micros": 47714751,
+      "tier": 2
+    },
+    "oteryn:creature.fox": {
+      "kills_per_hour_micros": 5768652,
+      "loot_per_kill_micros": 2741500,
+      "tier": 1
+    },
+    "oteryn:creature.frazzlemaw": {
+      "kills_per_hour_micros": 80334728,
+      "loot_per_kill_micros": 1141661693,
+      "tier": 3
+    },
+    "oteryn:creature.freakish_lost_soul": {
+      "kills_per_hour_micros": 24752900,
+      "loot_per_kill_micros": 1290722960,
+      "tier": 4
+    },
+    "oteryn:creature.frost_dragon": {
+      "kills_per_hour_micros": 193939393,
+      "loot_per_kill_micros": 241321687,
+      "tier": 3
+    },
+    "oteryn:creature.frost_dragon_hatchling": {
+      "kills_per_hour_micros": 167930029,
+      "loot_per_kill_micros": 59339896,
+      "tier": 2
+    },
+    "oteryn:creature.frost_flower_asura": {
+      "kills_per_hour_micros": 111627906,
+      "loot_per_kill_micros": 1120546621,
+      "tier": 3
+    },
+    "oteryn:creature.frost_giant": {
+      "kills_per_hour_micros": 468292682,
+      "loot_per_kill_micros": 40522686,
+      "tier": 2
+    },
+    "oteryn:creature.frost_giantess": {
+      "kills_per_hour_micros": 468292682,
+      "loot_per_kill_micros": 39456301,
+      "tier": 2
+    },
+    "oteryn:creature.frost_troll": {
+      "kills_per_hour_micros": 3211955,
+      "loot_per_kill_micros": 6048805,
+      "tier": 1
+    },
+    "oteryn:creature.fruit_drop": {
+      "kills_per_hour_micros": 38044914,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.furious_troll": {
+      "kills_per_hour_micros": 570297029,
+      "loot_per_kill_micros": 79589700,
+      "tier": 2
+    },
+    "oteryn:creature.fury": {
+      "kills_per_hour_micros": 111196911,
+      "loot_per_kill_micros": 946588200,
+      "tier": 3
+    },
+    "oteryn:creature.gang_member": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 12545655,
+      "tier": 1
+    },
+    "oteryn:creature.gargoyle": {
+      "kills_per_hour_micros": 381456953,
+      "loot_per_kill_micros": 35673388,
+      "tier": 2
+    },
+    "oteryn:creature.gazer": {
+      "kills_per_hour_micros": 49913344,
+      "loot_per_kill_micros": 15292710,
+      "tier": 1
+    },
+    "oteryn:creature.gazer_spectre": {
+      "kills_per_hour_micros": 10034843,
+      "loot_per_kill_micros": 998392850,
+      "tier": 3
+    },
+    "oteryn:creature.ghastly_dragon": {
+      "kills_per_hour_micros": 57427716,
+      "loot_per_kill_micros": 1785554905,
+      "tier": 3
+    },
+    "oteryn:creature.ghost": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 18736513,
+      "tier": 2
+    },
+    "oteryn:creature.ghost_wolf": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 8371449,
+      "tier": 1
+    },
+    "oteryn:creature.ghoul": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 20892361,
+      "tier": 1
+    },
+    "oteryn:creature.ghoulish_hyaena": {
+      "kills_per_hour_micros": 360000000,
+      "loot_per_kill_micros": 39108034,
+      "tier": 2
+    },
+    "oteryn:creature.giant_spider": {
+      "kills_per_hour_micros": 118518518,
+      "loot_per_kill_micros": 208924109,
+      "tier": 2
+    },
+    "oteryn:creature.gingerbread_man": {
+      "kills_per_hour_micros": 7105847,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.girtablilu_warrior": {
+      "kills_per_hour_micros": 47020408,
+      "loot_per_kill_micros": 3864321340,
+      "tier": 4
+    },
+    "oteryn:creature.gladiator": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 27189279,
+      "tier": 1
+    },
+    "oteryn:creature.gloom_maw": {
+      "kills_per_hour_micros": 46116893,
+      "loot_per_kill_micros": 1888566585,
+      "tier": 4
+    },
+    "oteryn:creature.gloom_wolf": {
+      "kills_per_hour_micros": 6800472,
+      "loot_per_kill_micros": 33807612,
+      "tier": 1
+    },
+    "oteryn:creature.glooth_anemone": {
+      "kills_per_hour_micros": 165994236,
+      "loot_per_kill_micros": 566167955,
+      "tier": 3
+    },
+    "oteryn:creature.glooth_bandit": {
+      "kills_per_hour_micros": 124675324,
+      "loot_per_kill_micros": 551351325,
+      "tier": 3
+    },
+    "oteryn:creature.glooth_blob": {
+      "kills_per_hour_micros": 187622149,
+      "loot_per_kill_micros": 99264175,
+      "tier": 2
+    },
+    "oteryn:creature.glooth_brigand": {
+      "kills_per_hour_micros": 144000000,
+      "loot_per_kill_micros": 599398400,
+      "tier": 3
+    },
+    "oteryn:creature.glooth_golem": {
+      "kills_per_hour_micros": 129147982,
+      "loot_per_kill_micros": 748164125,
+      "tier": 3
+    },
+    "oteryn:creature.gnarlhound": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 15441365,
+      "tier": 1
+    },
+    "oteryn:creature.goblin": {
+      "kills_per_hour_micros": 17899316,
+      "loot_per_kill_micros": 4741929,
+      "tier": 1
+    },
+    "oteryn:creature.goblin_assassin": {
+      "kills_per_hour_micros": 2390140,
+      "loot_per_kill_micros": 5749388,
+      "tier": 1
+    },
+    "oteryn:creature.goblin_leader": {
+      "kills_per_hour_micros": 17899316,
+      "loot_per_kill_micros": 6125909,
+      "tier": 1
+    },
+    "oteryn:creature.goblin_scavenger": {
+      "kills_per_hour_micros": 2947497,
+      "loot_per_kill_micros": 5803797,
+      "tier": 1
+    },
+    "oteryn:creature.goggle_cake": {
+      "kills_per_hour_micros": 135529411,
+      "loot_per_kill_micros": 1054309141,
+      "tier": 3
+    },
+    "oteryn:creature.golden_servant": {
+      "kills_per_hour_micros": 235102040,
+      "loot_per_kill_micros": 73921400,
+      "tier": 2
+    },
+    "oteryn:creature.golden_servant_replica": {
+      "kills_per_hour_micros": 190728476,
+      "loot_per_kill_micros": 156928544,
+      "tier": 3
+    },
+    "oteryn:creature.goldhanded_cultist": {
+      "kills_per_hour_micros": 139805825,
+      "loot_per_kill_micros": 601143664,
+      "tier": 3
+    },
+    "oteryn:creature.goldhanded_cultist_bride": {
+      "kills_per_hour_micros": 139805825,
+      "loot_per_kill_micros": 364436500,
+      "tier": 3
+    },
+    "oteryn:creature.gore_horn": {
+      "kills_per_hour_micros": 19168053,
+      "loot_per_kill_micros": 3677107700,
+      "tier": 4
+    },
+    "oteryn:creature.gorerilla": {
+      "kills_per_hour_micros": 16783216,
+      "loot_per_kill_micros": 3549427214,
+      "tier": 4
+    },
+    "oteryn:creature.gorger_inferniarch": {
+      "kills_per_hour_micros": 50928381,
+      "loot_per_kill_micros": 1479271400,
+      "tier": 4
+    },
+    "oteryn:creature.gozzler": {
+      "kills_per_hour_micros": 559223300,
+      "loot_per_kill_micros": 44604006,
+      "tier": 2
+    },
+    "oteryn:creature.grave_guard": {
+      "kills_per_hour_micros": 174018126,
+      "loot_per_kill_micros": 104312975,
+      "tier": 2
+    },
+    "oteryn:creature.grave_robber": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 21992745,
+      "tier": 1
+    },
+    "oteryn:creature.gravedigger": {
+      "kills_per_hour_micros": 61016949,
+      "loot_per_kill_micros": 201738425,
+      "tier": 2
+    },
+    "oteryn:creature.green_djinn": {
+      "kills_per_hour_micros": 340828402,
+      "loot_per_kill_micros": 53799955,
+      "tier": 2
+    },
+    "oteryn:creature.grim_reaper": {
+      "kills_per_hour_micros": 98126064,
+      "loot_per_kill_micros": 522921170,
+      "tier": 4
+    },
+    "oteryn:creature.grimeleech": {
+      "kills_per_hour_micros": 50000000,
+      "loot_per_kill_micros": 2976450166,
+      "tier": 4
+    },
+    "oteryn:creature.grynch_clan_goblin": {
+      "kills_per_hour_micros": 11878737,
+      "loot_per_kill_micros": 12986539,
+      "tier": 1
+    },
+    "oteryn:creature.gryphon": {
+      "kills_per_hour_micros": 89026275,
+      "loot_per_kill_micros": 0,
+      "tier": 3
+    },
+    "oteryn:creature.guardian_of_tales": {
+      "kills_per_hour_micros": 29675425,
+      "loot_per_kill_micros": 4048363395,
+      "tier": 4
+    },
+    "oteryn:creature.guzzlemaw": {
+      "kills_per_hour_micros": 64000000,
+      "loot_per_kill_micros": 1002501725,
+      "tier": 4
+    },
+    "oteryn:creature.hand_of_cursed_fate": {
+      "kills_per_hour_micros": 74418604,
+      "loot_per_kill_micros": 1196957135,
+      "tier": 4
+    },
+    "oteryn:creature.harpy": {
+      "kills_per_hour_micros": 62270270,
+      "loot_per_kill_micros": 2081156000,
+      "tier": 4
+    },
+    "oteryn:creature.haunted_dragon": {
+      "kills_per_hour_micros": 71641791,
+      "loot_per_kill_micros": 1444539130,
+      "tier": 4
+    },
+    "oteryn:creature.haunted_hunter": {
+      "kills_per_hour_micros": 16170690,
+      "loot_per_kill_micros": 5592647350,
+      "tier": 4
+    },
+    "oteryn:creature.haunted_treeling": {
+      "kills_per_hour_micros": 355555555,
+      "loot_per_kill_micros": 55028350,
+      "tier": 2
+    },
+    "oteryn:creature.hawk_hopper": {
+      "kills_per_hour_micros": 175609756,
+      "loot_per_kill_micros": 843094096,
+      "tier": 3
+    },
+    "oteryn:creature.headpecker": {
+      "kills_per_hour_micros": 25600000,
+      "loot_per_kill_micros": 3976924464,
+      "tier": 4
+    },
+    "oteryn:creature.headwalker": {
+      "kills_per_hour_micros": 146564885,
+      "loot_per_kill_micros": 747765387,
+      "tier": 3
+    },
+    "oteryn:creature.hellfire_fighter": {
+      "kills_per_hour_micros": 47721623,
+      "loot_per_kill_micros": 538895475,
+      "tier": 3
+    },
+    "oteryn:creature.hellflayer": {
+      "kills_per_hour_micros": 35932626,
+      "loot_per_kill_micros": 3126696552,
+      "tier": 4
+    },
+    "oteryn:creature.hellhound": {
+      "kills_per_hour_micros": 61081654,
+      "loot_per_kill_micros": 2113193155,
+      "tier": 4
+    },
+    "oteryn:creature.hellhunter_inferniarch": {
+      "kills_per_hour_micros": 38297872,
+      "loot_per_kill_micros": 2078074960,
+      "tier": 4
+    },
+    "oteryn:creature.hellspawn": {
+      "kills_per_hour_micros": 96969696,
+      "loot_per_kill_micros": 371370754,
+      "tier": 3
+    },
+    "oteryn:creature.herald_of_gloom": {
+      "kills_per_hour_micros": 269158878,
+      "loot_per_kill_micros": 50164000,
+      "tier": 2
+    },
+    "oteryn:creature.hero": {
+      "kills_per_hour_micros": 242016806,
+      "loot_per_kill_micros": 95812710,
+      "tier": 3
+    },
+    "oteryn:creature.hibernal_moth": {
+      "kills_per_hour_micros": 167441860,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.hideous_fungus": {
+      "kills_per_hour_micros": 88208269,
+      "loot_per_kill_micros": 929303370,
+      "tier": 3
+    },
+    "oteryn:creature.high_voltage_elemental": {
+      "kills_per_hour_micros": 181132075,
+      "loot_per_kill_micros": 271618250,
+      "tier": 3
+    },
+    "oteryn:creature.hive_overseer": {
+      "kills_per_hour_micros": 43243243,
+      "loot_per_kill_micros": 3310631715,
+      "tier": 4
+    },
+    "oteryn:creature.honey_elemental": {
+      "kills_per_hour_micros": 114285714,
+      "loot_per_kill_micros": 597274410,
+      "tier": 3
+    },
+    "oteryn:creature.honour_guard": {
+      "kills_per_hour_micros": 5241128,
+      "loot_per_kill_micros": 17096978,
+      "tier": 1
+    },
+    "oteryn:creature.hot_dog": {
+      "kills_per_hour_micros": 301570680,
+      "loot_per_kill_micros": 27918372,
+      "tier": 2
+    },
+    "oteryn:creature.hulking_carnisylvan": {
+      "kills_per_hour_micros": 41468682,
+      "loot_per_kill_micros": 2655965840,
+      "tier": 3
+    },
+    "oteryn:creature.hulking_prehemoth": {
+      "kills_per_hour_micros": 17465130,
+      "loot_per_kill_micros": 4611243000,
+      "tier": 4
+    },
+    "oteryn:creature.humongous_fungus": {
+      "kills_per_hour_micros": 114970059,
+      "loot_per_kill_micros": 877093180,
+      "tier": 3
+    },
+    "oteryn:creature.hunter": {
+      "kills_per_hour_micros": 929032258,
+      "loot_per_kill_micros": 36311460,
+      "tier": 2
+    },
+    "oteryn:creature.hyaena": {
+      "kills_per_hour_micros": 14833891,
+      "loot_per_kill_micros": 925800,
+      "tier": 1
+    },
+    "oteryn:creature.hydra": {
+      "kills_per_hour_micros": 179439252,
+      "loot_per_kill_micros": 320350867,
+      "tier": 3
+    },
+    "oteryn:creature.ice_dragon": {
+      "kills_per_hour_micros": 161797752,
+      "loot_per_kill_micros": 525312770,
+      "tier": 3
+    },
+    "oteryn:creature.ice_golem": {
+      "kills_per_hour_micros": 210989010,
+      "loot_per_kill_micros": 133730130,
+      "tier": 2
+    },
+    "oteryn:creature.ice_witch": {
+      "kills_per_hour_micros": 121775898,
+      "loot_per_kill_micros": 74937870,
+      "tier": 2
+    },
+    "oteryn:creature.icecold_book": {
+      "kills_per_hour_micros": 20998906,
+      "loot_per_kill_micros": 6231199510,
+      "tier": 4
+    },
+    "oteryn:creature.iceplume_strider": {
+      "kills_per_hour_micros": 49740932,
+      "loot_per_kill_micros": 1704882300,
+      "tier": 4
+    },
+    "oteryn:creature.iks_ahpututu": {
+      "kills_per_hour_micros": 248275862,
+      "loot_per_kill_micros": 654451050,
+      "tier": 3
+    },
+    "oteryn:creature.iks_aucar": {
+      "kills_per_hour_micros": 246153846,
+      "loot_per_kill_micros": 506897225,
+      "tier": 3
+    },
+    "oteryn:creature.iks_chuka": {
+      "kills_per_hour_micros": 313043478,
+      "loot_per_kill_micros": 541443047,
+      "tier": 3
+    },
+    "oteryn:creature.iks_pututu": {
+      "kills_per_hour_micros": 311351351,
+      "loot_per_kill_micros": 673018612,
+      "tier": 3
+    },
+    "oteryn:creature.iks_yapunac": {
+      "kills_per_hour_micros": 99826689,
+      "loot_per_kill_micros": 1057546640,
+      "tier": 3
+    },
+    "oteryn:creature.infected_weeper": {
+      "kills_per_hour_micros": 54909437,
+      "loot_per_kill_micros": 499792000,
+      "tier": 3
+    },
+    "oteryn:creature.infernal_demon": {
+      "kills_per_hour_micros": 6216274,
+      "loot_per_kill_micros": 6998294800,
+      "tier": 4
+    },
+    "oteryn:creature.infernal_frog": {
+      "kills_per_hour_micros": 244067796,
+      "loot_per_kill_micros": 23400894,
+      "tier": 2
+    },
+    "oteryn:creature.infernal_phantom": {
+      "kills_per_hour_micros": 14389208,
+      "loot_per_kill_micros": 5500294180,
+      "tier": 4
+    },
+    "oteryn:creature.infernalist": {
+      "kills_per_hour_micros": 123076923,
+      "loot_per_kill_micros": 217140550,
+      "tier": 3
+    },
+    "oteryn:creature.infernoid_blob": {
+      "kills_per_hour_micros": 1556756756,
+      "loot_per_kill_micros": 26540000,
+      "tier": 2
+    },
+    "oteryn:creature.infernoid_hound": {
+      "kills_per_hour_micros": 1476923076,
+      "loot_per_kill_micros": 20950000,
+      "tier": 2
+    },
+    "oteryn:creature.infernoid_soul": {
+      "kills_per_hour_micros": 1309090909,
+      "loot_per_kill_micros": 24790000,
+      "tier": 2
+    },
+    "oteryn:creature.infernoid_spiritual": {
+      "kills_per_hour_micros": 1280000000,
+      "loot_per_kill_micros": 24790000,
+      "tier": 2
+    },
+    "oteryn:creature.ink_blob": {
+      "kills_per_hour_micros": 51382694,
+      "loot_per_kill_micros": 6475051200,
+      "tier": 4
+    },
+    "oteryn:creature.ink_splash": {
+      "kills_per_hour_micros": 174018126,
+      "loot_per_kill_micros": 690288056,
+      "tier": 3
+    },
+    "oteryn:creature.insane_siren": {
+      "kills_per_hour_micros": 78581173,
+      "loot_per_kill_micros": 886226820,
+      "tier": 4
+    },
+    "oteryn:creature.insect_swarm": {
+      "kills_per_hour_micros": 103597122,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.insectoid_scout": {
+      "kills_per_hour_micros": 505263157,
+      "loot_per_kill_micros": 37417556,
+      "tier": 2
+    },
+    "oteryn:creature.insectoid_worker": {
+      "kills_per_hour_micros": 133642691,
+      "loot_per_kill_micros": 138568790,
+      "tier": 2
+    },
+    "oteryn:creature.instable_breach_brood": {
+      "kills_per_hour_micros": 175075987,
+      "loot_per_kill_micros": 332078449,
+      "tier": 3
+    },
+    "oteryn:creature.instable_sparkion": {
+      "kills_per_hour_micros": 193288590,
+      "loot_per_kill_micros": 368389963,
+      "tier": 3
+    },
+    "oteryn:creature.iron_servant": {
+      "kills_per_hour_micros": 405633802,
+      "loot_per_kill_micros": 51843843,
+      "tier": 2
+    },
+    "oteryn:creature.iron_servant_replica": {
+      "kills_per_hour_micros": 116129032,
+      "loot_per_kill_micros": 105681092,
+      "tier": 2
+    },
+    "oteryn:creature.ironblight": {
+      "kills_per_hour_micros": 56526005,
+      "loot_per_kill_micros": 1745421600,
+      "tier": 4
+    },
+    "oteryn:creature.island_troll": {
+      "kills_per_hour_micros": 17899316,
+      "loot_per_kill_micros": 9820189,
+      "tier": 1
+    },
+    "oteryn:creature.jaracal": {
+      "kills_per_hour_micros": 94581280,
+      "loot_per_kill_micros": 847039088,
+      "tier": 3
+    },
+    "oteryn:creature.juggernaut": {
+      "kills_per_hour_micros": 16911332,
+      "loot_per_kill_micros": 3880184925,
+      "tier": 4
+    },
+    "oteryn:creature.jungle_moa": {
+      "kills_per_hour_micros": 206451612,
+      "loot_per_kill_micros": 361758774,
+      "tier": 3
+    },
+    "oteryn:creature.juvenile_bashmu": {
+      "kills_per_hour_micros": 38892640,
+      "loot_per_kill_micros": 2346410495,
+      "tier": 3
+    },
+    "oteryn:creature.killer_caiman": {
+      "kills_per_hour_micros": 62813522,
+      "loot_per_kill_micros": 170322767,
+      "tier": 2
+    },
+    "oteryn:creature.killer_rabbit": {
+      "kills_per_hour_micros": 576000000,
+      "loot_per_kill_micros": 20978031,
+      "tier": 2
+    },
+    "oteryn:creature.knight_s_apparition": {
+      "kills_per_hour_micros": 10363440,
+      "loot_per_kill_micros": 7228747246,
+      "tier": 5
+    },
+    "oteryn:creature.knowledge_elemental": {
+      "kills_per_hour_micros": 43308270,
+      "loot_per_kill_micros": 3854771505,
+      "tier": 4
+    },
+    "oteryn:creature.kollos": {
+      "kills_per_hour_micros": 97792869,
+      "loot_per_kill_micros": 969033875,
+      "tier": 3
+    },
+    "oteryn:creature.kongra": {
+      "kills_per_hour_micros": 391836734,
+      "loot_per_kill_micros": 33601394,
+      "tier": 2
+    },
+    "oteryn:creature.lacewing_moth": {
+      "kills_per_hour_micros": 157377049,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.ladybug": {
+      "kills_per_hour_micros": 1717864,
+      "loot_per_kill_micros": 13310670,
+      "tier": 1
+    },
+    "oteryn:creature.lamassu": {
+      "kills_per_hour_micros": 43969465,
+      "loot_per_kill_micros": 1835041920,
+      "tier": 4
+    },
+    "oteryn:creature.lancer_beetle": {
+      "kills_per_hour_micros": 289447236,
+      "loot_per_kill_micros": 72957330,
+      "tier": 2
+    },
+    "oteryn:creature.larva": {
+      "kills_per_hour_micros": 24030037,
+      "loot_per_kill_micros": 5469768,
+      "tier": 1
+    },
+    "oteryn:creature.lava_golem": {
+      "kills_per_hour_micros": 31613611,
+      "loot_per_kill_micros": 1637882396,
+      "tier": 4
+    },
+    "oteryn:creature.lava_lurker": {
+      "kills_per_hour_micros": 56916996,
+      "loot_per_kill_micros": 51980250,
+      "tier": 3
+    },
+    "oteryn:creature.lavafungus": {
+      "kills_per_hour_micros": 57831325,
+      "loot_per_kill_micros": 3177674225,
+      "tier": 4
+    },
+    "oteryn:creature.lavaworm": {
+      "kills_per_hour_micros": 58775510,
+      "loot_per_kill_micros": 4669830536,
+      "tier": 4
+    },
+    "oteryn:creature.leaf_golem": {
+      "kills_per_hour_micros": 1936004,
+      "loot_per_kill_micros": 24707307,
+      "tier": 1
+    },
+    "oteryn:creature.lich": {
+      "kills_per_hour_micros": 109505703,
+      "loot_per_kill_micros": 220450209,
+      "tier": 2
+    },
+    "oteryn:creature.liodile": {
+      "kills_per_hour_micros": 56415279,
+      "loot_per_kill_micros": 1970950780,
+      "tier": 4
+    },
+    "oteryn:creature.lion": {
+      "kills_per_hour_micros": 11513092,
+      "loot_per_kill_micros": 4008780,
+      "tier": 1
+    },
+    "oteryn:creature.lion_hydra": {
+      "kills_per_hour_micros": 124137931,
+      "loot_per_kill_micros": 774320563,
+      "tier": 3
+    },
+    "oteryn:creature.little_corym_charlatan": {
+      "kills_per_hour_micros": 32341381,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.lizard_chosen": {
+      "kills_per_hour_micros": 127716186,
+      "loot_per_kill_micros": 179673790,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_commander": {
+      "kills_per_hour_micros": 811267605,
+      "loot_per_kill_micros": 36465000,
+      "tier": 2
+    },
+    "oteryn:creature.lizard_dragon_priest": {
+      "kills_per_hour_micros": 290909090,
+      "loot_per_kill_micros": 134700725,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_executioner": {
+      "kills_per_hour_micros": 7760711,
+      "loot_per_kill_micros": 18935000,
+      "tier": 1
+    },
+    "oteryn:creature.lizard_henchman": {
+      "kills_per_hour_micros": 50305676,
+      "loot_per_kill_micros": 10575000,
+      "tier": 1
+    },
+    "oteryn:creature.lizard_high_guard": {
+      "kills_per_hour_micros": 211764705,
+      "loot_per_kill_micros": 104094170,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_legionnaire": {
+      "kills_per_hour_micros": 282352941,
+      "loot_per_kill_micros": 75524360,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_magician": {
+      "kills_per_hour_micros": 74708171,
+      "loot_per_kill_micros": 14565000,
+      "tier": 1
+    },
+    "oteryn:creature.lizard_magistratus": {
+      "kills_per_hour_micros": 69818181,
+      "loot_per_kill_micros": 254209123,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_noble": {
+      "kills_per_hour_micros": 62337662,
+      "loot_per_kill_micros": 271337947,
+      "tier": 3
+    },
+    "oteryn:creature.lizard_sentinel": {
+      "kills_per_hour_micros": 505263157,
+      "loot_per_kill_micros": 62285702,
+      "tier": 2
+    },
+    "oteryn:creature.lizard_snakecharmer": {
+      "kills_per_hour_micros": 443076923,
+      "loot_per_kill_micros": 31958025,
+      "tier": 2
+    },
+    "oteryn:creature.lizard_swordmaster": {
+      "kills_per_hour_micros": 15454789,
+      "loot_per_kill_micros": 17800000,
+      "tier": 1
+    },
+    "oteryn:creature.lizard_templar": {
+      "kills_per_hour_micros": 316483516,
+      "loot_per_kill_micros": 44240595,
+      "tier": 2
+    },
+    "oteryn:creature.lizard_zaogun": {
+      "kills_per_hour_micros": 122033898,
+      "loot_per_kill_micros": 269564680,
+      "tier": 3
+    },
+    "oteryn:creature.lost_basher": {
+      "kills_per_hour_micros": 142928039,
+      "loot_per_kill_micros": 628892426,
+      "tier": 3
+    },
+    "oteryn:creature.lost_berserker": {
+      "kills_per_hour_micros": 44036697,
+      "loot_per_kill_micros": 959940155,
+      "tier": 3
+    },
+    "oteryn:creature.lost_exile": {
+      "kills_per_hour_micros": 224124513,
+      "loot_per_kill_micros": 457864780,
+      "tier": 3
+    },
+    "oteryn:creature.lost_husher": {
+      "kills_per_hour_micros": 221538461,
+      "loot_per_kill_micros": 962906370,
+      "tier": 3
+    },
+    "oteryn:creature.lost_soul": {
+      "kills_per_hour_micros": 70761670,
+      "loot_per_kill_micros": 1017639975,
+      "tier": 3
+    },
+    "oteryn:creature.lost_thrower": {
+      "kills_per_hour_micros": 204982206,
+      "loot_per_kill_micros": 389452040,
+      "tier": 3
+    },
+    "oteryn:creature.lumbering_carnivor": {
+      "kills_per_hour_micros": 115662650,
+      "loot_per_kill_micros": 591777304,
+      "tier": 3
+    },
+    "oteryn:creature.mad_scientist": {
+      "kills_per_hour_micros": 426666666,
+      "loot_per_kill_micros": 21436175,
+      "tier": 2
+    },
+    "oteryn:creature.magma_crawler": {
+      "kills_per_hour_micros": 62337662,
+      "loot_per_kill_micros": 992366700,
+      "tier": 3
+    },
+    "oteryn:creature.makara": {
+      "kills_per_hour_micros": 86356821,
+      "loot_per_kill_micros": 1424363917,
+      "tier": 4
+    },
+    "oteryn:creature.mammoth": {
+      "kills_per_hour_micros": 357763975,
+      "loot_per_kill_micros": 60875663,
+      "tier": 2
+    },
+    "oteryn:creature.manta_ray": {
+      "kills_per_hour_micros": 168914956,
+      "loot_per_kill_micros": 13274467,
+      "tier": 2
+    },
+    "oteryn:creature.manticore": {
+      "kills_per_hour_micros": 41830065,
+      "loot_per_kill_micros": 1142667120,
+      "tier": 3
+    },
+    "oteryn:creature.mantosaurus": {
+      "kills_per_hour_micros": 21262458,
+      "loot_per_kill_micros": 4203863650,
+      "tier": 4
+    },
+    "oteryn:creature.many_faces": {
+      "kills_per_hour_micros": 10742260,
+      "loot_per_kill_micros": 7235239400,
+      "tier": 4
+    },
+    "oteryn:creature.marid": {
+      "kills_per_hour_micros": 242016806,
+      "loot_per_kill_micros": 92645690,
+      "tier": 2
+    },
+    "oteryn:creature.marsh_stalker": {
+      "kills_per_hour_micros": 96644295,
+      "loot_per_kill_micros": 21920054,
+      "tier": 1
+    },
+    "oteryn:creature.massive_earth_elemental": {
+      "kills_per_hour_micros": 213333333,
+      "loot_per_kill_micros": 143765330,
+      "tier": 3
+    },
+    "oteryn:creature.massive_energy_elemental": {
+      "kills_per_hour_micros": 56526005,
+      "loot_per_kill_micros": 132580000,
+      "tier": 2
+    },
+    "oteryn:creature.massive_fire_elemental": {
+      "kills_per_hour_micros": 103971119,
+      "loot_per_kill_micros": 157700650,
+      "tier": 3
+    },
+    "oteryn:creature.massive_water_elemental": {
+      "kills_per_hour_micros": 186407766,
+      "loot_per_kill_micros": 133665400,
+      "tier": 3
+    },
+    "oteryn:creature.mean_lost_soul": {
+      "kills_per_hour_micros": 39263803,
+      "loot_per_kill_micros": 593070090,
+      "tier": 4
+    },
+    "oteryn:creature.meandering_mushroom": {
+      "kills_per_hour_micros": 16391576,
+      "loot_per_kill_micros": 5757450200,
+      "tier": 5
+    },
+    "oteryn:creature.medusa": {
+      "kills_per_hour_micros": 87009063,
+      "loot_per_kill_micros": 971808950,
+      "tier": 3
+    },
+    "oteryn:creature.mega_dragon": {
+      "kills_per_hour_micros": 50437828,
+      "loot_per_kill_micros": 2158013930,
+      "tier": 4
+    },
+    "oteryn:creature.menacing_carnivor": {
+      "kills_per_hour_micros": 57142857,
+      "loot_per_kill_micros": 763032072,
+      "tier": 3
+    },
+    "oteryn:creature.mercurial_menace": {
+      "kills_per_hour_micros": 17370325,
+      "loot_per_kill_micros": 4082074200,
+      "tier": 4
+    },
+    "oteryn:creature.mercury_blob": {
+      "kills_per_hour_micros": 900000000,
+      "loot_per_kill_micros": 3841640,
+      "tier": 2
+    },
+    "oteryn:creature.merlkin": {
+      "kills_per_hour_micros": 581818181,
+      "loot_per_kill_micros": 22985002,
+      "tier": 2
+    },
+    "oteryn:creature.metal_gargoyle": {
+      "kills_per_hour_micros": 141523341,
+      "loot_per_kill_micros": 394810797,
+      "tier": 3
+    },
+    "oteryn:creature.midnight_asura": {
+      "kills_per_hour_micros": 110769230,
+      "loot_per_kill_micros": 832061633,
+      "tier": 3
+    },
+    "oteryn:creature.midnight_panther": {
+      "kills_per_hour_micros": 91573926,
+      "loot_per_kill_micros": 53209451,
+      "tier": 2
+    },
+    "oteryn:creature.midnight_spawn": {
+      "kills_per_hour_micros": 57485029,
+      "loot_per_kill_micros": 79404000,
+      "tier": 2
+    },
+    "oteryn:creature.midnight_warrior": {
+      "kills_per_hour_micros": 79448275,
+      "loot_per_kill_micros": 58500000,
+      "tier": 2
+    },
+    "oteryn:creature.minotaur": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 35689485,
+      "tier": 1
+    },
+    "oteryn:creature.minotaur_amazon": {
+      "kills_per_hour_micros": 150785340,
+      "loot_per_kill_micros": 613008978,
+      "tier": 3
+    },
+    "oteryn:creature.minotaur_archer": {
+      "kills_per_hour_micros": 9272376,
+      "loot_per_kill_micros": 24229900,
+      "tier": 1
+    },
+    "oteryn:creature.minotaur_cult_follower": {
+      "kills_per_hour_micros": 74035989,
+      "loot_per_kill_micros": 876644857,
+      "tier": 2
+    },
+    "oteryn:creature.minotaur_cult_prophet": {
+      "kills_per_hour_micros": 245106382,
+      "loot_per_kill_micros": 428762037,
+      "tier": 3
+    },
+    "oteryn:creature.minotaur_cult_zealot": {
+      "kills_per_hour_micros": 216541353,
+      "loot_per_kill_micros": 309724802,
+      "tier": 3
+    },
+    "oteryn:creature.minotaur_guard": {
+      "kills_per_hour_micros": 711111111,
+      "loot_per_kill_micros": 30160138,
+      "tier": 2
+    },
+    "oteryn:creature.minotaur_hunter": {
+      "kills_per_hour_micros": 272985781,
+      "loot_per_kill_micros": 270569348,
+      "tier": 3
+    },
+    "oteryn:creature.minotaur_invader": {
+      "kills_per_hour_micros": 214925373,
+      "loot_per_kill_micros": 375193705,
+      "tier": 3
+    },
+    "oteryn:creature.minotaur_mage": {
+      "kills_per_hour_micros": 800000000,
+      "loot_per_kill_micros": 36792413,
+      "tier": 2
+    },
+    "oteryn:creature.misguided_bully": {
+      "kills_per_hour_micros": 157377049,
+      "loot_per_kill_micros": 544239660,
+      "tier": 3
+    },
+    "oteryn:creature.misguided_thief": {
+      "kills_per_hour_micros": 178881987,
+      "loot_per_kill_micros": 202094466,
+      "tier": 3
+    },
+    "oteryn:creature.mitmah_scout": {
+      "kills_per_hour_micros": 90000000,
+      "loot_per_kill_micros": 822509850,
+      "tier": 3
+    },
+    "oteryn:creature.mitmah_seer": {
+      "kills_per_hour_micros": 80559440,
+      "loot_per_kill_micros": 669693150,
+      "tier": 3
+    },
+    "oteryn:creature.mole": {
+      "kills_per_hour_micros": 693975903,
+      "loot_per_kill_micros": 31688677,
+      "tier": 2
+    },
+    "oteryn:creature.monk": {
+      "kills_per_hour_micros": 464516129,
+      "loot_per_kill_micros": 12032472,
+      "tier": 2
+    },
+    "oteryn:creature.monk_s_apparition": {
+      "kills_per_hour_micros": 16509028,
+      "loot_per_kill_micros": 8881619068,
+      "tier": 5
+    },
+    "oteryn:creature.mooh_tah_warrior": {
+      "kills_per_hour_micros": 77523553,
+      "loot_per_kill_micros": 303275510,
+      "tier": 2
+    },
+    "oteryn:creature.moohtant": {
+      "kills_per_hour_micros": 117311608,
+      "loot_per_kill_micros": 483487250,
+      "tier": 3
+    },
+    "oteryn:creature.moonspawn_blightspitter": {
+      "kills_per_hour_micros": 48080133,
+      "loot_per_kill_micros": 1908389200,
+      "tier": 4
+    },
+    "oteryn:creature.moonspawn_juggernaut": {
+      "kills_per_hour_micros": 64214046,
+      "loot_per_kill_micros": 0,
+      "tier": 4
+    },
+    "oteryn:creature.moonspawn_oozecrown": {
+      "kills_per_hour_micros": 46153846,
+      "loot_per_kill_micros": 1397124500,
+      "tier": 4
+    },
+    "oteryn:creature.moonstone_excavator": {
+      "kills_per_hour_micros": 75392670,
+      "loot_per_kill_micros": 1152982675,
+      "tier": 3
+    },
+    "oteryn:creature.moonstone_overseer": {
+      "kills_per_hour_micros": 71552795,
+      "loot_per_kill_micros": 1118856500,
+      "tier": 3
+    },
+    "oteryn:creature.mould_phantom": {
+      "kills_per_hour_micros": 13342599,
+      "loot_per_kill_micros": 6885976300,
+      "tier": 4
+    },
+    "oteryn:creature.mummy": {
+      "kills_per_hour_micros": 570297029,
+      "loot_per_kill_micros": 42645850,
+      "tier": 2
+    },
+    "oteryn:creature.mutated_bat": {
+      "kills_per_hour_micros": 162253521,
+      "loot_per_kill_micros": 130268850,
+      "tier": 2
+    },
+    "oteryn:creature.mutated_human": {
+      "kills_per_hour_micros": 570297029,
+      "loot_per_kill_micros": 46370530,
+      "tier": 2
+    },
+    "oteryn:creature.mutated_rat": {
+      "kills_per_hour_micros": 232258064,
+      "loot_per_kill_micros": 86419003,
+      "tier": 2
+    },
+    "oteryn:creature.mutated_tiger": {
+      "kills_per_hour_micros": 119502074,
+      "loot_per_kill_micros": 83161233,
+      "tier": 2
+    },
+    "oteryn:creature.mycobiontic_beetle": {
+      "kills_per_hour_micros": 11815384,
+      "loot_per_kill_micros": 8242757135,
+      "tier": 5
+    },
+    "oteryn:creature.naga_archer": {
+      "kills_per_hour_micros": 62405200,
+      "loot_per_kill_micros": 1455078060,
+      "tier": 3
+    },
+    "oteryn:creature.naga_warrior": {
+      "kills_per_hour_micros": 50838481,
+      "loot_per_kill_micros": 1368500432,
+      "tier": 4
+    },
+    "oteryn:creature.necromancer": {
+      "kills_per_hour_micros": 181132075,
+      "loot_per_kill_micros": 45934283,
+      "tier": 2
+    },
+    "oteryn:creature.nibblemaw": {
+      "kills_per_hour_micros": 119254658,
+      "loot_per_kill_micros": 879017400,
+      "tier": 3
+    },
+    "oteryn:creature.night_harpy": {
+      "kills_per_hour_micros": 38476953,
+      "loot_per_kill_micros": 1768117500,
+      "tier": 5
+    },
+    "oteryn:creature.nightfiend": {
+      "kills_per_hour_micros": 136492890,
+      "loot_per_kill_micros": 184898797,
+      "tier": 3
+    },
+    "oteryn:creature.nighthunter": {
+      "kills_per_hour_micros": 21942857,
+      "loot_per_kill_micros": 4111438300,
+      "tier": 4
+    },
+    "oteryn:creature.nightmare": {
+      "kills_per_hour_micros": 155675675,
+      "loot_per_kill_micros": 307457065,
+      "tier": 3
+    },
+    "oteryn:creature.nightmare_scion": {
+      "kills_per_hour_micros": 296907216,
+      "loot_per_kill_micros": 129790065,
+      "tier": 3
+    },
+    "oteryn:creature.nightstalker": {
+      "kills_per_hour_micros": 186407766,
+      "loot_per_kill_micros": 48461630,
+      "tier": 2
+    },
+    "oteryn:creature.noble_lion": {
+      "kills_per_hour_micros": 120000000,
+      "loot_per_kill_micros": 51417480,
+      "tier": 2
+    },
+    "oteryn:creature.nomad": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 24423550,
+      "tier": 1
+    },
+    "oteryn:creature.nomad_blue": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 24356300,
+      "tier": 1
+    },
+    "oteryn:creature.nomad_female": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 24356300,
+      "tier": 1
+    },
+    "oteryn:creature.norcferatu_heartless": {
+      "kills_per_hour_micros": 65084745,
+      "loot_per_kill_micros": 1543072435,
+      "tier": 4
+    },
+    "oteryn:creature.norcferatu_nightweaver": {
+      "kills_per_hour_micros": 66589595,
+      "loot_per_kill_micros": 1393954440,
+      "tier": 4
+    },
+    "oteryn:creature.novice_of_the_cult": {
+      "kills_per_hour_micros": 543396226,
+      "loot_per_kill_micros": 19053342,
+      "tier": 2
+    },
+    "oteryn:creature.noxious_ripptor": {
+      "kills_per_hour_micros": 12347266,
+      "loot_per_kill_micros": 4096715190,
+      "tier": 4
+    },
+    "oteryn:creature.nymph": {
+      "kills_per_hour_micros": 58895705,
+      "loot_per_kill_micros": 245713870,
+      "tier": 2
+    },
+    "oteryn:creature.ogre_brute": {
+      "kills_per_hour_micros": 93203883,
+      "loot_per_kill_micros": 225352128,
+      "tier": 2
+    },
+    "oteryn:creature.ogre_rowdy": {
+      "kills_per_hour_micros": 51705565,
+      "loot_per_kill_micros": 710092080,
+      "tier": 3
+    },
+    "oteryn:creature.ogre_ruffian": {
+      "kills_per_hour_micros": 29752066,
+      "loot_per_kill_micros": 879487353,
+      "tier": 4
+    },
+    "oteryn:creature.ogre_sage": {
+      "kills_per_hour_micros": 72819216,
+      "loot_per_kill_micros": 1231461655,
+      "tier": 4
+    },
+    "oteryn:creature.ogre_savage": {
+      "kills_per_hour_micros": 89302325,
+      "loot_per_kill_micros": 275879784,
+      "tier": 2
+    },
+    "oteryn:creature.ogre_shaman": {
+      "kills_per_hour_micros": 162711864,
+      "loot_per_kill_micros": 255046550,
+      "tier": 2
+    },
+    "oteryn:creature.omnivora": {
+      "kills_per_hour_micros": 81471004,
+      "loot_per_kill_micros": 169237885,
+      "tier": 2
+    },
+    "oteryn:creature.oozing_carcass": {
+      "kills_per_hour_micros": 18532818,
+      "loot_per_kill_micros": 9110308130,
+      "tier": 5
+    },
+    "oteryn:creature.oozing_corpus": {
+      "kills_per_hour_micros": 12360515,
+      "loot_per_kill_micros": 6793360200,
+      "tier": 5
+    },
+    "oteryn:creature.orc": {
+      "kills_per_hour_micros": 24030037,
+      "loot_per_kill_micros": 11653184,
+      "tier": 1
+    },
+    "oteryn:creature.orc_berserker": {
+      "kills_per_hour_micros": 693975903,
+      "loot_per_kill_micros": 55601981,
+      "tier": 2
+    },
+    "oteryn:creature.orc_cult_fanatic": {
+      "kills_per_hour_micros": 334883720,
+      "loot_per_kill_micros": 261951616,
+      "tier": 3
+    },
+    "oteryn:creature.orc_cult_inquisitor": {
+      "kills_per_hour_micros": 248275862,
+      "loot_per_kill_micros": 319487480,
+      "tier": 3
+    },
+    "oteryn:creature.orc_cult_minion": {
+      "kills_per_hour_micros": 114970059,
+      "loot_per_kill_micros": 220360450,
+      "tier": 2
+    },
+    "oteryn:creature.orc_cult_priest": {
+      "kills_per_hour_micros": 306382978,
+      "loot_per_kill_micros": 276642760,
+      "tier": 3
+    },
+    "oteryn:creature.orc_cultist": {
+      "kills_per_hour_micros": 84705882,
+      "loot_per_kill_micros": 192641700,
+      "tier": 2
+    },
+    "oteryn:creature.orc_leader": {
+      "kills_per_hour_micros": 279611650,
+      "loot_per_kill_micros": 29795499,
+      "tier": 2
+    },
+    "oteryn:creature.orc_marauder": {
+      "kills_per_hour_micros": 518918918,
+      "loot_per_kill_micros": 58475508,
+      "tier": 2
+    },
+    "oteryn:creature.orc_rider": {
+      "kills_per_hour_micros": 768000000,
+      "loot_per_kill_micros": 78135617,
+      "tier": 2
+    },
+    "oteryn:creature.orc_shaman": {
+      "kills_per_hour_micros": 1152000000,
+      "loot_per_kill_micros": 20452215,
+      "tier": 2
+    },
+    "oteryn:creature.orc_spearman": {
+      "kills_per_hour_micros": 8853366,
+      "loot_per_kill_micros": 6853041,
+      "tier": 1
+    },
+    "oteryn:creature.orc_warlord": {
+      "kills_per_hour_micros": 117551020,
+      "loot_per_kill_micros": 105466764,
+      "tier": 2
+    },
+    "oteryn:creature.orc_warrior": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 16133678,
+      "tier": 1
+    },
+    "oteryn:creature.orchid_frog": {
+      "kills_per_hour_micros": 39916839,
+      "loot_per_kill_micros": 4134597,
+      "tier": 1
+    },
+    "oteryn:creature.orclops_bloodbreaker": {
+      "kills_per_hour_micros": 35036496,
+      "loot_per_kill_micros": 2355832720,
+      "tier": 4
+    },
+    "oteryn:creature.orclops_doomhauler": {
+      "kills_per_hour_micros": 210218978,
+      "loot_per_kill_micros": 463431000,
+      "tier": 3
+    },
+    "oteryn:creature.orclops_ravager": {
+      "kills_per_hour_micros": 321787709,
+      "loot_per_kill_micros": 437566990,
+      "tier": 3
+    },
+    "oteryn:creature.orewalker": {
+      "kills_per_hour_micros": 45461720,
+      "loot_per_kill_micros": 1636245560,
+      "tier": 4
+    },
+    "oteryn:creature.paladin_s_apparition": {
+      "kills_per_hour_micros": 16509028,
+      "loot_per_kill_micros": 7983310508,
+      "tier": 5
+    },
+    "oteryn:creature.panda": {
+      "kills_per_hour_micros": 5519356,
+      "loot_per_kill_micros": 8778660,
+      "tier": 1
+    },
+    "oteryn:creature.parder": {
+      "kills_per_hour_micros": 239004149,
+      "loot_per_kill_micros": 324877520,
+      "tier": 3
+    },
+    "oteryn:creature.penguin": {
+      "kills_per_hour_micros": 217358490,
+      "loot_per_kill_micros": 179300,
+      "tier": 1
+    },
+    "oteryn:creature.percht": {
+      "kills_per_hour_micros": 150391644,
+      "loot_per_kill_micros": 288281000,
+      "tier": 2
+    },
+    "oteryn:creature.phantasm": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 728806510,
+      "tier": 3
+    },
+    "oteryn:creature.pirat_bombardier": {
+      "kills_per_hour_micros": 178328173,
+      "loot_per_kill_micros": 622755225,
+      "tier": 3
+    },
+    "oteryn:creature.pirat_cutthroat": {
+      "kills_per_hour_micros": 105109489,
+      "loot_per_kill_micros": 363436775,
+      "tier": 3
+    },
+    "oteryn:creature.pirat_mate": {
+      "kills_per_hour_micros": 112280701,
+      "loot_per_kill_micros": 621859790,
+      "tier": 3
+    },
+    "oteryn:creature.pirat_scoundrel": {
+      "kills_per_hour_micros": 125217391,
+      "loot_per_kill_micros": 62118990,
+      "tier": 3
+    },
+    "oteryn:creature.pirate_buccaneer": {
+      "kills_per_hour_micros": 318232044,
+      "loot_per_kill_micros": 40385655,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_cook": {
+      "kills_per_hour_micros": 1371428571,
+      "loot_per_kill_micros": 24950000,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_corsair": {
+      "kills_per_hour_micros": 184025559,
+      "loot_per_kill_micros": 61101610,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_cutthroat": {
+      "kills_per_hour_micros": 405633802,
+      "loot_per_kill_micros": 36768982,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_ghost": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 37267027,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_gunner": {
+      "kills_per_hour_micros": 25702811,
+      "loot_per_kill_micros": 11160000,
+      "tier": 1
+    },
+    "oteryn:creature.pirate_marauder": {
+      "kills_per_hour_micros": 702439024,
+      "loot_per_kill_micros": 26310996,
+      "tier": 2
+    },
+    "oteryn:creature.pirate_navigator": {
+      "kills_per_hour_micros": 29090909,
+      "loot_per_kill_micros": 10750000,
+      "tier": 1
+    },
+    "oteryn:creature.pirate_quartermaster": {
+      "kills_per_hour_micros": 7134010,
+      "loot_per_kill_micros": 16950000,
+      "tier": 1
+    },
+    "oteryn:creature.pirate_skeleton": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 27467679,
+      "tier": 1
+    },
+    "oteryn:creature.pixie": {
+      "kills_per_hour_micros": 96806722,
+      "loot_per_kill_micros": 203399567,
+      "tier": 2
+    },
+    "oteryn:creature.plaguesmith": {
+      "kills_per_hour_micros": 48080133,
+      "loot_per_kill_micros": 946191845,
+      "tier": 3
+    },
+    "oteryn:creature.poacher": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 24319658,
+      "tier": 1
+    },
+    "oteryn:creature.poison_spider": {
+      "kills_per_hour_micros": 254867256,
+      "loot_per_kill_micros": 1968947,
+      "tier": 1
+    },
+    "oteryn:creature.poisonous_carnisylvan": {
+      "kills_per_hour_micros": 49698015,
+      "loot_per_kill_micros": 2372642200,
+      "tier": 3
+    },
+    "oteryn:creature.polar_bear": {
+      "kills_per_hour_micros": 10742260,
+      "loot_per_kill_micros": 5846270,
+      "tier": 1
+    },
+    "oteryn:creature.pooka": {
+      "kills_per_hour_micros": 193939393,
+      "loot_per_kill_micros": 167263613,
+      "tier": 2
+    },
+    "oteryn:creature.priestess": {
+      "kills_per_hour_micros": 355555555,
+      "loot_per_kill_micros": 35018253,
+      "tier": 2
+    },
+    "oteryn:creature.priestess_of_the_wild_sun": {
+      "kills_per_hour_micros": 44964871,
+      "loot_per_kill_micros": 1447655880,
+      "tier": 4
+    },
+    "oteryn:creature.putrid_mummy": {
+      "kills_per_hour_micros": 60125260,
+      "loot_per_kill_micros": 357179320,
+      "tier": 2
+    },
+    "oteryn:creature.quara_constrictor": {
+      "kills_per_hour_micros": 318232044,
+      "loot_per_kill_micros": 82186456,
+      "tier": 2
+    },
+    "oteryn:creature.quara_constrictor_scout": {
+      "kills_per_hour_micros": 334883720,
+      "loot_per_kill_micros": 92091595,
+      "tier": 2
+    },
+    "oteryn:creature.quara_hydromancer": {
+      "kills_per_hour_micros": 123076923,
+      "loot_per_kill_micros": 119886980,
+      "tier": 2
+    },
+    "oteryn:creature.quara_hydromancer_scout": {
+      "kills_per_hour_micros": 123076923,
+      "loot_per_kill_micros": 111330580,
+      "tier": 2
+    },
+    "oteryn:creature.quara_looter": {
+      "kills_per_hour_micros": 30670926,
+      "loot_per_kill_micros": 1861704150,
+      "tier": 4
+    },
+    "oteryn:creature.quara_mantassin": {
+      "kills_per_hour_micros": 192642140,
+      "loot_per_kill_micros": 72363560,
+      "tier": 2
+    },
+    "oteryn:creature.quara_mantassin_scout": {
+      "kills_per_hour_micros": 685714285,
+      "loot_per_kill_micros": 48488424,
+      "tier": 2
+    },
+    "oteryn:creature.quara_pincher": {
+      "kills_per_hour_micros": 173493975,
+      "loot_per_kill_micros": 219056544,
+      "tier": 3
+    },
+    "oteryn:creature.quara_pincher_scout": {
+      "kills_per_hour_micros": 68327402,
+      "loot_per_kill_micros": 116036165,
+      "tier": 2
+    },
+    "oteryn:creature.quara_plunderer": {
+      "kills_per_hour_micros": 27559808,
+      "loot_per_kill_micros": 1592435500,
+      "tier": 4
+    },
+    "oteryn:creature.quara_predator": {
+      "kills_per_hour_micros": 169411764,
+      "loot_per_kill_micros": 473716050,
+      "tier": 3
+    },
+    "oteryn:creature.quara_predator_scout": {
+      "kills_per_hour_micros": 129147982,
+      "loot_per_kill_micros": 142736390,
+      "tier": 2
+    },
+    "oteryn:creature.quara_raider": {
+      "kills_per_hour_micros": 26349496,
+      "loot_per_kill_micros": 1264583570,
+      "tier": 4
+    },
+    "oteryn:creature.radiant_acolyte": {
+      "kills_per_hour_micros": 14516129,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.radiant_inquisitor": {
+      "kills_per_hour_micros": 15517241,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.radiant_paragon": {
+      "kills_per_hour_micros": 12408444,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.radiant_templar": {
+      "kills_per_hour_micros": 11667004,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.radiant_warden": {
+      "kills_per_hour_micros": 10309647,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.radiant_zealot": {
+      "kills_per_hour_micros": 15837228,
+      "loot_per_kill_micros": 0,
+      "tier": 5
+    },
+    "oteryn:creature.rage_squid": {
+      "kills_per_hour_micros": 23216444,
+      "loot_per_kill_micros": 3261721260,
+      "tier": 4
+    },
+    "oteryn:creature.raging_fire": {
+      "kills_per_hour_micros": 217358490,
+      "loot_per_kill_micros": 0,
+      "tier": 3
+    },
+    "oteryn:creature.rat": {
+      "kills_per_hour_micros": 314754098,
+      "loot_per_kill_micros": 2970456,
+      "tier": 1
+    },
+    "oteryn:creature.raubritter_chastener": {
+      "kills_per_hour_micros": 46677471,
+      "loot_per_kill_micros": 1832389050,
+      "tier": 4
+    },
+    "oteryn:creature.raubritter_marksman": {
+      "kills_per_hour_micros": 38476953,
+      "loot_per_kill_micros": 1486928500,
+      "tier": 4
+    },
+    "oteryn:creature.raubritter_skirmisher": {
+      "kills_per_hour_micros": 31101511,
+      "loot_per_kill_micros": 1242939537,
+      "tier": 4
+    },
+    "oteryn:creature.ravenous_lava_lurker": {
+      "kills_per_hour_micros": 77837837,
+      "loot_per_kill_micros": 0,
+      "tier": 3
+    },
+    "oteryn:creature.reality_reaver": {
+      "kills_per_hour_micros": 91139240,
+      "loot_per_kill_micros": 1002872310,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_knight": {
+      "kills_per_hour_micros": 211764705,
+      "loot_per_kill_micros": 173153650,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_quara_constrictor": {
+      "kills_per_hour_micros": 267906976,
+      "loot_per_kill_micros": 251195535,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_quara_hydromancer": {
+      "kills_per_hour_micros": 209454545,
+      "loot_per_kill_micros": 502583475,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_quara_mantassin": {
+      "kills_per_hour_micros": 353374233,
+      "loot_per_kill_micros": 111148930,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_quara_pincher": {
+      "kills_per_hour_micros": 111627906,
+      "loot_per_kill_micros": 533302156,
+      "tier": 3
+    },
+    "oteryn:creature.renegade_quara_predator": {
+      "kills_per_hour_micros": 116363636,
+      "loot_per_kill_micros": 814649870,
+      "tier": 3
+    },
+    "oteryn:creature.retching_horror": {
+      "kills_per_hour_micros": 62540716,
+      "loot_per_kill_micros": 1040933623,
+      "tier": 3
+    },
+    "oteryn:creature.rhindeer": {
+      "kills_per_hour_micros": 51336898,
+      "loot_per_kill_micros": 2039427150,
+      "tier": 4
+    },
+    "oteryn:creature.ripper_spectre": {
+      "kills_per_hour_micros": 24552429,
+      "loot_per_kill_micros": 752064220,
+      "tier": 3
+    },
+    "oteryn:creature.roaming_dread": {
+      "kills_per_hour_micros": 19692307,
+      "loot_per_kill_micros": 2677819000,
+      "tier": 4
+    },
+    "oteryn:creature.roaring_lion": {
+      "kills_per_hour_micros": 120754716,
+      "loot_per_kill_micros": 144367320,
+      "tier": 2
+    },
+    "oteryn:creature.rootthing_amber_shaper": {
+      "kills_per_hour_micros": 21325435,
+      "loot_per_kill_micros": 4710780000,
+      "tier": 4
+    },
+    "oteryn:creature.rootthing_bug_tracker": {
+      "kills_per_hour_micros": 24283305,
+      "loot_per_kill_micros": 2384429750,
+      "tier": 4
+    },
+    "oteryn:creature.rootthing_nutshell": {
+      "kills_per_hour_micros": 21068032,
+      "loot_per_kill_micros": 2288470000,
+      "tier": 4
+    },
+    "oteryn:creature.rorc": {
+      "kills_per_hour_micros": 488135593,
+      "loot_per_kill_micros": 44713573,
+      "tier": 2
+    },
+    "oteryn:creature.rot_elemental": {
+      "kills_per_hour_micros": 131807780,
+      "loot_per_kill_micros": 106736675,
+      "tier": 2
+    },
+    "oteryn:creature.rotten_golem": {
+      "kills_per_hour_micros": 9040966,
+      "loot_per_kill_micros": 6133442500,
+      "tier": 4
+    },
+    "oteryn:creature.rotten_man_maggot": {
+      "kills_per_hour_micros": 15819829,
+      "loot_per_kill_micros": 5122056000,
+      "tier": 5
+    },
+    "oteryn:creature.rotworm": {
+      "kills_per_hour_micros": 6866134,
+      "loot_per_kill_micros": 11190582,
+      "tier": 1
+    },
+    "oteryn:creature.rustheap_golem": {
+      "kills_per_hour_micros": 137142857,
+      "loot_per_kill_micros": 464957555,
+      "tier": 3
+    },
+    "oteryn:creature.sabretooth": {
+      "kills_per_hour_micros": 23990004,
+      "loot_per_kill_micros": 4619850000,
+      "tier": 4
+    },
+    "oteryn:creature.sacred_spider": {
+      "kills_per_hour_micros": 274285714,
+      "loot_per_kill_micros": 95582600,
+      "tier": 2
+    },
+    "oteryn:creature.salamander": {
+      "kills_per_hour_micros": 102309058,
+      "loot_per_kill_micros": 15080685,
+      "tier": 1
+    },
+    "oteryn:creature.sandcrawler": {
+      "kills_per_hour_micros": 92160000,
+      "loot_per_kill_micros": 1616299,
+      "tier": 1
+    },
+    "oteryn:creature.sandstone_scorpion": {
+      "kills_per_hour_micros": 156521739,
+      "loot_per_kill_micros": 134189068,
+      "tier": 2
+    },
+    "oteryn:creature.scarab": {
+      "kills_per_hour_micros": 402797202,
+      "loot_per_kill_micros": 29921935,
+      "tier": 2
+    },
+    "oteryn:creature.schiach": {
+      "kills_per_hour_micros": 145822784,
+      "loot_per_kill_micros": 271996510,
+      "tier": 2
+    },
+    "oteryn:creature.scorpion": {
+      "kills_per_hour_micros": 7663650,
+      "loot_per_kill_micros": 1276975,
+      "tier": 1
+    },
+    "oteryn:creature.sea_captain": {
+      "kills_per_hour_micros": 711111111,
+      "loot_per_kill_micros": 52630000,
+      "tier": 2
+    },
+    "oteryn:creature.sea_serpent": {
+      "kills_per_hour_micros": 219847328,
+      "loot_per_kill_micros": 296622035,
+      "tier": 3
+    },
+    "oteryn:creature.seacrest_serpent": {
+      "kills_per_hour_micros": 114741035,
+      "loot_per_kill_micros": 839367515,
+      "tier": 3
+    },
+    "oteryn:creature.serpent_spawn": {
+      "kills_per_hour_micros": 131506849,
+      "loot_per_kill_micros": 603119230,
+      "tier": 3
+    },
+    "oteryn:creature.shaburak_demon": {
+      "kills_per_hour_micros": 270422535,
+      "loot_per_kill_micros": 126538500,
+      "tier": 3
+    },
+    "oteryn:creature.shaburak_lord": {
+      "kills_per_hour_micros": 192642140,
+      "loot_per_kill_micros": 254442950,
+      "tier": 3
+    },
+    "oteryn:creature.shaburak_prince": {
+      "kills_per_hour_micros": 149610389,
+      "loot_per_kill_micros": 388046850,
+      "tier": 3
+    },
+    "oteryn:creature.shadow_hound": {
+      "kills_per_hour_micros": 137470167,
+      "loot_per_kill_micros": 67751000,
+      "tier": 2
+    },
+    "oteryn:creature.shadow_pupil": {
+      "kills_per_hour_micros": 265437788,
+      "loot_per_kill_micros": 79432580,
+      "tier": 2
+    },
+    "oteryn:creature.shaper_matriarch": {
+      "kills_per_hour_micros": 196587030,
+      "loot_per_kill_micros": 545657720,
+      "tier": 3
+    },
+    "oteryn:creature.shark": {
+      "kills_per_hour_micros": 106077348,
+      "loot_per_kill_micros": 57596000,
+      "tier": 2
+    },
+    "oteryn:creature.shell_drake": {
+      "kills_per_hour_micros": 117311608,
+      "loot_per_kill_micros": 797415550,
+      "tier": 3
+    },
+    "oteryn:creature.shock_head": {
+      "kills_per_hour_micros": 73282442,
+      "loot_per_kill_micros": 105093437,
+      "tier": 3
+    },
+    "oteryn:creature.shrieking_cry_stal": {
+      "kills_per_hour_micros": 12914798,
+      "loot_per_kill_micros": 4538371800,
+      "tier": 4
+    },
+    "oteryn:creature.sibang": {
+      "kills_per_hour_micros": 600000000,
+      "loot_per_kill_micros": 19905213,
+      "tier": 2
+    },
+    "oteryn:creature.sight_of_surrender": {
+      "kills_per_hour_micros": 9759403,
+      "loot_per_kill_micros": 12496876370,
+      "tier": 4
+    },
+    "oteryn:creature.silencer": {
+      "kills_per_hour_micros": 82403433,
+      "loot_per_kill_micros": 785762149,
+      "tier": 4
+    },
+    "oteryn:creature.silverfrost_sentinel": {
+      "kills_per_hour_micros": 35843186,
+      "loot_per_kill_micros": 2074828200,
+      "tier": 4
+    },
+    "oteryn:creature.sineater_inferniarch": {
+      "kills_per_hour_micros": 56195121,
+      "loot_per_kill_micros": 1463956550,
+      "tier": 4
+    },
+    "oteryn:creature.skeleton": {
+      "kills_per_hour_micros": 58064516,
+      "loot_per_kill_micros": 14549167,
+      "tier": 1
+    },
+    "oteryn:creature.skeleton_elite_warrior": {
+      "kills_per_hour_micros": 61407249,
+      "loot_per_kill_micros": 2597001980,
+      "tier": 4
+    },
+    "oteryn:creature.skeleton_warrior": {
+      "kills_per_hour_micros": 6937251,
+      "loot_per_kill_micros": 6077691,
+      "tier": 1
+    },
+    "oteryn:creature.skunk": {
+      "kills_per_hour_micros": 314754098,
+      "loot_per_kill_micros": 505250,
+      "tier": 1
+    },
+    "oteryn:creature.slime": {
+      "kills_per_hour_micros": 944262295,
+      "loot_per_kill_micros": 0,
+      "tier": 2
+    },
+    "oteryn:creature.slug": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 12823406,
+      "tier": 1
+    },
+    "oteryn:creature.smuggler": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 8946521,
+      "tier": 1
+    },
+    "oteryn:creature.snake": {
+      "kills_per_hour_micros": 464516129,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.son_of_verminor": {
+      "kills_per_hour_micros": 63506063,
+      "loot_per_kill_micros": 0,
+      "tier": 4
+    },
+    "oteryn:creature.sopping_carcass": {
+      "kills_per_hour_micros": 15007816,
+      "loot_per_kill_micros": 6155240250,
+      "tier": 5
+    },
+    "oteryn:creature.sopping_corpus": {
+      "kills_per_hour_micros": 8678619,
+      "loot_per_kill_micros": 9264059400,
+      "tier": 5
+    },
+    "oteryn:creature.sorcerer_s_apparition": {
+      "kills_per_hour_micros": 24636441,
+      "loot_per_kill_micros": 6940249500,
+      "tier": 5
+    },
+    "oteryn:creature.soul_broken_harbinger": {
+      "kills_per_hour_micros": 70072992,
+      "loot_per_kill_micros": 1752104890,
+      "tier": 4
+    },
+    "oteryn:creature.souleater": {
+      "kills_per_hour_micros": 149610389,
+      "loot_per_kill_micros": 352132850,
+      "tier": 3
+    },
+    "oteryn:creature.sparkion": {
+      "kills_per_hour_micros": 132718894,
+      "loot_per_kill_micros": 704588145,
+      "tier": 3
+    },
+    "oteryn:creature.spectre": {
+      "kills_per_hour_micros": 29447852,
+      "loot_per_kill_micros": 342967325,
+      "tier": 3
+    },
+    "oteryn:creature.spellreaper_inferniarch": {
+      "kills_per_hour_micros": 36525047,
+      "loot_per_kill_micros": 2085980885,
+      "tier": 4
+    },
+    "oteryn:creature.sphinx": {
+      "kills_per_hour_micros": 44859813,
+      "loot_per_kill_micros": 1206050320,
+      "tier": 4
+    },
+    "oteryn:creature.spider": {
+      "kills_per_hour_micros": 457142857,
+      "loot_per_kill_micros": 2041846,
+      "tier": 1
+    },
+    "oteryn:creature.spidris": {
+      "kills_per_hour_micros": 101230228,
+      "loot_per_kill_micros": 868851750,
+      "tier": 3
+    },
+    "oteryn:creature.spidris_elite": {
+      "kills_per_hour_micros": 74708171,
+      "loot_per_kill_micros": 1525056850,
+      "tier": 3
+    },
+    "oteryn:creature.spiky_carnivor": {
+      "kills_per_hour_micros": 78474114,
+      "loot_per_kill_micros": 528622686,
+      "tier": 3
+    },
+    "oteryn:creature.spit_nettle": {
+      "kills_per_hour_micros": 19047619,
+      "loot_per_kill_micros": 7132825,
+      "tier": 1
+    },
+    "oteryn:creature.spitter": {
+      "kills_per_hour_micros": 256000000,
+      "loot_per_kill_micros": 316955900,
+      "tier": 3
+    },
+    "oteryn:creature.squid_warden": {
+      "kills_per_hour_micros": 26815642,
+      "loot_per_kill_micros": 4375247785,
+      "tier": 4
+    },
+    "oteryn:creature.squidgy_slime": {
+      "kills_per_hour_micros": 6092659,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.stabilizing_dread_intruder": {
+      "kills_per_hour_micros": 133953488,
+      "loot_per_kill_micros": 603327239,
+      "tier": 3
+    },
+    "oteryn:creature.stabilizing_reality_reaver": {
+      "kills_per_hour_micros": 145088161,
+      "loot_per_kill_micros": 534108138,
+      "tier": 3
+    },
+    "oteryn:creature.stalker": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 5766266,
+      "tier": 1
+    },
+    "oteryn:creature.stalking_stalk": {
+      "kills_per_hour_micros": 22839016,
+      "loot_per_kill_micros": 3815354350,
+      "tier": 4
+    },
+    "oteryn:creature.stampor": {
+      "kills_per_hour_micros": 95049504,
+      "loot_per_kill_micros": 174500948,
+      "tier": 2
+    },
+    "oteryn:creature.starving_wolf": {
+      "kills_per_hour_micros": 34636199,
+      "loot_per_kill_micros": 1180930,
+      "tier": 1
+    },
+    "oteryn:creature.stone_devourer": {
+      "kills_per_hour_micros": 72911392,
+      "loot_per_kill_micros": 1302423360,
+      "tier": 3
+    },
+    "oteryn:creature.stone_golem": {
+      "kills_per_hour_micros": 405633802,
+      "loot_per_kill_micros": 49597761,
+      "tier": 2
+    },
+    "oteryn:creature.stone_rhino": {
+      "kills_per_hour_micros": 112941176,
+      "loot_per_kill_micros": 168892270,
+      "tier": 3
+    },
+    "oteryn:creature.stonerefiner": {
+      "kills_per_hour_micros": 167441860,
+      "loot_per_kill_micros": 255730350,
+      "tier": 2
+    },
+    "oteryn:creature.streaked_devourer": {
+      "kills_per_hour_micros": 62813522,
+      "loot_per_kill_micros": 5301444350,
+      "tier": 4
+    },
+    "oteryn:creature.sugar_cube": {
+      "kills_per_hour_micros": 82997118,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.sugar_cube_worker": {
+      "kills_per_hour_micros": 36432637,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.sulphider": {
+      "kills_per_hour_micros": 16719883,
+      "loot_per_kill_micros": 3714788193,
+      "tier": 4
+    },
+    "oteryn:creature.sulphur_spouter": {
+      "kills_per_hour_micros": 18308963,
+      "loot_per_kill_micros": 4175077875,
+      "tier": 4
+    },
+    "oteryn:creature.swamp_troll": {
+      "kills_per_hour_micros": 3211955,
+      "loot_per_kill_micros": 3115240,
+      "tier": 1
+    },
+    "oteryn:creature.swampling": {
+      "kills_per_hour_micros": 21091175,
+      "loot_per_kill_micros": 17734209,
+      "tier": 1
+    },
+    "oteryn:creature.swan_maiden": {
+      "kills_per_hour_micros": 82285714,
+      "loot_per_kill_micros": 181540424,
+      "tier": 2
+    },
+    "oteryn:creature.swarmer": {
+      "kills_per_hour_micros": 300000000,
+      "loot_per_kill_micros": 112389320,
+      "tier": 2
+    },
+    "oteryn:creature.tarantula": {
+      "kills_per_hour_micros": 600000000,
+      "loot_per_kill_micros": 29916607,
+      "tier": 2
+    },
+    "oteryn:creature.tarnished_spirit": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 40860438,
+      "tier": 2
+    },
+    "oteryn:creature.terramite": {
+      "kills_per_hour_micros": 374025974,
+      "loot_per_kill_micros": 48709321,
+      "tier": 2
+    },
+    "oteryn:creature.terrified_elephant": {
+      "kills_per_hour_micros": 426666666,
+      "loot_per_kill_micros": 20662300,
+      "tier": 2
+    },
+    "oteryn:creature.terror_bird": {
+      "kills_per_hour_micros": 476033057,
+      "loot_per_kill_micros": 28912115,
+      "tier": 2
+    },
+    "oteryn:creature.terrorsleep": {
+      "kills_per_hour_micros": 51336898,
+      "loot_per_kill_micros": 1540231251,
+      "tier": 4
+    },
+    "oteryn:creature.thanatursus": {
+      "kills_per_hour_micros": 45176470,
+      "loot_per_kill_micros": 2212283653,
+      "tier": 4
+    },
+    "oteryn:creature.thornback_tortoise": {
+      "kills_per_hour_micros": 253744493,
+      "loot_per_kill_micros": 43710267,
+      "tier": 2
+    },
+    "oteryn:creature.thornfire_wolf": {
+      "kills_per_hour_micros": 245106382,
+      "loot_per_kill_micros": 61860333,
+      "tier": 2
+    },
+    "oteryn:creature.tiger": {
+      "kills_per_hour_micros": 5949798,
+      "loot_per_kill_micros": 7055230,
+      "tier": 1
+    },
+    "oteryn:creature.toad": {
+      "kills_per_hour_micros": 20310296,
+      "loot_per_kill_micros": 12515347,
+      "tier": 1
+    },
+    "oteryn:creature.tomb_servant": {
+      "kills_per_hour_micros": 252631578,
+      "loot_per_kill_micros": 65478276,
+      "tier": 2
+    },
+    "oteryn:creature.tortoise": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 12680624,
+      "tier": 1
+    },
+    "oteryn:creature.tremendous_tyrant": {
+      "kills_per_hour_micros": 36045056,
+      "loot_per_kill_micros": 4714786440,
+      "tier": 4
+    },
+    "oteryn:creature.troll": {
+      "kills_per_hour_micros": 17899316,
+      "loot_per_kill_micros": 8770462,
+      "tier": 1
+    },
+    "oteryn:creature.troll_champion": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 7389502,
+      "tier": 1
+    },
+    "oteryn:creature.troll_guard": {
+      "kills_per_hour_micros": 131506849,
+      "loot_per_kill_micros": 6496188,
+      "tier": 1
+    },
+    "oteryn:creature.troll_legionnaire": {
+      "kills_per_hour_micros": 711111111,
+      "loot_per_kill_micros": 78794519,
+      "tier": 2
+    },
+    "oteryn:creature.true_dawnfire_asura": {
+      "kills_per_hour_micros": 54857142,
+      "loot_per_kill_micros": 2847085175,
+      "tier": 4
+    },
+    "oteryn:creature.true_feverbloom_asura": {
+      "kills_per_hour_micros": 42197802,
+      "loot_per_kill_micros": 1739492890,
+      "tier": 4
+    },
+    "oteryn:creature.true_frost_flower_asura": {
+      "kills_per_hour_micros": 104537205,
+      "loot_per_kill_micros": 2534734705,
+      "tier": 4
+    },
+    "oteryn:creature.true_midnight_asura": {
+      "kills_per_hour_micros": 47721623,
+      "loot_per_kill_micros": 2556251990,
+      "tier": 4
+    },
+    "oteryn:creature.truffle": {
+      "kills_per_hour_micros": 10730253,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.truffle_cook": {
+      "kills_per_hour_micros": 13812949,
+      "loot_per_kill_micros": 0,
+      "tier": 1
+    },
+    "oteryn:creature.tunnel_tyrant": {
+      "kills_per_hour_micros": 72819216,
+      "loot_per_kill_micros": 1059404110,
+      "tier": 3
+    },
+    "oteryn:creature.turbulent_elemental": {
+      "kills_per_hour_micros": 10487982,
+      "loot_per_kill_micros": 5918201500,
+      "tier": 4
+    },
+    "oteryn:creature.twisted_pooka": {
+      "kills_per_hour_micros": 106864564,
+      "loot_per_kill_micros": 149269330,
+      "tier": 2
+    },
+    "oteryn:creature.twisted_shaper": {
+      "kills_per_hour_micros": 154423592,
+      "loot_per_kill_micros": 558651600,
+      "tier": 3
+    },
+    "oteryn:creature.two_headed_turtle": {
+      "kills_per_hour_micros": 59751037,
+      "loot_per_kill_micros": 1964216785,
+      "tier": 3
+    },
+    "oteryn:creature.undead_cavebear": {
+      "kills_per_hour_micros": 257142857,
+      "loot_per_kill_micros": 28156100,
+      "tier": 2
+    },
+    "oteryn:creature.undead_dragon": {
+      "kills_per_hour_micros": 52698993,
+      "loot_per_kill_micros": 1788854005,
+      "tier": 4
+    },
+    "oteryn:creature.undead_elite_gladiator": {
+      "kills_per_hour_micros": 53382761,
+      "loot_per_kill_micros": 2827206970,
+      "tier": 4
+    },
+    "oteryn:creature.undead_gladiator": {
+      "kills_per_hour_micros": 91283676,
+      "loot_per_kill_micros": 125111648,
+      "tier": 2
+    },
+    "oteryn:creature.undead_mine_worker": {
+      "kills_per_hour_micros": 6937251,
+      "loot_per_kill_micros": 32289399,
+      "tier": 1
+    },
+    "oteryn:creature.undead_prospector": {
+      "kills_per_hour_micros": 60314136,
+      "loot_per_kill_micros": 31481237,
+      "tier": 1
+    },
+    "oteryn:creature.undertaker": {
+      "kills_per_hour_micros": 20338983,
+      "loot_per_kill_micros": 3820106800,
+      "tier": 4
+    },
+    "oteryn:creature.usurper_archer": {
+      "kills_per_hour_micros": 52126696,
+      "loot_per_kill_micros": 1524605084,
+      "tier": 4
+    },
+    "oteryn:creature.usurper_knight": {
+      "kills_per_hour_micros": 38735709,
+      "loot_per_kill_micros": 1571788174,
+      "tier": 4
+    },
+    "oteryn:creature.usurper_warlock": {
+      "kills_per_hour_micros": 51291184,
+      "loot_per_kill_micros": 1361363230,
+      "tier": 4
+    },
+    "oteryn:creature.valkyrie": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 23636647,
+      "tier": 1
+    },
+    "oteryn:creature.vampire": {
+      "kills_per_hour_micros": 188235294,
+      "loot_per_kill_micros": 76847671,
+      "tier": 2
+    },
+    "oteryn:creature.vampire_bride": {
+      "kills_per_hour_micros": 308021390,
+      "loot_per_kill_micros": 185293975,
+      "tier": 3
+    },
+    "oteryn:creature.vampire_pig": {
+      "kills_per_hour_micros": 374025974,
+      "loot_per_kill_micros": 28121082,
+      "tier": 2
+    },
+    "oteryn:creature.vampire_viscount": {
+      "kills_per_hour_micros": 70588235,
+      "loot_per_kill_micros": 85622936,
+      "tier": 2
+    },
+    "oteryn:creature.varg": {
+      "kills_per_hour_micros": 70761670,
+      "loot_per_kill_micros": 1495884900,
+      "tier": 4
+    },
+    "oteryn:creature.varnished_diremaw": {
+      "kills_per_hour_micros": 61472785,
+      "loot_per_kill_micros": 3182445764,
+      "tier": 4
+    },
+    "oteryn:creature.venerable_girtablilu": {
+      "kills_per_hour_micros": 45678033,
+      "loot_per_kill_micros": 2996889440,
+      "tier": 4
+    },
+    "oteryn:creature.vexclaw": {
+      "kills_per_hour_micros": 51018600,
+      "loot_per_kill_micros": 2340388260,
+      "tier": 4
+    },
+    "oteryn:creature.vibrant_phantom": {
+      "kills_per_hour_micros": 13852813,
+      "loot_per_kill_micros": 7468891500,
+      "tier": 4
+    },
+    "oteryn:creature.vicious_manbat": {
+      "kills_per_hour_micros": 211764705,
+      "loot_per_kill_micros": 277604773,
+      "tier": 3
+    },
+    "oteryn:creature.vicious_squire": {
+      "kills_per_hour_micros": 79558011,
+      "loot_per_kill_micros": 91474147,
+      "tier": 2
+    },
+    "oteryn:creature.vile_grandmaster": {
+      "kills_per_hour_micros": 170919881,
+      "loot_per_kill_micros": 305386927,
+      "tier": 3
+    },
+    "oteryn:creature.vulcongra": {
+      "kills_per_hour_micros": 227667984,
+      "loot_per_kill_micros": 266863990,
+      "tier": 3
+    },
+    "oteryn:creature.wailing_widow": {
+      "kills_per_hour_micros": 181703470,
+      "loot_per_kill_micros": 80946550,
+      "tier": 2
+    },
+    "oteryn:creature.walker": {
+      "kills_per_hour_micros": 116129032,
+      "loot_per_kill_micros": 698918200,
+      "tier": 3
+    },
+    "oteryn:creature.walking_dread": {
+      "kills_per_hour_micros": 12524461,
+      "loot_per_kill_micros": 4859561000,
+      "tier": 4
+    },
+    "oteryn:creature.walking_pillar": {
+      "kills_per_hour_micros": 13521126,
+      "loot_per_kill_micros": 5799080345,
+      "tier": 5
+    },
+    "oteryn:creature.wandering_pillar": {
+      "kills_per_hour_micros": 14505162,
+      "loot_per_kill_micros": 6526914970,
+      "tier": 5
+    },
+    "oteryn:creature.war_golem": {
+      "kills_per_hour_micros": 81586402,
+      "loot_per_kill_micros": 888879565,
+      "tier": 3
+    },
+    "oteryn:creature.war_wolf": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 4326860,
+      "tier": 1
+    },
+    "oteryn:creature.wardragon": {
+      "kills_per_hour_micros": 55598455,
+      "loot_per_kill_micros": 1877873790,
+      "tier": 4
+    },
+    "oteryn:creature.warlock": {
+      "kills_per_hour_micros": 125490196,
+      "loot_per_kill_micros": 315792968,
+      "tier": 3
+    },
+    "oteryn:creature.wasp": {
+      "kills_per_hour_micros": 44070390,
+      "loot_per_kill_micros": 1185440,
+      "tier": 1
+    },
+    "oteryn:creature.waspoid": {
+      "kills_per_hour_micros": 105301645,
+      "loot_per_kill_micros": 348481030,
+      "tier": 2
+    },
+    "oteryn:creature.water_buffalo": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 15316000,
+      "tier": 1
+    },
+    "oteryn:creature.water_elemental": {
+      "kills_per_hour_micros": 158677685,
+      "loot_per_kill_micros": 91829600,
+      "tier": 2
+    },
+    "oteryn:creature.weakened_frazzlemaw": {
+      "kills_per_hour_micros": 293877551,
+      "loot_per_kill_micros": 387387810,
+      "tier": 3
+    },
+    "oteryn:creature.weeper": {
+      "kills_per_hour_micros": 65979381,
+      "loot_per_kill_micros": 1277100280,
+      "tier": 4
+    },
+    "oteryn:creature.werebadger": {
+      "kills_per_hour_micros": 221538461,
+      "loot_per_kill_micros": 551456879,
+      "tier": 3
+    },
+    "oteryn:creature.werebear": {
+      "kills_per_hour_micros": 156948228,
+      "loot_per_kill_micros": 770404853,
+      "tier": 3
+    },
+    "oteryn:creature.wereboar": {
+      "kills_per_hour_micros": 183439490,
+      "loot_per_kill_micros": 563715236,
+      "tier": 3
+    },
+    "oteryn:creature.werecrocodile": {
+      "kills_per_hour_micros": 57831325,
+      "loot_per_kill_micros": 1104682710,
+      "tier": 3
+    },
+    "oteryn:creature.werefox": {
+      "kills_per_hour_micros": 236065573,
+      "loot_per_kill_micros": 448942523,
+      "tier": 3
+    },
+    "oteryn:creature.werehyaena": {
+      "kills_per_hour_micros": 161797752,
+      "loot_per_kill_micros": 570070808,
+      "tier": 3
+    },
+    "oteryn:creature.werehyaena_shaman": {
+      "kills_per_hour_micros": 172972972,
+      "loot_per_kill_micros": 362734290,
+      "tier": 3
+    },
+    "oteryn:creature.werelion": {
+      "kills_per_hour_micros": 136817102,
+      "loot_per_kill_micros": 695435606,
+      "tier": 3
+    },
+    "oteryn:creature.werelioness": {
+      "kills_per_hour_micros": 127716186,
+      "loot_per_kill_micros": 776201390,
+      "tier": 3
+    },
+    "oteryn:creature.werepanther": {
+      "kills_per_hour_micros": 83720930,
+      "loot_per_kill_micros": 921900734,
+      "tier": 3
+    },
+    "oteryn:creature.weretiger": {
+      "kills_per_hour_micros": 72090112,
+      "loot_per_kill_micros": 1109898795,
+      "tier": 3
+    },
+    "oteryn:creature.werewolf": {
+      "kills_per_hour_micros": 194594594,
+      "loot_per_kill_micros": 413043586,
+      "tier": 3
+    },
+    "oteryn:creature.white_lion": {
+      "kills_per_hour_micros": 141871921,
+      "loot_per_kill_micros": 909762706,
+      "tier": 3
+    },
+    "oteryn:creature.white_shade": {
+      "kills_per_hour_micros": 31823204,
+      "loot_per_kill_micros": 24512000,
+      "tier": 2
+    },
+    "oteryn:creature.white_tiger": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 11445500,
+      "tier": 1
+    },
+    "oteryn:creature.white_weretiger": {
+      "kills_per_hour_micros": 76089828,
+      "loot_per_kill_micros": 2129466362,
+      "tier": 4
+    },
+    "oteryn:creature.wiggler": {
+      "kills_per_hour_micros": 86486486,
+      "loot_per_kill_micros": 244341400,
+      "tier": 2
+    },
+    "oteryn:creature.wild_warrior": {
+      "kills_per_hour_micros": 0,
+      "loot_per_kill_micros": 28503952,
+      "tier": 1
+    },
+    "oteryn:creature.wilting_leaf_golem": {
+      "kills_per_hour_micros": 417391304,
+      "loot_per_kill_micros": 34867251,
+      "tier": 2
+    },
+    "oteryn:creature.winged_jaracal": {
+      "kills_per_hour_micros": 46791226,
+      "loot_per_kill_micros": 1494858402,
+      "tier": 4
+    },
+    "oteryn:creature.winter_wolf": {
+      "kills_per_hour_micros": 227667984,
+      "loot_per_kill_micros": 2892787,
+      "tier": 1
+    },
+    "oteryn:creature.witch": {
+      "kills_per_hour_micros": 496551724,
+      "loot_per_kill_micros": 39421469,
+      "tier": 2
+    },
+    "oteryn:creature.wolf": {
+      "kills_per_hour_micros": 259459459,
+      "loot_per_kill_micros": 2828058,
+      "tier": 1
+    },
+    "oteryn:creature.worker_golem": {
+      "kills_per_hour_micros": 234146341,
+      "loot_per_kill_micros": 105511485,
+      "tier": 3
+    },
+    "oteryn:creature.worm_priestess": {
+      "kills_per_hour_micros": 355555555,
+      "loot_per_kill_micros": 291107982,
+      "tier": 3
+    },
+    "oteryn:creature.wyrm": {
+      "kills_per_hour_micros": 213333333,
+      "loot_per_kill_micros": 381530480,
+      "tier": 3
+    },
+    "oteryn:creature.wyvern": {
+      "kills_per_hour_micros": 174545454,
+      "loot_per_kill_micros": 100956754,
+      "tier": 2
+    },
+    "oteryn:creature.yeti": {
+      "kills_per_hour_micros": 120502092,
+      "loot_per_kill_micros": 54721350,
+      "tier": 2
+    },
+    "oteryn:creature.yielothax": {
+      "kills_per_hour_micros": 275598086,
+      "loot_per_kill_micros": 244054460,
+      "tier": 3
+    },
+    "oteryn:creature.young_goanna": {
+      "kills_per_hour_micros": 56526005,
+      "loot_per_kill_micros": 1042152535,
+      "tier": 4
+    },
+    "oteryn:creature.young_sea_serpent": {
+      "kills_per_hour_micros": 426666666,
+      "loot_per_kill_micros": 132182910,
+      "tier": 3
+    },
+    "oteryn:creature.zombie": {
+      "kills_per_hour_micros": 280975609,
+      "loot_per_kill_micros": 83061256,
+      "tier": 2
+    }
+  },
+  "model_input_sha256": "7d291eefad3d00dd4d420f0677dfd4c6ac3c2719fb6a3785805e80d97fdcf282",
+  "npc_price_policy": "maximum_catalogue_offer",
+  "npc_sell_prices": {
+    "oteryn:item.tibia.i10196": 150,
+    "oteryn:item.tibia.i10272": 35,
+    "oteryn:item.tibia.i10273": 95,
+    "oteryn:item.tibia.i10274": 50,
+    "oteryn:item.tibia.i10275": 35,
+    "oteryn:item.tibia.i10276": 150,
+    "oteryn:item.tibia.i10277": 210,
+    "oteryn:item.tibia.i10278": 120,
+    "oteryn:item.tibia.i10279": 15,
+    "oteryn:item.tibia.i10280": 380,
+    "oteryn:item.tibia.i10281": 80,
+    "oteryn:item.tibia.i10282": 600,
+    "oteryn:item.tibia.i10283": 55,
+    "oteryn:item.tibia.i10289": 250,
+    "oteryn:item.tibia.i10291": 30,
+    "oteryn:item.tibia.i10292": 35,
+    "oteryn:item.tibia.i10293": 50,
+    "oteryn:item.tibia.i10295": 20,
+    "oteryn:item.tibia.i10296": 10,
+    "oteryn:item.tibia.i10297": 50,
+    "oteryn:item.tibia.i10298": 320,
+    "oteryn:item.tibia.i10299": 15,
+    "oteryn:item.tibia.i10300": 50,
+    "oteryn:item.tibia.i10301": 28,
+    "oteryn:item.tibia.i10302": 45,
+    "oteryn:item.tibia.i10303": 48,
+    "oteryn:item.tibia.i10304": 475,
+    "oteryn:item.tibia.i10305": 130,
+    "oteryn:item.tibia.i10306": 360,
+    "oteryn:item.tibia.i10307": 150,
+    "oteryn:item.tibia.i10308": 50,
+    "oteryn:item.tibia.i10309": 600,
+    "oteryn:item.tibia.i10310": 500,
+    "oteryn:item.tibia.i10311": 400,
+    "oteryn:item.tibia.i10312": 450,
+    "oteryn:item.tibia.i10313": 800,
+    "oteryn:item.tibia.i10314": 75,
+    "oteryn:item.tibia.i10315": 100,
+    "oteryn:item.tibia.i10316": 480,
+    "oteryn:item.tibia.i10317": 380,
+    "oteryn:item.tibia.i10318": 30,
+    "oteryn:item.tibia.i10319": 15,
+    "oteryn:item.tibia.i10320": 180,
+    "oteryn:item.tibia.i10321": 100,
+    "oteryn:item.tibia.i10328": 75,
+    "oteryn:item.tibia.i10397": 250,
+    "oteryn:item.tibia.i10404": 150,
+    "oteryn:item.tibia.i10405": 200,
+    "oteryn:item.tibia.i10407": 25,
+    "oteryn:item.tibia.i10408": 100,
+    "oteryn:item.tibia.i10409": 700,
+    "oteryn:item.tibia.i10410": 320,
+    "oteryn:item.tibia.i10411": 110,
+    "oteryn:item.tibia.i10413": 600,
+    "oteryn:item.tibia.i10414": 150,
+    "oteryn:item.tibia.i10415": 550,
+    "oteryn:item.tibia.i10416": 130,
+    "oteryn:item.tibia.i10417": 500,
+    "oteryn:item.tibia.i10418": 100,
+    "oteryn:item.tibia.i10420": 250,
+    "oteryn:item.tibia.i10438": 12000,
+    "oteryn:item.tibia.i10439": 12000,
+    "oteryn:item.tibia.i10444": 175,
+    "oteryn:item.tibia.i10449": 700,
+    "oteryn:item.tibia.i10450": 200,
+    "oteryn:item.tibia.i10451": 9000,
+    "oteryn:item.tibia.i10452": 170,
+    "oteryn:item.tibia.i10453": 50,
+    "oteryn:item.tibia.i10454": 60,
+    "oteryn:item.tibia.i10455": 80,
+    "oteryn:item.tibia.i10456": 20,
+    "oteryn:item.tibia.i10457": 1500,
+    "oteryn:item.tibia.i11443": 30,
+    "oteryn:item.tibia.i11444": 60,
+    "oteryn:item.tibia.i11445": 30,
+    "oteryn:item.tibia.i11446": 350,
+    "oteryn:item.tibia.i11447": 290,
+    "oteryn:item.tibia.i11448": 300,
+    "oteryn:item.tibia.i11449": 320,
+    "oteryn:item.tibia.i11450": 480,
+    "oteryn:item.tibia.i11451": 30,
+    "oteryn:item.tibia.i11452": 35,
+    "oteryn:item.tibia.i11453": 20,
+    "oteryn:item.tibia.i11454": 1000,
+    "oteryn:item.tibia.i11455": 500,
+    "oteryn:item.tibia.i11456": 120,
+    "oteryn:item.tibia.i11457": 100,
+    "oteryn:item.tibia.i11458": 80,
+    "oteryn:item.tibia.i11463": 120,
+    "oteryn:item.tibia.i11464": 50,
+    "oteryn:item.tibia.i11465": 90,
+    "oteryn:item.tibia.i11466": 30,
+    "oteryn:item.tibia.i11467": 60,
+    "oteryn:item.tibia.i11469": 80,
+    "oteryn:item.tibia.i11470": 180,
+    "oteryn:item.tibia.i11471": 100,
+    "oteryn:item.tibia.i11472": 75,
+    "oteryn:item.tibia.i11473": 110,
+    "oteryn:item.tibia.i11474": 60,
+    "oteryn:item.tibia.i11475": 250,
+    "oteryn:item.tibia.i11476": 25,
+    "oteryn:item.tibia.i11477": 85,
+    "oteryn:item.tibia.i11478": 45,
+    "oteryn:item.tibia.i11479": 30,
+    "oteryn:item.tibia.i11480": 80,
+    "oteryn:item.tibia.i11481": 30,
+    "oteryn:item.tibia.i11482": 50,
+    "oteryn:item.tibia.i11483": 20,
+    "oteryn:item.tibia.i11484": 25,
+    "oteryn:item.tibia.i11485": 10,
+    "oteryn:item.tibia.i11486": 430,
+    "oteryn:item.tibia.i11487": 140,
+    "oteryn:item.tibia.i11488": 350,
+    "oteryn:item.tibia.i11489": 280,
+    "oteryn:item.tibia.i11490": 410,
+    "oteryn:item.tibia.i11491": 500,
+    "oteryn:item.tibia.i11492": 66,
+    "oteryn:item.tibia.i11493": 120,
+    "oteryn:item.tibia.i11510": 230,
+    "oteryn:item.tibia.i11511": 55,
+    "oteryn:item.tibia.i11512": 95,
+    "oteryn:item.tibia.i11513": 70,
+    "oteryn:item.tibia.i11514": 110,
+    "oteryn:item.tibia.i11515": 50,
+    "oteryn:item.tibia.i11539": 20,
+    "oteryn:item.tibia.i11603": 5000,
+    "oteryn:item.tibia.i11605": 5000,
+    "oteryn:item.tibia.i11607": 5000,
+    "oteryn:item.tibia.i11609": 5000,
+    "oteryn:item.tibia.i11652": 8000,
+    "oteryn:item.tibia.i11658": 550,
+    "oteryn:item.tibia.i11659": 430,
+    "oteryn:item.tibia.i11660": 340,
+    "oteryn:item.tibia.i11661": 120,
+    "oteryn:item.tibia.i11666": 5000,
+    "oteryn:item.tibia.i11671": 390,
+    "oteryn:item.tibia.i11672": 240,
+    "oteryn:item.tibia.i11673": 680,
+    "oteryn:item.tibia.i11674": 50000,
+    "oteryn:item.tibia.i11679": 7500,
+    "oteryn:item.tibia.i11680": 300,
+    "oteryn:item.tibia.i11681": 300,
+    "oteryn:item.tibia.i11684": 20,
+    "oteryn:item.tibia.i11693": 60000,
+    "oteryn:item.tibia.i11702": 380,
+    "oteryn:item.tibia.i11703": 210,
+    "oteryn:item.tibia.i12482": 500,
+    "oteryn:item.tibia.i12483": 1000,
+    "oteryn:item.tibia.i12510": 250,
+    "oteryn:item.tibia.i12541": 1000,
+    "oteryn:item.tibia.i12544": 400,
+    "oteryn:item.tibia.i12545": 245,
+    "oteryn:item.tibia.i12557": 3000,
+    "oteryn:item.tibia.i12600": 20,
+    "oteryn:item.tibia.i12601": 175,
+    "oteryn:item.tibia.i12683": 2000,
+    "oteryn:item.tibia.i12730": 150,
+    "oteryn:item.tibia.i12737": 4000,
+    "oteryn:item.tibia.i12742": 600,
+    "oteryn:item.tibia.i12805": 600,
+    "oteryn:item.tibia.i12806": 800,
+    "oteryn:item.tibia.i130": 1,
+    "oteryn:item.tibia.i13987": 4000,
+    "oteryn:item.tibia.i13990": 3000,
+    "oteryn:item.tibia.i13991": 40000,
+    "oteryn:item.tibia.i13993": 60000,
+    "oteryn:item.tibia.i13994": 30000,
+    "oteryn:item.tibia.i13996": 16000,
+    "oteryn:item.tibia.i13997": 25000,
+    "oteryn:item.tibia.i13998": 36000,
+    "oteryn:item.tibia.i13999": 40000,
+    "oteryn:item.tibia.i14000": 42000,
+    "oteryn:item.tibia.i14001": 42000,
+    "oteryn:item.tibia.i14002": 3000,
+    "oteryn:item.tibia.i14004": 2000,
+    "oteryn:item.tibia.i14006": 4000,
+    "oteryn:item.tibia.i14008": 280,
+    "oteryn:item.tibia.i14009": 330,
+    "oteryn:item.tibia.i14010": 230,
+    "oteryn:item.tibia.i14011": 90,
+    "oteryn:item.tibia.i14012": 180,
+    "oteryn:item.tibia.i14013": 290,
+    "oteryn:item.tibia.i14017": 80,
+    "oteryn:item.tibia.i14040": 11000,
+    "oteryn:item.tibia.i14041": 360,
+    "oteryn:item.tibia.i14042": 9000,
+    "oteryn:item.tibia.i14043": 9000,
+    "oteryn:item.tibia.i14044": 430,
+    "oteryn:item.tibia.i14076": 130,
+    "oteryn:item.tibia.i14077": 420,
+    "oteryn:item.tibia.i14078": 340,
+    "oteryn:item.tibia.i14079": 210,
+    "oteryn:item.tibia.i14080": 320,
+    "oteryn:item.tibia.i14081": 190,
+    "oteryn:item.tibia.i14082": 450,
+    "oteryn:item.tibia.i14083": 150,
+    "oteryn:item.tibia.i14086": 15000,
+    "oteryn:item.tibia.i14087": 15000,
+    "oteryn:item.tibia.i14088": 32000,
+    "oteryn:item.tibia.i14089": 17000,
+    "oteryn:item.tibia.i14112": 10000,
+    "oteryn:item.tibia.i14222": 3000,
+    "oteryn:item.tibia.i14223": 2000,
+    "oteryn:item.tibia.i14224": 4000,
+    "oteryn:item.tibia.i14225": 130,
+    "oteryn:item.tibia.i14246": 28000,
+    "oteryn:item.tibia.i14247": 12000,
+    "oteryn:item.tibia.i14250": 7000,
+    "oteryn:item.tibia.i16102": 500,
+    "oteryn:item.tibia.i16119": 1500,
+    "oteryn:item.tibia.i16120": 1500,
+    "oteryn:item.tibia.i16121": 1500,
+    "oteryn:item.tibia.i16122": 400,
+    "oteryn:item.tibia.i16123": 400,
+    "oteryn:item.tibia.i16124": 400,
+    "oteryn:item.tibia.i16125": 800,
+    "oteryn:item.tibia.i16126": 800,
+    "oteryn:item.tibia.i16127": 800,
+    "oteryn:item.tibia.i16130": 570,
+    "oteryn:item.tibia.i16131": 610,
+    "oteryn:item.tibia.i16132": 650,
+    "oteryn:item.tibia.i16133": 400,
+    "oteryn:item.tibia.i16134": 800,
+    "oteryn:item.tibia.i16135": 330,
+    "oteryn:item.tibia.i16137": 590,
+    "oteryn:item.tibia.i16138": 440,
+    "oteryn:item.tibia.i16139": 540,
+    "oteryn:item.tibia.i16140": 510,
+    "oteryn:item.tibia.i16163": 35000,
+    "oteryn:item.tibia.i16164": 35000,
+    "oteryn:item.tibia.i16165": 1500,
+    "oteryn:item.tibia.i16232": 4000,
+    "oteryn:item.tibia.i16236": 3000,
+    "oteryn:item.tibia.i16240": 2000,
+    "oteryn:item.tibia.i17458": 20,
+    "oteryn:item.tibia.i17461": 65,
+    "oteryn:item.tibia.i17462": 50,
+    "oteryn:item.tibia.i17463": 25,
+    "oteryn:item.tibia.i17809": 35,
+    "oteryn:item.tibia.i17810": 250,
+    "oteryn:item.tibia.i17812": 500,
+    "oteryn:item.tibia.i17813": 300,
+    "oteryn:item.tibia.i17817": 50,
+    "oteryn:item.tibia.i17818": 150,
+    "oteryn:item.tibia.i17819": 40,
+    "oteryn:item.tibia.i17822": 20,
+    "oteryn:item.tibia.i17823": 30,
+    "oteryn:item.tibia.i17824": 40,
+    "oteryn:item.tibia.i17826": 280,
+    "oteryn:item.tibia.i17827": 110,
+    "oteryn:item.tibia.i17828": 4000,
+    "oteryn:item.tibia.i17829": 7000,
+    "oteryn:item.tibia.i17830": 190,
+    "oteryn:item.tibia.i17831": 150,
+    "oteryn:item.tibia.i17846": 750,
+    "oteryn:item.tibia.i17847": 120,
+    "oteryn:item.tibia.i17848": 250,
+    "oteryn:item.tibia.i17849": 170,
+    "oteryn:item.tibia.i17850": 160,
+    "oteryn:item.tibia.i17851": 230,
+    "oteryn:item.tibia.i17852": 2000,
+    "oteryn:item.tibia.i17853": 140,
+    "oteryn:item.tibia.i17854": 80,
+    "oteryn:item.tibia.i17855": 40,
+    "oteryn:item.tibia.i17856": 210,
+    "oteryn:item.tibia.i17857": 160,
+    "oteryn:item.tibia.i17859": 300,
+    "oteryn:item.tibia.i18924": 60,
+    "oteryn:item.tibia.i18925": 90,
+    "oteryn:item.tibia.i18926": 40,
+    "oteryn:item.tibia.i18927": 150,
+    "oteryn:item.tibia.i18928": 360,
+    "oteryn:item.tibia.i18929": 90,
+    "oteryn:item.tibia.i18930": 210,
+    "oteryn:item.tibia.i18993": 70,
+    "oteryn:item.tibia.i18994": 115,
+    "oteryn:item.tibia.i18995": 55,
+    "oteryn:item.tibia.i18996": 120,
+    "oteryn:item.tibia.i18997": 30,
+    "oteryn:item.tibia.i19110": 35,
+    "oteryn:item.tibia.i19111": 25,
+    "oteryn:item.tibia.i19358": 1500,
+    "oteryn:item.tibia.i19359": 300,
+    "oteryn:item.tibia.i19372": 4000,
+    "oteryn:item.tibia.i20183": 3000,
+    "oteryn:item.tibia.i20184": 1900,
+    "oteryn:item.tibia.i20198": 700,
+    "oteryn:item.tibia.i20199": 400,
+    "oteryn:item.tibia.i20200": 390,
+    "oteryn:item.tibia.i20201": 600,
+    "oteryn:item.tibia.i20202": 450,
+    "oteryn:item.tibia.i20203": 900,
+    "oteryn:item.tibia.i20204": 500,
+    "oteryn:item.tibia.i20205": 650,
+    "oteryn:item.tibia.i20206": 350,
+    "oteryn:item.tibia.i20207": 480,
+    "oteryn:item.tibia.i21164": 7000,
+    "oteryn:item.tibia.i21165": 11000,
+    "oteryn:item.tibia.i21166": 6000,
+    "oteryn:item.tibia.i21167": 10000,
+    "oteryn:item.tibia.i21168": 11000,
+    "oteryn:item.tibia.i21169": 2000,
+    "oteryn:item.tibia.i21170": 5000,
+    "oteryn:item.tibia.i21171": 9000,
+    "oteryn:item.tibia.i21172": 2500,
+    "oteryn:item.tibia.i21173": 14000,
+    "oteryn:item.tibia.i21174": 7000,
+    "oteryn:item.tibia.i21175": 3000,
+    "oteryn:item.tibia.i21176": 12000,
+    "oteryn:item.tibia.i21177": 2500,
+    "oteryn:item.tibia.i21178": 1500,
+    "oteryn:item.tibia.i21179": 1500,
+    "oteryn:item.tibia.i21180": 1500,
+    "oteryn:item.tibia.i21183": 2000,
+    "oteryn:item.tibia.i21400": 15,
+    "oteryn:item.tibia.i21892": 10000,
+    "oteryn:item.tibia.i21974": 270,
+    "oteryn:item.tibia.i21975": 350,
+    "oteryn:item.tibia.i21981": 15000,
+    "oteryn:item.tibia.i22007": 70,
+    "oteryn:item.tibia.i22051": 160,
+    "oteryn:item.tibia.i22052": 180,
+    "oteryn:item.tibia.i22053": 175,
+    "oteryn:item.tibia.i22054": 165,
+    "oteryn:item.tibia.i22055": 185,
+    "oteryn:item.tibia.i22056": 195,
+    "oteryn:item.tibia.i22057": 185,
+    "oteryn:item.tibia.i22060": 3000,
+    "oteryn:item.tibia.i22085": 5000,
+    "oteryn:item.tibia.i22086": 7500,
+    "oteryn:item.tibia.i22087": 1500,
+    "oteryn:item.tibia.i22171": 2500,
+    "oteryn:item.tibia.i22172": 1500,
+    "oteryn:item.tibia.i22183": 3600,
+    "oteryn:item.tibia.i22184": 200,
+    "oteryn:item.tibia.i22188": 180,
+    "oteryn:item.tibia.i22189": 210,
+    "oteryn:item.tibia.i22191": 250,
+    "oteryn:item.tibia.i22192": 2000,
+    "oteryn:item.tibia.i22193": 500,
+    "oteryn:item.tibia.i22194": 500,
+    "oteryn:item.tibia.i22195": 3500,
+    "oteryn:item.tibia.i22726": 50000,
+    "oteryn:item.tibia.i22727": 30000,
+    "oteryn:item.tibia.i22728": 1100,
+    "oteryn:item.tibia.i22729": 1300,
+    "oteryn:item.tibia.i22730": 1200,
+    "oteryn:item.tibia.i22866": 45000,
+    "oteryn:item.tibia.i22867": 45000,
+    "oteryn:item.tibia.i23501": 260,
+    "oteryn:item.tibia.i23502": 290,
+    "oteryn:item.tibia.i23503": 300,
+    "oteryn:item.tibia.i23504": 310,
+    "oteryn:item.tibia.i23505": 280,
+    "oteryn:item.tibia.i23506": 250,
+    "oteryn:item.tibia.i23507": 400,
+    "oteryn:item.tibia.i23508": 270,
+    "oteryn:item.tibia.i23510": 410,
+    "oteryn:item.tibia.i23511": 430,
+    "oteryn:item.tibia.i23513": 300,
+    "oteryn:item.tibia.i23514": 300,
+    "oteryn:item.tibia.i23515": 300,
+    "oteryn:item.tibia.i23516": 300,
+    "oteryn:item.tibia.i23517": 310,
+    "oteryn:item.tibia.i23518": 350,
+    "oteryn:item.tibia.i23519": 270,
+    "oteryn:item.tibia.i23520": 270,
+    "oteryn:item.tibia.i23521": 250,
+    "oteryn:item.tibia.i23522": 250,
+    "oteryn:item.tibia.i23523": 300,
+    "oteryn:item.tibia.i23524": 250,
+    "oteryn:item.tibia.i23529": 8000,
+    "oteryn:item.tibia.i23531": 8000,
+    "oteryn:item.tibia.i23533": 8000,
+    "oteryn:item.tibia.i23542": 6000,
+    "oteryn:item.tibia.i23543": 6000,
+    "oteryn:item.tibia.i23544": 6000,
+    "oteryn:item.tibia.i2418": 1,
+    "oteryn:item.tibia.i24380": 150,
+    "oteryn:item.tibia.i24381": 200,
+    "oteryn:item.tibia.i24384": 260,
+    "oteryn:item.tibia.i24385": 180,
+    "oteryn:item.tibia.i24386": 300,
+    "oteryn:item.tibia.i24387": 320,
+    "oteryn:item.tibia.i24388": 175,
+    "oteryn:item.tibia.i24389": 265,
+    "oteryn:item.tibia.i24390": 350,
+    "oteryn:item.tibia.i24391": 750,
+    "oteryn:item.tibia.i24392": 3500,
+    "oteryn:item.tibia.i24937": 700,
+    "oteryn:item.tibia.i24938": 550,
+    "oteryn:item.tibia.i24939": 10000,
+    "oteryn:item.tibia.i24940": 10000,
+    "oteryn:item.tibia.i24941": 10000,
+    "oteryn:item.tibia.i24942": 10000,
+    "oteryn:item.tibia.i24961": 350,
+    "oteryn:item.tibia.i24962": 450,
+    "oteryn:item.tibia.i25088": 2000,
+    "oteryn:item.tibia.i25089": 400,
+    "oteryn:item.tibia.i25686": 150,
+    "oteryn:item.tibia.i25689": 250,
+    "oteryn:item.tibia.i25691": 120,
+    "oteryn:item.tibia.i25693": 150,
+    "oteryn:item.tibia.i25694": 200,
+    "oteryn:item.tibia.i25695": 200,
+    "oteryn:item.tibia.i25696": 250,
+    "oteryn:item.tibia.i25697": 180,
+    "oteryn:item.tibia.i25698": 2000,
+    "oteryn:item.tibia.i25699": 12000,
+    "oteryn:item.tibia.i25700": 5000,
+    "oteryn:item.tibia.i25701": 1000,
+    "oteryn:item.tibia.i25702": 500,
+    "oteryn:item.tibia.i25735": 50,
+    "oteryn:item.tibia.i25737": 500,
+    "oteryn:item.tibia.i25742": 200,
+    "oteryn:item.tibia.i25743": 500,
+    "oteryn:item.tibia.i25744": 250,
+    "oteryn:item.tibia.i25745": 200,
+    "oteryn:item.tibia.i27301": 80,
+    "oteryn:item.tibia.i27369": 40,
+    "oteryn:item.tibia.i27462": 100,
+    "oteryn:item.tibia.i27463": 200,
+    "oteryn:item.tibia.i27592": 800,
+    "oteryn:item.tibia.i27593": 650,
+    "oteryn:item.tibia.i27594": 500,
+    "oteryn:item.tibia.i27595": 500,
+    "oteryn:item.tibia.i27596": 700,
+    "oteryn:item.tibia.i27597": 350,
+    "oteryn:item.tibia.i27598": 270,
+    "oteryn:item.tibia.i27599": 550,
+    "oteryn:item.tibia.i27600": 600,
+    "oteryn:item.tibia.i27601": 350,
+    "oteryn:item.tibia.i27602": 850,
+    "oteryn:item.tibia.i27603": 240,
+    "oteryn:item.tibia.i27604": 120,
+    "oteryn:item.tibia.i27606": 100,
+    "oteryn:item.tibia.i27607": 850,
+    "oteryn:item.tibia.i27608": 900,
+    "oteryn:item.tibia.i27618": 15000,
+    "oteryn:item.tibia.i27619": 10000,
+    "oteryn:item.tibia.i27620": 8000,
+    "oteryn:item.tibia.i27621": 15000,
+    "oteryn:item.tibia.i27622": 10000,
+    "oteryn:item.tibia.i27623": 4500,
+    "oteryn:item.tibia.i27624": 8000,
+    "oteryn:item.tibia.i27625": 15000,
+    "oteryn:item.tibia.i27626": 10000,
+    "oteryn:item.tibia.i27627": 8000,
+    "oteryn:item.tibia.i27874": 250,
+    "oteryn:item.tibia.i281": 3000,
+    "oteryn:item.tibia.i2814": 5,
+    "oteryn:item.tibia.i282": 3000,
+    "oteryn:item.tibia.i283": 5,
+    "oteryn:item.tibia.i2831": 30,
+    "oteryn:item.tibia.i2833": 10,
+    "oteryn:item.tibia.i284": 5,
+    "oteryn:item.tibia.i2842": 150,
+    "oteryn:item.tibia.i2843": 60,
+    "oteryn:item.tibia.i2844": 40,
+    "oteryn:item.tibia.i2846": 15,
+    "oteryn:item.tibia.i2848": 2000,
+    "oteryn:item.tibia.i285": 5,
+    "oteryn:item.tibia.i2852": 2000,
+    "oteryn:item.tibia.i28566": 1300,
+    "oteryn:item.tibia.i28567": 1100,
+    "oteryn:item.tibia.i28568": 720,
+    "oteryn:item.tibia.i28569": 640,
+    "oteryn:item.tibia.i28570": 350,
+    "oteryn:item.tibia.i2874": 5,
+    "oteryn:item.tibia.i28821": 1350,
+    "oteryn:item.tibia.i28822": 280,
+    "oteryn:item.tibia.i28823": 650,
+    "oteryn:item.tibia.i28824": 950,
+    "oteryn:item.tibia.i2903": 250,
+    "oteryn:item.tibia.i2906": 6,
+    "oteryn:item.tibia.i2933": 150,
+    "oteryn:item.tibia.i29345": 60,
+    "oteryn:item.tibia.i29346": 180,
+    "oteryn:item.tibia.i29347": 2150,
+    "oteryn:item.tibia.i29348": 210,
+    "oteryn:item.tibia.i2953": 150,
+    "oteryn:item.tibia.i2958": 8000,
+    "oteryn:item.tibia.i2991": 200,
+    "oteryn:item.tibia.i2994": 1000,
+    "oteryn:item.tibia.i29942": 500000,
+    "oteryn:item.tibia.i29943": 270000,
+    "oteryn:item.tibia.i29944": 180000,
+    "oteryn:item.tibia.i29945": 225000,
+    "oteryn:item.tibia.i29946": 630000,
+    "oteryn:item.tibia.i30005": 205,
+    "oteryn:item.tibia.i3002": 400,
+    "oteryn:item.tibia.i3003": 15,
+    "oteryn:item.tibia.i3004": 100,
+    "oteryn:item.tibia.i30053": 45000,
+    "oteryn:item.tibia.i30054": 50000,
+    "oteryn:item.tibia.i30055": 30000,
+    "oteryn:item.tibia.i30056": 18000,
+    "oteryn:item.tibia.i30058": 370,
+    "oteryn:item.tibia.i30059": 70000,
+    "oteryn:item.tibia.i3006": 30000,
+    "oteryn:item.tibia.i30060": 90000,
+    "oteryn:item.tibia.i30061": 50000,
+    "oteryn:item.tibia.i3007": 250,
+    "oteryn:item.tibia.i3008": 400,
+    "oteryn:item.tibia.i30087": 280000,
+    "oteryn:item.tibia.i30088": 240000,
+    "oteryn:item.tibia.i3010": 800,
+    "oteryn:item.tibia.i3012": 100,
+    "oteryn:item.tibia.i3013": 2000,
+    "oteryn:item.tibia.i3014": 500,
+    "oteryn:item.tibia.i3016": 2000,
+    "oteryn:item.tibia.i3017": 150,
+    "oteryn:item.tibia.i3018": 200,
+    "oteryn:item.tibia.i30180": 30000,
+    "oteryn:item.tibia.i3019": 32000,
+    "oteryn:item.tibia.i3025": 200,
+    "oteryn:item.tibia.i3026": 160,
+    "oteryn:item.tibia.i3027": 280,
+    "oteryn:item.tibia.i3028": 300,
+    "oteryn:item.tibia.i3029": 250,
+    "oteryn:item.tibia.i3030": 250,
+    "oteryn:item.tibia.i3031": 1,
+    "oteryn:item.tibia.i3032": 250,
+    "oteryn:item.tibia.i30324": 220,
+    "oteryn:item.tibia.i30325": 250,
+    "oteryn:item.tibia.i3033": 200,
+    "oteryn:item.tibia.i3034": 320,
+    "oteryn:item.tibia.i3035": 100,
+    "oteryn:item.tibia.i3036": 10000,
+    "oteryn:item.tibia.i3037": 1000,
+    "oteryn:item.tibia.i3038": 5000,
+    "oteryn:item.tibia.i3039": 1000,
+    "oteryn:item.tibia.i3040": 850,
+    "oteryn:item.tibia.i3041": 5000,
+    "oteryn:item.tibia.i3042": 100,
+    "oteryn:item.tibia.i3043": 10000,
+    "oteryn:item.tibia.i3044": 100,
+    "oteryn:item.tibia.i3049": 200,
+    "oteryn:item.tibia.i3055": 2500,
+    "oteryn:item.tibia.i3057": 45000,
+    "oteryn:item.tibia.i3058": 200,
+    "oteryn:item.tibia.i3059": 30,
+    "oteryn:item.tibia.i3061": 85,
+    "oteryn:item.tibia.i3062": 170,
+    "oteryn:item.tibia.i3063": 8000,
+    "oteryn:item.tibia.i3066": 100,
+    "oteryn:item.tibia.i3068": 10000,
+    "oteryn:item.tibia.i3074": 100,
+    "oteryn:item.tibia.i3076": 190,
+    "oteryn:item.tibia.i3080": 50000,
+    "oteryn:item.tibia.i3081": 500,
+    "oteryn:item.tibia.i3084": 100,
+    "oteryn:item.tibia.i30975": 25,
+    "oteryn:item.tibia.i31323": 42000,
+    "oteryn:item.tibia.i31324": 38000,
+    "oteryn:item.tibia.i31331": 270,
+    "oteryn:item.tibia.i31332": 300,
+    "oteryn:item.tibia.i31340": 530,
+    "oteryn:item.tibia.i31437": 470,
+    "oteryn:item.tibia.i31438": 360,
+    "oteryn:item.tibia.i31439": 220,
+    "oteryn:item.tibia.i31440": 310,
+    "oteryn:item.tibia.i31441": 330,
+    "oteryn:item.tibia.i31442": 240,
+    "oteryn:item.tibia.i31443": 950,
+    "oteryn:item.tibia.i31558": 270,
+    "oteryn:item.tibia.i31559": 230,
+    "oteryn:item.tibia.i31560": 190,
+    "oteryn:item.tibia.i31561": 260,
+    "oteryn:item.tibia.i31588": 28000,
+    "oteryn:item.tibia.i31589": 74000,
+    "oteryn:item.tibia.i31590": 25000,
+    "oteryn:item.tibia.i31591": 410000,
+    "oteryn:item.tibia.i31592": 480000,
+    "oteryn:item.tibia.i31593": 425000,
+    "oteryn:item.tibia.i31594": 440000,
+    "oteryn:item.tibia.i31595": 430000,
+    "oteryn:item.tibia.i31622": 210000,
+    "oteryn:item.tibia.i31623": 490000,
+    "oteryn:item.tibia.i31624": 245000,
+    "oteryn:item.tibia.i31678": 650,
+    "oteryn:item.tibia.i32009": 40,
+    "oteryn:item.tibia.i3201": 90,
+    "oteryn:item.tibia.i32010": 60,
+    "oteryn:item.tibia.i32011": 100,
+    "oteryn:item.tibia.i32012": 120,
+    "oteryn:item.tibia.i3207": 250,
+    "oteryn:item.tibia.i32093": 60,
+    "oteryn:item.tibia.i32114": 50,
+    "oteryn:item.tibia.i32227": 120,
+    "oteryn:item.tibia.i32228": 260,
+    "oteryn:item.tibia.i3249": 20000,
+    "oteryn:item.tibia.i32578": 100000,
+    "oteryn:item.tibia.i32579": 90000,
+    "oteryn:item.tibia.i32580": 50000,
+    "oteryn:item.tibia.i32583": 12000,
+    "oteryn:item.tibia.i32589": 36000,
+    "oteryn:item.tibia.i32593": 120000,
+    "oteryn:item.tibia.i32594": 70000,
+    "oteryn:item.tibia.i32595": 150000,
+    "oteryn:item.tibia.i32596": 310000,
+    "oteryn:item.tibia.i32597": 220000,
+    "oteryn:item.tibia.i32598": 489000,
+    "oteryn:item.tibia.i32599": 185000,
+    "oteryn:item.tibia.i32600": 370000,
+    "oteryn:item.tibia.i32622": 60000,
+    "oteryn:item.tibia.i32623": 80000,
+    "oteryn:item.tibia.i32624": 41000,
+    "oteryn:item.tibia.i32625": 56000,
+    "oteryn:item.tibia.i32626": 20000,
+    "oteryn:item.tibia.i3264": 25,
+    "oteryn:item.tibia.i3265": 450,
+    "oteryn:item.tibia.i3266": 80,
+    "oteryn:item.tibia.i3267": 2,
+    "oteryn:item.tibia.i3268": 5,
+    "oteryn:item.tibia.i3269": 400,
+    "oteryn:item.tibia.i32698": 820,
+    "oteryn:item.tibia.i3270": 1,
+    "oteryn:item.tibia.i32704": 500,
+    "oteryn:item.tibia.i32705": 500,
+    "oteryn:item.tibia.i3271": 240,
+    "oteryn:item.tibia.i32711": 50,
+    "oteryn:item.tibia.i3272": 5,
+    "oteryn:item.tibia.i32724": 500,
+    "oteryn:item.tibia.i32725": 250,
+    "oteryn:item.tibia.i3273": 12,
+    "oteryn:item.tibia.i3274": 7,
+    "oteryn:item.tibia.i3275": 260,
+    "oteryn:item.tibia.i3276": 25,
+    "oteryn:item.tibia.i32769": 12000,
+    "oteryn:item.tibia.i3277": 3,
+    "oteryn:item.tibia.i32770": 15000,
+    "oteryn:item.tibia.i32771": 13000,
+    "oteryn:item.tibia.i32772": 10000,
+    "oteryn:item.tibia.i32773": 8000,
+    "oteryn:item.tibia.i32774": 6000,
+    "oteryn:item.tibia.i3278": 460,
+    "oteryn:item.tibia.i3279": 470,
+    "oteryn:item.tibia.i3280": 1000,
+    "oteryn:item.tibia.i3281": 100,
+    "oteryn:item.tibia.i3282": 100,
+    "oteryn:item.tibia.i3283": 118,
+    "oteryn:item.tibia.i3284": 250,
+    "oteryn:item.tibia.i3285": 51,
+    "oteryn:item.tibia.i3286": 30,
+    "oteryn:item.tibia.i3287": 2,
+    "oteryn:item.tibia.i3288": 350,
+    "oteryn:item.tibia.i3289": 1,
+    "oteryn:item.tibia.i3290": 500,
+    "oteryn:item.tibia.i3291": 1,
+    "oteryn:item.tibia.i3292": 1,
+    "oteryn:item.tibia.i3293": 3,
+    "oteryn:item.tibia.i3294": 10,
+    "oteryn:item.tibia.i3295": 6000,
+    "oteryn:item.tibia.i3296": 360,
+    "oteryn:item.tibia.i3297": 15,
+    "oteryn:item.tibia.i3298": 2,
+    "oteryn:item.tibia.i3299": 5,
+    "oteryn:item.tibia.i3300": 35,
+    "oteryn:item.tibia.i3301": 10,
+    "oteryn:item.tibia.i3302": 90,
+    "oteryn:item.tibia.i3303": 300,
+    "oteryn:item.tibia.i3304": 50,
+    "oteryn:item.tibia.i3305": 120,
+    "oteryn:item.tibia.i3306": 1000,
+    "oteryn:item.tibia.i3307": 10,
+    "oteryn:item.tibia.i3308": 6,
+    "oteryn:item.tibia.i3309": 450,
+    "oteryn:item.tibia.i3310": 9,
+    "oteryn:item.tibia.i3311": 170,
+    "oteryn:item.tibia.i3312": 270,
+    "oteryn:item.tibia.i3313": 50,
+    "oteryn:item.tibia.i3314": 2000,
+    "oteryn:item.tibia.i3315": 11000,
+    "oteryn:item.tibia.i3316": 350,
+    "oteryn:item.tibia.i3317": 185,
+    "oteryn:item.tibia.i3318": 50,
+    "oteryn:item.tibia.i3319": 320,
+    "oteryn:item.tibia.i3320": 280,
+    "oteryn:item.tibia.i3323": 1500,
+    "oteryn:item.tibia.i3326": 8000,
+    "oteryn:item.tibia.i3327": 110,
+    "oteryn:item.tibia.i3328": 1000,
+    "oteryn:item.tibia.i3330": 90,
+    "oteryn:item.tibia.i3332": 30000,
+    "oteryn:item.tibia.i3333": 12000,
+    "oteryn:item.tibia.i3334": 23000,
+    "oteryn:item.tibia.i3336": 10,
+    "oteryn:item.tibia.i3337": 5,
+    "oteryn:item.tibia.i3338": 20,
+    "oteryn:item.tibia.i3339": 15000,
+    "oteryn:item.tibia.i3340": 50000,
+    "oteryn:item.tibia.i3341": 42000,
+    "oteryn:item.tibia.i3342": 12000,
+    "oteryn:item.tibia.i3344": 1500,
+    "oteryn:item.tibia.i3345": 200,
+    "oteryn:item.tibia.i3346": 500,
+    "oteryn:item.tibia.i3347": 25,
+    "oteryn:item.tibia.i3348": 1000,
+    "oteryn:item.tibia.i3349": 160,
+    "oteryn:item.tibia.i3350": 130,
+    "oteryn:item.tibia.i3351": 293,
+    "oteryn:item.tibia.i3352": 17,
+    "oteryn:item.tibia.i3353": 150,
+    "oteryn:item.tibia.i3354": 30,
+    "oteryn:item.tibia.i3355": 4,
+    "oteryn:item.tibia.i3356": 1000,
+    "oteryn:item.tibia.i3357": 400,
+    "oteryn:item.tibia.i3358": 70,
+    "oteryn:item.tibia.i3359": 150,
+    "oteryn:item.tibia.i3360": 20000,
+    "oteryn:item.tibia.i3361": 12,
+    "oteryn:item.tibia.i3362": 15,
+    "oteryn:item.tibia.i3363": 180,
+    "oteryn:item.tibia.i3364": 30000,
+    "oteryn:item.tibia.i3365": 420,
+    "oteryn:item.tibia.i3366": 90000,
+    "oteryn:item.tibia.i3367": 66,
+    "oteryn:item.tibia.i3368": 320,
+    "oteryn:item.tibia.i3369": 696,
+    "oteryn:item.tibia.i3370": 875,
+    "oteryn:item.tibia.i3371": 375,
+    "oteryn:item.tibia.i3372": 49,
+    "oteryn:item.tibia.i3373": 55,
+    "oteryn:item.tibia.i3374": 22,
+    "oteryn:item.tibia.i3375": 16,
+    "oteryn:item.tibia.i3376": 20,
+    "oteryn:item.tibia.i3377": 75,
+    "oteryn:item.tibia.i33779": 30000,
+    "oteryn:item.tibia.i3378": 25,
+    "oteryn:item.tibia.i33780": 230000,
+    "oteryn:item.tibia.i33781": 10000,
+    "oteryn:item.tibia.i3379": 3,
+    "oteryn:item.tibia.i3380": 140,
+    "oteryn:item.tibia.i3381": 210,
+    "oteryn:item.tibia.i3382": 60,
+    "oteryn:item.tibia.i3383": 130,
+    "oteryn:item.tibia.i3384": 40,
+    "oteryn:item.tibia.i3385": 70,
+    "oteryn:item.tibia.i3386": 40000,
+    "oteryn:item.tibia.i3387": 40000,
+    "oteryn:item.tibia.i3388": 195,
+    "oteryn:item.tibia.i3389": 84,
+    "oteryn:item.tibia.i3390": 155,
+    "oteryn:item.tibia.i33920": 620000,
+    "oteryn:item.tibia.i33921": 850000,
+    "oteryn:item.tibia.i33922": 640000,
+    "oteryn:item.tibia.i33923": 720000,
+    "oteryn:item.tibia.i33924": 950000,
+    "oteryn:item.tibia.i33925": 1500000,
+    "oteryn:item.tibia.i33926": 840000,
+    "oteryn:item.tibia.i33927": 737000,
+    "oteryn:item.tibia.i33928": 1900000,
+    "oteryn:item.tibia.i33929": 2200,
+    "oteryn:item.tibia.i33932": 3200,
+    "oteryn:item.tibia.i33933": 1300,
+    "oteryn:item.tibia.i33934": 1600,
+    "oteryn:item.tibia.i33935": 2700,
+    "oteryn:item.tibia.i33936": 1450,
+    "oteryn:item.tibia.i33937": 3500,
+    "oteryn:item.tibia.i33938": 1200,
+    "oteryn:item.tibia.i33943": 220,
+    "oteryn:item.tibia.i33944": 350,
+    "oteryn:item.tibia.i33945": 300,
+    "oteryn:item.tibia.i33952": 3000000,
+    "oteryn:item.tibia.i33953": 5000000,
+    "oteryn:item.tibia.i3397": 30000,
+    "oteryn:item.tibia.i3398": 40000,
+    "oteryn:item.tibia.i33982": 3700,
+    "oteryn:item.tibia.i34008": 9000,
+    "oteryn:item.tibia.i34014": 3900,
+    "oteryn:item.tibia.i34018": 2800000,
+    "oteryn:item.tibia.i34019": 3100000,
+    "oteryn:item.tibia.i34020": 2700000,
+    "oteryn:item.tibia.i34021": 2900000,
+    "oteryn:item.tibia.i34022": 12000,
+    "oteryn:item.tibia.i34023": 14000,
+    "oteryn:item.tibia.i34024": 15000,
+    "oteryn:item.tibia.i34025": 19000,
+    "oteryn:item.tibia.i3403": 250,
+    "oteryn:item.tibia.i3404": 1000,
+    "oteryn:item.tibia.i3405": 280,
+    "oteryn:item.tibia.i3406": 850,
+    "oteryn:item.tibia.i3407": 900,
+    "oteryn:item.tibia.i3408": 7500,
+    "oteryn:item.tibia.i3409": 80,
+    "oteryn:item.tibia.i3410": 45,
+    "oteryn:item.tibia.i34100": 210,
+    "oteryn:item.tibia.i34101": 230,
+    "oteryn:item.tibia.i34102": 280,
+    "oteryn:item.tibia.i34103": 300,
+    "oteryn:item.tibia.i3411": 25,
+    "oteryn:item.tibia.i3412": 5,
+    "oteryn:item.tibia.i3413": 95,
+    "oteryn:item.tibia.i34138": 2100,
+    "oteryn:item.tibia.i34139": 2100,
+    "oteryn:item.tibia.i3414": 50000,
+    "oteryn:item.tibia.i34140": 5000,
+    "oteryn:item.tibia.i34141": 2100,
+    "oteryn:item.tibia.i34142": 2100,
+    "oteryn:item.tibia.i34143": 2100,
+    "oteryn:item.tibia.i34144": 1200,
+    "oteryn:item.tibia.i34145": 1200,
+    "oteryn:item.tibia.i34146": 1200,
+    "oteryn:item.tibia.i34147": 3000,
+    "oteryn:item.tibia.i34148": 1200,
+    "oteryn:item.tibia.i34149": 1200,
+    "oteryn:item.tibia.i3415": 180,
+    "oteryn:item.tibia.i3416": 360,
+    "oteryn:item.tibia.i34160": 270,
+    "oteryn:item.tibia.i34161": 130,
+    "oteryn:item.tibia.i34162": 190,
+    "oteryn:item.tibia.i34163": 210,
+    "oteryn:item.tibia.i34164": 200,
+    "oteryn:item.tibia.i3417": 520,
+    "oteryn:item.tibia.i34170": 30000,
+    "oteryn:item.tibia.i3418": 79,
+    "oteryn:item.tibia.i3419": 109,
+    "oteryn:item.tibia.i3420": 30000,
+    "oteryn:item.tibia.i3421": 400,
+    "oteryn:item.tibia.i3422": 480,
+    "oteryn:item.tibia.i3423": 650,
+    "oteryn:item.tibia.i3424": 1500,
+    "oteryn:item.tibia.i3425": 100,
+    "oteryn:item.tibia.i3426": 16,
+    "oteryn:item.tibia.i3427": 49,
+    "oteryn:item.tibia.i3428": 90,
+    "oteryn:item.tibia.i3429": 5,
+    "oteryn:item.tibia.i3430": 50,
+    "oteryn:item.tibia.i3431": 85,
+    "oteryn:item.tibia.i3432": 49,
+    "oteryn:item.tibia.i3433": 3000,
+    "oteryn:item.tibia.i3434": 119,
+    "oteryn:item.tibia.i3435": 5000,
+    "oteryn:item.tibia.i3436": 9000,
+    "oteryn:item.tibia.i3440": 2000,
+    "oteryn:item.tibia.i3441": 80,
+    "oteryn:item.tibia.i3442": 35000,
+    "oteryn:item.tibia.i3443": 850,
+    "oteryn:item.tibia.i3444": 120,
+    "oteryn:item.tibia.i3445": 280,
+    "oteryn:item.tibia.i3453": 10,
+    "oteryn:item.tibia.i3456": 15,
+    "oteryn:item.tibia.i3457": 8,
+    "oteryn:item.tibia.i3459": 15,
+    "oteryn:item.tibia.i3462": 5,
+    "oteryn:item.tibia.i3463": 10,
+    "oteryn:item.tibia.i3481": 75,
+    "oteryn:item.tibia.i3483": 40,
+    "oteryn:item.tibia.i3509": 9,
+    "oteryn:item.tibia.i3550": 2000,
+    "oteryn:item.tibia.i3552": 2,
+    "oteryn:item.tibia.i3554": 30000,
+    "oteryn:item.tibia.i3556": 1000,
+    "oteryn:item.tibia.i35562": 100,
+    "oteryn:item.tibia.i3557": 115,
+    "oteryn:item.tibia.i35571": 500,
+    "oteryn:item.tibia.i35572": 110,
+    "oteryn:item.tibia.i35573": 180,
+    "oteryn:item.tibia.i35574": 250,
+    "oteryn:item.tibia.i35578": 11000,
+    "oteryn:item.tibia.i35579": 7000,
+    "oteryn:item.tibia.i3558": 25,
+    "oteryn:item.tibia.i35580": 9000,
+    "oteryn:item.tibia.i35581": 6000,
+    "oteryn:item.tibia.i35588": 150,
+    "oteryn:item.tibia.i3559": 9,
+    "oteryn:item.tibia.i35596": 200,
+    "oteryn:item.tibia.i3560": 750,
+    "oteryn:item.tibia.i3561": 1,
+    "oteryn:item.tibia.i35610": 52000,
+    "oteryn:item.tibia.i35611": 27000,
+    "oteryn:item.tibia.i35612": 80000,
+    "oteryn:item.tibia.i35613": 150000,
+    "oteryn:item.tibia.i35614": 120000,
+    "oteryn:item.tibia.i3562": 1,
+    "oteryn:item.tibia.i3568": 50,
+    "oteryn:item.tibia.i3571": 150,
+    "oteryn:item.tibia.i3575": 5000,
+    "oteryn:item.tibia.i3577": 2,
+    "oteryn:item.tibia.i3579": 2,
+    "oteryn:item.tibia.i3580": 100,
+    "oteryn:item.tibia.i3582": 4,
+    "oteryn:item.tibia.i3590": 1,
+    "oteryn:item.tibia.i3595": 1,
+    "oteryn:item.tibia.i3598": 1,
+    "oteryn:item.tibia.i3600": 2,
+    "oteryn:item.tibia.i3601": 1,
+    "oteryn:item.tibia.i3606": 1,
+    "oteryn:item.tibia.i3607": 2,
+    "oteryn:item.tibia.i3657": 50,
+    "oteryn:item.tibia.i3658": 10,
+    "oteryn:item.tibia.i3659": 250,
+    "oteryn:item.tibia.i3661": 25,
+    "oteryn:item.tibia.i3674": 50,
+    "oteryn:item.tibia.i36769": 600,
+    "oteryn:item.tibia.i36770": 750,
+    "oteryn:item.tibia.i36771": 1100,
+    "oteryn:item.tibia.i36772": 500,
+    "oteryn:item.tibia.i36773": 400,
+    "oteryn:item.tibia.i36774": 600,
+    "oteryn:item.tibia.i36775": 420,
+    "oteryn:item.tibia.i36776": 650,
+    "oteryn:item.tibia.i36777": 900,
+    "oteryn:item.tibia.i36778": 800,
+    "oteryn:item.tibia.i36779": 550,
+    "oteryn:item.tibia.i36780": 1000,
+    "oteryn:item.tibia.i36781": 750,
+    "oteryn:item.tibia.i36782": 670,
+    "oteryn:item.tibia.i36783": 930,
+    "oteryn:item.tibia.i36784": 740,
+    "oteryn:item.tibia.i36785": 900,
+    "oteryn:item.tibia.i36786": 390,
+    "oteryn:item.tibia.i36787": 1200,
+    "oteryn:item.tibia.i36788": 650,
+    "oteryn:item.tibia.i36789": 900,
+    "oteryn:item.tibia.i36790": 500,
+    "oteryn:item.tibia.i36791": 700000,
+    "oteryn:item.tibia.i36792": 650000,
+    "oteryn:item.tibia.i36793": 950000,
+    "oteryn:item.tibia.i36794": 240000,
+    "oteryn:item.tibia.i36795": 300000,
+    "oteryn:item.tibia.i36796": 440000,
+    "oteryn:item.tibia.i36805": 250,
+    "oteryn:item.tibia.i36806": 230,
+    "oteryn:item.tibia.i36807": 2000,
+    "oteryn:item.tibia.i36808": 220000,
+    "oteryn:item.tibia.i36809": 320000,
+    "oteryn:item.tibia.i36820": 600,
+    "oteryn:item.tibia.i36821": 400,
+    "oteryn:item.tibia.i36822": 620,
+    "oteryn:item.tibia.i36823": 350,
+    "oteryn:item.tibia.i36835": 48000,
+    "oteryn:item.tibia.i36971": 520,
+    "oteryn:item.tibia.i36972": 570,
+    "oteryn:item.tibia.i3726": 150,
+    "oteryn:item.tibia.i3727": 15,
+    "oteryn:item.tibia.i3728": 100,
+    "oteryn:item.tibia.i3731": 200,
+    "oteryn:item.tibia.i3732": 100,
+    "oteryn:item.tibia.i3734": 500,
+    "oteryn:item.tibia.i3735": 20,
+    "oteryn:item.tibia.i3736": 15,
+    "oteryn:item.tibia.i3737": 20,
+    "oteryn:item.tibia.i3738": 10,
+    "oteryn:item.tibia.i3739": 10,
+    "oteryn:item.tibia.i3740": 20,
+    "oteryn:item.tibia.i3741": 25,
+    "oteryn:item.tibia.i37613": 5000000,
+    "oteryn:item.tibia.i37810": 3250000,
+    "oteryn:item.tibia.i39037": 1490000,
+    "oteryn:item.tibia.i39038": 460000,
+    "oteryn:item.tibia.i39040": 1070000,
+    "oteryn:item.tibia.i39375": 2200,
+    "oteryn:item.tibia.i39376": 1900,
+    "oteryn:item.tibia.i39377": 2900,
+    "oteryn:item.tibia.i39378": 2500,
+    "oteryn:item.tibia.i39379": 2150,
+    "oteryn:item.tibia.i39380": 2700,
+    "oteryn:item.tibia.i39381": 2000,
+    "oteryn:item.tibia.i39382": 3000,
+    "oteryn:item.tibia.i39383": 2300,
+    "oteryn:item.tibia.i39384": 1800,
+    "oteryn:item.tibia.i39386": 2800,
+    "oteryn:item.tibia.i39387": 2800,
+    "oteryn:item.tibia.i39388": 1300,
+    "oteryn:item.tibia.i39389": 2600,
+    "oteryn:item.tibia.i39391": 1200,
+    "oteryn:item.tibia.i39392": 2750,
+    "oteryn:item.tibia.i39393": 2650,
+    "oteryn:item.tibia.i39394": 3200,
+    "oteryn:item.tibia.i39395": 2500,
+    "oteryn:item.tibia.i39399": 215000,
+    "oteryn:item.tibia.i39400": 150000,
+    "oteryn:item.tibia.i39401": 350,
+    "oteryn:item.tibia.i39402": 320,
+    "oteryn:item.tibia.i39403": 140,
+    "oteryn:item.tibia.i39404": 160,
+    "oteryn:item.tibia.i39405": 250,
+    "oteryn:item.tibia.i39406": 360,
+    "oteryn:item.tibia.i39407": 330,
+    "oteryn:item.tibia.i39408": 380,
+    "oteryn:item.tibia.i39409": 460,
+    "oteryn:item.tibia.i39410": 220,
+    "oteryn:item.tibia.i39411": 390,
+    "oteryn:item.tibia.i39412": 380,
+    "oteryn:item.tibia.i39413": 340,
+    "oteryn:item.tibia.i39414": 340,
+    "oteryn:item.tibia.i39415": 570,
+    "oteryn:item.tibia.i39416": 570,
+    "oteryn:item.tibia.i39417": 150,
+    "oteryn:item.tibia.i39418": 150,
+    "oteryn:item.tibia.i39543": 470000,
+    "oteryn:item.tibia.i3988": 2,
+    "oteryn:item.tibia.i3994": 2,
+    "oteryn:item.tibia.i4007": 5,
+    "oteryn:item.tibia.i40530": 1000,
+    "oteryn:item.tibia.i40531": 530,
+    "oteryn:item.tibia.i40532": 560,
+    "oteryn:item.tibia.i40533": 640,
+    "oteryn:item.tibia.i40534": 440,
+    "oteryn:item.tibia.i40535": 685,
+    "oteryn:item.tibia.i40582": 550,
+    "oteryn:item.tibia.i40583": 480,
+    "oteryn:item.tibia.i40584": 600,
+    "oteryn:item.tibia.i40585": 730,
+    "oteryn:item.tibia.i40586": 630,
+    "oteryn:item.tibia.i40587": 680,
+    "oteryn:item.tibia.i4065": 1500,
+    "oteryn:item.tibia.i4173": 2,
+    "oteryn:item.tibia.i43729": 570,
+    "oteryn:item.tibia.i43730": 490,
+    "oteryn:item.tibia.i43731": 280,
+    "oteryn:item.tibia.i43732": 11000,
+    "oteryn:item.tibia.i43733": 11000,
+    "oteryn:item.tibia.i43734": 11000,
+    "oteryn:item.tibia.i43735": 11000,
+    "oteryn:item.tibia.i43736": 18000,
+    "oteryn:item.tibia.i43737": 18000,
+    "oteryn:item.tibia.i43846": 5100,
+    "oteryn:item.tibia.i43849": 3800,
+    "oteryn:item.tibia.i43850": 4400,
+    "oteryn:item.tibia.i43851": 5500,
+    "oteryn:item.tibia.i43852": 3800,
+    "oteryn:item.tibia.i43853": 4100,
+    "oteryn:item.tibia.i44602": 2500,
+    "oteryn:item.tibia.i44603": 5000,
+    "oteryn:item.tibia.i44604": 10000,
+    "oteryn:item.tibia.i44605": 2500,
+    "oteryn:item.tibia.i44606": 5000,
+    "oteryn:item.tibia.i44607": 10000,
+    "oteryn:item.tibia.i44608": 2500,
+    "oteryn:item.tibia.i44609": 5000,
+    "oteryn:item.tibia.i44610": 10000,
+    "oteryn:item.tibia.i44611": 2500,
+    "oteryn:item.tibia.i44612": 5000,
+    "oteryn:item.tibia.i44613": 10000,
+    "oteryn:item.tibia.i44743": 520,
+    "oteryn:item.tibia.i44744": 840,
+    "oteryn:item.tibia.i44745": 1100,
+    "oteryn:item.tibia.i44746": 690,
+    "oteryn:item.tibia.i44747": 475,
+    "oteryn:item.tibia.i44748": 550,
+    "oteryn:item.tibia.i44749": 730,
+    "oteryn:item.tibia.i44750": 190000,
+    "oteryn:item.tibia.i44751": 380000,
+    "oteryn:item.tibia.i44752": 270000,
+    "oteryn:item.tibia.i48251": 2350,
+    "oteryn:item.tibia.i48252": 2640,
+    "oteryn:item.tibia.i48254": 2680,
+    "oteryn:item.tibia.i48255": 1870,
+    "oteryn:item.tibia.i48256": 95000,
+    "oteryn:item.tibia.i48273": 6750,
+    "oteryn:item.tibia.i4839": 500,
+    "oteryn:item.tibia.i48508": 850,
+    "oteryn:item.tibia.i48509": 1250,
+    "oteryn:item.tibia.i48510": 950,
+    "oteryn:item.tibia.i48511": 1450,
+    "oteryn:item.tibia.i48516": 300000,
+    "oteryn:item.tibia.i48517": 500000,
+    "oteryn:item.tibia.i48544": 2910,
+    "oteryn:item.tibia.i4871": 50,
+    "oteryn:item.tibia.i49271": 500,
+    "oteryn:item.tibia.i49371": 2500,
+    "oteryn:item.tibia.i49372": 5000,
+    "oteryn:item.tibia.i49373": 10000,
+    "oteryn:item.tibia.i49908": 800,
+    "oteryn:item.tibia.i50054": 3100,
+    "oteryn:item.tibia.i50055": 2950,
+    "oteryn:item.tibia.i50056": 2600,
+    "oteryn:item.tibia.i50057": 2100,
+    "oteryn:item.tibia.i50058": 2800,
+    "oteryn:item.tibia.i50059": 2250,
+    "oteryn:item.tibia.i50067": 450000,
+    "oteryn:item.tibia.i50101": 4200,
+    "oteryn:item.tibia.i5014": 5000,
+    "oteryn:item.tibia.i50150": 8000,
+    "oteryn:item.tibia.i50152": 6000,
+    "oteryn:item.tibia.i50181": 90,
+    "oteryn:item.tibia.i50182": 135,
+    "oteryn:item.tibia.i50183": 180,
+    "oteryn:item.tibia.i5021": 40,
+    "oteryn:item.tibia.i50257": 1,
+    "oteryn:item.tibia.i50267": 80,
+    "oteryn:item.tibia.i50268": 150,
+    "oteryn:item.tibia.i50269": 400,
+    "oteryn:item.tibia.i50271": 200,
+    "oteryn:item.tibia.i50272": 100,
+    "oteryn:item.tibia.i50273": 500,
+    "oteryn:item.tibia.i50274": 700,
+    "oteryn:item.tibia.i5080": 30000,
+    "oteryn:item.tibia.i51119": 10,
+    "oteryn:item.tibia.i51259": 5000,
+    "oteryn:item.tibia.i51419": 480,
+    "oteryn:item.tibia.i51420": 800,
+    "oteryn:item.tibia.i51421": 110000,
+    "oteryn:item.tibia.i51422": 1250,
+    "oteryn:item.tibia.i51423": 1800,
+    "oteryn:item.tibia.i51425": 1450,
+    "oteryn:item.tibia.i51426": 620,
+    "oteryn:item.tibia.i51427": 340,
+    "oteryn:item.tibia.i51472": 970,
+    "oteryn:item.tibia.i51473": 1230,
+    "oteryn:item.tibia.i51474": 680,
+    "oteryn:item.tibia.i51475": 820,
+    "oteryn:item.tibia.i51476": 1150,
+    "oteryn:item.tibia.i51477": 750,
+    "oteryn:item.tibia.i51478": 790,
+    "oteryn:item.tibia.i51479": 1360,
+    "oteryn:item.tibia.i51480": 1550,
+    "oteryn:item.tibia.i51481": 178000,
+    "oteryn:item.tibia.i51482": 1820,
+    "oteryn:item.tibia.i51483": 116000,
+    "oteryn:item.tibia.i51484": 930,
+    "oteryn:item.tibia.i51485": 580,
+    "oteryn:item.tibia.i51486": 850,
+    "oteryn:item.tibia.i51760": 150,
+    "oteryn:item.tibia.i52632": 10000,
+    "oteryn:item.tibia.i52633": 5000,
+    "oteryn:item.tibia.i52662": 2000,
+    "oteryn:item.tibia.i52663": 1000,
+    "oteryn:item.tibia.i52664": 3000,
+    "oteryn:item.tibia.i52705": 10000,
+    "oteryn:item.tibia.i52706": 4500,
+    "oteryn:item.tibia.i52707": 6000,
+    "oteryn:item.tibia.i52710": 250000,
+    "oteryn:item.tibia.i52711": 250000,
+    "oteryn:item.tibia.i52712": 250000,
+    "oteryn:item.tibia.i52713": 400000,
+    "oteryn:item.tibia.i52714": 250000,
+    "oteryn:item.tibia.i52715": 650000,
+    "oteryn:item.tibia.i52716": 3500000,
+    "oteryn:item.tibia.i52717": 1500000,
+    "oteryn:item.tibia.i52718": 5500,
+    "oteryn:item.tibia.i52719": 3000,
+    "oteryn:item.tibia.i52720": 9000,
+    "oteryn:item.tibia.i52726": 250000,
+    "oteryn:item.tibia.i52727": 250000,
+    "oteryn:item.tibia.i52728": 500000,
+    "oteryn:item.tibia.i52746": 125000,
+    "oteryn:item.tibia.i52747": 1250000,
+    "oteryn:item.tibia.i52964": 1500,
+    "oteryn:item.tibia.i53002": 120,
+    "oteryn:item.tibia.i53003": 95,
+    "oteryn:item.tibia.i53004": 160,
+    "oteryn:item.tibia.i53167": 25,
+    "oteryn:item.tibia.i5461": 3000,
+    "oteryn:item.tibia.i5479": 2000,
+    "oteryn:item.tibia.i5526": 300,
+    "oteryn:item.tibia.i5668": 4000,
+    "oteryn:item.tibia.i5669": 4000,
+    "oteryn:item.tibia.i5710": 300,
+    "oteryn:item.tibia.i5741": 40000,
+    "oteryn:item.tibia.i5791": 6000,
+    "oteryn:item.tibia.i5799": 3000,
+    "oteryn:item.tibia.i5803": 42000,
+    "oteryn:item.tibia.i5804": 2000,
+    "oteryn:item.tibia.i5809": 6000,
+    "oteryn:item.tibia.i5810": 500,
+    "oteryn:item.tibia.i5875": 2000,
+    "oteryn:item.tibia.i5876": 150,
+    "oteryn:item.tibia.i5877": 100,
+    "oteryn:item.tibia.i5878": 80,
+    "oteryn:item.tibia.i5879": 100,
+    "oteryn:item.tibia.i5880": 500,
+    "oteryn:item.tibia.i5881": 120,
+    "oteryn:item.tibia.i5882": 200,
+    "oteryn:item.tibia.i5883": 120,
+    "oteryn:item.tibia.i5884": 40000,
+    "oteryn:item.tibia.i5885": 10000,
+    "oteryn:item.tibia.i5886": 1000,
+    "oteryn:item.tibia.i5887": 10000,
+    "oteryn:item.tibia.i5888": 500,
+    "oteryn:item.tibia.i5889": 3000,
+    "oteryn:item.tibia.i5890": 30,
+    "oteryn:item.tibia.i5891": 20000,
+    "oteryn:item.tibia.i5892": 15000,
+    "oteryn:item.tibia.i5893": 250,
+    "oteryn:item.tibia.i5894": 50,
+    "oteryn:item.tibia.i5895": 150,
+    "oteryn:item.tibia.i5896": 100,
+    "oteryn:item.tibia.i5897": 70,
+    "oteryn:item.tibia.i5898": 80,
+    "oteryn:item.tibia.i5899": 90,
+    "oteryn:item.tibia.i5901": 5,
+    "oteryn:item.tibia.i5902": 40,
+    "oteryn:item.tibia.i5904": 8000,
+    "oteryn:item.tibia.i5905": 100,
+    "oteryn:item.tibia.i5906": 300,
+    "oteryn:item.tibia.i5909": 100,
+    "oteryn:item.tibia.i5910": 200,
+    "oteryn:item.tibia.i5911": 300,
+    "oteryn:item.tibia.i5912": 200,
+    "oteryn:item.tibia.i5913": 100,
+    "oteryn:item.tibia.i5914": 150,
+    "oteryn:item.tibia.i5917": 150,
+    "oteryn:item.tibia.i5918": 200,
+    "oteryn:item.tibia.i5919": 8000,
+    "oteryn:item.tibia.i5920": 100,
+    "oteryn:item.tibia.i5921": 50,
+    "oteryn:item.tibia.i5922": 90,
+    "oteryn:item.tibia.i5925": 70,
+    "oteryn:item.tibia.i5930": 2000,
+    "oteryn:item.tibia.i5944": 25,
+    "oteryn:item.tibia.i5948": 200,
+    "oteryn:item.tibia.i5954": 1000,
+    "oteryn:item.tibia.i5956": 500,
+    "oteryn:item.tibia.i6087": 100,
+    "oteryn:item.tibia.i6088": 250,
+    "oteryn:item.tibia.i6089": 400,
+    "oteryn:item.tibia.i6090": 800,
+    "oteryn:item.tibia.i6095": 500,
+    "oteryn:item.tibia.i6096": 1000,
+    "oteryn:item.tibia.i6103": 30000,
+    "oteryn:item.tibia.i6131": 150,
+    "oteryn:item.tibia.i6299": 1000,
+    "oteryn:item.tibia.i645": 15000,
+    "oteryn:item.tibia.i647": 150,
+    "oteryn:item.tibia.i6491": 2000,
+    "oteryn:item.tibia.i6499": 1000,
+    "oteryn:item.tibia.i651": 299,
+    "oteryn:item.tibia.i6525": 3000,
+    "oteryn:item.tibia.i6527": 42000,
+    "oteryn:item.tibia.i6534": 50000,
+    "oteryn:item.tibia.i6535": 50000,
+    "oteryn:item.tibia.i6536": 50000,
+    "oteryn:item.tibia.i6537": 50000,
+    "oteryn:item.tibia.i6539": 50000,
+    "oteryn:item.tibia.i6540": 50000,
+    "oteryn:item.tibia.i6546": 50000,
+    "oteryn:item.tibia.i6553": 45000,
+    "oteryn:item.tibia.i6561": 20000,
+    "oteryn:item.tibia.i675": 250,
+    "oteryn:item.tibia.i676": 250,
+    "oteryn:item.tibia.i677": 250,
+    "oteryn:item.tibia.i678": 200,
+    "oteryn:item.tibia.i7158": 100,
+    "oteryn:item.tibia.i7159": 100,
+    "oteryn:item.tibia.i7183": 20000,
+    "oteryn:item.tibia.i7290": 2000,
+    "oteryn:item.tibia.i7379": 1500,
+    "oteryn:item.tibia.i7380": 6000,
+    "oteryn:item.tibia.i7381": 300,
+    "oteryn:item.tibia.i7382": 36000,
+    "oteryn:item.tibia.i7383": 25000,
+    "oteryn:item.tibia.i7384": 30000,
+    "oteryn:item.tibia.i7386": 12000,
+    "oteryn:item.tibia.i7387": 3000,
+    "oteryn:item.tibia.i7388": 30000,
+    "oteryn:item.tibia.i7389": 30000,
+    "oteryn:item.tibia.i7390": 40000,
+    "oteryn:item.tibia.i7392": 6000,
+    "oteryn:item.tibia.i7402": 15000,
+    "oteryn:item.tibia.i7403": 40000,
+    "oteryn:item.tibia.i7404": 20000,
+    "oteryn:item.tibia.i7406": 6000,
+    "oteryn:item.tibia.i7408": 1500,
+    "oteryn:item.tibia.i7414": 20000,
+    "oteryn:item.tibia.i7415": 30000,
+    "oteryn:item.tibia.i7416": 30000,
+    "oteryn:item.tibia.i7417": 45000,
+    "oteryn:item.tibia.i7418": 35000,
+    "oteryn:item.tibia.i7419": 10000,
+    "oteryn:item.tibia.i7422": 25000,
+    "oteryn:item.tibia.i7423": 90,
+    "oteryn:item.tibia.i7424": 5000,
+    "oteryn:item.tibia.i7425": 500,
+    "oteryn:item.tibia.i7426": 8000,
+    "oteryn:item.tibia.i7427": 9000,
+    "oteryn:item.tibia.i7429": 40000,
+    "oteryn:item.tibia.i7430": 3000,
+    "oteryn:item.tibia.i7432": 1000,
+    "oteryn:item.tibia.i7434": 40000,
+    "oteryn:item.tibia.i7437": 7000,
+    "oteryn:item.tibia.i7438": 2000,
+    "oteryn:item.tibia.i7439": 500,
+    "oteryn:item.tibia.i7440": 500,
+    "oteryn:item.tibia.i7441": 250,
+    "oteryn:item.tibia.i7443": 500,
+    "oteryn:item.tibia.i7449": 600,
+    "oteryn:item.tibia.i7452": 5000,
+    "oteryn:item.tibia.i7453": 55000,
+    "oteryn:item.tibia.i7456": 10000,
+    "oteryn:item.tibia.i7457": 2000,
+    "oteryn:item.tibia.i7459": 1500,
+    "oteryn:item.tibia.i7460": 1500,
+    "oteryn:item.tibia.i7461": 200,
+    "oteryn:item.tibia.i7462": 400,
+    "oteryn:item.tibia.i7463": 6000,
+    "oteryn:item.tibia.i7464": 850,
+    "oteryn:item.tibia.i7774": 100,
+    "oteryn:item.tibia.i7786": 700,
+    "oteryn:item.tibia.i7991": 150,
+    "oteryn:item.tibia.i7992": 25,
+    "oteryn:item.tibia.i8021": 10000,
+    "oteryn:item.tibia.i8022": 40000,
+    "oteryn:item.tibia.i8025": 50000,
+    "oteryn:item.tibia.i8027": 25000,
+    "oteryn:item.tibia.i8029": 12000,
+    "oteryn:item.tibia.i8031": 10,
+    "oteryn:item.tibia.i8039": 50000,
+    "oteryn:item.tibia.i8041": 50000,
+    "oteryn:item.tibia.i8042": 350,
+    "oteryn:item.tibia.i8043": 6000,
+    "oteryn:item.tibia.i8044": 500,
+    "oteryn:item.tibia.i8045": 3000,
+    "oteryn:item.tibia.i8046": 1500,
+    "oteryn:item.tibia.i8049": 16000,
+    "oteryn:item.tibia.i8050": 16000,
+    "oteryn:item.tibia.i8052": 16000,
+    "oteryn:item.tibia.i8055": 50000,
+    "oteryn:item.tibia.i8057": 55000,
+    "oteryn:item.tibia.i8061": 18000,
+    "oteryn:item.tibia.i8063": 15000,
+    "oteryn:item.tibia.i8064": 200,
+    "oteryn:item.tibia.i8072": 4000,
+    "oteryn:item.tibia.i8073": 8000,
+    "oteryn:item.tibia.i8074": 13000,
+    "oteryn:item.tibia.i8075": 19000,
+    "oteryn:item.tibia.i8095": 36,
+    "oteryn:item.tibia.i811": 11000,
+    "oteryn:item.tibia.i812": 11000,
+    "oteryn:item.tibia.i813": 2500,
+    "oteryn:item.tibia.i814": 1500,
+    "oteryn:item.tibia.i8143": 500,
+    "oteryn:item.tibia.i815": 1500,
+    "oteryn:item.tibia.i816": 1500,
+    "oteryn:item.tibia.i817": 1500,
+    "oteryn:item.tibia.i818": 2500,
+    "oteryn:item.tibia.i819": 2500,
+    "oteryn:item.tibia.i820": 2500,
+    "oteryn:item.tibia.i821": 11000,
+    "oteryn:item.tibia.i822": 11000,
+    "oteryn:item.tibia.i823": 11000,
+    "oteryn:item.tibia.i824": 11000,
+    "oteryn:item.tibia.i825": 11000,
+    "oteryn:item.tibia.i826": 11000,
+    "oteryn:item.tibia.i827": 2500,
+    "oteryn:item.tibia.i828": 2500,
+    "oteryn:item.tibia.i829": 2500,
+    "oteryn:item.tibia.i830": 2500,
+    "oteryn:item.tibia.i836": 80,
+    "oteryn:item.tibia.i8531": 10000,
+    "oteryn:item.tibia.i8775": 500,
+    "oteryn:item.tibia.i8923": 800,
+    "oteryn:item.tibia.i901": 800,
+    "oteryn:item.tibia.i9013": 500,
+    "oteryn:item.tibia.i9014": 500,
+    "oteryn:item.tibia.i9015": 1000,
+    "oteryn:item.tibia.i9017": 500,
+    "oteryn:item.tibia.i902": 5000,
+    "oteryn:item.tibia.i9027": 2000,
+    "oteryn:item.tibia.i9028": 1000,
+    "oteryn:item.tibia.i903": 15,
+    "oteryn:item.tibia.i9034": 5000,
+    "oteryn:item.tibia.i9035": 5000,
+    "oteryn:item.tibia.i9045": 1000,
+    "oteryn:item.tibia.i9053": 20,
+    "oteryn:item.tibia.i9054": 25,
+    "oteryn:item.tibia.i9055": 30,
+    "oteryn:item.tibia.i9056": 4000,
+    "oteryn:item.tibia.i9057": 200,
+    "oteryn:item.tibia.i9058": 5000,
+    "oteryn:item.tibia.i9063": 500,
+    "oteryn:item.tibia.i9067": 3000,
+    "oteryn:item.tibia.i9103": 8000,
+    "oteryn:item.tibia.i9232": 50,
+    "oteryn:item.tibia.i9302": 3000,
+    "oteryn:item.tibia.i9303": 3000,
+    "oteryn:item.tibia.i9304": 3000,
+    "oteryn:item.tibia.i9392": 15000,
+    "oteryn:item.tibia.i940": 2000,
+    "oteryn:item.tibia.i941": 2000,
+    "oteryn:item.tibia.i942": 5000,
+    "oteryn:item.tibia.i944": 2000,
+    "oteryn:item.tibia.i945": 2000,
+    "oteryn:item.tibia.i946": 5000,
+    "oteryn:item.tibia.i947": 5000,
+    "oteryn:item.tibia.i948": 5000,
+    "oteryn:item.tibia.i953": 10,
+    "oteryn:item.tibia.i954": 5000,
+    "oteryn:item.tibia.i9606": 15000,
+    "oteryn:item.tibia.i9613": 10000,
+    "oteryn:item.tibia.i9615": 1000,
+    "oteryn:item.tibia.i9616": 20000,
+    "oteryn:item.tibia.i9626": 1000,
+    "oteryn:item.tibia.i9627": 1000,
+    "oteryn:item.tibia.i9631": 280,
+    "oteryn:item.tibia.i9632": 200,
+    "oteryn:item.tibia.i9633": 100,
+    "oteryn:item.tibia.i9634": 15,
+    "oteryn:item.tibia.i9635": 45,
+    "oteryn:item.tibia.i9636": 375,
+    "oteryn:item.tibia.i9637": 500,
+    "oteryn:item.tibia.i9638": 280,
+    "oteryn:item.tibia.i9639": 150,
+    "oteryn:item.tibia.i9640": 50,
+    "oteryn:item.tibia.i9641": 45,
+    "oteryn:item.tibia.i9642": 95,
+    "oteryn:item.tibia.i9643": 100,
+    "oteryn:item.tibia.i9644": 265,
+    "oteryn:item.tibia.i9645": 190,
+    "oteryn:item.tibia.i9646": 120,
+    "oteryn:item.tibia.i9647": 80,
+    "oteryn:item.tibia.i9648": 30,
+    "oteryn:item.tibia.i9649": 90,
+    "oteryn:item.tibia.i9650": 30,
+    "oteryn:item.tibia.i9651": 25,
+    "oteryn:item.tibia.i9652": 60,
+    "oteryn:item.tibia.i9653": 5000,
+    "oteryn:item.tibia.i9654": 460,
+    "oteryn:item.tibia.i9655": 200,
+    "oteryn:item.tibia.i9656": 190,
+    "oteryn:item.tibia.i9657": 55,
+    "oteryn:item.tibia.i9658": 160,
+    "oteryn:item.tibia.i9659": 85,
+    "oteryn:item.tibia.i9660": 700,
+    "oteryn:item.tibia.i9661": 280,
+    "oteryn:item.tibia.i9662": 420,
+    "oteryn:item.tibia.i9663": 420,
+    "oteryn:item.tibia.i9664": 550,
+    "oteryn:item.tibia.i9665": 400,
+    "oteryn:item.tibia.i9666": 520,
+    "oteryn:item.tibia.i9667": 200,
+    "oteryn:item.tibia.i9668": 150,
+    "oteryn:item.tibia.i9683": 115,
+    "oteryn:item.tibia.i9684": 120,
+    "oteryn:item.tibia.i9685": 275,
+    "oteryn:item.tibia.i9686": 20,
+    "oteryn:item.tibia.i9688": 800,
+    "oteryn:item.tibia.i9689": 30,
+    "oteryn:item.tibia.i9690": 90,
+    "oteryn:item.tibia.i9691": 60,
+    "oteryn:item.tibia.i9692": 10,
+    "oteryn:item.tibia.i9693": 10,
+    "oteryn:item.tibia.i9694": 400,
+    "oteryn:item.tibia.i9843": 100
+  },
+  "prey_seconds": 7200,
+  "schema": "OTERYN_PREY_SLOT_VALUES/v1"
+}
