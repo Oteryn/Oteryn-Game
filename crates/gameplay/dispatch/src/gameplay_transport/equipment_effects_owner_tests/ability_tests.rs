@@ -134,6 +134,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 3342, 7380, 7383, 7384, 7389, 7392, 7402, 7406, 7415 and 8077..=8081.
     // 8080 (sparking rainbow shield) has speed_bonus=10; the other 107 have speed_bonus=0.
     ("GEMX-I19", 108),
+    // W22c Drome: the Crystal Cube and its twenty rewards 36723..=36742 and 36827 from
+    // Crystal 201189f (tools/content-migration/drome_item_profiles.py). All have
+    // speed_bonus=0. P15 Forge reuses the existing Exalted Core 37110 and adds none.
+    ("W22C-DROME", 21),
 ];
 
 #[test]
