@@ -952,6 +952,850 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/carlin_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32351,
+          "y": 31679,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32403,
+        "y": 31813,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_movement-cults-of-carlin-teleport.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/orc_entry",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33167,
+          "y": 31930,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10842
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33182,
+        "y": 31837,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/orc_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33183,
+          "y": 31837,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10842
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33168,
+        "y": 31930,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/essence_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33085,
+          "y": 31963,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32349,
+        "y": 31668,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_teleport_from_essence_of_malice.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_0",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32731,
+          "y": 31531,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_1",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32739,
+          "y": 31489,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_2",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32739,
+          "y": 31507,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_3",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32761,
+          "y": 31518,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 3
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_4",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32720,
+          "y": 31545,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_5",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32745,
+          "y": 31423,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 5
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_6",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32742,
+          "y": 31410,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 6
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_7",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32685,
+          "y": 31430,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 7
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_8",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32746,
+          "y": 31462,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_9",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32683,
+          "y": 31537,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 9
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_10",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32740,
+          "y": 31494,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 10
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_11",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32741,
+          "y": 31494,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_12",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32745,
+          "y": 31523,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 12
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/find_oasis",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5560,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_check_oasis.lua:3-18"
+      ],
+      "success_message": "You have found a lovely oasis with green fauna and juicy fruit. You didn't expect that."
     }
   ]
 }
