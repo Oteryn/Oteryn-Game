@@ -91,7 +91,7 @@ pub async fn exchange(
 ) -> Result<Vec<u8>, SourceError> {
     exchange_status(desc, operation, body, permit, true)
         .await
-        .map(|(_, body)| body)
+        .map(|(_, body, _)| body)
 }
 /// `exchange` for an operation whose contract distinguishes failure statuses:
 /// a final non-200 status is returned with its bounded body instead of
@@ -102,6 +102,16 @@ pub(crate) async fn exchange_with_status(
     body: &str,
     permit: &mut super::QueuePermit<'_>,
 ) -> Result<(u16, Vec<u8>), SourceError> {
+    exchange_status(desc, operation, body, permit, false)
+        .await
+        .map(|(status, body, _)| (status, body))
+}
+pub(crate) async fn exchange_store(
+    desc: &ProducerDescriptor,
+    operation: Operation,
+    body: &str,
+    permit: &mut super::QueuePermit<'_>,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
     exchange_status(desc, operation, body, permit, false).await
 }
 /// Request head bound: the fixed request line and fields, the longest
@@ -148,7 +158,7 @@ async fn exchange_status(
     body: &str,
     permit: &mut super::QueuePermit<'_>,
     require_ok: bool,
-) -> Result<(u16, Vec<u8>), SourceError> {
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
     permit.require_active()?;
     if body.len() > operation.request_bytes_max() {
         return Err(SourceError::CapacityExceeded);
@@ -175,7 +185,21 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
-        if operation == Operation::ReadPremiumSnapshotV1 {
+        if let Some(max) = super::store::response_bytes_max(operation) {
+            let mut retry_after = None;
+            let (status, raw) = read_response_inner(
+                &mut tls,
+                false,
+                max,
+                true,
+                &[],
+                false,
+                Some(&mut retry_after),
+            )
+            .await?;
+            return Ok((status, raw, retry_after));
+        }
+        let (status, raw) = if operation == Operation::ReadPremiumSnapshotV1 {
             read_response_bounded(&mut tls, require_ok, 1024, true, &[]).await
         } else if matches!(
             operation,
@@ -220,7 +244,8 @@ async fn exchange_status(
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
             read_response_status(&mut tls, false).await
-        }
+        }?;
+        Ok((status, raw, None))
     };
     tokio::time::timeout(Duration::from_millis(EXCHANGE_DEADLINE_MS), future)
         .await
@@ -285,7 +310,31 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
     body_statuses: &[u16],
     oversized_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
-    if body_max == 0 || body_max > 8192 {
+    read_response_inner(
+        stream,
+        require_ok,
+        body_max,
+        require_json,
+        body_statuses,
+        oversized_ok,
+        None,
+    )
+    .await
+}
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Store additionally retains Retry-After while sharing the bounded HTTP parser"
+)]
+async fn read_response_inner<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+    body_statuses: &[u16],
+    oversized_ok: bool,
+    mut store_retry: Option<&mut Option<Duration>>,
+) -> Result<(u16, Vec<u8>), SourceError> {
+    if body_max == 0 || body_max > if store_retry.is_some() { 12288 } else { 8192 } {
         return Err(SourceError::InvalidInput);
     }
     let mut head = Vec::with_capacity(1024);
@@ -335,6 +384,8 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
     let mut chunked = false;
     let mut identity_encoding = false;
     let mut content_type = None;
+    let mut retry_after = None;
+    let mut no_store = false;
     for line in lines.filter(|line| !line.is_empty()) {
         fields = fields.checked_add(1).ok_or(SourceError::CapacityExceeded)?;
         if fields > 32 || line.len() + 2 > 2048 {
@@ -351,7 +402,11 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
         }
         let value = value.trim_matches([' ', '\t']);
         if name.eq_ignore_ascii_case("content-length") {
-            if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
+            if value.is_empty()
+                || !value.bytes().all(|b| b.is_ascii_digit())
+                || (store_retry.is_some()
+                    && (value.len() > 10 || (value.len() > 1 && value.starts_with('0'))))
+            {
                 return Err(SourceError::InvalidInput);
             }
             if length.is_some() || chunked {
@@ -378,11 +433,32 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
                 return Err(SourceError::InvalidInput);
             }
             content_type = Some(value.to_owned());
+        } else if name.eq_ignore_ascii_case("cache-control") && store_retry.is_some() {
+            no_store |= value
+                .split(',')
+                .any(|v| v.trim().eq_ignore_ascii_case("no-store"));
+        } else if name.eq_ignore_ascii_case("retry-after") && store_retry.is_some() {
+            if retry_after.is_some()
+                || value.is_empty()
+                || !value.bytes().all(|b| b.is_ascii_digit())
+            {
+                return Err(SourceError::InvalidInput);
+            }
+            retry_after = Some(Duration::from_secs(
+                value.parse().map_err(|_| SourceError::InvalidInput)?,
+            ));
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
     }
+    if let Some(target) = store_retry.as_mut() {
+        if !no_store || (code == 429 && retry_after.is_none_or(|delay| delay.is_zero())) {
+            return Err(SourceError::InvalidInput);
+        }
+        **target = retry_after;
+    }
     if require_json
+        && (store_retry.is_none() || code == 200)
         && content_type.as_deref().is_none_or(|value| {
             let mut parts = value.split(';');
             !parts
@@ -673,5 +749,34 @@ mod character_command_response_tests {
                     (200, b"1234".to_vec())
                 );
             });
+    }
+}
+
+#[cfg(test)]
+mod store_response_tests {
+    use super::*;
+    #[test]
+    fn store_response_bounds_and_retry_after() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
+            for status in [200, 409, 429, 503] {
+                let body = if status == 200 { "x".repeat(9000) } else { String::new() };
+                let raw = format!("HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nRetry-After: 17\r\n\r\n{body}", body.len());
+                let mut bytes = raw.as_bytes();
+                let mut retry_after = None;
+                let (got, decoded) = read_response_inner(&mut bytes, false, 12288, true, &[], false, Some(&mut retry_after)).await?;
+                assert_eq!(got, status);
+                assert_eq!(decoded, body.as_bytes());
+                assert_eq!(retry_after, Some(Duration::from_secs(17)));
+            }
+            for fields in ["", "Retry-After: x\r\n", "Retry-After: 1\r\nRetry-After: 2\r\n"] {
+                let raw = format!("HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\n{fields}\r\n");
+                let mut bytes = raw.as_bytes();
+                assert!(read_response_inner(&mut bytes, false, 512, true, &[], false, Some(&mut None)).await.is_err());
+            }
+            let raw = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 513\r\n\r\n";
+            assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None)).await.is_err());
+            Ok::<(), SourceError>(())
+        })?;
+        Ok(())
     }
 }

@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::store as wire;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex as SyncMutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use sha2::{Digest, Sha256};
 
 const SWORD: &str = "store:exercise-sword";
 const SWORD_ITEM: &str = "oteryn:item.tibia.i28552";
@@ -47,47 +48,41 @@ impl StoreTransport for FakePlatform {
     > {
         let mut ledger = self.0.lock().expect("ledger");
         let request: serde_json::Value = serde_json::from_str(body).expect("json body");
+        assert_eq!(request["source_authority"], "oteryn-game/store-consumer");
+        if operation == Operation::PurchaseStoreOfferV1 { assert_eq!(request["world_id"], ledger.world); }
         let answer = match operation {
             Operation::ReadStoreBalanceV1 => {
-                let currency = request["currency"].as_str().expect("currency");
-                let balance = if currency == "TIBIA_COIN" { ledger.balance } else { 0 };
-                serde_json::json!({"contract_version":1,"balance":{"currency":currency,"balance":balance}})
+                platform_balance(&request, ledger.balance)
             }
             Operation::PurchaseStoreOfferV1 => {
                 ledger.purchases += 1;
-                let price = request["price"].as_u64().expect("price");
+                let price = request["unit_price"].as_str().expect("price string").parse::<u64>().expect("price") * request["quantity"].as_u64().expect("quantity");
                 if price > ledger.balance {
-                    serde_json::json!({"contract_version":1,"result":"INSUFFICIENT_BALANCE"})
+                    platform_answer(&request, None, ledger.balance, body)
                 } else {
                     ledger.balance -= price;
                     ledger.debits.push(price);
                     let n = u8::try_from(ledger.debits.len()).expect("few orders");
                     let operation = uuid(&id(100 + n));
-                    let intent = serde_json::json!({
-                        "operation_id": operation,
-                        "account_id": request["account_id"],
-                        "character_id": request["character_id"],
-                        "world_id": ledger.world,
-                        "fulfilment_unit_id": format!("unit-{n}"),
-                        "catalog_revision": request["catalog_revision"],
-                        "offer_key": request["offer_key"],
-                    });
+                    let order = uuid(&id(120 + n));
+                    let intent = platform_intent(&request, &operation, &order);
                     ledger.intents.insert(operation.clone(), intent);
-                    serde_json::json!({"contract_version":1,"result":"ACCEPTED",
-                        "order_id": uuid(&id(120 + n)), "operation_ids": [operation]})
+                    platform_answer(&request, Some((&order, &operation)), ledger.balance, body)
                 }
             }
-            Operation::ReadStoreDeliveryIntentV1 => {
+            Operation::ReadStoreOperationIntentV1 => {
                 let operation = request["operation_id"].as_str().expect("operation");
-                serde_json::json!({"contract_version":1,"intent":ledger.intents[operation]})
+                ledger.intents[operation].clone()
             }
-            Operation::PublishStoreReceiptV1 => {
+            Operation::PublishStoreDeliveryReceiptV1 => {
+                assert_eq!(request["binding_digest"], sha256(&platform_bytes(&ledger.intents[request["operation_id"].as_str().expect("operation")])));
+                assert_eq!(request["result_code"], "STORE_OK");
                 ledger.receipts += 1;
                 serde_json::json!({"contract_version":1,"result":"accepted"})
             }
             _ => return Box::pin(async { Err(TransportFailure::NotFound) }),
         };
-        Box::pin(async move { Ok(answer.to_string().into_bytes()) })
+        Box::pin(async move { Ok(platform_bytes(&answer)) })
     }
 }
 
@@ -176,7 +171,7 @@ fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
-        catalog_revision: "store-catalogue-r1".into(),
+        catalog_revision: "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d".into(),
         price,
         currency: "TIBIA_COIN".into(),
     };
@@ -265,7 +260,7 @@ fn scenario() -> TestResult {
         }));
         owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(
             FakePlatform(ledger.clone()),
-        )))));
+        ), "oteryn-game/store-consumer".into()))));
 
         // Without the selected capability the command is no Store command.
         let values = serve(&owner, &mut admitted, &[page_request()?]).await?;
@@ -292,8 +287,8 @@ fn scenario() -> TestResult {
         assert_eq!(values.len(), 1, "{values:?}");
         assert_eq!(values[0].0, CommandStatus::Accepted, "{values:?}");
         let page = wire::decode_catalogue_page(&values[0].1).map_err(debug)?;
-        assert_eq!(page.catalog_revision, "store-catalogue-r1");
-        assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (23, 60, 0));
+        assert_eq!(page.catalog_revision, "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
+        assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (23, 60, 60));
         let sword = page
             .offers
             .iter()
@@ -356,4 +351,49 @@ fn scenario() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+// Shared test-only Platform wire builders. The ordered serializer mirrors the
+// Platform fixture order, so these fakes exercise the strict production decoder.
+pub(super) fn sha256(bytes: &[u8]) -> String {
+    Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
+}
+pub(super) fn platform_balance(request: &serde_json::Value, balance: u64) -> serde_json::Value {
+    serde_json::json!({"contract_version":1,"result":"OK","account_id":request["account_id"],"balances":[{"currency":"COINS","available":balance.to_string(),"reserved":"0"}],"read_at":"1"})
+}
+pub(super) fn platform_answer(request: &serde_json::Value, accepted: Option<(&str, &str)>, balance: u64, body: &str) -> serde_json::Value {
+    let mut answer = serde_json::json!({"contract_version":1,"purchase_request_id":request["purchase_request_id"],"request_digest":sha256(body.as_bytes()),"result":"INSUFFICIENT_BALANCE","decided_at":"1"});
+    if let Some((order, operation)) = accepted {
+        answer["result"] = "ACCEPTED".into();
+        answer["order_id"] = order.into();
+        answer["currency"] = request["currency"].clone();
+        answer["total_price"] = (request["unit_price"].as_str().expect("unit price").parse::<u64>().expect("amount") * request["quantity"].as_u64().expect("quantity")).to_string().into();
+        answer["available_after"] = balance.to_string().into();
+        answer["units"] = serde_json::json!([{"unit_kind":"ITEM","entitlement_id":operation,"delivery_operation_id":operation}]);
+    }
+    answer
+}
+pub(super) fn platform_intent(request: &serde_json::Value, operation: &str, order: &str) -> serde_json::Value {
+    serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":"oteryn.store.item_grant","product_version":"1","unit_kind":"ITEM","catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":"item:test","grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
+}
+pub(super) fn platform_bytes(v: &serde_json::Value) -> Vec<u8> {
+    let fields = if v.get("operation_kind").is_some() {
+        "contract_version operation_kind issuer_authority source_revision operation_id order_id entitlement_id account_id product_id product_version unit_kind catalog_revision offer_key grant_key grant_revision quantity issued_at_source audience"
+    } else if v["operation"] == "PurchaseStoreOfferV1" {
+        "contract_version operation source_authority purchase_request_id account_id character_id world_id catalog_revision offer_key currency unit_price quantity"
+    } else if v.get("balances").is_some() { "contract_version result account_id balances read_at" }
+    else if v.get("purchase_request_id").is_some() {
+        if v["result"] == "ACCEPTED" { "contract_version purchase_request_id request_digest result order_id currency total_price available_after units decided_at" }
+        else { "contract_version purchase_request_id request_digest result decided_at" }
+    } else if v.get("available").is_some() { "currency available reserved" }
+    else if v.get("delivery_operation_id").is_some() { "unit_kind entitlement_id delivery_operation_id" }
+    else { "contract_version result" };
+    let parts: Vec<_> = fields.split_whitespace().map(|k| {
+        let value = &v[k];
+        let encoded = if let Some(array) = value.as_array() {
+            format!("[{}]", array.iter().map(|v| String::from_utf8(platform_bytes(v)).expect("UTF8")).collect::<Vec<_>>().join(","))
+        } else { value.to_string() };
+        format!("\"{k}\":{encoded}")
+    }).collect();
+    format!("{{{}}}", parts.join(",")).into_bytes()
 }

@@ -134,18 +134,17 @@ async fn catalogue_page(
         String::new()
     };
     let platform = owner.store.as_ref()?;
-    let (total_coins, transferable_coins) = {
+    let total_coins = {
         let mut client = platform.lock().await;
-        let total = client.balance(&account, "TIBIA_COIN").await.ok()?;
-        let transferable = client
-            .balance(&account, "TRANSFERABLE_TIBIA_COIN")
-            .await
-            .ok()?;
-        (total.balance, transferable.balance)
+        let page = client.balance(&account).await.ok()?;
+        let [balance] = page.balances.as_slice() else {
+            return None;
+        };
+        if balance.currency != "COINS" {
+            return None;
+        }
+        balance.available.parse::<u64>().ok()?
     };
-    if transferable_coins > total_coins {
-        return None;
-    }
     Some(wire::StoreCataloguePage {
         catalog_revision: catalogue.rules.revision().to_owned(),
         offers: rows
@@ -159,7 +158,7 @@ async fn catalogue_page(
             .collect(),
         next_page_cursor,
         total_coins,
-        transferable_coins,
+        transferable_coins: total_coins,
     })
 }
 
@@ -258,6 +257,10 @@ async fn purchase(
     {
         return Some(refusal(wire::StorePurchaseCode::StaleQuote));
     }
+    let platform_currency = match platform_currency(quote.currency) {
+        Ok(currency) => currency,
+        Err(code) => return Some(refusal(code)),
+    };
     let id = rules::PurchaseRequestId::from_bytes(request.purchase_request_id).ok()?;
     let character_id = *fence.character_id.as_bytes();
     let binding = rules::PurchaseStoreOffer::from_quote(
@@ -303,8 +306,10 @@ async fn purchase(
                     character_id: uuid_text(&character_id),
                     offer_key: binding.offer_key.clone(),
                     catalog_revision: binding.catalog_revision.clone(),
-                    price: binding.price,
-                    currency: currency_text(binding.currency).into(),
+                    unit_price: binding.price.to_string(),
+                    world_id: uuid_text(admitted.world_id.as_bytes()),
+                    quantity: 1,
+                    currency: platform_currency.into(),
                 }).await
                 // Unknown debit outcome retains the permanent-offer reservation for this id.
                 .ok()?
@@ -355,26 +360,22 @@ async fn deliver(
     purchase: Option<&HirelingStorePurchase>,
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
-    let intent = platform.lock().await.read_intent(operation).await.ok()?;
+    let intent = platform.lock().await.read_intent(crate::native_admission_source::store::OperationKind::Deliver, operation).await.ok()?;
     let account = *binding.account_id.as_bytes();
     let character_id = *binding.character_id.as_bytes();
     let world_id = *admitted.world_id.as_bytes();
-    if intent.account_id != uuid_text(&account)
-        || intent.character_id.as_deref() != Some(uuid_text(&character_id).as_str())
-        || intent
-            .world_id
-            .as_deref()
-            .is_some_and(|world| world != uuid_text(&world_id))
-        || intent.offer_key != binding.offer_key
-        || intent.catalog_revision != binding.catalog_revision
+    if intent.quantity != Some(1)
+        || intent.account_id != uuid_text(&account)
+        || intent.offer_key.as_deref() != Some(binding.offer_key.as_str())
+        || intent.catalog_revision.as_deref() != Some(binding.catalog_revision.as_str())
     {
         return None;
     }
     if let Some(purchase)=purchase.filter(|p|!matches!(p.action,HirelingStoreAction::Hire {..})) {
         let fence=gameplay_fence(owner,admitted).await?;
-        let plan=HirelingServiceDeliveryPlan {identity:DeliveryIdentity {account_id:account,character_id,world_id,fulfilment_unit_id:intent.fulfilment_unit_id},command,purchase:purchase.clone()};
+        let plan=HirelingServiceDeliveryPlan {identity:DeliveryIdentity {account_id:account,character_id,world_id,fulfilment_unit_id:intent.entitlement_id.clone()},command,purchase:purchase.clone()};
         let receipt=owner.root.apply_store_hireling_service(owner.character,owner.holder,operation_id,plan,fence).await.ok()?;
-        publish(owner,platform,operation_id,&receipt).await?;
+        publish(owner,platform,operation_id,&intent,&receipt).await?;
         return Some(());
     }
     let effects = rules::plan_delivery(
@@ -384,9 +385,9 @@ async fn deliver(
             account_id: binding.account_id,
             character_id: binding.character_id,
             world_id: crate::domain::WorldId::from_bytes(world_id).ok()?,
-            fulfilment_unit_id: intent.fulfilment_unit_id.clone(),
-            offer_key: intent.offer_key.clone(),
-            catalog_revision: intent.catalog_revision.clone(),
+            fulfilment_unit_id: intent.entitlement_id.clone(),
+            offer_key: intent.offer_key.clone()?,
+            catalog_revision: intent.catalog_revision.clone()?,
             quantity: 1,
         },
         &rules::CharacterStoreView::default(),
@@ -396,9 +397,9 @@ async fn deliver(
         if unlock_key != catalogue::PREY_EXPANSION_UNLOCK { return None; }
         let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
             operation_id, account_id: account, world_id,
-            fulfilment_unit_id: intent.fulfilment_unit_id,
+            fulfilment_unit_id: intent.entitlement_id.clone(),
         }).await?;
-        let bytes = serde_json::to_vec(&receipt).ok()?;
+        let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
         if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
             let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
         }
@@ -424,7 +425,7 @@ async fn deliver(
         account_id: account,
         character_id,
         world_id,
-        fulfilment_unit_id: intent.fulfilment_unit_id,
+        fulfilment_unit_id: intent.entitlement_id.clone(),
         item_instance_id: item_instance_id(&operation_id),
         command,
         mint: RewardClaimInboxMintRequest {
@@ -449,11 +450,11 @@ async fn deliver(
     } else {
         owner.root.apply_store_delivery(owner.character,owner.holder,operation_id,plan,fence).await.ok()?
     };
-    publish(owner,platform,operation_id,&receipt).await
+    publish(owner,platform,operation_id,&intent,&receipt).await
 }
 
-async fn publish(owner:&ComposedFreshAdmission<'_, '_, '_>,platform:&StorePlatform,operation_id:[u8;16],receipt:&crate::durability::store::DeliveryReceipt)->Option<()> {
-    let bytes = serde_json::to_vec(receipt).ok()?;
+async fn publish(owner:&ComposedFreshAdmission<'_, '_, '_>,platform:&StorePlatform,operation_id:[u8;16],intent:&crate::native_admission_source::store::DeliveryIntent,receipt:&crate::durability::store::DeliveryReceipt)->Option<()> {
+    let bytes = platform.lock().await.delivery_receipt(intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
     // Publication is best effort here: the outbox keeps the receipt until Platform accepts it.
     if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
         let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
@@ -532,3 +533,13 @@ pub(super) fn uuid_bytes(text: &str) -> Option<[u8; 16]> {
 #[cfg(test)]
 #[path = "store/tests.rs"]
 mod tests;
+
+// Platform has one currency: Oteryn Coins. Every coin is transferable.
+fn platform_currency(
+    currency: rules::CurrencyKind,
+) -> Result<&'static str, wire::StorePurchaseCode> {
+    match currency {
+        rules::CurrencyKind::TibiaCoin => Ok("COINS"),
+        rules::CurrencyKind::TransferableTibiaCoin => Err(wire::StorePurchaseCode::OfferUnavailable),
+    }
+}

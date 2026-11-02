@@ -2,13 +2,13 @@
 //! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: String,
-    catalog_revision: String,
     #[serde(rename = "source")]
     _source: serde_json::Value,
     offers: Vec<Offer>,
@@ -62,7 +62,13 @@ pub(super) struct RuntimeCatalogue {
 impl RuntimeCatalogue {
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
     pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
-        let document: Document = serde_json::from_slice(bytes).ok()?;
+        let mut value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
+        // D2(b): hash the entire document, recursively sorting object keys. The
+        // revision is derived, so it is not a member of its own hash input.
+        value.sort_all_objects();
+        let revision: String = Sha256::digest(serde_json::to_vec(&value).ok()?)
+            .iter().map(|byte| format!("{byte:02x}")).collect();
+        let document: Document = serde_json::from_value(value).ok()?;
         if document.schema != "OTERYN_STORE_RUNTIME_CATALOGUE/v1" || document.offers.is_empty() {
             return None;
         }
@@ -119,7 +125,7 @@ impl RuntimeCatalogue {
             });
         }
         Some(Self {
-            rules: rules::Catalogue::admit(document.catalog_revision, offers).ok()?,
+            rules: rules::Catalogue::admit(revision, offers).ok()?,
             titles,
             item_revisions,
             hirelings,

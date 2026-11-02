@@ -1,0 +1,30 @@
+{
+  "contract_version": 1,
+  "result": "OK",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "entries": [
+    {
+      "entry_id": "4812",
+      "kind": "STORE_PURCHASE",
+      "currency": "COINS",
+      "available_delta": "-250",
+      "reserved_delta": "0",
+      "order_id": "0192b6a0-4c00-7000-8000-000000000501",
+      "offer_key": "premium-30d",
+      "quantity": 1,
+      "created_at": "1792756740"
+    },
+    {
+      "entry_id": "4790",
+      "kind": "COIN_PACKAGE_CREDIT",
+      "currency": "COINS",
+      "available_delta": "1500",
+      "reserved_delta": "0",
+      "order_id": null,
+      "offer_key": null,
+      "quantity": null,
+      "created_at": "1792670400"
+    }
+  ],
+  "next_before_entry_id": "4790"
+}

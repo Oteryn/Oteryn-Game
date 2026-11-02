@@ -2,6 +2,7 @@
 //! The fixture begins at the durable crash boundary: its originally enabled quote passed,
 //! the reservation exists, and Platform has one debit whose reply may or may not be retained.
 use super::*;
+use super::store::{platform_answer, platform_intent, platform_bytes};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
 use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
@@ -13,7 +14,15 @@ use std::sync::{Arc, Mutex as SyncMutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const OFFER: &str = "store:prey-list-expansion";
-const OLD_REVISION: &str = "prey-retry-test-original-r0";
+fn old_revision() -> String {
+    let mut document: serde_json::Value = serde_json::from_slice(include_bytes!("../../../../../../rulesets/economy/store/catalogue.json")).expect("catalogue JSON");
+    let offers = document["offers"].as_array_mut().expect("offers");
+    let offer = offers.iter_mut().find(|offer| offer["key"] == OFFER).expect("Prey offer");
+    offer["enabled"] = true.into();
+    offer["price"] = 37.into();
+    document.sort_all_objects();
+    super::store::sha256(&serde_json::to_vec(&document).expect("canonical catalogue"))
+}
 
 #[test]
 fn prey_diff_store_accepted_purchase_resumes_after_catalogue_change_without_another_debit() -> TestResult {
@@ -58,23 +67,24 @@ impl StoreTransport for ExistingDebit {
                 ledger.purchases += 1;
                 // Platform's existing idempotency contract: the exact old id/quote replays
                 // the accepted order. A request that could start a second debit fails here.
-                for key in ["purchase_request_id", "account_id", "character_id", "offer_key", "catalog_revision", "price", "currency"] {
+                for key in ["purchase_request_id", "account_id", "character_id", "offer_key", "world_id", "catalog_revision", "unit_price", "quantity", "currency"] {
                     assert_eq!(request[key], ledger.original[key], "retry changed {key}");
                 }
                 assert_eq!(ledger.debits, 1);
+                assert_eq!(body.as_bytes(), platform_bytes(&ledger.original));
                 ledger.answer.clone()
             }
-            Operation::ReadStoreDeliveryIntentV1 => {
+            Operation::ReadStoreOperationIntentV1 => {
                 assert_eq!(request["operation_id"], ledger.intent["operation_id"]);
-                serde_json::json!({"contract_version":1,"intent":ledger.intent})
+                ledger.intent.clone()
             }
-            Operation::PublishStoreReceiptV1 => {
+            Operation::PublishStoreDeliveryReceiptV1 => {
                 ledger.receipts.push(request);
                 serde_json::json!({"contract_version":1,"result":"accepted"})
             }
             _ => return Box::pin(async { Err(TransportFailure::NotFound) }),
         };
-        Box::pin(async move { Ok(answer.to_string().into_bytes()) })
+        Box::pin(async move { Ok(platform_bytes(&answer)) })
     }
 }
 
@@ -110,7 +120,7 @@ fn scenario(answered: bool) -> TestResult {
             &[wire::CAPABILITY_STORE_V1],
         ).ok_or("Store capability")?;
         let request = wire::StorePurchaseRequest {
-            purchase_request_id: id(230), offer_key: OFFER.into(), catalog_revision: OLD_REVISION.into(),
+            purchase_request_id: id(230), offer_key: OFFER.into(), catalog_revision: old_revision(),
             price: 37, currency: "TIBIA_COIN".into(), // fixture quote, never a proposed production price
         };
         let old_binding = rules::PurchaseStoreOffer {
@@ -140,17 +150,23 @@ fn scenario(answered: bool) -> TestResult {
             original: serde_json::json!({
                 "purchase_request_id":uuid(&request.purchase_request_id), "account_id":uuid(&account),
                 "character_id":uuid(current.character_id.as_bytes()), "offer_key":OFFER,
-                "catalog_revision":OLD_REVISION, "price":request.price, "currency":"TIBIA_COIN",
+                "world_id":uuid(admitted.world_id.as_bytes()), "catalog_revision":old_revision(), "unit_price":request.price.to_string(), "quantity":1, "currency":"COINS",
             }),
-            intent: serde_json::json!({
-                "operation_id":operation, "account_id":uuid(&account),
-                "character_id":uuid(current.character_id.as_bytes()), "world_id":uuid(admitted.world_id.as_bytes()),
-                "fulfilment_unit_id":"prey-retry-original-unit", "catalog_revision":OLD_REVISION, "offer_key":OFFER,
-            }),
-            answer: serde_json::json!({"contract_version":1,"result":"ACCEPTED","order_id":order,"operation_ids":[operation]}),
+            intent: platform_intent(&serde_json::json!({"account_id":uuid(&account),"catalog_revision":old_revision(),"offer_key":OFFER}), &operation, &order),
+            answer: serde_json::Value::Null,
             purchases: 0, debits: 1, receipts: Vec::new(),
         }));
-        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(ExistingDebit(ledger.clone()))))));
+        {
+            let mut stored = ledger.lock().expect("ledger");
+            let mut original = stored.original.clone();
+            original["contract_version"] = 1.into();
+            original["operation"] = "PurchaseStoreOfferV1".into();
+            original["source_authority"] = "oteryn-game/store-consumer".into();
+            let body = String::from_utf8(platform_bytes(&original))?;
+            stored.answer = platform_answer(&original, Some((&order, &operation)), 0, &body);
+            stored.original = original;
+        }
+        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(ExistingDebit(ledger.clone())), "oteryn-game/store-consumer".into()))));
 
         // A changed binding of the original request id cannot exploit the resume path.
         for field in 0..3 {
