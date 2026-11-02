@@ -36,6 +36,8 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod coin_exchange;
+mod grizzly;
+mod grizzly_shop;
 mod monk;
 mod premium_purchase;
 mod service_context;
@@ -47,10 +49,16 @@ struct SessionNpc {
     recent: RecentIntents,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
+    /// The exact bounded offer list shown in this window, including its rank filter.
+    window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
+    /// Display cache only; the NPC trade writer independently checks quest points.
+    grizzly_shop_points: Option<i64>,
+    grizzly_shop_items: std::collections::BTreeSet<String>,
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
     exchange: Option<coin_exchange::Pending>,
+    grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
 }
@@ -71,8 +79,10 @@ pub struct NpcConversations {
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
 }
 
+#[cfg(test)]
+use oteryn_gameplay_npc::npc_command::project_offers;
 use oteryn_gameplay_npc::npc_command::projected;
-pub use oteryn_gameplay_npc::npc_command::{NpcTradeOffer, NpcTradeRefusal, project_offers};
+pub use oteryn_gameplay_npc::npc_command::{NpcTradeOffer, NpcTradeRefusal};
 
 use oteryn_gameplay_economy::npc_trade::NPC_TRADE_QUANTITY_MAX as MAX_TRADE_QUANTITY;
 
@@ -249,6 +259,7 @@ impl NpcConversations {
             .is_none_or(|identity| identity != shown.identity)
             .then(|| {
                 state.window = None;
+                state.window_offers.clear();
                 NpcTradeWindow::default()
             })
     }
@@ -274,17 +285,10 @@ impl NpcConversations {
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
             && ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
-        .then(|| open_window(chat, runtime, intent.npc_actor, items))
+        .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
         .flatten();
         outcome.window = match opened {
-            Some(window) => {
-                if let Ok(mut sessions) = self.sessions.lock()
-                    && let Some(state) = sessions.get_mut(&session)
-                {
-                    state.window = Some(intent.npc_actor);
-                }
-                Some(window)
-            }
+            Some(window) => Some(window),
             None => self.close_window(session, talking_to.map(|npc| npc.placement_identity())),
         };
         outcome
@@ -326,11 +330,16 @@ impl NpcConversations {
         {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::NotInRange)));
         }
-        let shown = self
+        let (shown, shown_offers) = self
             .sessions
             .lock()
             .ok()
-            .and_then(|sessions| sessions.get(&session).and_then(|state| state.window));
+            .and_then(|sessions| {
+                sessions
+                    .get(&session)
+                    .map(|state| (state.window, state.window_offers.clone()))
+            })
+            .unwrap_or_default();
         if shown != Some(intent.npc_actor) {
             // No window is open on this NPC: there is nothing to re-project.
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
@@ -338,12 +347,15 @@ impl NpcConversations {
         // NPC-0 §5.1: the client's revision, offer and price are only stale checks; a mismatch
         // is STALE and re-projects the window.
         let stale = || {
-            let window = open_window(chat, runtime, intent.npc_actor, items).unwrap_or_default();
+            let window = self
+                .open_window(chat, runtime, session, intent.npc_actor, items)
+                .unwrap_or_default();
             if window.open.is_none()
                 && let Ok(mut sessions) = self.sessions.lock()
                 && let Some(state) = sessions.get_mut(&session)
             {
                 state.window = None;
+                state.window_offers.clear();
             }
             NpcTradeRefusal {
                 disposition: Disposition::Stale,
@@ -370,14 +382,17 @@ impl NpcConversations {
         }
         let Some((offer, source)) = usize::try_from(intent.offer_index)
             .ok()
-            .and_then(|index| projected(entry.offers(), items).nth(index))
+            .and_then(|index| projected(&shown_offers, items).nth(index))
         else {
             return Err(Box::new(stale()));
         };
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if source.currency.is_some() || source.sub_type.is_some() {
+        if !entry.offers().contains(source)
+            || source.currency.is_some()
+            || source.sub_type.is_some()
+        {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
@@ -584,7 +599,9 @@ pub(super) async fn npc_bank_talk(
         .map(|id| CommandRef::new(session, id));
     let _trade_permit = if intent.text.to_ascii_lowercase().contains("yes") {
         let Some(permit) = admission.spell_lane_permit().await else {
-            return unknown();
+            // The lane's retained work belongs to an earlier operation. This NPC
+            // command has attempted no mutation and has no retained invocation yet.
+            return rejected();
         };
         if !admission.states.player_trades.physical_service(session) {
             return rejected();
@@ -594,6 +611,33 @@ pub(super) async fn npc_bank_talk(
         None
     };
     let mut runtime = admission.runtime.lock().await;
+    let points = admission
+        .states
+        .quest_sessions
+        .lock()
+        .ok()
+        .and_then(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|entry| entry.copy.as_ref())
+                .map(|copy| {
+                    oteryn_gameplay_quests::quest::grizzly_adams::storage_value(
+                        copy.tracks(),
+                        oteryn_gameplay_quests::quest::grizzly_adams::POINTS_STORAGE,
+                    )
+                })
+        });
+    let native = admission
+        .active_generation
+        .filter(|active| {
+            runtime.content_pin().server_artifact_digest()
+                == active.identity().server_artifact_digest()
+        })
+        .and_then(|active| active.native_gameplay());
+    admission
+        .states
+        .npc_conversations
+        .refresh_grizzly_shop_context(session, points, grizzly_shop::admitted_items(native));
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,
         &runtime,
@@ -618,6 +662,16 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(context) = grizzly::context(admission, &runtime, actor, session, &intent) {
+        if ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text))
+            && ordinary.window.is_some()
+        {
+            return ordinary;
+        }
+        drop(runtime);
+        drop(_trade_permit);
+        return grizzly::talk(admission, actor, command, intent, context).await;
     }
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
@@ -1071,29 +1125,6 @@ fn bank_completion_reply(
     };
     BankNpcOperationDurability::reply(&operation, record.result)
 }
-/// The trade window of `npc` for its conversation: its offers at the book's catalogue revision.
-/// `None` when the NPC has no projectable offer or there is no pinned Item index.
-fn open_window(
-    chat: &ChatRuntime,
-    runtime: &ChannelRuntimeV1,
-    npc: EntityRef,
-    items: Option<&ItemDefinitionIndex>,
-) -> Option<NpcTradeWindow> {
-    let (book, items) = (chat.npc_talk()?, items?);
-    let visible = runtime.visible_entities();
-    let placed = visible.npcs.iter().find(|placed| {
-        placed.actor.placement_identity() == npc.identity && placed.generation == npc.generation
-    })?;
-    let entry = runtime
-        .npc_key(placed.actor)
-        .and_then(|key| book.get(key))?;
-    let offers = project_offers(entry.offers(), items);
-    (!offers.is_empty()).then(|| NpcTradeWindow {
-        open: Some((npc, book.catalogue_revision())),
-        offers,
-    })
-}
-
 /// Ends the conversation of `session` when the intent named the NPC it was held with; returns the
 /// closing payload then.
 fn end(

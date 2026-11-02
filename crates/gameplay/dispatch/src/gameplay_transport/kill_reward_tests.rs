@@ -144,6 +144,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         talisman: Arc::default(),
         boss_reward: None,
         activity_death: None,
+        grizzly: None,
         damage_shares: Vec::new(),
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),

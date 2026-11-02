@@ -137,6 +137,7 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
     let mut refused = 0;
     let mut explicit = 0;
     let mut inexact_effects = 0;
+    let grizzly_tracks = oteryn_gameplay_quests::quest::grizzly_adams::storage_keys();
     for transition in &transitions {
         let key = transition["key"].as_str().ok_or("key")?;
         let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
@@ -145,8 +146,17 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
         let computed = effects(transition)?
             .iter()
             .any(|effect| explicit_computed(effect) || inexact(effect));
-        assert_eq!(not_supported, computed, "{key}");
-        refused += usize::from(not_supported);
+        // W15c fences the old single-write Grizzly fragments behind its compound
+        // owner. The event line still counts the original lowered SOURCE document.
+        let grizzly_fragment = transition["quest"]
+            == oteryn_gameplay_quests::quest::grizzly_adams::QUEST
+            && effects(transition)?.iter().any(|effect| {
+                effect["track"]
+                    .as_str()
+                    .is_some_and(|track| grizzly_tracks.iter().any(|owned| owned == track))
+            });
+        assert_eq!(not_supported, computed || grizzly_fragment, "{key}");
+        refused += usize::from(computed);
         for effect in effects(transition)? {
             explicit += usize::from(explicit_computed(effect));
             inexact_effects += usize::from(inexact(effect));

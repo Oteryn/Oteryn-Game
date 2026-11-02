@@ -107,7 +107,11 @@ impl NpcTalkBook {
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
-            catalogue_revision: revision_of(model.source_tree_digest()),
+            catalogue_revision: revision_of(
+                &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                    model.source_tree_digest(),
+                ),
+            ),
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
@@ -125,7 +129,18 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if matches!(
+            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if reference.key
+                == "oteryn:npc.grizzly_adams"
+            {
+                // W15c: the existing NPC owner opens the conversation; confirmed task
+                // choices and their stateful replies belong to native Grizzly dispatch.
+                (
+                    "Welcome to the Paw and Fur - Hunting Elite. Would you like to join?".into(),
+                    "Good hunting!".into(),
+                    Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
+                    Vec::new(),
+                )
+            } else if matches!(
                 reference.key.as_str(),
                 "oteryn:npc.ambassador_manop" | "oteryn:npc.enpa_deia_pema"
             ) {
@@ -635,6 +650,71 @@ mod summer_dialogue_tests {
                 .map(|route| route.keyword.as_str())
                 .collect::<Vec<_>>(),
             ["venore"]
+        );
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "repository Grizzly dialogue qualification"
+)]
+mod grizzly_dialogue_tests {
+    use super::*;
+
+    #[test]
+    fn grizzly_native_task_npc_is_reachable_from_the_real_dialogue_catalogue() {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("catalogue");
+        let model = catalogue.service_model_for_project().expect("model");
+        let book = NpcTalkBook::from_model(&model);
+        let entry = book
+            .get("oteryn:npc.grizzly_adams")
+            .expect("native Grizzly dialogue");
+        assert_eq!(
+            entry.offers().len(),
+            56,
+            "all sourced offers pass native Item admission"
+        );
+        for (points, count) in [(9, 0), (10, 40), (20, 41), (40, 46), (70, 56)] {
+            assert_eq!(
+                entry
+                    .offers()
+                    .iter()
+                    .filter(
+                        |offer| crate::content::npc_catalogue::grizzly_shop::visible(
+                            "oteryn:npc.grizzly_adams",
+                            offer,
+                            Some(points)
+                        )
+                    )
+                    .count(),
+                count
+            );
+        }
+        let position = ChatPosition {
+            x: 1,
+            y: 1,
+            floor: 0,
+        };
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position,
+            entry,
+        }];
+        let mut engaged = None;
+        let greeting = talk(position, "hi", &npcs, &mut engaged).expect("greeting");
+        assert!(greeting.text.contains("Paw and Fur"));
+        assert_eq!(engaged, Some(1));
+        assert!(
+            entry
+                .topic_reply
+                .as_deref()
+                .is_some_and(|text| text.contains("tasks"))
         );
     }
 }

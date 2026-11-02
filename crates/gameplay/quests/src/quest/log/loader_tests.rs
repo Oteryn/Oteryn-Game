@@ -14,11 +14,12 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
             .iter()
             .all(|entry| entry.reason == "no admitted progress track")
     );
+    // W15c now binds the Grizzly points/counters to the existing source missions.
     assert!(
         loaded
             .exclusions
             .iter()
-            .any(|entry| entry.mission.as_deref() == Some("paw_and_fur_hunting_elite"))
+            .all(|entry| entry.mission.as_deref() != Some("paw_and_fur_hunting_elite"))
     );
     let first = &loaded.content.active().quests()[0];
     assert_eq!(first.key, "oteryn:quest.a_father_s_burden_quest");

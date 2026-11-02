@@ -299,7 +299,7 @@ async fn write_periodic(
     Ok(Ok(outcome))
 }
 
-fn validate_fence(
+pub(super) fn validate_fence(
     fence: &CurrentCharacterGameplayFence,
     record: &LastPositionRecord,
 ) -> Result<()> {

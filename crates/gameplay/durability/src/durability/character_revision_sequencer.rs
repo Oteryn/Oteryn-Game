@@ -30,6 +30,7 @@ use std::sync::Arc;
 use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
+mod grizzly;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
@@ -662,8 +663,18 @@ impl RevisionSlot {
         facts: WheelChangeFacts,
         gate: &G,
     ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
-        self.commit_wheel_with_admission(root, authority, node, fence, request, ruleset, facts, gate, &|| true)
-            .await
+        self.commit_wheel_with_admission(
+            root,
+            authority,
+            node,
+            fence,
+            request,
+            ruleset,
+            facts,
+            gate,
+            &|| true,
+        )
+        .await
     }
 
     /// A caller-owned decision is retained across the existing revision retry.

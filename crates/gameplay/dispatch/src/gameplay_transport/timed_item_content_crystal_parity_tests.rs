@@ -106,23 +106,33 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     }
 
     // I05 (2026-10-31): the skill rings left this pin when they were admitted above. These three
-    // stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089 and healing
-    // 3098 -> 3100 need equipment regeneration, and neither system is production-ready.
+    // active forms stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089
+    // and healing 3098 -> 3100 need regeneration; neither effect is production-ready.
     for base in [3049, 3052, 3098] {
         let definition = typed_of(native, base);
-        assert!(
-            definition
-                .as_ref()
-                .and_then(|definition| equipped_definition(native, definition))
-                .is_none(),
-            "{base}"
-        );
+        // W15b admits the base stealth/life rings as chest rewards. Their
+        // unqualified active forms remain unavailable: wearing keeps the base.
+        let equipped = definition
+            .as_ref()
+            .and_then(|definition| equipped_definition(native, definition));
+        if matches!(base, 3049 | 3052) {
+            let definition = definition.as_ref().expect("W15b base ring reward");
+            assert_eq!(equipped.as_ref(), Some(definition), "{base}");
+        } else {
+            assert!(equipped.is_none(), "{base}");
+        }
         assert!(
             definition
                 .as_ref()
                 .and_then(|definition| facts(native, definition))
                 .is_none(),
             "{base}"
+        );
+    }
+    for active in [3086, 3089, 3100] {
+        assert!(
+            native.item_policy(&key(active), "definition-r1").is_none(),
+            "{active}"
         );
     }
 }
