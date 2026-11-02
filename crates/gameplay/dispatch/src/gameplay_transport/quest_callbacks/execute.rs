@@ -160,6 +160,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
+        let mut success_message = if callback.storage.is_empty() {
+            callback.success_message.clone()
+        } else {
+            None
+        };
         if !callback.storage.is_empty() {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -194,7 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            match slot
+            let outcome = slot
                 .commit_world_callback(
                     self.root,
                     self.character,
@@ -208,12 +213,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     context,
                 )
-                .await
-            {
+                .await;
+            let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
+            match outcome {
                 Ok(
                     QuestTransitionOutcome::Committed(ref committed)
                     | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
+                    if fresh {
+                        success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                    }
                     #[cfg(test)]
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
                         return UseDisposition::Rejected;
@@ -242,7 +251,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
                     }
-                    if let Some(message) = &callback.failure_message {
+                    // Returning STEP callbacks emit their refusal after restoring
+                    // the origin in refuse_quest_step. Only one owner emits it.
+                    if (callback.trigger != Trigger::StepIn || !callback.return_on_failure)
+                        && let Some(message) = &callback.failure_message
+                    {
                         self.states.chat.push_quest_feedback(session, message);
                     }
                     return UseDisposition::Rejected;
@@ -284,6 +297,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
+        }
+        if let Some(message) = success_message {
+            self.states.chat.push_quest_feedback(session, &message);
         }
         UseDisposition::Committed
     }

@@ -146,9 +146,17 @@ impl DurabilityRoot {
         };
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        // Altar transitions cannot be invoked through a weaker generic quest caller.
+        // Native rules require a world occurrence even if a caller renames the
+        // transition. Inspect the effects, not only the authored callback key.
+        let native_world_rule = catalogue.transition(&request.transition_key).is_some_and(|transition| {
+            transition.effects.iter().any(|effect| matches!(
+                effect.effect,
+                oteryn_gameplay_quests::quest::QuestEffectKind::Native(_)
+            ))
+        });
+        // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
-            && oteryn_gameplay_quests::quest::world_callbacks::load()
+            && (native_world_rule || oteryn_gameplay_quests::quest::world_callbacks::load()
                 .map_err(|_| CharacterProgressionError::InvalidInput)?
                 .iter()
                 .any(|c| {
@@ -157,8 +165,9 @@ impl DurabilityRoot {
                             || c.item_on_target.is_some()
                             || c.minimum_level.is_some()
                             || c.experience.is_some()
-                            || c.monk_reward.is_some())
-                })
+                            || c.monk_reward.is_some()
+                            || c.native_rule.is_some())
+                }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
