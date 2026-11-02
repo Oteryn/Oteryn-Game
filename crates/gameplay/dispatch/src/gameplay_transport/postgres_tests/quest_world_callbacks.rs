@@ -480,6 +480,8 @@ mod assertions;
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
+#[path = "quest_world_callbacks/unnatural_selection.rs"]
+mod unnatural_selection;
 #[path = "quest_world_callbacks/lions_rock.rs"]
 mod lions_rock;
 pub(super) use scenario::scenario;

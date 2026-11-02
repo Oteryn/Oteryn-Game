@@ -39,7 +39,124 @@ pub struct Snapshot {
     pub questline: i64,
 }
 
-/// Closed until the dedicated quest commit installs its source rule.
-pub fn apply_dance(_tile: u8, _snapshot: Snapshot) -> Result<Snapshot, QuestRefusal> {
-    Err(QuestRefusal::NotSupported)
+/// Pure planning inside the existing fenced quest transaction. No inventory,
+/// achievement or presentation writes are hidden in this state transition.
+pub fn apply_dance(tile: u8, mut snapshot: Snapshot) -> Result<Snapshot, QuestRefusal> {
+    if tile == 0 || usize::from(tile) > TILES.len() {
+        return Err(QuestRefusal::NotSupported);
+    }
+    let expected = snapshot
+        .dance_status
+        .checked_sub(1)
+        .and_then(|index| usize::try_from(index).ok())
+        .and_then(|index| SEQUENCE.get(index))
+        .ok_or(QuestRefusal::StageMismatch)?;
+    if *expected != tile {
+        snapshot.dance_status = 1;
+        return Ok(snapshot);
+    }
+    snapshot.dance_status += 1;
+    if snapshot.dance_status == 17 {
+        snapshot.mission03 = 3;
+        snapshot.questline = 7;
+    }
+    Ok(snapshot)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dance_uses_every_source_tile_and_all_sixteen_steps() -> Result<(), QuestRefusal> {
+        let mut state = Snapshot {
+            dance_status: 1,
+            mission03: 2,
+            questline: 6,
+        };
+        for (index, tile) in SEQUENCE.into_iter().enumerate() {
+            state = apply_dance(tile, state)?;
+            assert_eq!(
+                state.dance_status,
+                i64::try_from(index).map_err(|_| QuestRefusal::OutOfRange)? + 2
+            );
+            if index < 15 {
+                assert_eq!((state.mission03, state.questline), (2, 6));
+            }
+        }
+        assert_eq!(
+            state,
+            Snapshot {
+                dance_status: 17,
+                mission03: 3,
+                questline: 7
+            }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn every_wrong_active_tile_resets_only_dance_status() -> Result<(), QuestRefusal> {
+        for (index, expected) in SEQUENCE.into_iter().enumerate() {
+            for tile in 1..=9 {
+                if tile == expected {
+                    continue;
+                }
+                let state = Snapshot {
+                    dance_status: i64::try_from(index).map_err(|_| QuestRefusal::OutOfRange)? + 1,
+                    mission03: 1,
+                    questline: 12,
+                };
+                assert_eq!(
+                    apply_dance(tile, state)?,
+                    Snapshot {
+                        dance_status: 1,
+                        ..state
+                    }
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn inactive_or_finished_dance_has_no_transition() {
+        for dance_status in [-1, 0, 17, i64::MAX] {
+            let state = Snapshot {
+                dance_status,
+                mission03: 2,
+                questline: 6,
+            };
+            assert_eq!(apply_dance(5, state), Err(QuestRefusal::StageMismatch));
+        }
+    }
+
+    #[test]
+    fn final_step_preserves_the_sources_absence_of_mission_guards() {
+        let state = Snapshot {
+            dance_status: 16,
+            mission03: 0,
+            questline: 15,
+        };
+        assert_eq!(
+            apply_dance(2, state),
+            Ok(Snapshot {
+                dance_status: 17,
+                mission03: 3,
+                questline: 7
+            })
+        );
+    }
+
+    #[test]
+    fn unknown_tile_never_changes_a_track() {
+        let state = Snapshot {
+            dance_status: 1,
+            mission03: 2,
+            questline: 6,
+        };
+        for tile in [0, 10, u8::MAX] {
+            assert_eq!(apply_dance(tile, state), Err(QuestRefusal::NotSupported));
+        }
+    }
 }

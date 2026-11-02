@@ -3708,6 +3708,520 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-ray-of-light",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1052,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 11
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13"
+      ],
+      "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-1",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-2",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-3",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 3
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-4",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-5",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 5
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-6",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 6
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-7",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 7
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-8",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-9",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 9
+      }
     }
   ]
 }
