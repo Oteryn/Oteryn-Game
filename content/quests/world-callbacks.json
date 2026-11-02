@@ -2131,6 +2131,321 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-bleeding",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57526,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/nine/owl",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/tem/bleeds",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Sorry",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:13"
+      ],
+      "success_message": "The arrow is still sticking in the tree. Fresh blood keeps trickling from the spot where the arrow hit the trunk."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-books",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57504,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Empty.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:13"
+      ],
+      "success_message": "You find nothing in the Ambassador's house. If he's in fact a traitor he got rid of any evidence that could incriminate him."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-mind-mirror-57505",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 57505,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33936,
+        "y": 31648,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:48",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:57"
+      ],
+      "success_message": "You were moved to the right brain side"
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-mind-mirror-57506",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 57506,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33899,
+        "y": 31644,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:65",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:64",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:73"
+      ],
+      "success_message": "You were moved to the left brain side"
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-owl",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57525,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/nine/owl",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Sorry",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:13"
+      ],
+      "success_message": "You discover an owl resting in a tree. Thats special, because you have never seen an owl in all of Kilmaresh."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-paper-scraps",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40031,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:32"
+      ],
+      "success_message": "Paper scraps lie scattered on the floor. It takes some time to put them back together. But it's only a badly written poem."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-roof",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50307,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:57",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:59",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:64"
+      ],
+      "success_message": "You find nothing in the Ambassador's house. If he's in fact a traitor he got rid of any evidence that could incriminate him."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-scrolls",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40029,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:39",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:41",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:42",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:49"
+      ],
+      "success_message": "You examine the scrolls carefully. Those are orders from Rathleton for the Ambassador. No sign of treason here."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-soot-paper",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40030,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:15"
+      ],
+      "success_message": "Documents were burnt here recently. Only the part of one scroll still lies in front of the chimney but it's too sooted to read."
     }
   ]
 }
