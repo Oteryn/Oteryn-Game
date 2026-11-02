@@ -1521,6 +1521,108 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:30-31"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28574",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28574,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33641,
+        "y": 31236,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28575",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28575,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33421,
+        "y": 31255,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/deeplings-boss-28576",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 28576,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33543,
+        "y": 31263,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/deeplings_world_change/crystal",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 13
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:4"
+      ]
     }
   ]
 }
