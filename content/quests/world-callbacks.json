@@ -1080,6 +1080,246 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:194",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:274"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-edron-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33185,
+          "y": 31794,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50978
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-four-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32585,
+          "y": 32557,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-edron",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32522,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51528
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33185,
+        "y": 31795,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-four",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32540,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51626
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32585,
+        "y": 32558,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-one-to-two",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32526,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51624
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32526,
+        "y": 32513,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-third-labelled-to-two",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32536,
+          "y": 32512,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51625
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32526,
+        "y": 32513,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-three-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32552,
+          "y": 32594,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/between-the-lines-two-to-one",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32526,
+          "y": 32512,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 51756
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32520,
+        "y": 32514,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
+      ]
     }
   ]
 }
