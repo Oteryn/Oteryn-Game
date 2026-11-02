@@ -110,11 +110,14 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
     // Capability 272 adds live Atelier balances and retains its prerequisite 148.
     // pkg4 adds 92 (zones_nologout raid messages), 168 (animus mastery) and 274 (loyalty skills).
+    // CL26 (#2816) adds the native client features 182 (daily reward), 224 (boss rewards, with
+    // its prerequisite 117), 233 (player typing) and 259 (public channels, with its prerequisite
+    // 80); the set stays strictly ascending as the hello encoder requires.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
             4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 60, 62, 63,
-            68, 72, 91, 92, 140, 147, 148, 168, 272, 274
+            68, 72, 80, 91, 92, 117, 140, 147, 148, 168, 182, 224, 233, 259, 272, 274
         ]
     );
 }

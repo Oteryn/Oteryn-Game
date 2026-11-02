@@ -1,0 +1,10 @@
+{
+  "mechanic": "0259-chat-public-channels",
+  "kind": "panels",
+  "id": "0259-chat-public-channels-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text",
+  "not_applicable": {
+    "settings": "Public room access and membership are server-owned."
+  }
+}
