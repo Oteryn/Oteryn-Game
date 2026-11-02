@@ -2103,6 +2103,384 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/rookie-wolf-found",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25025,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:81"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-wolf-sprint-exit",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25027,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua:104"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-mine-enter",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50344,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-mine-exit",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50345,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-wasp-lair",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50353,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission11_sweet_poison.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-fortress-water-found",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50359,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40058",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40058,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31977,
+        "y": 32174,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40059",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40059,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31964,
+        "y": 32174,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40060",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40060,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31958,
+        "y": 32184,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40061",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40061,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31955,
+        "y": 32187,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40062",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40062,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31970,
+        "y": 32183,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-energy-barrier-40063",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40063,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31954,
+        "y": 32174,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rookie-poisoned-water",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40012,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i12784",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:307"
+      ],
+      "experience": 50
+    },
+    {
       "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
       "quest": "oteryn:quest.adventures_of_galthen_quest",
       "trigger": "step_in",

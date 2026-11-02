@@ -11,6 +11,40 @@ fn named(suffix: &str) -> Result<Callback, String> {
 }
 
 #[test]
+fn quests6_rookie_water_uses_the_real_poison_and_advances_only_stage_seven() -> Result<(), String> {
+    let c = named("rookie-poisoned-water")?;
+    assert_eq!(c.quest, "oteryn:quest.the_rookie_guard_quest");
+    assert_eq!(c.selector.action, Some(40012));
+    assert_eq!(c.experience, Some(50));
+    let input = c.item_on_target.as_ref().ok_or("poison input")?;
+    assert_eq!(
+        (
+            input.item.as_str(),
+            input.count,
+            input.replacement.as_deref()
+        ),
+        ("oteryn:item.tibia.i12784", 1, None)
+    );
+    let loaded = super::super::loader::load_embedded_quest_state("quests6-test")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue.transition(&c.key).ok_or("transition")?;
+    let track = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission12";
+    let mut before = std::collections::BTreeMap::new();
+    for stage in [6, 8] {
+        before.insert(track.into(), stage);
+        assert!(catalogue.evaluate(transition, &before, 0).is_err());
+    }
+    before.insert(track.into(), 7);
+    let changes = catalogue
+        .evaluate(transition, &before, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(changes.len(), 1);
+    assert_eq!((changes[0].before, changes[0].after), (7, 8));
+    Ok(())
+}
+
+#[test]
 fn quests6_shadows_inkwell_needs_eight_successes_and_resets_the_same_counter() -> Result<(), String>
 {
     // Crystal's eight-success guard is retained per Q6-D17 and the coordinator's
