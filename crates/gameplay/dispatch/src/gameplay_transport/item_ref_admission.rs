@@ -74,7 +74,9 @@ pub(super) fn pinned_index<'g>(
     .then_some(index)
 }
 
-pub(super) use oteryn_gameplay_items::item_ref_admission::{definition_ref, generation_item_facts};
+pub(super) use oteryn_gameplay_items::item_ref_admission::{
+    definition_ref, generation_inbox_item_facts, generation_item_facts,
+};
 
 /// MAP-ITEM-REF-1 Part B: the bound corpses of the Channel as D85 objects (entity generation 0),
 /// read under the caller's runtime lock. A corpse whose definition the pinned index does not name
@@ -203,6 +205,33 @@ impl ItemWeightLookup for NativeItemWeights<'_> {
             return Err(ItemWeightRefused::DefinitionMismatch);
         }
         facts.weight.ok_or(ItemWeightRefused::Unknown)
+    }
+}
+
+/// Inbox custody admits the pinned immovable Hireling lamp without widening
+/// ordinary carried-item admission. Existing carried definitions keep their facts.
+pub(super) struct NativeInboxItemWeights<'a>(
+    pub(super) &'a NativeGameplayState,
+    pub(super) Option<&'a super::spell_premium_coordinator::SpellPremiumCoordinator>,
+);
+
+impl ItemWeightLookup for NativeInboxItemWeights<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        let facts = generation_inbox_item_facts(self.0, definition)
+            .map_err(|_| ItemWeightRefused::DefinitionMismatch)?;
+        if facts.stack == ItemStackClass::Unknown {
+            return Err(ItemWeightRefused::DefinitionMismatch);
+        }
+        facts.weight.ok_or(ItemWeightRefused::Unknown)
+    }
+
+    fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
+        self.1
+            .is_some_and(|owner| owner.view(account).premium_gate().premium_current())
     }
 }
 

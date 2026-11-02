@@ -31,10 +31,10 @@ pub(super) struct CarriedInputs {
     equipment_already_advanced: bool,
 }
 
-pub(super) async fn lock_inputs(
+pub(super) async fn lock_inputs<C: FeeChangeInput>(
     connection: &mut PgConnection,
     fence: &CurrentCharacterGameplayFence,
-    request: &FeeBurnRequest,
+    request: &FeeBurnRequest<C>,
     world: WorldId,
 ) -> Result<CarriedInputs> {
     let equipment: Option<Value> = sqlx::query_scalar(
@@ -57,6 +57,7 @@ pub(super) async fn lock_inputs(
     if rows.len() > COIN_INPUTS_MAX {
         return Err(FeeBurnError::CapacityExceeded);
     }
+    let facts = request.change.facts().ok_or(FeeBurnError::InvalidInput)?;
     let mut inputs = Vec::with_capacity(rows.len());
     let mut sources = Vec::with_capacity(rows.len());
     for row in rows {
@@ -64,9 +65,9 @@ pub(super) async fn lock_inputs(
             Coin::from_production_key(&row.try_get::<String, _>("definition_production_key")?)
                 .ok_or(DurabilityError::InvalidStoredState)?;
         let compatible = match coin {
-            Coin::Gold => &request.change.gold,
-            Coin::Platinum => &request.change.platinum,
-            Coin::Crystal => &request.change.crystal,
+            Coin::Gold => &facts.gold,
+            Coin::Platinum => &facts.platinum,
+            Coin::Crystal => &facts.crystal,
         };
         let revision: String = row.try_get("definition_revision_ref")?;
         if revision != compatible.revision_ref {
@@ -173,10 +174,10 @@ impl CarriedInputs {
             .any(|line| self.sources[line.input]["surface"] == 3)
     }
 
-    pub(super) fn audit_cause(
+    pub(super) fn audit_cause<C>(
         &self,
         fence: &CurrentCharacterGameplayFence,
-        request: &FeeBurnRequest,
+        request: &FeeBurnRequest<C>,
         plan: &FeePlan,
     ) -> Result<FeeBurnCauseV1> {
         let mut cause = request.cause.audit();
@@ -212,11 +213,11 @@ impl CarriedInputs {
         clippy::too_many_arguments,
         reason = "one source proof binds the existing fee transaction"
     )]
-    pub(super) async fn record(
+    pub(super) async fn record<C>(
         &self,
         connection: &mut PgConnection,
         fence: &CurrentCharacterGameplayFence,
-        request: &FeeBurnRequest,
+        request: &FeeBurnRequest<C>,
         plan: &FeePlan,
         backpack: Option<[u8; 16]>,
         capacity: usize,
@@ -284,11 +285,11 @@ impl CarriedInputs {
         Ok(())
     }
 
-    pub(super) async fn advance_equipment(
+    pub(super) async fn advance_equipment<C>(
         &self,
         connection: &mut PgConnection,
         fence: &CurrentCharacterGameplayFence,
-        request: &FeeBurnRequest,
+        request: &FeeBurnRequest<C>,
         plan: &FeePlan,
     ) -> Result<()> {
         if self.equipment_already_advanced || !self.equipment_used(plan) {

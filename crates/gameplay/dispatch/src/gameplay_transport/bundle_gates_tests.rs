@@ -774,6 +774,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
+    // Rotten Blood progression supplies its source combat room; qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),

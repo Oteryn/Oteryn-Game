@@ -362,6 +362,7 @@ impl ChannelRuntimeV1 {
                     floor: position.floor,
                 },
                 revision: 1,
+                last_translation_revision: 0,
                 facing: None,
             }),
             target_identity,
@@ -826,6 +827,14 @@ impl ChannelRuntimeV1 {
     ) -> Result<Vec<CompanionSnapshot>, CarrierError> {
         self.carrier
             .player_slot_index(&self.continuity, owner.0, session)?;
+        self.owned_companions_of_proven_player(owner, session)
+    }
+
+    fn owned_companions_of_proven_player(
+        &self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<Vec<CompanionSnapshot>, CarrierError> {
         let master = CompanionMaster {
             actor: owner,
             session,
@@ -1035,6 +1044,7 @@ impl ChannelRuntimeV1 {
                     floor: position.floor,
                 },
                 revision: 1,
+                last_translation_revision: 0,
                 facing: None,
             });
             *companion = Some(state);
@@ -1136,6 +1146,16 @@ impl ChannelRuntimeV1 {
         self.assert_actor_spell_unreserved(expected.actor)?;
         self.carrier
             .player_slot_index(&self.continuity, owner.0, session)?;
+        self.despawn_companion_of_proven_player(owner, session, expected)
+    }
+
+    fn despawn_companion_of_proven_player(
+        &mut self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        expected: &CompanionSnapshot,
+    ) -> Result<(), CarrierError> {
+        self.assert_actor_spell_unreserved(expected.actor)?;
         if expected.state.master
             != Some(CompanionMaster {
                 actor: owner,
@@ -1155,12 +1175,22 @@ impl ChannelRuntimeV1 {
         owner: ExactActorRef,
         session: GameSessionId,
     ) -> Result<usize, CarrierError> {
-        let owned = self.owned_companions(owner, session)?;
+        self.carrier
+            .player_slot_index(&self.continuity, owner.0, session)?;
+        self.remove_companions_of_proven_player(owner, session)
+    }
+
+    pub(super) fn remove_companions_of_proven_player(
+        &mut self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<usize, CarrierError> {
+        let owned = self.owned_companions_of_proven_player(owner, session)?;
         for creature in &owned {
             self.assert_actor_spell_unreserved(creature.actor)?;
         }
         for creature in &owned {
-            self.despawn_companion(owner, session, creature)?;
+            self.despawn_companion_of_proven_player(owner, session, creature)?;
         }
         Ok(owned.len())
     }

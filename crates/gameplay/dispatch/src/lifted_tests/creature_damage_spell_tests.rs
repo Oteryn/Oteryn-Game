@@ -19,12 +19,14 @@ use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+#[derive(Clone)]
 struct CurrentWorld {
     facts: SpellCombatFacts,
     missing: bool,
     blocked: bool,
     facing: Option<Facing>,
     extra: Vec<(ExactActorRef, GameSessionId, u32)>,
+    invisible: std::collections::BTreeSet<[u8; 16]>,
     levels: std::collections::BTreeMap<[u8; 16], u32>,
     party_area: Option<crate::content::ProjectV2ReferenceLevelOverride>,
     party_members: Vec<ExactActorRef>,
@@ -87,6 +89,7 @@ impl SpellWorldReader for CurrentWorld {
             facts.attack.session = s;
             facts.multiplier_ppm = *m;
         }
+        facts.attack.visible &= !self.invisible.contains(&t.placement_identity());
         if let Some(level) = self.levels.get(&t.placement_identity()) {
             facts.attack.player_level = *level;
         }
@@ -176,20 +179,36 @@ fn setup_named(
     ScopeRuntimeFence,
     RuntimeWorkStamp,
 ) {
-    let (mut r, t, s) = runtime_three_slots();
-    r.initialize_source_pinned_lab_player_position(
-        t,
-        s,
+    setup_named_at(
+        name,
+        index,
         MovementLocalPosition {
             x: 100,
             y: 100,
             floor: 7,
         },
     )
-    .expect("qualified fixture");
+}
+
+fn setup_named_at(
+    name: &str,
+    index: usize,
+    at: MovementLocalPosition,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    SpellSource,
+    ProfileAbilityProposal,
+    CurrentWorld,
+    ScopeRuntimeFence,
+    RuntimeWorkStamp,
+) {
+    let (mut r, t, s) = runtime_three_slots();
+    r.initialize_source_pinned_lab_player_position(t, s, at)
+        .expect("qualified fixture");
     let (records, profiles) = if matches!(
         name,
-        "radiant_acolyte" | "radiant_paragon" | "radiant_templar"
+        "radiant_acolyte" | "radiant_paragon" | "radiant_templar" | "phosphorus_final"
     ) {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
@@ -202,7 +221,7 @@ fn setup_named(
             .into_iter()
             .find(|record| record.profile.target.key == format!("oteryn:creature.{name}"))
             .and_then(|record| record.attack_definitions)
-            .expect("actual Radiant closure");
+            .expect("actual Summer closure");
         (definitions.records, definitions.profiles)
     } else if name == "bony_sea_devil" {
         let packet = native_windup_packet();
@@ -245,11 +264,7 @@ fn setup_named(
         .expect("qualified fixture");
     let issuer = r
         .admit_source_pinned_lab_creature(
-            MovementLocalPosition {
-                x: 101,
-                y: 100,
-                floor: 7,
-            },
+            MovementLocalPosition { x: at.x + 1, ..at },
             &cref.key,
             health as i64,
         )
@@ -386,6 +401,7 @@ fn setup_named(
             blocked: false,
             facing: None,
             extra: vec![],
+            invisible: Default::default(),
             levels: Default::default(),
             party_area: None,
             party_members: vec![],
@@ -400,7 +416,15 @@ fn composed_readonly_preflight_defers_actual_hp_and_rejects_missing_policy() {
     let (mut r, mut states, source, p, mut world, _, stamp) = setup();
     let owner = DamageSpellOwner::default();
     let prepared = owner
-        .prepare_target(&r, &source, &p, &mut world, stamp, None)
+        .prepare_target(
+            &r,
+            &source,
+            &p,
+            &mut world,
+            stamp,
+            None,
+            SemanticTimeMicros::from_micros(0),
+        )
         .expect("qualified fixture");
     assert!(!prepared.targets.is_empty());
     // A real one-point owner probe proves no primary HP was committed during preparation.
@@ -424,7 +448,15 @@ fn composed_readonly_preflight_defers_actual_hp_and_rejects_missing_policy() {
     );
     world.missing = true;
     assert!(matches!(
-        owner.prepare_target(&r, &source, &p, &mut world, stamp, None),
+        owner.prepare_target(
+            &r,
+            &source,
+            &p,
+            &mut world,
+            stamp,
+            None,
+            SemanticTimeMicros::from_micros(0)
+        ),
         Err(AttackError::MissingCombatFacts)
     ));
     assert_eq!(
@@ -1547,7 +1579,23 @@ fn independent_tile_combat_rejection_and_retired_scope() {
 }
 #[test]
 fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
-    let (mut r, mut v, s, p, mut w, f, stamp) = setup_named("abyssador", 1);
+    let (mut r, mut v, s, p, mut w, f, stamp) = setup_named_at(
+        "abyssador",
+        1,
+        MovementLocalPosition {
+            x: 33502,
+            y: 32740,
+            floor: 13,
+        },
+    );
+    r.install_hazard_level(p.target, w.facts.attack.session, 12)
+        .expect("selected level");
+    r.install_hazard_world_frame(
+        p.target,
+        w.facts.attack.session,
+        "oteryn:frame/world-bundle-v3",
+    )
+    .expect("source frame");
     assert_eq!((s.minimum, s.maximum), (0, 0));
     assert!(s.element.is_none());
     assert!(!s.conditions.is_empty());
@@ -1572,6 +1620,10 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
     let target = result.targets[0].1.as_ref().expect("actual store commit");
     assert!(target.condition_only_applied);
     assert!(target.damage.is_none());
+    assert_eq!(
+        r.last_hazard_critical_us(p.target, w.facts.attack.session),
+        None
+    );
     assert_eq!(
         o.execute(
             &mut r,
@@ -1599,6 +1651,212 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
         .health_after,
         184
     );
+}
+
+#[test]
+fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay() {
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
+    let (mut runtime, _, source, proposal, mut world, _, _) = setup_named("phosphorus_final", 1);
+    let mut vitals = ChannelSpellStates::default();
+    vitals
+        .initialize(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100_000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("living target for the complete source schedule");
+    let base_speed = u16::try_from(
+        vitals
+            .read_owned_player_state_test_snapshot(
+                &runtime,
+                proposal.target,
+                world.facts.attack.session,
+            )
+            .expect("current player")
+            .owned_base_speed(),
+    )
+    .expect("native speed");
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed,
+    });
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut spells = DamageSpellOwner::default();
+    let first = spells
+        .execute_current_target_condition(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("source under runtime fence");
+    let target = first.targets[0].1.as_ref().expect("current target");
+    assert!(target.condition_only_applied);
+    assert!(target.damage.is_none());
+    assert_eq!(
+        vitals
+            .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+            .expect("current health")
+            .0,
+        100_000
+    );
+    let tick_facts = TickFacts {
+        in_protection_zone: false,
+        standing_on_field: None,
+    };
+    assert_eq!(
+        vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([70; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(3_999_999),
+            )
+            .expect("before first delayed tick")
+            .damage,
+        0
+    );
+    // Crystal spells_phosphorus_curse.lua:8-13; floor each emitted float accumulator,
+    // never feed the floored result into the next multiplication.
+    let expected = [
+        300, 345, 396, 456, 524, 603, 693, 798, 917, 1055, 1213, 1395, 1605, 1845, 2122, 2441,
+        2807, 3228, 3712, 4269, 4909,
+    ];
+    // PHOSPHORUS_NATIVE_REGENERATION_ACCOUNTING: source_take_due advances the
+    // same always-on regeneration owner before applying the curse. This hungry
+    // Druid gains one HP per four credited owner seconds. The early call above
+    // credits one second at 3_999_999us; the 4_000_000us call is too early for the
+    // next second. Later two-second observations each credit one owner second,
+    // so the five health credits occur at these exact times (no catch-up burst).
+    let regeneration_due_us = [10_000_000, 18_000_000, 26_000_000, 34_000_000, 42_000_000];
+    let mut regenerated = 0;
+    let mut total = 0;
+    for (index, amount) in expected.into_iter().enumerate() {
+        let now = 4_000_000 + u64::try_from(index).expect("bounded tick") * 2_000_000;
+        let tick = vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([71; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(now),
+            )
+            .expect("existing canonical periodic owner");
+        assert_eq!(tick.damage, amount, "source tick {index}");
+        total += amount;
+        if regeneration_due_us.contains(&now) {
+            regenerated += 1;
+        }
+        assert_eq!(
+            vitals
+                .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+                .expect("current health after source tick")
+                .0,
+            100_000 - total + regenerated,
+            "source tick {index} retains ordinary regeneration"
+        );
+        if index == 2 {
+            assert_eq!(
+                spells
+                    .execute_current_target_condition(
+                        &mut runtime,
+                        stamp,
+                        &mut vitals,
+                        &source,
+                        &proposal,
+                        &mut world,
+                        SemanticTimeMicros::from_micros(now),
+                    )
+                    .expect("same cast does not restart the schedule"),
+                first
+            );
+        }
+    }
+    assert_eq!(
+        vitals
+            .source_player_health(&runtime, proposal.target, world.facts.attack.session)
+            .expect("current health")
+            .0,
+        100_000 - total + regenerated
+    );
+    assert_eq!(
+        vitals
+            .tick_source_player_conditions(
+                &mut runtime,
+                proposal.target,
+                world.facts.attack.session,
+                DecisionOccurrenceId::from_bytes([72; 16]),
+                tick_facts,
+                SemanticTimeMicros::from_micros(46_000_000),
+            )
+            .expect("no extra tick")
+            .damage,
+        0
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        spells.execute_current_target_condition(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(48_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn summer_phosphorus_curse_qualification_preserves_final_stats_and_rejects_drift() {
+    let document: crate::content::native_gameplay::CreatureProfilesDocument =
+        serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )))
+        .expect("actual pinned Summer provider");
+    let mut record = document
+        .records
+        .into_iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.phosphorus_final")
+        .expect("final profile");
+    let (_, _, source, _, _, _, _) = setup_named("phosphorus_final", 1);
+    use oteryn_gameplay_encounters::bosses::summer_2026::is_phosphorus_curse;
+    assert!(is_phosphorus_curse(&record, &source));
+    assert!(
+        record
+            .source_qualification
+            .as_deref()
+            .expect("source limitation")
+            .contains("W16_ADMISSION_AND_PHASE_SOURCE_MISSING")
+    );
+    assert!(matches!(&record.profile.data, Data::Creature(profile)
+        if profile.health == Some(90_000) && profile.experience == Some(0)));
+    let closure = record.attack_definitions.as_ref().expect("closure");
+    assert!(closure.profiles.contains(&record.profile));
+    let mut wrong = source.clone();
+    wrong.minimum = 1;
+    assert!(!is_phosphorus_curse(&record, &wrong));
+    let mut wrong = source.clone();
+    wrong.conditions.clear();
+    assert!(!is_phosphorus_curse(&record, &wrong));
+    if let Some(Data::Behavior(behavior)) = record.behavior.as_mut().map(|p| &mut p.data) {
+        behavior.attacks[1].interval_ms = 10_000;
+    }
+    assert!(!is_phosphorus_curse(&record, &source));
 }
 
 #[test]
@@ -2989,4 +3247,1446 @@ fn dmg3_earth_death_target_sources_read_protection_and_replay() {
             before
         );
     }
+}
+
+// Lab admission intentionally does not install a live CreaturePolicy. Hazard must
+// still prove a current wild monster, so use the existing actual source decoder.
+fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
+    let policies = crate::content::native_gameplay::callback_source_native_test_policies(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/presentations/definitions/spell-native-profiles.json"
+        )),
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("actual native Creature policies");
+    runtime
+        .install_companion_policies(policies)
+        .expect("pinned policy table");
+    runtime
+        .install_creature_policy(actor, key)
+        .expect("actual wild Creature policy");
+    assert!(
+        runtime
+            .companion_snapshot_including_dead(actor)
+            .expect("current monster")
+            .state
+            .master
+            .is_none()
+    );
+}
+
+/// A native scheduled cast reaches the real HP owner with the session's durable selection
+/// projection. The actual map admission owns frame qualification; this fixture supplies it.
+#[test]
+fn hazard_monster_spell_uses_current_zone_frame_rounding_and_replay() {
+    for (at, frame, expected) in [
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: 13,
+            },
+            "oteryn:frame/world-bundle-v3",
+            5,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: 13,
+            },
+            "engineering-frame",
+            4,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33640,
+                y: 32920,
+                floor: 15,
+            },
+            "oteryn:frame/world-bundle-v3",
+            4,
+        ),
+        (
+            MovementLocalPosition {
+                x: 33502,
+                y: 32740,
+                floor: -13,
+            },
+            "oteryn:frame/world-bundle-v3",
+            4,
+        ),
+    ] {
+        let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) =
+            setup_named_at("1st_mate_ratticus", 1, at);
+        qualify_hazard_monster(
+            &mut runtime,
+            proposal.issuer,
+            "oteryn:creature.1st_mate_ratticus",
+        );
+        let session = world.facts.attack.session;
+        runtime
+            .install_hazard_level(proposal.target, session, 12)
+            .expect("selected level");
+        runtime
+            .install_hazard_world_frame(proposal.target, session, frame)
+            .expect("frame projection");
+        // A critical from another attack owner suppresses this spell's critical, not its boost.
+        runtime
+            .record_hazard_critical(proposal.target, session, 1_000_000)
+            .expect("shared critical clock");
+        source.minimum = 9;
+        source.maximum = 9;
+        source.reference_level = None;
+        source.critical = None;
+        world.facts.multiplier_ppm = 500_000;
+        let mut owner = DamageSpellOwner::default();
+        let hit = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("native spell cast");
+        let receipt = hit.targets[0]
+            .1
+            .as_ref()
+            .expect("target")
+            .damage
+            .expect("real HP receipt");
+        assert_eq!(receipt.applied, expected);
+        assert_eq!(receipt.health_after, FACTS.max_health - expected);
+        assert_eq!(
+            runtime.last_hazard_critical_us(proposal.target, session),
+            Some(1_000_000)
+        );
+        assert_eq!(
+            owner
+                .execute(
+                    &mut runtime,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000)
+                )
+                .expect("retry"),
+            hit
+        );
+        assert_eq!(
+            runtime.last_hazard_critical_us(proposal.target, session),
+            Some(1_000_000)
+        );
+    }
+}
+
+#[test]
+fn hazard_critical_window_is_shared_and_bound_to_the_exact_player_session() {
+    use oteryn_gameplay_combat::hazard::incoming_damage;
+    let at = MovementLocalPosition {
+        x: 33502,
+        y: 32740,
+        floor: 13,
+    };
+    let (mut runtime, _, _, proposal, world, _, _) = setup_named_at("1st_mate_ratticus", 1, at);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.1st_mate_ratticus",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .install_hazard_level(proposal.target, session, 12)
+        .expect("selected level");
+    runtime
+        .install_hazard_world_frame(proposal.target, session, "oteryn:frame/world-bundle-v3")
+        .expect("source frame");
+    let first =
+        incoming_damage(&runtime, &world.facts.attack, 9, 0, 1_000_000, false).expect("first hit");
+    assert!(first.critical);
+    assert_eq!(first.amount, 18); // ceil(ceil(9 * 1.5275) * 1.24)
+    runtime
+        .record_hazard_critical(proposal.target, session, 1_000_000)
+        .expect("committed hit");
+    let next = incoming_damage(&runtime, &world.facts.attack, 9, 0, 2_999_999, false)
+        .expect("inside interval");
+    assert!(!next.critical);
+    assert_eq!(next.amount, 12);
+    assert!(
+        incoming_damage(&runtime, &world.facts.attack, 9, 0, 3_000_000, false)
+            .expect("exact interval")
+            .critical
+    );
+    assert!(
+        !incoming_damage(&runtime, &world.facts.attack, 9, 0, 3_000_000, true)
+            .expect("already critical")
+            .critical
+    );
+    assert_eq!(
+        incoming_damage(&runtime, &world.facts.attack, 0, 0, 3_000_000, false).expect("zero"),
+        oteryn_gameplay_combat::hazard::IncomingHazardDamage {
+            amount: 0,
+            critical: false
+        }
+    );
+    let stale = GameSessionId::decode(&test_uuid(0x72)).expect("different session");
+    assert!(
+        runtime
+            .record_hazard_critical(proposal.target, stale, 4_000_000)
+            .is_err()
+    );
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, stale),
+        None
+    );
+    assert!(!runtime.hazard_world_frame(proposal.target, stale));
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, session),
+        Some(1_000_000)
+    );
+}
+
+#[test]
+fn hazard_mana_drain_never_gains_hp_damage_or_consumes_critical_window() {
+    let at = MovementLocalPosition {
+        x: 33502,
+        y: 32740,
+        floor: 13,
+    };
+    let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) =
+        setup_named_at("an_astral_glyph", 3, at);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.an_astral_glyph",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .install_hazard_level(proposal.target, session, 12)
+        .expect("selected level");
+    runtime
+        .install_hazard_world_frame(proposal.target, session, "oteryn:frame/world-bundle-v3")
+        .expect("source frame");
+    source.minimum = 9;
+    source.maximum = 9;
+    source.element = Some("mana_drain".into());
+    source.reference_level = None;
+    source.critical = None;
+    let hit = DamageSpellOwner::default()
+        .execute(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("mana drain");
+    let target = hit.targets[0].1.as_ref().expect("target");
+    assert!(target.damage.is_none());
+    assert_eq!(target.mana.expect("MP receipt").applied, 9);
+    assert_eq!(
+        runtime.last_hazard_critical_us(proposal.target, session),
+        None
+    );
+}
+
+#[test]
+fn monster_area_invisible_bystander_keeps_damage_conditions_protections_and_replay() {
+    // Crystal 201189f combat.cpp:1626-1658 enumerates area recipients without
+    // applying AI target-acquisition visibility to every affected tile occupant.
+    for (name, index) in [("1st_mate_ratticus", 1), ("abyssador", 1)] {
+        for protection in 0..3 {
+            let (mut runtime, mut states, source, proposal, mut world, _, _) =
+                setup_named(name, index);
+            assert!(source.area.is_some(), "actual source area");
+            world.facts.condition_policy = Some(CurrentConditionPolicy {
+                immunities: vec![],
+                base_speed: 180,
+            });
+            let (bystander, session) = chain_second(&mut runtime, &mut states, &mut world);
+            world.invisible.insert(bystander.placement_identity());
+            assert!(
+                world.facts.attack.visible,
+                "the selected target remains visible"
+            );
+            match protection {
+                1 => world.facts.attack.target_pz = true,
+                2 => world.facts.attack.target_protected = true,
+                _ => {}
+            }
+            let stamp = runtime.issue_owner_work().expect("current area work");
+            install_recipient_invisibility(&runtime, &mut states, bystander, session, stamp);
+            let before = states
+                .read_owned_player_state_test_snapshot(&runtime, bystander, session)
+                .expect("actual bystander before the cast")
+                .clone();
+            let mut owner = DamageSpellOwner::default();
+            let first = owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2_000_000),
+                )
+                .expect("actual scheduled area source");
+            let applied = states
+                .read_owned_player_state_test_snapshot(&runtime, bystander, session)
+                .expect("actual bystander after the cast")
+                .clone();
+            if protection == 0 {
+                assert_eq!(
+                    first.targets.len(),
+                    2,
+                    "visible target and invisible bystander"
+                );
+                let hit = first
+                    .targets
+                    .iter()
+                    .find(|(actor, _)| *actor == bystander)
+                    .expect("invisible bystander is an area recipient")
+                    .1
+                    .as_ref()
+                    .expect("actual bystander owner receipt");
+                if source.conditions.is_empty() {
+                    assert!(hit.damage.is_some_and(|damage| damage.applied > 0));
+                    assert!(applied.vitals().health < before.vitals().health);
+                } else {
+                    assert!(hit.condition_only_applied);
+                    for condition in &source.conditions {
+                        assert!(
+                            applied
+                                .owned_conditions()
+                                .get(condition.condition_type().conflict_key())
+                                .is_some()
+                        );
+                    }
+                    assert_eq!(applied.vitals(), before.vitals());
+                }
+            } else {
+                assert!(
+                    first.targets.is_empty(),
+                    "current combat protection still applies"
+                );
+                assert_eq!(applied, before);
+            }
+            assert_eq!(
+                owner
+                    .execute_current(
+                        &mut runtime,
+                        stamp,
+                        &mut states,
+                        &source,
+                        &proposal,
+                        &mut world,
+                        SemanticTimeMicros::from_micros(9_000_000),
+                    )
+                    .expect("retained area occurrence"),
+                first
+            );
+            assert_eq!(
+                states.read_owned_player_state_test_snapshot(&runtime, bystander, session),
+                Some(&applied),
+                "replay cannot apply area damage or conditions twice"
+            );
+        }
+    }
+}
+
+#[test]
+fn monster_direct_invisible_target_keeps_visibility_gate_and_replay() {
+    let (mut runtime, mut states, source, proposal, mut world, _, _) = setup_named("hunter", 1);
+    assert!(source.area.is_none());
+    assert!(source.chain.is_none());
+    world.invisible.insert(proposal.target.placement_identity());
+    let stamp = runtime.issue_owner_work().expect("current direct work");
+    install_recipient_invisibility(
+        &runtime,
+        &mut states,
+        proposal.target,
+        world.facts.attack.session,
+        stamp,
+    );
+    let before = states
+        .read_owned_player_state_test_snapshot(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("actual direct target before refusal")
+        .clone();
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("invisible direct target is excluded");
+    assert!(first.targets.is_empty());
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(9_000_000),
+            )
+            .expect("retained direct-target refusal"),
+        first
+    );
+    assert_eq!(
+        states.read_owned_player_state_test_snapshot(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session
+        ),
+        Some(&before)
+    );
+}
+
+#[test]
+fn monster_direct_current_sources_replay_real_damage_and_owned_conditions() {
+    for (name, index) in [
+        ("hunter", 1),
+        ("radiant_acolyte", 1),
+        ("abyssador", 1),
+        ("blightwalker", 3),
+    ] {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
+        world.facing = Some(Facing::West);
+        world.facts.condition_policy = Some(CurrentConditionPolicy {
+            immunities: vec![],
+            base_speed: 180,
+        });
+        let session = world.facts.attack.session;
+        let stamp = runtime.issue_owner_work().expect("current owner work");
+        let mut owner = DamageSpellOwner::default();
+        let first = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("generic source reaches existing current owners");
+        assert_eq!(first.targets.len(), 1, "{name} source target");
+        let target = first.targets[0].1.as_ref().expect("real player commit");
+        if source.maximum == 0 {
+            assert!(
+                target.condition_only_applied,
+                "{name} condition-only source"
+            );
+            assert!(target.damage.is_none());
+        } else {
+            assert!(target.damage.is_some(), "{name} primary source damage");
+        }
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("committed player")
+            .clone();
+        for definition in &source.conditions {
+            assert!(
+                committed
+                    .owned_conditions()
+                    .get(definition.condition_type().conflict_key())
+                    .is_some(),
+                "{name} source condition is installed in the actual owned store"
+            );
+        }
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000),
+                )
+                .expect("retained source occurrence"),
+            first,
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("unchanged player on replay"),
+            &committed,
+        );
+        runtime.retire_owner_cycle();
+        assert_eq!(
+            owner.execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(10_000_000),
+            ),
+            Err(AttackError::StaleOwner),
+        );
+    }
+}
+
+#[test]
+fn monster_current_composite_keeps_typed_death_resistance_conditions_and_replay() {
+    let (mut runtime, mut vitals, mut source, proposal, mut world, _, _) =
+        setup_named("blightwalker", 3);
+    // Explicit numerical fixture: keep the admitted source/condition path, with
+    // fixed 101 damage so the existing 1.01% Death resistance has a visible effect.
+    source.minimum = 101;
+    source.maximum = 101;
+    source.armor = false;
+    assert_eq!(source.element.as_deref(), Some("death"));
+    assert!(!source.conditions.is_empty());
+    world.facing = Some(Facing::West);
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed: 180,
+    });
+    let session = world.facts.attack.session;
+    let mut player = crate::spell::cast::PlayerSpellState::new(
+        crate::spell::cast::CharacterCastFacts {
+            level: 500,
+            ..FACTS
+        },
+        0,
+        0,
+    )
+    .expect("eligible numerical fixture");
+    player
+        .apply_owner_promotion_transition(true, true, Some(10_000_000))
+        .expect("current promoted Premium player");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .sockets
+        .gem_values_milli
+        .insert(("Death Resistance".into(), "".into()), 1_010);
+    player.install_wheel_effects(effects);
+    assert!(player.wheel_effects_at(2_000_000).is_some());
+    assert_eq!(
+        player.after_player_block(
+            101,
+            crate::player_lethal::PlayerHitKind::Death,
+            0,
+            2_000_000
+        ),
+        Some(99)
+    );
+    world.facts.attack.player_level = 500;
+    world.facts.attack.revision = player.revision();
+    let before_revision = player.revision();
+    let health = player.vitals().health;
+    assert!(vitals.replace_owned_player_state_test_fixture(
+        &runtime,
+        proposal.target,
+        session,
+        player
+    ));
+    let stamp = runtime.issue_owner_work().expect("current work");
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("typed composite through actual damage owner");
+    let receipt = first.targets[0]
+        .1
+        .as_ref()
+        .expect("owned target")
+        .damage
+        .expect("HP receipt");
+    assert_eq!(receipt.applied, 99);
+    assert_eq!(receipt.vitals_revision, before_revision + 1);
+    assert_eq!(receipt.health_after, health - 99);
+    let committed = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("committed player")
+        .clone();
+    assert_eq!(committed.revision(), receipt.vitals_revision);
+    for definition in &source.conditions {
+        assert!(
+            committed
+                .owned_conditions()
+                .get(definition.condition_type().conflict_key())
+                .is_some()
+        );
+    }
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(3_000_000),
+            )
+            .expect("replay"),
+        first
+    );
+    assert_eq!(
+        vitals.read_owned_player_state_test_snapshot(&runtime, proposal.target, session),
+        Some(&committed)
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        owner.execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(4_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn monster_direct_current_missing_policy_and_protection_do_not_mutate_player() {
+    for mode in 0..3 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+            setup_named("abyssador", 1);
+        let session = world.facts.attack.session;
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("player before refusal")
+            .clone();
+        match mode {
+            0 => world.missing = true,
+            1 => world.facts.condition_policy = None,
+            _ => world.facts.attack.target_protected = true,
+        }
+        let stamp = runtime.issue_owner_work().expect("current owner work");
+        let result = DamageSpellOwner::default().execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        );
+        if mode == 2 {
+            assert!(
+                result
+                    .expect("protected target is excluded")
+                    .targets
+                    .is_empty()
+            );
+        } else {
+            assert_eq!(result, Err(AttackError::MissingCombatFacts));
+        }
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("refused player unchanged"),
+            &before,
+        );
+    }
+}
+
+#[test]
+fn monster_source_geometry_shares_target_caster_and_direction_centers() {
+    use crate::content::ProjectV2AbilityArea;
+    let (_, _, mut source, _, _, _, _) = setup();
+    let from = MovementLocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let to = MovementLocalPosition {
+        x: 104,
+        y: 101,
+        floor: 7,
+    };
+    // Geometry probes retain no authority and commit no source effects.
+    source.area = None;
+    assert_eq!(
+        source.target_tiles(from, to, None).expect("direct tile"),
+        vec![(104, 101, 7)]
+    );
+    source.area = Some(ProjectV2AbilityArea::Circle { radius_tiles: 2 });
+    source.needs_target = true;
+    source.needs_direction = false;
+    assert_eq!(
+        source.cast_center(from, to, None).expect("target center"),
+        to
+    );
+    let mut tiles = source.target_tiles(from, to, None).expect("source radius2");
+    tiles.sort_unstable();
+    assert_eq!(
+        tiles,
+        vec![
+            (103, 101, 7),
+            (104, 100, 7),
+            (104, 101, 7),
+            (104, 102, 7),
+            (105, 101, 7)
+        ]
+    );
+    source.needs_target = false;
+    assert_eq!(
+        source.cast_center(from, to, None).expect("caster center"),
+        from
+    );
+    source.needs_direction = true;
+    source.area = Some(ProjectV2AbilityArea::Beam {
+        length_tiles: 3,
+        spread_tiles: 0,
+    });
+    let mut tiles = source
+        .target_tiles(from, to, Some(Facing::East))
+        .expect("source beam");
+    tiles.sort_unstable();
+    assert_eq!(tiles, vec![(101, 100, 7), (102, 100, 7), (103, 100, 7)]);
+    assert_eq!(
+        source.target_tiles(from, to, None),
+        Err(AttackError::MissingCombatFacts)
+    );
+    assert_eq!(
+        source.target_tiles(
+            from,
+            MovementLocalPosition { floor: 8, ..to },
+            Some(Facing::East)
+        ),
+        Err(AttackError::OutOfRange)
+    );
+    assert_eq!(
+        source.cast_center(
+            MovementLocalPosition {
+                x: i32::MAX,
+                ..from
+            },
+            to,
+            Some(Facing::East)
+        ),
+        Err(AttackError::NumericOverflow)
+    );
+}
+
+#[test]
+fn monster_current_variant_uses_one_source_child_for_geometry_commit_and_replay() {
+    let packet = native_variant_packet();
+    let case = packet["cases"]
+        .as_array()
+        .expect("native variant cases")
+        .iter()
+        .find(|case| case["creature"]["key"] == "oteryn:creature.barbarian_brutetamer")
+        .expect("native barbarian variant");
+    let index = case["entry"].as_u64().expect("source entry") as usize;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("barbarian_brutetamer", index);
+    world.facing = Some(Facing::West);
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed: 180,
+    });
+    let (selected, child) = source
+        .selected_variant(&proposal)
+        .expect("source selector")
+        .expect("variant selected");
+    let child_identity = child.variant_child.clone().expect("source child identity");
+    let from = runtime
+        .read_actor_position(proposal.issuer)
+        .expect("issuer position")
+        .position();
+    let to = runtime
+        .read_actor_position(proposal.target)
+        .expect("target position")
+        .position();
+    let tiles = child
+        .target_tiles(from, to, world.facing)
+        .expect("selected child geometry");
+    assert!(tiles.contains(&(to.x, to.y, to.floor)));
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("current variant owner");
+    let receipt = first
+        .source_variant
+        .as_ref()
+        .expect("retained selector receipt");
+    assert_eq!((receipt.index, &receipt.child), (selected, &child_identity));
+    assert_eq!(receipt.parent, proposal.ability);
+    assert_eq!(first.targets.len(), 1);
+    assert!(
+        first.targets[0]
+            .1
+            .as_ref()
+            .expect("current player condition")
+            .condition_only_applied
+    );
+    let session = world.facts.attack.session;
+    let committed = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("committed variant condition")
+        .clone();
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(9_000_000),
+            )
+            .expect("variant replay"),
+        first
+    );
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("same condition state"),
+        &committed
+    );
+}
+
+#[test]
+fn monster_current_windup_uses_due_owner_and_revalidates_policy() {
+    for mode in 0..4 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) = windup_setup();
+        let stamp = runtime.issue_owner_work().expect("current windup work");
+        let session = world.facts.attack.session;
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("owned player before windup")
+            .clone();
+        let mut owner = DamageSpellOwner::default();
+        let start = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("current source windup");
+        assert!(start.targets.is_empty());
+        assert_eq!(
+            owner.next_windup_due_time().expect("actual timer").get(),
+            4_000_000
+        );
+        let pending = owner.pending_windups();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].1.target, proposal.target);
+        assert_eq!(pending[0].2, session);
+        assert_eq!(pending[0].3.get(), 4_000_000);
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(3_000_000),
+                )
+                .expect("start replay"),
+            start
+        );
+        let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
+            SemanticTimeMicros::from_micros(3_999_999),
+        );
+        assert!(
+            owner
+                .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+                .expect("not due")
+                .is_empty()
+        );
+        match mode {
+            1 => world.facts.attack.target_pz = true,
+            2 => world.missing = true,
+            3 => {
+                runtime
+                    .remove_test_actor(proposal.issuer)
+                    .expect("source removed before due");
+            }
+            _ => {}
+        }
+        clock.advance(1);
+        let fired = owner
+            .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+            .expect("current due lane");
+        assert_eq!(fired.len(), 1);
+        match mode {
+            0 => assert!(
+                fired[0].1.as_ref().expect("due cast").targets[0]
+                    .1
+                    .as_ref()
+                    .expect("current condition")
+                    .condition_only_applied
+            ),
+            1 => assert!(
+                fired[0]
+                    .1
+                    .as_ref()
+                    .expect("protected target skip")
+                    .targets
+                    .is_empty()
+            ),
+            2 => assert_eq!(fired[0].1, Err(AttackError::MissingCombatFacts)),
+            _ => assert_eq!(fired[0].1, Err(AttackError::StaleIssuer)),
+        }
+        assert_eq!(owner.next_windup_due_time(), None);
+        assert!(owner.pending_windups().is_empty());
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("owned player after windup")
+            .clone();
+        if mode == 0 {
+            assert_eq!(committed.revision(), before.revision() + 1);
+            assert_eq!(committed.vitals(), before.vitals());
+        } else {
+            assert_eq!(committed, before);
+        }
+        assert!(
+            owner
+                .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+                .expect("due replay empty")
+                .is_empty()
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("replayed store"),
+            &committed
+        );
+    }
+}
+
+fn install_recipient_invisibility(
+    runtime: &ChannelRuntimeV1,
+    vitals: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    stamp: RuntimeWorkStamp,
+) {
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let invisible = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+        "test.source.recipient.invisible",
+        1,
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible { duration_ms: 5000 },
+    )
+    .expect("qualified invisibility");
+    let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+        now: 1_000_000,
+        base_speed: 180,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([92; 16]),
+    };
+    assert!(vitals.install_owned_player_self_use_test_condition(
+        runtime,
+        runtime.owner_fence().expect("current owner"),
+        stamp,
+        actor,
+        session,
+        &invisible,
+        &facts,
+    ));
+    assert_eq!(
+        vitals.native_actor_invisible(
+            runtime,
+            actor,
+            Some(session),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000_000),
+        ),
+        Some(true)
+    );
+}
+
+#[test]
+fn monster_current_chain_still_requires_visible_initial_target() {
+    use crate::creature_chain_attack::ChainOwner;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    let session = world.facts.attack.session;
+    let stamp = runtime.issue_owner_work().expect("current chain work");
+    install_recipient_invisibility(&runtime, &mut vitals, proposal.target, session, stamp);
+    world.invisible.insert(proposal.target.placement_identity());
+    let before = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("invisible initial player")
+        .clone();
+    let mut map = CurrentChainMap { missing: false };
+    let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
+    let now = SemanticTimeMicros::from_micros(2_000_000);
+    assert_eq!(
+        chain.schedule_current(
+            &runtime, stamp, &source, &proposal, &mut world, &mut map, now,
+        ),
+        Err(AttackError::StaleTarget)
+    );
+    // Acquiring visibility later cannot turn the refused occurrence into a cast.
+    world.invisible.clear();
+    assert_eq!(
+        chain.schedule_current(
+            &runtime, stamp, &source, &proposal, &mut world, &mut map, now,
+        ),
+        Err(AttackError::StaleTarget)
+    );
+    assert_eq!(chain.next_due_time(), None);
+    assert!(chain.pending_sources().expect("no pending cast").is_empty());
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("unchanged invisible initial player"),
+        &before
+    );
+}
+
+#[test]
+fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
+    use crate::creature_chain_attack::ChainOwner;
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    for mode in 0..3 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+            setup_named("bony_sea_devil", 5);
+        let (second, session) = chain_second(&mut runtime, &mut vitals, &mut world);
+        let mut map = CurrentChainMap { missing: false };
+        let stamp = runtime.issue_owner_work().expect("current chain work");
+        // Crystal combat.cpp:1980-1984 does not require a visible secondary hop.
+        // Install the real owned condition, then project its independent combat fact.
+        install_recipient_invisibility(&runtime, &mut vitals, second, session, stamp);
+        world.invisible.insert(second.placement_identity());
+        let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
+        let damage = DamageSpellOwner::default();
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(2_000_000));
+        let token = chain
+            .schedule_current(
+                &runtime,
+                stamp,
+                &source,
+                &proposal,
+                &mut world,
+                &mut map,
+                clock.now(),
+            )
+            .expect("current source chain");
+        assert_eq!(
+            chain
+                .schedule_current(
+                    &runtime,
+                    stamp,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    &mut map,
+                    clock.now(),
+                )
+                .expect("schedule replay"),
+            token
+        );
+        assert_eq!(chain.next_due_time(), Some(clock.now()));
+        let first = chain
+            .run_due_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &mut world,
+                &mut map,
+                &clock,
+            )
+            .expect("first exact target");
+        assert_eq!(first.len(), 1);
+        assert!(
+            first[0].2.as_ref().expect("first hit").targets[0]
+                .1
+                .as_ref()
+                .expect("first damage")
+                .damage
+                .expect("damage receipt")
+                .applied
+                > 0
+        );
+        assert_eq!(
+            chain.next_due_time().expect("second deadline").get(),
+            2_050_000
+        );
+        let pending = chain.pending_sources().expect("next source metadata");
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            (pending[0].proposal.target, pending[0].session),
+            (second, session)
+        );
+        assert_eq!(pending[0].due.get(), 2_050_000);
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, second, session)
+            .expect("second store before due")
+            .clone();
+        clock.advance(49_999);
+        assert!(
+            chain
+                .run_due_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &damage,
+                    &mut world,
+                    &mut map,
+                    &clock,
+                )
+                .expect("second not yet due")
+                .is_empty()
+        );
+        if mode == 1 {
+            map.missing = true;
+        }
+        if mode == 2 {
+            world.facts.attack.target_protected = true;
+        }
+        clock.advance(1);
+        let next = chain
+            .run_due_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &mut world,
+                &mut map,
+                &clock,
+            )
+            .expect("due step");
+        assert_eq!(next.len(), 1);
+        match mode {
+            0 => assert!(
+                next[0].2.as_ref().expect("second hit").targets[0]
+                    .1
+                    .as_ref()
+                    .expect("second damage")
+                    .damage
+                    .expect("second receipt")
+                    .applied
+                    > 0
+            ),
+            1 => assert_eq!(next[0].2, Err(AttackError::MissingCombatFacts)),
+            _ => assert!(
+                next[0]
+                    .2
+                    .as_ref()
+                    .expect("protected skip")
+                    .targets
+                    .is_empty()
+            ),
+        }
+        assert_eq!(
+            chain.receipts(token).expect("retained step receipts").len(),
+            2
+        );
+        assert_eq!(chain.next_due_time(), None);
+        assert!(
+            chain
+                .pending_sources()
+                .expect("finished metadata")
+                .is_empty()
+        );
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, second, session)
+            .expect("second store after due")
+            .clone();
+        if mode == 0 {
+            assert_ne!(committed, before);
+        } else {
+            assert_eq!(committed, before);
+        }
+        map.missing = false;
+        world.facts.attack.target_protected = false;
+        assert!(
+            chain
+                .run_due_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &damage,
+                    &mut world,
+                    &mut map,
+                    &clock,
+                )
+                .expect("no repeated step")
+                .is_empty()
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, second, session)
+                .expect("same retained state"),
+            &committed
+        );
+    }
+}
+
+#[test]
+fn monster_current_chain_retired_owner_cannot_consume_pending_step() {
+    use crate::creature_chain_attack::ChainOwner;
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    let mut map = CurrentChainMap { missing: false };
+    let stamp = runtime.issue_owner_work().expect("current work");
+    let mut chain = ChainOwner::new_current(&runtime).expect("owner");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+    chain
+        .schedule_current(
+            &runtime,
+            stamp,
+            &source,
+            &proposal,
+            &mut world,
+            &mut map,
+            clock.now(),
+        )
+        .expect("pending current cast");
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        chain.run_due_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &DamageSpellOwner::default(),
+            &mut world,
+            &mut map,
+            &clock,
+        ),
+        Err(AttackError::StaleOwner)
+    );
+    assert_eq!(chain.next_due_time(), Some(clock.now()));
+    assert_eq!(
+        chain
+            .pending_sources()
+            .expect("pending source retained")
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn monster_windup_factory_receives_exact_source_target_and_supplied_work() {
+    use crate::foundation::owner_timer::VirtualOwnerClock;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = windup_setup();
+    let stamp = runtime.issue_owner_work().expect("scheduled work");
+    let session = world.facts.attack.session;
+    let mut owner = DamageSpellOwner::default();
+    owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("pending windup");
+    let due_stamp = runtime
+        .issue_owner_work()
+        .expect("prepared current due work");
+    let binding = runtime.binding();
+    let (_, wrong_stamp) = crate::foundation::crystal_timer_fixture(
+        binding.runtime_scope(),
+        crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
+            .expect("different generation"),
+    )
+    .expect("independent stale work");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(4_000_000));
+    let mut called = 0;
+    assert_eq!(
+        owner.run_windup_due_current_with(
+            &mut runtime,
+            wrong_stamp,
+            &mut vitals,
+            &clock,
+            |_, _, _, _| {
+                called += 1;
+                None
+            },
+        ),
+        Err(AttackError::StaleOwner)
+    );
+    assert_eq!(called, 0);
+    assert_eq!(owner.pending_windups().len(), 1);
+    let fired = owner
+        .run_windup_due_current_with(
+            &mut runtime,
+            due_stamp,
+            &mut vitals,
+            &clock,
+            |actual_source, actual_proposal, actual_session, actual_stamp| {
+                called += 1;
+                assert_eq!(actual_source.fingerprint, source.fingerprint);
+                assert_eq!(actual_proposal, &proposal);
+                assert_eq!(actual_session, session);
+                assert_eq!(actual_stamp, due_stamp);
+                Some(Box::new(world.clone()) as Box<dyn SpellWorldReader>)
+            },
+        )
+        .expect("source-specific due reader");
+    assert_eq!(called, 1);
+    assert_eq!(fired.len(), 1);
+    assert!(
+        fired[0].1.as_ref().expect("due result").targets[0]
+            .1
+            .as_ref()
+            .expect("owned condition")
+            .condition_only_applied
+    );
+    assert!(
+        owner
+            .run_windup_due_current_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &clock,
+                |_, _, _, _| {
+                    called += 1;
+                    None
+                },
+            )
+            .expect("spent pulse cannot ask for another reader")
+            .is_empty()
+    );
+    assert_eq!(called, 1);
+}
+
+#[test]
+fn monster_chain_factory_receives_frozen_origin_and_exact_step_under_supplied_work() {
+    use crate::creature_chain_attack::{ChainMapFacts, ChainOwner};
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    chain_second(&mut runtime, &mut vitals, &mut world);
+    let mut map = CurrentChainMap { missing: false };
+    let stamp = runtime.issue_owner_work().expect("schedule work");
+    let mut chain = ChainOwner::new_current(&runtime).expect("current owner");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+    let token = chain
+        .schedule_current(
+            &runtime,
+            stamp,
+            &source,
+            &proposal,
+            &mut world,
+            &mut map,
+            clock.now(),
+        )
+        .expect("source chain");
+    let damage = DamageSpellOwner::default();
+    let mut called = 0;
+    for step in 0..2 {
+        let expected = chain
+            .pending_sources()
+            .expect("prepared metadata")
+            .remove(0);
+        let due_stamp = runtime
+            .issue_owner_work()
+            .expect("prepared current step work");
+        let result = chain
+            .run_due_current_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &damage,
+                &clock,
+                |actual_source, actual_proposal, actual_session, actual_from, actual_stamp| {
+                    called += 1;
+                    assert_eq!(actual_source.fingerprint, expected.source.fingerprint);
+                    assert_eq!(actual_proposal, &expected.proposal);
+                    assert_eq!(actual_session, expected.session);
+                    assert_eq!(actual_from, expected.from);
+                    assert_eq!(actual_stamp, due_stamp);
+                    Some((
+                        Box::new(world.clone()) as Box<dyn SpellWorldReader>,
+                        Box::new(CurrentChainMap { missing: false }) as Box<dyn ChainMapFacts>,
+                    ))
+                },
+            )
+            .expect("source-specific current readers");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, step);
+        assert!(
+            result[0].2.as_ref().expect("actual step").targets[0]
+                .1
+                .as_ref()
+                .expect("actual damage")
+                .damage
+                .expect("receipt")
+                .applied
+                > 0
+        );
+        clock.advance(50_000);
+    }
+    assert_eq!(called, 2);
+    assert_eq!(chain.receipts(token).expect("step receipts").len(), 2);
+    assert!(
+        chain
+            .run_due_current_with(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &clock,
+                |_, _, _, _, _| {
+                    called += 1;
+                    None
+                },
+            )
+            .expect("spent chain pulses")
+            .is_empty()
+    );
+    assert_eq!(called, 2);
 }

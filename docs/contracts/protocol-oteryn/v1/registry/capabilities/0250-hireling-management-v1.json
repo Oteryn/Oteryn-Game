@@ -1,0 +1,15 @@
+{
+  "id": 250,
+  "name": "HIRELING_MANAGEMENT_V1",
+  "owner_decision": "OTV2-20261031-hireling",
+  "owner": "House Hireling identity and appearance",
+  "requires": [
+    165
+  ],
+  "command_types": [
+    470
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "E12: BUNDLE_WORLD_OFFERED_CAPABILITIES only. Command470 requires current character authority; appearance and return require ownership and the current named House. The existing capability165 and lamp item-use owner retain their commands."
+}

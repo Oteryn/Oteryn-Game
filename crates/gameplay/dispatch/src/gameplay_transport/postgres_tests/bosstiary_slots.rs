@@ -221,7 +221,7 @@ fn scenario() -> TestResult {
         let paid = exchange(&owner, &mut admitted, BossSlotRequest::Remove { slot: 1 }).await?;
         assert_eq!(paid.status, 0);
         assert_eq!(paid.remove_fee, 400000);
-        let fees:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=15").fetch_one(&h.pool).await?;
+        let fees:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=16").fetch_one(&h.pool).await?;
         assert_eq!(fees, (1, 100000));
         let operations: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_boss_slot_operations")

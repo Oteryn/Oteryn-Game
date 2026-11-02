@@ -2,12 +2,17 @@
 //!
 //! These journals are not a purchase or coin ledger. Platform owns both.
 mod codec;
+mod hireling_capacity;
+mod hireling_delivery;
+mod hireling_model;
+mod hireling_reservation;
 mod outbox;
 mod prey_expansion;
 mod prey_purchase;
 mod purchase;
 mod storage;
-pub use codec::{DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError};
+pub use codec::{DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError};
+pub use hireling_model::{HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase, canonical_hireling_name};
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]

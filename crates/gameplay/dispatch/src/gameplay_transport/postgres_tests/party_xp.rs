@@ -53,6 +53,7 @@ pub(super) enum Case {
     TaskBoardUnbound,
     TaskBoardPrechange,
     TaskBoardOrdered,
+    SoulWarTerminal,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -558,6 +559,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(task_board_case, Case::TaskBoardTalisman) {
         return task_board::qualify_talisman(&mut owner, h, &players).await;
+    }
+    if matches!(case, Case::SoulWarTerminal) {
+        return super::soul_war::terminal_expiry_case(&owner, &h.pool, &players).await;
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;

@@ -323,7 +323,8 @@ fn i14_global_consumables_are_admitted() {
     }
 }
 
-/// W15b admits the exact Great Mana chest reward; condition effects remain unsupported.
+/// The hireling Trader and W15b chest rewards admit physical Great Mana with
+/// canonical potion facts. The condition-effect potion 7644 remains unadmitted.
 #[test]
 fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     let controller = native();
@@ -371,11 +372,9 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
             admitted.push(id);
         }
     }
-    // TASKBOARD-P04 admits 8074 and 25699 through its source-qualified delivery cohort:
-    // Crystal 201189f task_board_delivery_items.lua:85,281; items.xml:22081-22092,48934-48955.
-    // W15b admits the basic spellbook 3059 as an exact chest reward; the other
-    // source ids remain unadmitted.
-    assert_eq!(admitted, vec![3059, 6120, 8074, 25699]);
+    // E12 admits the source Trader spellbooks, including the Task Board cohort;
+    // W15b additionally admits the basic spellbook 3059 as an exact chest reward.
+    assert_eq!(admitted, vec![3059, 6120, 8072, 8073, 8074, 8075, 25699]);
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

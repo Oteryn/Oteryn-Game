@@ -153,6 +153,8 @@ pub struct AppearanceValidationContext<C> {
 mod character_sex;
 mod current_appearance;
 mod earned_unlocks;
+mod quest_grants;
+pub(crate) use quest_grants::{QuestOutfitGrant, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;
 
 impl DurabilityRoot {

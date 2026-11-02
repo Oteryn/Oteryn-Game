@@ -290,6 +290,7 @@ impl ScopeRuntimeV1 {
                         floor: member.destination_cell.floor,
                     },
                     revision: 1,
+                    last_translation_revision: 0,
                     facing: None,
                 });
             }

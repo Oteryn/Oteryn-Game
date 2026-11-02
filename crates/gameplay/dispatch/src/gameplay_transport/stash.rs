@@ -54,6 +54,9 @@ pub(super) async fn execute(
                 .is_some(),
         )
     };
+    let hireling =
+        super::npc_command::hireling_services::stash_access(admission, actor, command).await;
+    let reachable = reachable || hireling.is_some();
     let live_allowed = native.is_some();
     // Historical receipt identity is independent of current gameplay eligibility.
     // Never use it to reopen a view or reacquire current mutation authority.
@@ -90,20 +93,45 @@ pub(super) async fn execute(
         let receipt = match previous {
             Some(previous) => previous,
             None if !live_allowed => return Some(reply),
-            None => admission
-                .root
-                .stash_conversion(
-                    &permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    request,
-                    native,
-                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    false,
-                )
-                .await
-                .ok()??,
+            None => {
+                if !reachable {
+                    reply.outcome = StashOutcome::NoLocker;
+                    return Some(reply);
+                }
+                if let Some(id) = hireling {
+                    admission
+                        .root
+                        .hireling_stash_conversion(
+                            &permit,
+                            admission.character,
+                            admission.holder,
+                            fence,
+                            request,
+                            native,
+                            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                            false,
+                            admission.channel_id,
+                            id,
+                        )
+                        .await
+                        .ok()??
+                } else {
+                    admission
+                        .root
+                        .stash_conversion(
+                            &permit,
+                            admission.character,
+                            admission.holder,
+                            fence,
+                            request,
+                            native,
+                            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                            false,
+                        )
+                        .await
+                        .ok()??
+                }
+            }
         };
         reply.outcome = receipt.outcome;
         reply.stowed_quantity = receipt.stowed_quantity;

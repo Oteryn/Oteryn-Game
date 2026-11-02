@@ -5,12 +5,13 @@ import json
 import xml.etree.ElementTree as ET
 
 import writable_item_profiles as writing
+import timed_item_profiles as timed
 
 SOURCE = 'imports/canary/items-xml/items.xml'
 SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
 
 
-def complete_native_stack(record, definition, binding):
+def complete_native_stack(root, record, definition, binding):
     """Fill only unqualified stack facts; established native facts keep authority."""
     identity = definition['identity']
     expected = {'family': identity['family'], 'production_key': identity['key'],
@@ -54,6 +55,33 @@ def complete_native_stack(record, definition, binding):
             if (container.get('state') != 'KNOWN'
                     or container['value']['capacity'] != expected_capacity):
                 raise ValueError('QUEST_CALLBACK_NATIVE_CONTAINER_INCOMPLETE')
+    # The merged chest cohort owns these accepted rounded weights; retain the
+    # raw Trader capture, and reconcile only its exact reviewed leaf pairs.
+    from hireling_item_profiles import MERGED_MAIN_NATIVE_WEIGHTS
+    decision = MERGED_MAIN_NATIVE_WEIGHTS.get(identity['key'])
+    if decision is not None:
+        accepted, donor, _ = decision
+        canonical_weight = definition['semantics']['physical']['value']['weight']
+        observed_weight = semantics['physical']['value']['weight']
+        if (canonical_weight != {'state': 'KNOWN', 'value': accepted}
+                or observed_weight not in ({'state': 'KNOWN', 'value': accepted},
+                                           {'state': 'KNOWN', 'value': donor})):
+            raise ValueError('QUEST_CALLBACK_SHARED_WEIGHT_DRIFT')
+        semantics['physical']['value']['weight'] = copy.deepcopy(canonical_weight)
+    # Other native cohorts may already carry this exact chest child. Retain
+    # their known facts, but do not lose the canonical food/potion, protection
+    # or trade policy merely because the physical Item was admitted first.
+    for group, fact in grant_semantics(root, definition).items():
+        # I05/TIMED owns these ability groups, including deliberately UNKNOWN
+        # inactive forms. Filling them from canonical chest facts would add the
+        # inactive bonus to the active form's bonus when the ring is worn.
+        if group == 'skill_modifiers' and identity['key'] in {
+                f'oteryn:item.tibia.i{number}' for number in timed.IDS}:
+            continue
+        if (fact.get('state') == 'KNOWN'
+                and semantics.get(group, {'state': 'UNKNOWN'}).get('state')
+                in ('UNKNOWN', 'NOT_APPLICABLE')):
+            semantics[group] = copy.deepcopy(fact)
 
 
 def grant_semantics(root, definition):
@@ -93,6 +121,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
+    # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
+    # apply the same pinned source, exact binding and portability checks below.
+    keys.add('oteryn:item.tibia.i32594')
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
@@ -154,7 +186,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
         if key in present:
-            complete_native_stack(present[key], definition, matches[0])
+            complete_native_stack(root, present[key], definition, matches[0])
             continue
         item_id = int(matches[0]['external_id'])
         source_matches = [item for item in source_items
@@ -178,7 +210,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                                       'revision_ref': identity['revision']},
             'production_binding': matches[0], 'production_binding_qualification': None,
         })
-        complete_native_stack(document['records'][-1], definition, matches[0])
+        complete_native_stack(root, document['records'][-1], definition, matches[0])
     document['records'].sort(key=order)
     raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     generated[profile_path] = raw

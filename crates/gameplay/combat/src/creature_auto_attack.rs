@@ -236,8 +236,36 @@ pub struct MeleeSource {
     shield: bool,
     fingerprint: [u8; 32],
     pub content_digest: [u8; 32],
+    bite_definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
 }
 impl MeleeSource {
+    /// Revalidate the private native source closure against this owner's current issuer and
+    /// the exact schedule/bounds consumed by the existing bite adapter. A public boolean or
+    /// arbitrary cooldown value cannot opt an unqualified bite into source scheduling.
+    pub fn admits_bite_definition(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        definition: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+    ) -> bool {
+        runtime.contains_live_creature(issuer)
+            && definition == self.bite_definition
+            && runtime.matches_live_creature_identity(issuer, self.creature_key.as_bytes())
+            && runtime.content_pin().server_artifact_digest() == self.content_digest
+            && definition.content_digest == self.content_digest
+            && usize::from(definition.entry_index) == self.entry_index
+            && definition.interval_us == self.interval_micros
+            && definition.chance_ppm == self.chance_ppm
+            && definition.minimum == self.minimum
+            && definition.maximum == self.maximum
+    }
+
+    /// Native secondary damage conditions, already qualified with this source closure.
+    /// The current player condition owner still decides immunity and atomic admission.
+    pub fn conditions(&self) -> &[ConditionDefinition] {
+        &self.conditions
+    }
+
     /// All profiles/records must come from the owner's currently pinned native artifact.
     /// The complete source closure is fingerprinted; unsupported multi-effect attacks refuse.
     pub fn from_native(
@@ -390,6 +418,16 @@ impl MeleeSource {
         }
         let minimum = u32::try_from(minimum).map_err(|_| AttackError::NumericOverflow)?;
         let maximum = u32::try_from(maximum).map_err(|_| AttackError::NumericOverflow)?;
+        let bite_definition =
+            oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition::new_native(
+                content_digest,
+                e.interval_ms,
+                e.chance_ppm,
+                minimum,
+                maximum,
+            )
+            .ok_or(AttackError::InvalidSource)?
+            .with_entry_index(u16::try_from(index).map_err(|_| AttackError::InvalidSource)?);
         let fingerprint = if let Some(policy) = critical {
             Sha256::digest(
                 serde_json::to_vec(&(
@@ -437,6 +475,7 @@ impl MeleeSource {
             shield: ep.mitigated_by.contains(&ProjectV2Mitigation::Shield),
             fingerprint,
             content_digest,
+            bite_definition,
         })
     }
 }
@@ -496,7 +535,6 @@ pub struct AutoAttackOwner {
     entries: Vec<Entry>,
     pub blocks: Vec<DefenseBudget>,
     selections: Vec<AiSelection>,
-    hazard_criticals: Vec<(ExactActorRef, GameSessionId, u64)>,
 }
 /// Current accepted AI selection; its occurrence comes from the existing ThinkSequenceTracker.
 struct AiSelection {
@@ -1157,58 +1195,6 @@ impl AutoAttackOwner {
                 })
                 .transpose()?
         };
-        self.hazard_criticals
-            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
-        let mut hazard_critical = false;
-        let requested = {
-            use oteryn_gameplay_encounter_rules::hazard::{
-                gnomprona_contains, provisional_effects,
-            };
-            let a = from.position();
-            let b = to.position();
-            if gnomprona_contains(a.x, a.y, a.floor) && gnomprona_contains(b.x, b.y, b.floor) {
-                if let Some(level) =
-                    crate::hazard::effective_level(runtime, facts.target, facts.session)
-                {
-                    let effects =
-                        provisional_effects(level).map_err(|_| AttackError::InvalidPlan)?;
-                    let last = self
-                        .hazard_criticals
-                        .iter()
-                        .find(|(actor, session, _)| {
-                            *actor == facts.target && *session == facts.session
-                        })
-                        .map_or(0, |(_, _, last)| *last);
-                    let chance = deterministic_decision_u64(
-                        root,
-                        id,
-                        "hazard_critical",
-                        source.entry_index as u64,
-                    )
-                    .map_err(|_| AttackError::InvalidPlan)?
-                        % 1_000_000;
-                    hazard_critical = now.get().saturating_sub(last) >= 2_000_000
-                        && !source_critical.is_some_and(|event| event.critical)
-                        && effects.creature_critical(chance as u32);
-                    let base = if hazard_critical {
-                        effects.critical_damage(u64::from(requested))
-                    } else {
-                        Ok(u64::from(requested))
-                    }
-                    .map_err(|_| AttackError::NumericOverflow)?;
-                    u32::try_from(
-                        effects
-                            .creature_damage(base)
-                            .map_err(|_| AttackError::NumericOverflow)?,
-                    )
-                    .map_err(|_| AttackError::NumericOverflow)?
-                } else {
-                    requested
-                }
-            } else {
-                requested
-            }
-        };
         // Source-default bonus is ZERO; preserve actual base requested HP. Dynamic boosts/VFX remain qualified gaps.
         let mut remaining = requested;
         let mut budget_next = None;
@@ -1258,6 +1244,25 @@ impl AutoAttackOwner {
             };
             remaining = remaining.saturating_sub(armor);
         }
+        let blocked = requested.saturating_sub(remaining);
+        let hazard_draw =
+            deterministic_decision_u64(root, id, "hazard_critical", source.entry_index as u64)
+                .map_err(|_| AttackError::InvalidPlan)?
+                % 1_000_000;
+        // Crystal applies Hazard to the positive damage remaining after ordinary blocking.
+        let hazard = crate::hazard::incoming_damage(
+            runtime,
+            &facts,
+            remaining,
+            hazard_draw as u32,
+            now.get(),
+            source_critical.is_some_and(|event| event.critical),
+        )
+        .map_err(|_| AttackError::NumericOverflow)?;
+        let remaining = hazard.amount;
+        let requested = remaining
+            .checked_add(blocked)
+            .ok_or(AttackError::NumericOverflow)?;
         if !vitals.reflect_equipment_damage(
             runtime,
             facts.issuer,
@@ -1342,17 +1347,10 @@ impl AutoAttackOwner {
                 }),
             }
         }
-        if hazard_critical {
-            if let Some((_, _, last)) = self
-                .hazard_criticals
-                .iter_mut()
-                .find(|(actor, session, _)| *actor == facts.target && *session == facts.session)
-            {
-                *last = now.get();
-            } else {
-                self.hazard_criticals
-                    .push((facts.target, facts.session, now.get()));
-            }
+        if hazard.critical && damage.is_some() {
+            runtime
+                .record_hazard_critical(facts.target, facts.session, now.get())
+                .map_err(|_| AttackError::StaleTarget)?;
         }
         Ok(SwingOutcome {
             occurrence,

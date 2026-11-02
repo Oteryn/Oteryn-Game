@@ -62,30 +62,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // NODEBOOT-1: both reads go through the shared holder that background passes also
         // take, so a busy holder is retried briefly instead of refusing the command.
         use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
-        let Ok(stored) = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
-                let fence = self
-                    .current_quest_fence(session)
-                    .await
-                    .map_err(|()| Unavailable)?
-                    .ok_or(Rejected)?;
-                self.root
-                    .read_pvp_state(self.character, self.holder, fence)
-                    .await
-                    .map_err(|_| Unavailable)
-            })
-            .await
+        let Ok((fence, stored, house_scope)) =
+            crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+                .retry_unavailable(async || {
+                    let fence = self
+                        .current_quest_fence(session)
+                        .await
+                        .map_err(|()| Unavailable)?
+                        .ok_or(Rejected)?;
+                    // Activities also use Instance scopes. Only a native House
+                    // actor may select the named-House custody reader.
+                    let house_scope = self
+                        .runtime
+                        .lock()
+                        .await
+                        .house_actor_state(actor, session)
+                        .is_ok();
+                    let stored = if house_scope {
+                        self.root
+                            .read_house_pvp_state(
+                                self.character,
+                                self.holder,
+                                fence,
+                                self.channel_id,
+                            )
+                            .await
+                    } else {
+                        self.root
+                            .read_pvp_state(self.character, self.holder, fence)
+                            .await
+                    }
+                    .map_err(|_| Unavailable)?;
+                    Ok((fence, stored, house_scope))
+                })
+                .await
         else {
             return false;
         };
         let runtime = self.runtime.lock().await;
-        if runtime.player_control_facts(actor, session).is_err() {
+        if house_scope {
+            let Ok(house) = runtime.house_actor_state(actor, session) else {
+                return false;
+            };
+            if fence.game_session_id != session
+                || house.scope != fence.runtime_scope
+                || house.generation != fence.scope_ownership_generation
+                || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                || house.lease.generation() != fence.character_lease_generation
+            {
+                return false;
+            }
+        } else if runtime.player_control_facts(actor, session).is_err() {
             return false;
         }
         let mut states = self.states.spell_states.lock().await;
-        states
-            .pvp_locks
-            .retain(|(a, s, _)| runtime.player_control_facts(*a, *s).is_ok());
+        states.pvp_locks.retain(|(a, s, _)| {
+            runtime.player_control_facts(*a, *s).is_ok()
+                || runtime.house_player_control_facts(*a, *s).is_ok()
+        });
         lock_mut(&mut states, actor, session);
         if let Some(stored) = stored {
             let now = self.owner_now().get();

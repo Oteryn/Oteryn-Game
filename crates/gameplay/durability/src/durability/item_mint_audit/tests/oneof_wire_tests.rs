@@ -1,4 +1,5 @@
-//! Fixed wire fixtures captured before DUR-ONEOF-1 changed either oneof block.
+//! Fixed wire fixtures captured before DUR-ONEOF-1 changed either oneof block,
+//! plus explicit fixtures for later registered additive variants.
 //! These are codec fixtures, not semantically valid gameplay transactions.
 use super::*;
 use crate::durability::item_fee_burn_audit::{
@@ -286,14 +287,32 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 proof: vec![0x81, 0x07],
             }),
         ),
-        // WB2: Bosstiary slot removal fee, a closed NPC-purchase-shaped cause.
         (
             15,
+            "QuestAccessPurchase",
+            FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:service.quest.rotten-blood.access".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        // WB2: Bosstiary slot removal fee, a closed NPC-purchase-shaped cause.
+        (
+            16,
             "BosstiarySlot",
             FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
                 atelier_proof: Vec::new(),
                 service_key: "oteryn:bosstiary.slot_remove".into(),
                 occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        (
+            472,
+            "HirelingService",
+            FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:service.hireling.food.29409".into(),
+                occurrence: vec![0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7],
             }),
         ),
     ]
@@ -318,6 +337,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("Atelier", "08018201040a028107"),
         ("Forge", "08019a01040a028107"),
         ("ForgeFee", "72040a028107"),
+        ("QuestAccessPurchase", "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107"),
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
@@ -331,7 +351,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ),
         (
             "BosstiarySlot",
-            "7a220a1c6f746572796e3a626f737374696172792e736c6f745f72656d6f766512028107",
+            "8201220a1c6f746572796e3a626f737374696172792e736c6f745f72656d6f766512028107",
         ),
         ("CharmUnassign", "0a0b0a05636861726d12028107"),
         ("PromotionPurchase", "120f0a0970726f6d6f74696f6e12028107"),
@@ -341,6 +361,8 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("MarketFee", "32080a02810712020809"),
         ("Imbuement", "3a070a028107208101"),
         ("NpcTravel", "420c0a0674726176656c12028107"),
+        // E12 adds reserved cause472; every earlier codec golden remains unchanged.
+        ("HirelingService", "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007"),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

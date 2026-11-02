@@ -130,6 +130,43 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        self.install_verified_proficiency_equipment(actor, session, equipment, catalogue)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn install_house_proficiency_equipment(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+    ) -> Option<()> {
+        let house = runtime.house_actor_state(actor, session).ok()?;
+        if fence.game_session_id != session
+            || house.scope != fence.runtime_scope
+            || house.generation != fence.scope_ownership_generation
+            || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+            || house.lease.generation() != fence.character_lease_generation
+            || fence.character_id.as_bytes() != &equipment.character
+            || equipment.content_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let Some(catalogue) = &self.proficiency_catalogue else {
+            return Some(());
+        };
+        self.install_verified_proficiency_equipment(actor, session, equipment, catalogue)
+            .await
+    }
+
+    async fn install_verified_proficiency_equipment(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+        catalogue: &ProductionProficiencyCatalogue,
+    ) -> Option<()> {
         let key = equipment
             .items
             .iter()

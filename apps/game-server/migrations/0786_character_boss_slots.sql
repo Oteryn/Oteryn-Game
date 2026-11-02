@@ -48,7 +48,7 @@ BEGIN
   OR NEW.state_before IS DISTINCT FROM previous OR NEW.created_xact_id<>pg_current_xact_id()
   OR (NEW.ordinal>1 AND previous IS NULL)
   OR (NEW.fee_gold>0 AND NOT EXISTS(SELECT 1 FROM game_item_fee_burns f WHERE f.transaction_id=NEW.fee_transaction_id
-    AND f.character_id=NEW.character_id AND f.cause_kind=15 AND f.cause_occurrence_id=NEW.occurrence_id
+    AND f.character_id=NEW.character_id AND f.cause_kind=16 AND f.cause_occurrence_id=NEW.occurrence_id
     AND f.fee_gold_units=NEW.fee_gold AND f.created_xact_id=pg_current_xact_id())) THEN
    RAISE EXCEPTION 'Boss slot operation chain or fee mismatch' USING ERRCODE='23514'; END IF;
  END IF;
@@ -64,16 +64,16 @@ REVOKE ALL ON FUNCTION game_boss_slots_proven() FROM PUBLIC;
 DO $$ DECLARE body TEXT; BEGIN
  SELECT regexp_replace(pg_get_constraintdef(oid),' NOT VALID$','') INTO STRICT body FROM pg_constraint WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_cause_kind_check';
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check;
- EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK(('||substr(body,7)||') OR cause_kind=15)';
+ EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK(('||substr(body,7)||') OR cause_kind=16)';
  SELECT regexp_replace(pg_get_constraintdef(oid),' NOT VALID$','') INTO STRICT body FROM pg_constraint WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_purchase_cause';
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_purchase_cause;
- EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_purchase_cause CHECK(('||substr(body,7)||') OR (cause_kind=15 AND charm_key IS NULL AND purchase_service_key=''oteryn:bosstiary.slot_remove'' AND fee_gold_units BETWEEN 100000 AND 76000000)) NOT VALID';
+ EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_purchase_cause CHECK(('||substr(body,7)||') OR (cause_kind=16 AND charm_key IS NULL AND purchase_service_key=''oteryn:bosstiary.slot_remove'' AND fee_gold_units BETWEEN 100000 AND 76000000)) NOT VALID';
  SELECT pg_get_constraintdef(oid) INTO STRICT body FROM pg_constraint WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_committed_character_revision_check';
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_committed_character_revision_check;
- EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_committed_character_revision_check CHECK(('||substr(body,7)||') OR (cause_kind=15 AND committed_character_revision BETWEEN 1 AND 18446744073709551615))';
+ EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_committed_character_revision_check CHECK(('||substr(body,7)||') OR (cause_kind=16 AND committed_character_revision BETWEEN 1 AND 18446744073709551615))';
  body:=pg_get_functiondef('game_item_fee_burn_consistency_guard()'::regprocedure);
  IF position('(NEW.cause_kind=5 AND EXISTS' IN body)=0 THEN RAISE EXCEPTION 'missing item-only fee proof'; END IF;
  EXECUTE replace(body,'(NEW.cause_kind=5 AND EXISTS',
-  '(NEW.cause_kind=15 AND EXISTS(SELECT 1 FROM game_character_boss_slot_operations p WHERE p.fee_transaction_id=NEW.transaction_id AND p.character_id=NEW.character_id AND p.occurrence_id=NEW.cause_occurrence_id AND p.fee_gold=NEW.fee_gold_units AND p.created_xact_id=pg_current_xact_id())) OR (NEW.cause_kind=5 AND EXISTS');
+  '(NEW.cause_kind=16 AND EXISTS(SELECT 1 FROM game_character_boss_slot_operations p WHERE p.fee_transaction_id=NEW.transaction_id AND p.character_id=NEW.character_id AND p.occurrence_id=NEW.cause_occurrence_id AND p.fee_gold=NEW.fee_gold_units AND p.created_xact_id=pg_current_xact_id())) OR (NEW.cause_kind=5 AND EXISTS');
 END $$;
 ALTER TABLE game_character_bosstiary_kill_receipts ADD COLUMN kill_credit SMALLINT NOT NULL DEFAULT 1 CHECK(kill_credit IN(1,3));

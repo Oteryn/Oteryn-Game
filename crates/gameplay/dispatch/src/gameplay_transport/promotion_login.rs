@@ -1,6 +1,9 @@
 //! Premium session registrations and the promotion display snapshot captured at login.
 use super::*;
 
+#[path = "promotion_login/house_transfer.rs"]
+mod house_transfer;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn admit_promotion(&self, session: GameSessionId) {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {

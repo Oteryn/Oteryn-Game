@@ -1,9 +1,8 @@
 //! Bounded AI-3 -> AI-4 integration for source-qualified adjacent physical melee.
 //! Ranged attacks, defences, areas and custom callbacks are explicitly unsupported.
-//! Uses the existing AI issuer, commit fences and D54 non-lethal player HP floor.
-//! Source intervals/chances are retained; missed owner turns coalesce without bursts.
-//! CREATURE-AI-1 §1.5: the swing is the profile's one melee entry; its chance is drawn in ppm
-//! with purpose `AI_ATTACK` bound to (creature, swing sequence, entry index).
+//! Uses the existing AI issuer, commit fences and player vitals/death owner.
+//! Native source indices consume the committed shared attack-window decision. Legacy adapter
+//! intervals remain coalesced. Every occurrence is bound to the creature and source entry.
 use std::collections::{BTreeMap, btree_map};
 
 use crate::ability::creature_bite::{
@@ -16,11 +15,16 @@ use crate::ai_think::{
     AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId, ThinkOccurrence,
     ThinkOutcome, chebyshev_distance, step_towards,
 };
+use crate::creature_auto_attack::MeleeSource;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_simulation_determinism::deterministic_decision_u64;
 
 pub use oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition;
+
+/// Legacy adapter cadence. Native Crystal's 1500 ms extra-swing guard belongs exclusively
+/// to ProfileScheduleState (monster.cpp:1270-1274), not a cooldown after every regular cast.
+pub const MONSTER_MELEE_THRESHOLD_MICROS: u64 = 1_500_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dispatch {
@@ -30,17 +34,22 @@ pub enum Dispatch {
 }
 #[derive(Debug, Clone)]
 struct Entry {
-    actor: ExactActorRef,
     definition: MeleeDefinition,
     due_us: u64,
     last: Option<(u64, Dispatch)>,
+}
+#[derive(Debug)]
+struct ActorEntries {
+    actor: ExactActorRef,
+    legacy: Option<Entry>,
+    native: BTreeMap<u16, Entry>,
 }
 #[derive(Debug, Default)]
 pub struct MonsterMeleeOwner {
     /// Keyed by the issuer's slot (`actor_local_id`), at most one entry per carrier slot and so
     /// at most `CREATUREAI0-RL-04` (SPAWN-CEILINGS-1, Codex 4242381779: no longer the D57 64). A
     /// newer generation in the slot replaces the dead issuer's entry in place.
-    entries: BTreeMap<u32, Entry>,
+    entries: BTreeMap<u32, ActorEntries>,
     bites: CreatureBiteLedger,
     /// CREATURE-AI-1 §2.1: the Channel's creature thinks, which decide each swing's target.
     pub creature_ai: crate::ai_think::CreatureAiTable,
@@ -65,7 +74,7 @@ impl MonsterMeleeOwner {
         issuer: ExactActorRef,
         sequence: u64,
         definition: MeleeDefinition,
-        mut input: CreatureThinkInput,
+        input: CreatureThinkInput,
         perceived: &[PerceivedPlayer],
         resolve_target: impl Fn(
             PerceivedPlayerId,
@@ -73,11 +82,61 @@ impl MonsterMeleeOwner {
         revisions: RevisionSet,
         now: SemanticTimeMicros,
     ) -> Result<Dispatch, BiteRejection> {
+        self.think_with_native_source(
+            runtime,
+            vitals,
+            issuer,
+            sequence,
+            definition,
+            input,
+            perceived,
+            resolve_target,
+            revisions,
+            now,
+            None,
+        )
+    }
+
+    /// A privately resolved native source consumes exactly the committed AI occurrence and
+    /// source index. The legacy call supplies None and keeps its original receipt/cadence.
+    #[allow(clippy::too_many_arguments)]
+    pub fn think_with_native_source(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn CreatureBiteVitals,
+        issuer: ExactActorRef,
+        sequence: u64,
+        definition: MeleeDefinition,
+        mut input: CreatureThinkInput,
+        perceived: &[PerceivedPlayer],
+        resolve_target: impl Fn(
+            PerceivedPlayerId,
+        ) -> Option<(ExactActorRef, GameSessionId, ReentryProtection)>,
+        revisions: RevisionSet,
+        now: SemanticTimeMicros,
+        native_source: Option<&MeleeSource>,
+    ) -> Result<Dispatch, BiteRejection> {
         runtime
             .owner_fence()
             .map_err(|_| BiteRejection::StaleIssuer)?;
         if !runtime.contains_live_creature(issuer) {
             return Err(BiteRejection::StaleIssuer);
+        }
+        let selection = if let Some(source) = native_source {
+            if !source.admits_bite_definition(runtime, issuer, definition) {
+                return Err(BiteRejection::InvalidPlan);
+            }
+            Some(
+                self.creature_ai
+                    .native_melee_selection(issuer, usize::from(definition.entry_index))
+                    .ok_or(BiteRejection::InvalidPlan)?,
+            )
+        } else {
+            None
+        };
+        let sequence = selection.map_or(sequence, |selected| selected.occurrence.sequence);
+        if selection.is_some() && sequence == 0 {
+            return Ok(Dispatch::Decision(ThinkOutcome::Idle));
         }
         if definition.content_digest != runtime.content_pin().server_artifact_digest()
             || sequence == 0
@@ -85,18 +144,21 @@ impl MonsterMeleeOwner {
             return Err(BiteRejection::InvalidPlan);
         }
         let fresh = Entry {
-            actor: issuer,
             definition,
             due_us: now.get(),
             last: None,
         };
         let entries = self.entries.len();
         // The issuer is live, so another generation's entry in its slot is a dead issuer's.
-        let entry = match self.entries.entry(issuer.actor_local_id()) {
+        let actor_entries = match self.entries.entry(issuer.actor_local_id()) {
             btree_map::Entry::Occupied(occupied) => {
                 let entry = occupied.into_mut();
                 if entry.actor != issuer {
-                    *entry = fresh;
+                    *entry = ActorEntries {
+                        actor: issuer,
+                        legacy: None,
+                        native: BTreeMap::new(),
+                    };
                 }
                 entry
             }
@@ -104,8 +166,20 @@ impl MonsterMeleeOwner {
                 if entries >= CREATURE_BITE_LEDGER_MAX {
                     return Err(BiteRejection::LedgerFull);
                 }
-                vacant.insert(fresh)
+                vacant.insert(ActorEntries {
+                    actor: issuer,
+                    legacy: None,
+                    native: BTreeMap::new(),
+                })
             }
+        };
+        let entry = if native_source.is_some() {
+            actor_entries
+                .native
+                .entry(definition.entry_index)
+                .or_insert(fresh)
+        } else {
+            actor_entries.legacy.get_or_insert(fresh)
         };
         if entry.definition != definition {
             return Err(BiteRejection::OccurrenceConflict);
@@ -118,17 +192,38 @@ impl MonsterMeleeOwner {
                 return Ok(result);
             }
         }
-        let due = now.get() >= entry.due_us;
+        // Crystal monster.cpp:1204/1266 suppresses melee while fleeing, but leaves
+        // ranged spell schedules running. Healing can resume this same pending swing.
+        if selection.is_none()
+            && self
+                .creature_ai
+                .state(issuer)
+                .is_some_and(|state| state.is_fleeing())
+        {
+            let result = Dispatch::Decision(ThinkOutcome::Idle);
+            entry.last = Some((sequence, result));
+            return Ok(result);
+        }
+        let due = selection.map_or(now.get() >= entry.due_us, |selected| {
+            selected.target.is_some()
+        });
         input.attack = AttackReadiness {
             off_cooldown: due,
             chance_percent: u8::try_from(definition.chance_ppm / 10_000)
                 .map_err(|_| BiteRejection::InvalidPlan)?,
         };
-        let decision = swing_decision(&input, perceived, issuer, sequence, &definition)?;
-        if due {
+        let decision = swing_decision(
+            &input,
+            perceived,
+            issuer,
+            sequence,
+            &definition,
+            selection.map(|selected| selected.target.is_some()),
+        )?;
+        if due && native_source.is_none() {
             entry.due_us = now
                 .get()
-                .checked_add(definition.interval_us)
+                .checked_add(definition.interval_us.max(MONSTER_MELEE_THRESHOLD_MICROS))
                 .ok_or(BiteRejection::InvalidPlan)?;
         }
         let result = match decision {
@@ -138,27 +233,40 @@ impl MonsterMeleeOwner {
                     entry.last = Some((sequence, result));
                     return Ok(result);
                 };
+                if selection.is_some_and(|selected| selected.target != Some(target)) {
+                    let result = Dispatch::Bite(Err(BiteRejection::InvalidPlan));
+                    entry.last = Some((sequence, result));
+                    return Ok(result);
+                }
+                let draw_occurrence = selection.map_or(input.occurrence, |selected| {
+                    decision_occurrence(selected.occurrence)
+                });
+                let draw_index = if selection.is_some() {
+                    u64::from(definition.entry_index)
+                } else {
+                    0
+                };
                 let draw = deterministic_decision_u64(
                     &input.decision_root,
-                    input.occurrence,
+                    draw_occurrence,
                     "ai.monster.melee.magnitude",
-                    0,
+                    draw_index,
                 )
                 .map_err(|_| BiteRejection::InvalidPlan)?;
                 // ARMOR-MITIGATION-1: the same occurrence draws the target's armor reduction.
                 let armor_draw = deterministic_decision_u64(
                     &input.decision_root,
-                    input.occurrence,
+                    draw_occurrence,
                     "ai.monster.melee.armor",
-                    0,
+                    draw_index,
                 )
                 .map_err(|_| BiteRejection::InvalidPlan)?;
                 // SHIELD-DEFENCE-1: and the target's blocked-hit defence.
                 let defence_draw = deterministic_decision_u64(
                     &input.decision_root,
-                    input.occurrence,
+                    draw_occurrence,
                     "ai.monster.melee.defence",
-                    0,
+                    draw_index,
                 )
                 .map_err(|_| BiteRejection::InvalidPlan)?;
                 let width = u64::from(definition.maximum) - u64::from(definition.minimum) + 1;
@@ -182,20 +290,29 @@ impl MonsterMeleeOwner {
                     );
                     Dispatch::ZeroDamage
                 } else {
-                    let bite = CreatureBiteDefinition::new(definition.interval_us, magnitude)
-                        .ok_or(BiteRejection::InvalidPlan)?;
+                    let intent = AiAbilityAdapter::bite(
+                        issuer,
+                        sequence,
+                        target,
+                        session,
+                        armor_draw,
+                        defence_draw,
+                    );
+                    let bite = match native_source {
+                        Some(source) => CreatureBiteDefinition::from_native_source(
+                            source, runtime, intent, definition, magnitude,
+                        ),
+                        None => CreatureBiteDefinition::new(
+                            definition.interval_us.max(MONSTER_MELEE_THRESHOLD_MICROS),
+                            magnitude,
+                        ),
+                    }
+                    .ok_or(BiteRejection::InvalidPlan)?;
                     Dispatch::Bite(commit_ai_bite(
                         &mut self.bites,
                         runtime,
                         vitals,
-                        AiAbilityAdapter::bite(
-                            issuer,
-                            sequence,
-                            target,
-                            session,
-                            armor_draw,
-                            defence_draw,
-                        ),
+                        intent,
                         bite,
                         revisions,
                         protection,
@@ -232,6 +349,7 @@ fn swing_decision(
     issuer: ExactActorRef,
     sequence: u64,
     definition: &MeleeDefinition,
+    native_selected: Option<bool>,
 ) -> Result<ThinkOutcome, BiteRejection> {
     let Some((distance, target)) = perceived
         .iter()
@@ -248,6 +366,13 @@ fn swing_decision(
     }
     if !(target.legal_attack_target && input.attack.off_cooldown) {
         return Ok(ThinkOutcome::Idle);
+    }
+    if let Some(selected) = native_selected {
+        return Ok(if selected {
+            ThinkOutcome::AttackIntent(target.id)
+        } else {
+            ThinkOutcome::Idle
+        });
     }
     let draw = deterministic_decision_u64(
         &input.decision_root,
@@ -526,7 +651,12 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(vitals.health, 0, "DEATH-2: a creature bite may be lethal");
         assert_eq!(
-            owner.entries.values().next().map(|entry| entry.due_us),
+            owner
+                .entries
+                .values()
+                .next()
+                .and_then(|entry| entry.legacy.as_ref())
+                .map(|entry| entry.due_us),
             Some(11_000_000),
             "missed turns never burst"
         );
@@ -724,7 +854,12 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(result, Dispatch::Decision(ThinkOutcome::Idle));
         assert_eq!(
-            owner.entries.values().next().map(|entry| entry.due_us),
+            owner
+                .entries
+                .values()
+                .next()
+                .and_then(|entry| entry.legacy.as_ref())
+                .map(|entry| entry.due_us),
             Some(2_000_000)
         );
         assert_eq!((vitals.health, vitals.revision), (20, 0));
@@ -827,6 +962,185 @@ mod tests {
         assert_eq!((vitals.health, vitals.revision), (20, 0));
         Ok(())
     }
+    #[test]
+    fn legacy_melee_adapter_retains_its_1500_ms_cadence() -> Result<(), String> {
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let def = MeleeDefinition::new(
+            runtime.content_pin().server_artifact_digest(),
+            500,
+            1_000_000,
+            8,
+            8,
+        )
+        .ok_or("threshold fixture")?;
+        let mut owner = MonsterMeleeOwner::default();
+        let mut vitals = Vitals {
+            health: 100,
+            revision: 0,
+            armor: 0,
+            defence: None,
+            protection: None,
+        };
+        for (sequence, now, expected_health) in [
+            (1, 0, 92),
+            (2, 500_000, 92),
+            (3, 1_499_999, 92),
+            (4, 1_500_000, 84),
+            (5, 2_999_999, 84),
+            (6, 3_000_000, 76),
+        ] {
+            let result = owner
+                .think(
+                    &mut runtime,
+                    &mut vitals,
+                    issuer,
+                    sequence,
+                    def,
+                    input(1),
+                    &perceived(),
+                    |_| {
+                        Some((
+                            target,
+                            session,
+                            ReentryProtection {
+                                protected_until: None,
+                            },
+                        ))
+                    },
+                    revisions()?,
+                    SemanticTimeMicros::from_micros(now),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(vitals.health, expected_health, "threshold at {now}");
+            let replay = owner
+                .think(
+                    &mut runtime,
+                    &mut vitals,
+                    issuer,
+                    sequence,
+                    def,
+                    input(2),
+                    &perceived(),
+                    |_| {
+                        Some((
+                            target,
+                            session,
+                            ReentryProtection {
+                                protected_until: None,
+                            },
+                        ))
+                    },
+                    revisions()?,
+                    SemanticTimeMicros::from_micros(now),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(replay, result);
+            assert_eq!(vitals.health, expected_health, "replay cannot double hit");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn fleeing_melee_replays_suppression_and_resumes_after_healing() -> Result<(), String> {
+        use crate::ai_think::behaviour_profile::CreatureBehaviourProfile;
+        use crate::ai_think::targeting::TargetCandidate;
+        use crate::ai_think::{CreatureAiState, CreatureThinkFacts};
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let behavior = serde_json::from_value(serde_json::json!({
+            "movement":{"can_walk":true,"pass_through":false,"pushable":false,
+                "push_items":false,"push_creatures":false,"walks_on_energy":false,
+                "walks_on_fire":false,"walks_on_poison":false},
+            "targeting":{"hostile":true,"can_target":true,"sense_invisible":false,
+                "target_distance_tiles":1,"static_attack_chance_ppm":1000000,"flee_health":5}
+        }))
+        .map_err(|error| error.to_string())?;
+        let profile = CreatureBehaviourProfile::project(Some(&behavior), &BTreeMap::new())
+            .map_err(|error| format!("{error:?}"))?;
+        let mut owner = MonsterMeleeOwner::default();
+        owner
+            .creature_ai
+            .admit(CreatureAiState::new(issuer, profile, position(0)), 0);
+        let candidates = [TargetCandidate {
+            actor: target,
+            position: position(1),
+            eligible: true,
+            invisible: false,
+            health: 100,
+            damage: 0,
+        }];
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        let revisions = revisions()?;
+        let mut facts = CreatureThinkFacts {
+            position: position(0),
+            health: 5,
+            has_active_condition: false,
+            players: &candidates,
+            now_us: 0,
+            root: &root,
+            revisions: &revisions,
+        };
+        let report = owner
+            .creature_ai
+            .think(issuer, &facts)
+            .ok_or("admitted AI state")?
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(report.fleeing);
+        let mut vitals = Vitals {
+            health: 20,
+            revision: 0,
+            armor: 0,
+            defence: None,
+            protection: None,
+        };
+        let definition = definition(&runtime, 1_000_000)?;
+        let mut swing = |owner: &mut MonsterMeleeOwner, sequence, now| {
+            owner
+                .think(
+                    &mut runtime,
+                    &mut vitals,
+                    issuer,
+                    sequence,
+                    definition,
+                    input(1),
+                    &perceived(),
+                    |_| {
+                        Some((
+                            target,
+                            session,
+                            ReentryProtection {
+                                protected_until: None,
+                            },
+                        ))
+                    },
+                    revisions.clone(),
+                    SemanticTimeMicros::from_micros(now),
+                )
+                .map_err(|error| format!("{error:?}"))
+        };
+        assert_eq!(
+            swing(&mut owner, 1, 0)?,
+            Dispatch::Decision(ThinkOutcome::Idle)
+        );
+        facts.health = 6;
+        facts.now_us = 1_000_000;
+        let report = owner
+            .creature_ai
+            .think(issuer, &facts)
+            .ok_or("admitted AI state")?
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(!report.fleeing);
+        assert_eq!(
+            swing(&mut owner, 1, 1_000_000)?,
+            Dispatch::Decision(ThinkOutcome::Idle)
+        );
+        assert!(matches!(
+            swing(&mut owner, 2, 1_000_000)?,
+            Dispatch::Bite(Ok(_))
+        ));
+        assert_eq!((vitals.health, vitals.revision), (12, 1));
+        Ok(())
+    }
+
     #[test]
     fn source_intervals_and_chances_refuse_lossy_or_invalid_inputs() -> Result<(), String> {
         let d = MeleeDefinition::new([3; 32], 2000, 1_000_000, 0, 8)
@@ -1033,4 +1347,6 @@ mod tests {
         assert_eq!(defences, 0, "a protected player's block is not met");
         Ok(())
     }
+
+    mod native_tests;
 }

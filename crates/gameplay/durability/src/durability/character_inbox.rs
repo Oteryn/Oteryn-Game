@@ -23,7 +23,7 @@ use sqlx::postgres::PgConnection;
 mod reward_claim;
 
 pub use reward_claim::{
-    REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError, RewardClaimInboxMintCandidate,
+    HirelingRecallRequest, REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError, RewardClaimInboxMintCandidate,
     RewardClaimInboxMintOutput, RewardClaimInboxMintRequest, RewardClaimInboxOutcome,
     RewardClaimInboxPlan, RewardClaimInboxPosition, RewardClaimInboxTransaction,
 };

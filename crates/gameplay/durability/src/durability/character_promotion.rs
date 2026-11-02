@@ -21,6 +21,24 @@ pub async fn read_durable_promotion(
 }
 
 impl DurabilityRoot {
+    /// Character-owned observation for restoring a session projection. This is
+    /// not a purchase/session capability; each consumer proves current custody.
+    pub async fn read_character_promotion(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+    ) -> Result<bool, CharacterProgressionError> {
+        let recovery = authority.record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let promoted = read_durable_promotion(&mut tx, character).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(promoted))
+        })).await?
+    }
+
     pub async fn read_promotion_for_session(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

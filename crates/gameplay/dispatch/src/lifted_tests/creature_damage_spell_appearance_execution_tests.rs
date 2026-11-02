@@ -60,6 +60,8 @@ struct World<'a> {
     missing: bool,
     blocked: bool,
     content_present: bool,
+    visible: bool,
+    target_protected: bool,
 }
 impl SpellWorldReader for World<'_> {
     fn native_gameplay<'a>(&'a self, _: &ChannelRuntimeV1) -> Option<&'a NativeGameplayState> {
@@ -115,11 +117,11 @@ impl SpellWorldReader for World<'_> {
                 target: t,
                 session: s,
                 revision: 1,
-                visible: true,
+                visible: self.visible,
                 issuer_pz: false,
                 target_pz: self.blocked,
                 issuer_protected: false,
-                target_protected: false,
+                target_protected: self.target_protected,
                 defense: 0,
                 armor: 0,
                 player_level: 1,
@@ -159,7 +161,7 @@ fn fixture<'a>(
         1,
         1,
         "runtime-scope-assignment:1",
-        8,
+        64 + 8,
         pin,
     )
     .unwrap();
@@ -309,6 +311,8 @@ fn fixture<'a>(
             missing: false,
             blocked: false,
             content_present: true,
+            visible: true,
+            target_protected: false,
         },
         fence,
         stamp,
@@ -353,6 +357,16 @@ fn appearance_all120_source_bodies_resolve_current_native110_creature10_items() 
             pin.clone(),
         )
         .unwrap();
+        let catalog =
+            crate::creature_area_heal::CreatureHealCatalog::from_current_native(&r, &native)
+                .expect("same active native creature HP catalog");
+        assert!(catalog.matches_current(&r));
+        assert!(
+            catalog
+                .maximum
+                .get(&creature.key)
+                .is_some_and(|maximum| *maximum > 0)
+        );
         let defs = source.current_appearance_conditions(&r, &native).unwrap();
         assert_eq!(defs.len(), 1);
         match defs[0].values() {
@@ -376,48 +390,91 @@ fn appearance_all120_source_bodies_resolve_current_native110_creature10_items() 
 #[ignore = "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"]
 fn scheduled_appearance_real_player_store_projection_expiry_and_replay() {
     let (native, pin) = actual_content();
-    for (index, item) in [(4, false), (5, true)] {
-        let (mut r, mut states, source, p, mut world, fence, stamp) =
-            fixture(&native, pin.clone(), "dark_apprentice", index, false);
-        let before = states
-            .read_owned_player_state_test_snapshot(&r, p.target, world.session)
-            .unwrap()
-            .clone();
-        let mut owner = DamageSpellOwner::default();
-        let now = SemanticTimeMicros::from_micros(1);
-        let first = owner
-            .execute(
-                &mut r,
-                &fence,
-                stamp,
-                &mut states,
-                &source,
-                &p,
-                &mut world,
-                now,
-            )
-            .unwrap();
-        assert_eq!(first.targets.len(), if item { 2 } else { 1 });
-        assert!(first.targets[0].1.as_ref().unwrap().condition_only_applied);
-        assert_eq!(
-            states
+    assert_invisible_area_appearance_protection_and_replay(&native, pin.clone());
+    for current_owner in [false, true] {
+        for (index, item) in [(4, false), (5, true)] {
+            let (mut r, mut states, source, p, mut world, fence, stamp) =
+                fixture(&native, pin.clone(), "dark_apprentice", index, false);
+            if current_owner {
+                let at = r.read_actor_position(p.issuer).unwrap().position();
+                let health = native
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .find_map(|record| match &record.profile.data {
+                        Data::Creature(creature)
+                            if record.profile.target.key == source.creature_key =>
+                        {
+                            creature.health
+                        }
+                        _ => None,
+                    })
+                    .unwrap();
+                for offset in 0..64 {
+                    r.admit_source_pinned_lab_creature(
+                        MovementLocalPosition {
+                            x: at.x + 64 + offset,
+                            y: at.y,
+                            floor: at.floor,
+                        },
+                        &source.creature_key,
+                        i64::try_from(health).unwrap(),
+                    )
+                    .unwrap();
+                }
+                assert!(r.positioned_actor_census().unwrap().len() > 64);
+            }
+            let current_stamp = r.issue_owner_work().expect("current appearance work");
+            let before = states
                 .read_owned_player_state_test_snapshot(&r, p.target, world.session)
                 .unwrap()
-                .vitals(),
-            before.vitals()
-        );
-        assert!(
-            r.actor_conditions(p.target, Some(world.session))
+                .clone();
+            let mut owner = DamageSpellOwner::default();
+            let now = SemanticTimeMicros::from_micros(1);
+            let first = if current_owner {
+                owner.execute_current(
+                    &mut r,
+                    current_stamp,
+                    &mut states,
+                    &source,
+                    &p,
+                    &mut world,
+                    now,
+                )
+            } else {
+                owner.execute(
+                    &mut r,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &p,
+                    &mut world,
+                    now,
+                )
+            }
+            .unwrap();
+            assert_eq!(first.targets.len(), if item { 2 } else { 1 });
+            assert!(first.targets[0].1.as_ref().unwrap().condition_only_applied);
+            assert_eq!(
+                states
+                    .read_owned_player_state_test_snapshot(&r, p.target, world.session)
+                    .unwrap()
+                    .vitals(),
+                before.vitals()
+            );
+            assert!(
+                r.actor_conditions(p.target, Some(world.session))
+                    .unwrap()
+                    .instances()
+                    .is_empty()
+            );
+            let store = states
+                .read_owned_player_state_test_snapshot(&r, p.target, world.session)
                 .unwrap()
-                .instances()
-                .is_empty()
-        );
-        let store = states
-            .read_owned_player_state_test_snapshot(&r, p.target, world.session)
-            .unwrap()
-            .owned_conditions();
-        let shown = store.displayed_temporary_appearance_at(1).unwrap();
-        match shown {
+                .owned_conditions();
+            let shown = store.displayed_temporary_appearance_at(1).unwrap();
+            match shown {
             oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance::Item(v) => {
                 assert!(item);
                 assert_eq!(v.definition_key(), "oteryn:item.tibia.i2324");
@@ -436,30 +493,122 @@ fn scheduled_appearance_real_player_store_projection_expiry_and_replay() {
                 );
             }
         }
-        assert!(store.displayed_temporary_appearance_at(2_000_001).is_none());
-        let applied = states
-            .read_owned_player_state_test_snapshot(&r, p.target, world.session)
+            assert!(store.displayed_temporary_appearance_at(2_000_001).is_none());
+            let applied = states
+                .read_owned_player_state_test_snapshot(&r, p.target, world.session)
+                .unwrap()
+                .clone();
+            let retry = if current_owner {
+                owner.execute_current(
+                    &mut r,
+                    current_stamp,
+                    &mut states,
+                    &source,
+                    &p,
+                    &mut world,
+                    now,
+                )
+            } else {
+                owner.execute(
+                    &mut r,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &p,
+                    &mut world,
+                    now,
+                )
+            }
+            .unwrap();
+            assert_eq!(first, retry);
+            assert_eq!(
+                states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
+                Some(&applied)
+            );
+        }
+    }
+}
+fn assert_invisible_area_appearance_protection_and_replay(
+    native: &NativeGameplayState,
+    pin: ChannelContentPin,
+) {
+    // Crystal 201189f combat.cpp:1757-1759 sends area conditions through
+    // CombatFunc's complete recipient enumeration (1626-1658).
+    for protected in [false, true] {
+        let (mut runtime, mut states, source, proposal, mut world, _, _) =
+            fixture(native, pin.clone(), "dark_apprentice", 5, false);
+        assert!(source.area.is_some());
+        world.visible = false;
+        world.target_protected = protected;
+        let before = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
             .unwrap()
             .clone();
-        let retry = owner
-            .execute(
-                &mut r,
-                &fence,
+        let stamp = runtime
+            .issue_owner_work()
+            .expect("current area appearance work");
+        let mut owner = DamageSpellOwner::default();
+        let first = owner
+            .execute_current(
+                &mut runtime,
                 stamp,
                 &mut states,
                 &source,
-                &p,
+                &proposal,
                 &mut world,
-                now,
+                SemanticTimeMicros::from_micros(1),
             )
-            .unwrap();
-        assert_eq!(first, retry);
+            .expect("source-qualified area appearance");
+        let target = first
+            .targets
+            .iter()
+            .find(|(actor, _)| *actor == proposal.target);
+        let applied = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .clone();
+        if protected {
+            assert!(target.is_none());
+            assert_eq!(applied, before);
+        } else {
+            assert!(
+                target
+                    .expect("invisible player receives the source area appearance")
+                    .1
+                    .as_ref()
+                    .expect("actual appearance owner receipt")
+                    .condition_only_applied
+            );
+            assert!(
+                applied
+                    .owned_conditions()
+                    .displayed_temporary_appearance_at(1)
+                    .is_some()
+            );
+            assert_eq!(applied.vitals(), before.vitals());
+        }
         assert_eq!(
-            states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(1),
+                )
+                .expect("retained area appearance occurrence"),
+            first
+        );
+        assert_eq!(
+            states.read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session),
             Some(&applied)
         );
     }
 }
+
 #[test]
 #[ignore = "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"]
 fn scheduled_appearance_missing_artifact_tile_refusal_wrong_revision_and_stale_owner_no_mutation() {
@@ -609,83 +758,115 @@ fn source_target_flag_defense_still_mutates_sole_native_creature_slot() {
 #[ignore = "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"]
 fn appearance_area_late_player_clock_refusal_rolls_back_creature_and_players() {
     let (native, pin) = actual_content();
-    let (mut r, mut states, source, p, mut world, fence, stamp) =
-        fixture(&native, pin, "dark_apprentice", 5, false);
-    let root = GameplayDecisionRoot::from_bytes(native.source_digest());
-    let def = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
-        "fixture:future",
-        1,
-        oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible { duration_ms: 1000 },
-    )
-    .unwrap();
-    let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
-        now: 10,
-        base_speed: 180,
-        mana_shield_capacity: 0,
-        target_reentry_protected: false,
-        source_reentry_protected: false,
-        target_is_player: true,
-        decision_root: &root,
-        occurrence: DecisionOccurrenceId::from_bytes([7; 16]),
-    };
-    assert!(states.install_owned_player_self_use_test_condition(
-        &r,
-        &fence,
-        stamp,
-        p.target,
-        world.session,
-        &def,
-        &facts
-    ));
-    let player = states
-        .read_owned_player_state_test_snapshot(&r, p.target, world.session)
-        .unwrap()
-        .clone();
-    let creature = r.actor_conditions(p.issuer, None).unwrap().clone();
-    let mut owner = DamageSpellOwner::default();
-    assert_eq!(
-        owner.execute(
-            &mut r,
+    for current_owner in [false, true] {
+        let (mut r, mut states, source, p, mut world, fence, stamp) =
+            fixture(&native, pin.clone(), "dark_apprentice", 5, false);
+        let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+        let def = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+            "fixture:future",
+            1,
+            oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible {
+                duration_ms: 1000,
+            },
+        )
+        .unwrap();
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+            now: 10,
+            base_speed: 180,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([7; 16]),
+        };
+        assert!(states.install_owned_player_self_use_test_condition(
+            &r,
             &fence,
             stamp,
-            &mut states,
-            &source,
-            &p,
-            &mut world,
-            SemanticTimeMicros::from_micros(1)
-        ),
-        Err(AttackError::MissingVitals)
-    );
-    assert_eq!(
-        states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
-        Some(&player)
-    );
-    assert_eq!(r.actor_conditions(p.issuer, None).unwrap(), &creature);
-    let binding = r.binding();
-    let (stale, wrong_stamp) = crate::foundation::crystal_timer_fixture(
-        binding.runtime_scope(),
-        crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        owner.execute(
-            &mut r,
-            &stale,
-            wrong_stamp,
-            &mut states,
-            &source,
-            &p,
-            &mut world,
-            SemanticTimeMicros::from_micros(10)
-        ),
-        Err(AttackError::StaleOwner)
-    );
-    assert_eq!(
-        states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
-        Some(&player)
-    );
-    assert_eq!(r.actor_conditions(p.issuer, None).unwrap(), &creature);
+            p.target,
+            world.session,
+            &def,
+            &facts
+        ));
+        let player = states
+            .read_owned_player_state_test_snapshot(&r, p.target, world.session)
+            .unwrap()
+            .clone();
+        let creature = r.actor_conditions(p.issuer, None).unwrap().clone();
+        let mut owner = DamageSpellOwner::default();
+        let current_stamp = r
+            .issue_owner_work()
+            .expect("current appearance rollback work");
+        let refused = if current_owner {
+            owner.execute_current(
+                &mut r,
+                current_stamp,
+                &mut states,
+                &source,
+                &p,
+                &mut world,
+                SemanticTimeMicros::from_micros(1),
+            )
+        } else {
+            owner.execute(
+                &mut r,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &p,
+                &mut world,
+                SemanticTimeMicros::from_micros(1),
+            )
+        };
+        assert_eq!(refused, Err(AttackError::MissingVitals));
+        assert_eq!(
+            states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
+            Some(&player)
+        );
+        assert_eq!(r.actor_conditions(p.issuer, None).unwrap(), &creature);
+        let binding = r.binding();
+        let (stale, wrong_stamp) = crate::foundation::crystal_timer_fixture(
+            binding.runtime_scope(),
+            crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            owner.execute(
+                &mut r,
+                &stale,
+                wrong_stamp,
+                &mut states,
+                &source,
+                &p,
+                &mut world,
+                SemanticTimeMicros::from_micros(10)
+            ),
+            Err(AttackError::StaleOwner)
+        );
+        assert_eq!(
+            states.read_owned_player_state_test_snapshot(&r, p.target, world.session),
+            Some(&player)
+        );
+        assert_eq!(r.actor_conditions(p.issuer, None).unwrap(), &creature);
+        if current_owner {
+            r.retire_owner_cycle();
+            assert_eq!(
+                owner.execute_current(
+                    &mut r,
+                    current_stamp,
+                    &mut states,
+                    &source,
+                    &p,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(10),
+                ),
+                Err(AttackError::StaleOwner)
+            );
+        }
+    }
 }
 
 #[test]

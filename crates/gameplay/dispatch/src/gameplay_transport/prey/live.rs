@@ -31,8 +31,35 @@ pub(in crate::gameplay_transport) struct LivePrey {
     pending: Option<([u8; 16], Vec<PreyCheckpoint>)>,
 }
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn house_prey_transfer_ready(
+        &self, actor: ExactActorRef, source: GameSessionId, destination: GameSessionId,
+    ) -> bool {
+        !self.prey.iter().any(|state| state.session == destination)
+            && self.prey.iter().filter(|state| state.actor == actor && state.session == source)
+                .all(|state| !state.has_spending() && state.pending.is_none())
+    }
+
+    /// Preserve the same selected slots and clocks after the real native
+    /// handoff; only the session lookup changes. Pending native writes must
+    /// have settled under their original source before the handoff starts.
+    pub(in crate::gameplay_transport) fn move_house_prey(
+        &mut self, actor: ExactActorRef, source: GameSessionId, destination: GameSessionId,
+    ) {
+        for state in &mut self.prey {
+            if state.actor == actor && state.session == source { state.session = destination; }
+        }
+    }
+
     pub(in crate::gameplay_transport) fn clear_prey(&mut self, session: GameSessionId) {
         self.prey.retain(|p| p.session != session);
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn house_prey_transfer_observation(
+        &self, actor: ExactActorRef, session: GameSessionId,
+    ) -> Option<(Vec<u8>, [bool;3], u32, bool)> {
+        let state = self.prey.iter().find(|state| state.actor == actor && state.session == session)?;
+        Some((wire::encode_reply(&state.reply).ok()?, state.permanent, state.activity.iter().map(|activity| activity.spent).sum(), state.pending.is_some()))
     }
 
     pub(in crate::gameplay_transport) fn apply_prey_spell_damage(
@@ -67,11 +94,31 @@ impl ChannelSpellStates {
         permanent: [bool; 3],
         defense_mode: PreyDefenseMode,
     ) {
-        self.prey
-            .retain(|p| runtime.player_control_facts(p.actor, p.session).is_ok());
+        self.prey.retain(|p| runtime.player_control_facts(p.actor, p.session).is_ok()
+            || runtime.house_player_control_facts(p.actor, p.session).is_ok());
         if self.get(runtime, actor, session).is_none() {
             return;
         }
+        self.install_admitted_prey(actor, session, reply, permanent, defense_mode);
+    }
+
+    /// Only data prepared by the real source admission is installed here.
+    /// House combat/Prey commands retain their existing unsupported gates.
+    #[allow(clippy::too_many_arguments, reason = "House admission also requires its current inventory fence alongside the configured Prey defense mode")]
+    pub(in crate::gameplay_transport) fn load_house_prey(
+        &mut self, runtime: &ChannelRuntimeV1, actor: ExactActorRef, session: GameSessionId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        reply: wire::Reply, permanent: [bool; 3], defense_mode: PreyDefenseMode,
+    ) -> Option<()> {
+        self.house_state_mut(runtime, actor, session, fence)?;
+        self.prey.retain(|p| runtime.player_control_facts(p.actor, p.session).is_ok()
+            || runtime.house_player_control_facts(p.actor, p.session).is_ok());
+        self.install_admitted_prey(actor, session, reply, permanent, defense_mode);
+        Some(())
+    }
+
+    fn install_admitted_prey(&mut self, actor: ExactActorRef, session: GameSessionId,
+        reply: wire::Reply, permanent: [bool; 3], defense_mode: PreyDefenseMode) {
         if let Some(p) = self
             .prey
             .iter_mut()

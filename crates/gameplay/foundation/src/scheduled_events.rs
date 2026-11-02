@@ -51,6 +51,39 @@ impl Default for EventRates {
 #[serde(deny_unknown_fields)]
 struct SourceSchedule {
     events: Vec<SourceEvent>,
+    /// Annual gameplay-event windows are consumed by their individual owners; the rate
+    /// scheduler still validates their committed calendar shape when loading this shared file.
+    #[serde(default, rename = "seasonal")]
+    _seasonal: Vec<SourceSeasonalEvent>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceSeasonalEvent {
+    #[serde(rename = "event")]
+    _event: String,
+    #[serde(rename = "source")]
+    _source: String,
+    #[serde(rename = "windows")]
+    _windows: Vec<SourceSeasonalWindow>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceSeasonalWindow {
+    #[serde(rename = "start")]
+    _start: SourceMonthDay,
+    #[serde(rename = "end_exclusive")]
+    _end_exclusive: SourceMonthDay,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceMonthDay {
+    #[serde(rename = "month")]
+    _month: u8,
+    #[serde(rename = "day")]
+    _day: u8,
 }
 
 /// One `events.xml` `<event>` with its `<ingame>` rates (absent attributes stay 100).

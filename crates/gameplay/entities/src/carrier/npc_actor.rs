@@ -15,6 +15,11 @@ use super::{
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
+#[path = "npc_actor/hireling.rs"]
+mod hireling;
+#[doc(hidden)]
+pub use hireling::HouseHirelingBinding;
+pub use hireling::{HirelingProjection, HouseHirelingEntity};
 
 /// `NPCPLACE1-RL-01` (= `NPCBEH0-RL-01`): NPC placements, and so NPC actors, per Channel.
 pub const MAX_NPC_PLACEMENTS: usize = 2_048;
@@ -185,6 +190,16 @@ impl ChannelRuntimeV1 {
         let Some((index, generation)) = found else {
             return Ok(());
         };
+        if matches!(
+            &self.carrier.slots[index],
+            Slot::NpcOccupied {
+                hireling: Some(_),
+                ..
+            }
+        ) {
+            return Err(NpcPlacementError::Carrier(CarrierError::WrongScope));
+        }
+
         let free = u32::try_from(index)
             .map_err(|_| NpcPlacementError::Carrier(CarrierError::CapacityArithmeticOverflow))?;
         self.carrier.slots[index] = Slot::VacantReusable {
@@ -312,12 +327,14 @@ impl ChannelRuntimeV1 {
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
+            hireling: None,
             position: VersionedPosition {
                 actor_local_id,
                 actor_local_generation: ActorLocalGeneration(generation),
                 context,
                 position,
                 revision: 1,
+                last_translation_revision: 0,
                 facing: Some(placement.direction),
             },
         };
@@ -331,7 +348,10 @@ impl ChannelRuntimeV1 {
         let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
         match &self.carrier.slots[index] {
             Slot::NpcOccupied {
-                generation, key, ..
+                generation,
+                key,
+                hireling: None,
+                ..
             } if *generation == actor.0.actor_local_generation.0 => Some(key),
             _ => None,
         }
@@ -393,6 +413,7 @@ mod tests {
             .expect("Movement reads the placed NPC");
         assert_eq!(snapshot.context(), runtime.pinned_movement_context());
         assert_eq!(snapshot.facing(), Some(MovementFacing::South));
+        assert_eq!(snapshot.last_translation_revision(), 0);
         let others_before = runtime.carrier.slots[1..].to_vec();
         for (x, y, facing) in [
             (20, 9, MovementFacing::North),
@@ -410,6 +431,7 @@ mod tests {
             assert_eq!(snapshot.position(), next);
             assert_eq!(snapshot.context(), old.context());
             assert_eq!(snapshot.revision(), old.revision() + 1);
+            assert_eq!(snapshot.last_translation_revision(), snapshot.revision());
             assert_eq!(snapshot.facing(), Some(facing));
             assert_eq!(runtime.borrow_movement_position().read(actor), Ok(snapshot));
             let visible = runtime.visible_entities();
@@ -480,7 +502,7 @@ mod tests {
             .read(actor)
             .expect("NPC position");
         let before = runtime.carrier.slots.clone();
-        for changed in 0..9 {
+        for changed in 0..10 {
             let mut wrong = initial;
             match changed {
                 0 => wrong.0.actor_ref = other.0,
@@ -491,7 +513,8 @@ mod tests {
                 5 => wrong.0.version.revision += 1,
                 6 => wrong.0.version.facing = Some(MovementFacing::West),
                 7 => wrong.0.version.actor_local_id = other.0.actor_local_id,
-                _ => wrong.0.version.actor_local_generation = ActorLocalGeneration(2),
+                8 => wrong.0.version.actor_local_generation = ActorLocalGeneration(2),
+                _ => wrong.0.version.last_translation_revision += 1,
             }
             let next = MovementLocalPosition {
                 x: wrong.position().x + 1,

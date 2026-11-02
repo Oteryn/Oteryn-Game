@@ -180,7 +180,7 @@ fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError>
     }
 }
 
-fn encode_ref(entity: &EntityRef) -> Vec<u8> {
+pub(crate) fn encode_ref(entity: &EntityRef) -> Vec<u8> {
     let mut output = Vec::with_capacity(ENTITY_IDENTITY_BYTES + 14);
     push_tag(&mut output, 1, 2);
     push_varint(&mut output, ENTITY_IDENTITY_BYTES as u64);
@@ -275,7 +275,7 @@ fn varint_u32(input: &[u8], cursor: &mut usize) -> Result<u32, WorldSpatialError
     u32::try_from(read_varint(input, cursor)?).map_err(|_| WorldSpatialError::Malformed)
 }
 
-fn decode_ref(input: &[u8]) -> Result<EntityRef, WorldSpatialError> {
+pub(crate) fn decode_ref(input: &[u8]) -> Result<EntityRef, WorldSpatialError> {
     let mut cursor = 0;
     let (mut identity, mut generation) = (None, None);
     while cursor < input.len() {
