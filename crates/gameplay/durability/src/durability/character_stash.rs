@@ -109,6 +109,27 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
     ) -> Result<Option<StashReceipt>, DurabilityError> {
+        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,None).await
+    }
+
+    /// Steward service extends the native stash owner with a closed named-House admission.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn hireling_stash_conversion<C: ItemLoopContent>(
+        &self, permit:&super::spell_owner_commit::SpellLanePermit,
+        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
+        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
+        probe:bool,origin_channel:crate::foundation::ChannelId,hireling_id:[u8;16],
+    )->Result<Option<StashReceipt>,DurabilityError> {
+        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,Some((origin_channel,hireling_id))).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn stash_conversion_at<C: ItemLoopContent>(
+        &self, permit:&super::spell_owner_commit::SpellLanePermit,
+        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
+        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
+        probe:bool,hireling:Option<(crate::foundation::ChannelId,[u8;16])>,
+    )->Result<Option<StashReceipt>,DurabilityError> {
         let intent =
             encode_stash_intent(request.intent).map_err(|_| DurabilityError::InvalidStoredState)?;
         if request.command.game_session_id() != fence.game_session_id
@@ -116,12 +137,11 @@ impl DurabilityRoot {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        permit.check_scope(fence.runtime_scope)?;
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content);
+        let mut context = (native, content, permit);
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,context|Box::pin(async move {
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&record).await?;
@@ -137,17 +157,31 @@ impl DurabilityRoot {
                 return Ok(Some(StashReceipt {transaction,outcome,stowed_quantity:if same {u32::try_from(previous.try_get::<i64,_>("stowed")?).map_err(|_|DurabilityError::InvalidStoredState)?}else{0}}));
             }
             if probe {super::db::commit_semantic_transaction(tx,deadline).await?;return Ok(None);}
-            assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.command),context.1.loop_content_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
+            if let Some((origin,_))=hireling {context.2.check_channel(fence.runtime_scope.world_id(),origin)?;}
+            else {context.2.check_scope(fence.runtime_scope)?;}
+            let channel=if let Some((origin,id))=hireling {
+                super::db::lock_admission_relations(&mut tx).await?;
+                if !super::house_hireling::fence::assert_house_inventory_fence(&mut tx,&node,&fence,*origin.as_bytes()).await?
+                    || !super::house_hireling::food::service_in_transaction(&mut tx,&fence,id,Some(1003)).await? {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                origin
+            } else {
+                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.command),context.1.loop_content_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
+                scope_of(&fence).map_err(|_|DurabilityError::InvalidStoredState)?.1
+            };
+            let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)}else{None};
             if context.1.loop_content_digest()!=context.0.source_digest() {return Err(DurabilityError::Unavailable);}
             let planned=plan(&mut tx,fence,&request,context.0,context.1).await?;
             let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
             let outcome=match &planned {Ok(_)=>StashOutcome::Committed,Err(outcome)=>*outcome};
             let action=if matches!(request.intent.action,StashAction::Stow(_)) {2_i16}else{3};
             let stowed_quantity=if action==2 {planned.as_ref().map(|p|p.amount).unwrap_or(0)}else{0};
-            let envelope=match &planned {Ok(plan)=>Some(audit::encode(fence,&request,plan,&transaction,&event,occurred)?),Err(_)=>None};
-            let (world,_)=scope_of(&fence).map_err(|_|DurabilityError::InvalidStoredState)?;
-            sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11))")
-                .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref()).execute(&mut *tx).await?;
+            let envelope=match &planned {Ok(plan)=>Some(audit::encode(fence,channel,&request,plan,&transaction,&event,occurred,house_key.as_deref())?),Err(_)=>None};
+            let world=fence.runtime_scope.world_id();
+            sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256,house_key,house_scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11),$12,$13::text::numeric)")
+                .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref())
+                .bind(house_key.as_deref()).bind(house_key.as_ref().map(|_|fence.scope_ownership_generation.get().to_string())).execute(&mut *tx).await?;
             if let Ok(plan)=planned {
                 apply(&mut tx,fence,&plan,action,&transaction).await?;
                 let envelope=envelope.ok_or(DurabilityError::InvalidStoredState)?;
@@ -192,7 +226,7 @@ async fn plan<C: ItemLoopContent>(
     if let Some(refusal) = request.access_refusal {
         return Ok(Err(refusal));
     }
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let world = fence.runtime_scope.world_id();
     let bag=sqlx::query("SELECT uuid_send(s.item_instance_id) AS parent,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid AND i.lifecycle=1")
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(bag) = bag else { refuse!(NoBackpack) };
@@ -351,7 +385,7 @@ async fn apply(
     action: i16,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let world = fence.runtime_scope.world_id();
     let entry = &plan.entry;
     let after = plan.before
         + if action == 2 {

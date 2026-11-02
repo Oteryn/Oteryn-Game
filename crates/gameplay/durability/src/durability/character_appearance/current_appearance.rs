@@ -1,5 +1,14 @@
 //! Current appearance state loaded under recovery, admission and Character fences.
 use super::*;
+#[path = "current_appearance/house_fence.rs"]
+mod house_fence;
+use house_fence::assert_read_fence;
+
+#[derive(Clone, Copy)]
+enum ReadScope {
+    Channel,
+    House { origin_channel: [u8; 16] },
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrentCharacterAppearance {
@@ -31,8 +40,35 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel).await
+    }
+
+    /// Read-only House projection. The native named-House proof replaces only the Channel
+    /// admission check; root revision, interpretation, selected appearance and earned grants
+    /// are still read by the same existing owner in this transaction.
+    pub async fn read_current_house_character_appearance_state(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        origin_channel: [u8; 16],
+        grant_keys: Vec<String>,
+    ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::House { origin_channel }).await
+    }
+
+    async fn read_appearance_state_in_scope(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        grant_keys: Vec<String>,
+        scope: ReadScope,
+    ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || !matches!((scope, fence.runtime_scope),
+                (ReadScope::Channel, RuntimeScopeRefV1::Channel { .. })
+                | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. }))
         {
             return Err(AppearanceWriteError::InvalidInput);
         }
@@ -46,7 +82,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                    let root = match assert_read_fence(&mut tx, &fence, &node, scope).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error.into())),
                     };

@@ -111,6 +111,7 @@ impl CreatureAiTable {
                 motion.stop();
                 continue;
             }
+            entry.state.attack_facing = step;
             motion.expected = moved.ok();
             if motion.route.is_some() {
                 motion.cursor += 1;

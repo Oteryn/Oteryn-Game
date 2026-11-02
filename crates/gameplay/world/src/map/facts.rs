@@ -98,8 +98,8 @@ pub struct BundleFacts {
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
     placements: Vec<(u64, Placement)>,
-    /// Ascending.
-    houses: Vec<TilePos>,
+    /// Ascending `(tile, source House id)`, retained from the bundle's tile fact.
+    houses: Vec<(TilePos, u32)>,
     house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
@@ -165,7 +165,7 @@ impl BundleFacts {
                 floor: sector.floor,
             };
             if tile.house != 0 {
-                self.houses.push(pos);
+                self.houses.push((pos, tile.house));
             }
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
@@ -323,6 +323,23 @@ impl BundleFacts {
         self.house_doors.sort_unstable();
         self.house_doors.shrink_to_fit();
         self.doors.finish();
+    }
+
+    /// Exact source membership of an authored House tile. A boolean House marker
+    /// cannot admit movement into an adjacent House; ambiguous records grant none.
+    pub fn house_id(&self, pos: TilePos) -> Option<u32> {
+        let at = self.houses.partition_point(|(tile, _)| *tile < pos);
+        let (tile, house) = *self.houses.get(at)?;
+        if tile != pos
+            || house == 0
+            || self
+                .houses
+                .get(at + 1)
+                .is_some_and(|(tile, _)| *tile == pos)
+        {
+            return None;
+        }
+        Some(house)
     }
 
     /// The one source door at this tile of this exact House. Ambiguous tiles grant nothing.
@@ -844,7 +861,9 @@ impl MapFacts for BundleFacts {
     }
 
     fn house_tile(&self, pos: TilePos) -> bool {
-        self.houses.binary_search(&pos).is_ok()
+        self.houses
+            .binary_search_by_key(&pos, |(tile, _)| *tile)
+            .is_ok()
     }
 
     fn base_hidden(&self, key: u64) -> bool {
@@ -940,6 +959,51 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    #[test]
+    fn source_house_membership_keeps_adjacent_identities_and_refuses_ambiguity() {
+        use oteryn_world_bundle::sector::Tile;
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let tile = |x, house| Tile {
+            x,
+            y: 100,
+            flags: 0,
+            house,
+            zones: Vec::new(),
+            items: Vec::new(),
+        };
+        let at = |x| TilePos {
+            x,
+            y: 100,
+            floor: -7,
+        };
+        let mut sector = Sector {
+            floor: -7,
+            sx: 0,
+            sy: 0,
+            tiles: vec![tile(100, 3437), tile(101, 3438), tile(102, 0)],
+        };
+        facts.push(&bundle.manifest, &sector, &mut BTreeSet::new());
+        facts.finish();
+        assert_eq!(facts.house_id(at(100)), Some(3437));
+        assert_eq!(facts.house_id(at(101)), Some(3438));
+        assert_eq!(facts.house_id(at(102)), None);
+        assert_eq!(
+            facts.house_id(TilePos {
+                floor: -8,
+                ..at(100)
+            }),
+            None
+        );
+        sector.tiles = vec![tile(100, 9999)];
+        facts.push(&bundle.manifest, &sector, &mut BTreeSet::new());
+        facts.finish();
+        assert_eq!(facts.house_id(at(100)), None);
+        assert!(facts.house_tile(at(100)));
+        assert_eq!(facts.house_id(at(101)), Some(3438));
+    }
 
     #[test]
     fn terrain_tool_action_never_admits_a_dropped_teleport_or_unique_binding() {
@@ -1063,7 +1127,7 @@ mod tests {
         ] {
             let mut facts = BundleFacts::default();
             if house {
-                facts.houses.push(pos);
+                facts.houses.push((pos, 1));
             }
             assert_eq!(
                 facts.rotate_base(key, 0, before, after),

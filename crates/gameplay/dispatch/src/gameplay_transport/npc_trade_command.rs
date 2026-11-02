@@ -169,6 +169,15 @@ pub(super) async fn trade(
         Ok(Some(_)) | Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     }
 
+    let mut hireling = match super::npc_command::hireling_services::authorize_trade(
+        admission, actor, command, &intent,
+    )
+    .await
+    {
+        Ok(selection) => selection,
+        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+    };
     if !admission.states.player_trades.physical_service(session) {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
@@ -187,21 +196,22 @@ pub(super) async fn trade(
             Ok(offer) => offer,
             Err(refusal) => return Err(Box::new(NpcTradeStep::Refused(*refusal))),
         };
-        let available = runtime
-            .visible_entities()
-            .npcs
-            .iter()
-            .find(|npc| {
-                npc.actor.placement_identity() == intent.npc_actor.identity
-                    && npc.generation == intent.npc_actor.generation
-            })
-            .is_some_and(|npc| {
-                oteryn_gameplay_entities::rashid_schedule::trade_available(
-                    &offer.npc_key,
-                    npc.position,
-                    now,
-                )
-            });
+        let available = hireling.is_some()
+            || runtime
+                .visible_entities()
+                .npcs
+                .iter()
+                .find(|npc| {
+                    npc.actor.placement_identity() == intent.npc_actor.identity
+                        && npc.generation == intent.npc_actor.generation
+                })
+                .is_some_and(|npc| {
+                    oteryn_gameplay_entities::rashid_schedule::trade_available(
+                        &offer.npc_key,
+                        npc.position,
+                        now,
+                    )
+                });
         if !available {
             return Err(Box::new(NpcTradeStep::rejected()));
         }
@@ -229,22 +239,65 @@ pub(super) async fn trade(
             },
         )
     };
+    // Crystal npc.cpp590-595: source23721 invokes the actual LootPouch sweep.
+    // It remains visible/lookable, but may never enter the physical single-item SELL owner.
+    if offer.side == NpcTradeSide::Sell
+        && hireling.as_ref().is_some_and(|selection| {
+            crate::domain::hireling::catalogue::ROWS[selection.source_row].item_id == 23721
+        })
+    {
+        return Err(Box::new(NpcTradeStep::rejected()));
+    }
     let Some(native) = admission
         .active_generation
         .and_then(ActiveGeneration::native_gameplay)
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
-    let Ok(item) = generation_item_facts(
-        native,
-        &TypedDefinitionRef {
-            family: ITEM_FAMILY.to_owned(),
-            production_key: offer.item_key.clone(),
-            revision_ref: offer.item_revision.clone(),
-        },
-    ) else {
+    let target = TypedDefinitionRef {
+        family: ITEM_FAMILY.to_owned(),
+        production_key: offer.item_key.clone(),
+        revision_ref: offer.item_revision.clone(),
+    };
+    let materialized = if let Some(selection) = &mut hireling
+        && offer.side == NpcTradeSide::Buy
+        && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row).is_some()
+    {
+        selection.wrapped_target = Some(target.clone());
+        TypedDefinitionRef {
+            production_key: format!(
+                "oteryn:item.tibia.i{}",
+                crate::domain::hireling::catalogue::DECORATION_KIT_ITEM_ID
+            ),
+            ..target
+        }
+    } else {
+        target
+    };
+    let Ok(item) = generation_item_facts(native, &materialized) else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
+    if let Some(selection) = &mut hireling {
+        let row = &crate::domain::hireling::catalogue::ROWS[selection.source_row];
+        if row.sub_type != 0 {
+            use crate::content::ReferenceItemField::Known;
+            selection.full_charges = native
+                .item_policy(
+                    &item.definition.production_key,
+                    &item.definition.revision_ref,
+                )
+                .and_then(|policy| match &policy.record().semantics.charges {
+                    Known(charges) => match charges.count {
+                        Known(count) => Some(count),
+                        _ => None,
+                    },
+                    _ => None,
+                });
+            if selection.full_charges != Some(row.sub_type) {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            }
+        }
+    }
     let backpack = match admission
         .root
         .read_character_backpack(admission.character, fence.character_id)
@@ -283,7 +336,40 @@ pub(super) async fn trade(
         coins,
         backpack,
     };
-    let result = if sell_all {
+    let hireling_runtime = if hireling.is_some() {
+        Some(admission.runtime.lock().await)
+    } else {
+        None
+    };
+    if let Some(runtime) = hireling_runtime.as_ref()
+        && admission
+            .states
+            .npc_conversations
+            .trade_in(
+                &admission.states.chat,
+                runtime,
+                actor,
+                session,
+                &intent,
+                pinned_index(runtime, admission.active_generation),
+            )
+            .is_err()
+    {
+        return Err(Box::new(NpcTradeStep::rejected()));
+    }
+    let result = if let Some(selection) = hireling {
+        admission
+            .root
+            .commit_hireling_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                selection,
+                sell_all,
+            )
+            .await
+    } else if sell_all {
         admission
             .root
             .commit_npc_sell_all(admission.character, admission.holder, fence, request)

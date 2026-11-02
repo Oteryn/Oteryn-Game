@@ -17,6 +17,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.stop_timed_actor(actor, session).await {
             return false;
         }
+        if !super::super::item_use::gourmet::checkpoint(self, actor, session, true).await {
+            return false;
+        }
         match self
             .root
             .reconcile_character_death(self.character, death.occurrence)

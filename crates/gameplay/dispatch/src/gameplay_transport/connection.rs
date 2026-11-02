@@ -737,6 +737,13 @@ where
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?
             {
+                if command == 0 {
+                    // The native owner admits zero only for an authenticated
+                    // fresh House restoration. It is server provenance, not a
+                    // client command: the House scope is published by the
+                    // existing domain-51 join/resync snapshot instead.
+                    return Ok(resumed);
+                }
                 let ack = encode_command_result(
                     continuity.connection_generation,
                     continuity
@@ -783,12 +790,7 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let offered = with_weather_offer(
-        authority.offered_capabilities(),
-        authority.world_weather().is_some(),
-    );
-    let offered = mechanic_offers(authority, offered);
-    let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
+    let Some(selected) = fresh_capability_selection(authority, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
@@ -839,6 +841,21 @@ where
         .await
         .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
     Ok(admitted)
+}
+
+/// The existing fresh wire selection, shared with native saved-House admission.
+/// It is data only; the owner independently authenticates the grant and current
+/// required capabilities before any committed scope transition.
+pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissionAuthority>(
+    authority: &A,
+    supported: &[u32],
+) -> Option<SelectedCapabilities> {
+    let offered = with_weather_offer(
+        authority.offered_capabilities(),
+        authority.world_weather().is_some(),
+    );
+    let offered = mechanic_offers(authority, offered);
+    SelectedCapabilities::select(&offered, supported)
 }
 
 /// No gameplay command, state or liveness semantics are allocated to the seam:

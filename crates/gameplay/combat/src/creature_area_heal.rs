@@ -66,6 +66,49 @@ impl CreatureHealCatalog {
         Ok((key.to_owned(), max))
     }
 
+    /// Build the same identity/HP catalog from an already-qualified active native artifact.
+    /// Detached caller profiles cannot supply this current content binding.
+    pub fn from_current_native(
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+    ) -> Result<Self, AreaHealError> {
+        runtime
+            .owner_fence()
+            .map_err(|_| AreaHealError::StaleOwner)?;
+        if runtime.content_pin().server_artifact_digest() != native.source_digest() {
+            return Err(AreaHealError::InvalidSource);
+        }
+        let mut maximum = BTreeMap::new();
+        for record in &native.creature_profiles().records {
+            let Data::Creature(creature) = &record.profile.data else {
+                return Err(AreaHealError::InvalidSource);
+            };
+            // The qualified loader owns each admitted revision. Canonical source
+            // definitions and retained legacy creatures share this active catalog;
+            // a different admitted revision is not a missing HP value.
+            if record.profile.target.family != ProjectV2Family::Creature
+                || record.profile.target.key.is_empty()
+                || record.profile.target.revision.is_empty()
+            {
+                return Err(AreaHealError::InvalidSource);
+            }
+            let max = creature
+                .health
+                .filter(|health| *health > 0 && *health <= i64::MAX as u64)
+                .ok_or(AreaHealError::InvalidSource)?;
+            if maximum
+                .insert(record.profile.target.key.clone(), max)
+                .is_some()
+            {
+                return Err(AreaHealError::InvalidSource);
+            }
+        }
+        Ok(Self {
+            content: native.source_digest(),
+            world: runtime.content_pin().world_id(),
+            maximum,
+        })
+    }
     pub fn from_native(draft: &ProjectV2Draft, content: [u8; 32]) -> Result<Self, AreaHealError> {
         let value = draft.core.world_id.as_bytes();
         if value.len() != 32

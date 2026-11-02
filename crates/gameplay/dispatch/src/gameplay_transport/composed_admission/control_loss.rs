@@ -103,11 +103,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GraceExpiryResult::Unknown;
         }
-        let removed = self
-            .runtime
-            .lock()
-            .await
-            .remove_terminal_session(session, actor);
+        let removed = {
+            let mut runtime = self.runtime.lock().await;
+            if runtime.house_actor_state(actor, session).is_ok() {
+                runtime.remove_terminal_house_session(session, actor)
+            } else {
+                runtime.remove_terminal_session(session, actor)
+            }
+        };
         match removed {
             Ok(()) => {
                 self.activity_runtimes

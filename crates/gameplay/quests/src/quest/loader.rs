@@ -203,6 +203,16 @@ pub fn load_embedded_quest_state(
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::grizzly_adams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.source_tracks.insert(
+        super::rotten_blood::ACCESS_TRACK.into(),
+        "kv:rotten-blood-quest:access".into(),
+    );
+    lowered.source_tracks.insert(
+        super::rotten_blood::ACCESS_DOOR_TRACK.into(),
+        "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
+    );
     Ok(lowered)
 }
 

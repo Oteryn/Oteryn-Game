@@ -31,6 +31,24 @@ pub fn generation_item_facts(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Result<ItemDefinitionFacts, PickupContentError> {
+    generation_destination_facts(native, definition, false)
+}
+
+/// Native Inbox may receive a carried Item or a definition with an explicit
+/// Inbox-only admission. This does not make that definition portable. Content
+/// qualification closes the new destination to the immovable Hireling lamp.
+pub fn generation_inbox_item_facts(
+    native: &NativeGameplayState,
+    definition: &TypedDefinitionRef,
+) -> Result<ItemDefinitionFacts, PickupContentError> {
+    generation_destination_facts(native, definition, true)
+}
+
+fn generation_destination_facts(
+    native: &NativeGameplayState,
+    definition: &TypedDefinitionRef,
+    inbox: bool,
+) -> Result<ItemDefinitionFacts, PickupContentError> {
     let record = native
         .item_policy(&definition.production_key, &definition.revision_ref)
         .map(|policy| policy.record())
@@ -42,10 +60,15 @@ pub fn generation_item_facts(
         })
         .ok_or(PickupContentError::DefinitionNotFound)?;
     let admitted = record.admission.materializable
-        && record
+        && (record
             .admission
             .legal_destinations
-            .contains(&NativeItemDestination::CharacterInventory);
+            .contains(&NativeItemDestination::CharacterInventory)
+            || inbox
+                && record
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInbox));
     let stack = match record.admission.stack_class {
         _ if !admitted => ItemStackClass::Unknown,
         NativeItemStackClass::NonStackable => ItemStackClass::NonStackable,

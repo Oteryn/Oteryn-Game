@@ -5,13 +5,14 @@ impl ChannelSpellStates {
     pub(in crate::gameplay_transport::actor_spell) fn native_source_appearance_batch(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
-        fence: &ScopeRuntimeFence,
+        fence: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
         source: ExactActorRef,
         definitions: &[ConditionDefinition],
         targets: &[SourceAppearanceTarget<'_>],
     ) -> Option<Vec<SourceAppearanceReceipt>> {
-        if !current_owner(runtime, fence, stamp)
+        let current_fence = fence.or_else(|| runtime.owner_fence().ok())?;
+        if !current_owner(runtime, current_fence, stamp)
             || !creature_current(runtime, source)
             || definitions.len() != 1
             || targets.is_empty()
@@ -115,7 +116,10 @@ impl ChannelSpellStates {
                 &plans,
                 SemanticTimeMicros::from_micros(now),
                 |current| {
-                    if !current_owner(current, fence, stamp) || !creature_current(current, source) {
+                    let current_fence = fence.or_else(|| current.owner_fence().ok())?;
+                    if !current_owner(current, current_fence, stamp)
+                        || !creature_current(current, source)
+                    {
                         return None;
                     }
                     for (index, actor, session, before, _) in &players {

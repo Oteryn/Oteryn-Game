@@ -73,9 +73,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<bool> {
         let runtime = self.runtime.lock().await;
         runtime.owner_fence().ok()?;
-        let facts = runtime
-            .player_control_facts(actor, command.game_session_id)
-            .ok()?;
+        let facts = if let Some(fence) = command.item_fence
+            && matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+        {
+            // E12: this common reservation reader also precedes native House
+            // USE. Read the actual House carrier; a transferred actor has no
+            // Channel control facts. This does not admit a House player trade.
+            let state = runtime.house_actor_state(actor, command.game_session_id).ok()?;
+            if fence.game_session_id != command.game_session_id
+                || state.scope != fence.runtime_scope
+                || state.generation != fence.scope_ownership_generation
+                || state.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+                || state.lease.generation() != fence.character_lease_generation
+                || runtime.house_player_writes_fenced(actor, command.game_session_id).ok()?
+            {
+                return Some(false);
+            }
+            runtime.house_player_control_facts(actor, command.game_session_id).ok()?
+        } else {
+            runtime.player_control_facts(actor, command.game_session_id).ok()?
+        };
         if facts.control_loss.is_some() {
             return Some(false);
         }

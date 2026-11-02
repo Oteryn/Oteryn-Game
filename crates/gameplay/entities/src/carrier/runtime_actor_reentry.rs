@@ -6,7 +6,8 @@
 //! `config.lua.dist:61`), which only monster target selection reads (`monster.cpp:475`,
 //! `:1014`); it does not refuse the player's own actions the way the reentry window does.
 use super::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, PlayerActorReservation, Slot,
+    CarrierError, ChannelActorCarrier, ChannelRuntimeV1, ExactActorRef, GameSessionId,
+    PlayerActorReservation, Slot,
 };
 
 /// S15a: Crystal 201189f8 `loginProtectionPeriod = 10 * 1000` (`config.lua.dist:61`,
@@ -98,11 +99,23 @@ impl ChannelRuntimeV1 {
         let index = self
             .carrier
             .player_slot_index(&self.continuity, actor.0, session)?;
-        self.carrier.assert_slot_spell_unreserved(index)?;
+        self.carrier
+            .restore_control_after_committed_reentry_at(index, epoch, now_us)
+    }
+}
+
+impl ChannelActorCarrier {
+    pub(super) fn restore_control_after_committed_reentry_at(
+        &mut self,
+        index: usize,
+        epoch: u64,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        self.assert_slot_spell_unreserved(index)?;
         let until = now_us
             .checked_add(4_000_000)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        match &mut self.carrier.slots[index] {
+        match &mut self.slots[index] {
             Slot::Occupied {
                 lifecycle,
                 spell_combat,

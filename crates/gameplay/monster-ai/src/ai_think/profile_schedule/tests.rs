@@ -800,4 +800,110 @@ fn prepared_native_summon_population_consumes_explicit_owner_fixture_facts() {
     );
 }
 
+fn run_native(
+    state: &mut ProfileScheduleState,
+    sequence: u64,
+    behavior: &ProjectV2BehaviorAuthoring,
+    abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+    target: Option<AttackTarget>,
+) -> Result<SchedulePlan, ScheduleError> {
+    state.prepare_native_with_summons(
+        ProfileScheduleInput {
+            occurrence: occurrence(sequence),
+            behavior,
+            abilities,
+            target,
+            revisions: &revisions(),
+            root: &root(),
+        },
+        None,
+        NativeAttackFacts {
+            now_us: sequence.saturating_mul(1_000_000),
+            fleeing: false,
+            target_disappeared: false,
+        },
+    )
+}
+
+#[test]
+fn unresolved_native_callback_preserves_resolved_attacks_and_source_indices() {
+    let (mut behavior, abilities) = fixture(1000);
+    let resolved = behavior.attacks[0].clone();
+    behavior.attacks[0].ability.key = "oteryn:ability.unresolved-source-callback".into();
+    behavior.attacks.push(resolved.clone());
+    behavior.defenses.push(resolved);
+    let mut state = ProfileScheduleState::new(actor(1));
+    let plan = run_native(&mut state, 1, &behavior, &abilities, target(Some(1)))
+        .expect("resolved native entries still run");
+    assert_eq!(plan.proposals.len(), 2);
+    assert_eq!(plan.proposals[0].entry_index, 1);
+    assert_eq!(plan.proposals[0].list, ScheduleList::Attack);
+    assert_eq!(plan.proposals[1].entry_index, 0);
+    assert_eq!(plan.proposals[1].list, ScheduleList::Defence);
+    assert_eq!(
+        run_native(&mut state, 1, &behavior, &abilities, target(Some(1))),
+        Ok(plan)
+    );
+    assert_eq!(
+        run(&mut state, 1, &behavior, &abilities, target(Some(1))),
+        Err(ScheduleError::OccurrenceConflict),
+        "a retry cannot switch native and strict admission"
+    );
+    assert_eq!(
+        run(
+            &mut ProfileScheduleState::new(actor(1)),
+            1,
+            &behavior,
+            &abilities,
+            target(Some(1)),
+        ),
+        Err(ScheduleError::MissingAbilityProfile),
+        "strict caller-authored admission remains fail closed"
+    );
+    behavior.attacks[0].interval_ms = 0;
+    assert_eq!(
+        run_native(
+            &mut ProfileScheduleState::new(actor(1)),
+            1,
+            &behavior,
+            &abilities,
+            target(Some(1)),
+        ),
+        Err(ScheduleError::InvalidSchedule),
+        "unresolved source code never excuses malformed schedule data"
+    );
+}
+
+#[test]
+fn native_attacks_restart_after_target_loss_while_defenses_keep_running() {
+    let (mut behavior, abilities) = fixture(2000);
+    behavior.defenses.push(ProjectV2AbilitySchedule {
+        interval_ms: 1000,
+        ..behavior.attacks[0].clone()
+    });
+    let mut state = ProfileScheduleState::new(actor(1));
+    for sequence in 1..=3 {
+        let plan = run_native(&mut state, sequence, &behavior, &abilities, None)
+            .expect("targetless defense think");
+        assert_eq!(plan.evaluated_attack_ticks_ms, 0);
+        assert_eq!(plan.attack_ticks_after_ms, 0);
+        assert_eq!(plan.proposals.len(), 1);
+        assert_eq!(plan.proposals[0].list, ScheduleList::Defence);
+    }
+    let first = run_native(&mut state, 4, &behavior, &abilities, target(Some(1)))
+        .expect("first targeted interval");
+    assert_eq!(first.attack_ticks_after_ms, 1000);
+    assert_eq!(first.proposals.len(), 1);
+    let due = run_native(&mut state, 5, &behavior, &abilities, target(Some(1)))
+        .expect("source interval is due");
+    assert_eq!(due.proposals.len(), 2);
+    run_native(&mut state, 6, &behavior, &abilities, target(Some(1))).expect("new half interval");
+    run_native(&mut state, 7, &behavior, &abilities, None).expect("target disappeared");
+    let restarted = run_native(&mut state, 8, &behavior, &abilities, target(Some(1)))
+        .expect("reacquired target starts a new source clock");
+    assert_eq!(restarted.evaluated_attack_ticks_ms, 1000);
+    assert_eq!(restarted.proposals.len(), 1);
+}
+
+mod native_melee_clock;
 mod summon_plan_tests;

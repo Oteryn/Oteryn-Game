@@ -3,6 +3,7 @@ mod command;
 mod decode;
 mod draw;
 mod expansion;
+mod house_read;
 mod loot_value;
 mod storage;
 mod types;

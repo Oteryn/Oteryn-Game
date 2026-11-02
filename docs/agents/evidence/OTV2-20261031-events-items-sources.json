@@ -1,0 +1,199 @@
+{
+  "schema": "OTERYN_AGENT_SOURCE_FACTS/v1",
+  "task": "OTV2-20261031-events-items",
+  "verified_on": "2026-10-31",
+  "sources": {
+    "crystal": {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "url": "https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    "official_autumn": {
+      "url": "https://www.tibia.com/news/?subtopic=latestnews",
+      "title": "Annual Autumn Vintage",
+      "published": "2026-10-01",
+      "owner_archive_reference": "https://www.tibia.com/news/?subtopic=newsarchive&id=8916",
+      "qualification": "Archive URL was supplied by the owner; direct archive retrieval was unavailable. The dated official news listing corroborates the windows, world success, 33 percent and seven days."
+    },
+    "wiki_autumn": {
+      "url": "https://www.tibiawiki.com.br/index.php?title=Annual_Autumn_Vintage&oldid=443757",
+      "revision": "443757",
+      "revision_date": "2026-08-31"
+    },
+    "fandom_autumn": {
+      "url": "https://tibia.fandom.com/wiki/Annual_Autumn_Vintage?oldid=1079774",
+      "revision": "1079774",
+      "repository_packet": "tools/content-schema/quest-authoring/samples/unbound-source-facts/source-facts.json",
+      "accepted_packet_sha256": "8572dd826a45ce6f11e443fd1fd39950d0387443fcdc22151ee889ee425ea283"
+    },
+    "autumn_answer": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6547455508"
+    },
+    "seasonal_answer": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6547596453"
+    },
+    "halloween_calendar": {
+      "url": "https://www.tibia.com/news/?subtopic=eventcalendar&calendarmonth=10&calendaryear=2026",
+      "period": "2026-10"
+    }
+  },
+  "autumn_vintage": {
+    "runtime_rules": "crates/gameplay/foundation/src/autumn_vintage.rs",
+    "facts": [
+      {
+        "rule": "annual windows",
+        "value": [
+          "10-01/server-save..10-08/server-save",
+          "10-17/server-save..10-24/server-save"
+        ],
+        "sources": [
+          "official_autumn",
+          "wiki_autumn"
+        ],
+        "interval": "start-inclusive/end-exclusive"
+      },
+      {
+        "rule": "server-save boundary",
+        "value": "existing Oteryn TIBIA_SERVER_SAVE_BERLIN_06 owner",
+        "sources": [
+          "seasonal_answer"
+        ],
+        "qualification": "Intentional approved replacement of public Tibia civil time; no independent Channel clock."
+      },
+      {
+        "rule": "berries per completed load",
+        "value": 100,
+        "sources": [
+          "wiki_autumn"
+        ],
+        "section": "Primeiro Estágio"
+      },
+      {
+        "rule": "completed loads for world success",
+        "value": 40,
+        "sources": [
+          "wiki_autumn"
+        ],
+        "section": "Sucesso no evento"
+      },
+      {
+        "rule": "world berry total",
+        "value": 4000,
+        "sources": [
+          "fandom_autumn",
+          "wiki_autumn"
+        ],
+        "qualification": "100 per load multiplied by 40 completed loads; uncompleted loads cannot publish success."
+      },
+      {
+        "rule": "personal contribution limit",
+        "value": 10,
+        "period_hours": 24,
+        "sources": [
+          "wiki_autumn",
+          "fandom_autumn"
+        ],
+        "section": "Primeiro Estágio"
+      },
+      {
+        "rule": "berries required for cellar entry",
+        "value": 3,
+        "consumed_for_entry": false,
+        "sources": [
+          "wiki_autumn"
+        ],
+        "section": "Método"
+      },
+      {
+        "rule": "eligible creatures",
+        "count": 39,
+        "runtime_list": "BERRY_CREATURES",
+        "sources": [
+          "wiki_autumn"
+        ],
+        "section": "Método",
+        "qualification": "Eligibility does not establish drop chance or count."
+      },
+      {
+        "rule": "potion multiplier",
+        "percent": 133,
+        "order": [
+          "base integer draw",
+          "floor(base*133/100)",
+          "existing resource cap"
+        ],
+        "resources": [
+          "health",
+          "mana"
+        ],
+        "includes_both_spirit_components": true,
+        "sources": [
+          "official_autumn",
+          "autumn_answer"
+        ]
+      },
+      {
+        "rule": "world reward duration",
+        "milliseconds": 604800000,
+        "start": "once at durable world success",
+        "scope": "WorldId across Channels",
+        "sources": [
+          "official_autumn",
+          "autumn_answer"
+        ]
+      }
+    ],
+    "unavailable": [
+      {
+        "marker": "AUTUMN_VINTAGE_BERRY_DROP_CHANCE",
+        "missing": [
+          "exact chance",
+          "drop count"
+        ],
+        "effect": "ordinary loot preserved; no invented event drop"
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_CELLAR_LANDING",
+        "missing": [
+          "native landing placement"
+        ],
+        "effect": "entry refused without spending berries"
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_MOULD_BINDING",
+        "missing": [
+          "native mould and vat bindings"
+        ],
+        "effect": "no delivery or completed-load evidence minted"
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_TREADING_STEPS_AND_DEADLINE",
+        "missing": [
+          "required steps",
+          "deadline",
+          "authoritative physical step producer"
+        ]
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_SUGAR_QUOTA",
+        "missing": [
+          "exact quota and interruption trigger"
+        ]
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_WATER_QUOTA",
+        "missing": [
+          "exact quota and interruption trigger"
+        ]
+      },
+      {
+        "marker": "AUTUMN_VINTAGE_BERRYPEST_TRIGGER_AND_COUNT",
+        "missing": [
+          "spawn trigger",
+          "spawn count",
+          "native spawn bindings"
+        ]
+      }
+    ],
+    "boundary": "The runtime cannot INSERT completed-load evidence. Publication requires all forty immutable receipts; administrative PG fixtures exercise publication and consumers without claiming a playable unsourced treading loop."
+  }
+}

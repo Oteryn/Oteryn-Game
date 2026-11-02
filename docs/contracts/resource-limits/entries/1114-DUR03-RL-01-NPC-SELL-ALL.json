@@ -1,7 +1,7 @@
 {
   "id": "DUR03-RL-01-NPC-SELL-ALL",
   "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
-  "resource": "ItemInstances touched by one DUR-03 NPC sell-all transaction (NpcTradeCause shape, sell_all)",
+  "resource": "ItemInstances touched by one DUR-03 NPC sell-all or admitted Hireling SELL transaction (NpcTradeCause shape, sell_all)",
   "unit": "ItemInstances per logical transaction",
   "hard_maximum": 23,
   "configurable_range": {
@@ -13,11 +13,15 @@
   "client_visible": false,
   "boundary_tests": [
     "max=23 admitted by the sell-all rows",
-    "a 21st item stack rejected before encoding (CAPACITY_EXCEEDED)"
+    "a 21st item stack rejected before encoding (CAPACITY_EXCEEDED)",
+    "hireling_postgres_trader_maximum_price_no_room_and_replay",
+    "high_value_trade_uses_existing_audit_owner_and_refuses_foreign_or_corrupt_coin_lines"
   ],
   "consumers": [
     "apps/game-server/src/durability/npc_trade_audit.rs",
-    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC sell-all: plan and usage checked before any write; migration 0211 re-proves the lines at commit)"
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC sell-all: plan and usage checked before any write; migration 0211 re-proves the lines at commit)",
+    "crates/gameplay/durability/src/durability/npc_trade/sell_hireling.rs",
+    "crates/gameplay/durability/src/durability/npc_trade_audit.rs (closed Hireling shape and measured encoding)"
   ],
-  "notes": "NPC-TRADE-SELLALL-1 (command 97 NPC_SHOP, action SELL_ALL): a SELL of every carried stack of the offer item, `OneItemNpcTradeV1.sell_all` = 15; up to 20 whole item BURN lines of one definition revision and up to 3 coin MINTs. The NPC trade rows DUR03-RL-*-NPC-TRADE-* are unchanged and still bound every trade that is not a sell-all."
+  "notes": "NPC-TRADE-SELLALL-1 keeps its existing command 97 SELL_ALL shape: at most 20 whole item BURNs and 3 coin MINTs. E12 explicitly maps the same existing owner\u2019s closed Hireling SELL shape to this resource group: the current named House, active Hireling and source offer are proved before mutation; one item BURN and at most eight physical coin MINTs pay at most 5,400,000 gold. The single-item Hireling shape uses at most nine touched items, nine custody lines, nine participants and nineteen work units, within the unchanged 23/23/23/66 ceilings. Ordinary Channel BUY/SELL retain their original shape-specific limits. See ../protocol-oteryn/v1/hireling-trade-and-audit-v1.md for the explicit mapping and source evidence."
 }

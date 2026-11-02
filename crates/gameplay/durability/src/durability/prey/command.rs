@@ -424,7 +424,7 @@ async fn write_receipt(
     Ok(())
 }
 
-fn mask_locked(reply: &mut Reply, access: &[bool; 3]) {
+pub(super) fn mask_locked(reply: &mut Reply, access: &[bool; 3]) {
     for slot in &mut reply.slots {
         if !access[usize::from(slot.slot - 1)] {
             slot.state = 0;

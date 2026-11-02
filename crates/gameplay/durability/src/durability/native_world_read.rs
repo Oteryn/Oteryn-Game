@@ -493,7 +493,9 @@ pub async fn qualified_creature_source_tile_in_transaction<
     let tile = initialized_tile_in_transaction::<O::Error>(tx, room, runtime, position)
         .await?
         .ok_or(NativeWorldReadError::MissingTileMetadata)?;
-    if owner.blocks_movement(position) {
+    // Source/Bundle collision flags are already qualified in the tile.
+    // Only Entry can add movement-only blockers without projectile metadata.
+    if matches!(&owner, WorldStaticOwnerBorrow::Entry(_)) && owner.blocks_movement(position) {
         return Err(NativeWorldReadError::MissingDynamicProjectileFlags);
     }
     Ok(QualifiedCombatTileFact {

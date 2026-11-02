@@ -18,6 +18,12 @@ package oteryn.events.v2;
 // RESOURCE_LIMITS_REGISTRY.json BANK0-RL-01..03, DUR03-RL-01-BANK, DUR03-RL-03-BANK and
 // DUR03-RL-07-BANK-PAYLOAD-BYTES / -ENVELOPE-BYTES.
 
+// Actual named House for a Hireling Bank service. Channel remains origin provenance.
+message BankHirelingHouseV1 {
+  string house_key = 1;
+  bytes hireling_id = 2;
+}
+
 message BankOperationV1 {
   uint32 interpretation_revision = 1;           // exactly 1
   BankOperationCauseV1 cause = 2;
@@ -37,6 +43,8 @@ message BankOperationV1 {
   // another Account of the same World, both TRANSFER lines with the operation's amount.
   repeated BankValueLineV1 value_lines = 10;
   bytes recipient_character_id = 11;            // transfer only; empty otherwise
+  // Present for a Hireling deposit, withdrawal or transfer in the actual named House.
+  optional BankHirelingHouseV1 hireling_house = 12;
 }
 
 message BankOperationCauseV1 {

@@ -3,8 +3,10 @@ import copy
 import hashlib
 import json
 import unittest
+from unittest.mock import patch
 
-from build_spell_item_identities import bind_profiles, binding_index, CRYSTAL_PIN
+import build_spell_item_identities as identity
+from build_spell_item_identities import CRYSTAL_PIN, bind_profiles, binding_index
 from canary_generic_item_identity import PACKET
 
 
@@ -60,6 +62,41 @@ class ItemIdentityTests(unittest.TestCase):
         changed["source_revision"] = "0"*40
         with self.assertRaises(ValueError):
             bind_profiles(self.document, self.index([changed]), {3582})
+
+    def test_independent_source_requires_its_exact_committed_xml_bytes(self):
+        changed = copy.deepcopy(self.row)
+        changed["source_revision"] = "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+        with self.assertRaisesRegex(ValueError, "Unqualified independent Crystal XML pin"):
+            bind_profiles(self.document, self.index([changed]), {3582},
+                independent_crystal_source=(identity.INDEPENDENT_CRYSTAL_PIN, b"<items/>"))
+
+    def test_independent_membership_does_not_rewrite_an_admitted_identity(self):
+        bindings = binding_index(identity.BINDINGS.read_bytes())
+        historical = bindings["43963"]
+        self.assertEqual(historical["source_revision"], "00ce02a57ca5a12e48f32a3476e37471167e4c3f")
+        document = copy.deepcopy(self.document)
+        document["records"][0]["authoring"]["item"]["key"] = "candidate:item/43963"
+        # Isolate the identity join. The actual capture/check gate separately
+        # exercises the exact SHA-pinned source parser with the real XML bytes.
+        with patch.object(identity, "independent_crystal_membership", return_value={43963}):
+            bound = bind_profiles(document, bindings, {43963},
+                independent_crystal_source=(identity.INDEPENDENT_CRYSTAL_PIN, b"fixture"))
+        actual = bound["records"][0]
+        self.assertEqual(actual["production_binding"], historical)
+        self.assertEqual(actual["production_definition"], {"family": "Item",
+            "production_key": historical["target"]["key"], "revision_ref": "definition-r1"})
+        self.assertIsNone(actual["production_binding_qualification"])
+        self.assertNotIn("production_binding", document["records"][0])
+
+    def test_independent_membership_cannot_replace_or_invent_a_binding_revision(self):
+        changed = copy.deepcopy(self.row)
+        changed["source_revision"] = identity.INDEPENDENT_CRYSTAL_PIN
+        with (
+            patch.object(identity, "independent_crystal_membership", return_value={3582}),
+            self.assertRaisesRegex(ValueError, "independently qualified source revision"),
+        ):
+            bind_profiles(self.document, self.index([changed]), {3582},
+                independent_crystal_source=(identity.INDEPENDENT_CRYSTAL_PIN, b"fixture"))
 
     def generic(self):
         known = lambda value: {"state": "KNOWN", "value": value}

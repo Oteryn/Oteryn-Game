@@ -11,6 +11,97 @@
 
 use super::*;
 
+#[test]
+fn current_session_ai_damage_shares_are_creature_scoped_and_reconnect_fenced() {
+    let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant(350, 1));
+    let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 2).expect("slots");
+    let first = carrier
+        .admit_creature(&owner, ActorState(1), "fixture:d4.ordinal", 1000)
+        .expect("first");
+    let second = carrier
+        .admit_creature(&owner, ActorState(2), "fixture:d4.ordinal", 1000)
+        .expect("second");
+    strike_as(
+        &mut carrier,
+        &owner,
+        first,
+        Some(attack(1, 1, 1, 0)),
+        "first:old",
+        100,
+    )
+    .expect("old hit");
+    strike_as(
+        &mut carrier,
+        &owner,
+        second,
+        Some(attack(1, 1, 2, 0)),
+        "second:old",
+        40,
+    )
+    .expect("other creature");
+    strike_as(
+        &mut carrier,
+        &owner,
+        first,
+        Some(attack(1, 2, 1, 0)),
+        "first:reconnected",
+        3,
+    )
+    .expect("new session hit");
+    // The same committed occurrence is replayed, and a later command from the old session
+    // is refused by the existing damage owner before either subtotal can change.
+    strike_as(
+        &mut carrier,
+        &owner,
+        first,
+        Some(attack(1, 2, 1, 0)),
+        "first:reconnected",
+        3,
+    )
+    .expect("replay");
+    assert_eq!(
+        strike_as(
+            &mut carrier,
+            &owner,
+            first,
+            Some(attack(1, 1, 3, 0)),
+            "first:stale",
+            50
+        ),
+        Err(CarrierError::SupersededAttackerSession)
+    );
+    let view = carrier.current_owner_combat_death(&owner);
+    let ai_first = view
+        .current_session_damage_shares(ExactActorRef(first))
+        .expect("first AI shares");
+    let ai_second = view
+        .current_session_damage_shares(ExactActorRef(second))
+        .expect("second AI shares");
+    let rewards = view
+        .reward_damage_shares(ExactActorRef(first))
+        .expect("reward shares");
+    assert_eq!(ai_first.len(), 1);
+    assert_eq!(
+        (
+            ai_first[0].total,
+            ai_first[0].session,
+            ai_first[0].lease_generation
+        ),
+        (3, Some(session(2)), Some(2))
+    );
+    assert_eq!(ai_second.len(), 1);
+    assert_eq!(
+        (
+            ai_second[0].total,
+            ai_second[0].session,
+            ai_second[0].lease_generation
+        ),
+        (40, Some(session(1)), Some(1))
+    );
+    assert_eq!(rewards.len(), 1);
+    assert_eq!(rewards[0].total, 103);
+}
+
 fn character(seed: u8) -> CharacterId {
     let mut bytes = [seed; 16];
     bytes[6] = 0x70;
@@ -124,6 +215,7 @@ fn equal_top_totals_resolve_to_the_contributor_that_reached_it_first() {
 
 #[test]
 fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
+    // W01a: unsequenced reward fixtures have no current-session AI subtotal.
     // Constructed directly: the owner assigns a fresh, strictly increasing ordinal (D142) per
     // distinct commit, so two distinct contributors can never share one through the public
     // accumulation path alone. D132 rule 2 (simultaneous application within the same deterministic ordinal)
@@ -131,6 +223,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
     let higher = DamageContributor {
         character: character(9),
         total: 7,
+        current_session_total: 0,
         last_update_ordinal: 4,
         high_water: None,
         last_damage_at_ms: None,
@@ -138,6 +231,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
     let lower = DamageContributor {
         character: character(3),
         total: 7,
+        current_session_total: 0,
         last_update_ordinal: 4,
         high_water: None,
         last_damage_at_ms: None,
@@ -159,6 +253,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
         DamageContributor {
             character: character(4),
             total: 12,
+            current_session_total: 0,
             last_update_ordinal: 6,
             high_water: None,
             last_damage_at_ms: None,
@@ -166,6 +261,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
         DamageContributor {
             character: character(1),
             total: 20,
+            current_session_total: 0,
             last_update_ordinal: 2,
             high_water: None,
             last_damage_at_ms: None,
@@ -173,6 +269,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
         DamageContributor {
             character: character(8),
             total: 20,
+            current_session_total: 0,
             last_update_ordinal: 5,
             high_water: None,
             last_damage_at_ms: None,
@@ -180,6 +277,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
         DamageContributor {
             character: character(2),
             total: 3,
+            current_session_total: 0,
             last_update_ordinal: 0,
             high_water: None,
             last_damage_at_ms: None,

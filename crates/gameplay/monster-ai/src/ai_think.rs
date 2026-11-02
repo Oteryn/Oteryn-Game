@@ -6,9 +6,11 @@
 //! The bootstrap `ai` tree is also compiled standalone by compatibility tests. Runtime goals
 //! are mounted here so those immutable snapshot/proposal tests retain their existing boundary.
 
+mod attack_facing;
 pub mod behaviour_profile;
 mod channel_owner;
 mod creature_steps;
+mod movement_attack;
 #[path = "ai/movement_goal.rs"]
 pub mod movement_goal;
 pub(crate) mod native_profile;
@@ -109,6 +111,14 @@ pub enum ThinkError {
     Draw,
 }
 
+/// A native source entry's result from the current committed think. `target` is present only
+/// if its shared due window, reach and chance selected a melee cast. It grants no authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeMeleeSelection {
+    pub occurrence: ThinkOccurrence,
+    pub target: Option<ExactActorRef>,
+}
+
 /// One creature's think state. Ephemeral: confers no Channel owner authority.
 pub struct CreatureAiState {
     actor: ExactActorRef,
@@ -117,6 +127,9 @@ pub struct CreatureAiState {
     spawn: Option<MovementLocalPosition>,
     unreachable: bool,
     target: Option<ExactActorRef>,
+    attack_facing: CardinalStep,
+    is_summon: bool,
+    attack_observation: Option<movement_attack::AttackObservation>,
     forced_target: Option<(ExactActorRef, u64)>,
     forced_distance: Option<u64>,
     change_ticks_ms: u64,
@@ -151,6 +164,10 @@ impl CreatureAiState {
             spawn: None,
             unreachable: false,
             target: None,
+            // Crystal creature.hpp:806: new creatures face south.
+            attack_facing: CardinalStep::South,
+            is_summon: false,
+            attack_observation: None,
             forced_target: None,
             forced_distance: None,
             change_ticks_ms: 0,
@@ -172,6 +189,12 @@ impl CreatureAiState {
     #[must_use]
     pub const fn target(&self) -> Option<ExactActorRef> {
         self.target
+    }
+
+    /// Last committed think decision; melee reads this before advancing its swing clock.
+    #[must_use]
+    pub fn is_fleeing(&self) -> bool {
+        self.last.as_ref().is_some_and(|report| report.fleeing)
     }
 
     /// The overrides this creature holds, at most `CREATUREAI0-RL-18`.
@@ -258,6 +281,31 @@ impl CreatureAiTable {
     #[must_use]
     pub fn state(&self, actor: ExactActorRef) -> Option<&CreatureAiState> {
         self.entry(actor).map(|entry| &entry.state)
+    }
+
+    /// The native melee owner consumes this recorded selection instead of independently
+    /// advancing a cooldown or drawing chance. Strict legacy profiles return `None`.
+    #[must_use]
+    pub fn native_melee_selection(
+        &self,
+        actor: ExactActorRef,
+        entry_index: usize,
+    ) -> Option<NativeMeleeSelection> {
+        let entry = self.entry(actor)?;
+        if !entry.state.profile.is_native() {
+            return None;
+        }
+        let selected = entry
+            .state
+            .schedule
+            .native_melee_selected(entry.sequence, entry_index);
+        Some(NativeMeleeSelection {
+            occurrence: ThinkOccurrence {
+                actor,
+                sequence: entry.sequence,
+            },
+            target: entry.state.target.filter(|_| selected),
+        })
     }
 
     /// The creature's pending think, `None` while idle or absent.

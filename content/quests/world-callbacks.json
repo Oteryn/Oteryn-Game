@@ -900,6 +900,58 @@
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/dryad-garden-enter",
+      "quest": "oteryn:quest.flower_month",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 33331,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33202,
+        "y": 32012,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dryad-garden-leave",
+      "quest": "oteryn:quest.flower_month",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 33332,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33264,
+        "y": 32012,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
+      ]
     }
   ]
 }

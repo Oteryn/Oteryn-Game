@@ -78,8 +78,20 @@ pub(super) fn activate(
     let mut creatures: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
     for record in creatures["records"].as_array_mut().ok_or("creatures")? {
         if record["profile"]["target"]["key"] == "oteryn:creature.cave_rat" {
+            let original_behavior = record["behavior"].clone();
             record["behavior"]["data"]["profile"]["targeting"]["flee_health"] =
                 serde_json::json!(0);
+            // The attack closure binds the admitted Behavior verbatim. Apply the
+            // same unfleeing fixture overlay to that root, retaining every attack body.
+            let behavior = record["behavior"].clone();
+            let bound = record["attack_definitions"]["profiles"]
+                .as_array_mut()
+                .ok_or("cave rat attack closure")?
+                .iter_mut()
+                .find(|profile| profile["target"] == behavior["target"])
+                .ok_or("cave rat attack Behavior binding")?;
+            assert_eq!(*bound, original_behavior, "original exact Behavior binding");
+            *bound = behavior;
         }
     }
     pin.bytes = serde_json::to_vec(&creatures)?;

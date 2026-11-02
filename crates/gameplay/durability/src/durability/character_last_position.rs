@@ -6,7 +6,8 @@
 //! The row is a Character runtime-state projection (§3.2): it is outside the CharacterRevision
 //! chain, with no cause, no receipt and no replay. Every write is one upsert under the
 //! composition rule 2 session checks (the reconnect-session row, the runtime-scope assignment and
-//! the admission guards), with no `character_root` row lock. It applies only when its order key
+//! the admission guards). Channel writes keep their no-root-lock path; the explicit named-House
+//! branch reuses its native custody lock order. It applies only when its order key
 //! (Character lease generation, `write_sequence`) is greater than the stored key, and never while
 //! a pending respawn exists. Three writers use it:
 //!
@@ -18,8 +19,12 @@
 //!   admission (`DurabilityRoot::consume_pending_respawn_placed`) and for an in-session respawn
 //!   (`DurabilityRoot::place_and_consume_pending_respawn_placed`).
 //!
-//! An instance scope (`runtime_scope_kind = 2`) writes nothing: the gameplay fence admits only a
-//! Channel scope, and the terminal release skips any other scope.
+//! Generic activity Instances still write nothing. Q16 (PR2783 ANSWER6549584730)
+//! adds an explicit named-House branch in the same ordered row: its actual cell
+//! and vitals are separate from retained origin Channel metadata. Periodic/final
+//! history writes prove current named custody; actual admission/recovery also
+//! proves current locked ACL/content/collision. See `house` and the House-position
+//! contract; no Channel scope is fabricated for a resident.
 //!
 //! The saved vitals ride in the same row and the same upsert as the cell, so every write above
 //! stores the cell and the vitals of one capture together, under one key and one fence: a stale
@@ -40,10 +45,13 @@ use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL;
 use sqlx::Row;
+mod house;
+pub use house::{HouseLastPosition, ScopedLastPosition, ScopedPeriodicLastPosition};
+pub(super) use house::{load_scoped_last_position, upsert_scoped_last_position, release_terminal_house_entry};
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
-/// A Channel movement cell: `x`, `y` and the legacy `floor` the Channel runtime and the pending
+/// A native Channel or named-House movement cell: `x`, `y` and the legacy `floor` the Channel runtime and the pending
 /// respawn record use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LastPositionCell {
@@ -208,32 +216,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         writes: Vec<PeriodicLastPosition>,
     ) -> Result<Vec<Result<LastPositionWrite>>> {
-        if writes.len() > LAST_POSITION_WRITE_BATCH {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        if writes.is_empty() {
-            return Ok(Vec::new());
-        }
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-        let node = node.clone();
-        Ok(self
-            .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let mut outcomes = Vec::with_capacity(writes.len());
-                    for write in writes {
-                        outcomes.push(write_periodic(&mut tx, &node, write).await?);
-                    }
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(outcomes)
-                })
-            })
-            .await?)
+        self.write_scoped_character_last_positions(authority, node,
+            writes.into_iter().map(|write| ScopedPeriodicLastPosition { write, house: None }).collect()).await
     }
 
     /// §3.3: the Character's last position, read under the session fence of `fence` when a new
@@ -322,76 +306,7 @@ pub(super) async fn upsert_last_position(
     key: LastPositionKey,
     record: &LastPositionRecord,
 ) -> std::result::Result<LastPositionWrite, DurabilityError> {
-    if key.character_lease_generation == 0 || key.write_sequence == 0 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let pending: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
-          WHERE character_id = encode($1,'hex')::uuid) OR EXISTS (SELECT 1 FROM game_character_pending_arrivals WHERE character_id = encode($1,'hex')::uuid)",
-    )
-    .bind(character_id.as_slice())
-    .fetch_one(&mut **tx)
-    .await?;
-    if pending {
-        return Ok(LastPositionWrite::PendingObligation);
-    }
-    // `LastVitals` bounds both values to `MAX_VITAL_POOL`, below `i32::MAX`.
-    let (health, mana) = match record.vitals {
-        Some(vitals) => (
-            Some(i32::try_from(vitals.health).map_err(|_| DurabilityError::InvalidStoredState)?),
-            Some(i32::try_from(vitals.mana).map_err(|_| DurabilityError::InvalidStoredState)?),
-        ),
-        None => (None, None),
-    };
-    let written = sqlx::query(
-        "INSERT INTO game_character_last_positions AS p \
-            (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
-             map_revision_digest, server_artifact_digest, character_lease_generation, \
-             write_sequence, health, mana, rest) \
-         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \
-                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, $13) \
-         ON CONFLICT (character_id) DO UPDATE SET \
-             world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \
-             tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \
-             coordinate_frame_digest = EXCLUDED.coordinate_frame_digest, \
-             map_revision_digest = EXCLUDED.map_revision_digest, \
-             server_artifact_digest = EXCLUDED.server_artifact_digest, \
-             character_lease_generation = EXCLUDED.character_lease_generation, \
-             write_sequence = EXCLUDED.write_sequence, \
-             health = EXCLUDED.health, mana = EXCLUDED.mana, rest = EXCLUDED.rest \
-         WHERE (p.character_lease_generation, p.write_sequence) \
-             < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)",
-    )
-    .bind(character_id.as_slice())
-    .bind(record.world_id.as_bytes().as_slice())
-    .bind(record.cell.x)
-    .bind(record.cell.y)
-    .bind(record.cell.floor)
-    .bind(record.coordinate_frame_digest.as_slice())
-    .bind(record.map_revision_digest.as_slice())
-    .bind(record.server_artifact_digest.as_slice())
-    .bind(key.character_lease_generation.to_string())
-    .bind(key.write_sequence.to_string())
-    .bind(health)
-    .bind(mana)
-    .bind(
-        record
-            .rest
-            .map(|rest| {
-                rest.into_iter()
-                    .map(i32::try_from)
-                    .collect::<std::result::Result<Vec<_>, _>>()
-            })
-            .transpose()
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
-    )
-    .execute(&mut **tx)
-    .await?;
-    Ok(if written.rows_affected() == 1 {
-        LastPositionWrite::Written
-    } else {
-        LastPositionWrite::Superseded
-    })
+    upsert_scoped_last_position(tx, character_id, key, record, None).await
 }
 
 pub(super) async fn load_last_position(

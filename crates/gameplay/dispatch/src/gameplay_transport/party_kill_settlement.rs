@@ -302,6 +302,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             slots.push(slot);
         }
+        let endgame_kill =
+            oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(&entry.creature)
+                .is_some()
+                || oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(
+                    &entry.creature,
+                )
+                .is_some()
+                || entry.creature == "oteryn:creature.the_primal_menace";
+        if endgame_kill {
+            // The fences above retain the expected revisions. Invalidate the
+            // cached cursors before the await so cancellation after an uncertain
+            // composed XP/Quest commit cannot expose a stale cursor to a waiter.
+            for slot in &mut slots {
+                slot.observe_endgame_progression();
+            }
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
@@ -334,6 +350,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
                     let death = key(entry);
+                    // W10/W11 still require Channel death authority. Other mechanics
+                    // retain the native owner's tagged Instance receipt format.
+                    let endgame_death = if endgame_kill {
+                        let Ok(key) = <[u8; 52]>::try_from(death.as_slice()) else {
+                            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                        };
+                        Some(key)
+                    } else {
+                        None
+                    };
+
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
                         &mut tx,
                         &scope,
@@ -380,9 +407,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return Err(DurabilityError::Unavailable);
                     }
                     let mut members = members.take().ok_or(DurabilityError::InvalidStoredState)?;
+                    // Freeze original fences and true native damage participation before XP
+                    // moves the member requests. A shared-XP bystander is not a boss killer.
+                    let participants = members.iter().map(|member| {
+                        let dealt_damage = entry.damage_shares.iter().any(|damage| {
+                            damage.total > 0
+                                && damage.character.as_bytes() == member.fence.character_id.as_bytes()
+                                && damage.session == Some(member.fence.game_session_id)
+                                && damage.lease_generation == Some(member.fence.character_lease_generation)
+                                // Crystal201189f creature.lua219-240 getKillers(true),
+                                // config.lua.dist40 pzLocked = 60 * 1000 milliseconds.
+                                && damage.last_damage_at_ms.is_some_and(|at| {
+                                    entry.facts.death_at_ms.checked_sub(at).is_some_and(|age| age <= 60_000)
+                                })
+                        });
+                        (member.fence, dealt_damage)
+                    }).collect::<Vec<_>>();
                     for (request, current) in members.iter_mut().zip(&current.members) {
+                        let amount = match crate::durability::quest_state::soul_war::soul_war_experience_in_transaction(
+                            &mut tx, request.fence.character_id, &entry.creature, current.share,
+                        ).await {
+                            Ok(amount) => amount,
+                            Err(error) => return Ok(Err(error)),
+                        };
                         request.request.amount =
-                            oteryn_simulation_determinism::ExactI64::new(current.share);
+                            oteryn_simulation_determinism::ExactI64::new(amount);
                         request.live_stamina = if current.share > 0 {
                             states.stamina_after_experience(
                                 current.actor,
@@ -445,6 +494,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(death) = endgame_death.as_ref() {
+                        // Quest/Hazard gains observe pre-gain XP and commit in the same
+                        // transaction. There is no post-XP logout/crash gap to lose a taint.
+                        if let Err(error) = crate::durability::quest_state::soul_war::apply_soul_war_kill_in_transaction(
+                            &mut tx, owner.holder, death, &entry.creature, &participants,
+                        ).await { return Ok(Err(error)); }
+                        if let Err(error) = crate::durability::quest_state::rotten_blood::apply_rotten_blood_kill_in_transaction(
+                            &mut tx, owner.holder, death, &entry.creature, &participants,
+                        ).await { return Ok(Err(error)); }
+                        if let Err(error) = crate::durability::character_hazard::apply_hazard_kill_in_transaction(
+                            &mut tx, owner.holder, death, &entry.creature, &participants,
+                        ).await { return Ok(Err(error)); }
+                    }
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     publish_stamina(states, runtime, &current, entry, &awards);
                     Ok(Ok(awards))
@@ -482,6 +544,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if award.character.as_bytes() == entry.facts.principal.character.as_bytes() {
                     principal = Some(xp);
                 }
+            }
+        }
+        if endgame_kill {
+            // Returned XP revisions precede possible Quest/Hazard descendants.
+            // Invalidate on replay too: a historical receipt is not a current cursor.
+            for slot in &mut slots {
+                slot.observe_endgame_progression();
             }
         }
         Ok(SettledPartyXp {

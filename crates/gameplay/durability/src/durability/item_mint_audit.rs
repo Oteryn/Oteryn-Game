@@ -2069,6 +2069,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_mint.rs",
                 "crates/gameplay/durability/src/durability/item_timed_state.rs",
                 "crates/gameplay/durability/src/durability/item_transfer.rs",
+                // E12's native Inbox lamp burn uses the same fenced Type2 tuple.
+                "crates/gameplay/durability/src/durability/item_use/hireling_lamp.rs",
                 "crates/gameplay/durability/src/durability/item_use.rs",
                 "crates/gameplay/durability/src/durability/map_item_mint.rs",
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
