@@ -1,0 +1,1003 @@
+{
+  "files": [
+    {
+      "git_blob": "e5ccd720f547b1ea0d26e1702947e5ac225edc8f",
+      "path": "data-global/monster/raids/the_horned_fox.lua",
+      "sha256": "8d6a70579784beefefc64e7b11cc325e297e70fea322dba162d34e2b5413e47f",
+      "text": "local mType = Game.createMonsterType(\"The Horned Fox\")\nlocal monster = {}\n\nmonster.description = \"The Horned Fox\"\nmonster.experience = 300\nmonster.outfit = {\n\tlookType = 202,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n\tlookMount = 0,\n}\n\nmonster.bosstiary = {\n\tbossRaceId = 202,\n\tbossRace = RARITY_NEMESIS,\n}\n\nmonster.health = 265\nmonster.maxHealth = 265\nmonster.race = \"blood\"\nmonster.corpse = 5983\nmonster.speed = 105\nmonster.manaCost = 0\n\nmonster.changeTarget = {\n\tinterval = 5000,\n\tchance = 8,\n}\n\nmonster.strategiesTarget = {\n\tnearest = 70,\n\thealth = 10,\n\tdamage = 20,\n}\n\nmonster.flags = {\n\tsummonable = false,\n\tattackable = true,\n\thostile = true,\n\tconvinceable = false,\n\tpushable = false,\n\trewardBoss = false,\n\tillusionable = false,\n\tcanPushItems = true,\n\tcanPushCreatures = true,\n\tstaticAttackChance = 90,\n\ttargetDistance = 1,\n\trunHealth = 0,\n\thealthHidden = false,\n\tisBlockable = false,\n\tcanWalkOnEnergy = false,\n\tcanWalkOnFire = false,\n\tcanWalkOnPoison = false,\n}\n\nmonster.light = {\n\tlevel = 0,\n\tcolor = 0,\n}\n\nmonster.summon = {\n\tmaxSummons = 5,\n\tsummons = {\n\t\t{ name = \"Minotaur Guard\", chance = 15, interval = 2000, count = 2 },\n\t\t{ name = \"Minotaur Archer\", chance = 15, interval = 2000, count = 2 },\n\t\t{ name = \"Minotaur Mage\", chance = 15, interval = 2000, count = 2 },\n\t},\n}\n\nmonster.voices = {\n\tinterval = 5000,\n\tchance = 10,\n\t{ text = \"You will never get me!\", yell = false },\n\t{ text = \"I'll be back!\", yell = false },\n\t{ text = \"Catch me, if you can!\", yell = false },\n\t{ text = \"Help me, Boys!\", yell = false },\n}\n\nmonster.loot = {\n\t{ id = 5804, chance = 100000 }, -- nose ring\n\t{ id = 3031, chance = 96880, maxCount = 99 }, -- gold coin\n\t{ id = 5878, chance = 96880 }, -- minotaur leather\n\t{ id = 11472, chance = 93750, maxCount = 2 }, -- minotaur horn\n\t{ id = 11482, chance = 81250 }, -- piece of warrior armor\n\t{ id = 7363, chance = 46880, maxCount = 14 }, -- piercing bolt\n\t{ id = 3359, chance = 28130 }, -- brass armor\n\t{ id = 3577, chance = 15630 }, -- meat\n\t{ id = 3413, chance = 12500 }, -- battle shield\n\t{ id = 236, chance = 9380 }, -- strong health potion\n\t{ id = 3396, chance = 9380 }, -- dwarven helmet\n\t{ id = 3483, chance = 6250 }, -- fishing rod\n\t{ id = 3275, chance = 3130 }, -- double axe\n\t{ id = 3049, chance = 10000 }, -- stealth ring\n\t{ id = 3276, chance = 6000 }, -- hatchet\n\t{ id = 3073, chance = 4000 }, -- wand of cosmic energy\n}\n\nmonster.attacks = {\n\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -100 },\n\t{ name = \"combat\", interval = 1000, chance = 25, type = COMBAT_PHYSICALDAMAGE, minDamage = 0, maxDamage = -20, range = 7, shootEffect = CONST_ANI_BOLT, target = false },\n\t{ name = \"condition\", type = CONDITION_POISON, interval = 1000, chance = 40, minDamage = -4, maxDamage = -8, range = 10, shootEffect = CONST_ANI_POISON, target = false },\n}\n\nmonster.defenses = {\n\tdefense = 33,\n\tarmor = 30,\n\t{ name = \"combat\", interval = 1000, chance = 15, type = COMBAT_HEALING, minDamage = 25, maxDamage = 75, effect = CONST_ME_MAGIC_RED, target = false },\n\t{ name = \"invisible\", interval = 2000, chance = 10, effect = CONST_ME_MAGIC_BLUE },\n}\n\nmonster.elements = {\n\t{ type = COMBAT_PHYSICALDAMAGE, percent = 0 },\n\t{ type = COMBAT_ENERGYDAMAGE, percent = 0 },\n\t{ type = COMBAT_EARTHDAMAGE, percent = 0 },\n\t{ type = COMBAT_FIREDAMAGE, percent = 0 },\n\t{ type = COMBAT_LIFEDRAIN, percent = 0 },\n\t{ type = COMBAT_MANADRAIN, percent = 0 },\n\t{ type = COMBAT_DROWNDAMAGE, percent = 0 },\n\t{ type = COMBAT_ICEDAMAGE, percent = -1 },\n\t{ type = COMBAT_HOLYDAMAGE, percent = 0 },\n\t{ type = COMBAT_DEATHDAMAGE, percent = -1 },\n}\n\nmonster.immunities = {\n\t{ type = \"paralyze\", condition = false },\n\t{ type = \"outfit\", condition = false },\n\t{ type = \"invisible\", condition = true },\n\t{ type = \"bleed\", condition = false },\n}\n\nmType:register(monster)\n"
+    },
+    {
+      "git_blob": "00b252b204ced7e20f64b0444637a7fa8014bae5",
+      "path": "data-global/raids/abdendriel/badgers.xml",
+      "sha256": "c226674a6efd02a7d8542d0e6faa91359cb0e7246a1ea4f93ed0f4c23217063c",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32633\" fromy=\"31645\" fromz=\"7\" tox=\"32715\" toy=\"31708\" toz=\"7\">\n\t\t<monster name=\"Badger\" amount=\"100\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "6b1b61dfb35769398d61250f7b2eb9b36c35b292",
+      "path": "data-global/raids/abdendriel/bears_and_wasps.xml",
+      "sha256": "c4a6829bdf7f37f55ae290ac1c016ed09c110ddf4600c75458bdc2b173f0f91e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Forrest animals spread out close to Ab'Dendriel!\" />\n\t<areaspawn delay=\"60000\" fromx=\"32600\" fromy=\"31712\" fromz=\"7\" tox=\"32634\" toy=\"31739\" toz=\"7\">\n\t\t<monster name=\"Wasp\" amount=\"30\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32600\" fromy=\"31712\" fromz=\"7\" tox=\"32634\" toy=\"31739\" toz=\"7\">\n\t\t<monster name=\"Bear\" amount=\"30\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "fdc42ec4540d0d5f987abc1e29be4619140bb80d",
+      "path": "data-global/raids/abdendriel/chayenne.xml",
+      "sha256": "91dbff138753a65fa2b40141c37db022e13238e7ebb60385a75dfffa99cf6171",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"An immense force is approaching Draconia.\" />\n\t<announce delay=\"50000\" type=\"Event\" message=\"Get prepare mortals, the visit of Chayenne is near.\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"Chayenne has returned to his citadel once more. Be careful there.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Chayenne\" x=\"32799\" y=\"31604\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "f991a71d52f0519a2997aef473dd23fbdc9471f8",
+      "path": "data-global/raids/abdendriel/dragons.xml",
+      "sha256": "dd34b6f2ea5b2a3d781608d3d4cee4c96607a8617e451ef05f163a3500e7684b",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"There are dragons rising in Draconia!\" />\n\t<areaspawn delay=\"1000\" fromx=\"32780\" fromy=\"31581\" fromz=\"7\" tox=\"32783\" toy=\"31587\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"2\" />\n\t\t<monster name=\"Dragon Hatchling\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32819\" fromy=\"31591\" fromz=\"7\" tox=\"32823\" toy=\"31596\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"2\" />\n\t\t<monster name=\"Dragon Hatchling\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32801\" fromy=\"31601\" fromz=\"7\" tox=\"32809\" toy=\"31608\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"2\" />\n\t\t<monster name=\"Dragon Hatchling\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32776\" fromy=\"31598\" fromz=\"7\" tox=\"32788\" toy=\"31610\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"2\" />\n\t\t<monster name=\"Dragon Hatchling\" amount=\"3\" />\n\t</areaspawn>\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32798\" y=\"31558\" z=\"6\" />\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32798\" y=\"31558\" z=\"5\" />\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32798\" y=\"31558\" z=\"4\" />\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32798\" y=\"31558\" z=\"3\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "e845502886b8c6935e6e2f2a232667bf3f63ee36",
+      "path": "data-global/raids/abdendriel/rotworm_queen.xml",
+      "sha256": "e7ffc2d3b604b4a0f80fdfb0ad836b01511d14f533004379e7f64d8b49bddd04",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Rotworm Queen\" x=\"32774\" y=\"31594\" z=\"12\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "7bef36369443202f0f50b68e43cf9be3ca4d6324",
+      "path": "data-global/raids/abdendriel/the_evil_eye.xml",
+      "sha256": "44420e7b6247b70891bfcf4096017c5dd034483ba12f2d63ed6e6e58a6c2f99e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Evil Eye\" x=\"32803\" y=\"31590\" z=\"14\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5f243c0b6ebac3e5a5ab7643bd35c1491b5c79de",
+      "path": "data-global/raids/abdendriel/warwolves.xml",
+      "sha256": "6fdf58b4cf28ef0ef1f04f5af786295ccc58f8135002be1e930a3be8bd129157",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Many aggressive beasts are roaming south of Ab'Dendriel! Take care!\" />\n\t<areaspawn delay=\"1300\" fromx=\"32600\" fromy=\"31712\" fromz=\"7\" tox=\"32634\" toy=\"31739\" toz=\"7\">\n\t\t<monster name=\"Wolf\" amount=\"55\" />\n\t\t<monster name=\"War Wolf\" amount=\"70\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "6dab4f0f24174c7a0ecbfa2339fe9ddd979424cd",
+      "path": "data-global/raids/abdendriel/white_deers.xml",
+      "sha256": "72644d4ba93b6a6f6be49076e3728bb3db5b29206406dcc5f5f0562ff4851b82",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n    <!--Single Spawns-->\n\t<announce delay=\"1000\" type=\"event\" message=\"There are white deer roaming the region near Ab'Dendriel. Don't slay too many of them, or they will leave the region.\" />\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32421\" y=\"31657\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32447\" y=\"31671\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32343\" y=\"31674\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32348\" y=\"31678\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32374\" y=\"31687\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32412\" y=\"31690\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32260\" y=\"31687\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32312\" y=\"31687\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32389\" y=\"31702\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32346\" y=\"31704\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32363\" y=\"31707\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32252\" y=\"31708\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32255\" y=\"31711\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32513\" y=\"31709\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32276\" y=\"31714\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32573\" y=\"31717\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32370\" y=\"31718\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32336\" y=\"31718\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32538\" y=\"31720\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32653\" y=\"31722\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32260\" y=\"31724\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32291\" y=\"31726\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32589\" y=\"31724\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32399\" y=\"31725\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32671\" y=\"31726\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32597\" y=\"31730\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32522\" y=\"31730\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32561\" y=\"31731\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32579\" y=\"31733\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32401\" y=\"31736\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32665\" y=\"31732\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32669\" y=\"31735\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32541\" y=\"31738\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32249\" y=\"31742\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32688\" y=\"31745\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32267\" y=\"31746\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32229\" y=\"31749\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32665\" y=\"31755\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32250\" y=\"31758\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32672\" y=\"31764\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32232\" y=\"31764\" z=\"7\"/>\n    <singlespawn delay=\"1000\" name=\"White Deer\" x=\"32760\" y=\"31913\" z=\"7\"/>\n</raid>"
+    },
+    {
+      "git_blob": "b1b760f3694bc7549e1ad27ce22eafae2f326b29",
+      "path": "data-global/raids/abdendriel/zevelon_duskbringer.xml",
+      "sha256": "d7bdc3b1dfb801793b5c54f5c38d64352485a25741b0c8bdfcd3feff680bf2b0",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Zevelon Duskbringer\" x=\"32767\" y=\"31578\" z=\"11\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "e9a8947fa85a2228b5b2f69f4fea0a0a95c221f6",
+      "path": "data-global/raids/ankrahmun/bone_beasts.xml",
+      "sha256": "31033ae963ca093da62e0b4475c0d9e086103cac4f2d02e33d2a760841fab3a2",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Bonebeasts are rattling down in the Ankrahmun Dipthrah tombs.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Bonebeasts roaming around in the Ankrahmun Dipthrah tombs.\" />\n\t<areaspawn delay=\"20000\" fromx=\"33129\" fromy=\"32569\" fromz=\"7\" tox=\"33156\" toy=\"32598\" toz=\"7\">\n\t\t<monster name=\"Bonebeast\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "521ac6132fdbc4bce4143c0c9b2dcc7b786ff90f",
+      "path": "data-global/raids/ankrahmun/cobras.xml",
+      "sha256": "0956aa0c6a7b0e2e75d36a63ebd58be104b66629359931e1e1b4ce3da7a078f7",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"There's something sizzling in the Ankrahmun Dipthrah tombs.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Even more sizzling in the Ankrahmun Dipthrah tombs.\" />\n\t<announce delay=\"30000\" type=\"event\" message=\"Poison overflow in the Ankrahmun Dipthrah tombs!\" />\n\t<areaspawn delay=\"40000\" fromx=\"33129\" fromy=\"32569\" fromz=\"7\" tox=\"33156\" toy=\"32598\" toz=\"7\">\n\t\t<monster name=\"Cobra\" amount=\"25\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "0eb910b461ccfd59d335cda8871b6c99235564b4",
+      "path": "data-global/raids/ankrahmun/gargoyles.xml",
+      "sha256": "c8323876cdca6e54942e9d3fb9316ecbb04063dc026345d59dfe5acc6f66e3e3",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"There is something stony moving down in the Ankrahmun Rahemos tombs.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Gargoyle attack in the Ankrahmun Rahemos tombs!\" />\n\t<areaspawn delay=\"20000\" fromx=\"33141\" fromy=\"32680\" fromz=\"12\" tox=\"33173\" toy=\"32699\" toz=\"12\">\n\t\t<monster name=\"Gargoyle\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "776b4d366e284fffadb58b02f0a66a67d2369a86",
+      "path": "data-global/raids/ankrahmun/nomads.xml",
+      "sha256": "ab355959e198fdc43fbe6cffbe435d7cf5b74df21f8a5394d9a9786c03782029",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Nomad scouts have been sighted close to the gates to Ankrahmun.\" />\n\t<announce delay=\"35000\" type=\"event\" message=\"The desert nomads are launching a full scale attack on Ankrahmun.\n\t\tSome might even have slipped through the defences!\" />\n\t<areaspawn delay=\"36000\" fromx=\"33254\" fromy=\"32752\" fromz=\"7\" tox=\"33073\" toy=\"32765\" toz=\"7\">\n\t\t<monster name=\"Nomad\" amount=\"160\" />\n\t</areaspawn>\n\t<areaspawn delay=\"66000\" fromx=\"33254\" fromy=\"32752\" fromz=\"7\" tox=\"33073\" toy=\"32765\" toz=\"7\">\n\t\t<monster name=\"Nomad\" amount=\"160\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "866cc923538e2b390275f6d8e9cfb14077755ce7",
+      "path": "data-global/raids/ankrahmun/scarabs.xml",
+      "sha256": "b3bacc57d634496a227c6466a68c66f4ce6af3a882010d014640bb54a22239ce",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Unusual frequent scarab sightings at the gates of Ankrahmun\" />\n\t<announce delay=\"60000\" type=\"event\" message=\"Ancient scarabs are leading an attack on Ankrahmun.\" />\n\t<areaspawn delay=\"60000\" fromx=\"33254\" fromy=\"32752\" fromz=\"7\" tox=\"33073\" toy=\"32765\" toz=\"7\">\n\t\t<monster name=\"Larva\" amount=\"50\" />\n\t\t<monster name=\"Scarab\" amount=\"30\" />\n\t\t<monster name=\"Ancient Scarab\" amount=\"16\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "c509481f816b4b432987d8d55081cd6b185a7af0",
+      "path": "data-global/raids/ankrahmun/terramites.xml",
+      "sha256": "ffd20fe123be5240d396cc4f5c899cb0ebd48fa419b93110a7781149ecf185ef",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Something is moving under the surface in the sand north of Ankrahmun!\"/>\n\t<announce delay=\"120000\" type=\"event\" message=\"Terramites north of Ankrahmun!\"/>\n\t<areaspawn delay=\"120000\" fromx=\"33134\" fromy=\"32697\" fromz=\"7\" tox=\"33189\" toy=\"32742\" toz=\"7\">\n\t\t<monster name=\"Terramite\" amount=\"30\"/>\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "0a19473c4ae0868dc7855d7920d3641759883b10",
+      "path": "data-global/raids/carlin/amazons.xml",
+      "sha256": "0054e81a8307b235e8e93b861969c1191ccac272b5618b8889e781f629334386",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Amazons are converging north of Carlin.\" />\n\t<announce delay=\"12000\" type=\"event\" message=\"Amazon attack north of Carlin!\" />\n\t<areaspawn delay=\"4000\" fromx=\"32415\" fromy=\"31587\" fromz=\"7\" tox=\"32434\" toy=\"31604\" toz=\"7\">\n\t\t<monster name=\"Amazon\" amount=\"8\" />\n\t</areaspawn>\n\t<areaspawn delay=\"8000\" fromx=\"32415\" fromy=\"31587\" fromz=\"7\" tox=\"32434\" toy=\"31604\" toz=\"7\">\n\t\t<monster name=\"Amazon\" amount=\"16\" />\n\t</areaspawn>\n\t<areaspawn delay=\"12000\" fromx=\"32415\" fromy=\"31587\" fromz=\"7\" tox=\"32434\" toy=\"31604\" toz=\"7\">\n\t\t<monster name=\"Amazon\" amount=\"32\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "b005702235b21ab78dceb6a4751b45e297c7256e",
+      "path": "data-global/raids/carlin/femor_hills_orcs.xml",
+      "sha256": "30670b48c843d6926e22cbae1233abcea8827f6e6b0abc585f8e2efdf3f6e1e4",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32522\" fromy=\"31766\" fromz=\"6\" tox=\"32551\" toy=\"31776\" toz=\"6\">\n\t\t<monster name=\"Orc\" amount=\"20\" />\n\t\t<monster name=\"Orc Warrior\" amount=\"8\" />\n\t\t<monster name=\"War Wolf\" amount=\"8\" />\n\t\t<monster name=\"Orc Rider\" amount=\"8\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"8\" />\n\t\t<monster name=\"Orc Shaman\" amount=\"8\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32531\" fromy=\"31769\" fromz=\"5\" tox=\"32543\" toy=\"31775\" toz=\"5\">\n\t\t<monster name=\"Orc\" amount=\"6\" />\n\t\t<monster name=\"Orc Warrior\" amount=\"6\" />\n\t\t<monster name=\"War Wolf\" amount=\"6\" />\n\t\t<monster name=\"Orc Rider\" amount=\"6\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"6\" />\n\t\t<monster name=\"Orc Shaman\" amount=\"6\" />\n\t\t<monster name=\"Orc Helmet\" amount=\"1\" />\n\t\t<monster name=\"Orc Shield\" amount=\"1\" />\n\t\t<monster name=\"Orc Armor\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "80790d91d4de4f14baf8013817e6c2a82c4dca77",
+      "path": "data-global/raids/carlin/hunter_and_wild_warrior.xml",
+      "sha256": "a6244d59215a4792f50bf644ac9638265de4fc200c8aaae91ba11fa8af9da69d",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32618\" fromy=\"31821\" fromz=\"7\" tox=\"32629\" toy=\"31831\" toz=\"7\">\n\t\t<monster name=\"Hunter\" amount=\"4\" />\n\t\t<monster name=\"Wild Warrior\" amount=\"6\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "ba17fdb26eda5ba9ee79192e72ca341cf1c08201",
+      "path": "data-global/raids/carlin/lesser_undeads.xml",
+      "sha256": "e8f25498f05ddf875e58e2408ea3fa3213f175ad736eef71821f28ccc0ccb456",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"There is a slight uneven energy in the ghostlands west of Carlin. Something is going to happen soon.\" />\n\t<announce delay=\"180000\" type=\"event\" message=\"Skeletons appeared in the ghostlands. Something is wrong there!\" />\n\t<announce delay=\"300000\" type=\"event\" message=\"Now the ghostlands are full of ghouls! Seems like there is a massive outburst of negative energy there!\" />\n\t<areaspawn delay=\"180000\" fromx=\"32177\" fromy=\"31790\" fromz=\"7\" tox=\"32219\" toy=\"31857\" toz=\"7\">\n\t\t<monster name=\"Skeleton\" amount=\"12\" />\n\t</areaspawn>\n\t<areaspawn delay=\"300000\" fromx=\"32177\" fromy=\"31790\" fromz=\"7\" tox=\"32219\" toy=\"31857\" toz=\"7\">\n\t\t<monster name=\"Ghoul\" amount=\"24\" />\n\t</areaspawn>\n\t<areaspawn delay=\"600000\" fromx=\"32177\" fromy=\"31790\" fromz=\"7\" tox=\"32219\" toy=\"31857\" toz=\"7\">\n\t\t<monster name=\"Ghost\" amount=\"24\" />\n\t</areaspawn>\n\t<areaspawn delay=\"720000\" fromx=\"32177\" fromy=\"31790\" fromz=\"7\" tox=\"32219\" toy=\"31857\" toz=\"7\">\n\t\t<monster name=\"Demon Skeleton\" amount=\"32\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "255b2accd49cc9dc284ca248489d7190cb9b7a88",
+      "path": "data-global/raids/carlin/orcs.xml",
+      "sha256": "db57f6d8b0e36eca88709642e08020d6ce59165790a8fc994c9356c07e92cd67",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Some Orcs are assembling in the woods between Carlin and Northport.\" />\n\t<areaspawn delay=\"20000\" fromx=\"32404\" fromy=\"31604\" fromz=\"7\" tox=\"32436\" toy=\"31642\" toz=\"7\">\n\t\t<monster name=\"Orc\" amount=\"50\" />\n\t</areaspawn>\n\t<announce delay=\"40000\" type=\"event\" message=\"Orcs attacking Carlin from the north-east!\" />\n\t<areaspawn delay=\"40000\" fromx=\"32404\" fromy=\"31604\" fromz=\"7\" tox=\"32436\" toy=\"31642\" toz=\"7\">\n\t\t<monster name=\"Orc Berserker\" amount=\"20\" />\n\t\t<monster name=\"Orc Leader\" amount=\"15\" />\n\t\t<monster name=\"Orc Shaman\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "5db193ebd1560e83ef236086ca7749688246ba80",
+      "path": "data-global/raids/carlin/trolls.xml",
+      "sha256": "3c4466b111234ffa77437995e3189d93493725869fe388003cafe40f764546a5",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Trolls trolling north-west of Carlin!\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Even more Trolls north-west of Carlin!\" />\n\t<announce delay=\"180000\" type=\"event\" message=\"Beware! Troll Champions north-west of Carlin!\" />\n\t<areaspawn delay=\"1000\" fromx=\"32261\" fromy=\"31658\" fromz=\"7\" tox=\"32315\" toy=\"31684\" toz=\"7\">\n\t\t<monster name=\"Troll\" amount=\"25\" />\n\t\t<monster name=\"Troll Guard\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32261\" fromy=\"31658\" fromz=\"7\" tox=\"32315\" toy=\"31684\" toz=\"7\">\n\t\t<monster name=\"Troll\" amount=\"25\" />\n\t\t<monster name=\"Troll Guard\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32261\" fromy=\"31658\" fromz=\"7\" tox=\"32315\" toy=\"31684\" toz=\"7\">\n\t\t<monster name=\"Troll\" amount=\"25\" />\n\t\t<monster name=\"Troll Guard\" amount=\"1\" />\n\t\t<monster name=\"Troll Champion\" amount=\"25\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "f7ccc82073d08346f88774458b2ab824fb3e6e52",
+      "path": "data-global/raids/carlin/undeads.xml",
+      "sha256": "cf4d43b7d34cd52417a5b1794fe94b1654f73a5222e354afe84baebe17f49adc",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"A disturbance in the ether stirs up the undead of the Ghostlands.\" />\n\t<announce delay=\"7000\" type=\"event\" message=\"The undead are reclaiming the Ghostlands once more!\" />\n\t<announce delay=\"15000\" type=\"event\" message=\"The dreaded Banshees and their undead retinue are unleashed in the Ghostland.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Banshees wish to feast on the souls of the living! Fight them in the Ghostlands or abandon all hope!\" />\n\t<areaspawn delay=\"20000\" fromx=\"32177\" fromy=\"31790\" fromz=\"7\" tox=\"32219\" toy=\"31857\" toz=\"7\">\n\t\t<monster name=\"Ghoul\" amount=\"8\" />\n\t\t<monster name=\"Stalker\" amount=\"8\" />\n\t\t<monster name=\"Ghost\" amount=\"8\" />\n\t\t<monster name=\"Mummy\" amount=\"8\" />\n\t\t<monster name=\"Demon Skeleton\" amount=\"16\" />\n\t\t<monster name=\"Lich\" amount=\"32\" />\n\t\t<monster name=\"Banshee\" amount=\"32\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "e501d647d667dea056d09c59330a041a6a3e8195",
+      "path": "data-global/raids/carlin/willi_wasp.xml",
+      "sha256": "7555dd4ac1c410a30c7f0ca0449f1e8bef5d8408440ee6226ae96250ebe5b894",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\n<announce delay=\"1000\" type=\"event\" message=\"Some wasps have been found north of Carlin. There is some loud buzzing in the air.\" />\n<announce delay=\"240000\" type=\"event\" message=\"Buzzing madness north of Carlin! Be careful if you're allergic!\" />\n<announce delay=\"300000\" type=\"event\" message=\"Willi Wasp the Wicked has arrived!\" />\n\t<areaspawn delay=\"240000\" fromx=\"32290\" fromy=\"31683\" fromz=\"7\" tox=\"32401\" toy=\"31739\" toz=\"7\">\n\t\t<monster name=\"Wasp\" amount=\"25\" />\n\t</areaspawn>\n\t<areaspawn delay=\"240000\" fromx=\"32290\" fromy=\"31683\" fromz=\"7\" tox=\"32401\" toy=\"31739\" toz=\"7\">\n\t\t<monster name=\"Wasp\" amount=\"25\" />\n\t</areaspawn>\n\t<singlespawn delay=\"300000\" name=\"Willi Wasp\" x=\"32350\" y=\"31727\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "a1071d025c0a7330cabaa624ab8aefa61a91f67f",
+      "path": "data-global/raids/carlin/yeti.xml",
+      "sha256": "5a55de41f595f61edac672365ccb31dba2e578633b2f9474ff8669ec9606db22",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\n<announce delay=\"1000\" type=\"event\" message=\"Something is moving to the icy grounds of Folda.\" />\n<announce delay=\"20000\" type=\"event\" message=\"Many Yetis are emerging from the icy mountains of Folda.\" />\n<announce delay=\"60000\" type=\"event\" message=\"Numerous Yetis are dominating Folda, beware!\" />\n\n\t<areaspawn delay=\"60000\" fromx=\"31991\" fromy=\"31580\" fromz=\"7\" tox=\"32044\" toy=\"31616\" toz=\"7\">\n\t\t<monster name=\"Yeti\" amount=\"60\" />\n\t</areaspawn>\n\n</raid>\n"
+    },
+    {
+      "git_blob": "91d20a4a5a0503d742559a0ad902d596ea8dc9e9",
+      "path": "data-global/raids/carlin/zarabustor.xml",
+      "sha256": "5454586e7ce5ee2b216fd39a8c561ecb62fdfc35c70d34ff6b843404be993ddc",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Zarabustor\" x=\"32509\" y=\"31581\" z=\"14\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "74683ff1c7e6d6a3e8d329c3596a5efd3f7fb95c",
+      "path": "data-global/raids/darashia/arachir_the_ancient_one.xml",
+      "sha256": "e7b423687abc3c5c3c49b621fe2f6eef1752d2240a6128d4d613d4b49df46225",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n<announce delay=\"1000\" type=\"event\" message=\"Beware of Arachir the Ancient One!\" />\n\t<singlespawn delay=\"1000\" name=\"Arachir the Ancient One\" x=\"32965\" y=\"32400\" z=\"12\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "6a11276a0082d04e201c342a163150cbe7cef57f",
+      "path": "data-global/raids/darashia/captain_jones.xml",
+      "sha256": "b4773be13a59bb026ca79e9dad774bde2dfb52351318046222d257a830359dbe",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Captain Jones\" x=\"33321\" y=\"32183\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "daea52343db32bcc5788ad0088d8c12f53146846",
+      "path": "data-global/raids/darashia/gravelord_oshuran.xml",
+      "sha256": "11b954af67b96cc0105247771e62313e05a972d6fbd64be74468616dfc119084",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Gravelord Oshuran\" x=\"32980\" y=\"32393\" z=\"12\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5a7859d1f8ca851ddfa2b1be4e62459ceff6cb24",
+      "path": "data-global/raids/darashia/minotaurs.xml",
+      "sha256": "97ba068d07deebeee5c9b726d6bfaacb36e2b6f33fb9fe7a42b4a398d955f1b2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t <!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Minotaurs are preparing an attack in the Darashia Minotaur pyramid!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Minotaurs are attacking Darashia from the north!\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Minotaurs are advancing to Darashia grom the north!\" />\n\t <!--Single Spawns-->\n\t <areaspawn delay=\"20000\" fromx=\"33253\" fromy=\"32295\" fromz=\"7\" tox=\"33294\" toy=\"32329\" toz=\"7\">\n\t\t<monster name=\"Minotaur\" amount=\"10\" />\n\t\t<monster name=\"Minotaur Guard\" amount=\"10\" />\n\t\t<monster name=\"Minotaur Mage\" amount=\"10\" />\n\t </areaspawn>\n\t <areaspawn delay=\"120000\" fromx=\"33253\" fromy=\"32295\" fromz=\"7\" tox=\"33294\" toy=\"32329\" toz=\"7\">\n\t\t<monster name=\"Minotaur\" amount=\"20\" />\n\t\t<monster name=\"Minotaur Guard\" amount=\"15\" />\n\t\t<monster name=\"Minotaur Mage\" amount=\"20\" />\n\t </areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "28bd10050e47f38f4ed576e1ed5ea2c7fa5acbac",
+      "path": "data-global/raids/darashia/necropharus.xml",
+      "sha256": "d6391c7db5240f29940b68473b5d13ae23140b16f17e87879f16fcb64cd634a0",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Beware of Necropharus!\" />\n\t<singlespawn delay=\"1000\" name=\"Necropharus\" x=\"33044\" y=\"32401\" z=\"10\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "617becfd654b9cead9baf7f8f0fe0361f8453100",
+      "path": "data-global/raids/darashia/pirates.xml",
+      "sha256": "eba48de852be567f89cf42a4782f327eec0e608d196566a1077b14d27c7913a2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Pillage and plunder! Pirates have been sighted north of Darashia!.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"33275\" fromy=\"32324\" fromz=\"7\" tox=\"33316\" toy=\"32360\" toz=\"7\">\n\t\t<monster name=\"Pirate Buccaneer\" amount=\"20\" />\n\t\t<monster name=\"Pirate Cutthroat\" amount=\"15\" />\n\t\t<monster name=\"Pirate Marauder\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "60ff80e7c53e4369887ed8304c4ef7ddd146d2f5",
+      "path": "data-global/raids/darashia/priestesses.xml",
+      "sha256": "5076c425dfe6faf4999ae333d0abcc39bfa1c603bfe1c7deb900a8d9d1fcf4d6",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"The priestesses in Drefia are preparing a black celebration.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"32984\" fromy=\"32404\" fromz=\"7\" tox=\"33009\" toy=\"32430\" toz=\"7\">\n\t\t<monster name=\"Priestess\" amount=\"25\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "3802d71e0507fedcc39d5bdcfe334878b1d4ef52",
+      "path": "data-global/raids/darashia/rotworm_queen.xml",
+      "sha256": "06dba4822d229851c40cf5b32a89cf097e25a7a3ee912d9e9d64b61a45875587",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Rotworm Queen\" x=\"33062\" y=\"32371\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "b4e62675381f7f0a3e044e3a1686479e3d254f8d",
+      "path": "data-global/raids/darashia/the_pale_count.xml",
+      "sha256": "c1dcd9670e575e291ea10d89948a1eb084a066056586c05db6fa08c0cf280755",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"Event\" message=\"The Pale Count has risen from his crypt deep under Drefia. Blood will flow.\" />\n\t<singlespawn delay=\"1000\" name=\"The Pale Count\" x=\"32969\" y=\"32420\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "00a28ba0981747d8485b80c801b35f9bb2654d8f",
+      "path": "data-global/raids/darashia/tyrn.xml",
+      "sha256": "86b110a6df9814350f28641789d6ec7aa2aed1d7dc730e8f34997cf592107949",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Tyrn\" x=\"33050\" y=\"32381\" z=\"14\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "0b516353ed2ddf2dd323a7d608cb2fcbd688424a",
+      "path": "data-global/raids/darashia/undeads.xml",
+      "sha256": "ecf3cd4fa20cf9347a531a566cf07264bd2b24b83d11e005303a2c28b53ca0b3",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Sightings of undead, west of Darashia! Imminent invasion is suspected!\" />\n\t<announce delay=\"10000\" type=\"event\" message=\"The undead are attacking Darashia!\" />\n\t<areaspawn delay=\"11000\" fromx=\"33156\" fromy=\"32414\" fromz=\"7\" tox=\"33182\" toy=\"32458\" toz=\"7\">\n\t\t<monster name=\"Vampire\" amount=\"25\" />\n\t\t<monster name=\"Stalker\" amount=\"30\" />\n\t\t<monster name=\"Skeleton\" amount=\"35\" />\n\t\t<monster name=\"demon skeleton\" amount=\"35\" />\n\t\t<monster name=\"bonelord\" amount=\"25\" />\n\t\t<monster name=\"necromancer\" amount=\"25\" />\n\t\t<monster name=\"bonebeast\" amount=\"25\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "e5e33ee8f052bb0f1f96ce15531cdd9d64094152",
+      "path": "data-global/raids/darashia/white_pale.xml",
+      "sha256": "56421ef51390e31cf24e03258cd8ff773e37904be7027dc1de0b13357257fd03",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"White Pale\" x=\"33264\" y=\"31875\" z=\"11\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "a380f8e7f5849df7a46bc484e5513abc187e676f",
+      "path": "data-global/raids/darashia/zomba.xml",
+      "sha256": "376771e5fbbe478c3dea259564d36909cba764f70ab36a48e49a41eff6a6c295",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\n<announce delay=\"1000\" type=\"event\" message=\"Hungry lions scout the western Darashian desert. Travellers beware!\" />\n<announce delay=\"240000\" type=\"event\" message=\"Packs of hungry lions stalk Darashia's western desert. Be on your guard!\" />\n<announce delay=\"300000\" type=\"event\" message=\"Hear the roar of Zomba, king of the lions, roaming the Darashia desert!\" />\n\t<areaspawn delay=\"240000\" fromx=\"33126\" fromy=\"32391\" fromz=\"7\" tox=\"33168\" toy=\"32449\" toz=\"7\">\n\t\t<monster name=\"Lion\" amount=\"25\" />\n\t</areaspawn>\n\t<areaspawn delay=\"240000\" fromx=\"33126\" fromy=\"32391\" fromz=\"7\" tox=\"33168\" toy=\"32449\" toz=\"7\">\n\t\t<monster name=\"Lion\" amount=\"25\" />\n\t</areaspawn>\n\t<singlespawn delay=\"300000\" name=\"Zomba\" x=\"33137\" y=\"32397\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "f05250c3d45d04f15ba41924abb33bd28a09d364",
+      "path": "data-global/raids/edron/big_boss_trolliver.xml",
+      "sha256": "01a718a8ad071976c1844699a1149ce2f61390d567e39ec286faa12a3f1fed3f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Big Boss Trolliver\" x=\"33133\" y=\"31714\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2451287064ad2189f961be05a6924d77181d410a",
+      "path": "data-global/raids/edron/feroxa.xml",
+      "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"An ancient evil is awakening in the grimvale mines.\" />\n\t<announce delay=\"30000\" type=\"Event\" message=\"Werewolfs entities are entering the\n\tmortal realm in the grimvale mines.\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"The Feroxa master has revealed itself in the mines of grimvale.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Feroxa\" x=\"33389\" y=\"31539\" z=\"11\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "8089cf924c88ec22e584e92c63da8d204b2d5c7a",
+      "path": "data-global/raids/edron/goblins.xml",
+      "sha256": "d6fd02af3b3dc1ea78b45242a2c25e7faac727ea7a54c2b8661665fe2426ebfd",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Goblins are converging west of Edron.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"33101\" fromy=\"31795\" fromz=\"7\" tox=\"33136\" toy=\"31836\" toz=\"7\">\n\t\t<monster name=\"Goblin\" amount=\"40\" />\n\t\t<monster name=\"Goblin Scavenger\" amount=\"10\" />\n\t\t<monster name=\"Goblin Assassin\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "fc50f263b77086d67e81b85fafd0218cbe35ad9a",
+      "path": "data-global/raids/edron/mad_mage.xml",
+      "sha256": "2a113c2abeed781551773ae13ab4ef67293a19a42bb4c90b5b587b229474d096",
+      "text": "<raid>\n\t<areaspawn delay=\"10000\" fromx=\"33311\" fromy=\"31850\" fromz=\"9\" tox=\"33362\" toy=\"31908\" toz=\"9\">\n\t\t<monster name=\"Golden Servant\" amount=\"7\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"10000\" fromx=\"33311\" fromy=\"31850\" fromz=\"9\" tox=\"33362\" toy=\"31908\" toz=\"9\">\n\t\t<monster name=\"Iron Servant\" amount=\"7\"/>\n\t</areaspawn>\n\t<singlespawn delay=\"20000\" name=\"Mad Mage\" x=\"33360\" y=\"31873\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "06cadf99f833e62e6ae036d70abf61f0d3256f90",
+      "path": "data-global/raids/edron/orcs.xml",
+      "sha256": "07763ddfb6f340195a0a7557f465957f5ee48c7ab3e3fb77da89bbbe50b2151f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Deep under Edron, the Orc population seems to grow rapidly.\n\t\tBe careful and take a rope with you!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Orc berserkers deep under Edron!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"33153\" fromy=\"31875\" fromz=\"7\" tox=\"33183\" toy=\"31906\" toz=\"7\">\n\t\t<monster name=\"Orc\" amount=\"20\" />\n\t\t<monster name=\"Orc Rider\" amount=\"5\" />\n\t\t<monster name=\"Orc Spearman\" amount=\"15\" />\n\t\t<monster name=\"Orc Warrior\" amount=\"10\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "dbd31d68fc047982e22ffa6966142250da518605",
+      "path": "data-global/raids/edron/orshabaal.xml",
+      "sha256": "f5a3dfec10df25a43deee780fe9cad4c330a2723ae7b116b5312a92e06d76ba2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"Orshabaal's minions are working on his return to the World. LEAVE Edron at once, mortals.\" />\n\t<announce delay=\"20000\" type=\"Event\" message=\"Orshabaal is about to make his way into the mortal realm. Run for your lives!\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"Orshabaal has been summoned from hell to plague the lands of mortals once again.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Orshabaal\" x=\"33118\" y=\"31699\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "388ae165a197fc3ce2484aec6bdc9afbab44e09f",
+      "path": "data-global/raids/edron/rotworm_queen.xml",
+      "sha256": "575c780ed5a2c92551929971a3f865e5b361a1b32421b707c4eac8c0818b2360",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Rotworm Queen\" x=\"33232\" y=\"31847\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "c001abb283cfb5566d79dfdd21d9d36eba3df197",
+      "path": "data-global/raids/edron/sir_valorcrest.xml",
+      "sha256": "0ccf04ef7a767bd657c2563c4cdc5a766705588b240b9c9658f3869ed8ef80b2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n<announce delay=\"1000\" type=\"event\" message=\"Beware of Sir Valorcrest!\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Sir Valorcrest\" x=\"33264\" y=\"31768\" z=\"10\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "7244fadab26801c24cd1778eb2f59aaf31180b62",
+      "path": "data-global/raids/edron/the_big_bad_one.xml",
+      "sha256": "2f5252541d5edfbc74412d02e8eabe3d2f3da1712a4fa083513f932c2035abfb",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Big Bad One\" x=\"33166\" y=\"31680\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5bc15bd7340ff26f10100ae707695ebbf6865b00",
+      "path": "data-global/raids/edron/warlock.xml",
+      "sha256": "bead93fb0cdf9366ca591b62e483e17cef7c4222587c842c215e687c7cf7198a",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Some monks have gathered at a stone circle west of Edron. They seem to be up to something.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"More monks have gathered at a stone circle west of Edron. Something terrible is going to happen!\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Run! Warlocks east of Edron! There seems to be a very unholy gathering!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"33112\" fromy=\"31694\" fromz=\"7\" tox=\"33123\" toy=\"31705\" toz=\"7\">\n\t\t<monster name=\"Monk\" amount=\"6\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"33112\" fromy=\"31694\" fromz=\"7\" tox=\"33123\" toy=\"31705\" toz=\"7\">\n\t\t<monster name=\"Warlock\" amount=\"3\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "673f0080b2fd5d08edd85821e656aea751cd7df5",
+      "path": "data-global/raids/edron/weakened_shlorg.xml",
+      "sha256": "6d08981bfa5224b5e5b10711a27220a73a3f5aa2bad15901346812553f48d4e0",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<singlespawn delay=\"2000\" name=\"Weakened Shlorg\" x=\"33164\" y=\"31716\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "7c8ffc342d5d1abeba3356cd2f6394bc39fc6606",
+      "path": "data-global/raids/farmine/battlemaster_zunzu.xml",
+      "sha256": "8853614523d318b6df2c81c169ce2a590030e56115e3f33acf41a4ddbd654a60",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"33201\" fromy=\"31238\" fromz=\"7\" tox=\"33272\" toy=\"31240\" toz=\"7\">\n\t\t<monster name=\"Battlemaster Zunzu\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "7647f638421665515951627127e5aeef0cd74e10",
+      "path": "data-global/raids/farmine/beetles.xml",
+      "sha256": "2c947afe102c692dc623d7f37375320261e2a237efdbd1cfb1b8325b7f450395",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Lancer beetles troop up in Farmine. Beware!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"A pack of lancer beetles heads towards the coast!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"33204\" fromy=\"31184\" fromz=\"7\" tox=\"33235\" toy=\"31212\" toz=\"7\">\n\t\t<monster name=\"Lancer Beetle\" amount=\"10\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "45541cf22dd62af5a2a3c3ed050317dc15c3b4a9",
+      "path": "data-global/raids/farmine/draptor.xml",
+      "sha256": "3533fdf5efe3c5a6262d95774d87c5804d4566cb39c10245660d5ac1beac4e5f",
+      "text": "<raid>\n\t<!-- Announcements -->\n\t<announce delay=\"1000\" type=\"event\" message=\"The dragons of the Dragonblaze Mountains have  descended to Zao to protect the lizardkin!\" />\n\t<!-- Single Spawns -->\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33206\" y=\"31247\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33256\" y=\"31235\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33214\" y=\"31187\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33236\" y=\"31168\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33307\" y=\"31185\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33338\" y=\"31197\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33256\" y=\"31158\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Draptor\" x=\"33234\" y=\"31185\" z=\"7\"/>\n\t<singlespawn delay=\"20000\" name=\"Grand Mother Foulscale\" x=\"33311\" y=\"31177\" z=\"7\"/>\n\t<areaspawn delay=\"20000\" fromx=\"33213\" fromy=\"31160\" fromz=\"7\" tox=\"33352\" toy=\"31237\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"70\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"10000\" fromx=\"33195\" fromy=\"31185\" fromz=\"7\" tox=\"33286\" toy=\"31247\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"40\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"10000\" fromx=\"33284\" fromy=\"31169\" fromz=\"7\" tox=\"33350\" toy=\"31196\" toz=\"7\">\n\t\t<monster name=\"Dragon\" amount=\"40\"/>\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "3b85a442f749fb9631248193d0bcb62a9d251453",
+      "path": "data-global/raids/farmine/dreadmaw.xml",
+      "sha256": "fb19892dde61dbf3f887226a95497e59144a910d12405934984c45a5b8196c87",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dreadmaw\" x=\"33281\" y=\"31156\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "fd1e4823e1490ad5283259ae863f3c2eeb0dc728",
+      "path": "data-global/raids/farmine/fleabringer1.xml",
+      "sha256": "428b32dd728b6c085df6b959901d7e22851d1159a6548144d3db170e2f1fc804",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33092\" y=\"31384\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33094\" y=\"31384\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Fleabringer\" x=\"33093\" y=\"31384\" z=\"8\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "212d63ad4fa5c55c0604d32a2abab9674fb64894",
+      "path": "data-global/raids/farmine/fleabringer2.xml",
+      "sha256": "5dd930761b4281b93fb9c30c1ec8e8fe7071d1022db6ba3f41643d2f91d6ab18",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33110\" y=\"31463\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33112\" y=\"31463\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Fleabringer\" x=\"33111\" y=\"31463\" z=\"8\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2c83a2666a0229a9fe57787c8f0cdb19b491ffd6",
+      "path": "data-global/raids/farmine/fleabringer3.xml",
+      "sha256": "d4d052332cb5e9bdfb311bfda453e49cd7780a494fd6d3eff72d2fb1f47aa2b5",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33250\" y=\"31421\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Insect Swarm\" x=\"33252\" y=\"31421\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Fleabringer\" x=\"33251\" y=\"31421\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "dec413321b6cc5ce354472a01ca3fef96aa06301",
+      "path": "data-global/raids/farmine/gnarlhounds.xml",
+      "sha256": "9e15b2191a407ac46781a7b50276db7f28ca2aed65c90966f897c0b0f7231b68",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"There seems to be a big gnarlhoud gang in Zao Steppe.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"The gnarlhounds seem to multiply by the minute.\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"The gnarlhounds roam free in the Zao Steppe. Watch out!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"120000\" fromx=\"33065\" fromy=\"31411\" fromz=\"7\" tox=\"33149\" toy=\"31474\" toz=\"7\">\n\t\t<monster name=\"Gnarlhound\" amount=\"20\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "fffe7052337f5837a8c0d38415a610a726e1833a",
+      "path": "data-global/raids/farmine/jailer.xml",
+      "sha256": "a488a8c2590260c56d21b60d5ab14e7baad5f30bb33def572818ac710874d112",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Jailer\" x=\"33355\" y=\"31350\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "ed4ef264929af5906d43a06c3bf4cd6f0d2da336",
+      "path": "data-global/raids/farmine/the_blightfather.xml",
+      "sha256": "4681cc6bed27c963ebf5b8f5814e18b49d8c6b21871f73915c760b49afae07a4",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Blightfather\" x=\"33302\" y=\"31154\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2dfd4ad385c335893eeb0a9d1fe8e8af9832cd99",
+      "path": "data-global/raids/farmine/zevelon_duskbringer.xml",
+      "sha256": "1b38fba91dfb813c9e2fa288a96ba29a76f92a15ac35133e3a330bbe1220a8f8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n<announce delay=\"1000\" type=\"event\" message=\"Beware of Zevelon Duskbringer!\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Zevelon Duskbringer\" x=\"32754\" y=\"31578\" z=\"11\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "f8d82eb4ae11b99afa1fe9889aeb7dd94894c6a7",
+      "path": "data-global/raids/farmine/zulazza_the_corruptor.xml",
+      "sha256": "afcfb0d03ebae6b66d3d9643743ddbece50a1a662582150b4e8fcf64fab42833",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"A massive orc force is gathering at the gates of Zzaion.\" />\n\t<announce delay=\"30000\" type=\"Event\" message=\"Orc reinforcements have arrived at the gates of Zzaion! The gates are under heavy attack!.\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"More orc reinforcements have arrived at the gates of Zzaion! The gates are under heavy attack!.\" />\n\t<announce delay=\"90000\" type=\"Event\" message=\"The gates to Zzaion have been breached! Orcs are invading the city!.\" />\n\t<announce delay=\"120000\" type=\"Event\" message=\"More orcs have arrived in Zzaion! The city is under attack! Strong lizard leaders have come to defend the city.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"120000\" name=\"Cublarc The Plunderer\" x=\"33246\" y=\"31405\" z=\"7\"/>\n\t<singlespawn delay=\"120000\" name=\"Zulazza The Corruptor\" x=\"33348\" y=\"31609\" z=\"1\"/>\n\t<singlespawn delay=\"120000\" name=\"Chizzoron The Distorter\" x=\"33344\" y=\"31605\" z=\"4\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "6559de33488d0d07ed147e9df41d161739e1ca47",
+      "path": "data-global/raids/feyrist/raxias.xml",
+      "sha256": "4a8c9fa2823de96cc318de12c1e744055ffa040b3eb98f46007c0d92e965dfce",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Raxias\" x=\"33462\" y=\"32158\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "7e4f76178a917d65dfb2b65228de95bd93498853",
+      "path": "data-global/raids/fury_gate/furyosa.xml",
+      "sha256": "b10bd97c19b7a9500ea282326d933c88fc5f5274772394a361172bdb99d36941",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"2000\" fromx=\"33257\" fromy=\"31784\" fromz=\"14\" tox=\"33342\" toy=\"31867\" toz=\"14\">\n\t\t<monster name=\"Demon\" amount=\"30\" />\n\t</areaspawn>\n\t<areaspawn delay=\"2000\" fromx=\"33257\" fromy=\"31784\" fromz=\"15\" tox=\"33342\" toy=\"31867\" toz=\"15\">\n\t\t<monster name=\"Demon\" amount=\"30\" />\n\t</areaspawn>\n\t<singlespawn delay=\"2000\" name=\"Furyosa\" x=\"33281\" y=\"31804\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "e205bfc1b9941a20fd6fb40027c05dc2c21f0c40",
+      "path": "data-global/raids/kazordoon/foreman_kneebiter.xml",
+      "sha256": "73efe779a1df6de81f3364834f05b42c7d07b7cca0a80f94317ea48a76a9aea8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Foreman Kneebiter\" x=\"32557\" y=\"31881\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "41f1af6cba13fe7a4e59645376ae7e2c53886c22",
+      "path": "data-global/raids/kazordoon/goblins.xml",
+      "sha256": "9ce301a4b7dccc98d3a03853c2a99232902d1afd3a5619ab9e555d1af9f425b1",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Goblins are preparing to attack Kazordoon from Femor Hills!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Goblins attack from Femor Hills!\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Danger! Now the goblin leaders attack Kazordoon from Femor Hills!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"32485\" fromy=\"31835\" fromz=\"7\" tox=\"32621\" toy=\"31911\" toz=\"7\">\n\t\t<monster name=\"Goblin\" amount=\"50\" />\n\t\t<monster name=\"Goblin Scavenger\" amount=\"15\" />\n\t\t<monster name=\"Goblin Assassin\" amount=\"10\" />\n\t</areaspawn>\n\t<singlespawn delay=\"120000\" name=\"Goblin Leader\" x=\"32607\" y=\"31859\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "84121d85af97df53806d98336be8df18c070f9b2",
+      "path": "data-global/raids/kazordoon/the_horned_fox.xml",
+      "sha256": "a772e2e3e2d7b49967b8021d28bfc78b636c2513f54bc4afc14cb277d94e6543",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Beware of The horned Fox!\" />\n\t<singlespawn delay=\"2000\" name=\"Minotaur mage\" x=\"32466\" y=\"31955\" z=\"4\" />\n\t<singlespawn delay=\"20000\" name=\"the Horned Fox\" x=\"32463\" y=\"31954\" z=\"4\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "bd6e1b5d3d762bd7e01cb7b0f8b75ee210736d49",
+      "path": "data-global/raids/liberty_bay/crustacea_gigantica1.xml",
+      "sha256": "7e8789b649489e1f562333597b9750f73030b1e7b97d1aa06ea714100b91354b",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"10000\" fromx=\"32182\" fromy=\"32937\" fromz=\"9\" tox=\"32182\" toy=\"32937\" toz=\"9\">\n\t\t<monster name=\"Crustacea Gigantica\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "02190fbc3969b551fc33be5a501d06925743fa6c",
+      "path": "data-global/raids/liberty_bay/crustacea_gigantica2.xml",
+      "sha256": "18e25226242b02be124af67af028b5429733dbdfced700e702c5efd1411e75f3",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"10000\" fromx=\"32107\" fromy=\"32787\" fromz=\"12\" tox=\"32107\" toy=\"32787\" toz=\"12\">\n\t\t<monster name=\"Crustacea Gigantica\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "4a3fa212a453950f2f5a2968847e17fd1e81201d",
+      "path": "data-global/raids/liberty_bay/crustacea_gigantica3.xml",
+      "sha256": "9f93cba5ca6d883de0d277d287a812c487f8a595dd323e69c5a81c3637d2e1e6",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"10000\" fromx=\"32096\" fromy=\"32738\" fromz=\"12\" tox=\"32096\" toy=\"32738\" toz=\"12\">\n\t\t<monster name=\"Crustacea Gigantica\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "7c24785c08d87fc38071eaa62d598b2c3848da36",
+      "path": "data-global/raids/liberty_bay/diblis_the_fair.xml",
+      "sha256": "23329898157687ebd3adf4172453a9c6ea5028b320e7962d3f7a4f0ec448161e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Beware of Diblis The Fair!\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Diblis The Fair\" x=\"32009\" y=\"32795\" z=\"10\" />\n\t<singlespawn delay=\"1000\" name=\"Banshee\" x=\"32009\" y=\"32796\" z=\"10\" />\n\t<singlespawn delay=\"1000\" name=\"Banshee\" x=\"32009\" y=\"32795\" z=\"10\" />\n\t<singlespawn delay=\"1000\" name=\"Banshee\" x=\"32010\" y=\"32795\" z=\"10\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "334b4c5c01733a69fa09fc5db58f324150f664cc",
+      "path": "data-global/raids/liberty_bay/ferumbras.xml",
+      "sha256": "0c8493ddfefb98dd70c0b3fec29a7d7cbf10ae6f418b6059b90af1112ce063b2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"The seals on Ferumbras old cidatel are glowing. Prepare for HIS return mortals.\" />\n\t<announce delay=\"80000\" type=\"Event\" message=\"Ferumbras return is at hand. The Edron Academy calls for Heroes to fight that evil.\" />\n\t<announce delay=\"100000\" type=\"Event\" message=\"Ferumbras has returned to his citadel once more. Stop him before its too late.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"100000\" name=\"Ferumbras\" x=\"32124\" y=\"32687\" z=\"4\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "d8d0458bcddbc4b7b833776057fdc290a749a9b9",
+      "path": "data-global/raids/liberty_bay/grandfather_tridian.xml",
+      "sha256": "2eb74df57da9752d5bb150b409b61ade8ba99c89b8a6055dd4f9f83ab79cceeb",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Grandfather Tridian\" x=\"32416\" y=\"32779\" z=\"11\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "97e1881ed52e0ad8ee501ff100dcd5fc45516f3f",
+      "path": "data-global/raids/liberty_bay/morgaroth.xml",
+      "sha256": "5c7e735eac34b8a07fc782c140517e09aca385fbf4ad03aeb638d9c6bfb438a2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"The ancient volcano on Goroma slowly becomes active once again.\" />\n\t<announce delay=\"30000\" type=\"Event\" message=\"There is an evil presence at the volcano of Goroma.\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"Evil Cultists have called an ancient evil into the volcano on Goroma. Beware of its power mortals.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Morgaroth\" x=\"32063\" y=\"32612\" z=\"14\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "ff6781ae12282b6b88cd027abd8b57327ae1e2fa",
+      "path": "data-global/raids/liberty_bay/pirates.xml",
+      "sha256": "a13f5dde4061f15a11ee7cf6217a2f0c04f41f5ed5e80e94680d4268d3744fe7",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Pirates are launching a surprise attack on Liberty Bay! Take care, they seem to be everywhere.\" />\n\t<announce delay=\"600000\" type=\"event\" message=\"Pirates have invaded the fortress.\" />\n\t<areaspawn delay=\"300000\" fromx=\"32194\" fromy=\"32778\" fromz=\"7\" tox=\"32249\" toy=\"32871\" toz=\"7\">\n\t\t<monster name=\"Pirate Corsair\" amount=\"12\" />\n\t\t<monster name=\"Pirate Buccaneer\" amount=\"12\" />\n\t\t<monster name=\"Pirate Cutthroat\" amount=\"12\" />\n\t\t<monster name=\"Pirate Marauder\" amount=\"12\" />\n\t\t<monster name=\"Smuggler\" amount=\"10\" />\n\t</areaspawn>\n\t<areaspawn delay=\"540000\" fromx=\"32250\" fromy=\"32779\" fromz=\"7\" tox=\"32364\" toy=\"32883\" toz=\"7\">\n\t\t<monster name=\"Pirate Corsair\" amount=\"12\" />\n\t\t<monster name=\"Pirate Buccaneer\" amount=\"12\" />\n\t\t<monster name=\"Pirate Cutthroat\" amount=\"12\" />\n\t\t<monster name=\"Pirate Marauder\" amount=\"12\" />\n\t\t<monster name=\"Smuggler\" amount=\"10\" />\n\t</areaspawn>\n\t<areaspawn delay=\"600000\" fromx=\"32194\" fromy=\"32778\" fromz=\"7\" tox=\"32249\" toy=\"32871\" toz=\"7\">\n\t\t<monster name=\"Pirate Corsair\" amount=\"12\" />\n\t\t<monster name=\"Pirate Buccaneer\" amount=\"12\" />\n\t\t<monster name=\"Pirate Cutthroat\" amount=\"12\" />\n\t\t<monster name=\"Pirate Marauder\" amount=\"12\" />\n\t\t<monster name=\"Smuggler\" amount=\"10\" />\n\t\t<monster name=\"Ron The Ripper\" amount=\"1\" />\n\t\t<monster name=\"Lethal Lissy\" amount=\"1\" />\n\t\t<monster name=\"Brutus Bloodbeard\" amount=\"1\" />\n\t\t<monster name=\"Deadeye Devious\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "fe896359f6cdd2087b7862f187084a3dc78d8f44",
+      "path": "data-global/raids/liberty_bay/quaras.xml",
+      "sha256": "d6c65378408ea91f70c7444c50ac8fddb5dd94f21952571e9ddfedf800ed776c",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Something is moving in the depths of the sea around Liberty Bay\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Numerous Quara fins have been sighted in the seas around Liberty Bay.\" />\n\t<announce delay=\"60000\" type=\"event\" message=\"Quara emerged from the sea to attack Liberty Bay.\" />\n\t<areaspawn delay=\"60000\" fromx=\"32306\" fromy=\"32705\" fromz=\"7\" tox=\"32319\" toy=\"32731\" toz=\"7\">\n\t\t<monster name=\"Quara Mantassin Scout\" amount=\"12\" />\n\t\t<monster name=\"Quara Constrictor Scout\" amount=\"12\" />\n\t\t<monster name=\"Quara Hydromancer Scout\" amount=\"12\" />\n\t\t<monster name=\"Quara Pincher Scout\" amount=\"12\" />\n\t\t<monster name=\"Quara Predator Scout\" amount=\"10\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "a417621e8674fb254b8a3b34fd4bae35858eff8b",
+      "path": "data-global/raids/liberty_bay/rotworm_queen.xml",
+      "sha256": "3646c499e9cdf4368b0e07594086f7ab080c549de9a8affe6c48afafccba9177",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Rotworm Queen\" x=\"32261\" y=\"32687\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "fb06e95a3b75b85f3147215674d5bd7bbe30acc9",
+      "path": "data-global/raids/liberty_bay/tigers.xml",
+      "sha256": "1b6d920af784b129805b8cbd5447456d61be754222a161eea6791e0fd1245075",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Majestic creatures with stripes roam the small desert at Meriana.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"120000\" fromx=\"32287\" fromy=\"32541\" fromz=\"7\" tox=\"32386\" toy=\"32618\" toz=\"7\">\n\t\t<monster name=\"Tiger\" amount=\"30\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "440b5b6a0033b7f889e1a4187aa55e594f0baac8",
+      "path": "data-global/raids/liberty_bay/tortoises.xml",
+      "sha256": "5864ab757b84dc775b10e99f6657356e402cb2be7896b32143c76852b6c99f7f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t <!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Slowly but steady, the population of tortoises grows on liberty island.\" />\n\t <!--Single Spawns-->\n\t <areaspawn delay=\"120000\" fromx=\"32208\" fromy=\"32724\" fromz=\"7\" tox=\"32248\" toy=\"32750\" toz=\"7\">\n\t    <monster name=\"Tortoise\" amount=\"30\" />\n\t </areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "abdbfae147883ce82e4a1bb714694b9c5cdd7cb0",
+      "path": "data-global/raids/liberty_bay/tyrn.xml",
+      "sha256": "fe6dc169d952d7d3d23d663578339b399ed5bdf61f86bd332002242bcac20b03",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Tyrn\" x=\"32440\" y=\"32850\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5643c7605f219ef7f0d4b6c26b9c28652d7664d7",
+      "path": "data-global/raids/liberty_bay/undead_cavebear.xml",
+      "sha256": "d7747b867aa737ea5a9d6b79aead940e421abc9bb42c15b6c593aa9f6a3b99ae",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"2000\" fromx=\"31909\" fromy=\"32554\" fromz=\"10\" tox=\"31983\" toy=\"32579\" toz=\"10\">\n\t\t\t<monster name=\"Undead Cavebear\" amount=\"3\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "0054e58ab8d91f5a9e3377e7dd5341d9d9a0b367",
+      "path": "data-global/raids/oramond/crustacea_gigantica1.xml",
+      "sha256": "ac02c8a1bcb7b02b1669faee0e5ae8bdd547987e4fbeb108032d9a290c5aec4d",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"10000\" fromx=\"33556\" fromy=\"31788\" fromz=\"14\" tox=\"33556\" toy=\"31788\" toz=\"14\">\n\t\t <monster name=\"Crustacea Gigantica\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "53bda7cb4dfd7476ed6057fa216421ded564af3d",
+      "path": "data-global/raids/oramond/crustacea_gigantica2.xml",
+      "sha256": "906c04c8f9afa61774a418c808f96b3d902ef08e9280e8794e0802fa987977ad",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"10000\" fromx=\"33502\" fromy=\"31629\" fromz=\"15\" tox=\"33502\" toy=\"31629\" toz=\"15\">\n\t\t <monster name=\"Crustacea Gigantica\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "10bc284bb40813c0d78f4f86dca24923cd4e3acd",
+      "path": "data-global/raids/oramond/glooth_bomb.xml",
+      "sha256": "f224fe98c84c6603ac58f01996e65930a6f7983f8a7029cedb0dadc2bc1b9c65",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Glooth Bomb\" x=\"33554\" y=\"32103\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "1e9e24a943fbced5570082952395777cef891210",
+      "path": "data-global/raids/oramond/the_ravenger.xml",
+      "sha256": "548fa2a3cff17603631b99e8b20325cb6babab9888891067032ba33c0b61fad9",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Ravenger\" x=\"33418\" y=\"32114\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "a1f52b3d1e860761a724f7553fedb04d2b3b24c8",
+      "path": "data-global/raids/oramond/walkers.xml",
+      "sha256": "4661d14d6462822497e661acef53b81bc7c5ff15a9d47097434ad4744307cf2a",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33543\" y=\"31924\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33564\" y=\"31942\" z=\"8\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33544\" y=\"31984\" z=\"9\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33585\" y=\"32011\" z=\"9\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33572\" y=\"31898\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33565\" y=\"31944\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33596\" y=\"32006\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33520\" y=\"31980\" z=\"12\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33467\" y=\"31982\" z=\"12\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33582\" y=\"32005\" z=\"12\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33542\" y=\"31983\" z=\"13\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33557\" y=\"32012\" z=\"13\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33699\" y=\"31936\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33703\" y=\"31940\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33720\" y=\"31955\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33717\" y=\"31962\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33601\" y=\"31934\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33608\" y=\"31923\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33580\" y=\"31955\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33583\" y=\"31977\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33616\" y=\"31981\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33604\" y=\"31987\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33680\" y=\"31941\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33644\" y=\"31942\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33675\" y=\"31954\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33652\" y=\"31966\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33653\" y=\"31961\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33639\" y=\"31973\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33693\" y=\"31969\" z=\"14\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33693\" y=\"31961\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33721\" y=\"31945\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33707\" y=\"31947\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33641\" y=\"31941\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33660\" y=\"31943\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33684\" y=\"31946\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33679\" y=\"31953\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33650\" y=\"31937\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33653\" y=\"31956\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33674\" y=\"32041\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33638\" y=\"32034\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33638\" y=\"32053\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33628\" y=\"32059\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33653\" y=\"32041\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33653\" y=\"32061\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33639\" y=\"32078\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33615\" y=\"32078\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33624\" y=\"32085\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33673\" y=\"32079\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33657\" y=\"32086\" z=\"15\"/>\n\t<singlespawn delay=\"1000\" name=\"Walker\" x=\"33616\" y=\"32096\" z=\"15\"/>\n</raid>"
+    },
+    {
+      "git_blob": "cdb50e2fa192e0bde069f56ae145846476bcbda1",
+      "path": "data-global/raids/port_hope/gorga.xml",
+      "sha256": "b833e39aedc93b3fca8d2d5240074d9a456e76b37a682f72aada962d9f7f9abe",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Gorga\" x=\"32867\" y=\"32829\" z=\"1\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "78fa6d6a11c2ff704e1b9e17b830d4e449aa2483",
+      "path": "data-global/raids/port_hope/hairman_the_huge.xml",
+      "sha256": "3862cb53bcd29bf8a5d4c4e9c38bf8811a7e58ef6f0a1b58d56f68c24bab9cd4",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Hairman The Huge\" x=\"32847\" y=\"32510\" z=\"8\" />\n\t<singlespawn delay=\"1000\" name=\"Kongra\" x=\"32846\" y=\"32510\" z=\"8\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "e170fdf215b9b97ea9aa868f5abb5789d2ff0df7",
+      "path": "data-global/raids/port_hope/high_templar_cobrass.xml",
+      "sha256": "106e88938369e5fe1b75ea94ce90f838ed9b652355d6b621961e87ab160820b3",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"High Templar Cobrass\" x=\"32957\" y=\"32837\" z=\"8\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "dd5330b0eb429a953aa48c31122cff0cf75127ea",
+      "path": "data-global/raids/port_hope/kongras.xml",
+      "sha256": "1f52f27c11b17ad28dace292783e95acd56c6822b4f3b47ac7d2f306e0ec1e8d",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"There are some kongras congregating south of Banuta.\" />\n\t<announce delay=\"300000\" type=\"event\" message=\"More furry primates in Banuta.\" />\n\t<announce delay=\"840000\" type=\"event\" message=\"More ape and fur flurry south of Banuta!\" />\n\t<areaspawn delay=\"1000\" fromx=\"32789\" fromy=\"32593\" fromz=\"7\" tox=\"32841\" toy=\"32611\" toz=\"7\">\n\t\t<monster name=\"Kongra\" amount=\"12\" />\n\t</areaspawn>\n\t<areaspawn delay=\"300000\" fromx=\"32789\" fromy=\"32593\" fromz=\"7\" tox=\"32841\" toy=\"32611\" toz=\"7\">\n\t\t<monster name=\"Kongra\" amount=\"24\" />\n\t</areaspawn>\n\t<areaspawn delay=\"840000\" fromx=\"32789\" fromy=\"32593\" fromz=\"7\" tox=\"32841\" toy=\"32611\" toz=\"7\">\n\t\t<monster name=\"Kongra\" amount=\"32\" />\n\t</areaspawn>\n</raid>"
+    },
+    {
+      "git_blob": "11f3cc8113c046992f71ef150960912199bdbc6c",
+      "path": "data-global/raids/port_hope/lizards.xml",
+      "sha256": "06e4b33362e028fd7f78f59ff69e174dc130870d1bcdf3f8a8ac51be23a60a53",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Lizards Sentinels seem to attack Port Hope from Chor.\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Lizards are advancing to Port Hope from Chor.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"32882\" fromy=\"32804\" fromz=\"7\" tox=\"32818\" toy=\"32764\" toz=\"7\">\n\t\t<monster name=\"Lizard Snakecharmer\" amount=\"5\" />\n\t\t<monster name=\"Lizard Templar\" amount=\"10\" />\n\t\t<monster name=\"Lizard Sentinel\" amount=\"5\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32882\" fromy=\"32804\" fromz=\"7\" tox=\"32818\" toy=\"32764\" toz=\"7\">\n\t\t<monster name=\"Lizard Snakecharmer\" amount=\"10\" />\n\t\t<monster name=\"Lizard Templar\" amount=\"5\" />\n\t\t<monster name=\"Lizard Sentinel\" amount=\"5\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "7000c7581d24da929a232a084804808ddf7f086e",
+      "path": "data-global/raids/port_hope/midnight_panther1.xml",
+      "sha256": "62a1f93c70b75087d2635a7be79f3c1dfcc42562b20c1eeb276f907a4bf57bd1",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"2000\" fromx=\"32841\" fromy=\"32706\" fromz=\"7\" tox=\"32841\" toy=\"32706\" toz=\"7\">\n\t\t<monster name=\"Midnight Panther\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "2b5a89e393eb5ab30861369c1ce25fb9e3dde970",
+      "path": "data-global/raids/port_hope/midnight_panther2.xml",
+      "sha256": "85d53f0a5a860c55b478dc067165333ef48955fdf02fb2f9e2a9d4341f08508a",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"2000\" fromx=\"32883\" fromy=\"32731\" fromz=\"7\" tox=\"32883\" toy=\"32731\" toz=\"7\">\n\t\t\t<monster name=\"Midnight Panther\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "2b5a89e393eb5ab30861369c1ce25fb9e3dde970",
+      "path": "data-global/raids/port_hope/midnight_panther3.xml",
+      "sha256": "85d53f0a5a860c55b478dc067165333ef48955fdf02fb2f9e2a9d4341f08508a",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"2000\" fromx=\"32883\" fromy=\"32731\" fromz=\"7\" tox=\"32883\" toy=\"32731\" toz=\"7\">\n\t\t\t<monster name=\"Midnight Panther\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "3fe562d678d000abb3e78019bc9cecc8ae4d96e2",
+      "path": "data-global/raids/port_hope/serpent_spawns.xml",
+      "sha256": "603da92c80e7d333553609b4d9820836136c761a5508f3f440153e756a2923e6",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Something bad is happening deep, deep down under Banuta.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"Something is sizzling deep under many sheets of soil in Banuta.\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"Hordes of slippery spawns slither in Deeper Banuta!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"32748\" fromy=\"32599\" fromz=\"15\" tox=\"32757\" toy=\"32609\" toz=\"15\">\n\t\t<monster name=\"Serpent Spawn\" amount=\"15\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32759\" fromy=\"32602\" fromz=\"15\" tox=\"32769\" toy=\"32607\" toz=\"15\">\n\t\t<monster name=\"Serpent Spawn\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "f8ae3edacd84a76652eefef2e85e07fda7ed0b66",
+      "path": "data-global/raids/port_hope/smuggler_baron_silvertoe.xml",
+      "sha256": "c767671a794bf4b4316b0ff64042d84f29a0829aafa03f4c3ea63fec81bf3ebf",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Smuggler Baron Silvertoe\" x=\"32540\" y=\"32647\" z=\"10\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "884420e789544c7372759470cd87a2783722ef0d",
+      "path": "data-global/raids/port_hope/stampede.xml",
+      "sha256": "32ebc61a91bcb60989b2b66829b074909c500dec72b907a5e3a27a07dd547f2e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Stampede! The Ape God has stirred up Tiquanda's elephants again!\" />\n\t<areaspawn delay=\"1000\" fromx=\"32825\" fromy=\"32667\" fromz=\"7\" tox=\"32888\" toy=\"32675\" toz=\"7\">\n\t\t<monster name=\"Terrified Elephant\" amount=\"16\" />\n\t</areaspawn>\n</raid>"
+    },
+    {
+      "git_blob": "040dcfe48f16d3d129c01a7c9592e9c5c8565973",
+      "path": "data-global/raids/port_hope/terror_birds.xml",
+      "sha256": "4588e3c0ecf523406c3ec6ccebd9704865fb62ba653e749fa1cb21506ddfe06c",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Terrorbirds have been sighted in Trapwood south-east of Port Hope!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"120000\" fromx=\"32700\" fromy=\"32771\" fromz=\"7\" tox=\"32746\" toy=\"32810\" toz=\"7\">\n\t\t<monster name=\"Terror Bird\" amount=\"30\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "708f28a0fd79aeabbd3b21b499cb817c4ea4875c",
+      "path": "data-global/raids/port_hope/the_welter.xml",
+      "sha256": "5a0ed0d3a1ca669822e41352c18b615048ac4aa9da4a828a00a2a555fb6f6d9a",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Welter\" x=\"33026\" y=\"32660\" z=\"5\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "c0389b9ac662a032c8f5150f5f6e87594c1c2ec8",
+      "path": "data-global/raids/port_hope/tiquandas_revenge1.xml",
+      "sha256": "5a900a793c5bc11bf0b544116a107d3a803f0f7fd074305a9ea7f971590e1a2c",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Tiquandas Revenge\" x=\"32918\" y=\"32555\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "b374cf15237315929c6d716eaf723b4b4df305fe",
+      "path": "data-global/raids/port_hope/tiquandas_revenge2.xml",
+      "sha256": "dd4c1b91f620f61845f72011ba2f838e5b6795bd0c60a28f252b74dc0c5054b2",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Tiquandas Revenge\" x=\"32924\" y=\"32702\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "59e7f7b48d341ab3f4ed0a774245997af198604f",
+      "path": "data-global/raids/port_hope/tiquandas_revenge3.xml",
+      "sha256": "8ca63bb46f8253810715a1719bf73fd0bbe8112144b596afd5767248357b897d",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Tiquandas Revenge\" x=\"32844\" y=\"32785\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "6d142e72fcaceb5650fec9c39ab375752a7775e1",
+      "path": "data-global/raids/raids.xml",
+      "sha256": "590841d11807081e7d0a6a39a8e6218b10f8c8932377e5fb87daf13c6958d653",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<raids>\n\t<!-- Ab'Dendriel -->\n\t<raid name=\"abdendriel.badgers\" file=\"abdendriel/badgers.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.bearsandwasps\" file=\"abdendriel/bears_and_wasps.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.chayenne\" file=\"abdendriel/chayenne.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"abdendriel.dragons\" file=\"abdendriel/dragons.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.rotwormqueen\" file=\"abdendriel/rotworm_queen.xml\" interval2=\"1440\" margin=\"180\" />\t\n\t<raid name=\"abdendriel.theevileye\" file=\"abdendriel/the_evil_eye.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.warwolves\" file=\"abdendriel/warwolves.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.whitedeers\" file=\"abdendriel/white_deers.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"abdendriel.zevelonduskbringer\" file=\"abdendriel/zevelon_duskbringer.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Ankrahmun -->\n\t<raid name=\"ankrahmun.bonebeasts\" file=\"ankrahmun/bone_beasts.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"ankrahmun.cobras\" file=\"ankrahmun/cobras.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"ankrahmun.gargoyles\" file=\"ankrahmun/gargoyles.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"ankrahmun.nomads\" file=\"ankrahmun/nomads.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"ankrahmun.scarabs\" file=\"ankrahmun/scarabs.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"ankrahmun.terramites\" file=\"ankrahmun/terramites.xml\" interval2=\"1440\" margin=\"180\" />\n\n\t<!-- Carlin -->\n\t<raid name=\"carlin.amazons\" file=\"carlin/amazons.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.femorhillsorcs\" file=\"carlin/femor_hills_orcs.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"carlin.hunterandwildwarrior\" file=\"carlin/hunter_and_wild_warrior.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.lesserundeads\" file=\"carlin/lesser_undeads.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.orcs\" file=\"carlin/orcs.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.trolls\" file=\"carlin/trolls.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.undeads\" file=\"carlin/undeads.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"carlin.williwasp\" file=\"carlin/willi_wasp.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"carlin.yeti\" file=\"carlin/yeti.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"carlin.zarabustor\" file=\"carlin/zarabustor.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Darashia -->\n\t<raid name=\"darashia.arachirtheancientone\" file=\"darashia/arachir_the_ancient_one.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.captainjones\" file=\"darashia/captain_jones.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"darashia.gravelordoshuran\" file=\"darashia/gravelord_oshuran.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"darashia.minotaurs\" file=\"darashia/minotaurs.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.necropharus\" file=\"darashia/necropharus.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"darashia.pirates\" file=\"darashia/pirates.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.priestesses\" file=\"darashia/priestesses.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.rotwormqueen\" file=\"darashia/rotworm_queen.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.thepalecount\" file=\"darashia/the_pale_count.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"darashia.tyrn\" file=\"darashia/tyrn.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.undeads\" file=\"darashia/undeads.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"darashia.whitepale\" file=\"darashia/white_pale.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"darashia.zomba\" file=\"darashia/zomba.xml\" interval2=\"1440\" margin=\"180\" />\n\n\t<!-- Edron -->\n\t<raid name=\"edron.bigbosstrolliver\" file=\"edron/big_boss_trolliver.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"edron.feroxa\" file=\"edron/feroxa.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"edron.goblins\" file=\"edron/goblins.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"edron.madmage\" file=\"edron/mad_mage.xml\" interval2=\"1440\" margin=\"180\"/>\n\t<raid name=\"edron.orcs\" file=\"edron/orcs.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"edron.orshabaal\" file=\"edron/orshabaal.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"edron.rotwormqueen\" file=\"edron/rotworm_queen.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"edron.shlorg\" file=\"edron/weakened_shlorg.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"edron.sirvalorcrest\" file=\"edron/sir_valorcrest.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"edron.thebigbadone\" file=\"edron/the_big_bad_one.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"edron.warlock\" file=\"edron/warlock.xml\" interval2=\"1440\" margin=\"180\" />\n\n\t<!-- Farmine -->\n\t<raid name=\"farmine.battlemasterzunzu\" file=\"farmine/battlemaster_zunzu.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.beetles\" file=\"farmine/beetles.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"farmine.blightfather\" file=\"farmine/the_blightfather.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.draptor\" file=\"farmine/draptor.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.dreadmaw\" file=\"farmine/dreadmaw.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.fleabringer1\" file=\"farmine/fleabringer1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.fleabringer2\" file=\"farmine/fleabringer2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.fleabringer3\" file=\"farmine/fleabringer3.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.gnarlhounds\" file=\"farmine/gnarlhounds.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"farmine.jailer\" file=\"farmine/jailer.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.zevelonduskbringer\" file=\"farmine/zevelon_duskbringer.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"farmine.zulazzathecorruptor\" file=\"farmine/zulazza_the_corruptor.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Feyrist -->\n\t<raid name=\"feyrist.raxias\" file=\"feyrist/raxias.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Fury Gate -->\n\t<raid name=\"furyfate.furyosa\" file=\"fury_gate/furyosa.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Kazordoon -->\n\t<raid name=\"kazordoon.foremankneebiter\" file=\"kazordoon/foreman_kneebiter.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"kazordoon.goblins\" file=\"kazordoon/goblins.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"kazordoon.thehornedfox\" file=\"kazordoon/the_horned_fox.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Liberty Bay -->\n\t<raid name=\"libertybay.crustaceagigantica1\" file=\"liberty_bay/crustacea_gigantica1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.crustaceagigantica2\" file=\"liberty_bay/crustacea_gigantica2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.crustaceagigantica3\" file=\"liberty_bay/crustacea_gigantica3.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.diblisthefair\" file=\"liberty_bay/diblis_the_fair.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.ferumbras\" file=\"liberty_bay/ferumbras.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"libertybay.grandfathertridian\" file=\"liberty_bay/grandfather_tridian.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.morgaroth\" file=\"liberty_bay/morgaroth.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"libertybay.pirates\" file=\"liberty_bay/pirates.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"libertybay.quaras\" file=\"liberty_bay/quaras.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"libertybay.rotwormqueen\" file=\"liberty_bay/rotworm_queen.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"libertybay.tigers\" file=\"liberty_bay/tigers.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"libertybay.tortoises\" file=\"liberty_bay/tortoises.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"libertybay.tyrn\" file=\"liberty_bay/tyrn.xml\" interval2=\"1440\" margin=\"360\" />\t\n\t<raid name=\"libertybay.undeadcavebear\" file=\"liberty_bay/undead_cavebear.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Oramond -->\n\t<raid name=\"oramond.crustaceagigantica1\" file=\"oramond/crustacea_gigantica1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"oramond.crustaceagigantica2\" file=\"oramond/crustacea_gigantica2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"oramond.gloothbomb\" file=\"oramond/glooth_bomb.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"oramond.ravenger\" file=\"oramond/the_ravenger.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"oramond.walkers\" file=\"oramond/walkers.xml\" interval2=\"1440\" margin=\"360\" />\n\t\n\t<!-- Port Hope -->\n\t<raid name=\"porthope.gorga\" file=\"port_hope/gorga.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.hairmanthehuge\" file=\"port_hope/hairman_the_huge.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.hightemplarcobrass\" file=\"port_hope/high_templar_cobrass.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.kongras\" file=\"port_hope/kongras.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.lizards\" file=\"port_hope/lizards.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.midnightpanther1\" file=\"port_hope/midnight_panther1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.midnightpanther2\" file=\"port_hope/midnight_panther2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.midnightpanther3\" file=\"port_hope/midnight_panther3.xml\" interval2=\"1440\" margin=\"360\" />\t\n\t<raid name=\"porthope.serpentspawns\" file=\"port_hope/serpent_spawns.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.smugglerbaronsilvertoe\" file=\"port_hope/smuggler_baron_silvertoe.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.stampede\" file=\"port_hope/stampede.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.terrorbirds\" file=\"port_hope/terror_birds.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.thewelter\" file=\"port_hope/the_welter.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"porthope.tiquandasrevenge1\" file=\"port_hope/tiquandas_revenge1.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.tiquandasrevenge2\" file=\"port_hope/tiquandas_revenge2.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"porthope.tiquandasrevenge3\" file=\"port_hope/tiquandas_revenge3.xml\" interval2=\"1440\" margin=\"180\" />\n\n\t<!-- Rookgaard -->\n\t<raid name=\"rookgaard.apprenticesheng\" file=\"rookgaard/apprentice_sheng.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"rookgaard.munster\" file=\"rookgaard/munster.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"rookgaard.rats\" file=\"rookgaard/rats.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"rookgaard.rottietherotworm1\" file=\"rookgaard/rottie_the_rotworm1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"rookgaard.rottietherotworm2\" file=\"rookgaard/rottie_the_rotworm2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"rookgaard.teleskor\" file=\"rookgaard/teleskor.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Roshamuul -->\n\t<raid name=\"roshamuul.gaz'haragoth\" file=\"roshamuul/gaz_haragoth.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"roshamuul.mawhawk\" file=\"roshamuul/mawhawk.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"roshamuul.omrafir\" file=\"roshamuul/omrafir.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Svargrond -->\n\t<raid name=\"svargrond.barbaria\" file=\"svargrond/barbaria.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.barbariansbittermor\" file=\"svargrond/barbarians_bittermor.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.barbarianssvargrond1\" file=\"svargrond/barbarians_svargrond1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.barbarianssvargrond2\" file=\"svargrond/barbarians_svargrond2.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"svargrond.direpenguin1\" file=\"svargrond/dire_penguin1.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin2\" file=\"svargrond/dire_penguin2.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin3\" file=\"svargrond/dire_penguin3.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin4\" file=\"svargrond/dire_penguin4.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin5\" file=\"svargrond/dire_penguin5.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin6\" file=\"svargrond/dire_penguin6.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin7\" file=\"svargrond/dire_penguin7.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin8\" file=\"svargrond/dire_penguin8.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin9\" file=\"svargrond/dire_penguin9.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.direpenguin10\" file=\"svargrond/dire_penguin10.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"svargrond.ghazbaran\" file=\"svargrond/ghazbaran.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.hirintror\" file=\"svargrond/hirintror.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.icegolems\" file=\"svargrond/ice_golems.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"svargrond.maninthecave\" file=\"svargrond/man_in_the_cave.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.ocyakao\" file=\"svargrond/ocyakao.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.yakchal\" file=\"svargrond/yakchal.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"svargrond.zushuka\" file=\"svargrond/zushuka.xml\" interval2=\"1440\" margin=\"360\"/>\n\n\t<!-- Thais -->\n\t<raid name=\"thais.cyclops\" file=\"thais/cyclops.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"thais.demodras\" file=\"thais/demodras.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"thais.grorlam\" file=\"thais/grorlam.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"thais.murius\" file=\"thais/general_murius.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"thais.orcs\" file=\"thais/orcs.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"thais.rats\" file=\"thais/rats.xml\" interval2=\"1440\" margin=\"720\" />\t\n\t<raid name=\"thais.thefrogprince\" file=\"thais/the_frog_prince.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Venore -->\n\t<raid name=\"venore.countesssorrow\" file=\"venore/countess_sorrow.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.demodras1\" file=\"venore/demodras1.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.demodras2\" file=\"venore/demodras2.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.dharalion\" file=\"venore/dharalion.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.dracola\" file=\"venore/dracola.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.elves\" file=\"venore/elves.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"venore.fernfang\" file=\"venore/fernfang.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.feverishcitizens\" file=\"venore/feverish_citizens.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"venore.hunters\" file=\"venore/hunters.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"venore.massacre\" file=\"venore/massacre.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.mrpunish\" file=\"venore/mr_punish.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.orcsambackpack\" file=\"venore/orc_sam_backpack.xml\" interval2=\"1440\" margin=\"720\" />\n\t<raid name=\"venore.rukorzad\" file=\"venore/rukor_zad.xml\" interval2=\"1440\" margin=\"360\" />\t\n\t<raid name=\"venore.thehandmaiden\" file=\"venore/the_handmaiden.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.theimperor\" file=\"venore/the_imperor.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.theplasmother\" file=\"venore/the_plasmother.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.undeadarmy\" file=\"venore/undead_army.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"venore.waterbuffaloes\" file=\"venore/water_buffaloes.xml\" interval2=\"1440\" margin=\"180\" />\n\t<raid name=\"venore.xenia\" file=\"venore/xenia.xml\" interval2=\"1440\" margin=\"360\" />\n\t<raid name=\"venore.yagathecrone\" file=\"venore/yaga_the_crone.xml\" interval2=\"1440\" margin=\"360\" />\n\n\t<!-- Yalahar -->\n\t<raid name=\"yalahar.vampires\" file=\"yalahar/vampires.xml\" interval2=\"1440\" margin=\"360\" />\n</raids>"
+    },
+    {
+      "git_blob": "b7ddff1f7810da51f93dae0b9dac35bdcc95fcbf",
+      "path": "data-global/raids/rookgaard/apprentice_sheng.xml",
+      "sha256": "86173e15949798c254b305a42240f69157d01299ef3ab117dd97435a8cae32f8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32127\" fromy=\"32060\" fromz=\"12\" tox=\"32127\" toy=\"32060\" toz=\"12\">\n\t\t<monster name=\"Apprentice Sheng\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "7b5dff50e2d228516de71f9189cb5f981df67190",
+      "path": "data-global/raids/rookgaard/munster.xml",
+      "sha256": "47961461ea2506a47f9ba69fa7c601eafd7f618908514f3200d09de13b3b86a7",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32101\" fromy=\"32217\" fromz=\"9\" tox=\"32101\" toy=\"32217\" toz=\"9\">\n\t\t<monster name=\"Munster\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "f573887b49046095b60ff236f999c6d48349b1cd",
+      "path": "data-global/raids/rookgaard/rats.xml",
+      "sha256": "b66dc781890b5d52574e7b8483efcd200b5014553aa44ea7d9607bec9ac16639",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32066\" fromy=\"32187\" fromz=\"7\" tox=\"32110\" toy=\"32219\" toz=\"7\">\n\t\t<monster name=\"Rat\" amount=\"20\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "384b05bddb5e898255eee631e57e00634e082e1e",
+      "path": "data-global/raids/rookgaard/rottie_the_rotworm1.xml",
+      "sha256": "566f970749fdd9da52c82256971f38893b5e4db64fa82e54feb5b2902ad61641",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32174\" fromy=\"32146\" fromz=\"11\" tox=\"32174\" toy=\"32146\" toz=\"11\">\n\t\t<monster name=\"Rottie The Rotworm\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "d4e10f2c574c736e9ea3284b6ce3e8b88a62e624",
+      "path": "data-global/raids/rookgaard/rottie_the_rotworm2.xml",
+      "sha256": "4dcbe924b87ed429f54b8a7bbc80f03cba39a6713e90098352be9ff988a2f241",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"31977\" fromy=\"32063\" fromz=\"13\" tox=\"31977\" toy=\"32063\" toz=\"13\">\n\t\t<monster name=\"Rottie The Rotworm\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "b8e717ceddcfdaa542ff35598079083b5765e561",
+      "path": "data-global/raids/rookgaard/teleskor.xml",
+      "sha256": "c5426451bbef43111d3cd3e2c34082f49668fca68e2e5c2132c97c92fabcbe86",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"31983\" fromy=\"32245\" fromz=\"10\" tox=\"31986\" toy=\"32249\" toz=\"10\">\n\t\t<monster name=\"Teleskor\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "3b771fa0fca67b91224a7c2cae9eacae2a815ed9",
+      "path": "data-global/raids/roshamuul/gaz_haragoth.xml",
+      "sha256": "48f7a25281746ac461425dea67a87d57f365593bc814c06eda011513adadc583",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"Something out of the ordinary, it's better we hide now!\" />\n\t<announce delay=\"20000\" type=\"Event\" message=\"His strength is unlimited, the demons kneeling before him .!\" />\n\t<announce delay=\"50000\" type=\"Event\" message=\"The dreaded Gaz'Haragoth is invading the land from prison.\" />\n\t<announce delay=\"80000\" type=\"Event\" message=\"Leave now mortals, beware Gaz'Haragoth.\" />\n\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"80000\" name=\"Gaz'Haragoth\" x=\"33538\" y=\"32381\" z=\"12\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "4c15a6732181b4776024fc21095aeb38ec91f51a",
+      "path": "data-global/raids/roshamuul/mawhawk.xml",
+      "sha256": "f4d5d05d36610f78c519485d0f476efa060e2997c7115b620676d0d7a25a52fe",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Mawhawk\" x=\"33696\" y=\"32461\" z=\"7\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "9dd58cbf7aeb9f7c55d33b82fa123aa040261560",
+      "path": "data-global/raids/roshamuul/omrafir.xml",
+      "sha256": "63d8800d966c0b2eb6f9b800871995e5c10a9169a9d4ebbabd0285a05ff0c156",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"20000\" type=\"Event\" message=\"Omrafir is about to make his way into the roshamuul prison. Run for your lives!\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"Bewarehas Omrafir.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Omrafir\" x=\"33587\" y=\"32378\" z=\"12\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "058114b3f14bb8739ac58a8ef7561d479f5d46cb",
+      "path": "data-global/raids/svargrond/barbaria.xml",
+      "sha256": "0a76670355c1272f915a57eeeed8014e697215062e87452c2f20266b7912d1bc",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Barbaria\" x=\"32006\" y=\"31417\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2089c65b9fb2866fcbf44ce8ca2c520e1a350cca",
+      "path": "data-global/raids/svargrond/barbarians_bittermor.xml",
+      "sha256": "60343cb0d06bf20c2f3bc4f8803b3fb7bd6bf082e6a5491ae21ea569b82f72b7",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Barbarians are gathering at Bittermor. They seem to be up to something.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"The barbarian pack is roaming around in Bittermor.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"31971\" fromy=\"31259\" fromz=\"7\" tox=\"31989\" toy=\"31276\" toz=\"7\">\n\t\t<monster name=\"Barbarian Bloodwalker\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Brutetamer\" amount=\"3\" />\n\t\t<monster name=\"Barbarian Headsplitter\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Skullhunter\" amount=\"10\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "e4c5b3d40528f580cc309bd1b1c4b917b2e8cbc1",
+      "path": "data-global/raids/svargrond/barbarians_svargrond1.xml",
+      "sha256": "079b4e259ba1f4d966ba72eb5363716f6ea117ee4ef19ea3f3ea20ccc103366d",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Scouts report a barbarian army gathering near Svargrond.\" />\n\t<announce delay=\"10000\" type=\"event\" message=\"Some invaders might try to access Svargrond via the ice to the south west.\" />\n\t<announce delay=\"30000\" type=\"event\" message=\"Raiders are attacking Svargrond!\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"The barbarians attacks on Svargrond are becoming more and more fierce!\" />\n\t<announce delay=\"180000\" type=\"event\" message=\"The barbarians are preparing for a final assault on Svargrond. Hide or fight!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"30000\" fromx=\"32175\" fromy=\"31178\" fromz=\"7\" tox=\"32207\" toy=\"31208\" toz=\"7\">\n\t\t<monster name=\"Barbarian Bloodwalker\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Brutetamer\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Headsplitter\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Skullhunter\" amount=\"5\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32175\" fromy=\"31178\" fromz=\"7\" tox=\"32207\" toy=\"31208\" toz=\"7\">\n\t\t<monster name=\"Barbarian Bloodwalker\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Brutetamer\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Headsplitter\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Skullhunter\" amount=\"5\" />\n\t</areaspawn>\n\t<areaspawn delay=\"180000\" fromx=\"32175\" fromy=\"31178\" fromz=\"7\" tox=\"32207\" toy=\"31208\" toz=\"7\">\n\t\t<monster name=\"Barbarian Bloodwalker\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Brutetamer\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Headsplitter\" amount=\"5\" />\n\t\t<monster name=\"Barbarian Skullhunter\" amount=\"5\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "594feff70d1f30d4771805e50abdb54858ac2728",
+      "path": "data-global/raids/svargrond/barbarians_svargrond2.xml",
+      "sha256": "ae0f6bb5acd1c4e2f82e16503f4c400168f0788a6cb699f44c7d1a0b6bcc695c",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Scouts report a barbarian army gathering near Svargrond\" />\n\t<announce delay=\"4000\" type=\"event\" message=\"Some invaders might try to access Svargrond via the ice to the North.\" />\n\t<announce delay=\"8000\" type=\"event\" message=\"Raiders are attacking Svargrond!\" />\n\t<areaspawn delay=\"10000\" fromx=\"32199\" fromy=\"31063\" fromz=\"5\" tox=\"32251\" toy=\"31084\" toz=\"5\">\n\t\t<monster name=\"Barbarian Bloodwalker\" amount=\"35\" />\n\t\t<monster name=\"Barbarian Brutetamer\" amount=\"22\" />\n\t\t<monster name=\"Barbarian Headsplitter\" amount=\"22\" />\n\t\t<monster name=\"Barbarian Skullhunter\" amount=\"28\" />\n\t\t<monster name=\"Ice Witch\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "aa07edc494b63273b569a3c3ce3d1306ed0ae98a",
+      "path": "data-global/raids/svargrond/dire_penguin1.xml",
+      "sha256": "61ebf4d019a525e1e4ece569405eaa809ec67439f2655e9585fb57d0669d0026",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32136\" y=\"31104\" z=\"2\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "581873622d4b53097d173f183bb5d77b4156a794",
+      "path": "data-global/raids/svargrond/dire_penguin10.xml",
+      "sha256": "b244b1f10dc52b00a41e2769e091bd84d7b7b3bf5048fa6bf3761b0a78ab6057",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32476\" y=\"31162\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "26e055b2d8c46ec224540fc6982bf6e8831be4eb",
+      "path": "data-global/raids/svargrond/dire_penguin2.xml",
+      "sha256": "a7c709a163fd0532ba3724ea4f1a5b839c255da7554154768580a608cfdcc910",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32147\" y=\"31140\" z=\"2\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "bbd113bee0b4180e40057ebd52d9715adf4a78bb",
+      "path": "data-global/raids/svargrond/dire_penguin3.xml",
+      "sha256": "91530d981973df69e5c8b7a005590bc76729e68c6c06740bcddf16ac53fae4fa",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32142\" y=\"31172\" z=\"2\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5d2175e57297dcee81f4cbbbf66796ea601022fc",
+      "path": "data-global/raids/svargrond/dire_penguin4.xml",
+      "sha256": "02ab69e12e74d0db41b03a7625044b463ed2b8d710bf187e66545875374d8b8e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32178\" y=\"31161\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "008144efe13abfbe94fd15f6c716abbda722ea9b",
+      "path": "data-global/raids/svargrond/dire_penguin5.xml",
+      "sha256": "156936d9a6455b3cdb22b34ace66f61f76180aef710c4dc2813e4f522e77d424",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32195\" y=\"31209\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "75572cf60f949b450c947c0dc353a03ee95f7c88",
+      "path": "data-global/raids/svargrond/dire_penguin6.xml",
+      "sha256": "0e1ae510ca8d527cfef41d3970bc6b234997ecf6483110811603abf4b294817b",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32189\" y=\"31245\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "249580caec4967487b001783da5a8a71a58188a3",
+      "path": "data-global/raids/svargrond/dire_penguin7.xml",
+      "sha256": "ae31c03a198028e7c20f2231d6c650e6d11d7ce59726c4410bdae070cc36d8f5",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32073\" y=\"31083\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2ea1e057c8c3eacad7117fd809be234ef265db4e",
+      "path": "data-global/raids/svargrond/dire_penguin8.xml",
+      "sha256": "7951dd8bb1ad0d3454195d79dbe2593ed0b6035a1685793bda8a7ff3d71b2079",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"31983\" y=\"31183\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "3c6428738c6555f9d592028edc64aec429658d79",
+      "path": "data-global/raids/svargrond/dire_penguin9.xml",
+      "sha256": "26865a24b40c8365ada3089ef7f84344c2aa7510fc117d63359a30a23e74668b",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dire Penguin\" x=\"32344\" y=\"31208\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "f12b715bfa9e74a05df1acea63f16344530887b5",
+      "path": "data-global/raids/svargrond/ghazbaran.xml",
+      "sha256": "332baa9365004d25753471832b20de35cd6c24e0e00e5aea7fcada3986e4e19e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"An ancient evil is awakening in the mines beneath Hrodmir.\" />\n\t<announce delay=\"30000\" type=\"Event\" message=\"Demonic entities are entering the mortal realm in the Hrodmir mines.\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"The demonic master has revealed itself in the mines of Hrodmir.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"60000\" name=\"Ghazbaran\" x=\"32228\" y=\"31163\" z=\"15\"/>\n\t<!--Area Spawns-->\n\t<areaspawn delay=\"53000\" fromx=\"32194\" fromy=\"30986\" fromz=\"14\" tox=\"32213\" toy=\"31012\" toz=\"14\">\n\t\t<monster name=\"Deathslicer\" amount=\"12\" />\n\t</areaspawn>\n\t<areaspawn delay=\"55000\" fromx=\"32194\" fromy=\"30986\" fromz=\"14\" tox=\"32213\" toy=\"31012\" toz=\"14\">\n\t\t<monster name=\"Juggernaut\" amount=\"5\" />\n\t</areaspawn>\n\t<areaspawn delay=\"56000\" fromx=\"32194\" fromy=\"30986\" fromz=\"14\" tox=\"32213\" toy=\"31012\" toz=\"14\">\n\t\t<monster name=\"Fury\" amount=\"8\" />\n\t</areaspawn>\n\t<areaspawn delay=\"58000\" fromx=\"32194\" fromy=\"30986\" fromz=\"14\" tox=\"32213\" toy=\"31012\" toz=\"14\">\n\t\t<monster name=\"Demon\" amount=\"6\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "1fcf1e735d5dd60c824a2208adb2c72719570c57",
+      "path": "data-global/raids/svargrond/hirintror.xml",
+      "sha256": "2b23ec96fdce09f61f8ba184575ecd3d3635fdaee37a759a690717d193baf399",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Hirintror\" x=\"32101\" y=\"31167\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "302bf4f8e84366f7a84da7d9652ce526b7836150",
+      "path": "data-global/raids/svargrond/ice_golems.xml",
+      "sha256": "c2d7e32eeca5831aafe9b33db1ed0e7bb575c2ad5672805419f265b1e30f0925",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"There is a sudden rise in ice golem population in Formogar mines.\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"More ice golems in Svargrond!\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"20000\" fromx=\"32093\" fromy=\"31094\" fromz=\"5\" tox=\"32155\" toy=\"31190\" toz=\"5\">\n\t\t<monster name=\"Ice Golem\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "f0495b4e304ef004616c879488fffe7ab460da51",
+      "path": "data-global/raids/svargrond/man_in_the_cave.xml",
+      "sha256": "a344dc1ee0d203a705ae6cc4959f0c6c0ab687150c11f35d99e20233a369ae65",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Man In The Cave\" x=\"32137\" y=\"31147\" z=\"2\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "46bdafa21425db013627d167ad6556b83e078a56",
+      "path": "data-global/raids/svargrond/ocyakao.xml",
+      "sha256": "d149bfbfeda1958c672e2a0c4fb07f014b9145c9a78d9e685398ce379001ab42",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<singlespawn delay=\"60000\" name=\"Ocyakao\" x=\"32353\" y=\"31052\" z=\"7\"/>\n\t<announce delay=\"2000\" type=\"event\" message=\"Beware of Ocyakao!\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "f2a70ab80996a1f8c422e16be04c1427fc88c73e",
+      "path": "data-global/raids/svargrond/yakchal.xml",
+      "sha256": "ac6ca7f2c81158c7c9bbc44fa4a5fddff73a98746cd1cc95a4c1477cad8ce202",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Yakchal\" x=\"32205\" y=\"31004\" z=\"14\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "5d4e76dffdf09245345b2f3c771f08d90f330946",
+      "path": "data-global/raids/svargrond/zushuka.xml",
+      "sha256": "0de7bf99d1d41dccbebc62acca811cb09bea6a84e44e9aa8e9876267406bee43",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Zushuka\" x=\"31941\" y=\"31388\" z=\"9\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "2926bbe95f50d85cf590e5d715736a4c59625da0",
+      "path": "data-global/raids/thais/cyclops.xml",
+      "sha256": "e0029ff00981f4fcbb7385bd641247833eefa6c17458717d30bf6a86a4a1fbb8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Let da mashing begin! Cyclops riot east of Thais.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"32503\" fromy=\"32058\" fromz=\"9\" tox=\"32520\" toy=\"32070\" toz=\"9\">\n\t\t<monster name=\"Cyclops\" amount=\"5\" />\n\t\t<monster name=\"Cyclops Drone\" amount=\"5\" />\n\t\t<monster name=\"Cyclops Smith\" amount=\"3\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "1088fd3662f171855392d0a6734a59e17710383f",
+      "path": "data-global/raids/thais/demodras.xml",
+      "sha256": "e64a9c75788e1142ce227dc177e82a92f13ad1b89460c9c36176393c82b99adb",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32358\" y=\"32093\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32360\" y=\"32093\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Demodras\" x=\"32359\" y=\"32093\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "0652edca3c11a92210edde0e8f1bfd49330c81c4",
+      "path": "data-global/raids/thais/general_murius.xml",
+      "sha256": "c64c9e90f6341084884cf4ece6b3d690081119703b6f807d7ba939fb1e4108f3",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"General Murius\" x=\"32427\" y=\"31131\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "6f123d826bb9fe5c753acf084c02c5705efdd1e4",
+      "path": "data-global/raids/thais/grorlam.xml",
+      "sha256": "bdbc6042715dd67905e5a7d34c903fbccfca89ef2950aebc742473fd1bbc7437",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Grorlam\" x=\"32380\" y=\"32065\" z=\"12\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "398632712e4621eb59bc768ad7d1477d84b1f0fc",
+      "path": "data-global/raids/thais/orcs.xml",
+      "sha256": "05cad6e141438ca8f70cdbf44dc71b1178486749949e0f676f413c8ef427f257",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"Event\" message=\"Orc activity near Thais reported! Beware!\" />\n\t<announce delay=\"60000\" type=\"Event\" message=\"Thais is under attack!\" />\n\t<singlespawn delay=\"120000\" name=\"Orc Helmet\" x=\"32368\" y=\"32162\" z=\"7\" />\n\t<singlespawn delay=\"120000\" name=\"Orc Shield\" x=\"32344\" y=\"32287\" z=\"7\" />\n\t<singlespawn delay=\"120000\" name=\"Orc Armor\" x=\"32271\" y=\"32282\" z=\"7\" />\n\t<areaspawn delay=\"60000\" fromx=\"32358\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32359\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Rider\" amount=\"5\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32452\" fromy=\"32235\" fromz=\"7\" tox=\"32437\" toy=\"32220\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"2\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32348\" fromy=\"32286\" fromz=\"7\" tox=\"32335\" toy=\"32297\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32261\" fromy=\"32271\" fromz=\"7\" tox=\"32287\" toy=\"32297\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32358\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"4\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Warlord\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32359\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32360\" fromy=\"32161\" fromz=\"7\" tox=\"32374\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32452\" fromy=\"32235\" fromz=\"7\" tox=\"32437\" toy=\"32220\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32348\" fromy=\"32286\" fromz=\"7\" tox=\"32335\" toy=\"32297\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n\t<areaspawn delay=\"120000\" fromx=\"32261\" fromy=\"32271\" fromz=\"7\" tox=\"32287\" toy=\"32297\" toz=\"7\">\n\t\t<monster name=\"Orc Shaman\" amount=\"3\" />\n\t\t<monster name=\"Orc\" amount=\"3\" />\n\t\t<monster name=\"Orc Rider\" amount=\"3\" />\n\t\t<monster name=\"Orc Berserker\" amount=\"3\" />\n\t\t<monster name=\"Orc Warlord\" amount=\"1\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "d7acd070dd8a48664bc6d52d54ad7b979ace648e",
+      "path": "data-global/raids/thais/rats.xml",
+      "sha256": "48a28ac333ed7e70a0ff4f2fe6fbb9c222e79e0a9fb0681f23f25e5bb80e11da",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Rat Plague in Thais!\" />\n\t<areaspawn delay=\"1000\" fromx=\"32331\" fromy=\"32182\" fromz=\"7\" tox=\"32426\" toy=\"32261\" toz=\"7\">\n\t\t<monster name=\"rat\" amount=\"20\" />\n\t\t<monster name=\"cave rat\" amount=\"20\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "814c5e87eeff9007e0bbf6fe20a741f696ea2207",
+      "path": "data-global/raids/thais/the_frog_prince.xml",
+      "sha256": "f766fdaba85302366b29442b3119a88d1254882862ebe51efdbcfb9e8793798f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Frog Prince\" x=\"32283\" y=\"32129\" z=\"7\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "af4d8c0f5e3a8a89b35621240248d3395ee97ad7",
+      "path": "data-global/raids/venore/countess_sorrow.xml",
+      "sha256": "6eab6df649a540936d408e1fb06fdddf08aeea29939cc6cffbe61cb4aee5f12f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Countess Sorrow\" x=\"32794\" y=\"32363\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "ef7d1e65f5ac49c70d2ea9b73d8cbbde2f8fd6b3",
+      "path": "data-global/raids/venore/demodras1.xml",
+      "sha256": "ae568edcbecc3759bc810a39d490dc02c20ba60dbdc9bf8aa47cb16a74c6884e",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32776\" y=\"32288\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32778\" y=\"32288\" z=\"10\"/>\n\t<singlespawn delay=\"1000\" name=\"Demodras\" x=\"32777\" y=\"32288\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "19a6390ad7edba0c40aa30c52cd41f5a80b6feb9",
+      "path": "data-global/raids/venore/demodras2.xml",
+      "sha256": "4e37fd6ff2c6e41c372e4ddfaffdb334a244731e8b1faa8cda9e5abfcf068a59",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32784\" y=\"32335\" z=\"12\"/>\n\t<singlespawn delay=\"1000\" name=\"Dragon Lord\" x=\"32786\" y=\"32335\" z=\"12\"/>\n\t<singlespawn delay=\"1000\" name=\"Demodras\" x=\"32785\" y=\"32335\" z=\"12\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "7caf8fad6c41d8560cb6bb3736782ec8445b5f22",
+      "path": "data-global/raids/venore/dharalion.xml",
+      "sha256": "087f5e04cee6d54d1c959f6fe344de05e6464ea0834fbd5e5b251e652f10cba4",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Beware! Beware of the Dharalion!\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dharalion\" x=\"33038\" y=\"32176\" z=\"9\" />\n\t<!--Area Spawns-->\n</raid>\n"
+    },
+    {
+      "git_blob": "dee279fd34e2f7444fa662df88824d7ac3fbe19a",
+      "path": "data-global/raids/venore/dracola.xml",
+      "sha256": "3c95e78c45d5dce0667fc76980fbfc344d7b9a900a11cefa5f75e65c97789fdd",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Dracola\" x=\"32832\" y=\"32276\" z=\"15\"/>\n\t<areaspawn delay=\"1000\" fromx=\"32826\" fromy=\"32261\" fromz=\"15\" tox=\"32837\" toy=\"32288\" toz=\"15\">\n\t\t<monster name=\"Lich\" amount=\"18\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "8445fd3f264fe8ae0aa3b6edaa9b0a69806400c2",
+      "path": "data-global/raids/venore/elves.xml",
+      "sha256": "909796c3f1c613c1ac71e074e92ff900a88c812ff6e74eb6fdd9da270089bc9b",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Elf Scouts have been sighted near Venore!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"The elves attack from shadowthorn!\" />\n\t<announce delay=\"60000\" type=\"event\" message=\"Venore is under attack!\" />\n\t<areaspawn delay=\"60000\" fromx=\"32853\" fromy=\"32123\" fromz=\"7\" tox=\"32861\" toy=\"32130\" toz=\"7\">\n\t\t<monster name=\"elf\" amount=\"4\" />\n\t\t<monster name=\"elf scout\" amount=\"4\" />\n\t\t<monster name=\"elf arcanist\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32932\" fromy=\"32158\" fromz=\"7\" tox=\"32944\" toy=\"32168\" toz=\"7\">\n\t\t<monster name=\"elf\" amount=\"4\" />\n\t\t<monster name=\"elf scout\" amount=\"4\" />\n\t\t<monster name=\"elf arcanist\" amount=\"3\" />\n\t</areaspawn>\n\t<areaspawn delay=\"60000\" fromx=\"32853\" fromy=\"32025\" fromz=\"7\" tox=\"32868\" toy=\"32034\" toz=\"7\">\n\t\t<monster name=\"elf\" amount=\"4\" />\n\t\t<monster name=\"elf scout\" amount=\"4\" />\n\t\t<monster name=\"elf arcanist\" amount=\"3\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "8099c9459c4dc3fc839008b28436c9d5e8efc42f",
+      "path": "data-global/raids/venore/fernfang.xml",
+      "sha256": "87ddf80af865b8a561ec4a0dd98e53ad4f7d08c7f42deeb48427d1797b81ad94",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"Beware Fernfang.\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"2000\" name=\"Fernfang\" x=\"32851\" y=\"32337\" z=\"6\" />\n\t<singlespawn delay=\"3000\" name=\"War Wolf\" x=\"32852\" y=\"32335\" z=\"6\" />\n\t<singlespawn delay=\"5000\" name=\"War Wolf\" x=\"32858\" y=\"32334\" z=\"6\" />\n</raid>\n"
+    },
+    {
+      "git_blob": "8e01355fcdb3eaa61f6ab1194cd1d9d6533b30ea",
+      "path": "data-global/raids/venore/feverish_citizens.xml",
+      "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Feverish Citizens are invading the streets of Venore!\" />\n\t<areaspawn delay=\"1000\" fromx=\"33012\" fromy=\"32052\" fromz=\"6\" tox=\"32861\" toy=\"32126\" toz=\"6\">\n\t\t<monster name=\"feverish citizen\" amount=\"120\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "def572be0d8829800585c0780456d699aa260886",
+      "path": "data-global/raids/venore/hunters.xml",
+      "sha256": "2a3ad50db012b45f66d06705798f93f8d553d6846c435e10323481a6cfee0d51",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"event\" message=\"Hunters on the hunt north of the Green Claw Swamp.\" />\n\t<!--Single Spawns-->\n\t<areaspawn delay=\"1000\" fromx=\"32692\" fromy=\"31947\" fromz=\"7\" tox=\"32808\" toy=\"32032\" toz=\"7\">\n\t\t<monster name=\"Hunter\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "a1399833ed9fc356dc394c6c7b8864ddfca7736a",
+      "path": "data-global/raids/venore/massacre.xml",
+      "sha256": "e9f531ae1aa83b1b367d03cb5ad818ced67175405c7f369e1c9aec5c59448c86",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Massacre\" x=\"32875\" y=\"32279\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "a9179aab83ef67cddba7df90283122381670d00b",
+      "path": "data-global/raids/venore/mr_punish.xml",
+      "sha256": "a3f22959ff9b22873b852b828d02435cccfd6c0d0cf1dc865bb453727e9dd1af",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Mr. Punish\" x=\"32758\" y=\"32243\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "652601a2c793d7a543ca2da2c1d09d43f27a0370",
+      "path": "data-global/raids/venore/orc_sam_backpack.xml",
+      "sha256": "6b412638379a8f940283eae9680fc49b34b165df155b2669e9d6038b963bfb00",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32964\" fromy=\"31735\" fromz=\"7\" tox=\"32981\" toy=\"31756\" toz=\"7\">\n\t\t<monster name=\"Orc Sam Backpack\" amount=\"1\"/>\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "35cee56707c7d452d8e07579854802be42bd2f11",
+      "path": "data-global/raids/venore/rukor_zad.xml",
+      "sha256": "6772967a6f1e7e9c6e7bb05bec3949fd06e9107a63f12d0efa10754c89ac4485",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Rukor Zad\" x=\"32605\" y=\"32381\" z=\"10\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "f3d63e84425e75da1d30a6610aea85a3b2c0314a",
+      "path": "data-global/raids/venore/the_handmaiden.xml",
+      "sha256": "e4775a5deece965bb79514d39ea8a7581a924b6e8863cf02614e9de0836e2756",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Handmaiden\" x=\"32785\" y=\"32278\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "7be92a75f666a19fde2349ada959d45742d57159",
+      "path": "data-global/raids/venore/the_imperor.xml",
+      "sha256": "f6f8e146fa2dd3d30cf1d77567171b0dd5ab595fa9446f76274cc3a24d9b0ae7",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Imperor\" x=\"32909\" y=\"32213\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "b1b6a112779803f39edfd6327bc7353cff0e792e",
+      "path": "data-global/raids/venore/the_old_widow.xml",
+      "sha256": "e2b55a4413b58a822239799aa0e45269c8ec19ac08c4440aa7c1ba2d0ccfd78f",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Announcements-->\n\t<announce delay=\"1000\" type=\"Event\" message=\"The mating season of the giant spiders is at hand. Leave the plains of havoc as fast as you can.\" />\n\t<announce delay=\"180000\" type=\"Event\" message=\"Giant spiders have gathered on the plains of havoc for their mating season. Beware!\" />\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"180000\" name=\"The Old Widow\" x=\"32776\" y=\"32296\" z=\"7\" />\n\t<!--Area Spawns-->\n\t<areaspawn delay=\"170000\" fromx=\"32760\" fromy=\"32292\" fromz=\"7\" tox=\"32796\" toy=\"32306\" toz=\"7\">\n\t\t<monster name=\"Giant Spider\" amount=\"10\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "5d93221ab662f4224b0730750140ed8d569f9c7a",
+      "path": "data-global/raids/venore/the_plasmother.xml",
+      "sha256": "9efe6f3d4565bf70aeb4da4ea235ec30f9a68ca0770d615eff96cc290468c4b8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"The Plasmother\" x=\"32836\" y=\"32329\" z=\"15\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "82864951d2fde4b5f36d1150116bff5641454fcd",
+      "path": "data-global/raids/venore/undead_army.xml",
+      "sha256": "f7a88d981da23c913a58cf88bf4b5513b03acb7573807a9f2b161a2ecf633989",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"The dead of the plains of havoc are becoming restless!\" />\n\t<announce delay=\"20000\" type=\"event\" message=\"A veritable army of undead is amassing in the plains of havoc, beware!\" />\n\t<announce delay=\"60000\" type=\"event\" message=\"The dreaded banshee lead their undead minions to claim the plains of havoc!\" />\n\t<areaspawn delay=\"60000\" fromx=\"32789\" fromy=\"32277\" fromz=\"7\" tox=\"32836\" toy=\"32299\" toz=\"7\">\n\t\t<monster name=\"Skeleton\" amount=\"35\" />\n\t\t<monster name=\"Banshee\" amount=\"12\" />\n\t\t<monster name=\"Ghoul\" amount=\"22\" />\n\t\t<monster name=\"Demon Skeleton\" amount=\"18\" />\n\t\t<monster name=\"Vampire\" amount=\"15\" />\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "6ee018008113f1ed330f54b40324fd11eed70ad1",
+      "path": "data-global/raids/venore/water_buffaloes.xml",
+      "sha256": "f452ea160cb8d10d3a683437fdf2cba009ac76b3b29b0f54f7dfba09a21926d8",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<areaspawn delay=\"1000\" fromx=\"32857\" fromy=\"32135\" fromz=\"7\" tox=\"32865\" toy=\"32142\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32874\" fromy=\"32201\" fromz=\"7\" tox=\"32882\" toy=\"32207\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32881\" fromy=\"32229\" fromz=\"7\" tox=\"32885\" toy=\"32233\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32942\" fromy=\"32260\" fromz=\"7\" tox=\"32951\" toy=\"32266\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32957\" fromy=\"32226\" fromz=\"7\" tox=\"32965\" toy=\"32236\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32818\" fromy=\"32168\" fromz=\"7\" tox=\"32825\" toy=\"32173\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"33091\" fromy=\"32069\" fromz=\"7\" tox=\"33095\" toy=\"32073\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"33057\" fromy=\"32141\" fromz=\"7\" tox=\"33062\" toy=\"32148\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n\t<areaspawn delay=\"1000\" fromx=\"32819\" fromy=\"32158\" fromz=\"7\" tox=\"32829\" toy=\"32169\" toz=\"7\">\n\t\t<monster name=\"Water Buffalo\" amount=\"4\"/>\n\t</areaspawn>\n</raid>\n"
+    },
+    {
+      "git_blob": "752ab932a5fad4c403426c5cfe37a2ec8a0aa812",
+      "path": "data-global/raids/venore/xenia.xml",
+      "sha256": "07a08c49070d3b9b53373731594493a41f5a7e3317893d9ca30150642e1f62b7",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Xenia\" x=\"32891\" y=\"31886\" z=\"8\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "626c3b0d8b04974d1960531f7267f849c11e3ba0",
+      "path": "data-global/raids/venore/yaga_the_crone.xml",
+      "sha256": "142bb838698dbddbb0d7f8d0ca7ca6b409338a72960332b8d7df75dd33a9cb51",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<!--Single Spawns-->\n\t<singlespawn delay=\"1000\" name=\"Yaga The Crone\" x=\"32712\" y=\"32008\" z=\"11\"/>\n</raid>\n"
+    },
+    {
+      "git_blob": "3bbf7a1aa9a2650d037dadb08843afd44639e7fd",
+      "path": "data-global/raids/yalahar/vampires.xml",
+      "sha256": "de3788ad90b411be4f840810c6730711e2ba67f81b727733b6af469b566e11d1",
+      "text": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<raid>\n\t<announce delay=\"1000\" type=\"event\" message=\"Citizens of Yalahar, beware! Harbingers of vampiric blood thirst are appearing in the city. Fight them or take your chance to flee while you still can.\" />\n\t<announce delay=\"120000\" type=\"event\" message=\"The sky over Yalahar is darkened by many little wings. Whoever isn't ready to fight the greater evil approaching, seek refuge inside the houses.\" />\n\t<announce delay=\"300000\" type=\"event\" message=\"Vampires have arrived in Yalahar - looking for humans to feed on and quench their blood thirst.\" />\n\t<areaspawn delay=\"120000\" fromx=\"32752\" fromy=\"31170\" fromz=\"7\" tox=\"32848\" toy=\"31249\" toz=\"7\">\n\t\t<monster name=\"Bat\" amount=\"200\" />\n\t</areaspawn>\n\t<areaspawn delay=\"300000\" fromx=\"32752\" fromy=\"31170\" fromz=\"7\" tox=\"32848\" toy=\"31249\" toz=\"7\">\n\t\t<monster name=\"Bat\" amount=\"200\" />\n\t\t<monster name=\"Vampire\" amount=\"100\" />\n\t</areaspawn>\n</raid>"
+    },
+    {
+      "git_blob": "769e72c3156ce8225dd665c60e018ec4d18040c5",
+      "path": "data-global/scripts/raids/bosses/man_in_the_cave.lua",
+      "sha256": "99a7fd4eebdf29054caac10fbb1cea5c2137e3126248437eddfdfe0a7dfbcadc",
+      "text": "local manInTheCave = MoveEvent()\n\nfunction manInTheCave.onStepIn(creature, item, position, fromPosition)\n\tlocal player = creature:getPlayer()\n\tif not player then\n\t\treturn true\n\tend\n\n\tlocal config = {\n\t\tstepPos = { x = 32131, y = 31147, z = 3 },\n\t\tfromPos = { x = 32124, y = 31141, z = 2 },\n\t\ttoPos = { x = 32142, y = 31153, z = 2 },\n\t\tteleportPos = { x = 32131, y = 31146, z = 2 },\n\t\tmonsterName = \"Man In The Cave\",\n\t}\n\n\tif position.x ~= config.stepPos.x or position.y ~= config.stepPos.y or position.z ~= config.stepPos.z then\n\t\treturn true\n\tend\n\n\tlocal monsterFound = false\n\tlocal monsterTarget = nil\n\n\tfor x = config.fromPos.x, config.toPos.x do\n\t\tfor y = config.fromPos.y, config.toPos.y do\n\t\t\tlocal tile = Tile(Position(x, y, config.fromPos.z))\n\t\t\tif tile then\n\t\t\t\tlocal creatures = tile:getCreatures()\n\t\t\t\tfor _, creature in ipairs(creatures) do\n\t\t\t\t\tif creature:isMonster() and creature:getName():lower() == config.monsterName:lower() then\n\t\t\t\t\t\tmonsterFound = true\n\t\t\t\t\t\tmonsterTarget = creature\n\t\t\t\t\t\tbreak\n\t\t\t\t\tend\n\t\t\t\tend\n\t\t\tend\n\t\t\tif monsterFound then\n\t\t\t\tbreak\n\t\t\tend\n\t\tend\n\t\tif monsterFound then\n\t\t\tbreak\n\t\tend\n\tend\n\n\tif monsterFound and monsterTarget then\n\t\tplayer:teleportTo(config.teleportPos)\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\tplayer:say(\"You have been roped up!\", TALKTYPE_MONSTER_SAY)\n\tend\n\n\treturn true\nend\n\nmanInTheCave:type(\"stepin\")\nmanInTheCave:id(799, 6594)\nmanInTheCave:register()\n"
+    },
+    {
+      "git_blob": "4d7c8d09e076d6aedc214da216455423dfef52f8",
+      "path": "data-global/scripts/raids/bosses/sugar_mommy.lua",
+      "sha256": "ed14893eab8935bf905ca251b59c77f4cf1d620d7c1235eb5cf4ef5df05a13cd",
+      "text": "local zone = Zone(\"candia.sugarmommy\")\nzone:addArea(Position(33450, 32131, 9), Position(33460, 32140, 9))\n\nlocal raid = Raid(\"candia.sugarmommy\", {\n\tzone = zone,\n\tallowedDays = { \"Friday\", \"Saturday\", \"Sunday\" },\n\tminActivePlayers = 1,\n\tinitialChance = 0.10,\n\ttargetChancePerDay = 0.05,\n\tmaxChancePerCheck = 1.0,\n})\n\nraid\n\t:addSpawnMonsters({\n\t\t{\n\t\t\tname = \"Sugar Mommy\",\n\t\t\tamount = 1,\n\t\t},\n\t})\n\t:autoAdvance(\"24h\")\n\nraid:register()\n"
+    },
+    {
+      "git_blob": "17d2123446b08246bec6804353985139be9a9927",
+      "path": "data-global/scripts/raids/world_changes/flower_month.lua",
+      "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb",
+      "text": "local DRYADS_PER_WAVE = 25\nlocal WAVE_INTERVAL = 15 * 60 * 1000\nlocal ROSEMARIE_POS = { x = 32534, y = 32827, z = 7 }\n\nlocal WAVES = {\n\t{\n\t\tmessage = \"Dryads have returned to protect the forest north of Edron.\",\n\t\tfrom = { x = 33166, y = 31694, z = 7 },\n\t\tto = { x = 33241, y = 31736, z = 7 },\n\t},\n\t{\n\t\tmessage = \"Dryads have returned to protect the northern forests near Ab'Dendriel.\",\n\t\tfrom = { x = 32414, y = 31691, z = 7 },\n\t\tto = { x = 32483, y = 31736, z = 7 },\n\t},\n\t{\n\t\tmessage = \"Dryads have returned to protect the jungle of Tiquanda.\",\n\t\tfrom = { x = 32755, y = 32739, z = 7 },\n\t\tto = { x = 32824, y = 32780, z = 7 },\n\t},\n\t{\n\t\tmessage = \"Dryads have returned to protect their tree gardens underneath Cormaya.\",\n\t\tfrom = { x = 33154, y = 31976, z = 11 },\n\t\tto = { x = 33283, y = 32066, z = 11 },\n\t},\n}\n\nlocal function spawnDryads(wave)\n\tGame.broadcastMessage(wave.message, MESSAGE_EVENT_ADVANCE)\n\n\tlocal spawned = 0\n\tlocal attempts = 0\n\n\twhile spawned < DRYADS_PER_WAVE and attempts < DRYADS_PER_WAVE * 10 do\n\t\tlocal pos = {\n\t\t\tx = math.random(wave.from.x, wave.to.x),\n\t\t\ty = math.random(wave.from.y, wave.to.y),\n\t\t\tz = wave.from.z,\n\t\t}\n\t\tlocal tile = Tile(pos)\n\t\tif tile and tile:isWalkable() then\n\t\t\tGame.createMonster(\"Dryad\", pos, false, true)\n\t\t\tspawned = spawned + 1\n\t\tend\n\t\tattempts = attempts + 1\n\tend\nend\n\nlocal function scheduleWave(index)\n\tspawnDryads(WAVES[index])\n\tlocal next = index < #WAVES and index + 1 or 1\n\taddEvent(function()\n\t\tscheduleWave(next)\n\tend, WAVE_INTERVAL)\nend\n\nlocal dryadRaid = GlobalEvent(\"FlowerMonth\")\n\nfunction dryadRaid.onStartup()\n\tlocal t = os.date(\"*t\")\n\tlocal month = t.month\n\n\tif month == 6 then\n\t\tGame.createNpc(\"Rosemarie\", ROSEMARIE_POS, true)\n\t\tscheduleWave(1)\n\t\tprint(string.format(\"[%04d-%02d-%02d %02d:%02d:%02d.000] [info] [World Change] Flower Month event is active.\", t.year, t.month, t.day, t.hour, t.min, t.sec))\n\tend\n\n\treturn true\nend\n\ndryadRaid:register()\n"
+    },
+    {
+      "git_blob": "9cf3039c43c5a7d404a06c5b716a1f8058252b67",
+      "path": "data/libs/systems/raids.lua",
+      "sha256": "195090b7052c8ec601d1ca17015f4e57509a01f32dd68137ebfa0c648f90326b",
+      "text": "---@alias Weekday 'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday'|'Sunday\n\n---@class Raid : Encounter\n---@field allowedDays Weekday|Weekday[] The days of the week the raid is allowed to start\n---@field minActivePlayers number The minimum number of players required to start the raid\n---@field initialChance number|nil The initial chance to start the raid\n---@field targetChancePerDay number The chance per enabled day to start the raid\n---@field maxChancePerCheck number The maximum chance to start the raid in a single check (1m)\n---@field minGapBetween string|number The minimum gap between raids of this type in seconds\n---@field maxChecksPerDay number The maximum number of checks per day\n---@field kv KV\nRaid = {\n\tregistry = {},\n\tcheckInterval = \"1m\",\n\tidleTime = \"5m\",\n}\n\n-- Set the metatable so that Raid inherits from Encounter\nsetmetatable(Raid, {\n\t__index = Encounter,\n\t---@param config { name: string, global: boolean, allowedDays: Weekday|Weekday[], minActivePlayers: number, targetChancePerDay: number, maxChancePerCheck: number, minGapBetween: string|number, initialChance: number, maxChecksPerDay: number }\n\t__call = function(self, name, config)\n\t\tconfig.global = true\n\t\tlocal raid = setmetatable(Encounter(name, config), { __index = Raid })\n\t\traid.allowedDays = config.allowedDays\n\t\traid.minActivePlayers = config.minActivePlayers\n\t\traid.targetChancePerDay = config.targetChancePerDay\n\t\traid.maxChancePerCheck = config.maxChancePerCheck\n\t\traid.minGapBetween = ParseDuration(config.minGapBetween)\n\t\traid.initialChance = config.initialChance\n\t\traid.maxChecksPerDay = config.maxChecksPerDay\n\t\traid.kv = kv.scoped(\"raids\"):scoped(name)\n\t\treturn raid\n\tend,\n})\n\n---Registers the raid\n---@param self Raid The raid to register\n---@return boolean True if the raid is registered successfully, false otherwise\nfunction Raid:register()\n\tEncounter.register(self)\n\tRaid.registry[self.name] = self\n\tself.registered = true\n\treturn true\nend\n\n---Starts the raid if it can be started\n---@param self Raid The raid to try to start\n---@return boolean True if the raid was started, false otherwise\nfunction Raid:tryStart(force)\n\tif not force and not self:canStart() then\n\t\treturn false\n\tend\n\tlogger.info(\"Starting raid {}\", self.name)\n\tself.kv:set(\"last-occurrence\", os.time())\n\tself:start()\n\treturn true\nend\n\n---Checks if the raid can be started\n---@param self Raid The raid to check\n---@return boolean True if the raid can be started, false otherwise\nfunction Raid:canStart()\n\tif self.currentStage ~= Encounter.unstarted then\n\t\tlogger.debug(\"Raid {} is already running\", self.name)\n\t\treturn false\n\tend\n\tlocal forceTrigger = self.kv:get(\"trigger-when-possible\")\n\tif not forceTrigger then\n\t\tlocal lastOccurrence = (self.kv:get(\"last-occurrence\") or 0) * 1000\n\t\tlocal currentTime = os.time() * 1000\n\t\tif self.minGapBetween and lastOccurrence and currentTime - lastOccurrence < self.minGapBetween then\n\t\t\tlogger.debug(\"Raid {} occurred too recently (last: {} ago, min: {})\", self.name, FormatDuration(currentTime - lastOccurrence), FormatDuration(self.minGapBetween))\n\t\t\treturn false\n\t\tend\n\n\t\tif not self.targetChancePerDay or not self.maxChancePerCheck then\n\t\t\tlogger.debug(\"Raid {} does not have a chance configured (targetChancePerDay: {}, maxChancePerCheck: {})\", self.name, self.targetChancePerDay, self.maxChancePerCheck)\n\t\t\treturn false\n\t\tend\n\n\t\tlocal checksToday = tonumber(self.kv:get(\"checks-today\") or 0)\n\t\tif self.maxChecksPerDay and checksToday >= self.maxChecksPerDay then\n\t\t\tlogger.debug(\"Raid {} has already checked today (checks today: {}, max: {})\", self.name, checksToday, self.maxChecksPerDay)\n\t\t\treturn false\n\t\tend\n\t\tself.kv:set(\"checks-today\", checksToday + 1)\n\n\t\tlocal failedAttempts = self.kv:get(\"failed-attempts\") or 0\n\t\tlocal checksPerDay = ParseDuration(\"23h\") / ParseDuration(Raid.checkInterval)\n\t\tlocal initialChance = self.initialChance or (self.targetChancePerDay / checksPerDay)\n\t\tlocal chanceIncrease = math.max((self.targetChancePerDay - initialChance) / checksPerDay, 0)\n\t\tlocal chance = initialChance + (chanceIncrease * failedAttempts)\n\t\tif chance > self.maxChancePerCheck then\n\t\t\tchance = self.maxChancePerCheck\n\t\tend\n\t\tchance = chance * 1000\n\n\t\t-- offset the chance by 1000 to allow for fractional chances\n\t\tlocal roll = math.random(100 * 1000)\n\t\tif roll > chance then\n\t\t\tlogger.debug(\"Raid {} failed to start (roll: {}, chance: {}, failed attempts: {})\", self.name, roll, chance, failedAttempts)\n\t\t\tself.kv:set(\"failed-attempts\", failedAttempts + 1)\n\t\t\treturn false\n\t\tend\n\tend\n\n\tif self.allowedDays and not self:isAllowedDay() then\n\t\tlogger.debug(\"Raid {} is not allowed today ({})\", self.name, os.date(\"%A\"))\n\t\tself.kv:set(\"trigger-when-possible\", true)\n\t\treturn false\n\tend\n\tif self.minActivePlayers and self:getActivePlayerCount() < self.minActivePlayers then\n\t\tlogger.debug(\"Raid {} does not have enough players (active: {}, min: {})\", self.name, self:getActivePlayerCount(), self.minActivePlayers)\n\t\tself.kv:set(\"trigger-when-possible\", true)\n\t\treturn false\n\tend\n\n\tself.kv:set(\"trigger-when-possible\", false)\n\tself.kv:set(\"failed-attempts\", 0)\n\treturn true\nend\n\n---Checks if the raid is allowed to start today\n---@param self Raid The raid to check\n---@return boolean True if the raid is allowed to start today, false otherwise\nfunction Raid:isAllowedDay()\n\tlocal day = os.date(\"%A\")\n\tif self.allowedDays == day then\n\t\treturn true\n\tend\n\tif type(self.allowedDays) == \"table\" then\n\t\tfor _, allowedDay in pairs(self.allowedDays) do\n\t\t\tif allowedDay == day then\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\tend\n\treturn false\nend\n\n---Gets the number of players in the game\n---@param self Raid The raid to check\n---@return number The number of players in the game\nfunction Raid:getActivePlayerCount()\n\tlocal count = 0\n\tfor _, player in pairs(Game.getPlayers()) do\n\t\tif player:getIdleTime() < ParseDuration(Raid.idleTime) then\n\t\t\tcount = count + 1\n\t\tend\n\tend\n\treturn count\nend\n\n--Overrides Encounter:addBroadcast\n--Adds a stage that broadcasts raid information globally\n--@param message string The message to send\n--@return boolean True if the message stage is added successfully, false otherwise\nfunction Raid:addBroadcast(message, type)\n\ttype = type or MESSAGE_EVENT_ADVANCE\n\treturn self:addStage({\n\t\tstart = function()\n\t\t\tself:broadcast(type, message)\n\t\t\tWebhook.sendMessage(\":space_invader: \" .. message, announcementChannels[\"raids\"])\n\t\tend,\n\t})\nend\n"
+    }
+  ],
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "schema": "OTERYN_CRYSTAL_RAID_SOURCE_CAPTURE/v1"
+}

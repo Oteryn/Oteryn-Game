@@ -6,6 +6,9 @@ use oteryn_gameplay_content::content::ProductionKey;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RaidPolicy {
+    /// RAIDS-GLOBAL: execution-only definition; the typed source catalogue and
+    /// node scheduler own its Lua/calendar eligibility, never a made-up interval.
+    SourceScheduled,
     Random {
         mean_interval_s: u32,
         min_gap_s: u32,
@@ -124,7 +127,12 @@ impl RaidDefinition {
             .checked_add(i64::from(last_wave))
             .and_then(|at| at.checked_add(i64::from(self.despawn_after_ms.unwrap_or(0))))
             .ok_or(RaidError::Exhausted)?;
-        // A malformed definition cannot close before its final announcement.
+        // RAIDS-GLOBAL 2026-11-01: Crystal carlin/trolls.xml has a final
+        // broadcast after its final spawn. A persistent raid closes its event
+        // sequence after that broadcast; an explicit despawn limit still binds.
+        if self.despawn_after_ms.is_none() {
+            return Ok(deadline.max(last_announcement));
+        }
         if last_announcement > deadline {
             return Err(RaidError::InvalidDefinition);
         }

@@ -48,6 +48,15 @@ pub enum RaidAction {
         firing_id: [u8; 16],
         bundle_digest: [u8; 32],
     },
+    /// The source planner already resolved its prerequisites and random draw.
+    /// Only SourceScheduled definitions accept this metadata-only input. The
+    /// durable owner commits this transition together with the source state.
+    ResolvedCheck {
+        now_ms: i64,
+        selected: bool,
+        firing_id: [u8; 16],
+        bundle_digest: [u8; 32],
+    },
     /// Metadata-only close at the deadline. Live runs/LOST reconciliation must
     /// be composed by their future owner before any runtime activation.
     Close {
@@ -193,6 +202,7 @@ impl RaidSchedule {
                     // One native deterministic draw for each due random check,
                     // including blocked checks. All variable-length parts are framed.
                     let selected = match definition.policy {
+                        RaidPolicy::SourceScheduled => return Err(RaidError::InvalidDefinition),
                         RaidPolicy::Random {
                             mean_interval_s,
                             min_gap_s,
@@ -228,6 +238,53 @@ impl RaidSchedule {
                             .or(self.last_fixed_slot_ms);
                     }
                     if selected && eligible && !running && !persistent_blocked {
+                        if WorldId::decode(&firing_id).is_err() {
+                            return Err(RaidError::InvalidState);
+                        }
+                        after.next_firing_ordinal = self
+                            .next_firing_ordinal
+                            .checked_add(1)
+                            .ok_or(RaidError::Exhausted)?;
+                        after.last_fired_at_ms = Some(now_ms);
+                        after.latest_firing = Some(Firing {
+                            ordinal: self.next_firing_ordinal,
+                            firing_id,
+                            reset_epoch: self.reset_epoch,
+                            fired_at_ms: now_ms,
+                            deadline_ms: definition.deadline(now_ms)?,
+                            bundle_digest,
+                            state: FiringState::Running,
+                        });
+                    }
+                }
+            }
+            RaidAction::ResolvedCheck {
+                now_ms,
+                selected,
+                firing_id,
+                bundle_digest,
+            } => {
+                if definition.policy != RaidPolicy::SourceScheduled {
+                    return Err(RaidError::InvalidDefinition);
+                }
+                if now_ms < 0 {
+                    return Err(RaidError::InvalidTime);
+                }
+                if !self.retired && now_ms >= self.next_check_at_ms {
+                    after.next_check_at_ms = now_ms
+                        .checked_add(CHECK_INTERVAL_MS)
+                        .ok_or(RaidError::Exhausted)?;
+                    after.check_ordinal = self
+                        .check_ordinal
+                        .checked_add(1)
+                        .ok_or(RaidError::Exhausted)?;
+                    let running = self
+                        .latest_firing
+                        .as_ref()
+                        .is_some_and(|f| f.state == FiringState::Running);
+                    // Modern Lua permits another run in the same reset epoch.
+                    // Its own min-gap and deferred-start state make the choice.
+                    if selected && !running {
                         if WorldId::decode(&firing_id).is_err() {
                             return Err(RaidError::InvalidState);
                         }

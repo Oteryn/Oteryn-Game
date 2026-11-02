@@ -4,6 +4,7 @@ mod depot_map_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
 include!("tutorial_notices_tests.rs");
+include!("server_messages_tests.rs");
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,

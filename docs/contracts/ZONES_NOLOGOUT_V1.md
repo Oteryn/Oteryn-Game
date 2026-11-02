@@ -39,7 +39,49 @@ Domain revisions start at zero and advance once per status delta; both revision 
 MOTD receipt travel with `SessionContinuity`. Snapshot and delta type 1 use
 `server_messages_v1.proto#ServerMessageV1`, the existing bounded status-text encoding.
 No frame in this domain is emitted without capability selection. Clients without 92
-retain the previous logout-result schema; client rendering is outside this server task.
+retain the previous logout-result schema.
+
+## RAIDS-GLOBAL announcement extension (2026-11-01)
+
+The existing domain 57 also carries raid `warning` (field 3) and `advance`
+(field 4) messages. Status text remains field 2 with unchanged bytes; the tutorial
+domain and codec remain unchanged. Text retains the existing 255-byte UTF-8 bound
+and the 260-byte registered payload envelope. The complete active source catalogue
+fits that bound. A snapshot contains only the empty marker or the configured MOTD;
+raid announcements are transient deltas and never enter a join snapshot.
+
+The current Channel owner applies a committed announcement step once by firing,
+ownership generation and step ordinal. It atomically captures the currently serving
+connections that selected capability 92 and queues the typed message for each.
+Registered Activity owners share their origin Channel's recipient hub, so a
+physical scope transfer does not opt a connected player out of broadcasts.
+An exact connected-controller handoff moves its existing recipient and pending
+references. The one physical connection guard retains its original identity
+through every handoff; cancellation before destination serve still removes that
+recipient by a lookup bounded to the existing 256 current connections.
+Connections that join or reconnect later receive no historical announcement. A
+connection guard drops its queued references on disconnect, including control-loss
+grace; an older connection cannot replace or remove a newer generation's recipient entry.
+An uncertain durable acknowledgement replays the retained publication receipt and
+does not enqueue the message again. A committed acknowledgement releases that receipt;
+the independent durable pending-effect guard prevents republication, and queued shared
+references remain available for delivery. A restarted owner receives LOST cleanup rather
+than resuming old announcements.
+The committed Complete/LOST acknowledgement also reclaims that firing's remaining
+receipts when an earlier acknowledgement committed but its response was lost.
+
+A `Notify` wakes the existing connection outbound poll immediately; delivery does
+not wait for the liveness or movement cadence. Each drain has at most the existing
+16-announcement bound and the existing connection write deadline. `RAIDS-GLOBAL-NOTICES`
+bounds the retained publication directory to 512 candidates times 16 announcements,
+and each of the listener's at most 256 connections has at most 16 queued shared
+references. Capacity failure defers the whole publication without partial fan-out.
+
+The typed client route preserves warning versus advance presentation. Crystal
+`201189f` `src/lua/creature/raids.cpp:313-318,332` maps XML `warning` to
+`MESSAGE_GAME_HIGHLIGHT`; `event`, `default` and omitted types use
+`MESSAGE_EVENT_ADVANCE`. `data/libs/systems/raids.lua:160-169` also defaults Lua
+broadcasts to advance. No new command or capability is introduced.
 
 Parity evidence (read-only pinned sources):
 

@@ -15,6 +15,7 @@ use super::*;
 /// by CLIENT-E2E-1 advertise their typed command routes so the shipped session loop and the
 /// qualification client negotiate the same feature set. NPC shop and hireling remain opt-in
 /// until their prerequisite NPC service and staff routes are implemented by the client session.
+/// 92 consumes ordered server status, warning and advance messages on domain 57.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -42,6 +43,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     prey::CAPABILITY_PREY_V1,
+    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
@@ -63,6 +65,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     CAPABILITY_BESTIARY_CHARMS_V1,
     CAPABILITY_ACHIEVEMENT_NOTICES_V1,

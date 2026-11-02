@@ -352,6 +352,47 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.server_motd
     }
 
+    fn server_messages_joined(&self, admitted: AdmittedSession) -> bool {
+        !raid_notices::selected(admitted)
+            || self.states.server_messages.join(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            )
+    }
+
+    fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_messages.leave(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        );
+    }
+
+    fn take_server_notice(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+        if !raid_notices::selected(admitted) {
+            return None;
+        }
+        self.states.server_messages.take(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        )
+    }
+
+    async fn server_messages_changed(&self, admitted: AdmittedSession) {
+        if !raid_notices::selected(admitted) {
+            std::future::pending::<()>().await;
+        }
+        self.states
+            .server_messages
+            .wait(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            )
+            .await;
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,
@@ -1076,6 +1117,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
     fn gameplay_idle_policy(&self) -> super::super::GameplayIdlePolicy {
         self.states.gameplay_idle_policy
+    }
+
+    fn observe_gameplay_idle(&self, admitted: AdmittedSession) {
+        if admitted.world_id == self.world_id && admitted.channel_id == self.channel_id {
+            self.states.gameplay_idle_presence.observe(admitted);
+        }
     }
 
     async fn gameplay_idle_exemptions(&self, admitted: AdmittedSession) -> Option<(bool, bool)> {
