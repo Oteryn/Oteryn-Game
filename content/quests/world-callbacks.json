@@ -1431,6 +1431,96 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/dangerous-depth-dwarves-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33921,
+          "y": 32402,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33782,
+        "y": 32205,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:40-41"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dangerous-depth-gnomes-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33982,
+          "y": 32234,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33829,
+        "y": 32186,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:50-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dangerous-depth-scouts-energy-exit",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34021,
+          "y": 32037,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33831,
+        "y": 32141,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:30-31"
+      ]
     }
   ]
 }
