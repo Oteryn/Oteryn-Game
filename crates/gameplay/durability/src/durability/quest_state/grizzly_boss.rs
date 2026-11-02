@@ -114,6 +114,28 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Historical obligation lookup only; a session need not have a fresh-admission
+    /// journal. Returning a visit still requires the independently current gameplay fence.
+    pub async fn pending_grizzly_boss_entry_for_session(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: GameSessionId,
+    ) -> Result<Option<GrizzlyBossEntry>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let query = format!("{} WHERE character_id=(SELECT character_id FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid) AND state IN ('ACTIVE','RETURN_PENDING')", select_columns());
+            let row = sqlx::query(sqlx::AssertSqlSafe(query))
+                .bind(session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            let value = row.as_ref().map(decode).transpose()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(value))
+        })).await?
+    }
+
     /// The current native Channel owner sees expired visits and visits from a prior
     /// owner generation. A process restart never extends a persisted deadline.
     pub async fn due_grizzly_boss_entries(
