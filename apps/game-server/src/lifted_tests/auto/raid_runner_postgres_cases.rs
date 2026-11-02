@@ -195,7 +195,8 @@ async fn global_exercise(h: &Harness, case: GlobalCase) -> TestResult {
     let firing = id(61);
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
-    global_seed(h, &definition, firing, if matches!(case, GlobalCase::Badger) { "raid:badger" } else { "raid:global-test" }).await?;
+    // The durable firing reader reconstructs a ProductionKey, whose contract rejects test-only markers.
+    global_seed(h, &definition, firing, if matches!(case, GlobalCase::Badger) { "raid:badger" } else { "raid:qualification" }).await?;
     if matches!(case, GlobalCase::FailedSingle) {
         return failed_single_exercise(h, firing, definition).await;
     }
