@@ -29,7 +29,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const EQUIP_ABILITIES_V1_FACTS: &[u8] =
     include_bytes!("../../../../../docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json");
 pub const EQUIP_ABILITIES_V1_FACTS_SHA256: &str =
-    "669ced861ca5f90bf3929f62de00a92e3fd0b6e13bdceb423ee7535811ab4668";
+    "29d26ba062cac7f05f83538ccf11a9740c3853abb8d03ac109871f93e7e21126";
 pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 27;
 pub const EQUIP_ABILITIES_V1_FIELD_COUNT: usize = 32;
 const SCHEMA: &str = "OTERYN_EQUIP_ABILITY_FACTS/v1";
@@ -522,7 +522,8 @@ mod tests {
         .into_bytes()
     }
 
-    const FIST: &str = r#""field_path":"skill_modifiers.modifiers","value":[{"evaluation_phase":{"state":"UNKNOWN"},"kind":"SKILL_FIST","parameter":{"state":"KNOWN","value":{"kind":"SIGNED_POINTS","value":6}},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}}]"#;
+    // Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
+    const FIST: &str = r#""field_path":"skill_modifiers.modifiers","value":[{"evaluation_phase":{"state":"UNKNOWN"},"kind":"SKILL_FIST","parameter":{"state":"KNOWN","value":{"kind":"SIGNED_POINTS","value":4}},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}}]"#;
     const FIRE_FIELD: &str = r#""field_path":"protection.resistances","value":[{"kind":"FIRE_FIELD","percent":{"state":"KNOWN","value":{"denominator":1,"numerator":90}}}]"#;
 
     fn apply(
@@ -583,7 +584,7 @@ mod tests {
             vec![
                 ItemAbility::SkillBoost {
                     skill: AbilitySkill::Fist,
-                    points: 6
+                    points: 4
                 },
                 ItemAbility::Protection {
                     element: ReferenceResistanceKind::Fire,

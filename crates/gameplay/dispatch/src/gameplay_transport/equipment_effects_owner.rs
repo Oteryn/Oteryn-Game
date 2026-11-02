@@ -107,7 +107,8 @@ fn equipment_effects_inner(
             // I05: custody keeps a timed ring's inactive form; the worn view's speed and
             // suppression apply (time ring 3053 -> 3090 speed 30, Crystal items.xml:7381-7385;
             // dwarven ring 3097 -> 3099 suppressdrunk, items.xml:7477-7489; power ring
-            // 3050 -> 3087 skillfist 6 and sword/axe/club rings 3091-3093 -> 3094-3096 skill 4,
+            // 3050 -> 3087 fist +4 (Monk Vocation Update 2025-04-08,
+            // TibiaWiki Power Ring history: +6 -> +4) and sword/axe/club rings 3091-3093 -> 3094-3096 skill 4,
             // items.xml:7339-7350, :7422-7457).
             let worn =
                 super::super::timed_item_content::equipped_definition(content, &item.definition)?;

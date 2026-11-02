@@ -18,9 +18,10 @@ use oteryn_game_server::content::{
     ProjectV2ItemTaxonomy, ProjectV2RangedWeapon, ProjectV2Source, ProjectV2SourceIdentityBinding,
     ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument, ReferenceCells,
     ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics,
-    ReferenceItemStack, ReferenceItemTradeRestrictions, ReferenceItemWeapon,
-    ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision,
-    ReimportFieldState, capture_world_project, item_abilities::apply_equip_abilities_v1,
+    ReferenceItemSkillModifiers, ReferenceItemStack, ReferenceItemTradeRestrictions,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
+    ReimportDecision, ReimportFieldState, capture_world_project,
+    item_abilities::apply_equip_abilities_v1,
 };
 use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
@@ -3032,6 +3033,50 @@ fn refresh_item_forge289_mapper(
     Ok(())
 }
 
+/// The immutable predecessor predates the Monk update; carry the current paired wiki fact
+/// forward without changing any other known ability or the historical promotion chain.
+fn apply_current_power_ring(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
+    let packet: Value = serde_json::from_slice(
+        oteryn_game_server::content::item_abilities::EQUIP_ABILITIES_V1_FACTS,
+    )?;
+    let facts = packet["facts"].as_array().ok_or("missing equip facts")?;
+    let fact = facts
+        .iter()
+        .find(|fact| {
+            fact["item_key"] == "oteryn:item.tibia.i3087"
+                && fact["field_path"] == "skill_modifiers.modifiers"
+        })
+        .ok_or("missing current Power Ring fact")?;
+    let current = serde_json::json!({"state": "KNOWN", "value": {
+        "modifiers": {"state": "KNOWN", "value": fact["value"]}
+    }});
+    let mut historical = current.clone();
+    // Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
+    historical["value"]["modifiers"]["value"][0]["parameter"]["value"]["value"] = Value::from(6);
+    let current: ReferenceItemField<ReferenceItemSkillModifiers> = serde_json::from_value(current)?;
+    let historical = serde_json::from_value(historical)?;
+    let mut hits = 0;
+    for record in &mut draft.core.records {
+        if let ProjectReferenceRecord::Item {
+            identity,
+            semantics,
+            ..
+        } = record
+            && identity.key == "oteryn:item.tibia.i3087"
+        {
+            if semantics.skill_modifiers != historical && semantics.skill_modifiers != current {
+                return Err("unexpected Power Ring predecessor modifiers".into());
+            }
+            semantics.skill_modifiers = current.clone();
+            hits += 1;
+        }
+    }
+    if hits != 1 {
+        return Err("expected exactly one active Power Ring".into());
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (root, predecessor) = authoring_roots()?;
     validate_ranged_profiles()?;
@@ -3051,6 +3096,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_official_creature_balance(&mut draft)?;
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
+        apply_current_power_ring(&mut draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.
