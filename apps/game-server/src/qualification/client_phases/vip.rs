@@ -1,6 +1,12 @@
 use super::*;
 pub(super) async fn vip(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
     use oteryn_dev_client::{client_runtime::vip, client_ui::vip as ui};
+    // VIP is bundle-world-only; the qualification entry room has no bundle VIP composition.
+    // Keep the phase strict whenever the serving node selects its mechanic.
+    if !client.selected_capabilities().contains(&43) {
+        evidence("mechanic=vip skipped=entry_room_owner_not_composed");
+        return Ok(());
+    }
     let mut panel = ui::VipPanel {
         selected: true,
         ..Default::default()

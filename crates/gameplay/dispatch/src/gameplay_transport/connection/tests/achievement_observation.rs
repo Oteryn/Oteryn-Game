@@ -19,6 +19,7 @@ struct FactsAuthority {
     immediate: bool,
     periodic: bool,
     lose_control_after_use: bool,
+    unavailable_after_first_use: bool,
 }
 
 impl FactsAuthority {
@@ -32,6 +33,7 @@ impl FactsAuthority {
             immediate,
             periodic: false,
             lose_control_after_use: false,
+            unavailable_after_first_use: false,
         }
     }
 
@@ -94,6 +96,9 @@ impl FreshAdmissionAuthority for FactsAuthority {
         if admitted.controller?.account_id != NOTICE_ACCOUNT
             || (self.lose_control_after_use && self.uses.get() != 0)
         {
+            return None;
+        }
+        if self.unavailable_after_first_use && self.uses.get() == 1 {
             return None;
         }
         let reads = self.reads.replace(self.reads.get() + 1);
@@ -361,6 +366,43 @@ fn p11_account_observation_fails_closed_after_control_changes() -> Result<(), Bo
             assert_eq!(outputs(&frames)?, (Vec::new(), Vec::new()));
             assert_eq!(ended_continuity(end)?.achievement_notice_revision, Some(0));
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn unavailable_achievement_refresh_does_not_disconnect_committed_use() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        // Model the node's busy durability holder after a committed door use. The next
+        // observation recovers and must deliver every new fact exactly once.
+        let authority = FactsAuthority {
+            unavailable_after_first_use: true,
+            ..FactsAuthority::new(false)
+        };
+        let commands = [1, 2].map(|id| {
+            use_command(
+                1,
+                id,
+                u64::from(COMMAND_TYPE_USE_INTENT),
+                b"oteryn:placement/entry-door",
+                0,
+            )
+        });
+        let (_, frames) =
+            drive_session(&authority, controlled(selected(&[31]))?, &commands).await?;
+        assert_eq!(
+            authority.uses.get(),
+            2,
+            "display read failure ended gameplay"
+        );
+        let (notices, text) = outputs(&frames)?;
+        assert!(notices.is_empty());
+        assert_eq!(
+            text.len(),
+            2,
+            "deferred facts must be delivered after recovery"
+        );
         Ok(())
     })
 }
