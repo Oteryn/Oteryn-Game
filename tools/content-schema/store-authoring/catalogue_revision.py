@@ -12,7 +12,7 @@ from pathlib import Path
 def revision(obj):
     def validate(value):
         if isinstance(value, float):
-            raise ValueError("catalogue numbers must be integers")
+            raise TypeError("catalogue numbers must be integers")
         if isinstance(value, dict):
             for child in value.values():
                 validate(child)
