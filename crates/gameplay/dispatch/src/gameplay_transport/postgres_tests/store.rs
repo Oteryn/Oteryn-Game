@@ -33,6 +33,7 @@ struct Ledger {
     debits: Vec<u64>,
     intents: BTreeMap<String, serde_json::Value>,
     receipts: usize,
+    malformed: bool,
 }
 
 /// The Platform side of the existing Store port: balance, debit, order and delivery intent.
@@ -67,7 +68,12 @@ impl StoreTransport for FakePlatform {
                     let order = uuid(&id(120 + n));
                     let intent = platform_intent(&request, &operation, &order);
                     ledger.intents.insert(operation.clone(), intent);
-                    platform_answer(&request, Some((&order, &operation)), ledger.balance, body)
+                    let mut answer = platform_answer(&request, Some((&order, &operation)), ledger.balance, body);
+                    if ledger.malformed {
+                        let unit = answer["units"][0].clone();
+                        answer["units"].as_array_mut().expect("units").push(unit);
+                    }
+                    answer
                 }
             }
             Operation::ReadStoreOperationIntentV1 => {
@@ -205,8 +211,16 @@ async fn swords(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+fn scenario() -> TestResult { scenario_with_answer(false) }
+
+#[test]
+fn storefix_protocol_violation_keeps_debit_uncertain_and_never_mints() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e::scenario_thread::run("storefix-malformed", || scenario_with_answer(true))
+}
+
 #[allow(clippy::too_many_lines)]
-fn scenario() -> TestResult {
+fn scenario_with_answer(malformed: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "store_e2e", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -255,6 +269,7 @@ fn scenario() -> TestResult {
 
         let ledger = Arc::new(SyncMutex::new(Ledger {
             balance: 60,
+            malformed,
             world: uuid(admitted.world_id.as_bytes()),
             ..Ledger::default()
         }));
@@ -295,6 +310,18 @@ fn scenario() -> TestResult {
             .find(|offer| offer.offer_key == SWORD)
             .ok_or("sword offer")?;
         assert_eq!((sword.price, sword.title.as_str()), (25, "Exercise Sword"));
+
+        if malformed {
+            let values = serve(&owner, &mut admitted, &[purchase_request(62, SWORD, 25)?]).await?;
+            assert_eq!(values, [(CommandStatus::Rejected, Vec::new())]);
+            assert_eq!(swords(&harness).await?, 0);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1 AND answer IS NULL").await?, 1);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(ledger.lock().expect("ledger").receipts, 0);
+            drop(owner); drop(authority); drop(seal);
+            return harness.cleanup().await;
+        }
 
         // A stale price never reaches Platform and writes nothing.
         let stale = purchase(&owner, &mut admitted, purchase_request(60, SWORD, 24)?).await?;

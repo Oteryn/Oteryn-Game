@@ -10,7 +10,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState};
 use crate::foundation::{CommandId, CommandRef};
-use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer, StoreClient};
+use crate::native_admission_source::store::{ProtocolError, PurchaseResult, PurchaseStoreOffer, StoreClient};
 use oteryn_gameplay_economy::store as rules;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::store as wire;
@@ -212,6 +212,17 @@ fn refusal(code: wire::StorePurchaseCode) -> wire::StorePurchaseResult {
     }
 }
 
+/// InvalidInput is produced only by local purchase validation/encoding, before transport.
+/// Retain a definite refusal so the normal answer path releases native reservations.
+/// Every post-send error remains uncertain and must reconcile the original request id.
+fn purchase_answer(answer: Result<PurchaseResult, ProtocolError>) -> Option<PurchaseResult> {
+    match answer {
+        Ok(answer) => Some(answer),
+        Err(ProtocolError::InvalidInput) => Some(PurchaseResult::PurchaseDisabled),
+        Err(_) => None,
+    }
+}
+
 /// A server quote mismatch never reaches Platform. Otherwise the first binding of the request id
 /// is retained before the debit, and its answer is saved once: a retry with the same id returns
 /// the saved answer and delivers again, idempotently per operation, never a second debit.
@@ -300,7 +311,9 @@ async fn purchase(
                 ).await.ok()?
             } else { true };
             let answer = if reserved {
-                platform.lock().await.purchase(&PurchaseStoreOffer {
+                // Every admitted runtime offer uses Platform ITEM grants, including
+                // native permanent unlocks and Hireling service effects.
+                purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
                     purchase_request_id: uuid_text(&request.purchase_request_id),
                     account_id: uuid_text(&account),
                     character_id: uuid_text(&character_id),
@@ -310,9 +323,7 @@ async fn purchase(
                     world_id: uuid_text(admitted.world_id.as_bytes()),
                     quantity: 1,
                     currency: platform_currency.into(),
-                }).await
-                // Unknown debit outcome retains the permanent-offer reservation for this id.
-                .ok()?
+                }, "ITEM").await)?
             } else {
                 PurchaseResult::OfferUnavailable
             };

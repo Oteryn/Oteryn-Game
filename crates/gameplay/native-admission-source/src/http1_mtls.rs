@@ -444,9 +444,13 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
             {
                 return Err(SourceError::InvalidInput);
             }
-            retry_after = Some(Duration::from_secs(
-                value.parse().map_err(|_| SourceError::InvalidInput)?,
-            ));
+            let delay = Duration::from_secs(value.parse().map_err(|_| SourceError::InvalidInput)?);
+            // Keep zero invalid below; every positive delay is bounded by the poller.
+            retry_after = Some(if delay.is_zero() {
+                delay
+            } else {
+                delay.clamp(crate::store::POLL, crate::store::MAX_BACKOFF)
+            });
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
@@ -775,6 +779,18 @@ mod store_response_tests {
             }
             let raw = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 513\r\n\r\n";
             assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None)).await.is_err());
+            Ok::<(), SourceError>(())
+        })?;
+        Ok(())
+    }
+
+    #[test]
+    fn storefix_http_caps_huge_retry_after() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
+            let raw = b"HTTP/1.1 429 Busy\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 4294967295\r\n\r\n";
+            let mut retry = None;
+            read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut retry)).await?;
+            assert_eq!(retry, Some(crate::store::MAX_BACKOFF));
             Ok::<(), SourceError>(())
         })?;
         Ok(())

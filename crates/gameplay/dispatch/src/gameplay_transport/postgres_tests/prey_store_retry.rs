@@ -26,21 +26,26 @@ fn old_revision() -> String {
 
 #[test]
 fn prey_diff_store_accepted_purchase_resumes_after_catalogue_change_without_another_debit() -> TestResult {
-    run_case(true)
+    run_case(true, false)
 }
 
 #[test]
 fn prey_diff_store_lost_platform_answer_reconciles_original_id_after_catalogue_change() -> TestResult {
-    run_case(false)
+    run_case(false, false)
 }
 
-fn run_case(answered: bool) -> TestResult {
+#[test]
+fn storefix_prey_local_encode_refusal_releases_reservation_without_debit() -> TestResult {
+    run_case(false, true)
+}
+
+fn run_case(answered: bool, invalid_local: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED route_less");
         return Ok(());
     }
     std::thread::Builder::new().stack_size(256 << 20)
-        .spawn(move || scenario(answered).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(answered, invalid_local).map_err(|error| error.to_string()))?
         .join().map_err(|_| "Prey Store retry case panicked")??;
     eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED");
     Ok(())
@@ -88,7 +93,7 @@ impl StoreTransport for ExistingDebit {
     }
 }
 
-fn scenario(answered: bool) -> TestResult {
+fn scenario(answered: bool, invalid_local: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "prey_store_retry", true, false).await?;
@@ -154,7 +159,7 @@ fn scenario(answered: bool) -> TestResult {
             }),
             intent: platform_intent(&serde_json::json!({"account_id":uuid(&account),"catalog_revision":old_revision(),"offer_key":OFFER}), &operation, &order),
             answer: serde_json::Value::Null,
-            purchases: 0, debits: 1, receipts: Vec::new(),
+            purchases: 0, debits: usize::from(!invalid_local), receipts: Vec::new(),
         }));
         {
             let mut stored = ledger.lock().expect("ledger");
@@ -166,7 +171,7 @@ fn scenario(answered: bool) -> TestResult {
             stored.answer = platform_answer(&original, Some((&order, &operation)), 0, &body);
             stored.original = original;
         }
-        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(ExistingDebit(ledger.clone())), "oteryn-game/store-consumer".into()))));
+        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(ExistingDebit(ledger.clone())), if invalid_local { "".into() } else { "oteryn-game/store-consumer".into() }))));
 
         // A changed binding of the original request id cannot exploit the resume path.
         for field in 0..3 {
@@ -194,6 +199,15 @@ fn scenario(answered: bool) -> TestResult {
         let (status, bytes) = send(&owner, &mut admitted, &request).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let result = wire::decode_purchase_result(&bytes).map_err(debug)?;
+        if invalid_local {
+            assert_eq!(result.code, wire::StorePurchaseCode::PurchaseDisabled);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_prey_expansion_purchases").fetch_one(&h.pool).await?, 0);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM store_purchase_requests WHERE state=2").fetch_one(&h.pool).await?, 1);
+            assert!(!owner.root.prey_list_expansion_owned(owner.character, current.character_id).await.map_err(debug)?);
+            { let held = ledger.lock().expect("ledger"); assert_eq!((held.purchases, held.debits), (0, 0)); }
+            drop(owner); drop(authority); drop(seal);
+            return h.cleanup().await;
+        }
         assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
         assert_eq!(result.order_id, Some(id(232)));
         assert_eq!(result.operation_id, Some(id(231)));

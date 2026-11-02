@@ -221,15 +221,22 @@ pub enum PurchaseResult {
 fn decode_purchase(raw: &[u8]) -> Result<PurchaseResult, ProtocolError> {
     let v = wire::decode("purchase-answer", raw, PURCHASE_RESPONSE_BYTES)?;
     Ok(match v["result"].as_str() {
-        Some("ACCEPTED") => PurchaseResult::Accepted {
-            order_id: typed(v["order_id"].clone())?,
-            operation_ids: v["units"]
+        Some("ACCEPTED") => {
+            let operation_ids: Vec<String> = v["units"]
                 .as_array()
                 .ok_or(ProtocolError::Malformed)?
                 .iter()
                 .map(|u| typed(u["delivery_operation_id"].clone()))
-                .collect::<Result<_, _>>()?,
-        },
+                .collect::<Result<_, _>>()?;
+            let mut distinct = std::collections::BTreeSet::new();
+            if operation_ids.iter().any(|id| !distinct.insert(id)) {
+                return Err(ProtocolError::Malformed);
+            }
+            PurchaseResult::Accepted {
+                order_id: typed(v["order_id"].clone())?,
+                operation_ids,
+            }
+        }
         Some("STALE_QUOTE") => PurchaseResult::StaleQuote,
         Some("OFFER_UNAVAILABLE") => PurchaseResult::OfferUnavailable,
         Some("PURCHASE_DISABLED") => PurchaseResult::PurchaseDisabled,
@@ -486,15 +493,22 @@ impl StoreClient {
         }), RECEIPT_REQUEST_BYTES)?;
         Ok(body.into_bytes())
     }
+    /// The expected unit kind comes from the caller's admitted offer, never the answer.
     pub async fn purchase(
         &mut self,
         request: &PurchaseStoreOffer,
+        expected_unit_kind: &str,
     ) -> Result<PurchaseResult, ProtocolError> {
-        let body = self.body(
-            "purchase-request",
-            serde_json::to_value(request).map_err(|_| ProtocolError::InvalidInput)?,
-            PURCHASE_REQUEST_BYTES,
-        )?;
+        if !matches!(expected_unit_kind, "PREMIUM_TIME" | "COSMETIC" | "ITEM") {
+            return Err(ProtocolError::InvalidInput);
+        }
+        let body = self
+            .body(
+                "purchase-request",
+                serde_json::to_value(request).map_err(|_| ProtocolError::InvalidInput)?,
+                PURCHASE_REQUEST_BYTES,
+            )
+            .map_err(|_| ProtocolError::InvalidInput)?;
         let raw = self
             .request(Operation::PurchaseStoreOfferV1, body.clone())
             .await?;
@@ -505,6 +519,7 @@ impl StoreClient {
             return Err(ProtocolError::Malformed);
         }
         if answer["result"] == "ACCEPTED" {
+            let units = answer["units"].as_array().ok_or(ProtocolError::Malformed)?;
             let total = request
                 .unit_price
                 .parse::<u64>()
@@ -512,6 +527,10 @@ impl StoreClient {
                 .and_then(|v| v.checked_mul(u64::from(request.quantity)))
                 .ok_or(ProtocolError::Malformed)?;
             if answer["currency"] != request.currency
+                || units.len() != usize::from(request.quantity)
+                || units
+                    .iter()
+                    .any(|unit| unit["unit_kind"] != expected_unit_kind)
                 || answer["total_price"]
                     .as_str()
                     .and_then(|v| v.parse::<u64>().ok())
@@ -632,7 +651,7 @@ impl StorePoller {
     pub async fn poll_once(&mut self) -> Duration {
         let page = match self.client.list_pending(&self.cursor).await {
             Ok(v) => v,
-            Err(ProtocolError::RateLimited(delay)) => return delay,
+            Err(ProtocolError::RateLimited(delay)) => return delay.clamp(POLL, MAX_BACKOFF),
             Err(_) => return self.fail(),
         };
         let next = page
@@ -647,7 +666,7 @@ impl StorePoller {
                 .await
             {
                 Ok(v) => v,
-                Err(ProtocolError::RateLimited(delay)) => return delay,
+                Err(ProtocolError::RateLimited(delay)) => return delay.clamp(POLL, MAX_BACKOFF),
                 Err(_) => return self.fail(),
             };
             let receipt = match self.apply.apply(&intent).await {
@@ -657,7 +676,7 @@ impl StorePoller {
             match self.publisher.publish(&receipt).await {
                 Ok(()) => {}
                 Err(ProtocolError::NotFound) => self.events.unknown_operation(&entry.operation_id),
-                Err(ProtocolError::RateLimited(delay)) => return delay,
+                Err(ProtocolError::RateLimited(delay)) => return delay.clamp(POLL, MAX_BACKOFF),
                 Err(_) => return self.fail(),
             }
         }

@@ -45,7 +45,7 @@ pub(super) async fn resume(
         PurchaseRequestState::Sent => {
             // The first answer may have been lost after Platform debited the purchase.
             // Reconcile its original request id and immutable quote, never create a new id.
-            let answer = platform.lock().await.purchase(&PurchaseStoreOffer {
+            let answer = purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
                 purchase_request_id: uuid_text(&request.purchase_request_id),
                 account_id: uuid_text(&account),
                 character_id: uuid_text(fence.character_id.as_bytes()),
@@ -55,7 +55,7 @@ pub(super) async fn resume(
                 world_id: uuid_text(admitted.world_id.as_bytes()),
                 quantity: 1,
                 currency: "COINS".into(),
-            }).await.ok()?;
+            }, "ITEM").await)?;
             let answer = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
             owner.root.record_store_answer(journal.clone(), answer).await.ok()?
         }

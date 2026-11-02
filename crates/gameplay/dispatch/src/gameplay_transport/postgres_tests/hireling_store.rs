@@ -232,7 +232,7 @@ pub(super) async fn house_scenario(
 }
 
 #[derive(Debug,Clone,Copy)]
-enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit}
+enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode}
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
 #[test]
 fn hireling_store_purchase_lamp_once_and_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-hire",||scenario(Case::Hire))}
@@ -254,6 +254,9 @@ fn hireling_store_full_inbox_refuses_before_debit_and_keeps_delivered_replay()->
 fn hireling_store_paid_lamp_retries_after_prepared_delivery_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-delivery-retry",||scenario(Case::DeliveryRetry))}
 #[test]
 fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-limit",||scenario(Case::Limit))}
+
+#[test]
+fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
 
 fn scenario(case:Case)->TestResult {
     run(async |admin| {
@@ -350,6 +353,15 @@ fn scenario(case:Case)->TestResult {
                 assert_eq!(ledger.lock().expect("ledger").debits,2);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,0);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_entitlements WHERE entitlement_id=1004").await?,1);
+            }
+            Case::LocalEncode=>{
+                // An invalid local authority identity fails encoding before transport.
+                owner.store=Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(FakePlatform(ledger.clone())), "".into()))));
+                let refused=purchase(&owner,&mut admitted,command(60,1002,900,None)?).await?;
+                assert_eq!(refused.code,wire::StorePurchaseCode::PurchaseDisabled);
+                assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,0);
+                assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=3").await?,1);
+                assert_eq!(ledger.lock().expect("ledger").debits,1,"only initial fixture hire debited");
             }
             Case::Refusals=>{
                 let stale=purchase(&owner,&mut admitted,command(60,1002,899,None)?).await?;assert_eq!(stale.code,wire::StorePurchaseCode::StaleQuote);

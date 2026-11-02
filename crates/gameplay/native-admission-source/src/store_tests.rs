@@ -203,7 +203,7 @@ fn purchase_closed_failures_are_typed() {
                 code.to_lowercase().replace('_', "-")
             ));
             let (mut c, _) = client(vec![Ok(raw)]);
-            assert_eq!(c.purchase(&request()).await.unwrap(), want);
+            assert_eq!(c.purchase(&request(), "PREMIUM_TIME").await.unwrap(), want);
         }
     });
 }
@@ -214,9 +214,88 @@ fn accepted_purchase_decodes_bound_ids() {
         let raw = fixture("purchase-answer.accepted.json");
         let (mut c, _) = client(vec![Ok(raw)]);
         assert!(matches!(
-            c.purchase(&request()).await.unwrap(),
+            c.purchase(&request(), "PREMIUM_TIME").await.unwrap(),
             PurchaseResult::Accepted { .. }
         ));
+    });
+}
+
+fn invalid_purchase_answer(case: u8) {
+    block_on(async {
+        {
+            let mut answer: serde_json::Value =
+                serde_json::from_slice(&fixture("purchase-answer.accepted.json")).unwrap();
+            let unit = answer["units"][0].clone();
+            match case {
+                0 => {
+                    answer["units"].as_array_mut().unwrap().push(unit);
+                    answer["units"][1]["delivery_operation_id"] =
+                        "0192b6a0-4c00-7000-8000-000000000702".into();
+                }
+                1 => answer["units"].as_array_mut().unwrap().push(unit),
+                _ => answer["units"][0]["unit_kind"] = "COSMETIC".into(),
+            }
+            let mut request = request();
+            let (mut c, calls) = client(Vec::new());
+            if case == 1 {
+                request.quantity = 2;
+                let body = c
+                    .body(
+                        "purchase-request",
+                        serde_json::to_value(&request).unwrap(),
+                        PURCHASE_REQUEST_BYTES,
+                    )
+                    .unwrap();
+                answer["request_digest"] = digest(body.as_bytes()).into();
+                answer["total_price"] = "500".into();
+            }
+            c.transport = Box::new(Fake {
+                replies: vec![Ok(wire::encode("purchase-answer", &answer)
+                    .unwrap()
+                    .into_bytes())]
+                .into(),
+                calls: calls.clone(),
+            });
+            assert_eq!(
+                c.purchase(&request, "PREMIUM_TIME").await,
+                Err(ProtocolError::Malformed),
+                "case {case}"
+            );
+            assert_eq!(calls.lock().unwrap().len(), 1);
+        }
+    });
+}
+
+#[test]
+fn storefix_poller_caps_huge_retry_after() {
+    block_on(async {
+        let (c, _) = client(vec![Err(TransportFailure::RateLimited(
+            Duration::from_secs(4294967295),
+        ))]);
+        let (publisher, _) = publisher(Vec::new());
+        let mut poller = StorePoller::new(
+            c,
+            Box::new(Apply {
+                seen: Arc::new(Mutex::new(0)),
+            }),
+            publisher,
+            Box::new(Events::default()),
+        );
+        assert_eq!(poller.poll_once().await, MAX_BACKOFF);
+    });
+}
+
+#[test]
+fn storefix_invalid_local_id_never_sends_purchase() {
+    block_on(async {
+        let (mut c, calls) = client(Vec::new());
+        let mut request = request();
+        request.character_id = "invalid-local-id".into();
+        assert_eq!(
+            c.purchase(&request, "PREMIUM_TIME").await,
+            Err(ProtocolError::InvalidInput)
+        );
+        assert!(calls.lock().unwrap().is_empty());
     });
 }
 
@@ -229,7 +308,7 @@ fn malformed_and_unknown_results_fail_closed() {
         br#"{"contract_version":1,"entries":[],"next_cursor":null,"extra":1}"#.to_vec(),
     ] {
         let (mut c, _) = client(vec![Ok(raw)]);
-        assert!(c.purchase(&request()).await.is_err() || c.list_pending(&OperationCursor::default()).await.is_err());
+        assert!(c.purchase(&request(), "PREMIUM_TIME").await.is_err() || c.list_pending(&OperationCursor::default()).await.is_err());
     }
     });
 }
@@ -357,7 +436,7 @@ fn store_wire_conformance_client_sends_exact_request_examples() {
         ]);
         c.balance(account).await.unwrap();
         c.history(account, "0", 2).await.unwrap();
-        c.purchase(&request).await.unwrap();
+        c.purchase(&request, "PREMIUM_TIME").await.unwrap();
         let cursor: OperationCursor =
             serde_json::from_slice(&fixture("pending-request.valid.json")).unwrap();
         c.list_pending(&cursor).await.unwrap();
@@ -460,7 +539,7 @@ fn store_wire_conformance_purchase_refuses_wrong_request_binding() {
                 .into_bytes();
             let (mut c, _) = client(vec![Ok(raw)]);
             assert_eq!(
-                c.purchase(&request()).await,
+                c.purchase(&request(), "PREMIUM_TIME").await,
                 Err(ProtocolError::Malformed),
                 "{member}"
             );
@@ -531,13 +610,16 @@ fn store_wire_conformance_retry_retains_exact_purchase_bytes() {
             Ok(fixture("purchase-answer.accepted.json")),
         ]);
         let request = request();
-        assert_eq!(c.purchase(&request).await, Err(ProtocolError::Transport));
         assert_eq!(
-            c.purchase(&request).await,
+            c.purchase(&request, "PREMIUM_TIME").await,
+            Err(ProtocolError::Transport)
+        );
+        assert_eq!(
+            c.purchase(&request, "PREMIUM_TIME").await,
             Err(ProtocolError::RateLimited(Duration::from_secs(17)))
         );
         assert!(matches!(
-            c.purchase(&request).await,
+            c.purchase(&request, "PREMIUM_TIME").await,
             Ok(PurchaseResult::Accepted { .. })
         ));
         let calls = calls.lock().unwrap();
@@ -604,7 +686,10 @@ fn store_wire_conformance_invalid_catalog_quote_never_reaches_platform() {
             } else {
                 request.currency = "TRANSFERABLE_COINS".into();
             }
-            assert_eq!(c.purchase(&request).await, Err(ProtocolError::InvalidInput));
+            assert_eq!(
+                c.purchase(&request, "PREMIUM_TIME").await,
+                Err(ProtocolError::InvalidInput)
+            );
             assert!(calls.lock().unwrap().is_empty());
         }
     });
@@ -664,4 +749,17 @@ fn store_wire_balance_requires_exactly_one_coins_entry() {
             );
         }
     });
+}
+
+#[test]
+fn storefix_purchase_rejects_extra_units() {
+    invalid_purchase_answer(0);
+}
+#[test]
+fn storefix_purchase_rejects_duplicate_operation_ids() {
+    invalid_purchase_answer(1);
+}
+#[test]
+fn storefix_purchase_rejects_wrong_unit_kind() {
+    invalid_purchase_answer(2);
 }
