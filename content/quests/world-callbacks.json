@@ -1623,6 +1623,185 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/movements_deepling_bosses.lua:4"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-reward-grave",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1001,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32714,
+        "y": 32398,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_gravestone.lua:2-11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/demon_oak.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-1",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9001,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-2",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9002,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-3",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9003,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-4",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9004,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/demon-oak-square-5",
+      "quest": "oteryn:quest.demon_oak",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 9005,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/squares",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
+      ]
     }
   ]
 }
