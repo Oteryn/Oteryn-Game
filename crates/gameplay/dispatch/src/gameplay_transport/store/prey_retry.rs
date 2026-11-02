@@ -38,7 +38,11 @@ pub(super) async fn resume(
     let Some(retained) = owner.root.read_prey_expansion_purchase(
         owner.character, owner.holder, fence, journal.clone(),
     ).await.ok()? else {
-        return Some(Resume::Fresh);
+        // A bare journal without the original reservation cannot already have debited
+        // this permanent offer. Restore mode must not create that missing reservation.
+        return Some(if owner.store_purchases == StorePurchaseMode::DisabledRestoredBackup {
+            Resume::Completed(refusal(wire::StorePurchaseCode::PurchaseDisabled))
+        } else { Resume::Fresh });
     };
     let saved = match retained {
         PurchaseRequestState::Answered(answer) => answer,

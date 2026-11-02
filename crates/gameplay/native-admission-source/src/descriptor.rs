@@ -131,6 +131,7 @@ impl Operation {
         }
     }
 }
+#[derive(Clone)]
 pub struct ProducerDescriptor {
     pub(super) source_authority: String,
     pub(super) connect_addr: std::net::SocketAddr,

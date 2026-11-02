@@ -153,3 +153,40 @@ fn store_platform_currency_refuses_the_removed_transferable_coin_kind() {
         Err(wire::StorePurchaseCode::OfferUnavailable)
     );
 }
+
+#[test]
+fn store_restored_backup_unit_refuses_without_platform_calls() {
+    use crate::native_admission_source::{descriptor::Operation, store::{StoreTransport, TransportFailure}};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    struct Platform(Arc<AtomicUsize>);
+    impl StoreTransport for Platform {
+        fn exchange<'a>(&'a mut self, _: Operation, _: &'a str) -> std::pin::Pin<Box<dyn std::future::Future<Output=Result<Vec<u8>, TransportFailure>> + Send + 'a>> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async { Err(TransportFailure::Unavailable) })
+        }
+    }
+    let calls = Arc::new(AtomicUsize::new(0));
+    let mut client = StoreClient::new(Box::new(Platform(calls.clone())), "oteryn-game/store-consumer".into());
+    let runtime = tokio::runtime::Builder::new_current_thread().build().expect("runtime");
+    let result = runtime.block_on(purchase_with_mode(
+        StorePurchaseMode::DisabledRestoredBackup, async { Some(false) }, async {
+            let _ = client.purchase(&PurchaseStoreOffer {
+                purchase_request_id: "018f3a00-0000-7000-8000-000000000007".into(),
+                account_id: "018f3a00-0000-7000-8000-000000000008".into(),
+                character_id: "018f3a00-0000-7000-8000-000000000009".into(),
+                offer_key: "store:exercise-sword".into(), catalog_revision: CATALOGUE.as_ref().expect("catalogue").rules.revision().into(),
+                unit_price: "25".into(), world_id: "018f3a00-0000-7000-8000-000000000010".into(), quantity: 1, currency: "COINS".into(),
+            }, "ITEM").await;
+            None
+        },
+    ));
+    assert_eq!(result.expect("disabled answer").code, wire::StorePurchaseCode::PurchaseDisabled);
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn store_capability_requires_a_composed_platform_client() {
+    static BASE: &[super::super::capabilities::OfferedCapability] = &[];
+    assert!(!with_store_offer(BASE, false).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
+    assert!(with_store_offer(BASE, true).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
+}

@@ -29,6 +29,59 @@ use catalogue::{RuntimeCatalogue, currency_text};
 /// The node's Platform Store client; `None` refuses every purchase as disabled.
 pub type StorePlatform = Arc<tokio::sync::Mutex<StoreClient>>;
 
+/// Operator-owned restore switch. Read/reconciliation/delivery availability is independent.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StorePurchaseMode {
+    #[default]
+    Enabled,
+    DisabledRestoredBackup,
+}
+
+impl StorePurchaseMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Enabled => "enabled",
+            Self::DisabledRestoredBackup => "disabled_restored_backup",
+        }
+    }
+}
+
+/// Add STORE_V1 only when its client is composed. Cache the bounded static base sets,
+/// as the other conditional capability offers do.
+pub fn with_store_offer(
+    base: &'static [super::capabilities::OfferedCapability],
+    configured: bool,
+) -> &'static [super::capabilities::OfferedCapability] {
+    if !configured { return base; }
+    type Set = &'static [super::capabilities::OfferedCapability];
+    static CACHE: std::sync::Mutex<Vec<(Set, Set)>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) { return set; }
+    let mut set = base.to_vec();
+    if !set.iter().any(|row| row.id == wire::CAPABILITY_STORE_V1) {
+        set.push(super::capabilities::OfferedCapability { id: wire::CAPABILITY_STORE_V1, requires: &[] });
+        set.sort_by_key(|row| row.id);
+    }
+    let set: Set = Box::leak(set.into_boxed_slice());
+    cache.push((base, set));
+    set
+}
+
+async fn purchase_with_mode(
+    mode: StorePurchaseMode,
+    retained: impl std::future::Future<Output = Option<bool>>,
+    purchase: impl std::future::Future<Output = Option<wire::StorePurchaseResult>>,
+) -> Option<wire::StorePurchaseResult> {
+    // Sent may already have debited Platform: reconcile the original request ID even
+    // after restore. Already-debited delivery/polling is deliberately outside this gate.
+    if mode == StorePurchaseMode::DisabledRestoredBackup && !retained.await? {
+        return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
+    }
+    purchase.await
+}
+
+
 static CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| {
     RuntimeCatalogue::from_json(include_bytes!(
         "../../../../../rulesets/economy/store/catalogue.json"
@@ -236,6 +289,25 @@ async fn purchase(
 ) -> Option<wire::StorePurchaseResult> {
     let account = admitted.controller?.account_id;
     let fence = admitted.item_fence?;
+    purchase_with_mode(
+        owner.store_purchases,
+        async { owner.root.has_store_purchase_request(
+            request.purchase_request_id, account, *fence.character_id.as_bytes(),
+        ).await.ok() },
+        purchase_retained_or_new(owner, admitted, catalogue, command_id, &request, customization),
+    ).await
+}
+
+async fn purchase_retained_or_new(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    catalogue: &RuntimeCatalogue,
+    command_id: u64,
+    request: &wire::StorePurchaseRequest,
+    customization: Option<wire::StoreHirelingCustomization>,
+) -> Option<wire::StorePurchaseResult> {
+    let account = admitted.controller?.account_id;
+    let fence = admitted.item_fence?;
     let Some(platform) = owner.store.clone() else {
         return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
     };
@@ -243,7 +315,7 @@ async fn purchase(
     // Resolve only that exact binding before applying today's catalogue to fresh requests.
     if request.offer_key == prey_retry::OFFER_KEY
         && let prey_retry::Resume::Completed(result) =
-            prey_retry::resume(owner, &platform, admitted, &request).await?
+            prey_retry::resume(owner, &platform, admitted, request).await?
     {
         return Some(result);
     }

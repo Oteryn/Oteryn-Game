@@ -40,15 +40,16 @@ fn storefix_prey_local_encode_refusal_releases_reservation_without_debit() -> Te
 }
 
 fn run_case(answered: bool, invalid_local: bool) -> TestResult {
+    let started = std::time::Instant::now();
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED route_less");
         return Ok(());
     }
-    std::thread::Builder::new().stack_size(256 << 20)
+    let result = std::thread::Builder::new().stack_size(256 << 20)
         .spawn(move || scenario(answered, invalid_local).map_err(|error| error.to_string()))?
-        .join().map_err(|_| "Prey Store retry case panicked")??;
-    eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED");
-    Ok(())
+        .join().unwrap_or_else(|_| Err("Prey Store retry case panicked".to_owned()));
+    eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED elapsed={:?} result={result:?}", started.elapsed());
+    result.map_err(Into::into)
 }
 
 struct PlatformLedger {
@@ -107,6 +108,7 @@ fn scenario(answered: bool, invalid_local: bool) -> TestResult {
         let (channel_pin, _, _, _) = pin.into_channel_parts();
         let deps = Dependencies::with_content(channel_pin, room, crate::spell::cast::v1_spell_book().map_err(debug)?)?;
         let mut owner = deps.owner(&h, &authority);
+        owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
         owner.active_generation = generation.active();
         deps.initialize(&owner).await;
         owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
@@ -186,6 +188,8 @@ fn scenario(answered: bool, invalid_local: bool) -> TestResult {
         assert!(!owner.root.prey_list_expansion_owned(owner.character, current.character_id).await.map_err(debug)?);
         assert_eq!(ledger.lock().expect("ledger").purchases, 0);
 
+        // Keep the original enabled-mode catalogue refusal assertion.
+        owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::Enabled;
         // A new request still requires the current enabled quote and writes no journal.
         let mut fresh = request.clone();
         fresh.purchase_request_id = id(233);
@@ -193,6 +197,13 @@ fn scenario(answered: bool, invalid_local: bool) -> TestResult {
         assert_eq!(status, CommandStatus::Accepted);
         let fresh_result = wire::decode_purchase_result(&bytes).map_err(debug)?;
         assert!(matches!(fresh_result.code, wire::StorePurchaseCode::OfferUnavailable | wire::StorePurchaseCode::StaleQuote));
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM store_purchase_requests").fetch_one(&h.pool).await?, 1);
+        assert_eq!(ledger.lock().expect("ledger").purchases, 0);
+
+        owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
+        let (status, bytes) = send(&owner, &mut admitted, &fresh).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(wire::decode_purchase_result(&bytes).map_err(debug)?.code, wire::StorePurchaseCode::PurchaseDisabled);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM store_purchase_requests").fetch_one(&h.pool).await?, 1);
         assert_eq!(ledger.lock().expect("ledger").purchases, 0);
 

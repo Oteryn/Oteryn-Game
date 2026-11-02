@@ -8,7 +8,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{CommandStatus, MessageType, decode_wire_envelope};
-use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     serve_admitted,
@@ -34,6 +34,7 @@ struct Ledger {
     intents: BTreeMap<String, serde_json::Value>,
     receipts: usize,
     malformed: bool,
+    answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
 /// The Platform side of the existing Store port: balance, debit, order and delivery intent.
@@ -57,6 +58,12 @@ impl StoreTransport for FakePlatform {
             }
             Operation::PurchaseStoreOfferV1 => {
                 ledger.purchases += 1;
+                let request_id = request["purchase_request_id"].as_str().expect("purchase id").to_owned();
+                if let Some((original, answer)) = ledger.answers.get(&request_id) {
+                    let result = if original == body { Ok(platform_bytes(answer)) }
+                        else { Err(TransportFailure::Conflict) };
+                    return Box::pin(async move { result });
+                }
                 let price = request["unit_price"].as_str().expect("price string").parse::<u64>().expect("price") * request["quantity"].as_u64().expect("quantity");
                 if price > ledger.balance {
                     platform_answer(&request, None, ledger.balance, body)
@@ -69,6 +76,7 @@ impl StoreTransport for FakePlatform {
                     let intent = platform_intent(&request, &operation, &order);
                     ledger.intents.insert(operation.clone(), intent);
                     let mut answer = platform_answer(&request, Some((&order, &operation)), ledger.balance, body);
+                    ledger.answers.insert(request_id, (body.to_owned(), answer.clone()));
                     if ledger.malformed {
                         let unit = answer["units"][0].clone();
                         answer["units"].as_array_mut().expect("units").push(unit);
@@ -92,6 +100,14 @@ impl StoreTransport for FakePlatform {
     }
 }
 
+pub(super) fn platform(world: &[u8; 16]) -> crate::gameplay_transport::store::StorePlatform {
+    Arc::new(tokio::sync::Mutex::new(StoreClient::new(
+        Box::new(FakePlatform(Arc::new(SyncMutex::new(Ledger {
+            balance: 60, world: uuid(world), ..Ledger::default()
+        })))), "oteryn-game/store-consumer".into(),
+    )))
+}
+
 fn uuid(bytes: &[u8; 16]) -> String {
     let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
     format!(
@@ -109,7 +125,10 @@ fn store_real_dispatch_pages_purchases_mints_once_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("store-e2e", scenario)
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("store-e2e", scenario);
+    eprintln!("STORE-154 POSTGRES_CASE_COMPLETED store-e2e elapsed={:?}", started.elapsed());
+    result
 }
 
 /// One connection carrying `commands` from the session's next command id.
@@ -211,16 +230,28 @@ async fn swords(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-fn scenario() -> TestResult { scenario_with_answer(false) }
+fn scenario() -> TestResult { scenario_with_answer(false, false) }
 
 #[test]
 fn storefix_protocol_violation_keeps_debit_uncertain_and_never_mints() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
-    super::kill_reward_e2e::scenario_thread::run("storefix-malformed", || scenario_with_answer(true))
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("storefix-malformed", || scenario_with_answer(true, false));
+    eprintln!("STORE-154 POSTGRES_CASE_COMPLETED storefix-malformed elapsed={:?}", started.elapsed());
+    result
+}
+
+#[test]
+fn store_restored_backup_refuses_new_and_reconciles_sent() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("store-restored", || scenario_with_answer(false, true));
+    eprintln!("STORE-154-D6 POSTGRES_CASE_COMPLETED elapsed={:?}", started.elapsed());
+    result
 }
 
 #[allow(clippy::too_many_lines)]
-fn scenario_with_answer(malformed: bool) -> TestResult {
+fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "store_e2e", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -267,6 +298,7 @@ fn scenario_with_answer(malformed: bool) -> TestResult {
         controller_binding.account_id = account_id;
         admitted.controller = Some(controller_binding);
 
+        assert!(!owner.offered_capabilities().iter().any(|offer| offer.id == wire::CAPABILITY_STORE_V1));
         let ledger = Arc::new(SyncMutex::new(Ledger {
             balance: 60,
             malformed,
@@ -277,22 +309,60 @@ fn scenario_with_answer(malformed: bool) -> TestResult {
             FakePlatform(ledger.clone()),
         ), "oteryn-game/store-consumer".into()))));
 
+        if restored {
+            owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[wire::CAPABILITY_STORE_V1],
+            ).ok_or("Store selection")?;
+            for offer in [SWORD, "store:hireling:25440", "store:prey-list-expansion"] {
+                let result = purchase(&owner, &mut admitted, purchase_request(60, offer, 25)?).await?;
+                assert_eq!(result.code, wire::StorePurchaseCode::PurchaseDisabled);
+            }
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests").await?, 0);
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_hireling_store_reservations").await?, 0);
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_prey_expansion_purchases").await?, 0);
+            assert_eq!(ledger.lock().expect("ledger").purchases, 0);
+            assert!(ledger.lock().expect("ledger").debits.is_empty());
+            // Browsing still uses Platform balance in restore mode.
+            let page = serve(&owner, &mut admitted, &[page_request()?]).await?;
+            assert_eq!(wire::decode_catalogue_page(&page[0].1).map_err(debug)?.total_coins, 60);
+            // Simulate a debit whose answer was lost before the Game retained it.
+            owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::Enabled;
+            ledger.lock().expect("ledger").malformed = true;
+            let uncertain = serve(&owner, &mut admitted, &[purchase_request(62, SWORD, 25)?]).await?;
+            assert_eq!(uncertain, [(CommandStatus::Rejected, Vec::new())]);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1 AND answer IS NULL").await?, 1);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(swords(&harness).await?, 0);
+            owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
+            ledger.lock().expect("ledger").malformed = false;
+            let reconciled = purchase(&owner, &mut admitted, purchase_request(62, SWORD, 25)?).await?;
+            assert_eq!(reconciled.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(ledger.lock().expect("ledger").purchases, 2);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(ledger.lock().expect("ledger").balance, 35);
+            assert_eq!(swords(&harness).await?, 1);
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=2").await?, 1);
+            let replay = purchase(&owner, &mut admitted, purchase_request(62, SWORD, 25)?).await?;
+            assert_eq!(replay, reconciled);
+            assert_eq!(ledger.lock().expect("ledger").purchases, 2);
+            drop(owner); drop(authority); drop(seal);
+            return harness.cleanup().await;
+        }
+
         // Without the selected capability the command is no Store command.
         let values = serve(&owner, &mut admitted, &[page_request()?]).await?;
         assert_eq!(values, [(CommandStatus::Rejected, Vec::new())]);
-        // STORE_V1 is registered but not offered (no production Platform Store client is
-        // composed), so the test offers it explicitly.
+        // A composed Platform client makes STORE_V1 available through the real offer.
         assert!(
-            !owner
+            owner
                 .offered_capabilities()
                 .iter()
                 .any(|offer| offer.id == wire::CAPABILITY_STORE_V1)
         );
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            &[OfferedCapability {
-                id: wire::CAPABILITY_STORE_V1,
-                requires: &[],
-            }],
+            owner.offered_capabilities(),
             &[wire::CAPABILITY_STORE_V1],
         )
         .ok_or("selection")?;
