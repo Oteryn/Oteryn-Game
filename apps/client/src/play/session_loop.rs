@@ -125,6 +125,17 @@ pub trait Stepper: Send {
     + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 81 }) }
     }
+    fn boss_rewards_selected(&self) -> bool {
+        false
+    }
+    fn boss_rewards(
+        &mut self,
+        _command: &oteryn_client_runtime::boss_rewards::BossRewardsCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::boss_rewards::BossRewardsResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 224 }) }
+    }
     fn prey_selected(&self) -> bool {
         false
     }
@@ -134,6 +145,17 @@ pub trait Stepper: Send {
     ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
+    }
+    fn daily_reward_selected(&self) -> bool {
+        false
+    }
+    fn daily_reward(
+        &mut self,
+        _command: &oteryn_client_runtime::daily_reward::DailyRewardCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::daily_reward::DailyRewardResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 182 }) }
     }
     fn imbue_selected(&self) -> bool {
         false
@@ -210,6 +232,28 @@ pub trait Stepper: Send {
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 63 }) }
     }
+    fn chat_public_selected(&self) -> bool {
+        false
+    }
+    fn chat_state(&self) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
+        None
+    }
+    fn chat_public(
+        &mut self,
+        _intent: &oteryn_session::ChatIntent,
+    ) -> impl Future<Output = Result<oteryn_session::ChatOutcome, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 259 }) }
+    fn player_typing_selected(&self) -> bool {
+        false
+    }
+    fn player_typing(
+        &mut self,
+        _command: &oteryn_client_runtime::player_typing::PlayerTypingCommand,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::player_typing::PlayerTypingResponse, SessionError>,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 233 }) }
+    }
 }
 
 /// Hands the shell what the session pushed, and the visible entities when they changed.
@@ -218,6 +262,9 @@ fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpa
     if let Some(entities) = session.entities_changed(held) {
         held.clone_from(&entities);
         outbox.entities(entities);
+    }
+    if let Some((rooms, lines)) = session.chat_state() {
+        outbox.chat_public_state(rooms, lines);
     }
 }
 
@@ -238,6 +285,8 @@ pub async fn run_session<T: Stepper>(
     outbox.stash_initialize(session.stash_selected());
     outbox.npc_shop_initialize(session.npc_shop_selected());
     outbox.prey_initialize(session.prey_selected());
+    outbox.daily_reward_initialize(session.daily_reward_selected());
+    outbox.boss_rewards_initialize(session.boss_rewards_selected());
     outbox.imbue_initialize(session.imbue_selected());
     outbox.player_trade_initialize(
         session.player_trade_selected(),
@@ -248,6 +297,8 @@ pub async fn run_session<T: Stepper>(
     outbox.party_initialize(session.party_selected());
     outbox.hireling_initialize(session.hireling_selected());
     outbox.market_initialize(session.market_selected());
+    outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
+    outbox.player_typing_initialize(session.player_typing_selected());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
@@ -362,9 +413,25 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::BossRewards(command)) => match session.boss_rewards(&command).await {
+                Ok(response) => {
+                    outbox.boss_rewards_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Prey(command)) => match session.prey(&command).await {
                 Ok(response) => {
                     outbox.prey_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::DailyReward(command)) => match session.daily_reward(&command).await {
+                Ok(response) => {
+                    outbox.daily_reward_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
@@ -431,6 +498,17 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Market(request)) => match session.market(&request).await {
                 Ok(response) => {
                     outbox.market_result(&response);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
+                Ok(outcome) => {
+                    outbox.chat_public_result(&outcome);
+            Ok(PlayCommand::PlayerTyping(command)) => match session.player_typing(&command).await {
+                Ok(response) => {
+                    outbox.player_typing_result(command, response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

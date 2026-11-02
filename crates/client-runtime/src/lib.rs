@@ -130,6 +130,12 @@ pub use oteryn_session::exiva;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 
+/// Daily reward wall query and claim execution through the admitted session.
+#[path = "features/0182-daily-reward/protocol.rs"]
+pub mod daily_reward;
+/// Personal boss reward commands through the admitted session.
+#[path = "features/0224-boss-rewards/protocol.rs"]
+pub mod boss_rewards;
 /// Guild command execution through the admitted session.
 #[path = "features/0040-guild/protocol.rs"]
 pub mod guild;
@@ -139,6 +145,10 @@ pub mod party;
 /// Player-trade command execution through the admitted session.
 #[path = "features/0060-player-trade/protocol.rs"]
 pub mod player_trade;
+/// Transient player-typing command execution.
+#[path = "features/0233-player-typing/protocol.rs"]
+pub mod player_typing;
+pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]
 pub mod prey;
@@ -173,3 +183,7 @@ pub mod hireling;
 /// Market queries and settlement intents through the admitted session.
 #[path = "features/0063-market/protocol.rs"]
 pub mod market;
+
+/// Existing chat command and state types extended by capability 259.
+#[path = "features/0259-chat-public-channels/protocol.rs"]
+pub mod chat_public_channels;

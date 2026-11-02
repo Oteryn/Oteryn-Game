@@ -31,6 +31,8 @@ pub enum SessionEvent {
     ChatRooms(AppliedDelta<ChatRoomSet>),
     /// Domain 12, capability-80 delta 3: available rooms and private-channel metadata.
     ChatChannelList(AppliedDelta<ChatChannelList>),
+    /// Domain 12, capability-233 delta 4: a visible actor's transient typing state.
+    PlayerTyping(AppliedDelta<player_typing::TypingUpdate>),
     /// Domain 12, negotiated delta 5: expiring coarse VIP statuses.
     VipPresence(AppliedDelta<oteryn_protocol_oteryn::vip_presence::PresenceBatch>),
     /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
@@ -58,7 +60,10 @@ impl SessionEvent {
             Self::WorldMap(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
-            Self::ChatLine(_) | Self::ChatRooms(_) | Self::VipPresence(_) => STATE_DOMAIN_CHAT,
+            Self::ChatLine(_)
+            | Self::ChatRooms(_)
+            | Self::VipPresence(_)
+            | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,
             Self::ChatChannelList(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,

@@ -24,6 +24,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_PACED_MOVEMENT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
+    // CL26s4: raw prerequisite state and typed boss reward command routes.
+    oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+    boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     CAPABILITY_ATTACK_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     logout::CAPABILITY_LOGOUT_V1,
@@ -41,14 +44,24 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     market::CAPABILITY_MARKET_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
+    // CL26s3: native daily reward wall, query, and claim controls.
+    oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+    // CL26s4: boss encounter prerequisite and personal boss reward commands.
+    oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     prey::CAPABILITY_PREY_V1,
+    // CL26s2: native player typing command and CHAT delta support.
+    player_typing::CAPABILITY_PLAYER_TYPING_V1,
+    boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+    // CL26s1: public channels and their private-channel prerequisite.
+    chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+    chat::public_channels::CAPABILITY_CHAT_PUBLIC_CHANNELS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

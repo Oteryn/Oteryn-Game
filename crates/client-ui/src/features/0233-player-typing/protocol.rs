@@ -1,0 +1,54 @@
+use super::*;
+use oteryn_client_runtime::{CommandStatus, TypingUpdate, WorldSpatialEntity};
+
+pub fn request(panel: &mut PlayerTypingPanel, typing: bool) -> Option<PlayerTypingCommand> {
+    if !panel.selected {
+        panel.feedback = Some("Player typing is unavailable in this session");
+        return None;
+    }
+    if panel.pending {
+        panel.feedback = Some("Waiting for the server");
+        return None;
+    }
+    panel.pending = true;
+    panel.feedback = None;
+    Some(PlayerTypingCommand { typing })
+}
+
+pub fn apply_result(
+    panel: &mut PlayerTypingPanel,
+    command: PlayerTypingCommand,
+    response: PlayerTypingResponse,
+) {
+    panel.pending = false;
+    if matches!(
+        response.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        panel.own_typing = command.typing;
+        panel.feedback = None;
+    } else {
+        panel.feedback = Some("The server refused the typing state");
+    }
+}
+
+pub fn reduce(panel: &mut PlayerTypingPanel, update: TypingUpdate) {
+    panel
+        .indicators
+        .retain(|entry| entry.identity != update.speaker.identity);
+    if update.typing {
+        panel.indicators.push(TypingIndicator {
+            identity: update.speaker.identity,
+            generation: update.speaker.generation,
+        });
+    }
+}
+
+pub fn retain_visible(panel: &mut PlayerTypingPanel, entities: &[WorldSpatialEntity]) {
+    panel.indicators.retain(|indicator| {
+        entities.iter().any(|entity| {
+            entity.entity.identity == indicator.identity
+                && entity.entity.generation == indicator.generation.get()
+        })
+    });
+}

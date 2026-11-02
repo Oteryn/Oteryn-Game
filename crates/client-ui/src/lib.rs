@@ -46,6 +46,12 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Daily reward wall and one-click claim controls.
+#[path = "features/0182-daily-reward/mod.rs"]
+pub mod daily_reward;
+/// Personal boss reward browsing and custody collection.
+#[path = "features/0224-boss-rewards/mod.rs"]
+pub mod boss_rewards;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;
@@ -55,6 +61,9 @@ pub mod party;
 /// Direct player-trade panel state and controls.
 #[path = "features/0060-player-trade/mod.rs"]
 pub mod player_trade;
+/// Transient player typing controls and visible-actor indicators.
+#[path = "features/0233-player-typing/mod.rs"]
+pub mod player_typing;
 /// Prey slots, candidate selection, bonuses, and automatic reroll controls.
 #[path = "features/0140-prey/mod.rs"]
 pub mod prey;
@@ -89,3 +98,7 @@ pub mod hireling;
 /// Market offer browsing and settlement controls.
 #[path = "features/0063-market/mod.rs"]
 pub mod market;
+
+/// Negotiated public chat rooms, their live lines, and room controls.
+#[path = "features/0259-chat-public-channels/mod.rs"]
+pub mod chat_public_channels;
