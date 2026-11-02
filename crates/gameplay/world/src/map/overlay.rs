@@ -40,6 +40,10 @@ pub use oteryn_gameplay_domain::domain::map_position::TilePos;
 pub struct EntryId(u64);
 
 impl EntryId {
+    /// The callback overlay uses the upper half; the ordinary overlay allocates from 1.
+    pub(crate) fn callback(sequence: u64) -> Option<Self> {
+        (sequence > 0 && sequence < (1 << 63)).then_some(Self((1 << 63) | sequence))
+    }
     pub fn get(self) -> u64 {
         self.0
     }

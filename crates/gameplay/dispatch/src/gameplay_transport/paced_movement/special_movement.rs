@@ -1,7 +1,8 @@
-//! Crystal-compatible swimming and trap step hooks on the production paced-movement path.
+//! Crystal movement scripts on the committed production paced-movement path.
 //!
 //! Donor values are from Crystal `data/scripts/movements/swimming.lua` lines 1-3, 20-37 and
-//! 46-53, and `data/scripts/movements/trap.lua` lines 1-8, 23-44 and 59-69 at `201189f8`.
+//! 46-53, `trap.lua` lines 1-8, 23-44 and 59-69, `yellow_pillow.lua` lines 3-10,
+//! `bath_tub.lua` lines 3-17,25-33 and `snow.lua` lines 3-23 at `201189f8`.
 use crate::content::ReferenceResistanceKind;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
@@ -204,6 +205,38 @@ fn swimming_definition() -> Option<ConditionDefinition> {
         })
 }
 
+/// Crystal yellow_pillow.lua:3-10 and utils_definitions.hpp:390 (MONSTER_SAY = 36).
+fn pillow_speech(id: u16, player: bool, ghost: bool) -> Option<(&'static str, u8, u16)> {
+    (id == 2397 && player && !ghost).then_some(("Faaart!", 36, 3))
+}
+
+fn snow_transform(id: u16, player: bool, ghost: bool) -> Option<u16> {
+    if !player || ghost {
+        return None;
+    }
+    match id {
+        799 => Some(6594),
+        6580..=6593 => Some(id + 15),
+        _ => None,
+    }
+}
+
+fn bath_definition(runtime: &ChannelRuntimeV1, map: &BundleMap) -> Option<ConditionDefinition> {
+    // Boot resolves this Item through the active served definition index, including unplaced items.
+    let item = map.facts.movement_item_facts(26087)?;
+    if !matches!(
+        item.definition,
+        oteryn_protocol_oteryn::world_map::MapDefinition::Item(_)
+    ) {
+        return None;
+    }
+    ConditionDefinition::new_permanent_item_outfit("environment.bath", 1)?.with_item_appearance(
+        "oteryn:item.tibia.i26087",
+        "definition-r1",
+        runtime.content_pin().server_artifact_digest(),
+    )
+}
+
 impl ChannelSpellStates {
     #[allow(
         clippy::too_many_arguments,
@@ -220,13 +253,15 @@ impl ChannelSpellStates {
         destination: MovementLocalPosition,
         optional_pvp: Option<bool>,
     ) -> bool {
-        let from_swimming = origin
-            .and_then(|at| tile_entries(map, at))
-            .is_some_and(|tile| {
-                tile.entries
-                    .iter()
-                    .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id))
-            });
+        if map.overlay.runtime_scope() != runtime.binding().runtime_scope() {
+            return false;
+        }
+        let origin_entries = origin.and_then(|at| tile_entries(map, at));
+        let from_swimming = origin_entries.as_ref().is_some_and(|tile| {
+            tile.entries
+                .iter()
+                .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id))
+        });
         let Some(TileEntries {
             protection_zone,
             entries: ids,
@@ -238,6 +273,23 @@ impl ChannelSpellStates {
             return false;
         };
         let mut changed = false;
+        for (_, entry) in &ids {
+            // This path has proved a current player. The current actor model admits no
+            // ghost mode; invisibility is deliberately not treated as ghost mode.
+            if let Some((text, talk_type, effect)) = pillow_speech(entry.appearance_id, true, false)
+                && let Some(position) = tile_position(destination)
+            {
+                changed |= map
+                    .facts
+                    .emit_movement_speech(crate::map::facts::MovementSpeech {
+                        speaker: actor,
+                        position,
+                        talk_type,
+                        text,
+                    });
+                changed |= map.facts.emit_movement_effect(position, effect);
+            }
+        }
         // Crystal special_tiles.lua:1-2,6-16 and decay_to.lua:3-15. These map
         // mutations run on the committed player StepIn route.
         for (key, entry) in &ids {
@@ -259,7 +311,12 @@ impl ChannelSpellStates {
             .iter()
             .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let mut next = current.clone();
-        if from_swimming {
+        let from_bath = origin_entries.as_ref().is_some_and(|tile| {
+            tile.entries
+                .iter()
+                .any(|(_, entry)| entry.appearance_id == 26100)
+        });
+        if from_swimming || from_bath {
             next.conditions.remove_type(ConditionType::Outfit);
         }
         if to_swimming {
@@ -302,6 +359,35 @@ impl ChannelSpellStates {
                 );
             }
         }
+        let mut enter_bath = false;
+        if ids.iter().any(|(_, entry)| entry.appearance_id == 26077)
+            && map.facts.movement_item_facts(26100).is_some()
+            && let Some(definition) = bath_definition(runtime, map)
+        {
+            next.conditions.remove_type(ConditionType::Outfit);
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let facts = ApplicationFacts {
+                now,
+                base_speed: 1,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([0x42; 16]),
+            };
+            enter_bath = next
+                .conditions
+                .apply(
+                    &definition,
+                    Some("environment:bath".to_owned()),
+                    ConditionSourceKind::Field,
+                    &[],
+                    &facts,
+                )
+                .is_ok();
+        }
         changed |= next != current;
         if next != current {
             let Some(revision) = current.revision().checked_add(1) else {
@@ -310,6 +396,36 @@ impl ChannelSpellStates {
             next.source_set_batch_revision(revision);
             if !self.commit(runtime, actor, session, next) {
                 return false;
+            }
+        }
+        // Crystal bath_tub.lua:25-33 StepOut precedes StepIn, including adjacent tubs.
+        if let Some(tile) = &origin_entries {
+            for (key, entry) in &tile.entries {
+                // Crystal snow.lua:3-23. No current actor can enter ghost mode; the
+                // rule keeps that distinct from ordinary invisible player conditions.
+                if let Some(appearance) = snow_transform(entry.appearance_id, true, false)
+                    && map
+                        .facts
+                        .start_movement_decay(*key, *entry, appearance, now, 10_000_000)
+                {
+                    changed = true;
+                    self.owner_wake.notify_one();
+                    // TODO(M10-MOVE): fenced, idempotent Snowbunny +1/10000 progress.
+                    // durability/account_achievement.rs:add_progress is transaction-private.
+                }
+                if entry.appearance_id == 26100 {
+                    changed |= map.facts.transform_movement_item(*key, 26077);
+                }
+            }
+        }
+        if enter_bath {
+            for (key, entry) in &ids {
+                if entry.appearance_id == 26077 {
+                    changed |= map.facts.transform_movement_item(*key, 26100);
+                }
+            }
+            if let Some(pos) = tile_position(destination) {
+                map.facts.emit_movement_effect(pos, 54);
             }
         }
         // trap.lua:59-69 reopens these four closed spike types on every step-out.
@@ -681,6 +797,9 @@ mod tests {
             if tile.x == 6 && protection_zone {
                 tile.flags = 1;
             }
+            if tile.x == 6 && before == 26077 {
+                tile.house = 42;
+            }
         }
         let bytes = oteryn_world_bundle::writer::write(
             &bundle.manifest,
@@ -705,10 +824,31 @@ mod tests {
             actor.channel_id().ok_or("channel")?,
             |key| {
                 Some(crate::map::facts::ItemDefinition {
-                    reference: NonZeroU32::new(if key == keys.0 { 1 } else { 2 })?,
+                    reference: NonZeroU32::new(if key == keys.0 {
+                        1
+                    } else if key == keys.1 {
+                        2
+                    } else if (before == 26077 && key == "oteryn:item.tibia.i26087")
+                        || ((before == 799 || (6580..=6593).contains(&before))
+                            && key
+                                == format!(
+                                    "oteryn:item.tibia.i{}",
+                                    if before == 799 { 6594 } else { before + 15 }
+                                ))
+                    {
+                        3
+                    } else {
+                        return None;
+                    })?,
                     solid: Some(false),
-                    blocks_projectile: false,
-                    pickupable: false,
+                    // Model an unplaced footprint with conservative unknown physical metadata.
+                    blocks_projectile: (before == 799 || (6580..=6593).contains(&before))
+                        && key
+                            == format!(
+                                "oteryn:item.tibia.i{}",
+                                if before == 799 { 6594 } else { before + 15 }
+                            ),
+                    pickupable: before == 26077 && key == keys.0,
                     door: false,
                 })
             },
@@ -751,9 +891,44 @@ mod tests {
                 at,
                 Some(false)
             ),
-            before != after
+            // Crystal yellow_pillow.lua:9-10 changes presentation with an unchanged item.
+            before != after || before == 2397
         );
         assert_eq!(current(), Some(after));
+        if before == 26077 {
+            assert!(map.facts.house_tile(pos), "bath tubs are house furniture");
+            let state = states.get(&runtime, actor, session).ok_or("state")?;
+            use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
+            assert!(
+                matches!(state.owned_conditions().displayed_temporary_appearance_at(60_000_000),
+                Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key() == "oteryn:item.tibia.i26087")
+            );
+            assert!(!map.facts.base_entry(pos, 1, 0).ok_or("tub")?.pickupable);
+            assert_eq!(
+                map.facts
+                    .movement_effects_since(0)
+                    .iter()
+                    .map(|(_, _, effect)| *effect)
+                    .collect::<Vec<_>>(),
+                vec![54]
+            );
+        }
+        if before == 2397 {
+            let speech = map.facts.movement_speech_since(0);
+            assert_eq!(speech.len(), 1);
+            assert_eq!(
+                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
+                (actor, "Faaart!", 36)
+            );
+            assert_eq!(
+                map.facts
+                    .movement_effects_since(0)
+                    .iter()
+                    .map(|(_, _, effect)| *effect)
+                    .collect::<Vec<_>>(),
+                vec![3]
+            );
+        }
         assert_eq!(
             states
                 .get(&runtime, actor, session)
@@ -775,6 +950,62 @@ mod tests {
             away,
             Some(false),
         );
+        if before == 799 || (6580..=6593).contains(&before) {
+            assert_eq!(
+                current(),
+                Some(if before == 799 { 6594 } else { before + 15 }),
+                "Crystal snow.lua:14-17 transforms only on StepOut"
+            );
+            assert!(
+                !map.facts
+                    .base_entry(pos, 1, 0)
+                    .ok_or("snow")?
+                    .blocks_projectile,
+                "footprints retain the original ground's projectile policy"
+            );
+            assert_eq!(map.facts.next_movement_decay_time(), Some(10_000_002));
+            assert_eq!(map.facts.expire_movement_items(10_000_001), 0);
+            assert_eq!(
+                current(),
+                Some(if before == 799 { 6594 } else { before + 15 })
+            );
+            assert_eq!(map.facts.expire_movement_items(10_000_002), 1);
+            assert_eq!(current(), Some(before));
+            assert_eq!(map.facts.next_movement_decay_time(), None);
+            assert_eq!(map.facts.expire_movement_items(10_000_002), 0);
+            states.stage_special_movement_step(
+                &runtime,
+                map,
+                actor,
+                session,
+                20_000_000,
+                Some(at),
+                away,
+                Some(false),
+            );
+            assert!(map.facts.transform_movement_item(key, before));
+            let revision = map.facts.object_revision(key);
+            assert_eq!(
+                map.facts.expire_movement_items(30_000_000),
+                0,
+                "stale decay cannot overwrite a later transform"
+            );
+            assert_eq!(map.facts.object_revision(key), revision);
+        }
+        if before == 26077 {
+            assert!(
+                map.facts.base_entry(pos, 1, 0).ok_or("tub")?.pickupable,
+                "leaving restores the original movable tub"
+            );
+            assert!(
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("state")?
+                    .owned_conditions()
+                    .displayed_temporary_appearance_at(2)
+                    .is_none()
+            );
+        }
         assert_eq!(current(), Some(if reverses { before } else { after }));
         Ok(())
     }
@@ -826,6 +1057,47 @@ mod tests {
             .spawn(|| movement_case(12368, 12368, false, false))?
             .join()
             .map_err(|_| "movement test thread")?
+    }
+
+    #[test]
+    fn m10_move_yellow_pillow_emits_poff_on_player_step()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        assert_eq!(pillow_speech(2397, true, true), None);
+        assert_eq!(pillow_speech(2397, false, false), None);
+        assert_eq!(pillow_speech(2398, true, false), None);
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| movement_case(2397, 2397, false, false))?
+            .join()
+            .map_err(|_| "pillow test thread")?
+    }
+
+    #[test]
+    fn m10_move_bath_tub_item_outfit_and_house_tub_restore_on_exit()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| movement_case(26077, 26100, false, true))?
+            .join()
+            .map_err(|_| "bath tub test thread")?
+    }
+
+    #[test]
+    fn m10_move_snow_step_out_all_ids_decay_back()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        assert_eq!(snow_transform(799, true, true), None);
+        assert_eq!(snow_transform(799, false, false), None);
+        assert_eq!(snow_transform(6594, true, false), None);
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                for before in [799].into_iter().chain(6580..=6593) {
+                    movement_case(before, before, false, false)?;
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "snow test thread")?
     }
 
     #[test]
