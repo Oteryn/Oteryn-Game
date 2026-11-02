@@ -10,6 +10,7 @@ impl Application {
     ) {
         if let Some(play) = &mut self.play {
             if play.link.animus_input(events)
+                || play.link.prey_input(events)
                 || play.link.wheel_input(events)
                 || play.link.exiva_input(events)
                 || play.link.loyalty_skills_input(events)

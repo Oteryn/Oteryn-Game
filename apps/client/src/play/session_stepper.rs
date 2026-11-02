@@ -146,7 +146,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     async fn prey(
         &mut self,
-        command: &oteryn_client_runtime::prey::PreyCommand,
+        command: &oteryn_client_runtime::prey::prey::Request,
     ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
         oteryn_client_runtime::prey::send(self, command).await
     }

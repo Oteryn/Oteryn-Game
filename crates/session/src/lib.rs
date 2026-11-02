@@ -40,7 +40,7 @@ pub use oteryn_protocol_oteryn::quest_log;
 /// Server-owned Animus and daily-reward values for native client features.
 pub use oteryn_protocol_oteryn::{animus_mastery, daily_reward};
 /// Wheel and Atelier wire values for the selected client feature.
-pub use oteryn_protocol_oteryn::{atelier, wheel};
+pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 mod guild_chat;
@@ -94,7 +94,6 @@ pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide
 /// Capability-81 NPC shop wire values consumed by the native client adapter.
 pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
-pub use oteryn_protocol_oteryn::prey;
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
     Status as VipPresenceStatus,

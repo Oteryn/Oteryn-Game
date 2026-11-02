@@ -9,6 +9,7 @@ pub enum PlayCommand {
     /// Capability-16 query encoded by its feature controls.
     QuestLog(Vec<u8>),
     Exiva(Vec<u8>),
+    Prey(oteryn_client_runtime::prey::prey::Request),
     LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
@@ -20,7 +21,6 @@ pub enum PlayCommand {
     TaskBoard(oteryn_client_runtime::task_board::TaskBoardCommand),
     Stash(oteryn_client_runtime::stash::StashCommand),
     NpcShop(oteryn_client_runtime::npc_shop::NpcShopCommand),
-    Prey(oteryn_client_runtime::prey::PreyCommand),
     PlayerTyping(oteryn_client_runtime::player_typing::PlayerTypingCommand),
     DailyReward(oteryn_client_runtime::daily_reward::DailyRewardCommand),
     BossRewards(oteryn_client_runtime::boss_rewards::BossRewardsCommand),

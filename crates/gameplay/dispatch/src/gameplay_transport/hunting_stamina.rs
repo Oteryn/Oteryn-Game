@@ -9,7 +9,7 @@ use crate::durability::character_progression::{
 };
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState};
-use oteryn_gameplay_characters::stamina::{HuntingActivityClock, HuntingClock};
+use oteryn_gameplay_characters::stamina::HuntingClock;
 
 #[derive(Debug)]
 pub(super) struct LiveStamina {
@@ -19,7 +19,6 @@ pub(super) struct LiveStamina {
     durable: u16,
     clock: HuntingClock,
     experience_started: bool,
-    prey_clock: HuntingActivityClock,
     pending_gain: Option<(BuildOccurrence, u16, u16)>,
     pending_debit: Option<(BuildOccurrence, u16, u16)>,
 }
@@ -72,7 +71,6 @@ impl ChannelSpellStates {
                     durable: minutes,
                     clock: HuntingClock::new(now),
                     experience_started: false,
-                    prey_clock: HuntingActivityClock::default(),
                     pending_gain: None,
                     pending_debit: None,
                 });
@@ -80,27 +78,6 @@ impl ChannelSpellStates {
         }
     }
 
-    pub(super) fn hunting_activity(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        now: u64,
-    ) {
-        if runtime.owner_fence().is_err() || self.get(runtime, actor, session).is_none() {
-            return;
-        }
-        if let Some(state) = self
-            .hunting_stamina
-            .iter_mut()
-            .find(|s| s.actor == actor && s.session == session)
-        {
-            // Damage activity continues to drive Prey time, never character stamina.
-            let (hunting_minutes, next) = state.prey_clock.activity(now, u16::MAX);
-            state.prey_clock = next;
-            self.prey_hunting_tick(actor, session, u32::from(hunting_minutes) * 60);
-        }
-    }
     /// Preview under the same runtime/state guards as the kill XP transaction.
     pub(super) fn stamina_after_experience(
         &self,
@@ -533,7 +510,12 @@ mod tests {
         }
         // Monster damage activity must not consume stamina either.
         for second in [3601, 3631, 3661] {
-            states.hunting_activity(&runtime, actor, session, second * 1_000_000);
+            // PREY-DIFF (2026-11-01): combat facts have a race-specific Prey owner.
+            states.prey_activity(&runtime, actor, session, super::super::prey::PreyActivity {
+                creature: "oteryn:creature.rat",
+                kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage,
+                now: second * 1_000_000,
+            });
             assert_eq!(states.live_stamina(actor, session), Some(2520));
         }
     }

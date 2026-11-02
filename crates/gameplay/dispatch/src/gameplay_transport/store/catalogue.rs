@@ -20,9 +20,13 @@ struct Offer {
     key: String,
     category: String,
     title: String,
-    price: u64,
+    price: Option<u64>,
+    #[serde(default = "enabled_by_default")]
+    enabled: bool,
     currency: String,
-    item: Item,
+    item: Option<Item>,
+    #[serde(default)]
+    unlock_key: Option<String>,
     #[serde(rename = "source_line")]
     _source_line: u32,
 }
@@ -35,6 +39,10 @@ struct Item {
     #[serde(rename = "charges")]
     _charges: u32,
 }
+
+pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
+
+fn enabled_by_default() -> bool { true }
 
 pub(super) struct RuntimeCatalogue {
     pub(super) rules: rules::Catalogue,
@@ -53,23 +61,38 @@ impl RuntimeCatalogue {
         let mut item_revisions = BTreeMap::new();
         let mut offers = Vec::with_capacity(document.offers.len());
         for offer in document.offers {
-            if offer.price == 0 || offer.currency != currency_text(rules::CurrencyKind::TibiaCoin)
-            {
+            // Owner-priced offers remain unavailable while their price is a placeholder.
+            if !offer.enabled {
+                continue;
+            }
+            let price = offer.price.filter(|price| *price > 0)?;
+            if offer.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
                 return None;
             }
+            let (kind, delivery, eligibility) = match (offer.item, offer.unlock_key) {
+                (Some(item), None) => {
+                    item_revisions.insert(offer.key.clone(), item.revision);
+                    (rules::OfferKind::Item, rules::DeliveryKind::Item { item_key: item.key, count: 1 }, rules::Eligibility::default())
+                }
+                (None, Some(unlock_key)) if unlock_key == PREY_EXPANSION_UNLOCK => {
+                    let eligibility = rules::Eligibility {
+                        reject_if_unlock_owned: Some(unlock_key.clone()),
+                        per_character_limit: Some(1),
+                        ..rules::Eligibility::default()
+                    };
+                    (rules::OfferKind::Service, rules::DeliveryKind::Unlock { unlock_key }, eligibility)
+                }
+                _ => return None,
+            };
             titles.insert(offer.key.clone(), offer.title);
-            item_revisions.insert(offer.key.clone(), offer.item.revision);
             offers.push(rules::AdmittedOffer {
                 key: offer.key,
                 category: offer.category,
-                kind: rules::OfferKind::Item,
-                price_coins: offer.price,
+                kind,
+                price_coins: price,
                 currency: rules::CurrencyKind::TibiaCoin,
-                delivery: rules::DeliveryKind::Item {
-                    item_key: offer.item.key,
-                    count: 1,
-                },
-                eligibility: rules::Eligibility::default(),
+                delivery,
+                eligibility,
             });
         }
         Some(Self {
