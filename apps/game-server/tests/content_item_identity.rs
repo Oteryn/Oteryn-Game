@@ -419,8 +419,8 @@ fn semantic_constants_resolve_to_existing_tibia_keys() {
 fn content_names_only_canonical_item_keys() {
     let table = table();
     let content = content_item_keys();
-    // #1807 adds 10 item keys, measured.
-    assert_eq!(content.len(), 34_043);
+    // #1807 adds 10 item keys; E06/#2792 intentionally adds 68 Crystal market goods.
+    assert_eq!(content.len(), 34_111);
     for key in &content {
         assert!(is_canonical_item_key(key), "{key}");
         assert!(key.starts_with("oteryn:item.tibia.i"), "{key}");
@@ -445,7 +445,7 @@ fn content_names_only_canonical_item_keys() {
 }
 
 #[test]
-fn snowball_current_appearance_has_only_an_identity_record() {
+fn snowball_current_appearance_is_an_e06_market_good() {
     let reference: Value = serde_json::from_slice(REFERENCE).expect("reference JSON");
     let snowball = reference["records"]
         .as_array()
@@ -453,10 +453,34 @@ fn snowball_current_appearance_has_only_an_identity_record() {
         .iter()
         .find(|record| record["identity"]["key"] == "oteryn:item.tibia.i53855")
         .expect("admitted Snowball identity");
-    assert_eq!(
-        snowball,
-        &serde_json::to_value(item("oteryn:item.tibia.i53855")).expect("identity-only Item")
-    );
+    // E06/#2792 intentionally promotes all 68 Crystal market goods, including Snowball.
+    let mut expected =
+        serde_json::to_value(item("oteryn:item.tibia.i53855")).expect("base Snowball Item");
+    expected["semantics"] = serde_json::json!({
+        "presentation": {"state": "UNKNOWN"},
+        "classification": {"state": "UNKNOWN"},
+        "physical": {"state": "UNKNOWN"},
+        "stack": {"state": "UNKNOWN"},
+        "equipment": {"state": "UNKNOWN"},
+        "weapon": {"state": "UNKNOWN"},
+        "protection": {"state": "UNKNOWN"},
+        "skill_modifiers": {"state": "UNKNOWN"},
+        "charges": {"state": "UNKNOWN"},
+        "temporal": {"state": "UNKNOWN"},
+        "container": {"state": "UNKNOWN"},
+        "imbuement": {"state": "UNKNOWN"},
+        "use_transform": {"state": "UNKNOWN"},
+        "trade_restrictions": {"state": "KNOWN", "value": {
+            "tradeable": {"state": "UNKNOWN"},
+            "marketable": {"state": "KNOWN", "value": true},
+            "vocations": {"state": "UNKNOWN"},
+            "account_binding_policy": {"state": "UNKNOWN"},
+            "character_binding_policy": {"state": "UNKNOWN"}
+        }},
+        "fluid": {"state": "UNKNOWN"},
+        "readable_writeable": {"state": "UNKNOWN"}
+    });
+    assert_eq!(snowball, &expected);
 }
 
 fn item(key: &str) -> ProjectReferenceRecord {
