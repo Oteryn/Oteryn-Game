@@ -1,17 +1,32 @@
 [
   {
     "mechanic": "0259-chat-public-channels",
+    "kind": "keybindings",
+    "id": "0259-chat-public-channels-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+C",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0259-chat-public-channels",
+    "kind": "panels",
+    "id": "0259-chat-public-channels-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text",
+    "not_applicable": {
+      "settings": "Public room access and membership are server-owned."
+    }
+  },
+  {
+    "mechanic": "0259-chat-public-channels",
     "kind": "handlers",
     "id": "0259-chat-public-channels-unsupported",
     "status": "unsupported",
-    "reason": "S04c is server-first; native public-channel presentation is pending.",
+    "reason": "Capability 259 extends command 13 owned by the still-unsupported capability-7 registration; client registration tooling permits only one handler owner per command.",
     "commands": [],
     "not_applicable": {
-      "state": "Native client migration is pending.",
-      "protocol": "Native client migration is pending.",
-      "view": "Native client migration is pending.",
-      "input": "Native client migration is pending.",
-      "settings": "Native client migration is pending."
+      "protocol": "The native route exists, but cannot be registered independently from its capability-7 command owner."
     }
   }
 ]

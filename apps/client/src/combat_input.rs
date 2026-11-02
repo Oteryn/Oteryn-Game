@@ -19,6 +19,9 @@ pub enum PlayCommand {
     Stash(oteryn_client_runtime::stash::StashCommand),
     NpcShop(oteryn_client_runtime::npc_shop::NpcShopCommand),
     Prey(oteryn_client_runtime::prey::PreyCommand),
+    PlayerTyping(oteryn_client_runtime::player_typing::PlayerTypingCommand),
+    DailyReward(oteryn_client_runtime::daily_reward::DailyRewardCommand),
+    BossRewards(oteryn_client_runtime::boss_rewards::BossRewardsCommand),
     Imbue(oteryn_client_runtime::imbue::ImbueCommand),
     /// Capability-60 direct player-trade intent.
     PlayerTrade(oteryn_client_runtime::player_trade::PlayerTradeCommand),
@@ -27,4 +30,5 @@ pub enum PlayCommand {
     Party(oteryn_client_runtime::party::PartyCommand),
     Hireling(oteryn_client_runtime::hireling::HirelingCommand),
     Market(oteryn_client_runtime::market::MarketCommand),
+    ChatPublic(oteryn_session::ChatIntent),
 }
