@@ -8,7 +8,9 @@ import copy
 import hashlib
 import json
 
-# I05 skill rings (Crystal 201189f8 data/items/items.xml): power 3050 -> 3087 skillfist 6
+# I05 skill rings: power 3050 -> 3087 fist +4 (TibiaWiki overrides stale Crystal +6;
+# Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4).
+# Crystal 201189f8 data/items/items.xml supplies the pairs and durations
 # (:6927-6936, :7339-7350), sword 3091 -> 3094, axe 3092 -> 3095, club 3093 -> 3096 skill 4
 # (:7392-7457); each active form lasts 1800 s with stopduration on the base.
 SKILL_RINGS = {3050: 3087, 3091: 3094, 3092: 3095, 3093: 3096}

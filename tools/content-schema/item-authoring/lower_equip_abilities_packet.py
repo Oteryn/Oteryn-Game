@@ -5,12 +5,13 @@ groups (`crates/gameplay/content/src/content/item_abilities.rs`; control-plane r
 schema change). TibiaWiki comes first, through the committed stats packet that
 `lower_wiki_stats_packet.py` writes. Where every wiki page of an Item is silent on a group, this
 tool lowers the Canary `items.xml` attributes (D384 pin, OTS_HYPOTHESIS_ONLY) into canonical
-Game-owned field values. Canary speed is already in displayed units: it agrees 1:1 with the wiki
+Game-owned field values. The worn Power Ring inherits the base ring's wiki modifiers before
+Canary fallback, since the wiki lists only the base ID. Canary speed is already in displayed units: it agrees 1:1 with the wiki
 on every Item that states both, and any disagreement fails the run. An Item whose Canary group
 holds a key outside the mapped abilities is held, because a Known list never drops an observed
 fact. STAT_BOOST and LIGHT have no source in either input.
 
-It writes two files:
+It writes two packets and refreshes the Rust facts digest pin for the default facts path:
 
 - the facts packet, which the materializer embeds: Item key, field path and canonical value
   only, written into an Unknown leaf. It names no source, so the server holds no compatibility
@@ -43,6 +44,7 @@ from lower_wiki_stats_packet import (
     SNAPSHOT,
     content_item_ids,
     known,
+    modifiers,
     physical_field_inputs,
 )
 
@@ -53,6 +55,10 @@ SOURCES = EVIDENCE / "OTV2-20261003-equip-abilities-sources-v1.json"
 SOURCES_SCHEMA = "OTERYN_EQUIP_ABILITY_SOURCES/v1"
 CANARY = ROOT / "imports" / "canary" / "items-xml" / "items.xml"
 CANARY_MANIFEST = ROOT / "imports" / "canary" / "items-xml" / "manifest.json"
+# The wiki lists only the base Power Ring; Canary's equip pair identifies its worn form.
+# Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
+PAIRED_MODIFIER_BASES = {3087: 3050}
+RUST_FACTS_PIN = ROOT / "crates/gameplay/content/src/content/item_abilities.rs"
 # Every wiki parameter the stats lowering reads into each group: one present means not silent.
 WIKI_MODIFIER_FIELDS = ("attrib", *MODIFIER_PERCENTS, "mantra", "elementalbond")
 WIKI_RESISTANCE_FIELDS = ("resist",)
@@ -297,10 +303,33 @@ def ability_sources(snapshot, canary, item_ids, definitions):
         ]
         canary_observed = {}
         fallback = []
+        base_id = PAIRED_MODIFIER_BASES.get(item_id)
+        if base_id is not None and not any(
+            name in obs["fields"] for obs in observations for name in WIKI_MODIFIER_FIELDS
+        ):
+            paired_values = []
+            for obs in wiki.get(base_id, []):
+                raw, typed = modifiers(obs["fields"])
+                if raw is None:
+                    continue
+                if typed == "MALFORMED":
+                    raise ValueError(f"malformed paired wiki modifiers: {base_id}")
+                paired_values.append(typed["value"])
+                wiki_sources.append({
+                    "class": "TIBIAWIKI", "paired_base_item_id": base_id,
+                    "page_id": obs["page_id"], "revision_id": obs["revision_id"],
+                    "values": raw,
+                })
+            if paired_values:
+                if any(value != paired_values[0] for value in paired_values):
+                    raise ValueError(f"conflicting paired wiki modifiers: {base_id}")
+                fallback.append({"field_path": "skill_modifiers.modifiers", "value": paired_values[0]})
         for field_path, wiki_fields, (observed, typed) in groups:
             if observed is None:
                 continue
             canary_observed |= observed
+            if any(row["field_path"] == field_path for row in fallback):
+                continue
             if any(
                 name in obs["fields"] for obs in observations for name in wiki_fields
             ):
@@ -448,6 +477,15 @@ def main(argv=None):
             ),
         )
     )
+    if args.facts == FACTS:
+        pin_text, count = re.subn(
+            r'(pub const EQUIP_ABILITIES_V1_FACTS_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+            lambda match: match[1] + hashlib.sha256(outputs[0][1]).hexdigest() + match[2],
+            RUST_FACTS_PIN.read_text(encoding="utf-8"),
+        )
+        if count != 1:
+            raise ValueError("expected exactly one Rust equip facts pin")
+        outputs.append((RUST_FACTS_PIN, pin_text.encode("utf-8")))
     if args.check:
         drift = [
             str(path)
@@ -464,7 +502,7 @@ def main(argv=None):
     print(
         json.dumps(
             {
-                "counts": [json.loads(data)["counts"] for _, data in outputs],
+                "counts": [json.loads(data)["counts"] for _, data in outputs[:2]],
                 "bytes": [len(data) for _, data in outputs],
             }
         )

@@ -11,7 +11,7 @@
  },
  "facts_packet": {
   "path": "docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json",
-  "sha256": "669ced861ca5f90bf3929f62de00a92e3fd0b6e13bdceb423ee7535811ab4668"
+  "sha256": "29d26ba062cac7f05f83538ccf11a9740c3853abb8d03ac109871f93e7e21126"
  },
  "holds": [
   {
@@ -926,7 +926,7 @@
         "state": "KNOWN",
         "value": {
          "kind": "SIGNED_POINTS",
-         "value": 6
+         "value": 4
         }
        },
        "priority": {
@@ -941,6 +941,15 @@
    ],
    "item_key": "oteryn:item.tibia.i3087",
    "sources": [
+    {
+     "class": "TIBIAWIKI",
+     "page_id": 2184,
+     "paired_base_item_id": 3050,
+     "revision_id": 1205616,
+     "values": {
+      "attrib": "fist fighting +4"
+     }
+    },
     {
      "attributes": {
       "skillfist": "6"

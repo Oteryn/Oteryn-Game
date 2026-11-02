@@ -238,6 +238,27 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
+def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None:
+    """Use accepted current Staff facts, preserving the pinned historical test pack."""
+    key = "oteryn:item.tibia.i3289"
+    authoring = json.loads((root / "content/items/definitions/items-20000-20499.json").read_bytes())
+    source, = [r["definition"] for r in authoring["records"] if r["definition"]["identity"]["key"] == key]
+    path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    document = json.loads(generated[path])
+    record, = [r for r in document["records"] if r["production_definition"]["production_key"] == key]
+    if source["identity"]["revision"] != record["production_definition"]["revision_ref"]:
+        raise ValueError("STAFF_PROFILE_IDENTITY")
+    # Monk Vocation Update: Fist/Monk/15/two hands; current wiki attack 22, defence 14.
+    record["semantics"]["equipment"] = copy.deepcopy(source["semantics"]["equipment"])
+    for field in ("weapon_type", "attack", "defense"):
+        record["semantics"]["weapon"]["value"][field] = copy.deepcopy(source["semantics"]["weapon"]["value"][field])
+    data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    generated[path] = data
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    manifest["item_profiles"]["sha256"] = hashlib.sha256(data).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
+
+
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
@@ -251,6 +272,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     generated = compose(root, baseline, generated)
     admit_overlay_profiles(root, generated)
     admit_consumable_profiles(root, generated)
+    admit_current_staff_profile(root, generated)
     import tutorial_movement_profiles
     tutorial_movement_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import loop_training_profiles

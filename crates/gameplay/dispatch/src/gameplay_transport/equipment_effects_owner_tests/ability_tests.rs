@@ -320,14 +320,15 @@ fn equipment_effects_owner_dwarven_ring_suppresses_drunk_only_in_ring_slot() -> 
 }
 
 /// I05: custody keeps a skill ring's inactive form; worn, it takes the active form's skill in the
-/// ring slot only (Crystal 201189f8 `items.xml:7339-7350`, power ring 3087 `skillfist` 6;
+/// ring slot only. Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
+/// Crystal 201189f8 supplies the ring pairs (`items.xml:7339-7350`;
 /// `:7422-7457`, sword/axe/club rings 3094/3095/3096 skill 4).
 #[test]
 fn equipment_effects_owner_inactive_skill_rings_take_worn_skill_only_in_ring_slot() -> TestResult {
     use oteryn_gameplay_content::content::item_abilities::AbilitySkill;
     let content = native(&input()?)?;
     for (base, skill, points) in [
-        (3050, AbilitySkill::Fist, 6),
+        (3050, AbilitySkill::Fist, 4),
         (3091, AbilitySkill::Sword, 4),
         (3092, AbilitySkill::Axe, 4),
         (3093, AbilitySkill::Club, 4),
@@ -342,6 +343,40 @@ fn equipment_effects_owner_inactive_skill_rings_take_worn_skill_only_in_ring_slo
             };
             assert_eq!(effects.skills, expected, "{base} slot {slot}");
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_staff_native_profile_matches_current_monk_facts() -> TestResult {
+    let content = native(&input()?)?;
+    let policy = content
+        .item_policy("oteryn:item.tibia.i3289", "definition-r1")
+        .ok_or("staff native profile")?;
+    let semantics = serde_json::to_value(&policy.record().semantics)?;
+    let weapon = &semantics["weapon"]["value"];
+    for (field, value) in [
+        ("weapon_type", serde_json::json!("FIST")),
+        ("attack", serde_json::json!(22)),
+        ("defense", serde_json::json!(14)),
+    ] {
+        assert_eq!(
+            weapon[field],
+            serde_json::json!({"state": "KNOWN", "value": value})
+        );
+    }
+    let patterns = &semantics["equipment"]["value"]["patterns"]["value"];
+    assert_eq!(patterns.as_array().ok_or("staff patterns")?.len(), 1);
+    for (field, value) in [
+        ("vocations", serde_json::json!(["MONK"])),
+        ("level", serde_json::json!(15)),
+        ("primary_slot", serde_json::json!("WEAPON")),
+        ("additional_reserved_slots", serde_json::json!(["SHIELD"])),
+    ] {
+        assert_eq!(
+            patterns[0][field],
+            serde_json::json!({"state": "KNOWN", "value": value})
+        );
     }
     Ok(())
 }

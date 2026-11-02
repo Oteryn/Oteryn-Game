@@ -53660,7 +53660,7 @@
                     "state": "KNOWN",
                     "value": {
                       "kind": "SIGNED_POINTS",
-                      "value": 6
+                      "value": 4
                     }
                   },
                   "priority": {
@@ -65094,22 +65094,59 @@
           }
         },
         "equipment": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": [
+                      "SHIELD"
+                    ]
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 15
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "WEAPON"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "MONK"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "KNOWN",
           "value": {
             "weapon_type": {
               "state": "KNOWN",
-              "value": "CLUB"
+              "value": "FIST"
             },
             "attack": {
               "state": "KNOWN",
-              "value": 10
+              "value": 22
             },
             "defense": {
               "state": "KNOWN",
-              "value": 25
+              "value": 14
             },
             "extra_defense": {
               "state": "KNOWN",
