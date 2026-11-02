@@ -135,10 +135,26 @@ async fn case(h: &Harness) -> TestResult {
                 format!("pager durability did not settle before room entry {member}").into(),
             );
         }
-        let outcome = owner
-            .enter_boss_room(&authority, &h.node, request.clone())
-            .await
-            .map_err(|error| format!("pager room entry {member}: {error}"))?;
+        // A ready check above can still lose the race to a holder that takes the root right
+        // after it (seen on CI as a single Unavailable at entry 10). Unavailable means the root
+        // could not be acquired, so retry the same request until a bounded deadline; every
+        // other error, and Unavailable after the deadline, still fails the test.
+        let retry_until = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
+        let outcome = loop {
+            match owner
+                .enter_boss_room(&authority, &h.node, request.clone())
+                .await
+            {
+                Err(crate::durability::DurabilityError::Unavailable)
+                    if tokio::time::Instant::now() < retry_until =>
+                {
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                }
+                other => {
+                    break other.map_err(|error| format!("pager room entry {member}: {error}"))?;
+                }
+            }
+        };
         assert!(
             matches!(outcome, ActivityEnterOutcome::Entered(_)),
             "real pager room {member}: {outcome:?}"
