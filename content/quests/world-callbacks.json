@@ -2931,6 +2931,256 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:18"
       ],
       "success_message": "You stumble over some old bones. Something is carved into the stone wall here: 'Tarun, my brother, you were right. She's evil.'"
+    },
+    {
+      "key": "oteryn:quest-callback/lion-bounac-return",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59603,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33183,
+        "y": 31756,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-exit-32480",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32398,
+          "y": 32480,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32401,
+        "y": 32480,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-exit-32481",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32398,
+          "y": 32481,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32401,
+        "y": 32481,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-elevator-down",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59605,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32371,
+        "y": 32497,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-enter-32480",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32400,
+          "y": 32480,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32397,
+        "y": 32480,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-enter-32481",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32400,
+          "y": 32481,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32397,
+        "y": 32481,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-elevator-up",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59604,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32374,
+        "y": 32497,
+        "floor": -3
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/bounac_trust",
+          "minimum": 5,
+          "maximum": 2147483647,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:16"
+      ]
     }
   ]
 }
