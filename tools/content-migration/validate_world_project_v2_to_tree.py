@@ -699,6 +699,8 @@ def main() -> int:
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     # E06 (owner decision 2026-10-31) minted the 68 client-only Crystal market Items: 34043 + 68.
     require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+                                       # RAIDS-GLOBAL 2026-11-01; raid_catalogue.py --check pins the full source reconciliation.
+                                       "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")["record_count"],
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,

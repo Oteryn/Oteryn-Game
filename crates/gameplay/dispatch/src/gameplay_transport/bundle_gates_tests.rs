@@ -133,7 +133,11 @@ const INVENTORY: &[Entry] = &[
             batch: "LOOP-MONSTER-1",
             pr: 2036,
         },
-        calls: &[("gameplay_transport/monster_ai_cycle.rs", 1)],
+        calls: &[
+            ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
+            ("gameplay_transport/raid_live_world.rs", 1),
+        ],
     },
     Entry {
         gate: "periodic player damage",
@@ -764,6 +768,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
+    // Rotten Blood progression supplies its source combat room; qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),

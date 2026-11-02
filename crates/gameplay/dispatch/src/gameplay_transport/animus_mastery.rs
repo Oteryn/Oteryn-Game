@@ -1,15 +1,20 @@
 //! ANIMUS-1 admitted, character-owned mastery query.
 
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use oteryn_protocol_oteryn::animus_mastery::{CAPABILITY_ANIMUS_MASTERY_V1, MAX_ANIMUS_PAGE_KEYS};
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
-    let mut result = base.to_vec();
-    if available && !result.iter().any(|entry| entry.id == 168) {
-        let at = result.partition_point(|entry| entry.id < 168);
+    let mut result: Vec<_> = base
+        .iter()
+        .copied()
+        .filter(|entry| entry.id != CAPABILITY_ANIMUS_MASTERY_V1)
+        .collect();
+    if available {
+        let at = result.partition_point(|entry| entry.id < CAPABILITY_ANIMUS_MASTERY_V1);
         result.insert(
             at,
             OfferedCapability {
-                id: 168,
+                id: CAPABILITY_ANIMUS_MASTERY_V1,
                 requires: &[],
             },
         );
@@ -39,7 +44,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         page: oteryn_protocol_oteryn::animus_mastery::AnimusPage,
     ) -> Option<Vec<u8>> {
-        if !admitted.continuity.selected_capabilities.contains(168) {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ANIMUS_MASTERY_V1)
+            || !(1..=MAX_ANIMUS_PAGE_KEYS).contains(&page.limit)
+        {
             return None;
         }
         let fence = admitted.item_fence?;
@@ -50,7 +60,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let masteries = self
             .root
-            .read_animus_masteries(self.character, fence.character_id)
+            .read_current_animus_masteries(self.character, self.holder, fence)
             .await
             .ok()?;
         let total = u16::try_from(masteries.len()).ok()?;
@@ -65,6 +75,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 macro_rules! composed_methods {
     () => {
         fn animus_mastery_available(&self) -> bool {
+            // Query readiness belongs to the durable reader. Already-earned masteries
+            // remain visible while the separate Soulpit acquisition owner is unavailable.
             true
         }
         async fn animus_mastery_query(
@@ -77,3 +89,36 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unavailable_animus_owner_removes_the_capability_from_scope_offers() {
+        let base = [167, 168, 169].map(|id| OfferedCapability { id, requires: &[] });
+        let actual = offered(&base, false);
+        assert_eq!(
+            actual.iter().map(|offer| offer.id).collect::<Vec<_>>(),
+            [167, 169]
+        );
+    }
+
+    #[test]
+    fn available_animus_owner_inserts_one_sorted_offer() {
+        let base = [167, 169].map(|id| OfferedCapability { id, requires: &[] });
+        let actual = offered(&base, true);
+        assert_eq!(
+            actual.iter().map(|offer| offer.id).collect::<Vec<_>>(),
+            [167, 168, 169]
+        );
+        assert_eq!(
+            offered(&actual, true)
+                .iter()
+                .map(|offer| offer.id)
+                .collect::<Vec<_>>(),
+            [167, 168, 169]
+        );
+        assert!(actual[1].requires.is_empty());
+    }
+}

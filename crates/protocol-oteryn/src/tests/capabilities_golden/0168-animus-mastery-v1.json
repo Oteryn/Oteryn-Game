@@ -10,8 +10,8 @@
   "domains": [],
   "supersedes": [],
   "offers": {
-    "production": false,
-    "item_view": false,
+    "production": true,
+    "item_view": true,
     "bundle_world": true
   }
 }

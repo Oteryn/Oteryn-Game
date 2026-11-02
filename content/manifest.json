@@ -38,6 +38,10 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
+    "Encounter.Raid": {
+      "index": "content/encounters/raids/index.json",
+      "records": 239
+    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6126
@@ -355,6 +359,15 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
+    },
+    {
+      "path": "content/encounters/raids/catalogue.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json"
+    },
+    {
+      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/index.json"

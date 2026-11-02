@@ -1,0 +1,29 @@
+{
+  "id": "RAIDS-GLOBAL-NOTICES",
+  "owner_contract": "ZONES_NOLOGOUT_V1.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "crates/gameplay/dispatch/src/gameplay_transport/raid_notices.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/zones_nologout_transport.rs",
+    "crates/protocol-oteryn/src/zones_nologout.rs"
+  ],
+  "resource": "Unacknowledged raid announcement identities per Channel ownership generation",
+  "unit": "announcement identities",
+  "hard_maximum": 8192,
+  "configurable_range": {
+    "minimum": 8192,
+    "maximum": 8192
+  },
+  "allocation_impact": "RAIDS-GLOBAL reuses the existing Channel session owner. 512 bounded catalogue candidates times 16 announcements bounds retained deduplication receipts. Each receipt owns one shared text of at most the existing 255 server-message UTF-8 bytes. Each of the existing listener's at most 256 live connections has at most 16 pending shared references, the existing announcement-per-raid bound. Capacity is checked for the entire recipient snapshot before any enqueue; a full queue or receipt directory defers the durable effect, never partially broadcasts or evicts deduplication. A committed Applied/Replayed durable acknowledgement reclaims its receipt; the independent pending-effect guard prevents subsequent republication while recipient references preserve delivery. Uncertain acknowledgement retains the receipt until its individual ACK or the firing Complete/LOST ACK is proven committed. Disconnect drops its queue, and owner retirement drops all receipts.",
+  "boundary_tests": [
+    "raid_notice_capacity_is_atomic_and_disconnect_releases_recipient_queue",
+    "raid_notice_receipt_limit_preserves_replay_and_refuses_new_identity",
+    "raid_notice_acknowledgement_reclaims_receipt_capacity_and_retains_queued_message",
+    "raid_notice_delayed_older_join_preserves_current_connection_and_backlog",
+    "raid_server_messages_enforce_wire_limit_and_reject_ambiguous_payloads",
+    "raid_notice_terminal_ack_reclaims_uncertain_receipts_across_generations_without_dropping_queue",
+    "raid_notice_cancelled_handoff_drops_destination_before_it_can_start_serving",
+    "raid_notice_handoff_guard_cannot_erase_a_reconnected_destination"
+  ]
+}

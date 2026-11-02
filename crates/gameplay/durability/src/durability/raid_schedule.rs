@@ -1,7 +1,16 @@
 //! Metadata CAS only; caller owns its semantic transaction/deadline and commit.
 //! Recovery and admission locks precede the named World/raid lock. Proposed
 //! reset/content facts do not authorize a World reset, actor or announcement.
+mod activity;
+mod calendar;
+mod lua;
+mod scheduler;
 mod storage;
+
+pub use activity::{MAX_RAID_ACTIVITY_PLAYERS, RaidActivityPlayer, RaidActivitySnapshot};
+pub use calendar::CalendarRaidScheduleCandidate;
+pub use lua::LuaRaidScheduleCandidate;
+pub use scheduler::{RaidScheduleCandidate, RaidSchedulerCheck, RaidSchedulerOutcome};
 
 use super::{
     DurabilityError, character_authority::assert_recovery_fence, db::lock_admission_relations,

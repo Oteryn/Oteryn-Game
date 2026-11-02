@@ -44,6 +44,9 @@ const FEE_WRITERS: &[&str] = &[
     "durability/npc_purchase.rs",
     "durability/npc_travel/paid.rs",
     "durability/prey/command.rs",
+    // Rotten Blood access burns its fee inside the Quest transaction; the NPC
+    // endgame owner holds the revision slot and invalidates its cursor before awaiting.
+    "durability/quest_state/rotten_blood_access.rs",
     // TASKBOARD-P04: talisman purchase participates in the existing fee owner.
     "durability/task_board/fee.rs",
 ];

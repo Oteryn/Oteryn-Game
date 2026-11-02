@@ -3,10 +3,12 @@
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
+    assert_item_only_fence,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
@@ -65,6 +67,36 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// The native query reads only through its current durable session, lease and scope.
+    /// Pending death-reward consumers retain the recovery-only reader below: their captured
+    /// occurrence can outlive the connection whose current query authority has ended.
+    pub async fn read_current_animus_masteries(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<Vec<String>, CharacterProgressionError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
+                        return Ok(Err(error));
+                    }
+                    let keys = read_in_transaction(&mut tx, fence.character_id).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(keys))
+                })
+            })
+            .await?
+    }
+
     /// Reads the character-owned completion set under the reconciled recovery authority.
     pub async fn read_animus_masteries(
         &self,
@@ -75,25 +107,34 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                let rows = sqlx::query(
-                    "SELECT species_key FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid ORDER BY species_key LIMIT $2",
-                )
-                .bind(character.as_bytes().as_slice())
-                .bind(MAX_ANIMUS_MASTERIES_SQL)
-                .fetch_all(&mut *tx)
-                .await?;
-                let keys = rows
-                    .into_iter()
-                    .map(|row| row.try_get::<String, _>("species_key"))
-                    .collect::<Result<Vec<_>, _>>()?;
-                commit_semantic_transaction(tx, deadline).await?;
-                Ok(Ok(keys))
-            }))
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let keys = read_in_transaction(&mut tx, character).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(keys))
+                })
+            })
             .await?
     }
+}
+
+async fn read_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> Result<Vec<String>, DurabilityError> {
+    let rows = sqlx::query(
+        "SELECT species_key FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid ORDER BY species_key COLLATE \"C\" LIMIT $2",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(MAX_ANIMUS_MASTERIES_SQL)
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.into_iter()
+        .map(|row| row.try_get::<String, _>("species_key"))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(DurabilityError::from)
 }
 
 /// The existing monotonic owner, composed in Soulpit's completion transaction. The caller

@@ -76,6 +76,7 @@ pub mod item_look;
 pub mod item_view;
 pub mod logout;
 pub mod loop_training;
+pub mod loyalty_skills;
 pub mod mail;
 pub mod market;
 pub mod npc_service;

@@ -4,8 +4,8 @@ use crate::combat_input::{CombatCommand, CombatReport};
 use oteryn_client_runtime::ClientRuntime;
 use oteryn_session::{
     ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, LogoutResult,
-    MAX_QUEUED_EVENTS, SessionEvent, SpellCastDisposition, StepDirection, StepDisposition,
-    StepOutcome, WorldSpatialObservation,
+    MAX_QUEUED_EVENTS, SessionError, SessionEvent, SpellCastDisposition, StepDirection,
+    StepDisposition, StepOutcome, WorldSpatialObservation,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};

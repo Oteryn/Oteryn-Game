@@ -81,7 +81,9 @@ impl State {
                 admitted.continuity.item_view = items.continuity();
             }
             visibility = Some(view);
-        } else if selected.domain_selected(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY) {
+        // Base visibility is a foundation domain even without a selected spatial
+        // capability. Only E12 hireling clients need this additional House view.
+        } else if enabled && selected.domain_selected(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY) {
             let observation = authority
                 .observe(actor)
                 .await

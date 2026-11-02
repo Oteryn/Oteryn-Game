@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
 """Extract daily world-change tile facts from the exact Crystal 201189f donor.
 
 No binary donor map enters the production tree. Blob hashes and the supported attribute
 subset are checked before the source positions/stacks are emitted as content data.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,22 +45,30 @@ def extract(donor: Path) -> dict:
             raise ValueError(f"{path}: donor blob differs from {REVISION}")
         tiles = []
 
-        def tile(x, y, z, flags, house, zones, items):
+        def tile(x, y, z, flags, house, zones, items, *, path=path, tiles=tiles):
             if house is not None or zones or len(items) > 64:
                 raise ValueError(f"{path}: unsupported tile owner at {(x, y, z)}")
             entries = []
             for appearance, depth, attrs in items:
                 if depth != 0 or set(attrs) - {4, 5, 15} or attrs.get(15, 0) != 0:
-                    raise ValueError(f"{path}: unsupported item attributes at {(x, y, z)}")
+                    raise ValueError(
+                        f"{path}: unsupported item attributes at {(x, y, z)}"
+                    )
                 entries.append([appearance, attrs.get(4), attrs.get(5)])
             tiles.append({"position": [x, y, z], "flags": flags, "entries": entries})
 
         facts = read_tiles(raw, tile)
         if facts.unknown_item_attrs or facts.unknown_tile_attrs:
             raise ValueError(f"{path}: unknown source attributes")
-        tiles.sort(key=lambda row: (row["position"][2], row["position"][1], row["position"][0]))
+        tiles.sort(
+            key=lambda row: (row["position"][2], row["position"][1], row["position"][0])
+        )
         layers.append({"key": key, "source": path, "blob": blob, "tiles": tiles})
-    return {"schema": "OTERYN_WORLD_CHANGE_LAYERS/v1", "source_revision": REVISION, "layers": layers}
+    return {
+        "schema": "OTERYN_WORLD_CHANGE_LAYERS/v1",
+        "source_revision": REVISION,
+        "layers": layers,
+    }
 
 
 def main():
@@ -71,14 +79,27 @@ def main():
     result = extract(args.donor)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     # One tile per line keeps the source geometry reviewable without a huge indentation tax.
-    lines = ["{", '  "schema": ' + json.dumps(result["schema"]) + ",",
-             '  "source_revision": ' + json.dumps(REVISION) + ",", '  "layers": [']
+    lines = [
+        "{",
+        '  "schema": ' + json.dumps(result["schema"]) + ",",
+        '  "source_revision": ' + json.dumps(REVISION) + ",",
+        '  "layers": [',
+    ]
     for index, layer in enumerate(result["layers"]):
-        lines.append("    {" + ", ".join(json.dumps(k) + ": " + json.dumps(layer[k])
-                     for k in ("key", "source", "blob")) + ', "tiles": [')
-        lines.extend("      " + json.dumps(tile, separators=(",", ":"))
-                     + ("," if i + 1 < len(layer["tiles"]) else "")
-                     for i, tile in enumerate(layer["tiles"]))
+        lines.append(
+            "    {"
+            + ", ".join(
+                json.dumps(k) + ": " + json.dumps(layer[k])
+                for k in ("key", "source", "blob")
+            )
+            + ', "tiles": ['
+        )
+        lines.extend(
+            "      "
+            + json.dumps(tile, separators=(",", ":"))
+            + ("," if i + 1 < len(layer["tiles"]) else "")
+            for i, tile in enumerate(layer["tiles"])
+        )
         lines.append("    ]}" + ("," if index + 1 < len(result["layers"]) else ""))
     lines.extend(["  ]", "}", ""])
     args.out.write_text("\n".join(lines))

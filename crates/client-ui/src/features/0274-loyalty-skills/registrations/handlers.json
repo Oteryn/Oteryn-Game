@@ -1,0 +1,15 @@
+{
+  "mechanic": "0274-loyalty-skills",
+  "kind": "handlers",
+  "id": "0274-loyalty-skills-query",
+  "status": "supported",
+  "commands": [
+    488
+  ],
+  "direction": "client_to_server",
+  "capability": 274,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Loyalty and trained levels are server-owned; this window has no local authority settings."
+  }
+}

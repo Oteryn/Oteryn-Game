@@ -1,4 +1,5 @@
 //! Same-node House transfers on the composed owner and the existing native carrier.
+use super::capabilities::SelectedCapabilities;
 use super::connection::{
     AdmittedSession, ConnectionIdentifiers, FirstEntryOutcome, SessionContinuity,
 };
@@ -22,6 +23,23 @@ mod session_views;
 
 /// None is an uncertain outcome: close, preserving the durable destination for recovery.
 pub(super) type TransferResult = Option<(Option<AdmittedSession>, Vec<u8>)>;
+
+/// A new command stream does not make the same physical player active again
+/// or replay its already delivered server messages.
+pub(super) fn handoff_continuity(
+    previous: SessionContinuity,
+    selected_capabilities: SelectedCapabilities,
+    connection_generation: u64,
+) -> SessionContinuity {
+    SessionContinuity {
+        gameplay_idle: previous.gameplay_idle,
+        server_message_revision: previous.server_message_revision,
+        server_motd_sent: previous.server_motd_sent,
+        selected_capabilities,
+        connection_generation,
+        ..SessionContinuity::FRESH
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn transfer_house(
@@ -346,12 +364,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         next.game_session_id = destination;
         next.first_entry = FirstEntryOutcome::Positioned;
         next.item_fence = super::item_fence_of(current);
-        next.continuity = SessionContinuity {
-            selected_capabilities: capabilities.selected(),
-            ..SessionContinuity::FRESH
-        };
-        // These are actor rate observations. The actual destination still starts
-        // its own command namespace and publication revisions.
+        next.continuity = handoff_continuity(
+            admitted.continuity,
+            capabilities.selected(),
+            ack.connection_generation,
+        );
+        // Actor rate observations survive the destination's new command namespace.
         next.continuity.combat.target_intents = admitted.continuity.combat.target_intents;
         next.continuity.combat.mode_intents = admitted.continuity.combat.mode_intents;
         self.carry_house_session_views(&admitted, &next)
@@ -374,6 +392,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
         }
+        self.states.gameplay_idle_presence.observe(next);
+        self.states
+            .gameplay_idle_presence
+            .forget(admitted.game_session_id);
+        // The physical connection's original guard owns this recipient across
+        // handoffs, including cancellation before its result reaches the wire.
+        self.states
+            .server_messages
+            .transfer_connection(admitted, next)
+            .ok()?;
         Some((Some(next), payload))
     }
 
@@ -786,6 +814,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(attack);
         drop(spells);
         drop(runtime);
+        let retained_idle = self
+            .states
+            .gameplay_idle_presence
+            .retained_idle(destination, actor)
+            .or_else(|| {
+                self.states
+                    .gameplay_idle_presence
+                    .retained_idle(recovered.source, actor)
+            });
         let account = recovered.account;
         let mut admitted = AdmittedSession {
             game_session_id: destination,
@@ -804,6 +841,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             item_fence: Some(fence),
         };
+        if let Some(idle) = retained_idle {
+            admitted.continuity.gameplay_idle = idle;
+        }
         if recovered.ack.house.is_none() {
             self.carry_recovered_house_session_views(recovered.source, &admitted)
                 .await?;
@@ -867,6 +907,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         .ok_or(Unavailable)?;
         self.states.command_ingress.admit(destination);
+        self.states.gameplay_idle_presence.observe(admitted);
+        self.states.gameplay_idle_presence.forget(recovered.source);
         Ok(Some(admitted))
     }
 }

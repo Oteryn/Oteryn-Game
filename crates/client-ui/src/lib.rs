@@ -2,6 +2,10 @@
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+/// Completed species and bounded Animus mastery pages.
+#[path = "features/0168-animus-mastery/mod.rs"]
+pub mod animus_mastery;
+
 /// World-interaction click intent mapping.
 pub mod world_interaction {
     include!(concat!(
@@ -16,9 +20,13 @@ pub mod paced_movement {
         "/src/features/0013-paced-movement/input.rs"
     ));
 }
+/// Native skills window with the account Loyalty projection.
+#[path = "features/0274-loyalty-skills/mod.rs"]
+pub mod loyalty_skills;
 /// Quest log panel and input bindings.
 #[path = "features/0016-quest-log/mod.rs"]
 pub mod quest_log;
+
 /// Logout key intent mapping.
 pub mod logout {
     include!(concat!(

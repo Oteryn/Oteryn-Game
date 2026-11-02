@@ -210,7 +210,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             std::thread::sleep(Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {
-            DestroyWindow(hwnd)
+            let _ = DestroyWindow(hwnd);
         }
         close(&weak)
     }
@@ -246,7 +246,7 @@ unsafe fn control(
     }
 }
 unsafe fn read_u8(hwnd: HWND) -> Option<u8> {
-    read_text(hwnd).trim().parse().ok()
+    unsafe { read_text(hwnd) }.trim().parse().ok()
 }
 unsafe fn read_text(hwnd: HWND) -> String {
     unsafe {

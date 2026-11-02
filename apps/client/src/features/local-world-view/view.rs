@@ -52,6 +52,7 @@ impl PlayView {
     /// Applies what the server pushed outside any step, coalesced: the latest own position and
     /// the latest entry per placement. Other domains are not drawn by this view.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        self.apply_server_messages(&pushed.server_messages);
         if let Some(position) = pushed.own {
             self.place(position);
         }

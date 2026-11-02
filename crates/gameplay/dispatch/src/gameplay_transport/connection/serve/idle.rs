@@ -23,14 +23,23 @@ where
     };
     let now = authority.gameplay_idle_now();
     let policy = authority.gameplay_idle_policy();
-    let idle = &mut session.admitted.continuity.gameplay_idle;
-    idle.training(now, training);
+    session
+        .admitted
+        .continuity
+        .gameplay_idle
+        .training(now, training);
+    authority.observe_gameplay_idle(session.admitted);
     // NOLOGOUT suppresses the warning/removal check, as in both pinned donors, but
     // does not refresh the clock. Leaving the tile re-evaluates the retained deadline.
     if training || no_logout {
         return Ok(());
     }
-    if idle.warning_due(now, policy) {
+    if session
+        .admitted
+        .continuity
+        .gameplay_idle
+        .warning_due(now, policy)
+    {
         // Reuse the negotiated status-text channel; no new unsolicited wire message.
         // Operator overrides must not advertise the default fifteen/one-minute timing.
         let warning = if policy == GameplayIdlePolicy::default() {

@@ -25,6 +25,9 @@ impl<S: SessionStream> Session<S> {
         match domain_id {
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
+            oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {
+                crate::server_messages::apply(self, server_sequence, payload)
+            }
             17 => crate::map_transport::apply(self, server_sequence, payload),
             oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE => {
                 self.appearance_delta(server_sequence, delta)
