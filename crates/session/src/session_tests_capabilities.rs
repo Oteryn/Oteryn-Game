@@ -24,6 +24,11 @@ fn derived_gated_routes_match_previous_table() {
         (148, &[161, 308, 309, 424], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),
+        // pkg4 additions: raid server messages arrive on domain 57 under 92 zones_nologout;
+        // animus mastery (168) and loyalty skills (274) query through their gated commands.
+        (92, &[], &[57]),
+        (168, &[232], &[]),
+        (274, &[488], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

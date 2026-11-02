@@ -97,7 +97,7 @@ fn global_definition(case: GlobalCase) -> TestResult<RaidDefinition> {
             entries: vec![WaveEntry {
                 creature: ProductionKey::new(if badger { "creature:badger" } else { "creature:rat" }).map_err(debug)?,
                 count: if badger { 100 } else { 2 },
-                area_anchor: ProductionKey::new("area:raid-test").map_err(debug)?,
+                area_anchor: ProductionKey::new("area:raid-anchor").map_err(debug)?,
             }],
         }],
     };
@@ -111,7 +111,7 @@ fn global_definition(case: GlobalCase) -> TestResult<RaidDefinition> {
         definition.despawn_after_ms = if matches!(case, GlobalCase::PersistentBoss) { None } else { Some(60_000) };
         definition.waves[0].entries.push(WaveEntry {
             creature: ProductionKey::new("creature:ferumbras").map_err(debug)?, count: 1,
-            area_anchor: ProductionKey::new("area:raid-test").map_err(debug)?,
+            area_anchor: ProductionKey::new("area:raid-anchor").map_err(debug)?,
         });
     }
     if matches!(case, GlobalCase::BossBeforeWave) {

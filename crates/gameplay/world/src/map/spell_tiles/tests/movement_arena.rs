@@ -46,7 +46,17 @@ pub fn rectangle(from: (u16, u16), to: (u16, u16), native_floor: i8) -> BundleWo
         max_y: to.1.saturating_add(1),
         floors: vec![native_floor],
     };
-    super::world_from_bundle(super::bundle_with_extent(Some(sectors), Some(extent)))
+    // Start next to the first authored corner (x 1, y 0 for `world`), so a rectangle
+    // authored at donor coordinates still boots on one of its own tiles.
+    let start = TilePos {
+        x: from.0.saturating_add(1).min(to.0),
+        y: from.1,
+        floor: native_floor,
+    };
+    super::world_from_bundle_at(
+        super::bundle_with_extent(Some(sectors), Some(extent)),
+        start,
+    )
 }
 
 pub fn cells(world_id: WorldId) -> NativeEntryMovementCells {
