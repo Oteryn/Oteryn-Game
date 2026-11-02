@@ -57,6 +57,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+    oteryn_protocol_oteryn::prey::CAPABILITY_PREY_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,

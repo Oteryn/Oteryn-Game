@@ -42,7 +42,7 @@ pub use oteryn_protocol_oteryn::player_trade;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
 /// Wheel and Atelier wire values for the selected client feature.
-pub use oteryn_protocol_oteryn::{atelier, wheel};
+pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 mod guild_chat;
 mod private_channels;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
@@ -94,7 +94,6 @@ pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide
 /// Capability-81 NPC shop wire values consumed by the native client adapter.
 pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
-pub use oteryn_protocol_oteryn::prey;
 pub use oteryn_protocol_oteryn::vip_presence::{
     PresenceBatch as VipPresenceBatch, PresenceEntry as VipPresenceEntry,
     Status as VipPresenceStatus,

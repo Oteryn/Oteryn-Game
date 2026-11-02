@@ -8,9 +8,11 @@ use crate::durability::prey::{PreyCatalogue, PreyMutation};
 use crate::durability::{DurabilityError, character_wheel::WheelPremiumGate};
 use oteryn_protocol_oteryn::prey as wire;
 
+#[path = "prey/kill.rs"]
+mod kill;
 #[path = "prey/live.rs"]
 mod live;
-pub(super) use live::LivePrey;
+pub(super) use live::{LivePrey, PreyActivity};
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
@@ -106,6 +108,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 };
                 if let Some(actor) = admitted.runtime_actor {
+                    let Some(catalogue) = self.prey_catalogue() else {
+                        return GuildReply::Unavailable;
+                    };
                     let runtime = self.runtime.lock().await;
                     self.states.spell_states.lock().await.load_prey(
                         &runtime,
@@ -113,6 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         admitted.game_session_id,
                         current.0,
                         current.1,
+                        catalogue.rules().defense_mode,
                     );
                 }
                 match wire::encode_reply(&reply) {
@@ -192,6 +198,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         result
     }
+
+    /// Store supplies an already authenticated immutable Platform delivery intent.
+    /// No Prey command can enter this grant boundary.
+    pub(super) async fn deliver_prey_expansion(
+        &self,
+        admitted: AdmittedSession,
+        delivery: crate::durability::prey::PreyStoreDelivery,
+    ) -> Option<crate::durability::store::DeliveryReceipt> {
+        let catalogue = self.prey_catalogue()?;
+        let expected = admitted.item_fence?;
+        let mut slot = self.revision_sequencer.acquire(expected.character_id).await;
+        let mut fence = super::character_gameplay_fence::current(self, admitted.game_session_id, true).await?;
+        if fence.connection_generation != expected.connection_generation
+            || fence.character_lease_generation != expected.character_lease_generation
+            || fence.scope_ownership_generation != expected.scope_ownership_generation
+            || fence.runtime_scope != expected.runtime_scope
+            || fence.character_id != expected.character_id
+        { return None; }
+        fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
+        let result = self.root.grant_prey_list_expansion(
+            self.character, self.holder, fence, delivery, &catalogue, &Premium(self.premium_coordinator)
+        ).await;
+        slot.observe_loop_training();
+        result.ok()
+    }
+
     pub(super) async fn admit_prey(&self, admitted: AdmittedSession) -> bool {
         if self.prey_catalogue().is_none() {
             return true;
@@ -222,6 +254,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if let Some(actor) = admitted.runtime_actor {
+            let Some(catalogue) = self.prey_catalogue() else { return false; };
             let runtime = self.runtime.lock().await;
             self.states.spell_states.lock().await.load_prey(
                 &runtime,
@@ -229,6 +262,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 admitted.game_session_id,
                 reply,
                 permanent,
+                catalogue.rules().defense_mode,
             );
         }
         true

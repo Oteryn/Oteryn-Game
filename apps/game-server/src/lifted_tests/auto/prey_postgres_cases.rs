@@ -100,7 +100,7 @@ async fn bounds(h: &Harness) -> TestResult {
     let empty: Vec<String> = vec![];
     for list in [
         empty,
-        (0..9).map(|n| format!("oteryn:creature.{n}")).collect(),
+        (0..64).map(|n| format!("oteryn:creature.{n}")).collect(),
         vec!["a".repeat(256)],
     ] {
         let valid: bool = sqlx::query_scalar("SELECT game_prey_creature_list_valid($1)")
@@ -113,7 +113,8 @@ async fn bounds(h: &Harness) -> TestResult {
         vec!["".into()],
         vec!["a".repeat(257)],
         vec!["rat".into(), "rat".into()],
-        (0..10).map(|n| format!("oteryn:creature.{n}")).collect(),
+        // OWNER-DEVIATION PREY-DIFF: configured9/12 list size, finite codec/storage ceiling64.
+        (0..65).map(|n| format!("oteryn:creature.{n}")).collect(),
     ] {
         let mut tx = h.pool.begin().await?;
         let rejected = sqlx::query("INSERT INTO game_character_prey_slots(character_id,slot,state,hunting_s_left,slot_epoch,creature_list) VALUES(encode($1,'hex')::uuid,1,'SELECTION',0,1,$2)")

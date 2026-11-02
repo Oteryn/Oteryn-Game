@@ -294,6 +294,9 @@ pub struct CreatureProfilesDocument {
     /// This is not the caller-supplied outer artifact digest or an actor identity claim.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_definitions_sha256: Option<String>,
+    /// PREY-DIFF runtime data; absent on historical content generations.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prey_rules: Option<serde_json::Value>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
