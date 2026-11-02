@@ -98,8 +98,11 @@ pub(super) async fn execute(
         .await
     {
         Ok(prepared) => prepared,
-        // Preparation only reads fences/receipts; no new VIP write has started.
-        Err(_) => return wire::encode_result(9, 0, 0, 0, "").ok(),
+        // A busy root issued no semantic pass; no new VIP write has started.
+        Err(crate::durability::DurabilityError::RootUnavailable) => {
+            return wire::encode_result(9, 0, 0, 0, "").ok();
+        }
+        Err(_) => return None,
     };
     let result = match prepared {
         VipPrepared::Replayed(result) => result,

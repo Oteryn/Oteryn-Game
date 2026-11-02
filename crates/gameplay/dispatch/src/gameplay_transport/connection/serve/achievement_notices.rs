@@ -54,6 +54,16 @@ pub(super) async fn immediate<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>
     session: &mut ServeState,
     notice: &EarnedNotice,
 ) -> Result<(), ServeEnd> {
+    if notice == &EarnedNotice::Unknown
+        && session.notices_selected
+        && session
+            .admitted
+            .continuity
+            .achievement_notice_revision
+            .is_some()
+    {
+        return Err(ServeEnd::Disconnected);
+    }
     if let EarnedNotice::Earned(earned) = notice {
         if session.achievement_notices.is_some() {
             // The source committed earlier; its transport may have been replaced while
