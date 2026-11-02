@@ -708,7 +708,12 @@ jobs:
           if [[ "$ENUMERATION_COMPLETE" != 'true' ]]; then
             git fetch --no-tags --depth=1 origin "$EXPECTED_BASE" || true
           fi
-          python -I tools/ci/classify_pr_test_lanes.py "$RUNNER_TEMP/rust-fast-metadata.json" > "$RUNNER_TEMP/rust-selection.json"
+          if [[ -f tools/ci/classify_pr_test_lanes.py ]]; then
+            python -I tools/ci/classify_pr_test_lanes.py "$RUNNER_TEMP/rust-fast-metadata.json" > "$RUNNER_TEMP/rust-selection.json"
+          else
+            # A head based on main before the selector landed has no script: lint and test the whole workspace.
+            echo '{"mode": "workspace", "packages": []}' > "$RUNNER_TEMP/rust-selection.json"
+          fi
           export RUST_SELECTION
           RUST_SELECTION="$(cat "$RUNNER_TEMP/rust-selection.json")"
           python - "$RUNNER_TEMP/rust-fast-metadata.json" "$RUNNER_TEMP/rust-fast-packages.tsv" <<'PY'
