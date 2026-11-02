@@ -243,6 +243,7 @@ pub trait Stepper: Send {
         _intent: &oteryn_session::ChatIntent,
     ) -> impl Future<Output = Result<oteryn_session::ChatOutcome, SessionError>> + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 259 }) }
+    }
     fn player_typing_selected(&self) -> bool {
         false
     }
@@ -506,6 +507,11 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_public_result(&outcome);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::PlayerTyping(command)) => match session.player_typing(&command).await {
                 Ok(response) => {
                     outbox.player_typing_result(command, response);
