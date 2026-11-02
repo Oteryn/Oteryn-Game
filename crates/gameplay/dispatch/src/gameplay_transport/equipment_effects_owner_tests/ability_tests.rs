@@ -102,6 +102,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
+    // Quests 6: Rookie wasp poison 12784 from Crystal
+    // 201189f871d23597b82caf88fd611454a2ddefb8:
+    // data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:307-319.
+    // tools/content-migration/quest_callback_profiles.py:120-213 retains its canonical
+    // admission and digest-pinned XML/default speed_bonus=0: one distinct native key.
+    ("QUESTS-6", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.
@@ -175,6 +181,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    let rookie_poison = profiles
+        .records
+        .iter()
+        .find(|record| record.production_definition.production_key == "oteryn:item.tibia.i12784")
+        .ok_or("missing source-qualified quests6 wasp poison")?;
+    assert!(rookie_poison.admission.materializable);
+    assert_eq!(rookie_poison.attributes.speed_bonus, Some(0));
     // This expected set comes from the independently pinned source catalogue and the
     // explicit Item admission gaps, never from the native profiles being tested.
     // These are known zero-speed Items, so the pre-existing unknown-speed set below

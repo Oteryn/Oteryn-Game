@@ -119,3 +119,22 @@ fn quests6_galthen_literal_exits_do_not_create_a_progress_track() -> Result<(), 
     Ok(())
 }
 
+#[test]
+fn quests6_unqualified_position_uses_are_not_active_on_ground() -> Result<(), String> {
+    let callbacks = load()?;
+    for c in &callbacks {
+        assert!(
+            !c.key
+                .starts_with("oteryn:quest-callback/anniversary-time-machine-")
+        );
+        assert!(
+            ![
+                "oteryn:quest-callback/galthen-iksupan-stairs-1",
+                "oteryn:quest-callback/galthen-iksupan-stairs-2",
+                "oteryn:quest-callback/galthen-mitmah-exit"
+            ]
+            .contains(&c.key.as_str())
+        );
+    }
+    Ok(())
+}

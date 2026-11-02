@@ -476,6 +476,8 @@ pub(super) async fn wire(
 mod actions;
 #[path = "quest_world_callbacks/assertions.rs"]
 mod assertions;
+#[path = "quest_world_callbacks/quests6.rs"]
+mod quests6;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
