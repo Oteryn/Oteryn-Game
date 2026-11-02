@@ -8,7 +8,8 @@ impl PlayLink {
 
     pub fn chat_party_room_send(&self) {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(intent) = oteryn_client_ui::chat_party_room::request(&mut mailbox.chat_party_room)
+        if let Some(intent) =
+            oteryn_client_ui::chat_party_room::request(&mut mailbox.chat_party_room)
             && self.commands.send(PlayCommand::ChatPublic(intent)).is_err()
         {
             mailbox.chat_party_room.pending = false;

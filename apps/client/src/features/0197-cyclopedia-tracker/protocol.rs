@@ -12,6 +12,9 @@ impl Outbox {
     }
     pub(in crate::play) fn cyclopedia_tracker_push(&self, payload: Vec<u8>) {
         let mut mailbox = lock(&self.0);
-        oteryn_client_ui::cyclopedia_tracker::apply_snapshot(&mut mailbox.cyclopedia_tracker, &payload);
+        oteryn_client_ui::cyclopedia_tracker::apply_snapshot(
+            &mut mailbox.cyclopedia_tracker,
+            &payload,
+        );
     }
 }

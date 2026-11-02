@@ -21,4 +21,15 @@ impl PlayLink {
     }
 }
 
-pub(super) fn enqueue(mailbox: &mut crate::play::mailbox::Mailbox, commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>, intent: Intent) { if let Some(command)=request(&mut mailbox.cyclopedia_tracker,intent) && commands.send(PlayCommand::Feature(command)).is_err(){mailbox.cyclopedia_tracker.pending=false;mailbox.cyclopedia_tracker.feedback=Some("The session has ended");} }
+pub(super) fn enqueue(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    intent: Intent,
+) {
+    if let Some(command) = request(&mut mailbox.cyclopedia_tracker, intent)
+        && commands.send(PlayCommand::Feature(command)).is_err()
+    {
+        mailbox.cyclopedia_tracker.pending = false;
+        mailbox.cyclopedia_tracker.feedback = Some("The session has ended");
+    }
+}
