@@ -21,12 +21,23 @@
   {
     "mechanic": "0259-chat-public-channels",
     "kind": "handlers",
-    "id": "0259-chat-public-channels-unsupported",
-    "status": "unsupported",
-    "reason": "Capability 259 extends command 13 owned by the still-unsupported capability-7 registration; client registration tooling permits only one handler owner per command.",
+    "id": "0259-chat-public-channels-push",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 259,
+    "entry": "protocol.rs::replace_state",
+    "push_messages": [
+      "ChatRooms",
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::replace_state",
+    "test": "tests/state.rs::server_room_projection_and_lines_replace_panel_state",
+    "shared_commands": [
+      13
+    ],
     "not_applicable": {
-      "protocol": "The native route exists, but cannot be registered independently from its capability-7 command owner."
+      "settings": "Public room access and membership are server-owned."
     }
   }
 ]

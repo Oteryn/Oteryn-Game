@@ -86,7 +86,7 @@ fn cl25j_feature_commands_cross_the_session_loop()
             outbox.item_forge_initialize(true);
             link.daily_boost_request(Intent {
                 command: 177,
-                payload: vec![1],
+                payload: vec![],
             });
             link.item_forge_request(vec![2]);
             tokio::runtime::Builder::new_current_thread()

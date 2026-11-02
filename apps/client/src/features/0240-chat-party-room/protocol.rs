@@ -4,6 +4,20 @@ impl Outbox {
     pub(in crate::play) fn chat_party_room_initialize(&self, selected: bool) {
         lock(&self.0).chat_party_room.selected = selected;
     }
+    pub(in crate::play) fn chat_party_room_result(&self) {
+        oteryn_client_ui::chat_party_room::apply_result(&mut lock(&self.0).chat_party_room);
+    }
+    pub(in crate::play) fn chat_result(
+        &self,
+        intent: &oteryn_session::ChatIntent,
+        outcome: &oteryn_session::ChatOutcome,
+    ) {
+        if matches!(intent, oteryn_session::ChatIntent::Party { .. }) {
+            self.chat_party_room_result();
+        } else {
+            self.chat_public_result(outcome);
+        }
+    }
 }
 pub(in crate::play) fn chat_line(pushed: &mut Pushed, delta: AppliedDelta<ChatLine>) {
     pushed.chat_lines.push(delta.value);

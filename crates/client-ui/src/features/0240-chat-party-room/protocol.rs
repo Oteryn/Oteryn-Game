@@ -1,4 +1,30 @@
 use super::ChatPartyRoomPanel;
+use oteryn_client_runtime::chat_public_channels::ChatIntent;
+
+pub fn request(panel: &mut ChatPartyRoomPanel) -> Option<ChatIntent> {
+    if !panel.selected {
+        panel.feedback = Some("Party chat is unavailable in this session".into());
+        return None;
+    }
+    if panel.pending {
+        panel.feedback = Some("Waiting for the server".into());
+        return None;
+    }
+    if panel.text.is_empty() || panel.text.len() > 1_020 {
+        panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
+        return None;
+    }
+    panel.pending = true;
+    panel.feedback = None;
+    Some(ChatIntent::Party {
+        text: panel.text.clone(),
+    })
+}
+
+pub fn apply_result(panel: &mut ChatPartyRoomPanel) {
+    panel.pending = false;
+}
+
 pub fn replace_rooms(
     panel: &mut ChatPartyRoomPanel,
     rooms: oteryn_client_runtime::cl25a_protocol::ChatRoomSet,
