@@ -156,6 +156,7 @@ impl PlayView {
 mod end;
 mod mailbox;
 mod session_loop;
+mod session_stepper;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
