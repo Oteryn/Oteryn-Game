@@ -2476,6 +2476,81 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:15",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:21"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/lions-rock-inner-sanctum-entry",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33128,
+          "y": 32308,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33122,
+        "y": 32308,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 4,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You have to pass the Lion's Tests to enter the inner sanctum!",
+      "success_message": "You have passed the Lion's Tests and are now worthy to enter the inner sanctum!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:28-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lions-rock-temple-message",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32274,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/message",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You enter a temple area which is gorgeously decorated and mysteriously unaffected by the course of time.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:128-144"
+      ]
     }
   ]
 }

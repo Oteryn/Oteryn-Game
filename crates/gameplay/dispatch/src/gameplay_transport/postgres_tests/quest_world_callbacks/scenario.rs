@@ -231,6 +231,8 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
                 .await
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&1));
+        } else if name == "lions-rock-inner-sanctum-entry" {
+            super::lions_rock::exercise(&mut owner, &mut admitted, &h, &authority, fence, &callback, origin).await?;
         } else if name == "liquid-black-shortcut" {
             // The source shortcut has no text. Exercise the generic authored refusal message
             // without changing that source binding in production content.

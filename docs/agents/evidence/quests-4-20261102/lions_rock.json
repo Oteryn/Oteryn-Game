@@ -1,0 +1,792 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "lions_rock",
+    "frozen_stage1": {
+      "total": 14,
+      "auto": 0,
+      "manual": 14
+    },
+    "authored_callback_definitions": 2,
+    "runtime_catalogue_callback_definitions": 2,
+    "runtime_exclusions": [],
+    "npc_source_files": 0,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Dwa callbacki; test realnego STEP odmowy i pojedynczego komunikatu.",
+    "left_out_summary": "Pozostałe granty, transforms, timery, znaki, pola i losowa fontanna pozostają poza granicą wspólnych modułów."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 10,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A010",
+        "original_index": 10,
+        "quest": "lions_rock",
+        "step": "Próba Strength",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Próba Strength",
+          "pattern": "P02/P16",
+          "trigger": "item9634 na33137,32291,8",
+          "condition": "LionsStrength<1; pagoda2074 w pozycji z konfiguracji",
+          "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa9634;2074→2075, reset15s",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:15"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Każda z trzech pagód2074 jest fizycznie obecna, a odpowiednie przedmioty mają natywne admission;9634 ma profil niezależny od reference-only nagłówka. Brak dotyczy atomowej konsumpcji, flag/Questline, transformacji pagody i resetu15s.",
+        "missing_function": "Jedna fenced operacja Inventory/Quest/World: consume1, właściwa flaga1, max(old,1)+1,2074→2075 i zachowany reset2074 po15s; pełny tekst bez dodatkowego grant.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:15"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 11,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A011",
+        "original_index": 11,
+        "quest": "lions_rock",
+        "step": "Próba Beauty",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Próba Beauty",
+          "pattern": "P02/P16",
+          "trigger": "item21389 na33138,32369,8",
+          "condition": "LionsBeauty<1; pagoda2074 w pozycji z konfiguracji",
+          "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa21389;2074→2075, reset15s",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:23"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Każda z trzech pagód2074 jest fizycznie obecna, a odpowiednie przedmioty mają natywne admission;9634 ma profil niezależny od reference-only nagłówka. Brak dotyczy atomowej konsumpcji, flag/Questline, transformacji pagody i resetu15s.",
+        "missing_function": "Jedna fenced operacja Inventory/Quest/World: consume1, właściwa flaga1, max(old,1)+1,2074→2075 i zachowany reset2074 po15s; pełny tekst bez dodatkowego grant.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:23"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 12,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A012",
+        "original_index": 12,
+        "quest": "lions_rock",
+        "step": "Próba Tears",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Próba Tears",
+          "pattern": "P02/P16",
+          "trigger": "item21466 na33154,32279,8",
+          "condition": "LionsTears<1; pagoda2074 w pozycji z konfiguracji",
+          "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa21466;2074→2075, reset15s",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:31"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Każda z trzech pagód2074 jest fizycznie obecna, a odpowiednie przedmioty mają natywne admission;9634 ma profil niezależny od reference-only nagłówka. Brak dotyczy atomowej konsumpcji, flag/Questline, transformacji pagody i resetu15s.",
+        "missing_function": "Jedna fenced operacja Inventory/Quest/World: consume1, właściwa flaga1, max(old,1)+1,2074→2075 i zachowany reset2074 po15s; pełny tekst bez dodatkowego grant.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:31"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 13,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A013",
+        "original_index": 13,
+        "quest": "lions_rock",
+        "step": "Zerwanie kwiatu",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Zerwanie kwiatu",
+          "pattern": "P02/P16",
+          "trigger": "Use item21388",
+          "condition": "Brak gate gracza",
+          "effect": "daje21389; Questline=max(old,1); TibiaTales.DefaultStart=1;21388→21935→21388 po60s",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:83"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Osiem dokładnych donor placements21388 zostało odczytanych strukturalnie z OTBM; native nie ma21388. Dane flower/21935/21389 są znane. Dodatkowo pełny grant i powrót obiektu po60s wymagają wspólnego ownera.",
+        "missing_function": "Rzeczywiste admission ośmiu source map objects oraz atomowe grant21389/Questline/DefaultStart/transform21388→21935 i reset po60s.",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:83"
+        ],
+        "evidence": [
+          "lions-source-placement-qualification.json",
+          "lions-flower-source-probe.json",
+          "lions-map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 14,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A014",
+        "original_index": 14,
+        "quest": "lions_rock",
+        "step": "Święta woda",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Święta woda",
+          "pattern": "P02",
+          "trigger": "Use33137,32351,6",
+          "condition": "Brak gate gracza",
+          "effect": "daje21466; Questline=max(old,1); TibiaTales.DefaultStart=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:101"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Source rule, tile i natywne21466 są kompletne. Każde użycie daje nową wodę; jednorazowe uprawnienie Monk nie jest równoważnym zachowaniem.",
+        "missing_function": "Powtarzalny atomowy grant21466 wraz z Questline=max(old,1) i TibiaTales.DefaultStart1 przez istniejących ownerów, bez nowej polityki once-claim.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:101"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "item-admissions.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 15,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A015",
+        "original_index": 15,
+        "quest": "lions_rock",
+        "step": "Wejście do inner sanctum",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Wejście do inner sanctum",
+          "pattern": "P03",
+          "trigger": "StepIn33128,32308,8",
+          "condition": "Questline>=4, zachować dokładną obecną wartość",
+          "effect": "Teleport33122,32308,8; w odmowie powrót fromPosition",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:31"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Pełny selector pozycyjny i top-level tile istnieją w B3. Source callback używa istniejącego właściciela TibiaTales i zachowuje dokładne guardy oraz tekst; sam rekord i B3 nie stanowią dowodu kompletnej grywalności Lions Rock.",
+        "missing_function": "Osobna kwalifikacja compiled MapFacts i zwykłego ingress w parent-owned testach. Źródłowe efekty magic pozostają osobno Left out, bez rozszerzenia ownerów.",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:31"
+        ],
+        "evidence": [
+          "callbacks-lions_rock.json",
+          "lions-callback-fragments-evidence.json",
+          "lions-map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lions-rock-inner-sanctum-entry",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": true,
+          "qualification_evidence": "lions-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 16,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A016",
+        "original_index": 16,
+        "quest": "lions_rock",
+        "step": "Rozbicie amfory",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Rozbicie amfory",
+          "pattern": "P02/P16",
+          "trigger": "8pozycji otaczających33119,32247,9 (m:54-62)",
+          "condition": "Questline=4 i amphora21945",
+          "effect": "21945→21946; Questline=5; daje21467; reset15s",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:66"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Wszystkie osiem trigger tiles, amfora21945 oraz21467 istnieją. Źródłowe Questline4→5, grant i reset15s są znane; brak implementacji tej kompozycji nie jest brakiem danych.",
+        "missing_function": "Atomowe przekształcenie środkowej21945→21946, grant21467, Questline5 i trwały reset21945 po15s z dowolnego z ośmiu source StepIn.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:66"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 17,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A017",
+        "original_index": 17,
+        "quest": "lions_rock",
+        "step": "Inskrypcja Snake",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Inskrypcja Snake",
+          "pattern": "P18",
+          "trigger": "StepIn33095,32244,9",
+          "condition": "SnakeSign<1; ma21467; pozycja dokładna",
+          "effect": "SnakeSign=1; Questline+=1; dwa teksty źródłowe",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:2"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Cztery pozycje i scroll21467 są obecne. Guard wymaga posiadania scrolla bez konsumpcji i nie wymaga Questline. Istniejące callback offerings zużywają przedmiot, więc nie wolno użyć ich jako tego guardu.",
+        "missing_function": "Read-only carried-item predicate21467>=1 połączony z konkretną sign flag<1, dwoma źródłowymi komunikatami, flag1 i Questline+1 w jednej fenced ścieżce.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:2"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 18,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A018",
+        "original_index": 18,
+        "quest": "lions_rock",
+        "step": "Inskrypcja Lizard",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Inskrypcja Lizard",
+          "pattern": "P18",
+          "trigger": "StepIn33130,32300,9",
+          "condition": "LizardSign<1; ma21467; pozycja dokładna",
+          "effect": "LizardSign=1; Questline+=1; dwa teksty źródłowe",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:8"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Cztery pozycje i scroll21467 są obecne. Guard wymaga posiadania scrolla bez konsumpcji i nie wymaga Questline. Istniejące callback offerings zużywają przedmiot, więc nie wolno użyć ich jako tego guardu.",
+        "missing_function": "Read-only carried-item predicate21467>=1 połączony z konkretną sign flag<1, dwoma źródłowymi komunikatami, flag1 i Questline+1 w jednej fenced ścieżce.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:8"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 19,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A019",
+        "original_index": 19,
+        "quest": "lions_rock",
+        "step": "Inskrypcja Scorpion",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Inskrypcja Scorpion",
+          "pattern": "P18",
+          "trigger": "StepIn33109,32329,9",
+          "condition": "ScorpionSign<1; ma21467; pozycja dokładna",
+          "effect": "ScorpionSign=1; Questline+=1; dwa teksty źródłowe",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:14"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Cztery pozycje i scroll21467 są obecne. Guard wymaga posiadania scrolla bez konsumpcji i nie wymaga Questline. Istniejące callback offerings zużywają przedmiot, więc nie wolno użyć ich jako tego guardu.",
+        "missing_function": "Read-only carried-item predicate21467>=1 połączony z konkretną sign flag<1, dwoma źródłowymi komunikatami, flag1 i Questline+1 w jednej fenced ścieżce.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:14"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 20,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A020",
+        "original_index": 20,
+        "quest": "lions_rock",
+        "step": "Inskrypcja Hyena",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Inskrypcja Hyena",
+          "pattern": "P18",
+          "trigger": "StepIn33127,32340,9",
+          "condition": "HyenaSign<1; ma21467; pozycja dokładna",
+          "effect": "HyenaSign=1; Questline+=1; dwa teksty źródłowe",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:20"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Cztery pozycje i scroll21467 są obecne. Guard wymaga posiadania scrolla bez konsumpcji i nie wymaga Questline. Istniejące callback offerings zużywają przedmiot, więc nie wolno użyć ich jako tego guardu.",
+        "missing_function": "Read-only carried-item predicate21467>=1 połączony z konkretną sign flag<1, dwoma źródłowymi komunikatami, flag1 i Questline+1 w jednej fenced ścieżce.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:20"
+        ],
+        "evidence": [
+          "lions-map-qualification.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 21,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A021",
+        "original_index": 21,
+        "quest": "lions_rock",
+        "step": "Komunikat świątyni",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Komunikat świątyni",
+          "pattern": "P03",
+          "trigger": "StepIn33080,32274,10",
+          "condition": "InnerSanctum.Message<1",
+          "effect": "Message=1; tekst źródłowy; bez teleportu",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:131"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Pełny selector pozycyjny i top-level tile istnieją w B3. Source callback używa istniejącego właściciela TibiaTales i zachowuje dokładne guardy oraz tekst; sam rekord i B3 nie stanowią dowodu kompletnej grywalności Lions Rock.",
+        "missing_function": "Osobna kwalifikacja compiled MapFacts i zwykłego ingress w parent-owned testach. Źródłowe efekty magic pozostają osobno Left out, bez rozszerzenia ownerów.",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:131"
+        ],
+        "evidence": [
+          "callbacks-lions_rock.json",
+          "lions-callback-fragments-evidence.json",
+          "lions-map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lions-rock-temple-message",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": true,
+          "qualification_evidence": "lions-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 22,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A022",
+        "original_index": 22,
+        "quest": "lions_rock",
+        "step": "Fontanna: losowanie",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Fontanna: losowanie",
+          "pattern": "P05/P17",
+          "trigger": "Use33073,32300,9, item6389",
+          "condition": "Time<os.time(); przy mount40 pomijaj lion's heart",
+          "effect": "Jedna z7nagród;6389→1852; Time=now+86400; Questline=11; achievement Lion's Den Explorer",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:115"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Natywny1852 jest prawidłowym początkowym kamieniem; źródłowe gems tworzą6389 później. Nie jest to brak danych fontanny. Losowy powtarzalny grant, mount40, clock, achievement i transformacja nie są zamkniętą istniejącą ścieżką tej partii; odmowa należy do tego samego dynamicznego obiektu.",
+        "missing_function": "Zamknięty fountain caller: Time<now, filtr mount40, jedna z7 source nagród,6389→1852,Time=now+86400,Questline11,achievement; Time>=now tylko source text. Bez zgadywania item-name→ID.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:115"
+        ],
+        "evidence": [
+          "lions-target-source-inputs.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 23,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A023",
+        "original_index": 23,
+        "quest": "lions_rock",
+        "step": "Fontanna: odmowa w cooldown",
+        "original_row": {
+          "quest": "lions_rock",
+          "step": "Fontanna: odmowa w cooldown",
+          "pattern": "P17",
+          "trigger": "Ten sam obiekt",
+          "condition": "Time>=os.time()",
+          "effect": "Tylko komunikat, bez nagrody",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:138"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Natywny1852 jest prawidłowym początkowym kamieniem; źródłowe gems tworzą6389 później. Nie jest to brak danych fontanny. Losowy powtarzalny grant, mount40, clock, achievement i transformacja nie są zamkniętą istniejącą ścieżką tej partii; odmowa należy do tego samego dynamicznego obiektu.",
+        "missing_function": "Zamknięty fountain caller: Time<now, filtr mount40, jedna z7 source nagród,6389→1852,Time=now+86400,Questline11,achievement; Time>=now tylko source text. Bez zgadywania item-name→ID.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:138"
+        ],
+        "evidence": [
+          "lions-target-source-inputs.json",
+          "lions-target-item-semantics.json",
+          "../worker-cults/left-out-final.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}
