@@ -90,6 +90,8 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/party_xp/task_board_ordered.rs",
                 2,
             ),
+            // XMECH-E2E-1: the hunt, death and disconnect scenarios attack through the real gate.
+            ("gameplay_transport/postgres_tests/scenarios/mod.rs", 3),
         ],
     },
     Entry {
