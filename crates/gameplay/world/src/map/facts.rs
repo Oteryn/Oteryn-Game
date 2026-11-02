@@ -24,7 +24,7 @@
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
-use super::overlay::{AddedItem, TilePos, pickup};
+use super::overlay::{AddedItem, EntryId, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
@@ -38,6 +38,15 @@ mod quest_callbacks;
 use quest_callbacks::CallbackStates;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
+
+/// A source movement talk line, retained for the shared presentation publisher.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MovementSpeech {
+    pub speaker: crate::foundation::ExactActorRef,
+    pub position: TilePos,
+    pub talk_type: u8,
+    pub text: &'static str,
+}
 
 /// The served definition of the Item a palette key names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +103,8 @@ struct Placement {
 #[derive(Debug, Default)]
 pub struct BundleFacts {
     palette: Vec<PaletteFacts>,
+    /// Movement targets may be unplaced; these are resolved by the same served Item index.
+    movement_definitions: BTreeMap<u16, EntryFacts>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -133,8 +144,29 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        let movement_definitions = [12369, 26077, 26087, 26100]
+            .into_iter()
+            .chain(6594..=6608)
+            .filter_map(|id| {
+                let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
+                Some((
+                    id,
+                    EntryFacts {
+                        definition: MapDefinition::Item(definition.reference),
+                        terrain_kind: None,
+                        appearance_id: id,
+                        blocks_projectile: definition.blocks_projectile,
+                        pickupable: definition.pickupable,
+                        bound: false,
+                        count: 1,
+                        sub_type: 0,
+                    },
+                ))
+            })
+            .collect();
         Ok(Self {
             palette,
+            movement_definitions,
             ids: unique,
             placements: Vec::new(),
             houses: Vec::new(),
@@ -835,6 +867,16 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.callbacks.lock().ok()?.movement_item(id)
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.callbacks
+            .lock()
+            .ok()
+            .and_then(|s| s.movement_items.get(&pos).cloned())
+            .unwrap_or_default()
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         let found = self
             .placements
@@ -896,6 +938,15 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.callbacks.as_ref()?.movement_item(id)
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.callbacks
+            .as_ref()
+            .and_then(|s| s.movement_items.get(&pos).cloned())
+            .unwrap_or_default()
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         self.facts.base_text(key)
     }

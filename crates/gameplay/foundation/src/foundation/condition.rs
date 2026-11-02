@@ -246,6 +246,18 @@ impl ConditionDefinition {
         Some(definition)
     }
 
+    /// Crystal bath_tub.lua:9-11: ticks -1 with lookTypeEx is a permanent Item outfit.
+    /// The caller must attach the qualified Item with `with_item_appearance`.
+    pub fn new_permanent_item_outfit(key: &str, revision: u32) -> Option<Self> {
+        let mut definition = Self::new(
+            key,
+            revision,
+            ConditionValues::ItemOutfit { duration_ms: 1 },
+        )?;
+        definition.permanent_outfit = true;
+        Some(definition)
+    }
+
     pub fn new_damage_schedule(
         key: &str,
         revision: u32,
