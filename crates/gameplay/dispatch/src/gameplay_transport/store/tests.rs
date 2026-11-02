@@ -3,9 +3,27 @@
 use super::*;
 
 #[test]
+fn store_catalogue_revision_is_canonical_sha256_and_changes_with_an_offer() {
+    let bytes = include_bytes!("../../../../../../rulesets/economy/store/catalogue.json");
+    let mut document: serde_json::Value = serde_json::from_slice(bytes).expect("catalogue JSON");
+    document.sort_all_objects();
+    let canonical = serde_json::to_vec(&document).expect("canonical catalogue");
+    let catalogue = RuntimeCatalogue::from_json(bytes).expect("catalogue");
+    let revision = catalogue.rules.revision();
+    assert_eq!(revision.len(), 64);
+    assert!(revision.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    let expected: String = Sha256::digest(&canonical).iter().map(|byte| format!("{byte:02x}")).collect();
+    assert_eq!(revision, expected);
+    assert_eq!(RuntimeCatalogue::from_json(&canonical).expect("compact catalogue").rules.revision(), revision);
+    document["offers"][0]["price"] = serde_json::json!(26);
+    let changed = RuntimeCatalogue::from_json(&serde_json::to_vec(&document).expect("changed JSON")).expect("changed catalogue");
+    assert_ne!(changed.rules.revision(), revision);
+}
+
+#[test]
 fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revision() {
     let catalogue=HIRELING_CATALOGUE.as_ref().expect("hireling catalogue");
-    assert_eq!(catalogue.rules.revision(),"store-hireling-crystal-201189f-v1");
+    assert_eq!(catalogue.rules.revision(),"e7e06a2b1ce23df40cc05be37882eb4b2d4139a5bbc112abd893e8eb526d890d");
     // Crystal201189f gamestore.lua:6303-6472, generated together from the donor.
     for (id,price) in [(25440,150),(25438,250),(25437,120),(1001,250),(1002,900),(1003,250),(1004,250),(2001,500),(2002,500),(2003,500),(2004,500),(2005,300),(2006,900),(2007,900),(2008,900),(2009,900)] {
         let key=format!("store:hireling:{id}");
@@ -15,13 +33,13 @@ fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revisi
     assert_eq!(catalogue.rules.offers_in_category("houses.hirelings",None,32).expect("page").len(),7);
     assert_eq!(catalogue.rules.offers_in_category("houses.hireling-dresses",None,32).expect("page").len(),9);
     assert_eq!(catalogue.item_revision("store:hireling:25440"),Some("definition-r1"));
-    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"store-catalogue-r1");
+    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
 }
 
 #[test]
 fn store_catalogue_admits_the_exercise_weapon_offers() {
     let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
-    assert_eq!(catalogue.rules.revision(), "store-catalogue-r1");
+    assert_eq!(catalogue.rules.revision(), "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
     let offer = catalogue.rules.offer("store:exercise-sword").expect("offer");
     // Canary 52550d5e consumables_exercise_weapons.lua:118-121: 25 coins, item 28552.
     assert_eq!(offer.price_coins, 25);
@@ -43,7 +61,7 @@ fn store_catalogue_admits_the_exercise_weapon_offers() {
 
 #[test]
 fn store_catalogue_refuses_open_or_unpriced_documents() {
-    let base = r#"{"schema":"OTERYN_STORE_RUNTIME_CATALOGUE/v1","catalog_revision":"r","source":{},
+    let base = r#"{"schema":"OTERYN_STORE_RUNTIME_CATALOGUE/v1","source":{},
         "offers":[{"key":"k","category":"c","title":"t","price":PRICE,"currency":"CUR",
         "item":{"key":"i","revision":"r","charges":1},"source_line":1}]}"#;
     let document = |price: &str, currency: &str| base.replace("PRICE", price).replace("CUR", currency);
@@ -125,4 +143,50 @@ fn prey_expansion_store_offer_has_one_per_character_unlock_and_no_item_delivery(
     assert_eq!(rules::build_quote(&catalogue.rules, &offer.key, &character).expect("new").price, 17);
     character.owned_unlocks.insert("prey-list-expansion".into());
     assert_eq!(rules::build_quote(&catalogue.rules, &offer.key, &character), Err(rules::QuoteRefusal::UnlockAlreadyOwned));
+}
+
+#[test]
+fn store_platform_currency_refuses_the_removed_transferable_coin_kind() {
+    assert_eq!(platform_currency(rules::CurrencyKind::TibiaCoin), Ok("COINS"));
+    assert_eq!(
+        platform_currency(rules::CurrencyKind::TransferableTibiaCoin),
+        Err(wire::StorePurchaseCode::OfferUnavailable)
+    );
+}
+
+#[test]
+fn store_restored_backup_unit_refuses_without_platform_calls() {
+    use crate::native_admission_source::{descriptor::Operation, store::{StoreTransport, TransportFailure}};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    struct Platform(Arc<AtomicUsize>);
+    impl StoreTransport for Platform {
+        fn exchange<'a>(&'a mut self, _: Operation, _: &'a str) -> std::pin::Pin<Box<dyn std::future::Future<Output=Result<Vec<u8>, TransportFailure>> + Send + 'a>> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async { Err(TransportFailure::Unavailable) })
+        }
+    }
+    let calls = Arc::new(AtomicUsize::new(0));
+    let mut client = StoreClient::new(Box::new(Platform(calls.clone())), "oteryn-game/store-consumer".into());
+    let runtime = tokio::runtime::Builder::new_current_thread().build().expect("runtime");
+    let result = runtime.block_on(purchase_with_mode(
+        StorePurchaseMode::DisabledRestoredBackup, async { Some(false) }, async {
+            let _ = client.purchase(&PurchaseStoreOffer {
+                purchase_request_id: "018f3a00-0000-7000-8000-000000000007".into(),
+                account_id: "018f3a00-0000-7000-8000-000000000008".into(),
+                character_id: "018f3a00-0000-7000-8000-000000000009".into(),
+                offer_key: "store:exercise-sword".into(), catalog_revision: CATALOGUE.as_ref().expect("catalogue").rules.revision().into(),
+                unit_price: "25".into(), world_id: "018f3a00-0000-7000-8000-000000000010".into(), quantity: 1, currency: "COINS".into(),
+            }, "ITEM").await;
+            None
+        },
+    ));
+    assert_eq!(result.expect("disabled answer").code, wire::StorePurchaseCode::PurchaseDisabled);
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn store_capability_requires_a_composed_platform_client() {
+    static BASE: &[super::super::capabilities::OfferedCapability] = &[];
+    assert!(!with_store_offer(BASE, false).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
+    assert!(with_store_offer(BASE, true).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
 }

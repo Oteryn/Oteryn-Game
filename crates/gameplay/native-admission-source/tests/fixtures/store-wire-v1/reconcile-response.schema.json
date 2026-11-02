@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.reconcile_response.v1.json",
+  "title": "oteryn.store_wire.reconcile_response.v1",
+  "description": "200 body of ListStoreOperationStatesV1. Every Store operation in any state, ascending by (source_revision, operation_id); at most 12288 bytes and 32 entries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "operations"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_kind",
+          "operation_id",
+          "source_revision",
+          "state",
+          "receipt_digest",
+          "recovery_generation"
+        ],
+        "properties": {
+          "operation_kind": {
+            "enum": [
+              "DELIVER",
+              "CLAIM",
+              "REVOKE_UNCLAIMED",
+              "RECLAIM",
+              "FLAG"
+            ]
+          },
+          "operation_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "source_revision": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "state": {
+            "enum": [
+              "PENDING",
+              "REOPENED",
+              "COMMITTED",
+              "REJECTED"
+            ]
+          },
+          "receipt_digest": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recovery_generation": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

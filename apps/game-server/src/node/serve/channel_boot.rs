@@ -102,8 +102,11 @@ pub(super) async fn prepare_channel(
             scope,
             generation,
             &config.readiness.world_policy_revision,
-            crate::gameplay_transport::world_required_capabilities::offered_for_scope(
-                bundle.is_some(), active_content.active(),
+            crate::gameplay_transport::with_store_offer(
+                crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                    bundle.is_some(), active_content.active(),
+                ),
+                true, // The node's required Platform descriptor composes its Store client.
             ),
         ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {

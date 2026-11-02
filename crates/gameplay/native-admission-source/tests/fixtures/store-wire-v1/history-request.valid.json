@@ -1,0 +1,8 @@
+{
+  "contract_version": 1,
+  "operation": "ReadStoreHistoryPageV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "before_entry_id": "0",
+  "max_entries": 2
+}

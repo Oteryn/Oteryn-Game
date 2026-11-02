@@ -40,12 +40,13 @@ pub enum Operation {
     ReadCharacterCommandIntentV1,
     /// Character command receipt publication (same contract, §4.3).
     PublishCharacterCommandReceiptV1,
-    ListPendingStoreDeliveriesV1,
-    ReadStoreDeliveryIntentV1,
-    PublishStoreReceiptV1,
+    ListPendingStoreOperationsV1,
+    ReadStoreOperationIntentV1,
+    PublishStoreDeliveryReceiptV1,
     PurchaseStoreOfferV1,
     ReadStoreBalanceV1,
-    ReadStoreHistoryV1,
+    ReadStoreHistoryPageV1,
+    ListStoreOperationStatesV1,
     /// World highscores snapshot (`oteryn-game-public-projections-v1` §4.1).
     PublishWorldHighscoresV1,
     /// Character profile snapshot (same contract, §4.2).
@@ -78,12 +79,13 @@ impl Operation {
             Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
             Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
-            Self::ListPendingStoreDeliveriesV1 => super::store::PENDING_PATH,
-            Self::ReadStoreDeliveryIntentV1 => super::store::READ_PATH,
-            Self::PublishStoreReceiptV1 => super::store::RECEIPT_PATH,
+            Self::ListPendingStoreOperationsV1 => super::store::PENDING_PATH,
+            Self::ReadStoreOperationIntentV1 => super::store::READ_PATH,
+            Self::PublishStoreDeliveryReceiptV1 => super::store::RECEIPT_PATH,
             Self::PurchaseStoreOfferV1 => super::store::PURCHASE_PATH,
             Self::ReadStoreBalanceV1 => super::store::BALANCE_PATH,
-            Self::ReadStoreHistoryV1 => super::store::HISTORY_PATH,
+            Self::ReadStoreHistoryPageV1 => super::store::HISTORY_PATH,
+            Self::ListStoreOperationStatesV1 => super::store::RECONCILE_PATH,
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
@@ -110,11 +112,12 @@ impl Operation {
             Self::PublishCharacterCommandReceiptV1 => {
                 super::character_commands::RECEIPT_REQUEST_BYTES
             }
-            Self::ListPendingStoreDeliveriesV1
-            | Self::ReadStoreDeliveryIntentV1
+            Self::ListPendingStoreOperationsV1
+            | Self::ReadStoreOperationIntentV1
             | Self::ReadStoreBalanceV1
-            | Self::ReadStoreHistoryV1 => super::store::READ_REQUEST_BYTES,
-            Self::PublishStoreReceiptV1 => super::store::RECEIPT_REQUEST_BYTES,
+            | Self::ListStoreOperationStatesV1
+            | Self::ReadStoreHistoryPageV1 => super::store::READ_REQUEST_BYTES,
+            Self::PublishStoreDeliveryReceiptV1 => super::store::RECEIPT_REQUEST_BYTES,
             Self::PurchaseStoreOfferV1 => super::store::PURCHASE_REQUEST_BYTES,
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
@@ -128,6 +131,7 @@ impl Operation {
         }
     }
 }
+#[derive(Clone)]
 pub struct ProducerDescriptor {
     pub(super) source_authority: String,
     pub(super) connect_addr: std::net::SocketAddr,
