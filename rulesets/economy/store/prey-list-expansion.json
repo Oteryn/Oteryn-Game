@@ -1,0 +1,12 @@
+{
+  "schema": "OTERYN_PREY_LIST_EXPANSION_OFFER/v1",
+  "owner_decision": "PREY-DIFF 2026-11-01",
+  "key": "store:prey-list-expansion",
+  "category": "useful-things.prey",
+  "title": "Prey List Expansion",
+  "price": null,
+  "enabled": false,
+  "currency": "TIBIA_COIN",
+  "unlock_key": "prey-list-expansion",
+  "price_status": "OWNER_APPROVAL_PENDING"
+}

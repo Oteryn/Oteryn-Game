@@ -233,7 +233,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 fn failure(error: GuildError) -> GuildReply {
     match error {
-        GuildError::InvalidInput | GuildError::NotCurrent | GuildError::ConflictingOccurrence => {
+        // No semantic pass was issued, so this command cannot have committed.
+        GuildError::Unavailable(crate::durability::DurabilityError::RootUnavailable)
+        | GuildError::InvalidInput | GuildError::NotCurrent | GuildError::ConflictingOccurrence => {
             GuildReply::Rejected
         }
         // Never sequence an unknown commit as a rejection. Disconnect; the retained command

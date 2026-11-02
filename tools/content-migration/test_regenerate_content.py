@@ -7,6 +7,7 @@ Run with `python3 tools/content-migration/test_regenerate_content.py`.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -199,6 +200,77 @@ def test_git_failure_while_enumerating_conflicts_fails_closed() -> None:
         assert unmerged(root) == sorted([SOURCES, DERIVED]), unmerged(root)
 
 
+def canonical(value: dict) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+
+
+def sha(root: Path, path: str) -> str:
+    return hashlib.sha256((root / path).read_bytes()).hexdigest()
+
+
+def spells_merge(root: Path, ours: dict, theirs: dict) -> None:
+    """Base, then each side rewrites the spells manifest and the profile files it names."""
+    git(root, "init", "-q", "-b", "main")
+    write(root, "content/manifest.json", {"managed_files": [{"path": rc.SPELLS_MANIFEST}]})
+    write(root, rc.PIN_PATH, PIN_TEST)
+    base = {"schema": "v5", "catalog": {"path": "abilities/catalog.json", "sha256": ""}}
+    write(root, "content/abilities/catalog.json", {"spells": ["base"]})
+    base["catalog"]["sha256"] = sha(root, "content/abilities/catalog.json")
+    write(root, rc.SPELLS_MANIFEST, canonical(base))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    git(root, "checkout", "-q", "-b", "theirs")
+    for side, change in (("theirs", theirs), ("ours", ours)):
+        if side == "ours":
+            git(root, "checkout", "-q", "main")
+        manifest = dict(base)
+        for key, value in change.items():
+            if isinstance(value, dict):
+                write(root, f"content/{value['path']}", {"profiles": [side]})
+                value = {**value, "sha256": sha(root, f"content/{value['path']}")}
+            manifest[key] = value
+        write(root, rc.SPELLS_MANIFEST, canonical(manifest))
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", side)
+    merged = subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "theirs"],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    assert merged.returncode != 0, "fixture merge must stop on conflicts"
+    assert unmerged(root) == [rc.SPELLS_MANIFEST], unmerged(root)
+
+
+def test_spells_manifest_conflict_merges_keys_and_rehashes_pins() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        spells_merge(
+            root,
+            {"items": {"path": "items/profiles.json"}},
+            {"creatures": {"path": "creatures/profiles.json"}},
+        )
+        code, resolved = resolve_in(root)
+        assert code == 0 and resolved == [rc.SPELLS_MANIFEST], (code, resolved)
+        text = (root / rc.SPELLS_MANIFEST).read_text(encoding="utf-8")
+        manifest = json.loads(text)
+        assert text == canonical(manifest), text
+        assert sorted(manifest) == ["catalog", "creatures", "items", "schema"], manifest
+        for key in ("catalog", "creatures", "items"):
+            assert manifest[key]["sha256"] == sha(root, f"content/{manifest[key]['path']}"), key
+
+
+def test_spells_manifest_conflict_on_one_key_fails_closed() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        spells_merge(root, {"schema": "v6-ours"}, {"schema": "v6-theirs"})
+        before = (root / rc.SPELLS_MANIFEST).read_bytes()
+        code, _ = resolve_in(root)
+        assert code == 2, code
+        assert unmerged(root) == [rc.SPELLS_MANIFEST], unmerged(root)
+        assert (root / rc.SPELLS_MANIFEST).read_bytes() == before
+
+
 def main() -> None:
     tests = [
         test_import_conflict_fails_closed_and_keeps_both_sides,
@@ -207,6 +279,8 @@ def main() -> None:
         test_world_pin_conflict_is_derived,
         test_world_pin_conflict_on_a_moved_entry_start_fails_closed,
         test_git_failure_while_enumerating_conflicts_fails_closed,
+        test_spells_manifest_conflict_merges_keys_and_rehashes_pins,
+        test_spells_manifest_conflict_on_one_key_fails_closed,
     ]
     for test in tests:
         test()

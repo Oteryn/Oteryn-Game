@@ -1524,8 +1524,13 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             )
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
+        let replayed = self.source_secondary_memos.iter().any(|memo| {
+            memo.actor == target && memo.session == session && memo.occurrence == occurrence
+        }) || self.source_damage.iter().any(|memo| {
+            memo.actor == target && memo.session == session && memo.occurrence == occurrence
+        });
         if definitions.is_empty() {
-            return self.apply_typed_attack_damage(
+            let receipt = self.apply_typed_attack_damage(
                 runtime,
                 target,
                 session,
@@ -1534,10 +1539,23 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
                 occurrence,
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now),
             );
+            // Raw-zero attempts are recorded by their attack owner at retained event time.
+            if !replayed
+                && receipt.is_some()
+                && let Ok(snapshot) = runtime.companion_snapshot(source)
+            {
+                self.prey_activity(runtime, target, session, super::prey::PreyActivity {
+                    creature: &snapshot.state.policy.definition_key,
+                    kind: if receipt.is_some_and(|hit| hit.applied > 0) {
+                        oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage
+                    } else {
+                        oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::Attacked
+                    },
+                    now: facts.now,
+                });
+            }
+            return receipt;
         }
-        let replayed = self.source_secondary_memos.iter().any(|memo| {
-            memo.actor == target && memo.session == session && memo.occurrence == occurrence
-        });
         let before = self.get(runtime, target, session)?.vitals().health;
         let receipt = self.native_composite_conditions(
             runtime,
@@ -1553,12 +1571,16 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             fence,
             stamp,
         )??;
-        if !replayed
-            && receipt.applied > 0
-            && receipt.health_after < before
-            && runtime.contains_live_creature(source)
-        {
-            self.hunting_activity(runtime, target, session, facts.now);
+        if !replayed && let Ok(snapshot) = runtime.companion_snapshot(source) {
+            self.prey_activity(runtime, target, session, super::prey::PreyActivity {
+                creature: &snapshot.state.policy.definition_key,
+                kind: if receipt.applied > 0 && receipt.health_after < before {
+                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage
+                } else {
+                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::Attacked
+                },
+                now: facts.now,
+            });
         }
         Some(receipt)
     }
@@ -1671,11 +1693,8 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
         let hit =
             self.apply_creature_damage_kind(runtime, target, session, magnitude, kind, now)?;
-        // Source-attack callers are monster attacks (including native monster spells).
-        // Replayed occurrences returned above do not renew the hunting clock.
-        if hit.damage.applied > 0 {
-            self.hunting_activity(runtime, target, session, now.get());
-        }
+        // PREY-DIFF: the composite source boundary records the race-qualified activity;
+        // this lower-level method also serves source-less condition damage.
         let death = hit.death.map(|bytes| {
             PlayerLethalReceipt::from_native_commit(
                 runtime,

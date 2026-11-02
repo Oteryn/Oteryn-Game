@@ -1,17 +1,15 @@
 {
   "mechanic": "0152-item-forge",
   "kind": "handlers",
-  "id": "0152-item-forge-unsupported",
-  "status": "unsupported",
-  "reason": "The server exposes all Forge actions through command 181; the native Forge panel is a separate client feature.",
+  "id": "0152-item-forge-commands",
+  "status": "supported",
   "commands": [
     181
   ],
+  "direction": "client_to_server",
+  "capability": 152,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Native Forge panel state is not part of the P18 server mechanic.",
-    "protocol": "Server command 181 supports canonical Forge requests and durable JSON results; native panel binding is pending.",
-    "view": "Native Forge panel rendering is not part of the P18 server mechanic.",
-    "input": "Native Forge panel input is not part of the P18 server mechanic.",
-    "settings": "No Forge client settings are introduced by the P18 server mechanic."
+    "settings": "Server-owned state."
   }
 }

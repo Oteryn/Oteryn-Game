@@ -10,11 +10,25 @@ impl Application {
     ) {
         if let Some(play) = &mut self.play {
             if play.link.animus_input(events)
+                || play.link.prey_input(events)
                 || play.link.wheel_input(events)
                 || play.link.exiva_input(events)
                 || play.link.loyalty_skills_input(events)
                 || play.link.stash_input(events)
                 || play.link.quest_input(events)
+                || play.link.boss_difficulty_input(events)
+                || play.link.browse_field_input(events)
+                || play.link.chat_party_room_input(events)
+                || play.link.cyclopedia_character_input(events)
+                || play.link.cyclopedia_tracker_input(events)
+                || play.link.daily_boost_input(events)
+                || play.link.depot_search_input(events)
+                || play.link.hireling_input(events)
+                || play.link.hotkey_equip_input(events)
+                || play.link.item_forge_input(events)
+                || play.link.store_input(events)
+                || play.link.vip_presence_input(events)
+                || play.link.weapon_proficiency_input(events)
             {
                 return;
             }

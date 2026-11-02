@@ -10,7 +10,10 @@ The cache carries the commit it was built from (target/.oteryn-cache-source-sha,
 written by the protected-main save job). This script fetches that exact commit,
 gives every tracked file an old mtime and leaves only the files that differ from
 the cached commit with their fresh checkout mtime, so Cargo rebuilds exactly the
-changed units. It fails open: with no marker, no fetch or any error it changes
+changed units. Build scripts also watch directories (rerun-if-changed=<dir>), and
+Cargo then takes the newest mtime of the directory and everything under it, so
+tracked directories are set old too, except each directory that holds a changed,
+added or removed path: a removed file leaves only its directory's mtime behind. It fails open: with no marker, no fetch or any error it changes
 nothing and the build is as slow as before, never wrong.
 """
 from __future__ import annotations
@@ -49,7 +52,24 @@ def normalize(root: Path, marker: Path = MARKER, old_mtime: int = OLD_MTIME) -> 
             continue
         os.utime(path, (old_mtime, old_mtime))
         reset += 1
-    return f"cache source {cached[:12]}: {reset} unchanged files set old, {len(changed)} changed files keep fresh mtime"
+    fresh_dirs = {parent for path in changed for parent in parents(path)}
+    tracked_dirs = {parent for path in tracked for parent in parents(path)}
+    aged_dirs = 0
+    for directory in sorted(tracked_dirs - fresh_dirs):
+        if os.path.islink(directory) or not os.path.isdir(directory):
+            continue
+        os.utime(directory, (old_mtime, old_mtime))
+        aged_dirs += 1
+    return (
+        f"cache source {cached[:12]}: {reset} unchanged files set old, {len(changed)} changed files keep fresh mtime, "
+        f"{aged_dirs} unchanged directories set old"
+    )
+
+
+def parents(path: str) -> list[str]:
+    """Every directory above a repository-relative path, the repository root included."""
+    parts = path.split("/")[:-1]
+    return ["."] + ["/".join(parts[: index + 1]) for index in range(len(parts))]
 
 
 def main() -> int:

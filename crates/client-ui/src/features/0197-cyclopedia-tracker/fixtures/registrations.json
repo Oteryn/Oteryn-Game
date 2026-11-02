@@ -2,19 +2,49 @@
   {
     "mechanic": "0197-cyclopedia-tracker",
     "kind": "handlers",
-    "id": "0197-cyclopedia-tracker-unsupported",
+    "id": "0197-cyclopedia-tracker-383",
     "status": "unsupported",
-    "reason": "The native client Cyclopedia tracker view remains pending.",
+    "direction": "client_to_server",
+    "capability": 197,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State and actions are server-owned."
+    },
     "commands": [
-      383,
+      383
+    ],
+    "reason": "The panel refreshes domain 98 but has no native add/remove creature controls."
+  },
+  {
+    "mechanic": "0197-cyclopedia-tracker",
+    "kind": "handlers",
+    "id": "0197-cyclopedia-tracker-384",
+    "status": "unsupported",
+    "direction": "client_to_server",
+    "capability": 197,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State and actions are server-owned."
+    },
+    "commands": [
       384
     ],
-    "not_applicable": {
-      "state": "Server-owned durable state.",
-      "protocol": "Unsupported until the native client handler lands.",
-      "view": "Unsupported until the native client handler lands.",
-      "input": "Unsupported until the native client handler lands.",
-      "settings": "No settings surface."
-    }
+    "reason": "The panel refreshes domain 98 but has no native add/remove creature controls."
+  },
+  {
+    "mechanic": "0197-cyclopedia-tracker",
+    "kind": "keybindings",
+    "id": "0197-cyclopedia-tracker-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+R",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0197-cyclopedia-tracker",
+    "kind": "panels",
+    "id": "0197-cyclopedia-tracker-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

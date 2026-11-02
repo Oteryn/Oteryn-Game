@@ -27,11 +27,19 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     if session.achievement_notices.is_none() {
         return Ok(());
     }
-    let observed = authority
+    let Some(observed) = authority
         .observe_achievement_notice_facts(session.admitted)
         .await
-        .ok_or(ServeEnd::Disconnected)?;
-    let facts = observed.facts.ok_or(ServeEnd::Disconnected)?;
+    else {
+        // The production root's sole holder can be busy with a background pass after a
+        // committed door use. This is display enrichment: defer without consuming any
+        // keys or revisions. The next cadence re-proves the exact controller before
+        // publishing; unavailable authority never permits a notice or a gameplay write.
+        return Ok(());
+    };
+    let Some(facts) = observed.facts else {
+        return Ok(());
+    };
     for fact in facts {
         deliver(stream, session, &fact).await?;
     }
@@ -62,16 +70,16 @@ pub(super) async fn immediate<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>
             // the ordinary result/inventory updates were being written. Apply the same
             // current account/session gate before the immediate notice, and take its
             // name/watermark from the catalogue-backed observation as well.
-            let observed = authority
+            let Some(current) = authority
                 .observe_achievement_notice_facts(session.admitted)
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
-            let current = observed
-                .facts
-                .ok_or(ServeEnd::Disconnected)?
-                .into_iter()
-                .find(|fact| fact.key == earned.key)
-                .ok_or(ServeEnd::Disconnected)?;
+                .and_then(|observed| observed.facts)
+                .and_then(|facts| facts.into_iter().find(|fact| fact.key == earned.key))
+            else {
+                // The committed source result stands. A later refresh re-proves control
+                // and delivers the notice without consuming its key or revision here.
+                return Ok(());
+            };
             deliver(stream, session, &current).await?;
         } else {
             // Historical injected authorities expose only a watermark; retain their

@@ -1,5 +1,6 @@
 //! PREY-LIVE-1: offered command bytes, durable draws/receipts and hunting expiry.
 use super::*;
+use super::prey_difficulty::{HistoryCounters, assert_history, selected_at};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -14,6 +15,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 #[test]
 fn prey_postgres_real_dispatch_draw_select_reroll_expiry_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED route_less");
         return Ok(());
     }
     std::thread::Builder::new()
@@ -21,6 +23,7 @@ fn prey_postgres_real_dispatch_draw_select_reroll_expiry_and_replay() -> TestRes
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "prey scenario panicked")??;
+    eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 fn scenario() -> TestResult {
@@ -42,6 +45,7 @@ fn scenario() -> TestResult {
         .execute(&h.pool)
         .await?;
         prepare_current_session(&h).await?;
+        super::daily_reward::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -141,6 +145,7 @@ fn scenario() -> TestResult {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or("native")?;
+        let catalogue = crate::durability::prey::PreyCatalogue::try_from(native).map_err(debug)?;
         // Every listed creature is selectable, so the last one stands for all.
         assert!(state.slots[0].creatures.iter().all(|key| {
             !native
@@ -193,13 +198,23 @@ fn scenario() -> TestResult {
         .map_err(debug)?;
         let values = exchange(&owner, &mut admitted, &[(7, &select_again)]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
+        let second_selection = wire::decode_reply(&values[0].1).map_err(debug)?;
+        let second_started = selected_at(&h, 1).await?;
         // Real hunting clock: idle does not spend; two activity samples spend one minute.
         {
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             states.load_stamina(&runtime, deps.actor, admitted.game_session_id, 2520);
-            states.hunting_activity(&runtime, deps.actor, admitted.game_session_id, 0);
-            states.hunting_activity(&runtime, deps.actor, admitted.game_session_id, 60_000_000);
+            // OWNER-DEVIATION PREY-DIFF, 2026-11-01: only this selected race spends time.
+            let selected = wire::decode_reply(&values[0].1).map_err(debug)?;
+            for now in [0, 60_000_000] {
+                states.prey_activity(&runtime, deps.actor, admitted.game_session_id,
+                    crate::gameplay_transport::prey::PreyActivity {
+                        creature: &selected.slots[0].selected,
+                        kind: oteryn_gameplay_progression::prey::PreyActivityKind::DealtDamage,
+                        now,
+                    });
+            }
         }
         assert!(owner.flush_prey(admitted.game_session_id).await);
         let left: i32 =
@@ -210,11 +225,14 @@ fn scenario() -> TestResult {
         // Drive the same server hunting tick to expiry; no wall/offline elapsed time is used.
         for minute in 2..=120 {
             let runtime = owner.runtime.lock().await;
-            owner.states.spell_states.lock().await.hunting_activity(
-                &runtime,
-                deps.actor,
-                admitted.game_session_id,
-                minute * 60_000_000,
+            let selected = wire::decode_reply(&values[0].1).map_err(debug)?;
+            owner.states.spell_states.lock().await.prey_activity(
+                &runtime, deps.actor, admitted.game_session_id,
+                crate::gameplay_transport::prey::PreyActivity {
+                    creature: &selected.slots[0].selected,
+                    kind: oteryn_gameplay_progression::prey::PreyActivityKind::DealtDamage,
+                    now: minute * 60_000_000,
+                },
             );
         }
         assert!(owner.flush_prey(admitted.game_session_id).await);
@@ -224,6 +242,8 @@ fn scenario() -> TestResult {
         assert_eq!(expired.slots[0].bonus, 0);
         assert!(expired.slots[0].selected.is_empty());
         assert_eq!(expired.slots[0].creatures.len(), 9);
+        assert_history(&h, &second_selection.slots[0], &catalogue, second_started, "EXPIRED",
+            HistoryCounters { consumed: 7200, free_rerolls: 1, ..HistoryCounters::default() }).await?;
         // Seed ordinary carried coins using the existing Item fixture convention. Only setup
         // uses the admin replication role; the command runs with every production trigger on.
         {
@@ -293,7 +313,7 @@ fn scenario() -> TestResult {
         )
         .map_err(debug)?;
         for day in 1..=20 {
-            super::daily_reward::epoch(&h, day).await?;
+            if day > 1 { super::daily_reward::epoch(&h, day).await?; }
             let (end, bytes) =
                 super::daily_reward::serve(&owner, &mut admitted, &[(2, &shrine), (oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])])
                     .await?;
@@ -333,7 +353,12 @@ fn scenario() -> TestResult {
         let chosen = wire::decode_reply(&values[0].1).map_err(debug)?;
         assert_eq!(chosen.slots[0].selected, "oteryn:creature.dragon");
         assert_eq!(chosen.wildcard_balance, 7);
-        // Each expiry checkpoints the actual native hunting signal, then debits atomically.
+        // Each expiry checkpoints the selected race's real activity, then debits atomically.
+        let mut hunt_now = 121 * 60_000_000;
+        let mut measured = chosen.slots[0].clone();
+        let mut measured_at = selected_at(&h, 1).await?;
+        let mut previous_wildcards = 5;
+        let mut previous_gold_rerolls = 1;
         for (option, cost) in [(2, 5), (1, 1)] {
             let bytes = wire::encode_request(&wire::Request::SetOption { slot: 1, option })
                 .map_err(debug)?;
@@ -342,11 +367,8 @@ fn scenario() -> TestResult {
                 exchange(&owner, &mut admitted, &[(command, &bytes)]).await?[0].0,
                 CommandStatus::Accepted
             );
-            owner.states.spell_states.lock().await.prey_hunting_tick(
-                deps.actor,
-                admitted.game_session_id,
-                7200,
-            );
+            consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
+                "oteryn:creature.dragon", &mut hunt_now).await;
             let before: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards")
                 .fetch_one(&h.pool)
                 .await?;
@@ -357,6 +379,9 @@ fn scenario() -> TestResult {
                     .await?,
                 before - cost
             );
+            assert_history(&h, &measured, &catalogue, measured_at, "EXPIRED",
+                HistoryCounters { consumed: 7200, wildcards: previous_wildcards,
+                    gold_rerolls: previous_gold_rerolls, ..HistoryCounters::default() }).await?;
             let command = admitted.continuity.next_command_id;
             let values = exchange(&owner, &mut admitted, &[(command, &query)]).await?;
             let renewed = wire::decode_reply(&values[0].1).map_err(debug)?;
@@ -366,14 +391,20 @@ fn scenario() -> TestResult {
                 assert_eq!(renewed.slots[0].bonus, chosen.slots[0].bonus);
                 assert_eq!(renewed.slots[0].grade, chosen.slots[0].grade);
             }
+            measured = renewed.slots[0].clone();
+            measured_at = selected_at(&h, 1).await?;
+            previous_wildcards = i64::from(cost);
+            previous_gold_rerolls = 0;
         }
         let reroll_bonus =
             wire::encode_request(&wire::Request::BonusReroll { slot: 1 }).map_err(debug)?;
         let command = admitted.continuity.next_command_id;
-        assert_eq!(
-            exchange(&owner, &mut admitted, &[(command, &reroll_bonus)]).await?[0].0,
-            CommandStatus::Accepted
-        );
+        let values = exchange(&owner, &mut admitted, &[(command, &reroll_bonus)]).await?;
+        assert_eq!(values[0].0, CommandStatus::Accepted);
+        assert_history(&h, &measured, &catalogue, measured_at, "REPLACED",
+            HistoryCounters { wildcards: previous_wildcards, ..HistoryCounters::default() }).await?;
+        let bonus_selection = wire::decode_reply(&values[0].1).map_err(debug)?;
+        let bonus_started = selected_at(&h, 1).await?;
         assert_eq!(
             sqlx::query_scalar::<_, i16>("SELECT balance FROM game_account_prey_wildcards")
                 .fetch_one(&h.pool)
@@ -394,17 +425,16 @@ fn scenario() -> TestResult {
             4
         );
         // The retained AUTO_REROLL now has no cards: expiry clears it and draws a list.
-        owner.states.spell_states.lock().await.prey_hunting_tick(
-            deps.actor,
-            admitted.game_session_id,
-            7200,
-        );
+        consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
+            "oteryn:creature.dragon", &mut hunt_now).await;
         assert!(owner.flush_prey(admitted.game_session_id).await);
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &query)]).await?;
         let unfunded = wire::decode_reply(&values[0].1).map_err(debug)?;
         assert_eq!(unfunded.slots[0].state, 1);
         assert_eq!(unfunded.slots[0].option, 0);
+        assert_history(&h, &bonus_selection.slots[0], &catalogue, bonus_started, "EXPIRED",
+            HistoryCounters { consumed: 7200, wildcards: 1, ..HistoryCounters::default() }).await?;
         // Replay after later writes returns the original frozen result, without another write.
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_prey_receipts")
             .fetch_one(&h.pool)
@@ -490,7 +520,7 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     commands: &[(u64, &[u8])],
@@ -543,4 +573,24 @@ async fn exchange(
         "Prey command results: {end:?}"
     );
     Ok(results)
+}
+
+
+async fn consume_120_minutes(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    creature: &str,
+    now: &mut u64,
+) {
+    for _ in 0..=120 {
+        *now += 60_000_000;
+        let runtime = owner.runtime.lock().await;
+        owner.states.spell_states.lock().await.prey_activity(&runtime, actor, session,
+            crate::gameplay_transport::prey::PreyActivity {
+                creature,
+                kind: oteryn_gameplay_progression::prey::PreyActivityKind::DealtDamage,
+                now: *now,
+            });
+    }
 }

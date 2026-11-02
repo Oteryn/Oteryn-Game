@@ -1,14 +1,27 @@
 syntax = "proto3";
 package oteryn.protocol.v1;
 // Native Oteryn canonical subset: ascending fields; singular fields never repeat;
-// unknown fields fail closed. Replies encode every scalar, including zero; requests
-// omit slot/argument at zero. Request/reply budgets: 263/8192 bytes.
-// Slot bounds: id 1..3, state 0..2, candidates <=9 (Creature keys <=256 bytes),
-// bonus <=4 (Canary None sentinel included), grade <=10, percent <=40,
-// hunting_seconds <=7200, option <=2. free_reroll_at is Unix seconds <= INT64_MAX.
-// Reply status: 0 success; 8 CONTENT_UNAVAILABLE (no mutation); 1..7 reserved.
-// CONTENT_UNAVAILABLE means the creature lacks an admitted bounded Prey loot table.
-// wildcard_balance <=52.
-message PreyRequestV1 { uint32 action = 1; uint32 slot = 2; uint32 argument = 3; string creature = 4; }
-message PreySlotV1 { uint32 slot = 1; uint32 state = 2; repeated string creatures = 3; string selected = 4; uint32 bonus = 5; uint32 grade = 6; uint32 percent = 7; uint32 hunting_seconds = 8; uint32 option = 9; uint64 free_reroll_at = 10; }
-message PreyReplyV1 { uint32 status = 1; uint32 wildcard_balance = 2; repeated PreySlotV1 slots = 3; }
+// unknown fields fail closed. Replies encode every scalar, including zero;
+// requests omit slot/argument at zero and strings when absent.
+// PREY-DIFF OWNER-DEVIATION 2026-11-01; existing capability140/command160.
+// Request/reply safety budgets: 273/65536 bytes. Creature keys <=256 bytes.
+// Actions: 0 Query, 1 ListReroll, 2 Select(argument=index1..64),
+// 3 SelectAny(creature), 4 BonusReroll, 5 SetOption(argument0..2),
+// 6 SetTier(argument1..5), 7 OfferedToday(creature=after cursor, omitted first page),
+// 8 PickAgain(creature,expected_price_gold); a changed quote refuses without debit. Entitlement grants are internal Store delivery only;
+// action9 and every other unknown action are rejected on the client wire.
+// Slot: id1..3, state0..2, candidates<=64 (safety ceiling, runtime config9/12),
+// bonus<=4, grade<=10, percent<=40, hunting_seconds<=7200, option<=2;
+// free_reroll_at and selection_epoch<=INT64_MAX. Tiers1..5: chosen is persisted
+// and may exceed allowed after level loss; draw uses min(chosen,allowed).
+// Reply statuses: 0 success; 1..7 reserved; 8 CONTENT_UNAVAILABLE;
+// 9 NO_CANDIDATES (no charge); 10 INVALID_TIER; 11 NOT_OFFERED;
+// 12 OCCUPIED; 13 ALREADY_OWNED (internal Store grant result).
+// wildcard_balance<=52; slots<=3, ascending unique ids; list_size1..64.
+// offered_today<=16 ascending unique creature keys; price_gold<=INT64_MAX;
+// occupied_slot0 means available,1..3 identifies the current slot.
+// offered_next is omitted on the final page, otherwise the next after cursor.
+message PreyRequestV1 { uint32 action = 1; uint32 slot = 2; uint32 argument = 3; string creature = 4; uint64 expected_price_gold = 5; }
+message PreySlotV1 { uint32 slot = 1; uint32 state = 2; repeated string creatures = 3; string selected = 4; uint32 bonus = 5; uint32 grade = 6; uint32 percent = 7; uint32 hunting_seconds = 8; uint32 option = 9; uint64 free_reroll_at = 10; uint32 chosen_tier = 11; uint32 allowed_tier = 12; uint64 selection_epoch = 13; }
+message PreyOfferedCreatureV1 { string creature = 1; uint64 price_gold = 2; uint32 occupied_slot = 3; }
+message PreyReplyV1 { uint32 status = 1; uint32 wildcard_balance = 2; repeated PreySlotV1 slots = 3; uint32 list_size = 4; bool expansion_owned = 5; repeated PreyOfferedCreatureV1 offered_today = 6; string offered_next = 7; }

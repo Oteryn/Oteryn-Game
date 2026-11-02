@@ -146,7 +146,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     async fn prey(
         &mut self,
-        command: &oteryn_client_runtime::prey::PreyCommand,
+        command: &oteryn_client_runtime::prey::prey::Request,
     ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
         oteryn_client_runtime::prey::send(self, command).await
     }
@@ -218,6 +218,29 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         request: &oteryn_client_runtime::hireling::HirelingCommand,
     ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
         oteryn_client_runtime::hireling::send(self, request).await
+    }
+    fn feature_selected(&self, capability: u32) -> bool {
+        self.is_selected(capability)
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        oteryn_client_runtime::raw_feature::send(self, command).await
+    }
+    fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+        self.gated_snapshot(domain)
+            .map(|snapshot| snapshot.payload.clone())
+    }
+    fn server_mechanic_selected(&self, capability: u32) -> bool {
+        self.is_selected(capability)
+    }
+    async fn server_mechanic(
+        &mut self,
+        request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
+    ) -> Result<oteryn_client_runtime::server_mechanic::ServerMechanicResponse, SessionError> {
+        self.gated_command(request.capability, request.command_type, &request.payload)
+            .await
     }
     fn market_selected(&self) -> bool {
         self.is_selected(oteryn_client_runtime::market::market::CAPABILITY_MARKET_V1)

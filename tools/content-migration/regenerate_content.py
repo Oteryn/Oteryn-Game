@@ -24,6 +24,12 @@ World pins (`content/world/pins/<slug>.json` and `.identity.json`) and the prepr
 manifest's `[world_bundle]` table follow the merged inputs; a pin conflict is derived too, unless
 the two sides moved the reviewed `entry_start` differently.
 
+`content/spells.manifest.json` is one canonical JSON line whose entries pin the bytes of the
+files they name, and no step below rewrites it, so taking one side would drop the other side's
+pins. It is merged key by key against the merge base instead, and every `{path, sha256}` entry
+is re-hashed from the merged file it names. Both sides changing one key differently (other than
+its digest) needs a person.
+
 Scope: the command regenerates only the content tree, `content/world` and the Rust package pins.
 It does not regenerate other Item-derived artifacts (the weapon proficiency sample, the TibiaWiki
 snapshot re-key and promotion packet, the pins in `item_stats_promotion.rs`, the Crystal binding
@@ -55,7 +61,10 @@ REGISTRY = (
     "content/content.lock.json",
 )
 # Written by the authoring tools but not listed in the content manifest.
-EXTRA_DERIVED = ("content/interactions/index.json",)
+EXTRA_DERIVED = (
+    "content/interactions/index.json",
+    "tools/content-schema/native-gameplay/prey-model-results.json",
+)
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
 # sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
 # the hand-written fields of the interactions index. A conflict here needs a person.
@@ -65,6 +74,8 @@ HAND_MAINTAINED = ("content/interactions/index.json",)
 # `world-bundle-compiler pin-refresh` from the staged inputs; the manifest follows the pin.
 WORLD_PINS = "content/world/pins/"
 PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
+# Merged key by key with its digests re-hashed; see the module docstring.
+SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
     "tools/content-migration/raid_catalogue.py",
@@ -77,6 +88,9 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
+    ["python3", "tools/content-migration/test_prey_difficulty.py"],
+    ["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--check"],
     ["python3", "tools/content-migration/imbuement_catalogue.py", "--check"],
     ["python3", "tools/content-migration/register_spell_families.py", "--check"],
     ["python3", "tools/content-migration/test_import_spell_families.py"],
@@ -134,6 +148,18 @@ def show(stage: str, path: str) -> str | None:
     return git("show", f"{stage}{path}") if present else None
 
 
+def prey_report_paths() -> set[str]:
+    """Only the active authoring date's reports are rewritten by regeneration."""
+    try:
+        date = json.loads((ROOT / "rulesets/prey/difficulty.json").read_text(encoding="utf-8"))["model"]["date"]
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date) is None:
+            return set()
+    except (OSError, ValueError, KeyError, TypeError):
+        # A conflicting or invalid authoring file remains a human-owned input.
+        return set()
+    return {f"docs/balance/PREY-TIME-SIM-{date}.md", f"docs/balance/PREY-SLOT-VALUE-{date}.md"}
+
+
 def derived_paths() -> set[str]:
     """Every path the steps below write: the managed files of both merge sides, and the rest."""
     managed = set()
@@ -153,7 +179,7 @@ def derived_paths() -> set[str]:
         f"content/world/{locator}"
         for locator in document_locators(git("show", f"HEAD:{PIN_PATH}"))
     }
-    return managed | world | set(REGISTRY) | set(EXTRA_DERIVED)
+    return managed | world | set(REGISTRY) | set(EXTRA_DERIVED) | prey_report_paths()
 
 
 def is_world_pin(path: str) -> bool:
@@ -179,6 +205,66 @@ def entry_start_agrees(path: str) -> bool:
         return False
 
 
+# Stands in for a file pin's digest until the merged file is hashed.
+REHASH = "<rehash>"
+
+
+def is_file_pin(value: object) -> bool:
+    return isinstance(value, dict) and "path" in value and "sha256" in value
+
+
+def spells_manifest_keys() -> dict | None:
+    """Three-way merge of the conflicted spells manifest by top-level key, digests left out.
+
+    None when a side does not parse or both sides changed one key differently."""
+    sides = [show(stage, SPELLS_MANIFEST) for stage in (":1:", ":2:", ":3:")]
+    if sides[1] is None or sides[2] is None:
+        return None
+    try:
+        base, ours, theirs = (json.loads(side) if side is not None else {} for side in sides)
+    except ValueError:
+        return None
+    if not all(isinstance(side, dict) for side in (base, ours, theirs)):
+        return None
+    absent = object()
+
+    def comparable(side: dict, key: str) -> object:
+        if key not in side:
+            return absent
+        value = side[key]
+        if is_file_pin(value):
+            return {**value, "sha256": REHASH}
+        return value
+
+    merged = {}
+    for key in sorted(set(base) | set(ours) | set(theirs)):
+        was, mine, other = (comparable(side, key) for side in (base, ours, theirs))
+        if mine == other or other == was:
+            chosen = mine
+        elif mine == was:
+            chosen = other
+        else:
+            return None
+        if chosen is not absent:
+            merged[key] = chosen
+    return merged
+
+
+def pinned_file(entry: dict) -> Path:
+    return (ROOT / "content" / entry["path"]).resolve()
+
+
+def merge_spells_manifest(keys: dict) -> None:
+    """Write the merged manifest, each file pin re-hashed from the merged file it names."""
+    manifest = {}
+    for key, value in keys.items():
+        if is_file_pin(value) and value["sha256"] == REHASH:
+            value = {**value, "sha256": hashlib.sha256(pinned_file(value).read_bytes()).hexdigest()}
+        manifest[key] = value
+    text = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    (ROOT / SPELLS_MANIFEST).write_text(text + "\n", encoding="utf-8")
+
+
 def needs_person(path: str, derived: set[str]) -> bool:
     if path.startswith(HAND_MAINTAINED_PREFIXES) or path in HAND_MAINTAINED:
         return True
@@ -191,6 +277,16 @@ def resolve_conflicts() -> list[str]:
     conflicted = git("diff", "--name-only", "--diff-filter=U").splitlines()
     derived = derived_paths()
     manual = [path for path in conflicted if needs_person(path, derived)]
+    spells_keys = None
+    if SPELLS_MANIFEST in conflicted and SPELLS_MANIFEST not in manual:
+        spells_keys = spells_manifest_keys()
+        missing = [
+            value["path"]
+            for value in (spells_keys or {}).values()
+            if is_file_pin(value) and not pinned_file(value).is_file()
+        ]
+        if spells_keys is None or missing:
+            manual.append(SPELLS_MANIFEST)
     # Check everything before writing anything, so a stop leaves the merge untouched.
     if not manual and PIN_PATH in conflicted and not merge_pin_test(write=False):
         manual = [PIN_PATH]
@@ -203,6 +299,8 @@ def resolve_conflicts() -> list[str]:
             print(f"  {path}", file=sys.stderr)
         sys.exit(2)
     for path in conflicted:
+        if path == SPELLS_MANIFEST:
+            continue  # hashed below, once the files it names are resolved
         if path == PIN_PATH:
             merge_pin_test(write=True)
         elif show(":3:", path) is not None:
@@ -212,6 +310,8 @@ def resolve_conflicts() -> list[str]:
             run(["git", "checkout", "--ours", "--", path])
         else:
             (ROOT / path).unlink(missing_ok=True)
+    if spells_keys is not None:
+        merge_spells_manifest(spells_keys)
     return conflicted
 
 
@@ -385,6 +485,16 @@ def repin_rust_inventory() -> None:
     npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
 
 
+def unresolved_worktree_paths() -> list[str]:
+    """Workers resolve files without staging the coordinator's pending merge."""
+    return [
+        path
+        for path in git("diff", "--name-only", "--diff-filter=U").splitlines()
+        if not (ROOT / path).is_file()
+        or re.search(r"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_text(), re.M)
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -403,11 +513,12 @@ def main() -> int:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
         return 0
-    if args.no_stage and git("diff", "--name-only", "--diff-filter=U").strip():
+    if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
-    conflicted = resolve_conflicts() if args.resolve else []
+    conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
     materialize_world()
     repin_rust_inventory()
+    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():

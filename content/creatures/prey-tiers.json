@@ -1,0 +1,6322 @@
+{
+  "proposal_status": "awaiting_owner_approval",
+  "records": [
+    {
+      "creature": "oteryn:creature.abyssal_calamary",
+      "display_name": "Abyssal Calamary",
+      "exclusive": true,
+      "experience": 200,
+      "max_health": 300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.acid_blob",
+      "display_name": "Acid Blob",
+      "exclusive": true,
+      "experience": 250,
+      "max_health": 250,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.acolyte_of_darkness",
+      "display_name": "Acolyte of Darkness",
+      "exclusive": true,
+      "experience": 200,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.acolyte_of_the_cult",
+      "display_name": "Acolyte of the Cult",
+      "exclusive": false,
+      "experience": 300,
+      "max_health": 390,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.adept_of_the_cult",
+      "display_name": "Adept of the Cult",
+      "exclusive": false,
+      "experience": 400,
+      "max_health": 430,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.adult_goanna",
+      "display_name": "Adult Goanna",
+      "exclusive": false,
+      "experience": 6180,
+      "max_health": 8300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.afflicted_strider",
+      "display_name": "Afflicted Strider",
+      "exclusive": false,
+      "experience": 6550,
+      "max_health": 10000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.amazon",
+      "display_name": "Amazon",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 110,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.ancient_scarab",
+      "display_name": "Ancient Scarab",
+      "exclusive": false,
+      "experience": 720,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.angry_sugar_fairy",
+      "display_name": "Angry Sugar Fairy",
+      "exclusive": false,
+      "experience": 3100,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.animated_feather",
+      "display_name": "Animated Feather",
+      "exclusive": false,
+      "experience": 9860,
+      "max_health": 13000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.animated_snowman",
+      "display_name": "Animated Snowman",
+      "exclusive": false,
+      "experience": 400,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.arachnophobica",
+      "display_name": "Arachnophobica",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 5000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.arctic_faun",
+      "display_name": "Arctic Faun",
+      "exclusive": true,
+      "experience": 300,
+      "max_health": 300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.armadile",
+      "display_name": "Armadile",
+      "exclusive": false,
+      "experience": 3200,
+      "max_health": 3800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.askarak_demon",
+      "display_name": "Askarak Demon",
+      "exclusive": true,
+      "experience": 900,
+      "max_health": 1500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.askarak_lord",
+      "display_name": "Askarak Lord",
+      "exclusive": true,
+      "experience": 1200,
+      "max_health": 2100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.askarak_prince",
+      "display_name": "Askarak Prince",
+      "exclusive": true,
+      "experience": 1700,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.assassin",
+      "display_name": "Assassin",
+      "exclusive": false,
+      "experience": 105,
+      "max_health": 175,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.azure_frog",
+      "display_name": "Azure Frog",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.badger",
+      "display_name": "Badger",
+      "exclusive": false,
+      "experience": 5,
+      "max_health": 23,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.baleful_bunny",
+      "display_name": "Baleful Bunny",
+      "exclusive": true,
+      "experience": 450,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bandit",
+      "display_name": "Bandit",
+      "exclusive": false,
+      "experience": 65,
+      "max_health": 245,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.bane_bringer",
+      "display_name": "Bane Bringer",
+      "exclusive": true,
+      "experience": 400,
+      "max_health": 2500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bane_of_light",
+      "display_name": "Bane of Light",
+      "exclusive": true,
+      "experience": 750,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.banshee",
+      "display_name": "Banshee",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.barbarian_bloodwalker",
+      "display_name": "Barbarian Bloodwalker",
+      "exclusive": false,
+      "experience": 195,
+      "max_health": 305,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.barbarian_brutetamer",
+      "display_name": "Barbarian Brutetamer",
+      "exclusive": false,
+      "experience": 90,
+      "max_health": 145,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.barbarian_headsplitter",
+      "display_name": "Barbarian Headsplitter",
+      "exclusive": false,
+      "experience": 85,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.barbarian_skullhunter",
+      "display_name": "Barbarian Skullhunter",
+      "exclusive": false,
+      "experience": 85,
+      "max_health": 135,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.barkless_devotee",
+      "display_name": "Barkless Devotee",
+      "exclusive": false,
+      "experience": 2200,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.barkless_fanatic",
+      "display_name": "Barkless Fanatic",
+      "exclusive": true,
+      "experience": 2500,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.bashmu",
+      "display_name": "Bashmu",
+      "exclusive": false,
+      "experience": 5000,
+      "max_health": 8200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.bat",
+      "display_name": "Bat",
+      "exclusive": false,
+      "experience": 10,
+      "max_health": 30,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.bear",
+      "display_name": "Bear",
+      "exclusive": false,
+      "experience": 23,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.behemoth",
+      "display_name": "Behemoth",
+      "exclusive": false,
+      "experience": 2500,
+      "max_health": 4000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.berserker_chicken",
+      "display_name": "Berserker Chicken",
+      "exclusive": true,
+      "experience": 220,
+      "max_health": 465,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.betrayed_wraith",
+      "display_name": "Betrayed Wraith",
+      "exclusive": false,
+      "experience": 3500,
+      "max_health": 4200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.biting_book",
+      "display_name": "Biting Book",
+      "exclusive": false,
+      "experience": 9350,
+      "max_health": 6500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.black_sphinx_acolyte",
+      "display_name": "Black Sphinx Acolyte",
+      "exclusive": false,
+      "experience": 7200,
+      "max_health": 8100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.blemished_spawn",
+      "display_name": "Blemished Spawn",
+      "exclusive": false,
+      "experience": 5300,
+      "max_health": 9000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.blightwalker",
+      "display_name": "Blightwalker",
+      "exclusive": false,
+      "experience": 6400,
+      "max_health": 8100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.bloated_man_maggot",
+      "display_name": "Bloated Man-Maggot",
+      "exclusive": false,
+      "experience": 21570,
+      "max_health": 31700,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.blood_beast",
+      "display_name": "Blood Beast",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.blood_crab",
+      "display_name": "Blood Crab",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 290,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.blood_hand",
+      "display_name": "Blood Hand",
+      "exclusive": false,
+      "experience": 750,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.blood_priest",
+      "display_name": "Blood Priest",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 820,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.blue_djinn",
+      "display_name": "Blue Djinn",
+      "exclusive": false,
+      "experience": 215,
+      "max_health": 330,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bluebeak",
+      "display_name": "Bluebeak",
+      "exclusive": false,
+      "experience": 2330,
+      "max_health": 2430,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.boar",
+      "display_name": "Boar",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 198,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.boar_man",
+      "display_name": "Boar Man",
+      "exclusive": false,
+      "experience": 7100,
+      "max_health": 9200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.bog_raider",
+      "display_name": "Bog Raider",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bonebeast",
+      "display_name": "Bonebeast",
+      "exclusive": false,
+      "experience": 580,
+      "max_health": 515,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bonelord",
+      "display_name": "Bonelord",
+      "exclusive": false,
+      "experience": 170,
+      "max_health": 260,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bony_sea_devil",
+      "display_name": "Bony Sea Devil",
+      "exclusive": false,
+      "experience": 17328,
+      "max_health": 24000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.boogy",
+      "display_name": "Boogy",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.brachiodemon",
+      "display_name": "Brachiodemon",
+      "exclusive": false,
+      "experience": 15770,
+      "max_health": 25000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.brain_squid",
+      "display_name": "Brain Squid",
+      "exclusive": false,
+      "experience": 17672,
+      "max_health": 18000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.braindeath",
+      "display_name": "Braindeath",
+      "exclusive": false,
+      "experience": 985,
+      "max_health": 1225,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.bramble_wyrmling",
+      "display_name": "Bramble Wyrmling",
+      "exclusive": false,
+      "experience": 2350,
+      "max_health": 2350,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.branchy_crawler",
+      "display_name": "Branchy Crawler",
+      "exclusive": false,
+      "experience": 17324,
+      "max_health": 27000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.breach_brood",
+      "display_name": "Breach Brood",
+      "exclusive": false,
+      "experience": 1760,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.bride_of_night",
+      "display_name": "Bride of Night",
+      "exclusive": false,
+      "experience": 450,
+      "max_health": 275,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.brimstone_bug",
+      "display_name": "Brimstone Bug",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.brinebrute_inferniarch",
+      "display_name": "Brinebrute Inferniarch",
+      "exclusive": true,
+      "experience": 20300,
+      "max_health": 32000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.broken_shaper",
+      "display_name": "Broken Shaper",
+      "exclusive": false,
+      "experience": 1800,
+      "max_health": 2200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.broodrider_inferniarch",
+      "display_name": "Broodrider Inferniarch",
+      "exclusive": true,
+      "experience": 7400,
+      "max_health": 9600,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.bug",
+      "display_name": "Bug",
+      "exclusive": false,
+      "experience": 18,
+      "max_health": 29,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.bulltaur_alchemist",
+      "display_name": "Bulltaur Alchemist",
+      "exclusive": false,
+      "experience": 4500,
+      "max_health": 5690,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.bulltaur_brute",
+      "display_name": "Bulltaur Brute",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 6560,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.bulltaur_forgepriest",
+      "display_name": "Bulltaur Forgepriest",
+      "exclusive": false,
+      "experience": 6400,
+      "max_health": 6840,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.burning_book",
+      "display_name": "Burning Book",
+      "exclusive": false,
+      "experience": 13200,
+      "max_health": 18000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.burning_gladiator",
+      "display_name": "Burning Gladiator",
+      "exclusive": false,
+      "experience": 7350,
+      "max_health": 10000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.burster_spectre",
+      "display_name": "Burster Spectre",
+      "exclusive": false,
+      "experience": 6000,
+      "max_health": 6500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.candy_floss_elemental",
+      "display_name": "Candy Floss Elemental",
+      "exclusive": false,
+      "experience": 3850,
+      "max_health": 3700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.candy_horror",
+      "display_name": "Candy Horror",
+      "exclusive": false,
+      "experience": 3000,
+      "max_health": 3100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.capricious_phantom",
+      "display_name": "Capricious Phantom",
+      "exclusive": false,
+      "experience": 17230,
+      "max_health": 30000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.carniphila",
+      "display_name": "Carniphila",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 255,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.carnivostrich",
+      "display_name": "Carnivostrich",
+      "exclusive": false,
+      "experience": 6710,
+      "max_health": 8250,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.carrion_worm",
+      "display_name": "Carrion Worm",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 145,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.cave_chimera",
+      "display_name": "Cave Chimera",
+      "exclusive": false,
+      "experience": 6800,
+      "max_health": 8000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cave_devourer",
+      "display_name": "Cave Devourer",
+      "exclusive": false,
+      "experience": 3380,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cave_rat",
+      "display_name": "Cave Rat",
+      "exclusive": false,
+      "experience": 10,
+      "max_health": 30,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.centipede",
+      "display_name": "Centipede",
+      "exclusive": false,
+      "experience": 34,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.chakoya_toolshaper",
+      "display_name": "Chakoya Toolshaper",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.chakoya_tribewarden",
+      "display_name": "Chakoya Tribewarden",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 68,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.chakoya_windcaller",
+      "display_name": "Chakoya Windcaller",
+      "exclusive": false,
+      "experience": 48,
+      "max_health": 84,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.chasm_spawn",
+      "display_name": "Chasm Spawn",
+      "exclusive": false,
+      "experience": 3600,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.chocolate_blob",
+      "display_name": "Chocolate Blob",
+      "exclusive": true,
+      "experience": 17,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.choking_fear",
+      "display_name": "Choking Fear",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 5800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cinder_wyrmling",
+      "display_name": "Cinder Wyrmling",
+      "exclusive": false,
+      "experience": 2350,
+      "max_health": 2350,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.clay_guardian",
+      "display_name": "Clay Guardian",
+      "exclusive": false,
+      "experience": 400,
+      "max_health": 625,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cliff_strider",
+      "display_name": "Cliff Strider",
+      "exclusive": true,
+      "experience": 7100,
+      "max_health": 9400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cloak_of_terror",
+      "display_name": "Cloak of Terror",
+      "exclusive": false,
+      "experience": 19700,
+      "max_health": 28000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.clomp",
+      "display_name": "Clomp",
+      "exclusive": false,
+      "experience": 475,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cobra",
+      "display_name": "Cobra",
+      "exclusive": false,
+      "experience": 30,
+      "max_health": 65,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.cobra_assassin",
+      "display_name": "Cobra Assassin",
+      "exclusive": false,
+      "experience": 6980,
+      "max_health": 8200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cobra_scout",
+      "display_name": "Cobra Scout",
+      "exclusive": false,
+      "experience": 7310,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cobra_vizier",
+      "display_name": "Cobra Vizier",
+      "exclusive": false,
+      "experience": 7650,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.converter",
+      "display_name": "Converter",
+      "exclusive": false,
+      "experience": 21425,
+      "max_health": 29600,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.coral_frog",
+      "display_name": "Coral Frog",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.corrupted_ghost",
+      "display_name": "Corrupted Ghost",
+      "exclusive": false,
+      "experience": 29,
+      "max_health": 30,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.corrupted_skeleton",
+      "display_name": "Corrupted Skeleton",
+      "exclusive": false,
+      "experience": 34,
+      "max_health": 45,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.corym_charlatan",
+      "display_name": "Corym Charlatan",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 250,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.corym_skirmisher",
+      "display_name": "Corym Skirmisher",
+      "exclusive": false,
+      "experience": 260,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.corym_vanguard",
+      "display_name": "Corym Vanguard",
+      "exclusive": false,
+      "experience": 490,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.courage_leech",
+      "display_name": "Courage Leech",
+      "exclusive": false,
+      "experience": 18900,
+      "max_health": 27000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crab",
+      "display_name": "Crab",
+      "exclusive": false,
+      "experience": 30,
+      "max_health": 55,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.crape_man",
+      "display_name": "Crape Man",
+      "exclusive": false,
+      "experience": 5040,
+      "max_health": 9150,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crawler",
+      "display_name": "Crawler",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1450,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.crazed_beggar",
+      "display_name": "Crazed Beggar",
+      "exclusive": false,
+      "experience": 35,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.crazed_summer_rearguard",
+      "display_name": "Crazed Summer Rearguard",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 5300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.crazed_summer_vanguard",
+      "display_name": "Crazed Summer Vanguard",
+      "exclusive": false,
+      "experience": 5000,
+      "max_health": 5500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crazed_winter_rearguard",
+      "display_name": "Crazed Winter Rearguard",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 5200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.crazed_winter_vanguard",
+      "display_name": "Crazed Winter Vanguard",
+      "exclusive": false,
+      "experience": 5400,
+      "max_health": 5800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cream_blob",
+      "display_name": "Cream Blob",
+      "exclusive": true,
+      "experience": 21,
+      "max_health": 76,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.creepy_crawler",
+      "display_name": "Creepy Crawler",
+      "exclusive": false,
+      "experience": 22380,
+      "max_health": 27000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.crimson_frog",
+      "display_name": "Crimson Frog",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.crocodile",
+      "display_name": "Crocodile",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 105,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.crusader",
+      "display_name": "Crusader",
+      "exclusive": false,
+      "experience": 3300,
+      "max_health": 3400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.crustacea_gigantica",
+      "display_name": "Crustacea Gigantica",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.crypt_construct",
+      "display_name": "Crypt Construct",
+      "exclusive": false,
+      "experience": 19730,
+      "max_health": 25000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crypt_defiler",
+      "display_name": "Crypt Defiler",
+      "exclusive": true,
+      "experience": 70,
+      "max_health": 185,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.crypt_fiend",
+      "display_name": "Crypt Fiend",
+      "exclusive": false,
+      "experience": 19070,
+      "max_health": 30000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crypt_mage",
+      "display_name": "Crypt Mage",
+      "exclusive": false,
+      "experience": 14200,
+      "max_health": 14000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crypt_shambler",
+      "display_name": "Crypt Shambler",
+      "exclusive": false,
+      "experience": 195,
+      "max_health": 330,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.crypt_warden",
+      "display_name": "Crypt Warden",
+      "exclusive": false,
+      "experience": 8400,
+      "max_health": 8300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crypt_warrior",
+      "display_name": "Crypt Warrior",
+      "exclusive": false,
+      "experience": 6050,
+      "max_health": 7800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.crystal_spider",
+      "display_name": "Crystal Spider",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1250,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.crystal_wolf",
+      "display_name": "Crystal Wolf",
+      "exclusive": true,
+      "experience": 275,
+      "max_health": 750,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.crystalcrusher",
+      "display_name": "Crystalcrusher",
+      "exclusive": false,
+      "experience": 500,
+      "max_health": 570,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cult_believer",
+      "display_name": "Cult Believer",
+      "exclusive": false,
+      "experience": 850,
+      "max_health": 975,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cult_enforcer",
+      "display_name": "Cult Enforcer",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1150,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cult_scholar",
+      "display_name": "Cult Scholar",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1650,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cunning_werepanther",
+      "display_name": "Cunning Werepanther",
+      "exclusive": false,
+      "experience": 3620,
+      "max_health": 4300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cursed_ape",
+      "display_name": "Cursed Ape",
+      "exclusive": false,
+      "experience": 2000,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.cursed_book",
+      "display_name": "Cursed Book",
+      "exclusive": false,
+      "experience": 13345,
+      "max_health": 20000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cursed_prospector",
+      "display_name": "Cursed Prospector",
+      "exclusive": false,
+      "experience": 5250,
+      "max_health": 3900,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.cyclops",
+      "display_name": "Cyclops",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 260,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cyclops_drone",
+      "display_name": "Cyclops Drone",
+      "exclusive": false,
+      "experience": 200,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cyclops_smith",
+      "display_name": "Cyclops Smith",
+      "exclusive": false,
+      "experience": 255,
+      "max_health": 435,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.cyclursus",
+      "display_name": "Cyclursus",
+      "exclusive": false,
+      "experience": 11775,
+      "max_health": 13500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.damaged_worker_golem",
+      "display_name": "Damaged Worker Golem",
+      "exclusive": true,
+      "experience": 95,
+      "max_health": 260,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dark_apprentice",
+      "display_name": "Dark Apprentice",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 225,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dark_carnisylvan",
+      "display_name": "Dark Carnisylvan",
+      "exclusive": false,
+      "experience": 4400,
+      "max_health": 7500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dark_faun",
+      "display_name": "Dark Faun",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dark_magician",
+      "display_name": "Dark Magician",
+      "exclusive": false,
+      "experience": 185,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dark_monk",
+      "display_name": "Dark Monk",
+      "exclusive": false,
+      "experience": 145,
+      "max_health": 190,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dark_torturer",
+      "display_name": "Dark Torturer",
+      "exclusive": false,
+      "experience": 4650,
+      "max_health": 7350,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.darklight_construct",
+      "display_name": "Darklight Construct",
+      "exclusive": false,
+      "experience": 22050,
+      "max_health": 32200,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.darklight_emitter",
+      "display_name": "Darklight Emitter",
+      "exclusive": false,
+      "experience": 20600,
+      "max_health": 27500,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.darklight_matter",
+      "display_name": "Darklight Matter",
+      "exclusive": false,
+      "experience": 19232,
+      "max_health": 30150,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.darklight_source",
+      "display_name": "Darklight Source",
+      "exclusive": false,
+      "experience": 19409,
+      "max_health": 31550,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.darklight_striker",
+      "display_name": "Darklight Striker",
+      "exclusive": false,
+      "experience": 19205,
+      "max_health": 29700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.dawnfire_asura",
+      "display_name": "Dawnfire Asura",
+      "exclusive": false,
+      "experience": 3610,
+      "max_health": 2900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.day_night_harpy",
+      "display_name": "Night Harpy",
+      "exclusive": false,
+      "experience": 21000,
+      "max_health": 14000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.death_blob",
+      "display_name": "Death Blob",
+      "exclusive": false,
+      "experience": 300,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.death_priest",
+      "display_name": "Death Priest",
+      "exclusive": true,
+      "experience": 750,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.deathling_scout",
+      "display_name": "Deathling Scout",
+      "exclusive": false,
+      "experience": 6300,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.deathling_spellsinger",
+      "display_name": "Deathling Spellsinger",
+      "exclusive": false,
+      "experience": 6400,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.deepling_brawler",
+      "display_name": "Deepling Brawler",
+      "exclusive": true,
+      "experience": 260,
+      "max_health": 380,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.deepling_elite",
+      "display_name": "Deepling Elite",
+      "exclusive": true,
+      "experience": 3000,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_guard",
+      "display_name": "Deepling Guard",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 1900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_master_librarian",
+      "display_name": "Deepling Master Librarian",
+      "exclusive": true,
+      "experience": 1900,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_scout",
+      "display_name": "Deepling Scout",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 240,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.deepling_spellsinger",
+      "display_name": "Deepling Spellsinger",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 850,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_tyrant",
+      "display_name": "Deepling Tyrant",
+      "exclusive": true,
+      "experience": 4200,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_warrior",
+      "display_name": "Deepling Warrior",
+      "exclusive": false,
+      "experience": 1500,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.deepling_worker",
+      "display_name": "Deepling Worker",
+      "exclusive": false,
+      "experience": 130,
+      "max_health": 190,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.deepsea_blood_crab",
+      "display_name": "Deepsea Blood Crab",
+      "exclusive": true,
+      "experience": 180,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.deepworm",
+      "display_name": "Deepworm",
+      "exclusive": false,
+      "experience": 2520,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.defiler",
+      "display_name": "Defiler",
+      "exclusive": false,
+      "experience": 3700,
+      "max_health": 3650,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.demon",
+      "display_name": "Demon",
+      "exclusive": false,
+      "experience": 6000,
+      "max_health": 8200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.demon_outcast",
+      "display_name": "Demon Outcast",
+      "exclusive": false,
+      "experience": 6200,
+      "max_health": 6900,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.demon_parrot",
+      "display_name": "Demon Parrot",
+      "exclusive": true,
+      "experience": 225,
+      "max_health": 360,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.demon_skeleton",
+      "display_name": "Demon Skeleton",
+      "exclusive": false,
+      "experience": 240,
+      "max_health": 400,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.destroyer",
+      "display_name": "Destroyer",
+      "exclusive": false,
+      "experience": 2500,
+      "max_health": 3700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_acolyte",
+      "display_name": "Devoted Radiant Acolyte",
+      "exclusive": false,
+      "experience": 56428,
+      "max_health": 39790,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_inquisitor",
+      "display_name": "Devoted Radiant Inquisitor",
+      "exclusive": false,
+      "experience": 55519,
+      "max_health": 40020,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_paragon",
+      "display_name": "Devoted Radiant Paragon",
+      "exclusive": false,
+      "experience": 59661,
+      "max_health": 41400,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_templar",
+      "display_name": "Devoted Radiant Templar",
+      "exclusive": false,
+      "experience": 58882,
+      "max_health": 42550,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_warden",
+      "display_name": "Devoted Radiant Warden",
+      "exclusive": false,
+      "experience": 60510,
+      "max_health": 44275,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devoted_radiant_zealot",
+      "display_name": "Devoted Radiant Zealot",
+      "exclusive": false,
+      "experience": 59590,
+      "max_health": 41980,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.devourer",
+      "display_name": "Devourer",
+      "exclusive": false,
+      "experience": 1755,
+      "max_health": 1900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.diabolic_imp",
+      "display_name": "Diabolic Imp",
+      "exclusive": false,
+      "experience": 2900,
+      "max_health": 1950,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.diamond_servant",
+      "display_name": "Diamond Servant",
+      "exclusive": true,
+      "experience": 700,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.diamond_servant_replica",
+      "display_name": "Diamond Servant Replica",
+      "exclusive": true,
+      "experience": 1400,
+      "max_health": 2000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dire_penguin",
+      "display_name": "Dire Penguin",
+      "exclusive": true,
+      "experience": 119,
+      "max_health": 173,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.diremaw",
+      "display_name": "Diremaw",
+      "exclusive": false,
+      "experience": 2770,
+      "max_health": 3600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.distorted_phantom",
+      "display_name": "Distorted Phantom",
+      "exclusive": false,
+      "experience": 18870,
+      "max_health": 26000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.doom_deer",
+      "display_name": "Doom Deer",
+      "exclusive": true,
+      "experience": 200,
+      "max_health": 405,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.doomsday_cultist",
+      "display_name": "Doomsday Cultist",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 125,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dragolisk",
+      "display_name": "Dragolisk",
+      "exclusive": false,
+      "experience": 4650,
+      "max_health": 6180,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dragon",
+      "display_name": "Dragon",
+      "exclusive": false,
+      "experience": 700,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dragon_hatchling",
+      "display_name": "Dragon Hatchling",
+      "exclusive": false,
+      "experience": 185,
+      "max_health": 380,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dragon_lord",
+      "display_name": "Dragon Lord",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 1900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dragon_lord_hatchling",
+      "display_name": "Dragon Lord Hatchling",
+      "exclusive": false,
+      "experience": 645,
+      "max_health": 750,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dragonling",
+      "display_name": "Dragonling",
+      "exclusive": true,
+      "experience": 2200,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.draken_abomination",
+      "display_name": "Draken Abomination",
+      "exclusive": false,
+      "experience": 4500,
+      "max_health": 6250,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.draken_elite",
+      "display_name": "Draken Elite",
+      "exclusive": false,
+      "experience": 4750,
+      "max_health": 5550,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.draken_spellweaver",
+      "display_name": "Draken Spellweaver",
+      "exclusive": false,
+      "experience": 3100,
+      "max_health": 5000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.draken_warmaster",
+      "display_name": "Draken Warmaster",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 4150,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.draptor",
+      "display_name": "Draptor",
+      "exclusive": true,
+      "experience": 2400,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dread_intruder",
+      "display_name": "Dread Intruder",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.drillworm",
+      "display_name": "Drillworm",
+      "exclusive": false,
+      "experience": 1200,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.druid_s_apparition",
+      "display_name": "Druid's Apparition",
+      "exclusive": false,
+      "experience": 21130,
+      "max_health": 25000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.dryad",
+      "display_name": "Dryad",
+      "exclusive": true,
+      "experience": 190,
+      "max_health": 310,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.duskbringer",
+      "display_name": "Duskbringer",
+      "exclusive": true,
+      "experience": 2600,
+      "max_health": 3550,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.dwarf",
+      "display_name": "Dwarf",
+      "exclusive": false,
+      "experience": 45,
+      "max_health": 90,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dwarf_geomancer",
+      "display_name": "Dwarf Geomancer",
+      "exclusive": false,
+      "experience": 265,
+      "max_health": 380,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dwarf_guard",
+      "display_name": "Dwarf Guard",
+      "exclusive": false,
+      "experience": 165,
+      "max_health": 245,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.dwarf_henchman",
+      "display_name": "Dwarf Henchman",
+      "exclusive": true,
+      "experience": 15,
+      "max_health": 350,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dwarf_soldier",
+      "display_name": "Dwarf Soldier",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 135,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dworc_fleshhunter",
+      "display_name": "Dworc Fleshhunter",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 85,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dworc_shadowstalker",
+      "display_name": "Dworc Shadowstalker",
+      "exclusive": false,
+      "experience": 7680,
+      "max_health": 8900,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.dworc_venomsniper",
+      "display_name": "Dworc Venomsniper",
+      "exclusive": false,
+      "experience": 35,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.dworc_voodoomaster",
+      "display_name": "Dworc Voodoomaster",
+      "exclusive": false,
+      "experience": 55,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.earth_elemental",
+      "display_name": "Earth Elemental",
+      "exclusive": false,
+      "experience": 550,
+      "max_health": 650,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.efreet",
+      "display_name": "Efreet",
+      "exclusive": false,
+      "experience": 410,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elder_bonelord",
+      "display_name": "Elder Bonelord",
+      "exclusive": false,
+      "experience": 280,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elder_mummy",
+      "display_name": "Elder Mummy",
+      "exclusive": true,
+      "experience": 560,
+      "max_health": 850,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elder_wyrm",
+      "display_name": "Elder Wyrm",
+      "exclusive": false,
+      "experience": 2500,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.elephant",
+      "display_name": "Elephant",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elf",
+      "display_name": "Elf",
+      "exclusive": false,
+      "experience": 42,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.elf_arcanist",
+      "display_name": "Elf Arcanist",
+      "exclusive": false,
+      "experience": 175,
+      "max_health": 220,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elf_overseer",
+      "display_name": "Elf Overseer",
+      "exclusive": true,
+      "experience": 290,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.elf_scout",
+      "display_name": "Elf Scout",
+      "exclusive": false,
+      "experience": 75,
+      "max_health": 160,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.emerald_damselfly",
+      "display_name": "Emerald Damselfly",
+      "exclusive": false,
+      "experience": 35,
+      "max_health": 90,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.emerald_tortoise",
+      "display_name": "Emerald Tortoise",
+      "exclusive": false,
+      "experience": 13040,
+      "max_health": 22300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.energetic_book",
+      "display_name": "Energetic Book",
+      "exclusive": false,
+      "experience": 12034,
+      "max_health": 18500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.energuardian_of_tales",
+      "display_name": "Energuardian of Tales",
+      "exclusive": false,
+      "experience": 11361,
+      "max_health": 14000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.energy_elemental",
+      "display_name": "Energy Elemental",
+      "exclusive": false,
+      "experience": 550,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.enfeebled_silencer",
+      "display_name": "Enfeebled Silencer",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.enlightened_of_the_cult",
+      "display_name": "Enlightened of the Cult",
+      "exclusive": false,
+      "experience": 500,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.enraged_crystal_golem",
+      "display_name": "Enraged Crystal Golem",
+      "exclusive": true,
+      "experience": 550,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.enslaved_dwarf",
+      "display_name": "Enslaved Dwarf",
+      "exclusive": true,
+      "experience": 2700,
+      "max_health": 3800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.eternal_guardian",
+      "display_name": "Eternal Guardian",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 2500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.evil_prospector",
+      "display_name": "Evil Prospector",
+      "exclusive": false,
+      "experience": 9800,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.evil_sheep",
+      "display_name": "Evil Sheep",
+      "exclusive": true,
+      "experience": 240,
+      "max_health": 350,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.evil_sheep_lord",
+      "display_name": "Evil Sheep Lord",
+      "exclusive": true,
+      "experience": 340,
+      "max_health": 400,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.execowtioner",
+      "display_name": "Execowtioner",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.exotic_bat",
+      "display_name": "Exotic Bat",
+      "exclusive": false,
+      "experience": 1200,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.exotic_cave_spider",
+      "display_name": "Exotic Cave Spider",
+      "exclusive": false,
+      "experience": 1400,
+      "max_health": 1900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.eyeless_devourer",
+      "display_name": "Eyeless Devourer",
+      "exclusive": false,
+      "experience": 6000,
+      "max_health": 10000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.falcon_knight",
+      "display_name": "Falcon Knight",
+      "exclusive": false,
+      "experience": 6300,
+      "max_health": 9000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.falcon_paladin",
+      "display_name": "Falcon Paladin",
+      "exclusive": false,
+      "experience": 6900,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.faun",
+      "display_name": "Faun",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.feral_sphinx",
+      "display_name": "Feral Sphinx",
+      "exclusive": false,
+      "experience": 8450,
+      "max_health": 9800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.feral_werecrocodile",
+      "display_name": "Feral Werecrocodile",
+      "exclusive": false,
+      "experience": 5430,
+      "max_health": 6400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.feverish_citizen",
+      "display_name": "Feverish Citizen",
+      "exclusive": true,
+      "experience": 30,
+      "max_health": 125,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.feversleep",
+      "display_name": "Feversleep",
+      "exclusive": false,
+      "experience": 5060,
+      "max_health": 5900,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.filth_toad",
+      "display_name": "Filth Toad",
+      "exclusive": true,
+      "experience": 90,
+      "max_health": 185,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.fire_devil",
+      "display_name": "Fire Devil",
+      "exclusive": false,
+      "experience": 145,
+      "max_health": 200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.fire_elemental",
+      "display_name": "Fire Elemental",
+      "exclusive": true,
+      "experience": 220,
+      "max_health": 280,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.firestarter",
+      "display_name": "Firestarter",
+      "exclusive": true,
+      "experience": 80,
+      "max_health": 180,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.flimsy_lost_soul",
+      "display_name": "Flimsy Lost Soul",
+      "exclusive": false,
+      "experience": 4500,
+      "max_health": 4000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.floating_savant",
+      "display_name": "Floating Savant",
+      "exclusive": false,
+      "experience": 8000,
+      "max_health": 8000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.flying_book",
+      "display_name": "Flying Book",
+      "exclusive": true,
+      "experience": 200,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.foam_stalker",
+      "display_name": "Foam Stalker",
+      "exclusive": false,
+      "experience": 3525,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.forest_fury",
+      "display_name": "Forest Fury",
+      "exclusive": false,
+      "experience": 330,
+      "max_health": 480,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.fox",
+      "display_name": "Fox",
+      "exclusive": false,
+      "experience": 15,
+      "max_health": 22,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.frazzlemaw",
+      "display_name": "Frazzlemaw",
+      "exclusive": false,
+      "experience": 3740,
+      "max_health": 4100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.freakish_lost_soul",
+      "display_name": "Freakish Lost Soul",
+      "exclusive": false,
+      "experience": 7020,
+      "max_health": 7000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.frost_dragon",
+      "display_name": "Frost Dragon",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.frost_dragon_hatchling",
+      "display_name": "Frost Dragon Hatchling",
+      "exclusive": false,
+      "experience": 745,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.frost_flower_asura",
+      "display_name": "Frost Flower Asura",
+      "exclusive": false,
+      "experience": 4200,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.frost_giant",
+      "display_name": "Frost Giant",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 270,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.frost_giantess",
+      "display_name": "Frost Giantess",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 275,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.frost_troll",
+      "display_name": "Frost Troll",
+      "exclusive": false,
+      "experience": 23,
+      "max_health": 55,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.fruit_drop",
+      "display_name": "Fruit Drop",
+      "exclusive": true,
+      "experience": 18,
+      "max_health": 63,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.furious_troll",
+      "display_name": "Furious Troll",
+      "exclusive": true,
+      "experience": 185,
+      "max_health": 245,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.fury",
+      "display_name": "Fury",
+      "exclusive": false,
+      "experience": 4000,
+      "max_health": 4100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.gang_member",
+      "display_name": "Gang Member",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 295,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.gargoyle",
+      "display_name": "Gargoyle",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 250,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.gazer",
+      "display_name": "Gazer",
+      "exclusive": true,
+      "experience": 90,
+      "max_health": 120,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.gazer_spectre",
+      "display_name": "Gazer Spectre",
+      "exclusive": false,
+      "experience": 4200,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.ghastly_dragon",
+      "display_name": "Ghastly Dragon",
+      "exclusive": false,
+      "experience": 4600,
+      "max_health": 7800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.ghost",
+      "display_name": "Ghost",
+      "exclusive": false,
+      "experience": 120,
+      "max_health": 150,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ghost_wolf",
+      "display_name": "Ghost Wolf",
+      "exclusive": true,
+      "experience": 65,
+      "max_health": 160,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.ghoul",
+      "display_name": "Ghoul",
+      "exclusive": false,
+      "experience": 85,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.ghoulish_hyaena",
+      "display_name": "Ghoulish Hyaena",
+      "exclusive": true,
+      "experience": 195,
+      "max_health": 400,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.giant_spider",
+      "display_name": "Giant Spider",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.gingerbread_man",
+      "display_name": "Gingerbread Man",
+      "exclusive": true,
+      "experience": 22,
+      "max_health": 85,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.girtablilu_warrior",
+      "display_name": "Girtablilu Warrior",
+      "exclusive": false,
+      "experience": 5800,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.gladiator",
+      "display_name": "Gladiator",
+      "exclusive": false,
+      "experience": 90,
+      "max_health": 185,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.gloom_maw",
+      "display_name": "Gloom Maw",
+      "exclusive": false,
+      "experience": 7550,
+      "max_health": 8700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.gloom_wolf",
+      "display_name": "Gloom Wolf",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 200,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.glooth_anemone",
+      "display_name": "Glooth Anemone",
+      "exclusive": false,
+      "experience": 1755,
+      "max_health": 2400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.glooth_bandit",
+      "display_name": "Glooth Bandit",
+      "exclusive": false,
+      "experience": 2000,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.glooth_blob",
+      "display_name": "Glooth Blob",
+      "exclusive": false,
+      "experience": 700,
+      "max_health": 750,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.glooth_brigand",
+      "display_name": "Glooth Brigand",
+      "exclusive": false,
+      "experience": 1900,
+      "max_health": 2400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.glooth_golem",
+      "display_name": "Glooth Golem",
+      "exclusive": false,
+      "experience": 1930,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.gnarlhound",
+      "display_name": "Gnarlhound",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 198,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.goblin",
+      "display_name": "Goblin",
+      "exclusive": false,
+      "experience": 25,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.goblin_assassin",
+      "display_name": "Goblin Assassin",
+      "exclusive": false,
+      "experience": 52,
+      "max_health": 75,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.goblin_leader",
+      "display_name": "Goblin Leader",
+      "exclusive": true,
+      "experience": 75,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.goblin_scavenger",
+      "display_name": "Goblin Scavenger",
+      "exclusive": false,
+      "experience": 37,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.goggle_cake",
+      "display_name": "Goggle Cake",
+      "exclusive": false,
+      "experience": 2700,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.golden_servant",
+      "display_name": "Golden Servant",
+      "exclusive": true,
+      "experience": 450,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.golden_servant_replica",
+      "display_name": "Golden Servant Replica",
+      "exclusive": true,
+      "experience": 1250,
+      "max_health": 2000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.goldhanded_cultist",
+      "display_name": "Goldhanded Cultist",
+      "exclusive": true,
+      "experience": 2000,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.goldhanded_cultist_bride",
+      "display_name": "Goldhanded Cultist Bride",
+      "exclusive": true,
+      "experience": 2000,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.gore_horn",
+      "display_name": "Gore Horn",
+      "exclusive": false,
+      "experience": 13540,
+      "max_health": 20620,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.gorerilla",
+      "display_name": "Gorerilla",
+      "exclusive": false,
+      "experience": 14160,
+      "max_health": 16850,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.gorger_inferniarch",
+      "display_name": "Gorger Inferniarch",
+      "exclusive": true,
+      "experience": 7180,
+      "max_health": 9450,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.gozzler",
+      "display_name": "Gozzler",
+      "exclusive": false,
+      "experience": 180,
+      "max_health": 240,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.grave_guard",
+      "display_name": "Grave Guard",
+      "exclusive": true,
+      "experience": 485,
+      "max_health": 720,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.grave_robber",
+      "display_name": "Grave Robber",
+      "exclusive": true,
+      "experience": 65,
+      "max_health": 165,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.gravedigger",
+      "display_name": "Gravedigger",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.green_djinn",
+      "display_name": "Green Djinn",
+      "exclusive": false,
+      "experience": 215,
+      "max_health": 330,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.grim_reaper",
+      "display_name": "Grim Reaper",
+      "exclusive": false,
+      "experience": 5500,
+      "max_health": 3900,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.grimeleech",
+      "display_name": "Grimeleech",
+      "exclusive": false,
+      "experience": 7216,
+      "max_health": 9500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.grynch_clan_goblin",
+      "display_name": "Grynch Clan Goblin",
+      "exclusive": true,
+      "experience": 4,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.gryphon",
+      "display_name": "Gryphon",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.guardian_of_tales",
+      "display_name": "Guardian of Tales",
+      "exclusive": false,
+      "experience": 10600,
+      "max_health": 15000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.guzzlemaw",
+      "display_name": "Guzzlemaw",
+      "exclusive": false,
+      "experience": 6050,
+      "max_health": 6400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.hand_of_cursed_fate",
+      "display_name": "Hand of Cursed Fate",
+      "exclusive": false,
+      "experience": 5000,
+      "max_health": 6600,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.harpy",
+      "display_name": "Harpy",
+      "exclusive": false,
+      "experience": 5720,
+      "max_health": 7700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.haunted_dragon",
+      "display_name": "Haunted Dragon",
+      "exclusive": true,
+      "experience": 6500,
+      "max_health": 6500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.haunted_hunter",
+      "display_name": "Haunted Hunter",
+      "exclusive": false,
+      "experience": 19500,
+      "max_health": 23000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.haunted_treeling",
+      "display_name": "Haunted Treeling",
+      "exclusive": false,
+      "experience": 310,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.hawk_hopper",
+      "display_name": "Hawk Hopper",
+      "exclusive": false,
+      "experience": 2250,
+      "max_health": 2180,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.headpecker",
+      "display_name": "Headpecker",
+      "exclusive": false,
+      "experience": 12930,
+      "max_health": 16300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.headwalker",
+      "display_name": "Headwalker",
+      "exclusive": false,
+      "experience": 2250,
+      "max_health": 2460,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hellfire_fighter",
+      "display_name": "Hellfire Fighter",
+      "exclusive": false,
+      "experience": 3800,
+      "max_health": 3800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hellflayer",
+      "display_name": "Hellflayer",
+      "exclusive": false,
+      "experience": 11720,
+      "max_health": 14000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.hellhound",
+      "display_name": "Hellhound",
+      "exclusive": false,
+      "experience": 5440,
+      "max_health": 7500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.hellhunter_inferniarch",
+      "display_name": "Hellhunter Inferniarch",
+      "exclusive": true,
+      "experience": 8100,
+      "max_health": 11300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.hellspawn",
+      "display_name": "Hellspawn",
+      "exclusive": false,
+      "experience": 2550,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.herald_of_gloom",
+      "display_name": "Herald of Gloom",
+      "exclusive": true,
+      "experience": 450,
+      "max_health": 340,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.hero",
+      "display_name": "Hero",
+      "exclusive": false,
+      "experience": 1200,
+      "max_health": 1400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hibernal_moth",
+      "display_name": "Hibernal Moth",
+      "exclusive": true,
+      "experience": 700,
+      "max_health": 850,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.hideous_fungus",
+      "display_name": "Hideous Fungus",
+      "exclusive": false,
+      "experience": 3700,
+      "max_health": 4600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.high_voltage_elemental",
+      "display_name": "High Voltage Elemental",
+      "exclusive": true,
+      "experience": 1500,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hive_overseer",
+      "display_name": "Hive Overseer",
+      "exclusive": true,
+      "experience": 5500,
+      "max_health": 7500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.honey_elemental",
+      "display_name": "Honey Elemental",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 2560,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.honour_guard",
+      "display_name": "Honour Guard",
+      "exclusive": true,
+      "experience": 55,
+      "max_health": 85,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.hot_dog",
+      "display_name": "Hot Dog",
+      "exclusive": true,
+      "experience": 190,
+      "max_health": 505,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.hulking_carnisylvan",
+      "display_name": "Hulking Carnisylvan",
+      "exclusive": false,
+      "experience": 4700,
+      "max_health": 8600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hulking_prehemoth",
+      "display_name": "Hulking Prehemoth",
+      "exclusive": false,
+      "experience": 13640,
+      "max_health": 20700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.humongous_fungus",
+      "display_name": "Humongous Fungus",
+      "exclusive": false,
+      "experience": 2900,
+      "max_health": 3400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.hunter",
+      "display_name": "Hunter",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 150,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.hyaena",
+      "display_name": "Hyaena",
+      "exclusive": false,
+      "experience": 20,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.hydra",
+      "display_name": "Hydra",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 2350,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.ice_dragon",
+      "display_name": "Ice Dragon",
+      "exclusive": true,
+      "experience": 2300,
+      "max_health": 2500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.ice_golem",
+      "display_name": "Ice Golem",
+      "exclusive": false,
+      "experience": 295,
+      "max_health": 385,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ice_witch",
+      "display_name": "Ice Witch",
+      "exclusive": false,
+      "experience": 580,
+      "max_health": 650,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.icecold_book",
+      "display_name": "Icecold Book",
+      "exclusive": false,
+      "experience": 12750,
+      "max_health": 21000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.iceplume_strider",
+      "display_name": "Iceplume Strider",
+      "exclusive": false,
+      "experience": 8150,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.iks_ahpututu",
+      "display_name": "Iks Ahpututu",
+      "exclusive": false,
+      "experience": 1700,
+      "max_health": 1630,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.iks_aucar",
+      "display_name": "Iks Aucar",
+      "exclusive": false,
+      "experience": 1240,
+      "max_health": 1520,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.iks_chuka",
+      "display_name": "Iks Chuka",
+      "exclusive": false,
+      "experience": 1310,
+      "max_health": 1240,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.iks_pututu",
+      "display_name": "Iks Pututu",
+      "exclusive": false,
+      "experience": 1390,
+      "max_health": 1310,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.iks_yapunac",
+      "display_name": "Iks Yapunac",
+      "exclusive": false,
+      "experience": 2340,
+      "max_health": 3125,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.infected_weeper",
+      "display_name": "Infected Weeper",
+      "exclusive": true,
+      "experience": 1200,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.infernal_demon",
+      "display_name": "Infernal Demon",
+      "exclusive": false,
+      "experience": 17430,
+      "max_health": 32000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.infernal_frog",
+      "display_name": "Infernal Frog",
+      "exclusive": true,
+      "experience": 190,
+      "max_health": 655,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.infernal_phantom",
+      "display_name": "Infernal Phantom",
+      "exclusive": false,
+      "experience": 15770,
+      "max_health": 26000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.infernalist",
+      "display_name": "Infernalist",
+      "exclusive": false,
+      "experience": 4000,
+      "max_health": 3650,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.infernoid_blob",
+      "display_name": "Infernoid Blob",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 85,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.infernoid_hound",
+      "display_name": "Infernoid Hound",
+      "exclusive": false,
+      "experience": 102,
+      "max_health": 86,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.infernoid_soul",
+      "display_name": "Infernoid Soul",
+      "exclusive": false,
+      "experience": 115,
+      "max_health": 95,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.infernoid_spiritual",
+      "display_name": "Infernoid Spiritual",
+      "exclusive": false,
+      "experience": 120,
+      "max_health": 102,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ink_blob",
+      "display_name": "Ink Blob",
+      "exclusive": false,
+      "experience": 14450,
+      "max_health": 9500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.ink_splash",
+      "display_name": "Ink Splash",
+      "exclusive": false,
+      "experience": 1450,
+      "max_health": 1950,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.insane_siren",
+      "display_name": "Insane Siren",
+      "exclusive": false,
+      "experience": 6000,
+      "max_health": 6500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.insect_swarm",
+      "display_name": "Insect Swarm",
+      "exclusive": true,
+      "experience": 40,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.insectoid_scout",
+      "display_name": "Insectoid Scout",
+      "exclusive": true,
+      "experience": 150,
+      "max_health": 230,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.insectoid_worker",
+      "display_name": "Insectoid Worker",
+      "exclusive": false,
+      "experience": 650,
+      "max_health": 950,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.instable_breach_brood",
+      "display_name": "Instable Breach Brood",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 2200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.instable_sparkion",
+      "display_name": "Instable Sparkion",
+      "exclusive": false,
+      "experience": 1350,
+      "max_health": 1900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.iron_servant",
+      "display_name": "Iron Servant",
+      "exclusive": true,
+      "experience": 210,
+      "max_health": 350,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.iron_servant_replica",
+      "display_name": "Iron Servant Replica",
+      "exclusive": true,
+      "experience": 600,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ironblight",
+      "display_name": "Ironblight",
+      "exclusive": false,
+      "experience": 5400,
+      "max_health": 6600,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.island_troll",
+      "display_name": "Island Troll",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.jaracal",
+      "display_name": "Jaracal",
+      "exclusive": false,
+      "experience": 2460,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.juggernaut",
+      "display_name": "Juggernaut",
+      "exclusive": false,
+      "experience": 11200,
+      "max_health": 18000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.jungle_moa",
+      "display_name": "Jungle Moa",
+      "exclusive": false,
+      "experience": 1200,
+      "max_health": 1300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.juvenile_bashmu",
+      "display_name": "Juvenile Bashmu",
+      "exclusive": false,
+      "experience": 4500,
+      "max_health": 7500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.killer_caiman",
+      "display_name": "Killer Caiman",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.killer_rabbit",
+      "display_name": "Killer Rabbit",
+      "exclusive": true,
+      "experience": 160,
+      "max_health": 205,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.knight_s_apparition",
+      "display_name": "Knight's Apparition",
+      "exclusive": false,
+      "experience": 21130,
+      "max_health": 25000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.knowledge_elemental",
+      "display_name": "Knowledge Elemental",
+      "exclusive": false,
+      "experience": 10603,
+      "max_health": 10500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.kollos",
+      "display_name": "Kollos",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 3800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.kongra",
+      "display_name": "Kongra",
+      "exclusive": false,
+      "experience": 115,
+      "max_health": 340,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.lacewing_moth",
+      "display_name": "Lacewing Moth",
+      "exclusive": true,
+      "experience": 800,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ladybug",
+      "display_name": "Ladybug",
+      "exclusive": true,
+      "experience": 70,
+      "max_health": 255,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lamassu",
+      "display_name": "Lamassu",
+      "exclusive": false,
+      "experience": 9000,
+      "max_health": 8700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.lancer_beetle",
+      "display_name": "Lancer Beetle",
+      "exclusive": false,
+      "experience": 275,
+      "max_health": 400,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.larva",
+      "display_name": "Larva",
+      "exclusive": false,
+      "experience": 44,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lava_golem",
+      "display_name": "Lava Golem",
+      "exclusive": true,
+      "experience": 7900,
+      "max_health": 9000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.lava_lurker",
+      "display_name": "Lava Lurker",
+      "exclusive": false,
+      "experience": 4000,
+      "max_health": 5900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lavafungus",
+      "display_name": "Lavafungus",
+      "exclusive": false,
+      "experience": 6200,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.lavaworm",
+      "display_name": "Lavaworm",
+      "exclusive": false,
+      "experience": 6500,
+      "max_health": 7500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.leaf_golem",
+      "display_name": "Leaf Golem",
+      "exclusive": false,
+      "experience": 45,
+      "max_health": 90,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lich",
+      "display_name": "Lich",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 880,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.liodile",
+      "display_name": "Liodile",
+      "exclusive": false,
+      "experience": 6310,
+      "max_health": 8600,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.lion",
+      "display_name": "Lion",
+      "exclusive": false,
+      "experience": 30,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lion_hydra",
+      "display_name": "Lion Hydra",
+      "exclusive": false,
+      "experience": 2600,
+      "max_health": 2760,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.little_corym_charlatan",
+      "display_name": "Little Corym Charlatan",
+      "exclusive": true,
+      "experience": 40,
+      "max_health": 90,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lizard_chosen",
+      "display_name": "Lizard Chosen",
+      "exclusive": false,
+      "experience": 2530,
+      "max_health": 3050,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_commander",
+      "display_name": "Lizard Commander",
+      "exclusive": false,
+      "experience": 240,
+      "max_health": 160,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.lizard_dragon_priest",
+      "display_name": "Lizard Dragon Priest",
+      "exclusive": false,
+      "experience": 1320,
+      "max_health": 1450,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_executioner",
+      "display_name": "Lizard Executioner",
+      "exclusive": false,
+      "experience": 90,
+      "max_health": 74,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lizard_henchman",
+      "display_name": "Lizard Henchman",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 58,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lizard_high_guard",
+      "display_name": "Lizard High Guard",
+      "exclusive": false,
+      "experience": 1450,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_legionnaire",
+      "display_name": "Lizard Legionnaire",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_magician",
+      "display_name": "Lizard Magician",
+      "exclusive": false,
+      "experience": 75,
+      "max_health": 62,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lizard_magistratus",
+      "display_name": "Lizard Magistratus",
+      "exclusive": true,
+      "experience": 2000,
+      "max_health": 6250,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_noble",
+      "display_name": "Lizard Noble",
+      "exclusive": true,
+      "experience": 2000,
+      "max_health": 7000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lizard_sentinel",
+      "display_name": "Lizard Sentinel",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 265,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.lizard_snakecharmer",
+      "display_name": "Lizard Snakecharmer",
+      "exclusive": false,
+      "experience": 210,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.lizard_swordmaster",
+      "display_name": "Lizard Swordmaster",
+      "exclusive": false,
+      "experience": 80,
+      "max_health": 68,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.lizard_templar",
+      "display_name": "Lizard Templar",
+      "exclusive": false,
+      "experience": 265,
+      "max_health": 410,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.lizard_zaogun",
+      "display_name": "Lizard Zaogun",
+      "exclusive": false,
+      "experience": 1700,
+      "max_health": 2955,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_basher",
+      "display_name": "Lost Basher",
+      "exclusive": false,
+      "experience": 2300,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_berserker",
+      "display_name": "Lost Berserker",
+      "exclusive": false,
+      "experience": 4800,
+      "max_health": 5900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_exile",
+      "display_name": "Lost Exile",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_husher",
+      "display_name": "Lost Husher",
+      "exclusive": false,
+      "experience": 1800,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_soul",
+      "display_name": "Lost Soul",
+      "exclusive": false,
+      "experience": 4000,
+      "max_health": 5800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lost_thrower",
+      "display_name": "Lost Thrower",
+      "exclusive": false,
+      "experience": 1500,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.lumbering_carnivor",
+      "display_name": "Lumbering Carnivor",
+      "exclusive": false,
+      "experience": 1452,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mad_scientist",
+      "display_name": "Mad Scientist",
+      "exclusive": false,
+      "experience": 205,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.magma_crawler",
+      "display_name": "Magma Crawler",
+      "exclusive": false,
+      "experience": 4250,
+      "max_health": 4800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.makara",
+      "display_name": "Makara",
+      "exclusive": false,
+      "experience": 5180,
+      "max_health": 5050,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.mammoth",
+      "display_name": "Mammoth",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.manta_ray",
+      "display_name": "Manta Ray",
+      "exclusive": true,
+      "experience": 125,
+      "max_health": 680,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.manticore",
+      "display_name": "Manticore",
+      "exclusive": false,
+      "experience": 4750,
+      "max_health": 6700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mantosaurus",
+      "display_name": "Mantosaurus",
+      "exclusive": false,
+      "experience": 12440,
+      "max_health": 19400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.many_faces",
+      "display_name": "Many Faces",
+      "exclusive": false,
+      "experience": 18870,
+      "max_health": 30000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.marid",
+      "display_name": "Marid",
+      "exclusive": false,
+      "experience": 410,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.marsh_stalker",
+      "display_name": "Marsh Stalker",
+      "exclusive": false,
+      "experience": 50,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.massive_earth_elemental",
+      "display_name": "Massive Earth Elemental",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1330,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.massive_energy_elemental",
+      "display_name": "Massive Energy Elemental",
+      "exclusive": true,
+      "experience": 950,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.massive_fire_elemental",
+      "display_name": "Massive Fire Elemental",
+      "exclusive": false,
+      "experience": 1400,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.massive_water_elemental",
+      "display_name": "Massive Water Elemental",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1250,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mean_lost_soul",
+      "display_name": "Mean Lost Soul",
+      "exclusive": false,
+      "experience": 5580,
+      "max_health": 5000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.meandering_mushroom",
+      "display_name": "Meandering Mushroom",
+      "exclusive": false,
+      "experience": 21980,
+      "max_health": 29100,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.medusa",
+      "display_name": "Medusa",
+      "exclusive": false,
+      "experience": 4050,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mega_dragon",
+      "display_name": "Mega Dragon",
+      "exclusive": false,
+      "experience": 7180,
+      "max_health": 7920,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.menacing_carnivor",
+      "display_name": "Menacing Carnivor",
+      "exclusive": false,
+      "experience": 2112,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mercurial_menace",
+      "display_name": "Mercurial Menace",
+      "exclusive": false,
+      "experience": 13000,
+      "max_health": 18500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.mercury_blob",
+      "display_name": "Mercury Blob",
+      "exclusive": false,
+      "experience": 180,
+      "max_health": 150,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.merlkin",
+      "display_name": "Merlkin",
+      "exclusive": false,
+      "experience": 145,
+      "max_health": 235,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.metal_gargoyle",
+      "display_name": "Metal Gargoyle",
+      "exclusive": false,
+      "experience": 1470,
+      "max_health": 2100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.midnight_asura",
+      "display_name": "Midnight Asura",
+      "exclusive": false,
+      "experience": 3700,
+      "max_health": 3100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.midnight_panther",
+      "display_name": "Midnight Panther",
+      "exclusive": true,
+      "experience": 900,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.midnight_spawn",
+      "display_name": "Midnight Spawn",
+      "exclusive": true,
+      "experience": 900,
+      "max_health": 2000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.midnight_warrior",
+      "display_name": "Midnight Warrior",
+      "exclusive": false,
+      "experience": 750,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.minotaur",
+      "display_name": "Minotaur",
+      "exclusive": false,
+      "experience": 50,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.minotaur_amazon",
+      "display_name": "Minotaur Amazon",
+      "exclusive": false,
+      "experience": 2200,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.minotaur_archer",
+      "display_name": "Minotaur Archer",
+      "exclusive": false,
+      "experience": 65,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.minotaur_cult_follower",
+      "display_name": "Minotaur Cult Follower",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1600,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.minotaur_cult_prophet",
+      "display_name": "Minotaur Cult Prophet",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.minotaur_cult_zealot",
+      "display_name": "Minotaur Cult Zealot",
+      "exclusive": false,
+      "experience": 1350,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.minotaur_guard",
+      "display_name": "Minotaur Guard",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 185,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.minotaur_hunter",
+      "display_name": "Minotaur Hunter",
+      "exclusive": false,
+      "experience": 1700,
+      "max_health": 1400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.minotaur_invader",
+      "display_name": "Minotaur Invader",
+      "exclusive": true,
+      "experience": 1760,
+      "max_health": 1850,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.minotaur_mage",
+      "display_name": "Minotaur Mage",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 155,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.misguided_bully",
+      "display_name": "Misguided Bully",
+      "exclusive": false,
+      "experience": 1800,
+      "max_health": 2000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.misguided_thief",
+      "display_name": "Misguided Thief",
+      "exclusive": false,
+      "experience": 1600,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mitmah_scout",
+      "display_name": "Mitmah Scout",
+      "exclusive": false,
+      "experience": 3230,
+      "max_health": 3940,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mitmah_seer",
+      "display_name": "Mitmah Seer",
+      "exclusive": false,
+      "experience": 4900,
+      "max_health": 4620,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mole",
+      "display_name": "Mole",
+      "exclusive": true,
+      "experience": 100,
+      "max_health": 200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.monk",
+      "display_name": "Monk",
+      "exclusive": false,
+      "experience": 200,
+      "max_health": 240,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.monk_s_apparition",
+      "display_name": "Monk's Apparition",
+      "exclusive": false,
+      "experience": 21130,
+      "max_health": 25000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.mooh_tah_warrior",
+      "display_name": "Mooh'Tah Warrior",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.moohtant",
+      "display_name": "Moohtant",
+      "exclusive": false,
+      "experience": 2600,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.moonspawn_blightspitter",
+      "display_name": "Moonspawn Blightspitter",
+      "exclusive": false,
+      "experience": 6670,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.moonspawn_juggernaut",
+      "display_name": "Moonspawn Juggernaut",
+      "exclusive": false,
+      "experience": 10000,
+      "max_health": 6000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.moonspawn_oozecrown",
+      "display_name": "Moonspawn Oozecrown",
+      "exclusive": false,
+      "experience": 7320,
+      "max_health": 9200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.moonstone_excavator",
+      "display_name": "Moonstone Excavator",
+      "exclusive": false,
+      "experience": 4670,
+      "max_health": 5100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.moonstone_overseer",
+      "display_name": "Moonstone Overseer",
+      "exclusive": false,
+      "experience": 4920,
+      "max_health": 5450,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.mould_phantom",
+      "display_name": "Mould Phantom",
+      "exclusive": false,
+      "experience": 17780,
+      "max_health": 28000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.mummy",
+      "display_name": "Mummy",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 240,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.mutated_bat",
+      "display_name": "Mutated Bat",
+      "exclusive": false,
+      "experience": 750,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.mutated_human",
+      "display_name": "Mutated Human",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 240,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.mutated_rat",
+      "display_name": "Mutated Rat",
+      "exclusive": false,
+      "experience": 450,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.mutated_tiger",
+      "display_name": "Mutated Tiger",
+      "exclusive": false,
+      "experience": 750,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.mycobiontic_beetle",
+      "display_name": "Mycobiontic Beetle",
+      "exclusive": false,
+      "experience": 21175,
+      "max_health": 30200,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.naga_archer",
+      "display_name": "Naga Archer",
+      "exclusive": false,
+      "experience": 4640,
+      "max_health": 4640,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.naga_warrior",
+      "display_name": "Naga Warrior",
+      "exclusive": false,
+      "experience": 5480,
+      "max_health": 5530,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.necromancer",
+      "display_name": "Necromancer",
+      "exclusive": false,
+      "experience": 580,
+      "max_health": 580,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.nibblemaw",
+      "display_name": "Nibblemaw",
+      "exclusive": false,
+      "experience": 2700,
+      "max_health": 2900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.night_harpy",
+      "display_name": "Night Harpy",
+      "exclusive": false,
+      "experience": 21000,
+      "max_health": 14000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.nightfiend",
+      "display_name": "Nightfiend",
+      "exclusive": true,
+      "experience": 2100,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.nighthunter",
+      "display_name": "Nighthunter",
+      "exclusive": false,
+      "experience": 13600,
+      "max_health": 19200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.nightmare",
+      "display_name": "Nightmare",
+      "exclusive": false,
+      "experience": 1800,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.nightmare_scion",
+      "display_name": "Nightmare Scion",
+      "exclusive": false,
+      "experience": 1350,
+      "max_health": 1400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.nightstalker",
+      "display_name": "Nightstalker",
+      "exclusive": false,
+      "experience": 500,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.noble_lion",
+      "display_name": "Noble Lion",
+      "exclusive": true,
+      "experience": 400,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.nomad",
+      "display_name": "Nomad",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 160,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.nomad_blue",
+      "display_name": "Nomad Blue",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 160,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.nomad_female",
+      "display_name": "Nomad Female",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 160,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.norcferatu_heartless",
+      "display_name": "Norcferatu Heartless",
+      "exclusive": false,
+      "experience": 5900,
+      "max_health": 5700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.norcferatu_nightweaver",
+      "display_name": "Norcferatu Nightweaver",
+      "exclusive": false,
+      "experience": 6370,
+      "max_health": 6100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.novice_of_the_cult",
+      "display_name": "Novice of the Cult",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 285,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.noxious_ripptor",
+      "display_name": "Noxious Ripptor",
+      "exclusive": false,
+      "experience": 14180,
+      "max_health": 22700,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.nymph",
+      "display_name": "Nymph",
+      "exclusive": false,
+      "experience": 850,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ogre_brute",
+      "display_name": "Ogre Brute",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ogre_rowdy",
+      "display_name": "Ogre Rowdy",
+      "exclusive": false,
+      "experience": 4200,
+      "max_health": 4500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.ogre_ruffian",
+      "display_name": "Ogre Ruffian",
+      "exclusive": false,
+      "experience": 5000,
+      "max_health": 5500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.ogre_sage",
+      "display_name": "Ogre Sage",
+      "exclusive": false,
+      "experience": 5500,
+      "max_health": 4800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.ogre_savage",
+      "display_name": "Ogre Savage",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1400,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.ogre_shaman",
+      "display_name": "Ogre Shaman",
+      "exclusive": false,
+      "experience": 625,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.omnivora",
+      "display_name": "Omnivora",
+      "exclusive": true,
+      "experience": 750,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.oozing_carcass",
+      "display_name": "Oozing Carcass",
+      "exclusive": false,
+      "experience": 20980,
+      "max_health": 27500,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.oozing_corpus",
+      "display_name": "Oozing Corpus",
+      "exclusive": false,
+      "experience": 20600,
+      "max_health": 28700,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.orc",
+      "display_name": "Orc",
+      "exclusive": false,
+      "experience": 25,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.orc_berserker",
+      "display_name": "Orc Berserker",
+      "exclusive": false,
+      "experience": 195,
+      "max_health": 210,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_cult_fanatic",
+      "display_name": "Orc Cult Fanatic",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.orc_cult_inquisitor",
+      "display_name": "Orc Cult Inquisitor",
+      "exclusive": false,
+      "experience": 1150,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.orc_cult_minion",
+      "display_name": "Orc Cult Minion",
+      "exclusive": false,
+      "experience": 850,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_cult_priest",
+      "display_name": "Orc Cult Priest",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.orc_cultist",
+      "display_name": "Orc Cultist",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1350,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_leader",
+      "display_name": "Orc Leader",
+      "exclusive": false,
+      "experience": 270,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_marauder",
+      "display_name": "Orc Marauder",
+      "exclusive": false,
+      "experience": 205,
+      "max_health": 235,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_rider",
+      "display_name": "Orc Rider",
+      "exclusive": false,
+      "experience": 110,
+      "max_health": 180,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_shaman",
+      "display_name": "Orc Shaman",
+      "exclusive": false,
+      "experience": 110,
+      "max_health": 115,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_spearman",
+      "display_name": "Orc Spearman",
+      "exclusive": false,
+      "experience": 38,
+      "max_health": 105,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.orc_warlord",
+      "display_name": "Orc Warlord",
+      "exclusive": false,
+      "experience": 670,
+      "max_health": 950,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.orc_warrior",
+      "display_name": "Orc Warrior",
+      "exclusive": false,
+      "experience": 50,
+      "max_health": 125,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.orchid_frog",
+      "display_name": "Orchid Frog",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.orclops_bloodbreaker",
+      "display_name": "Orclops Bloodbreaker",
+      "exclusive": false,
+      "experience": 8820,
+      "max_health": 10300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.orclops_doomhauler",
+      "display_name": "Orclops Doomhauler",
+      "exclusive": false,
+      "experience": 1450,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.orclops_ravager",
+      "display_name": "Orclops Ravager",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.orewalker",
+      "display_name": "Orewalker",
+      "exclusive": false,
+      "experience": 5900,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.paladin_s_apparition",
+      "display_name": "Paladin's Apparition",
+      "exclusive": false,
+      "experience": 21130,
+      "max_health": 25000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.panda",
+      "display_name": "Panda",
+      "exclusive": true,
+      "experience": 23,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.parder",
+      "display_name": "Parder",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.penguin",
+      "display_name": "Penguin",
+      "exclusive": true,
+      "experience": 1,
+      "max_health": 33,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.percht",
+      "display_name": "Percht",
+      "exclusive": true,
+      "experience": 600,
+      "max_health": 620,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.phantasm",
+      "display_name": "Phantasm",
+      "exclusive": false,
+      "experience": 4400,
+      "max_health": 3950,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.pirat_bombardier",
+      "display_name": "Pirat Bombardier",
+      "exclusive": false,
+      "experience": 1700,
+      "max_health": 2300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.pirat_cutthroat",
+      "display_name": "Pirat Cutthroat",
+      "exclusive": false,
+      "experience": 1800,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.pirat_mate",
+      "display_name": "Pirat Mate",
+      "exclusive": false,
+      "experience": 2400,
+      "max_health": 3200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.pirat_scoundrel",
+      "display_name": "Pirat Scoundrel",
+      "exclusive": false,
+      "experience": 1600,
+      "max_health": 2200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.pirate_buccaneer",
+      "display_name": "Pirate Buccaneer",
+      "exclusive": false,
+      "experience": 250,
+      "max_health": 425,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_cook",
+      "display_name": "Pirate Cook",
+      "exclusive": false,
+      "experience": 105,
+      "max_health": 90,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_corsair",
+      "display_name": "Pirate Corsair",
+      "exclusive": false,
+      "experience": 350,
+      "max_health": 675,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_cutthroat",
+      "display_name": "Pirate Cutthroat",
+      "exclusive": false,
+      "experience": 175,
+      "max_health": 325,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_ghost",
+      "display_name": "Pirate Ghost",
+      "exclusive": false,
+      "experience": 250,
+      "max_health": 275,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_gunner",
+      "display_name": "Pirate Gunner",
+      "exclusive": false,
+      "experience": 80,
+      "max_health": 68,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.pirate_marauder",
+      "display_name": "Pirate Marauder",
+      "exclusive": false,
+      "experience": 125,
+      "max_health": 210,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.pirate_navigator",
+      "display_name": "Pirate Navigator",
+      "exclusive": false,
+      "experience": 75,
+      "max_health": 64,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.pirate_quartermaster",
+      "display_name": "Pirate Quartermaster",
+      "exclusive": false,
+      "experience": 95,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.pirate_skeleton",
+      "display_name": "Pirate Skeleton",
+      "exclusive": false,
+      "experience": 85,
+      "max_health": 190,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.pixie",
+      "display_name": "Pixie",
+      "exclusive": false,
+      "experience": 700,
+      "max_health": 770,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.plaguesmith",
+      "display_name": "Plaguesmith",
+      "exclusive": false,
+      "experience": 3800,
+      "max_health": 8250,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.poacher",
+      "display_name": "Poacher",
+      "exclusive": false,
+      "experience": 70,
+      "max_health": 90,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.poison_spider",
+      "display_name": "Poison Spider",
+      "exclusive": false,
+      "experience": 22,
+      "max_health": 26,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.poisonous_carnisylvan",
+      "display_name": "Poisonous Carnisylvan",
+      "exclusive": false,
+      "experience": 4400,
+      "max_health": 8000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.polar_bear",
+      "display_name": "Polar Bear",
+      "exclusive": false,
+      "experience": 28,
+      "max_health": 85,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.pooka",
+      "display_name": "Pooka",
+      "exclusive": false,
+      "experience": 500,
+      "max_health": 500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.priestess",
+      "display_name": "Priestess",
+      "exclusive": false,
+      "experience": 420,
+      "max_health": 390,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.priestess_of_the_wild_sun",
+      "display_name": "Priestess of the Wild Sun",
+      "exclusive": false,
+      "experience": 6400,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.putrid_mummy",
+      "display_name": "Putrid Mummy",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1500,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_constrictor",
+      "display_name": "Quara Constrictor",
+      "exclusive": false,
+      "experience": 380,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_constrictor_scout",
+      "display_name": "Quara Constrictor Scout",
+      "exclusive": false,
+      "experience": 200,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_hydromancer",
+      "display_name": "Quara Hydromancer",
+      "exclusive": false,
+      "experience": 950,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_hydromancer_scout",
+      "display_name": "Quara Hydromancer Scout",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_looter",
+      "display_name": "Quara Looter",
+      "exclusive": false,
+      "experience": 8650,
+      "max_health": 11500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.quara_mantassin",
+      "display_name": "Quara Mantassin",
+      "exclusive": false,
+      "experience": 600,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_mantassin_scout",
+      "display_name": "Quara Mantassin Scout",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 220,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_pincher",
+      "display_name": "Quara Pincher",
+      "exclusive": false,
+      "experience": 1500,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.quara_pincher_scout",
+      "display_name": "Quara Pincher Scout",
+      "exclusive": false,
+      "experience": 600,
+      "max_health": 775,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_plunderer",
+      "display_name": "Quara Plunderer",
+      "exclusive": false,
+      "experience": 10800,
+      "max_health": 13500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.quara_predator",
+      "display_name": "Quara Predator",
+      "exclusive": false,
+      "experience": 1850,
+      "max_health": 2200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.quara_predator_scout",
+      "display_name": "Quara Predator Scout",
+      "exclusive": false,
+      "experience": 400,
+      "max_health": 890,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.quara_raider",
+      "display_name": "Quara Raider",
+      "exclusive": false,
+      "experience": 8150,
+      "max_health": 12500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.radiant_acolyte",
+      "display_name": "Radiant Acolyte",
+      "exclusive": false,
+      "experience": 37245,
+      "max_health": 34600,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.radiant_inquisitor",
+      "display_name": "Radiant Inquisitor",
+      "exclusive": false,
+      "experience": 36680,
+      "max_health": 34800,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.radiant_paragon",
+      "display_name": "Radiant Paragon",
+      "exclusive": false,
+      "experience": 39301,
+      "max_health": 36000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.radiant_templar",
+      "display_name": "Radiant Templar",
+      "exclusive": false,
+      "experience": 39008,
+      "max_health": 37000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.radiant_warden",
+      "display_name": "Radiant Warden",
+      "exclusive": false,
+      "experience": 40160,
+      "max_health": 38500,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.radiant_zealot",
+      "display_name": "Radiant Zealot",
+      "exclusive": false,
+      "experience": 39799,
+      "max_health": 36500,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.rage_squid",
+      "display_name": "Rage Squid",
+      "exclusive": false,
+      "experience": 16300,
+      "max_health": 17000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.raging_fire",
+      "display_name": "Raging Fire",
+      "exclusive": true,
+      "experience": 1500,
+      "max_health": 1800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.rat",
+      "display_name": "Rat",
+      "exclusive": false,
+      "experience": 5,
+      "max_health": 20,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.raubritter_chastener",
+      "display_name": "Raubritter Chastener",
+      "exclusive": false,
+      "experience": 9500,
+      "max_health": 10000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.raubritter_marksman",
+      "display_name": "Raubritter Marksman",
+      "exclusive": false,
+      "experience": 9025,
+      "max_health": 10500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.raubritter_skirmisher",
+      "display_name": "Raubritter Skirmisher",
+      "exclusive": false,
+      "experience": 8550,
+      "max_health": 11000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.ravenous_lava_lurker",
+      "display_name": "Ravenous Lava Lurker",
+      "exclusive": true,
+      "experience": 4000,
+      "max_health": 5000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.reality_reaver",
+      "display_name": "Reality Reaver",
+      "exclusive": false,
+      "experience": 2480,
+      "max_health": 3900,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_knight",
+      "display_name": "Renegade Knight",
+      "exclusive": false,
+      "experience": 1200,
+      "max_health": 1450,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_quara_constrictor",
+      "display_name": "Renegade Quara Constrictor",
+      "exclusive": true,
+      "experience": 1250,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_quara_hydromancer",
+      "display_name": "Renegade Quara Hydromancer",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 2000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_quara_mantassin",
+      "display_name": "Renegade Quara Mantassin",
+      "exclusive": true,
+      "experience": 1000,
+      "max_health": 1200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_quara_pincher",
+      "display_name": "Renegade Quara Pincher",
+      "exclusive": true,
+      "experience": 2200,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.renegade_quara_predator",
+      "display_name": "Renegade Quara Predator",
+      "exclusive": true,
+      "experience": 2700,
+      "max_health": 3250,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.retching_horror",
+      "display_name": "Retching Horror",
+      "exclusive": false,
+      "experience": 4100,
+      "max_health": 5300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.rhindeer",
+      "display_name": "Rhindeer",
+      "exclusive": false,
+      "experience": 5600,
+      "max_health": 8650,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.ripper_spectre",
+      "display_name": "Ripper Spectre",
+      "exclusive": false,
+      "experience": 3500,
+      "max_health": 3800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.roaming_dread",
+      "display_name": "Roaming Dread",
+      "exclusive": false,
+      "experience": 10350,
+      "max_health": 14500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.roaring_lion",
+      "display_name": "Roaring Lion",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.rootthing_amber_shaper",
+      "display_name": "Rootthing Amber Shaper",
+      "exclusive": false,
+      "experience": 13380,
+      "max_health": 15000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.rootthing_bug_tracker",
+      "display_name": "Rootthing Bug Tracker",
+      "exclusive": false,
+      "experience": 10420,
+      "max_health": 12500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.rootthing_nutshell",
+      "display_name": "Rootthing Nutshell",
+      "exclusive": false,
+      "experience": 9940,
+      "max_health": 13500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.rorc",
+      "display_name": "Rorc",
+      "exclusive": false,
+      "experience": 105,
+      "max_health": 260,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.rot_elemental",
+      "display_name": "Rot Elemental",
+      "exclusive": false,
+      "experience": 750,
+      "max_health": 850,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.rotten_golem",
+      "display_name": "Rotten Golem",
+      "exclusive": false,
+      "experience": 17324,
+      "max_health": 28000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.rotten_man_maggot",
+      "display_name": "Rotten Man-Maggot",
+      "exclusive": false,
+      "experience": 22625,
+      "max_health": 31100,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.rotworm",
+      "display_name": "Rotworm",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 65,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.rustheap_golem",
+      "display_name": "Rustheap Golem",
+      "exclusive": false,
+      "experience": 2350,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.sabretooth",
+      "display_name": "Sabretooth",
+      "exclusive": false,
+      "experience": 12830,
+      "max_health": 17300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sacred_spider",
+      "display_name": "Sacred Spider",
+      "exclusive": true,
+      "experience": 330,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.salamander",
+      "display_name": "Salamander",
+      "exclusive": false,
+      "experience": 25,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.sandcrawler",
+      "display_name": "Sandcrawler",
+      "exclusive": false,
+      "experience": 20,
+      "max_health": 30,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.sandstone_scorpion",
+      "display_name": "Sandstone Scorpion",
+      "exclusive": true,
+      "experience": 680,
+      "max_health": 900,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.scarab",
+      "display_name": "Scarab",
+      "exclusive": false,
+      "experience": 120,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.schiach",
+      "display_name": "Schiach",
+      "exclusive": true,
+      "experience": 580,
+      "max_health": 600,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.scorpion",
+      "display_name": "Scorpion",
+      "exclusive": false,
+      "experience": 45,
+      "max_health": 45,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.sea_captain",
+      "display_name": "Sea Captain",
+      "exclusive": false,
+      "experience": 280,
+      "max_health": 190,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.sea_serpent",
+      "display_name": "Sea Serpent",
+      "exclusive": false,
+      "experience": 2300,
+      "max_health": 1950,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.seacrest_serpent",
+      "display_name": "Seacrest Serpent",
+      "exclusive": false,
+      "experience": 2900,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.serpent_spawn",
+      "display_name": "Serpent Spawn",
+      "exclusive": false,
+      "experience": 3050,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shaburak_demon",
+      "display_name": "Shaburak Demon",
+      "exclusive": true,
+      "experience": 1150,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shaburak_lord",
+      "display_name": "Shaburak Lord",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 2100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shaburak_prince",
+      "display_name": "Shaburak Prince",
+      "exclusive": true,
+      "experience": 2300,
+      "max_health": 2600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shadow_hound",
+      "display_name": "Shadow Hound",
+      "exclusive": true,
+      "experience": 600,
+      "max_health": 555,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.shadow_pupil",
+      "display_name": "Shadow Pupil",
+      "exclusive": false,
+      "experience": 410,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.shaper_matriarch",
+      "display_name": "Shaper Matriarch",
+      "exclusive": false,
+      "experience": 1650,
+      "max_health": 2000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shark",
+      "display_name": "Shark",
+      "exclusive": false,
+      "experience": 700,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.shell_drake",
+      "display_name": "Shell Drake",
+      "exclusive": false,
+      "experience": 2900,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shock_head",
+      "display_name": "Shock Head",
+      "exclusive": false,
+      "experience": 2300,
+      "max_health": 4200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.shrieking_cry_stal",
+      "display_name": "Shrieking Cry-Stal",
+      "exclusive": false,
+      "experience": 14580,
+      "max_health": 20650,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sibang",
+      "display_name": "Sibang",
+      "exclusive": false,
+      "experience": 105,
+      "max_health": 225,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.sight_of_surrender",
+      "display_name": "Sight of Surrender",
+      "exclusive": true,
+      "experience": 17000,
+      "max_health": 28000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.silencer",
+      "display_name": "Silencer",
+      "exclusive": false,
+      "experience": 5100,
+      "max_health": 5400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.silverfrost_sentinel",
+      "display_name": "Silverfrost Sentinel",
+      "exclusive": false,
+      "experience": 8450,
+      "max_health": 9500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sineater_inferniarch",
+      "display_name": "Sineater Inferniarch",
+      "exclusive": true,
+      "experience": 6750,
+      "max_health": 9150,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.skeleton",
+      "display_name": "Skeleton",
+      "exclusive": false,
+      "experience": 35,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.skeleton_elite_warrior",
+      "display_name": "Skeleton Elite Warrior",
+      "exclusive": false,
+      "experience": 5370,
+      "max_health": 7800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.skeleton_warrior",
+      "display_name": "Skeleton Warrior",
+      "exclusive": false,
+      "experience": 45,
+      "max_health": 65,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.skunk",
+      "display_name": "Skunk",
+      "exclusive": true,
+      "experience": 3,
+      "max_health": 20,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.slime",
+      "display_name": "Slime",
+      "exclusive": true,
+      "experience": 160,
+      "max_health": 150,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.slug",
+      "display_name": "Slug",
+      "exclusive": true,
+      "experience": 70,
+      "max_health": 255,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.smuggler",
+      "display_name": "Smuggler",
+      "exclusive": false,
+      "experience": 48,
+      "max_health": 130,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.snake",
+      "display_name": "Snake",
+      "exclusive": true,
+      "experience": 10,
+      "max_health": 15,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.son_of_verminor",
+      "display_name": "Son of Verminor",
+      "exclusive": true,
+      "experience": 5900,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sopping_carcass",
+      "display_name": "Sopping Carcass",
+      "exclusive": false,
+      "experience": 23425,
+      "max_health": 32700,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.sopping_corpus",
+      "display_name": "Sopping Corpus",
+      "exclusive": false,
+      "experience": 22465,
+      "max_health": 33400,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.sorcerer_s_apparition",
+      "display_name": "Sorcerer's Apparition",
+      "exclusive": false,
+      "experience": 21130,
+      "max_health": 25000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.soul_broken_harbinger",
+      "display_name": "Soul-Broken Harbinger",
+      "exclusive": false,
+      "experience": 5800,
+      "max_health": 6300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.souleater",
+      "display_name": "Souleater",
+      "exclusive": false,
+      "experience": 1300,
+      "max_health": 1100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.sparkion",
+      "display_name": "Sparkion",
+      "exclusive": false,
+      "experience": 1520,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.spectre",
+      "display_name": "Spectre",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 1350,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.spellreaper_inferniarch",
+      "display_name": "Spellreaper Inferniarch",
+      "exclusive": true,
+      "experience": 8350,
+      "max_health": 11800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sphinx",
+      "display_name": "Sphinx",
+      "exclusive": false,
+      "experience": 6980,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.spider",
+      "display_name": "Spider",
+      "exclusive": false,
+      "experience": 12,
+      "max_health": 20,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.spidris",
+      "display_name": "Spidris",
+      "exclusive": false,
+      "experience": 2600,
+      "max_health": 3700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.spidris_elite",
+      "display_name": "Spidris Elite",
+      "exclusive": true,
+      "experience": 4000,
+      "max_health": 5000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.spiky_carnivor",
+      "display_name": "Spiky Carnivor",
+      "exclusive": false,
+      "experience": 1650,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.spit_nettle",
+      "display_name": "Spit Nettle",
+      "exclusive": false,
+      "experience": 20,
+      "max_health": 150,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.spitter",
+      "display_name": "Spitter",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.squid_warden",
+      "display_name": "Squid Warden",
+      "exclusive": false,
+      "experience": 15300,
+      "max_health": 16500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.squidgy_slime",
+      "display_name": "Squidgy Slime",
+      "exclusive": true,
+      "experience": 55,
+      "max_health": 150,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.stabilizing_dread_intruder",
+      "display_name": "Stabilizing Dread Intruder",
+      "exclusive": false,
+      "experience": 1900,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.stabilizing_reality_reaver",
+      "display_name": "Stabilizing Reality Reaver",
+      "exclusive": false,
+      "experience": 1950,
+      "max_health": 2500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.stalker",
+      "display_name": "Stalker",
+      "exclusive": false,
+      "experience": 90,
+      "max_health": 120,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.stalking_stalk",
+      "display_name": "Stalking Stalk",
+      "exclusive": false,
+      "experience": 12440,
+      "max_health": 17100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.stampor",
+      "display_name": "Stampor",
+      "exclusive": false,
+      "experience": 780,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.starving_wolf",
+      "display_name": "Starving Wolf",
+      "exclusive": true,
+      "experience": 65,
+      "max_health": 85,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.stone_devourer",
+      "display_name": "Stone Devourer",
+      "exclusive": false,
+      "experience": 3650,
+      "max_health": 4200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.stone_golem",
+      "display_name": "Stone Golem",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 270,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.stone_rhino",
+      "display_name": "Stone Rhino",
+      "exclusive": true,
+      "experience": 1800,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.stonerefiner",
+      "display_name": "Stonerefiner",
+      "exclusive": true,
+      "experience": 500,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.streaked_devourer",
+      "display_name": "Streaked Devourer",
+      "exclusive": false,
+      "experience": 6300,
+      "max_health": 7000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sugar_cube",
+      "display_name": "Sugar Cube",
+      "exclusive": true,
+      "experience": 19,
+      "max_health": 28,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.sugar_cube_worker",
+      "display_name": "Sugar Cube Worker",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 65,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.sulphider",
+      "display_name": "Sulphider",
+      "exclusive": false,
+      "experience": 14330,
+      "max_health": 21000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.sulphur_spouter",
+      "display_name": "Sulphur Spouter",
+      "exclusive": false,
+      "experience": 12381,
+      "max_health": 19000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.swamp_troll",
+      "display_name": "Swamp Troll",
+      "exclusive": false,
+      "experience": 25,
+      "max_health": 55,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.swampling",
+      "display_name": "Swampling",
+      "exclusive": false,
+      "experience": 45,
+      "max_health": 80,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.swan_maiden",
+      "display_name": "Swan Maiden",
+      "exclusive": false,
+      "experience": 700,
+      "max_health": 800,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.swarmer",
+      "display_name": "Swarmer",
+      "exclusive": false,
+      "experience": 350,
+      "max_health": 460,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.tarantula",
+      "display_name": "Tarantula",
+      "exclusive": false,
+      "experience": 120,
+      "max_health": 225,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.tarnished_spirit",
+      "display_name": "Tarnished Spirit",
+      "exclusive": true,
+      "experience": 120,
+      "max_health": 150,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.terramite",
+      "display_name": "Terramite",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 365,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.terrified_elephant",
+      "display_name": "Terrified Elephant",
+      "exclusive": false,
+      "experience": 160,
+      "max_health": 320,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.terror_bird",
+      "display_name": "Terror Bird",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.terrorsleep",
+      "display_name": "Terrorsleep",
+      "exclusive": false,
+      "experience": 7240,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.thanatursus",
+      "display_name": "Thanatursus",
+      "exclusive": false,
+      "experience": 6300,
+      "max_health": 7200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.thornback_tortoise",
+      "display_name": "Thornback Tortoise",
+      "exclusive": false,
+      "experience": 150,
+      "max_health": 300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.thornfire_wolf",
+      "display_name": "Thornfire Wolf",
+      "exclusive": true,
+      "experience": 200,
+      "max_health": 600,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.tiger",
+      "display_name": "Tiger",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 75,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.toad",
+      "display_name": "Toad",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 135,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.tomb_servant",
+      "display_name": "Tomb Servant",
+      "exclusive": true,
+      "experience": 215,
+      "max_health": 475,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.tortoise",
+      "display_name": "Tortoise",
+      "exclusive": false,
+      "experience": 90,
+      "max_health": 185,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.tremendous_tyrant",
+      "display_name": "Tremendous Tyrant",
+      "exclusive": false,
+      "experience": 6950,
+      "max_health": 11500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.troll",
+      "display_name": "Troll",
+      "exclusive": false,
+      "experience": 20,
+      "max_health": 50,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.troll_champion",
+      "display_name": "Troll Champion",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 75,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.troll_guard",
+      "display_name": "Troll Guard",
+      "exclusive": true,
+      "experience": 25,
+      "max_health": 60,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.troll_legionnaire",
+      "display_name": "Troll Legionnaire",
+      "exclusive": true,
+      "experience": 140,
+      "max_health": 210,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.true_dawnfire_asura",
+      "display_name": "True Dawnfire Asura",
+      "exclusive": false,
+      "experience": 8100,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.true_feverbloom_asura",
+      "display_name": "True Feverbloom Asura",
+      "exclusive": false,
+      "experience": 8600,
+      "max_health": 8600,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.true_frost_flower_asura",
+      "display_name": "True Frost Flower Asura",
+      "exclusive": false,
+      "experience": 7069,
+      "max_health": 4000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.true_midnight_asura",
+      "display_name": "True Midnight Asura",
+      "exclusive": false,
+      "experience": 8200,
+      "max_health": 9000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.truffle",
+      "display_name": "Truffle",
+      "exclusive": true,
+      "experience": 15,
+      "max_health": 70,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.truffle_cook",
+      "display_name": "Truffle Cook",
+      "exclusive": true,
+      "experience": 13,
+      "max_health": 54,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.tunnel_tyrant",
+      "display_name": "Tunnel Tyrant",
+      "exclusive": false,
+      "experience": 4420,
+      "max_health": 5200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.turbulent_elemental",
+      "display_name": "Turbulent Elemental",
+      "exclusive": false,
+      "experience": 17230,
+      "max_health": 28000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.twisted_pooka",
+      "display_name": "Twisted Pooka",
+      "exclusive": false,
+      "experience": 600,
+      "max_health": 700,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.twisted_shaper",
+      "display_name": "Twisted Shaper",
+      "exclusive": false,
+      "experience": 2050,
+      "max_health": 2500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.two_headed_turtle",
+      "display_name": "Two-Headed Turtle",
+      "exclusive": false,
+      "experience": 3310,
+      "max_health": 5010,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.undead_cavebear",
+      "display_name": "Undead Cavebear",
+      "exclusive": true,
+      "experience": 600,
+      "max_health": 450,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.undead_dragon",
+      "display_name": "Undead Dragon",
+      "exclusive": false,
+      "experience": 7500,
+      "max_health": 8350,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.undead_elite_gladiator",
+      "display_name": "Undead Elite Gladiator",
+      "exclusive": false,
+      "experience": 5700,
+      "max_health": 8000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.undead_gladiator",
+      "display_name": "Undead Gladiator",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.undead_mine_worker",
+      "display_name": "Undead Mine Worker",
+      "exclusive": true,
+      "experience": 45,
+      "max_health": 65,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.undead_prospector",
+      "display_name": "Undead Prospector",
+      "exclusive": true,
+      "experience": 85,
+      "max_health": 100,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.undertaker",
+      "display_name": "Undertaker",
+      "exclusive": false,
+      "experience": 14560,
+      "max_health": 20100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.usurper_archer",
+      "display_name": "Usurper Archer",
+      "exclusive": false,
+      "experience": 6800,
+      "max_health": 7300,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.usurper_knight",
+      "display_name": "Usurper Knight",
+      "exclusive": false,
+      "experience": 6900,
+      "max_health": 8200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.usurper_warlock",
+      "display_name": "Usurper Warlock",
+      "exclusive": false,
+      "experience": 7000,
+      "max_health": 7500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.valkyrie",
+      "display_name": "Valkyrie",
+      "exclusive": false,
+      "experience": 85,
+      "max_health": 190,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.vampire",
+      "display_name": "Vampire",
+      "exclusive": false,
+      "experience": 305,
+      "max_health": 475,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.vampire_bride",
+      "display_name": "Vampire Bride",
+      "exclusive": false,
+      "experience": 1050,
+      "max_health": 1200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.vampire_pig",
+      "display_name": "Vampire Pig",
+      "exclusive": true,
+      "experience": 165,
+      "max_health": 305,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.vampire_viscount",
+      "display_name": "Vampire Viscount",
+      "exclusive": false,
+      "experience": 800,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.varg",
+      "display_name": "Varg",
+      "exclusive": false,
+      "experience": 5630,
+      "max_health": 5400,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.varnished_diremaw",
+      "display_name": "Varnished Diremaw",
+      "exclusive": false,
+      "experience": 6300,
+      "max_health": 9000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.venerable_girtablilu",
+      "display_name": "Venerable Girtablilu",
+      "exclusive": false,
+      "experience": 5300,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.vexclaw",
+      "display_name": "Vexclaw",
+      "exclusive": false,
+      "experience": 6248,
+      "max_health": 8500,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.vibrant_phantom",
+      "display_name": "Vibrant Phantom",
+      "exclusive": false,
+      "experience": 19700,
+      "max_health": 27000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.vicious_manbat",
+      "display_name": "Vicious Manbat",
+      "exclusive": true,
+      "experience": 1200,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.vicious_squire",
+      "display_name": "Vicious Squire",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1000,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.vile_grandmaster",
+      "display_name": "Vile Grandmaster",
+      "exclusive": false,
+      "experience": 1500,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.vulcongra",
+      "display_name": "Vulcongra",
+      "exclusive": false,
+      "experience": 1100,
+      "max_health": 1600,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.wailing_widow",
+      "display_name": "Wailing Widow",
+      "exclusive": false,
+      "experience": 450,
+      "max_health": 850,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.walker",
+      "display_name": "Walker",
+      "exclusive": true,
+      "experience": 2200,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.walking_dread",
+      "display_name": "Walking Dread",
+      "exclusive": false,
+      "experience": 18000,
+      "max_health": 25000,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.walking_pillar",
+      "display_name": "Walking Pillar",
+      "exclusive": false,
+      "experience": 21018,
+      "max_health": 38000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.wandering_pillar",
+      "display_name": "Wandering Pillar",
+      "exclusive": false,
+      "experience": 23200,
+      "max_health": 37000,
+      "tier": 5
+    },
+    {
+      "creature": "oteryn:creature.war_golem",
+      "display_name": "War Golem",
+      "exclusive": false,
+      "experience": 2680,
+      "max_health": 4300,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.war_wolf",
+      "display_name": "War Wolf",
+      "exclusive": false,
+      "experience": 55,
+      "max_health": 140,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.wardragon",
+      "display_name": "Wardragon",
+      "exclusive": false,
+      "experience": 5340,
+      "max_health": 6960,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.warlock",
+      "display_name": "Warlock",
+      "exclusive": false,
+      "experience": 4000,
+      "max_health": 3500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.wasp",
+      "display_name": "Wasp",
+      "exclusive": false,
+      "experience": 24,
+      "max_health": 35,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.waspoid",
+      "display_name": "Waspoid",
+      "exclusive": false,
+      "experience": 830,
+      "max_health": 1100,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.water_buffalo",
+      "display_name": "Water Buffalo",
+      "exclusive": true,
+      "experience": 20,
+      "max_health": 390,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.water_elemental",
+      "display_name": "Water Elemental",
+      "exclusive": false,
+      "experience": 650,
+      "max_health": 550,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.weakened_frazzlemaw",
+      "display_name": "Weakened Frazzlemaw",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.weeper",
+      "display_name": "Weeper",
+      "exclusive": true,
+      "experience": 5800,
+      "max_health": 6800,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.werebadger",
+      "display_name": "Werebadger",
+      "exclusive": false,
+      "experience": 1600,
+      "max_health": 1700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werebear",
+      "display_name": "Werebear",
+      "exclusive": false,
+      "experience": 2100,
+      "max_health": 2400,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.wereboar",
+      "display_name": "Wereboar",
+      "exclusive": false,
+      "experience": 2000,
+      "max_health": 2200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werecrocodile",
+      "display_name": "Werecrocodile",
+      "exclusive": false,
+      "experience": 4140,
+      "max_health": 5280,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werefox",
+      "display_name": "Werefox",
+      "exclusive": false,
+      "experience": 1600,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werehyaena",
+      "display_name": "Werehyaena",
+      "exclusive": false,
+      "experience": 2200,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werehyaena_shaman",
+      "display_name": "Werehyaena Shaman",
+      "exclusive": false,
+      "experience": 2200,
+      "max_health": 2500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werelion",
+      "display_name": "Werelion",
+      "exclusive": false,
+      "experience": 2200,
+      "max_health": 2800,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werelioness",
+      "display_name": "Werelioness",
+      "exclusive": false,
+      "experience": 2300,
+      "max_health": 3000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werepanther",
+      "display_name": "Werepanther",
+      "exclusive": false,
+      "experience": 3550,
+      "max_health": 4200,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.weretiger",
+      "display_name": "Weretiger",
+      "exclusive": false,
+      "experience": 3920,
+      "max_health": 5000,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.werewolf",
+      "display_name": "Werewolf",
+      "exclusive": false,
+      "experience": 1900,
+      "max_health": 1955,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.white_lion",
+      "display_name": "White Lion",
+      "exclusive": false,
+      "experience": 2300,
+      "max_health": 2700,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.white_shade",
+      "display_name": "White Shade",
+      "exclusive": true,
+      "experience": 120,
+      "max_health": 260,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.white_tiger",
+      "display_name": "White Tiger",
+      "exclusive": false,
+      "experience": 40,
+      "max_health": 75,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.white_weretiger",
+      "display_name": "White Weretiger",
+      "exclusive": false,
+      "experience": 5200,
+      "max_health": 6100,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.wiggler",
+      "display_name": "Wiggler",
+      "exclusive": false,
+      "experience": 900,
+      "max_health": 1200,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.wild_warrior",
+      "display_name": "Wild Warrior",
+      "exclusive": false,
+      "experience": 60,
+      "max_health": 135,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.wilting_leaf_golem",
+      "display_name": "Wilting Leaf Golem",
+      "exclusive": false,
+      "experience": 225,
+      "max_health": 380,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.winged_jaracal",
+      "display_name": "Winged Jaracal",
+      "exclusive": false,
+      "experience": 7830,
+      "max_health": 8200,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.winter_wolf",
+      "display_name": "Winter Wolf",
+      "exclusive": false,
+      "experience": 20,
+      "max_health": 30,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.witch",
+      "display_name": "Witch",
+      "exclusive": false,
+      "experience": 120,
+      "max_health": 300,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.wolf",
+      "display_name": "Wolf",
+      "exclusive": false,
+      "experience": 18,
+      "max_health": 25,
+      "tier": 1
+    },
+    {
+      "creature": "oteryn:creature.worker_golem",
+      "display_name": "Worker Golem",
+      "exclusive": true,
+      "experience": 1250,
+      "max_health": 1470,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.worm_priestess",
+      "display_name": "Worm Priestess",
+      "exclusive": false,
+      "experience": 1500,
+      "max_health": 1100,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.wyrm",
+      "display_name": "Wyrm",
+      "exclusive": false,
+      "experience": 1550,
+      "max_health": 1825,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.wyvern",
+      "display_name": "Wyvern",
+      "exclusive": false,
+      "experience": 515,
+      "max_health": 795,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.yeti",
+      "display_name": "Yeti",
+      "exclusive": true,
+      "experience": 460,
+      "max_health": 950,
+      "tier": 2
+    },
+    {
+      "creature": "oteryn:creature.yielothax",
+      "display_name": "Yielothax",
+      "exclusive": false,
+      "experience": 1250,
+      "max_health": 1500,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.young_goanna",
+      "display_name": "Young Goanna",
+      "exclusive": false,
+      "experience": 5250,
+      "max_health": 6950,
+      "tier": 4
+    },
+    {
+      "creature": "oteryn:creature.young_sea_serpent",
+      "display_name": "Young Sea Serpent",
+      "exclusive": false,
+      "experience": 1000,
+      "max_health": 1050,
+      "tier": 3
+    },
+    {
+      "creature": "oteryn:creature.zombie",
+      "display_name": "Zombie",
+      "exclusive": false,
+      "experience": 280,
+      "max_health": 500,
+      "tier": 2
+    }
+  ],
+  "schema": "OTERYN_PREY_TIERS/v1",
+  "score": "experience; max_health and canonical key break ties",
+  "tiers": [
+    {
+      "examples": [
+        "Rat",
+        "Spit Nettle",
+        "Lion",
+        "Troll Champion",
+        "Smuggler",
+        "Nomad Female",
+        "Elf Scout",
+        "Pirate Quartermaster"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 99,
+      "experience_min": 1,
+      "minimum_level": 1,
+      "nonexclusive_count": 89,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 89,
+      "runtime_unsettleable_count": 87,
+      "tier": 1
+    },
+    {
+      "examples": [
+        "Infernoid Blob",
+        "Fire Devil",
+        "Dwarf Guard",
+        "Pirate Buccaneer",
+        "Shadow Pupil",
+        "Dragon Lord Hatchling",
+        "Bog Raider",
+        "Braindeath"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 999,
+      "experience_min": 100,
+      "minimum_level": 50,
+      "nonexclusive_count": 161,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 161,
+      "runtime_unsettleable_count": 161,
+      "tier": 2
+    },
+    {
+      "examples": [
+        "Deepling Spellsinger",
+        "Exotic Bat",
+        "Pirat Scoundrel",
+        "Deepling Guard",
+        "Draken Warmaster",
+        "Crusader",
+        "Frost Flower Asura",
+        "Moonstone Overseer"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 4999,
+      "experience_min": 1000,
+      "minimum_level": 100,
+      "nonexclusive_count": 188,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 188,
+      "runtime_unsettleable_count": 188,
+      "tier": 3
+    },
+    {
+      "examples": [
+        "Crazed Summer Vanguard",
+        "Ogre Sage",
+        "Thanatursus",
+        "True Frost Flower Asura",
+        "Raubritter Skirmisher",
+        "Sulphur Spouter",
+        "Brachiodemon",
+        "Crypt Construct"
+      ],
+      "expanded_three_slot_capacity": true,
+      "experience_max": 19999,
+      "experience_min": 5000,
+      "minimum_level": 250,
+      "nonexclusive_count": 154,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 154,
+      "runtime_unsettleable_count": 154,
+      "tier": 4
+    },
+    {
+      "examples": [
+        "Darklight Emitter",
+        "Night Harpy",
+        "Paladin's Apparition",
+        "Bloated Man-Maggot",
+        "Rotten Man-Maggot",
+        "Radiant Acolyte",
+        "Devoted Radiant Inquisitor",
+        "Devoted Radiant Warden"
+      ],
+      "expanded_three_slot_capacity": false,
+      "experience_max": null,
+      "experience_min": 20000,
+      "minimum_level": 500,
+      "nonexclusive_count": 33,
+      "normal_three_slot_capacity": true,
+      "runtime_available_count": 33,
+      "runtime_unsettleable_count": 27,
+      "tier": 5
+    }
+  ]
+}

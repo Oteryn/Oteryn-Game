@@ -1,0 +1,7 @@
+{
+  "mechanic": "0151-daily-boost",
+  "kind": "panels",
+  "id": "0151-daily-boost-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

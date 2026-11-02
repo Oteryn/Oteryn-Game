@@ -20,7 +20,7 @@ where
     }
     // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
     // backpack or open bags; their deltas follow the durable commit when changed.
-    // An unreadable backpack fails closed; the resumed snapshot restores it.
+    // A busy display read defers to the visibility cadence; writes still prove authority.
     if outcome.disposition == UseDisposition::Committed
         && let Some(view) = session.item_view.as_mut()
         && item_use_view_refresh::refresh(

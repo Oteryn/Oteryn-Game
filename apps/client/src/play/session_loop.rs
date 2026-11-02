@@ -141,7 +141,7 @@ pub trait Stepper: Send {
     }
     fn prey(
         &mut self,
-        _command: &oteryn_client_runtime::prey::PreyCommand,
+        _command: &oteryn_client_runtime::prey::prey::Request,
     ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }
@@ -222,6 +222,32 @@ pub trait Stepper: Send {
     > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 165 }) }
     }
+    fn feature_selected(&self, _capability: u32) -> bool {
+        false
+    }
+    fn feature(
+        &mut self,
+        _command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 0 }) }
+    }
+    fn feature_snapshot(&self, _domain: u32) -> Option<Vec<u8>> {
+        None
+    }
+    fn server_mechanic_selected(&self, _capability: u32) -> bool {
+        false
+    }
+    fn server_mechanic(
+        &mut self,
+        _request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
+    ) -> impl Future<
+        Output = Result<
+            oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+            SessionError,
+        >,
+    > + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 0 }) }
+    }
     fn market_selected(&self) -> bool {
         false
     }
@@ -260,6 +286,9 @@ pub trait Stepper: Send {
 /// Hands the shell what the session pushed, and the visible entities when they changed.
 fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
     outbox.push(session.drain());
+    if let Some(payload) = session.feature_snapshot(98) {
+        outbox.cyclopedia_tracker_push(payload);
+    }
     if let Some(entities) = session.entities_changed(held) {
         held.clone_from(&entities);
         outbox.entities(entities);
@@ -300,9 +329,53 @@ pub async fn run_session<T: Stepper>(
     outbox.market_initialize(session.market_selected());
     outbox.chat_public_initialize(session.chat_public_selected(), session.chat_state());
     outbox.player_typing_initialize(session.player_typing_selected());
+    outbox.boss_difficulty_initialize(session.feature_selected(225));
+    outbox.browse_field_initialize(session.server_mechanic_selected(230));
+    outbox.chat_party_room_initialize(session.feature_selected(240));
+    outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
+    outbox.daily_boost_initialize(session.feature_selected(151));
+    outbox.depot_search_initialize(session.server_mechanic_selected(153));
+    outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
+    outbox.item_forge_initialize(session.server_mechanic_selected(152));
+    outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.vip_presence_initialize(session.feature_selected(258));
+    outbox.weapon_proficiency_initialize(session.feature_selected(195));
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
+                Ok(result) => {
+                    match command.capability {
+                        151 => outbox.daily_boost_result(&result),
+                        195 => outbox.weapon_proficiency_result(&result),
+                        197 => outbox.cyclopedia_tracker_result(&result),
+                        199 => outbox.cyclopedia_character_result(&result),
+                        225 => outbox.boss_difficulty_result(&result),
+                        _ => {}
+                    }
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::ServerMechanic(request)) => {
+                match session.server_mechanic(&request).await {
+                    Ok(response) => {
+                        match request.capability {
+                            152 => outbox.item_forge_result(&response),
+                            153 => outbox.depot_search_result(&response),
+                            154 => outbox.store_result(&response),
+                            179 => outbox.hotkey_equip_result(&response),
+                            230 => outbox.browse_field_result(&response),
+                            _ => {}
+                        }
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::Animus(payload)) => match session.animus(&payload).await {
                 Ok(result) => {
                     outbox.animus_result(&result);
