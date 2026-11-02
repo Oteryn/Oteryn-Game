@@ -1802,6 +1802,444 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19-30"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-brain-head-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31946,
+          "y": 32334,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31971,
+        "y": 32325,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:2-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:141",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/teleport.lua:5-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-irgix-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33467,
+          "y": 31396,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33493,
+        "y": 31400,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:45-46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-01",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33484,
+          "y": 31435,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33483,
+        "y": 31452,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-02",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33481,
+          "y": 31452,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33486,
+        "y": 31435,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-03",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33558,
+          "y": 31467,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33573,
+        "y": 31467,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-04",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33570,
+          "y": 31467,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33555,
+        "y": 31467,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-05",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33549,
+          "y": 31440,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33537,
+        "y": 31440,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-06",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33539,
+          "y": 31440,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33550,
+        "y": 31439,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-07",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33540,
+          "y": 31411,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33528,
+        "y": 31410,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-08",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33531,
+          "y": 31410,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33541,
+        "y": 31412,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-09",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33535,
+          "y": 31444,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33546,
+        "y": 31444,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-slab-10",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33544,
+          "y": 31444,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33533,
+        "y": 31444,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:14-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-unaz-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33562,
+          "y": 31492,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33563,
+        "y": 31477,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:49-50",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/feaster-of-souls-vok-exit",
+      "quest": "oteryn:quest.feaster_of_souls_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33505,
+          "y": 31485,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33509,
+        "y": 31451,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:53-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:58-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:112-117"
+      ]
     }
   ]
 }
