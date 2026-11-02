@@ -66,6 +66,18 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    // CLIENT-E2E-1 adapters use gated_command for their typed exchanges too.
+    guild::CAPABILITY_GUILD_V1,
+    party::CAPABILITY_PARTY_V1,
+    vip::CAPABILITY_VIP_V1,
+    player_trade::CAPABILITY_PLAYER_TRADE_V1,
+    stash::CAPABILITY_STASH_V1,
+    market::CAPABILITY_MARKET_V1,
+    imbuement::CAPABILITY_IMBUE_V1,
+    task_board::CAPABILITY_TASK_BOARD_V1,
+    oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
+    prey::CAPABILITY_PREY_V1,
+    hireling::CAPABILITY_HIRELING_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,

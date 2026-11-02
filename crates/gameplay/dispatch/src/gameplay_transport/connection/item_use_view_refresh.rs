@@ -11,8 +11,14 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     views: Option<&mut ContainerViewState>,
     sequence: &mut u64,
 ) -> Option<()> {
-    let inventory =
-        item_move::observe_inventory(authority, actor, admitted.game_session_id, view).await?;
+    view.inventory_refresh_pending = true;
+    let Some(inventory) =
+        item_move::observe_inventory(authority, actor, admitted.game_session_id, view).await
+    else {
+        // The source already committed. Retain handles/revisions and retry this display
+        // read later; every subsequent item write still revalidates its own authority.
+        return Some(());
+    };
     let changed = view.inventory_committed(inventory);
     admitted.continuity.item_view = view.continuity();
     let mut deltas: Vec<_> = changed.ok()?.into_iter().collect();
@@ -35,5 +41,6 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         admitted.continuity.server_sequence = *sequence;
         write_frame(stream, &frame).await.ok()?;
     }
+    view.inventory_refresh_pending = false;
     Some(())
 }

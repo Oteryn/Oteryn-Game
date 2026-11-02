@@ -382,6 +382,21 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if let Some(view) = session.item_view.as_mut()
+        && view.inventory_refresh_pending
+    {
+        item_use_view_refresh::refresh(
+            stream,
+            authority,
+            session.actor,
+            &mut session.admitted,
+            view,
+            session.container_views.as_mut(),
+            &mut session.sequence,
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    }
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.

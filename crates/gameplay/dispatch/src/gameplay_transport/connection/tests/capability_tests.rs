@@ -207,3 +207,32 @@ fn depot_search_without_negotiated_capability_is_refused_by_real_dispatch()
         Ok(())
     })
 }
+
+#[test]
+fn entry_room_dev_client_selects_guild_and_party_without_bundle_mechanics()
+-> Result<(), Box<dyn Error>> {
+    // qualification::seam_flow has no bundle, active native gameplay or NPC book.
+    // The real node's default entry-room generation also has no native gameplay.
+    let authority = Authority::new(Err(AdmissionRefusal::Rejected));
+    let base =
+        crate::gameplay_transport::world_required_capabilities::offered_for_scope(false, None);
+    let offered = mechanic_offers(&authority, base.to_vec());
+    let selected =
+        SelectedCapabilities::select(&offered, oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES)
+            .ok_or("selection capacity")?;
+    assert!(
+        selected.contains(40),
+        "guild has no prerequisite and is offered on the entry room"
+    );
+    assert!(
+        selected.contains(42),
+        "party requires only spatial entities (6)"
+    );
+    for id in [4, 37, 43, 60, 62, 63, 68, 72, 81, 140, 165] {
+        assert!(
+            !selected.contains(id),
+            "unexpected entry-room mechanic {id}"
+        );
+    }
+    Ok(())
+}

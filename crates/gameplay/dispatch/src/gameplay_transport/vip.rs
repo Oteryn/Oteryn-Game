@@ -92,11 +92,18 @@ pub(super) async fn execute(
         request.operation,
         Operation::Add | Operation::GroupAdd | Operation::GroupRename
     );
-    let prepared = owner
+    let prepared = match owner
         .root
         .prepare_vip(owner.character, owner.holder, fence, command, request)
         .await
-        .ok()?;
+    {
+        Ok(prepared) => prepared,
+        // A busy root issued no semantic pass; no new VIP write has started.
+        Err(crate::durability::DurabilityError::RootUnavailable) => {
+            return wire::encode_result(9, 0, 0, 0, "").ok();
+        }
+        Err(_) => return None,
+    };
     let result = match prepared {
         VipPrepared::Replayed(result) => result,
         // Immutable replay above remains available while the relay is down. A new write

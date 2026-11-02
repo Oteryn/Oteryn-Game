@@ -69,16 +69,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.drain_kill_rewards(admitted.game_session_id).await
             != super::kill_reward::DrainOutcome::Drained
         {
-            return GuildReply::Unavailable;
+            return GuildReply::Rejected;
         }
         let Some(permit) = self.spell_lane_permit().await else {
-            return GuildReply::Unavailable;
+            return GuildReply::Rejected;
         };
         if !self
             .flush_prey_under_lane(admitted.game_session_id, &permit)
             .await
         {
-            return GuildReply::Unavailable;
+            return GuildReply::Rejected;
         }
         let occurrence =
             super::npc_trade_command::derived(b"prey:command:v1", admitted.game_session_id, id);
@@ -102,7 +102,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .lock()
                             .await
                             .clear_prey(admitted.game_session_id);
-                        return GuildReply::Unavailable;
+                        // The command already committed. Preserve its immutable reply while
+                        // leaving unavailable live boosts disabled until the next reload.
+                        return wire::encode_reply(&reply)
+                            .map_or(GuildReply::Unavailable, GuildReply::Payload);
                     }
                 };
                 if let Some(actor) = admitted.runtime_actor {
@@ -120,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(_) => GuildReply::Unavailable,
                 }
             }
+            Err(Error::Unavailable(DurabilityError::RootUnavailable)) => GuildReply::Rejected,
             Err(Error::Unavailable(_)) => GuildReply::Unavailable,
             Err(_) => GuildReply::Rejected,
         }

@@ -8,6 +8,17 @@ fn derived_gated_routes_match_previous_table() {
     // Compare sets because
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
+        (40, &[40, 41], &[]),
+        (42, &[45, 46], &[]),
+        (43, &[48, 49, 50], &[]),
+        (60, &[78], &[26]),
+        (62, &[79], &[27]),
+        (63, &[80], &[28]),
+        (68, &[85], &[]),
+        (72, &[89], &[]),
+        (81, &[97], &[]),
+        (140, &[160], &[]),
+        (165, &[220], &[]),
         (16, &[22], &[16]),
         (18, &[], &[17]),
         (37, &[36], &[]),
@@ -645,4 +656,58 @@ fn p17c_exiva_selection_routes_command_170_and_refuses_without_selection() -> Re
         })?
         .join()
         .map_err(|_| "Exiva selection thread panicked")?
+}
+
+#[test]
+fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                // The adapters for CLIENT-E2E-1 all call gated_command, including opt-in panels.
+                for (capability, command_type) in [
+                    (40, 40),
+                    (42, 45),
+                    (43, 48),
+                    (60, 78),
+                    (62, 79),
+                    (63, 80),
+                    (68, 85),
+                    (72, 89),
+                    (81, 97),
+                    (140, 160),
+                    (165, 220),
+                ] {
+                    assert!(
+                        gated_routes().any(|(id, commands, _)| id == capability
+                            && commands.contains(&command_type)),
+                        "missing panel route for capability {capability}"
+                    );
+                }
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[40], &[40], &[]).await?;
+                    let frame = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&frame)?
+                            .client_command(1)?
+                            .command_type,
+                        40
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"guild")?,
+                    )
+                    .await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[40])?).await?;
+                assert!(session.is_selected(40));
+                assert_eq!(session.gated_command(40, 40, b"").await?.payload, b"guild");
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "panel routes thread panicked")?
 }

@@ -2,6 +2,7 @@
 mod vip_presence;
 
 use super::*;
+use crate::gameplay_transport::operator_event;
 
 mod achievement_notices;
 mod activity_transfer;
@@ -95,7 +96,21 @@ enum ServeEnd {
 }
 
 impl ServeEnd {
+    #[track_caller]
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
+        let reason = match &self {
+            Self::Transferred(_) => "transferred",
+            Self::Disconnected => "disconnected",
+            Self::ControlLost => "control_lost",
+            Self::LoggedOut => "logged_out",
+            Self::Closed(_) => "protocol_error",
+        };
+        operator_event(&format!(
+            "event=serve_end reason={reason} source={} next_command_id={} server_sequence={}",
+            std::panic::Location::caller(),
+            admitted.continuity.next_command_id,
+            admitted.continuity.server_sequence,
+        ));
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
             Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -136,14 +151,14 @@ where
         match authority.resolve_native_scope(admitted).await {
             Ok(Some(next)) => scoped_authority = Some(next),
             Ok(None) => {}
-            Err(()) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Err(()) => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         if !authority.remember_activity_connection(admitted) {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            return ServeEnd::Disconnected.finish(admitted);
         }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
@@ -199,12 +214,12 @@ where
                     session.admitted,
                 );
             if server_messages.is_none() {
-                return ConnectionEnd::AdmittedThenDisconnected(session.admitted);
+                return ServeEnd::Disconnected.finish(session.admitted);
             }
         }
         loop {
             if !authority.remember_activity_connection(session.admitted) {
-                return ConnectionEnd::AdmittedThenDisconnected(session.admitted);
+                return ServeEnd::Disconnected.finish(session.admitted);
             }
             match activity_transfer::pending(stream, authority, &mut session).await {
                 Ok(Some(next)) => {
@@ -242,6 +257,10 @@ where
                     integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
+                operator_event(&format!(
+                    "event=serve_command_end next_command_id={}",
+                    session.admitted.continuity.next_command_id,
+                ));
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(authority.current_activity_connection(session.admitted));
             }

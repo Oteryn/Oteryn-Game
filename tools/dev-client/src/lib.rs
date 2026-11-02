@@ -21,7 +21,9 @@ use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
-use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
+/// Default support sent by this harness, shared with the native session.
+pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
+use oteryn_session::{Admission, Session, SessionError};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
     ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,

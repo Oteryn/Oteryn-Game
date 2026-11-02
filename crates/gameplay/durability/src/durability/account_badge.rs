@@ -71,7 +71,9 @@ impl DurabilityRoot {
                 level_sum: row.try_get("level_sum")?,
                 vocation_levels,
             };
-            let stored: Vec<i16> = sqlx::query_scalar("SELECT badge FROM game_account_badges WHERE account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) ORDER BY badge FOR UPDATE")
+            // Badges are insert-only (0573 grants the runtime SELECT, INSERT): no row lock.
+            // A concurrent award of the same badge is absorbed by ON CONFLICT DO NOTHING.
+            let stored: Vec<i16> = sqlx::query_scalar("SELECT badge FROM game_account_badges WHERE account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) ORDER BY badge")
                 .bind(character.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
             let mut earned = Vec::with_capacity(stored.len());
             for raw in stored {

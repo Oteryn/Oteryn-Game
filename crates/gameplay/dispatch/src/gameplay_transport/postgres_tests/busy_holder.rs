@@ -2,9 +2,11 @@
 //! holder instead of refusing at once.
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
+use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::AuthenticatedTransportRefV1;
 use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use std::time::Duration;
 
 #[test]
@@ -87,6 +89,61 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
             let refreshed = owner.refresh_pvp_locks(dependencies.actor, session).await;
             busy.await??;
             assert!(refreshed, "the refresh refused on a busy holder");
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
+fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("activity-input-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(
+                admin,
+                "activity_input_busy_holder",
+                true,
+                false,
+            )
+            .await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let dependencies = Dependencies::new()?;
+            let owner = dependencies.owner(&h, &authority);
+            let mut admitted = dependencies.admitted;
+            admitted.item_fence = crate::gameplay_transport::item_fence_of(
+                FreshAdmissionStore::from_root(h.root.clone())
+                    .current_session_at(admitted.game_session_id)
+                    .await?
+                    .0,
+            );
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    &[crate::gameplay_transport::capabilities::OfferedCapability {
+                        id: oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+                        requires: &[],
+                    }],
+                    &[oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1],
+                )
+                .ok_or("activity capability")?;
+            assert!(owner.activity_transfer_input(admitted).await);
+            let busy = hold_holder(&h.root, Duration::from_millis(300))?;
+            let accepted = owner.activity_transfer_input(admitted).await;
+            busy.await??;
+            assert!(
+                accepted,
+                "a background pass must not close ordinary activity-capable input"
+            );
+            // A persistently unavailable root still authorizes no input.
+            let held = h.root.try_issue_semantic_pass()?;
+            assert!(!owner.activity_transfer_input(admitted).await);
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             drop(owner);
             drop(seal);
             h.cleanup().await

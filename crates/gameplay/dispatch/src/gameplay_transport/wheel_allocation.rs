@@ -32,7 +32,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return WheelAllocationReply::Rejected;
         };
         let Some(permit) = self.spell_lane_permit().await else {
-            return WheelAllocationReply::Unavailable;
+            return WheelAllocationReply::Rejected;
         };
         let at_temple = {
             let runtime = self.runtime.lock().await;
@@ -137,6 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
                 | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence,
             )) => return WheelAllocationReply::Rejected,
+            Some(Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                crate::durability::DurabilityError::RootUnavailable,
+            ))) => return WheelAllocationReply::Rejected,
             _ => return WheelAllocationReply::Unavailable,
         };
         let allocation = self

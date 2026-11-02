@@ -85,7 +85,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// revision slot, then the session's allocation. A failed load fails the session's Wheel
     /// closed (every stage 0), never the login.
     pub(in crate::gameplay_transport) async fn admit_wheel_session(&self, session: GameSessionId) {
-        let allocation = match (self.current_quest_fence(session).await, &self.wheel_ruleset) {
+        let fence = self.current_quest_fence(session).await;
+        let retry = self.wheel_ruleset.is_some() && !matches!(&fence, Ok(None));
+        let allocation = match (fence, &self.wheel_ruleset) {
             (Ok(Some(fence)), Some(ruleset)) => {
                 crate::durability::character_wheel::admit_character_wheel(
                     &self.revision_sequencer,
@@ -99,6 +101,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
+        // A Character without admitted progression has no Wheel allocation. Keep the
+        // documented fail-closed result local to Wheel instead of immediately starting the
+        // progression-backed Atelier owner with the same missing state.
+        if allocation.is_none() {
+            if retry {
+                self.schedule_quest_refresh(session);
+            }
+            if let Ok(mut sessions) = self.states.atelier_sessions.lock() {
+                sessions.insert(session, None);
+            }
+            if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
+                sessions.insert(session, None);
+            }
+            return;
+        }
         if let (Ok(Some(fence)), Some(_), Some(_)) = (
             self.current_quest_fence(session).await,
             &self.wheel_ruleset,
