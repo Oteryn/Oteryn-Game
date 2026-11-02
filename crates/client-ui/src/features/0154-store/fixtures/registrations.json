@@ -2,21 +2,77 @@
   {
     "mechanic": "0154-store",
     "kind": "handlers",
-    "id": "0154-store-unsupported",
-    "status": "unsupported",
-    "reason": "STORE-WIRE-1 registers codecs only; native Store UI and dispatch are pending.",
+    "id": "0154-store-catalogue",
+    "status": "supported",
     "commands": [
-      183,
-      184,
-      185,
+      183
+    ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Server-owned state."
+    }
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
+    "id": "0154-store-history",
+    "status": "supported",
+    "commands": [
+      184
+    ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Server-owned state."
+    }
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
+    "id": "0154-store-inbox-claim",
+    "status": "supported",
+    "commands": [
       186
     ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Server-owned state."
+    }
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "keybindings",
+    "id": "0154-store-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+S",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "panels",
+    "id": "0154-store-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
+    "id": "0154-store-purchase",
+    "status": "supported",
+    "commands": [
+      185
+    ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Server-owned state."
     }
   }
 ]

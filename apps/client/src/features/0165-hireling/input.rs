@@ -1,8 +1,23 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::hireling::{Intent, request};
+use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
+    pub fn hireling_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if !oteryn_client_ui::hireling::open_key(events) {
+            return false;
+        }
+        self.hireling_request(Intent::Refresh);
+        #[cfg(windows)]
+        super::view::open_window(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).hireling.open = true;
+        }
+        true
+    }
+
     pub fn hireling_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
         if let Some(command) = request(&mut mailbox.hireling, intent)

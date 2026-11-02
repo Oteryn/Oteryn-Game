@@ -113,11 +113,13 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // CL26 (#2816) adds the native client features 182 (daily reward), 224 (boss rewards, with
     // its prerequisite 117), 233 (player typing) and 259 (public channels, with its prerequisite
     // 80); the set stays strictly ascending as the hello encoder requires.
+    // CL25J adds daily boost, forge, depot search, store, hotkey equip, browse field,
+    // party chat and VIP presence, including the equipment/container prerequisites 12/14.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
-            4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 60, 62, 63,
-            68, 72, 80, 91, 92, 117, 140, 147, 148, 168, 182, 224, 233, 259, 272, 274
+            4, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 60, 62, 63,
+            68, 72, 80, 91, 92, 117, 140, 147, 148, 151, 152, 153, 154, 168, 179, 182, 224, 230, 233, 240, 258, 259, 272, 274
         ]
     );
 }

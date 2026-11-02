@@ -1,0 +1,16 @@
+{
+  "mechanic": "0199-cyclopedia-character",
+  "kind": "handlers",
+  "id": "0199-cyclopedia-character-388",
+  "status": "unsupported",
+  "direction": "client_to_server",
+  "capability": 199,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "State and actions are server-owned."
+  },
+  "commands": [
+    388
+  ],
+  "reason": "The panel opens badges but has no native tab, paging, or target controls."
+}

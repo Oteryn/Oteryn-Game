@@ -1,0 +1,7 @@
+{
+  "mechanic": "0153-depot-search",
+  "kind": "panels",
+  "id": "0153-depot-search-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

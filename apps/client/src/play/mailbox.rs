@@ -40,6 +40,9 @@ pub struct Pushed {
     pub entities: Option<Vec<WorldSpatialEntity>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
+    pub chat_lines: Vec<oteryn_session::ChatLine>,
+    pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
+    pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
 }
 
 impl Pushed {
@@ -48,6 +51,9 @@ impl Pushed {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
+        self.chat_lines.extend(newer.chat_lines);
+        self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
+        self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -60,6 +66,20 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
+    pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
+    pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
+    pub(super) cyclopedia_character:
+        oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
+    pub(super) cyclopedia_tracker: oteryn_client_ui::cyclopedia_tracker::CyclopediaTrackerPanel,
+    pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
+    pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
+    pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
+    pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
+    pub(super) store: oteryn_client_ui::store::StorePanel,
+    pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
+    pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
+
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
@@ -156,6 +176,15 @@ impl Outbox {
         mailbox.check_server_messages();
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
+        for line in std::mem::take(&mut mailbox.pushed.chat_lines) {
+            oteryn_client_ui::chat_party_room::push_line(&mut mailbox.chat_party_room, line);
+        }
+        if let Some(rooms) = mailbox.pushed.chat_rooms.take() {
+            oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
+        }
+        if let Some(presence) = mailbox.pushed.vip_presence.take() {
+            oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
+        }
         if let Some(position) = mailbox.pushed.own
             && let (Ok(x), Ok(y), Ok(floor)) = (
                 u16::try_from(position.x),

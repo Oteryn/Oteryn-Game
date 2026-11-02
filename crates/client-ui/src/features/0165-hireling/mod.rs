@@ -1,6 +1,17 @@
 pub use oteryn_client_runtime::hireling::{
     CommandStatus, HirelingCommand, HirelingResponse, hireling,
 };
+use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
+
+pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|event| {
+        matches!(event,
+        NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+        if code.get() == 11 && modifiers.contains(Modifier::Control)
+            && modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Alt)
+            && !modifiers.contains(Modifier::Super))
+    })
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -89,6 +100,19 @@ pub fn panel_text(panel: &HirelingPanel) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_input_actions::{KeyCode, Modifiers};
+
+    #[test]
+    fn ctrl_shift_h_opens_panel() -> Result<(), Box<dyn std::error::Error>> {
+        let events = [NormalizedInputEvent::Key {
+            code: KeyCode::new(11)?,
+            state: ButtonState::Pressed,
+            repeat: false,
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        }];
+        assert!(open_key(&events));
+        Ok(())
+    }
 
     #[test]
     fn requests_use_the_codec_and_refusals_are_visible() {

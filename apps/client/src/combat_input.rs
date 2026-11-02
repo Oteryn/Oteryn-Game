@@ -12,6 +12,8 @@ pub enum PlayCommand {
     Prey(oteryn_client_runtime::prey::prey::Request),
     LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
+    Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
+    ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).

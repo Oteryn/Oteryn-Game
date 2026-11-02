@@ -2,19 +2,49 @@
   {
     "mechanic": "0199-cyclopedia-character",
     "kind": "handlers",
-    "id": "0199-cyclopedia-character-unsupported",
+    "id": "0199-cyclopedia-character-387",
     "status": "unsupported",
-    "reason": "PAR-P12 Cyclopedia character tabs are server-only; native client presentation is pending.",
+    "direction": "client_to_server",
+    "capability": 199,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State and actions are server-owned."
+    },
     "commands": [
-      387,
+      387
+    ],
+    "reason": "The panel opens badges but has no native tab, paging, or target controls."
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "handlers",
+    "id": "0199-cyclopedia-character-388",
+    "status": "unsupported",
+    "direction": "client_to_server",
+    "capability": 199,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State and actions are server-owned."
+    },
+    "commands": [
       388
     ],
-    "not_applicable": {
-      "state": "Server-only slice.",
-      "protocol": "Server-only slice.",
-      "view": "Server-only slice.",
-      "input": "Server-only slice.",
-      "settings": "Server-only slice."
-    }
+    "reason": "The panel opens badges but has no native tab, paging, or target controls."
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "keybindings",
+    "id": "0199-cyclopedia-character-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+U",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "panels",
+    "id": "0199-cyclopedia-character-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]
