@@ -1796,6 +1796,195 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_check_oasis.lua:3-18"
       ],
       "success_message": "You have found a lovely oasis with green fauna and juicy fruit. You didn't expect that."
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/hugo_exit",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2242,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32240,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:23-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2250",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2250,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32915,
+        "y": 32263,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2251",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2251,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32946,
+        "y": 32270,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2252",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2252,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32976,
+        "y": 32270,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2253",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2253,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32933,
+        "y": 32282,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2254",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2254,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2255",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2255,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
     }
   ]
 }
