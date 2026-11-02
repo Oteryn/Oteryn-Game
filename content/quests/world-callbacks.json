@@ -1359,6 +1359,519 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission11.lua:24"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2152",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2152,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2154",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2154,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33169,
+        "y": 31755,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:28",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2155",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2155,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33065,
+        "y": 31772,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2156",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2156,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33124,
+        "y": 31692,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:38",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2158",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2158,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:50",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2160",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2160,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33356,
+        "y": 31589,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:61",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2161",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2161,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31767,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:66",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2163",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2163,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2165",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2165,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33250,
+        "y": 31632,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:89",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2166",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2166,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33233,
+        "y": 31758,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:94",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2167",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2167,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33232,
+        "y": 31733,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:99",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2169",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2169,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:111",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2171",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2171,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33093,
+        "y": 31575,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:122",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2172",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2172,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33186,
+        "y": 31759,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:127",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2173",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2173,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31703,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:132",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2175",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2175,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:144",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2177",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2177,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33104,
+        "y": 31734,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:155",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2179",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2179,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33165,
+        "y": 31709,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:167",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-portal-2180",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2180,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33357,
+        "y": 31589,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:172",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:180-213"
+      ]
     }
   ]
 }
