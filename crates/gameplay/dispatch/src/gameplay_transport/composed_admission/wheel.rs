@@ -99,6 +99,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
+        // A Character without admitted progression has no Wheel allocation. Keep the
+        // documented fail-closed result local to Wheel instead of immediately starting the
+        // progression-backed Atelier owner with the same missing state.
+        if allocation.is_none() {
+            if let Ok(mut sessions) = self.states.atelier_sessions.lock() {
+                sessions.insert(session, None);
+            }
+            if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
+                sessions.insert(session, None);
+            }
+            return;
+        }
         if let (Ok(Some(fence)), Some(_), Some(_)) = (
             self.current_quest_fence(session).await,
             &self.wheel_ruleset,
