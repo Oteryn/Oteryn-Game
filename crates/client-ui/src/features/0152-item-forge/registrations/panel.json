@@ -1,0 +1,7 @@
+{
+  "mechanic": "0152-item-forge",
+  "kind": "panels",
+  "id": "0152-item-forge-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

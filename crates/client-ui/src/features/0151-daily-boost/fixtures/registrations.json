@@ -2,18 +2,32 @@
   {
     "mechanic": "0151-daily-boost",
     "kind": "handlers",
-    "id": "0151-daily-boost-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0151-daily-boost-177",
+    "status": "supported",
+    "direction": "client_to_server",
+    "capability": 151,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State and actions are server-owned."
+    },
     "commands": [
       177
-    ],
-    "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
-    }
+    ]
+  },
+  {
+    "mechanic": "0151-daily-boost",
+    "kind": "keybindings",
+    "id": "0151-daily-boost-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+B",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0151-daily-boost",
+    "kind": "panels",
+    "id": "0151-daily-boost-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

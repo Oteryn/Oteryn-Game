@@ -134,7 +134,12 @@ fn entity_peer(
 #[test]
 fn the_advertised_set_is_closed_under_the_registry_requires() {
     // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
-    let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12]), (36, &[7])];
+    // CL25J extends the closure check for every newly advertised dependent mechanic.
+    let requires: &[(u32, &[u32])] = &[
+        (4, &[6]), (12, &[4]), (14, &[4, 12]), (36, &[7]),
+        (152, &[14]), (153, &[37, 62]), (179, &[12, 14]),
+        (230, &[14, 18]), (240, &[7, 42]), (258, &[7, 43]),
+    ];
     for (capability, needed) in requires {
         if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
             for need in *needed {

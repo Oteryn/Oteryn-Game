@@ -1,0 +1,16 @@
+{
+  "mechanic": "0225-boss-difficulty",
+  "kind": "handlers",
+  "id": "0225-boss-difficulty-431",
+  "status": "unsupported",
+  "direction": "client_to_server",
+  "capability": 225,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "State and actions are server-owned."
+  },
+  "reason": "The prerequisite boss-encounter capability 117 has no native client route.",
+  "commands": [
+    431
+  ]
+}

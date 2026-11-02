@@ -1,0 +1,9 @@
+{
+  "mechanic": "0154-store",
+  "kind": "keybindings",
+  "id": "0154-store-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+S",
+  "entry": "input.rs::open_key"
+}
