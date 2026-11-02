@@ -11,6 +11,8 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::bosstiary::{BosstiaryBoss, progress};
 
+pub mod slots;
+
 impl DurabilityRoot {
     /// Credits a captured kill under the caller's held revision slot. This counter, like
     /// Animus completion, does not advance CharacterRevision. Current session/generation,
@@ -23,6 +25,23 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         occurrence: BestiaryKillOccurrence,
         boss: &BosstiaryBoss,
+    ) -> Result<bool, CharacterProgressionError> {
+        self.credit_bosstiary_kill_with_boost(authority, node, fence, occurrence, boss, false)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "captured boost joins the existing fenced kill identity"
+    )]
+    pub async fn credit_bosstiary_kill_with_boost(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: BestiaryKillOccurrence,
+        boss: &BosstiaryBoss,
+        boosted: bool,
     ) -> Result<bool, CharacterProgressionError> {
         if boss.key.len() > 128
             || !boss
@@ -49,11 +68,11 @@ impl DurabilityRoot {
             if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                 return Ok(Err(error));
             }
-            let stored: Option<(String, String)> = sqlx::query_as(
-                "SELECT boss_key,category FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid")
+            let stored: Option<(String, String, i16)> = sqlx::query_as(
+                "SELECT boss_key,category,kill_credit FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            if let Some((key, category)) = stored {
-                if key != boss.key || category != boss.category {
+            if let Some((key, category, credit)) = stored {
+                if key != boss.key || category != boss.category || credit != i16::from(crate::domain::bosstiary::kill_credit(boosted)) {
                     return Ok(Err(CharacterProgressionError::InvalidInput));
                 }
                 commit_semantic_transaction(tx, deadline).await?;
@@ -62,13 +81,13 @@ impl DurabilityRoot {
             let before: Option<i64> = sqlx::query_scalar(
                 "SELECT kill_count FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(&boss.key).fetch_optional(&mut *tx).await?;
-            let count = before.unwrap_or(0).checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
+            let count = before.unwrap_or(0).checked_add(i64::from(crate::domain::bosstiary::kill_credit(boosted))).ok_or(DurabilityError::InvalidStoredState)?;
             let points = progress(&boss.category, u64::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .ok_or(DurabilityError::InvalidStoredState)?.points;
             sqlx::query("INSERT INTO game_character_bosstiary_progress(character_id,boss_key,kill_count,boss_points) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT(character_id,boss_key) DO UPDATE SET kill_count=EXCLUDED.kill_count,boss_points=EXCLUDED.boss_points")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(&boss.key).bind(count).bind(i64::from(points)).execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_bosstiary_kill_receipts(character_id,occurrence_id,boss_key,category) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).bind(&boss.key).bind(&boss.category).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_bosstiary_kill_receipts(character_id,occurrence_id,boss_key,category,kill_credit) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5)")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).bind(&boss.key).bind(&boss.category).bind(i16::from(crate::domain::bosstiary::kill_credit(boosted))).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(true))
         })).await?

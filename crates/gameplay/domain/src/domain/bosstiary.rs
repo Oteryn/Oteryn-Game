@@ -86,3 +86,57 @@ mod tests {
         assert_eq!(kill_thresholds("unknown"), None);
     }
 }
+
+#[cfg(test)]
+mod slot_tests {
+    use super::*;
+    #[test]
+    fn crystal_boss_slot_unlock_bonus_remove_and_boosted_credit() {
+        assert!(!slot_unlocked(1, 0, false));
+        assert!(slot_unlocked(1, 5, true));
+        assert!(!slot_unlocked(2, 1499, true));
+        assert!(slot_unlocked(2, 1500, true));
+        for (points, bonus) in [(0, 25), (250, 50), (1250, 100), (1500, 106)] {
+            assert_eq!(loot_bonus_percent(points, false), bonus);
+            assert_eq!(loot_bonus_percent(points, true), bonus + 25);
+        }
+        assert_eq!(
+            [remove_fee(1), remove_fee(2), remove_fee(3)],
+            [0, 100000, 400000]
+        );
+        assert_eq!(kill_credit(false), 1);
+        assert_eq!(kill_credit(true), 3);
+    }
+}
+
+/// Crystal protocolgame.cpp:10615-10632: first prowess unlocks slot one; 1500 points slot two.
+pub const fn slot_unlocked(slot: u8, points: u32, prowess: bool) -> bool {
+    match slot {
+        1 => prowess,
+        2 => points >= 1500,
+        _ => false,
+    }
+}
+/// Crystal io_bosstiary.cpp:225-232 and protocolgame.cpp:10621: mastery adds 25%.
+pub fn loot_bonus_percent(points: u32, mastered: bool) -> u16 {
+    let base = if points <= 250 {
+        25 + points / 10
+    } else if points < 1250 {
+        37 + points / 20
+    } else {
+        100 + (((8 * u64::from((points - 1250) / 5) + 81) as f64).sqrt() - 9.0) as u32 / 2
+    };
+    base.min(u32::from(u16::MAX - 25)) as u16 + if mastered { 25 } else { 0 }
+}
+/// Crystal io_bosstiary.cpp:311-315, player.hpp:1881: initial removal counter is one.
+pub const fn remove_fee(removals: u8) -> u64 {
+    if removals < 2 {
+        0
+    } else {
+        300000 * removals as u64 - 500000
+    }
+}
+/// Crystal player.cpp:6567-6578, config.lua.dist:240-244: base one, boosted multiplier three.
+pub const fn kill_credit(boosted: bool) -> u8 {
+    if boosted { 3 } else { 1 }
+}

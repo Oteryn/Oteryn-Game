@@ -824,3 +824,34 @@ mod tests {
         assert!(assign(&catalogue, &unlocks, &two, "zap", "bear", 3, CharmExpansion).is_ok());
     }
 }
+
+#[cfg(test)]
+mod reset_tests {
+    use super::*;
+    #[test]
+    fn crystal_reset_all_level_boundary_and_expansion_discount() {
+        assert_eq!(reset_all_fee(100, CharmSlotEntitlement::Free), Some(100000));
+        assert_eq!(
+            reset_all_fee(101, CharmSlotEntitlement::Premium),
+            Some(1211000)
+        );
+        assert_eq!(
+            reset_all_fee(101, CharmSlotEntitlement::CharmExpansion),
+            Some(908250)
+        );
+    }
+}
+
+/// Crystal src/io/iobestiary.cpp:648-653: reset all stages and assignments, refund balances.
+pub fn reset_all_fee(level: u64, entitlement: CharmSlotEntitlement) -> Option<u64> {
+    let fee = 100000_u64.checked_add(if level > 100 {
+        level.checked_mul(11000)?
+    } else {
+        0
+    })?;
+    if entitlement == CharmSlotEntitlement::CharmExpansion {
+        fee.checked_mul(75).map(|n| n / 100)
+    } else {
+        Some(fee)
+    }
+}

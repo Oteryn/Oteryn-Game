@@ -276,6 +276,10 @@ impl CapturedRewardPrincipal {
 /// channel guards are released.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProjectedCreatureDeathFacts {
+    /// Captured daily selection on the lethal turn; retries preserve this multiplier.
+    pub boosted_boss: bool,
+    /// Server wall clock captured by the lethal producer for durable slot history.
+    pub died_at_unix_ms: u64,
     pub death: CreatureDeathOccurrenceKey,
     pub corpse: MovementLocalPosition,
     /// The death's single reward principal (§1.3); the settle refuses a
@@ -313,6 +317,8 @@ pub fn capture_projected_death_facts(
         .unwrap_or(principal.character);
     let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
     Ok(ProjectedCreatureDeathFacts {
+        boosted_boss: false,
+        died_at_unix_ms: 0,
         death,
         corpse,
         principal,
@@ -1017,7 +1023,14 @@ pub async fn settle_bosstiary(
         })?;
     session
         .root
-        .credit_bosstiary_kill(session.authority, session.node, fence, occurrence, boss)
+        .credit_bosstiary_kill_with_boost(
+            session.authority,
+            session.node,
+            fence,
+            occurrence,
+            boss,
+            facts.boosted_boss,
+        )
         .await
 }
 
