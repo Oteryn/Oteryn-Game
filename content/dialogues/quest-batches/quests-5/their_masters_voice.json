@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+      "quest": "oteryn:quest.their_masters_voice",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1875",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/their_masters_voice/servant_sentry/master",
+      "npc": "oteryn:npc.servant_sentry",
+      "quest": "oteryn:quest.their_masters_voice",
+      "keywords": [
+        "master"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Our. Master. Is. Gone. You. Can. Not. Visit. Him! We. Stand. {Sentry}!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:56"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/their_masters_voice/servant_sentry/sentry",
+      "npc": "oteryn:npc.servant_sentry",
+      "quest": "oteryn:quest.their_masters_voice",
+      "keywords": [
+        "sentry"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "{Master}. Conducted. Experiments. Great. Problems. You. Must. Go!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:57"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/their_masters_voice/servant_sentry/slime-gobbler-received",
+      "npc": "oteryn:npc.servant_sentry",
+      "quest": "oteryn:quest.their_masters_voice",
+      "keywords": [
+        "slime"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "{Slime}. Dangerous. We. Have. It. Under. Control. ... We. Will. Stand. {Sentry}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:58-60"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "key": "oteryn:quest-npc/their_masters_voice/servant_sentry/slime-help",
+      "npc": "oteryn:npc.servant_sentry",
+      "quest": "oteryn:quest.their_masters_voice",
+      "keywords": [
+        "slime"
+      ],
+      "match_mode": "lower_exact",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/their_masters_voice_world_change/slime_gobbler_received",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Defeat. {Slime}. We. Will. Why. Did. You. Kill. Us? Do. You. Want. To. Rectify. And. Help?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:58-60",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:80-82"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.servant_sentry",
+      "quest": "oteryn:quest.their_masters_voice",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "The. Slime. Has. Entered. Our. Master. Has. Left! We. Must. Help.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:94"
+          ]
+        }
+      ],
+      "farewell": "Goodbye. Human. Being!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:94",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:95",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ]
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "their_masters_voice.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      }
+    }
+  ]
+}
