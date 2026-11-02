@@ -2684,6 +2684,45 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:58",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-ladder",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30004,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32276,
+            "floor": -8
+          },
+          "appearance": 351,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+      ]
     }
   ]
 }
