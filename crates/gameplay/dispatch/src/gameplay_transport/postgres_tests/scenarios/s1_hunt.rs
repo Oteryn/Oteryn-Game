@@ -198,6 +198,7 @@ fn scenario() -> TestResult {
             count(&h, "SELECT count(*) FROM game_world_daily_boosts").await?,
             1
         );
+        let hunt_start = owner.owner_now().get();
         // The shared fixture stops before first_entry's semantic clock load. No hunt
         // has happened yet: initialize both admission clocks at the real owner time.
         assert_eq!(
@@ -214,7 +215,7 @@ fn scenario() -> TestResult {
                     player.runtime_actor.ok_or("actor")?,
                     player.game_session_id,
                     2520,
-                    owner.owner_now().get(),
+                    hunt_start,
                 );
             }
         }
@@ -223,6 +224,12 @@ fn scenario() -> TestResult {
         step_west(&mut owner, actor, session).await?;
         step_west(&mut owner, actor, session).await?;
         kill_rat(&mut owner, admitted, other, pin.clone()).await?;
+        // The hunt lasts a random number of 3 s attack passes (real hit chance), so it can
+        // take more than a minute. Production debits 1 stamina minute for a kill within 60 s
+        // of the clock loaded above and 2 after that (`HuntingClock::activity`); the fixed
+        // 2519 failed whenever the misses added up past 60 s. Expect the same rule's value.
+        let hunted_seconds = owner.owner_now().get() / 1_000_000 - hunt_start / 1_000_000;
+        let hunted_stamina: u16 = if hunted_seconds > 60 { 2518 } else { 2519 };
         let awards:Vec<(i64,i16,i32)> = sqlx::query_as("SELECT xp_awarded,prey_percent,stamina_minutes FROM game_party_kill_xp_members ORDER BY character_id").fetch_all(&h.pool).await?;
         assert_eq!(
             awards.len(),
@@ -240,8 +247,14 @@ fn scenario() -> TestResult {
         // Explicit numerical order: rat 5 -> daily 10 -> party pool/split -> each member's
         // personal Prey, low-level multiplier, then stamina, with one final truncation.
         let leader:(i64,i16,i32) = sqlx::query_as("SELECT xp_awarded,prey_percent,stamina_minutes FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(leader, (19, 40, 2519));
-        assert_eq!(awards, [(19, 40, 2519), (14, 0, 2519)]);
+        assert_eq!(leader, (19, 40, i32::from(hunted_stamina)));
+        assert_eq!(
+            awards,
+            [
+                (19, 40, i32::from(hunted_stamina)),
+                (14, 0, i32::from(hunted_stamina))
+            ]
+        );
         assert_eq!(
             count(&h, "SELECT base_xp FROM game_party_kill_xp_receipts").await?,
             10
@@ -264,7 +277,7 @@ fn scenario() -> TestResult {
                     .lock()
                     .await
                     .live_stamina(actor, player.game_session_id),
-                Some(2519)
+                Some(hunted_stamina)
             );
             assert_eq!(
                 owner
@@ -286,7 +299,7 @@ fn scenario() -> TestResult {
                 .read_hunting_stamina(&authority, fence.character_id)
                 .await
                 .map_err(debug)?,
-            2519
+            hunted_stamina
         );
         assert_eq!(
             count(
@@ -354,7 +367,7 @@ fn scenario() -> TestResult {
                 .read_hunting_stamina(&authority, fence.character_id)
                 .await
                 .map_err(debug)?,
-            2519
+            hunted_stamina
         );
         assert_eq!(count(&h,"SELECT count(*) FROM game_character_prey_slots WHERE creature_key='oteryn:creature.rat'").await?,1);
         drop(owner);
