@@ -19,13 +19,18 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         | FeeBurnCauseV1::NpcTravel(cause)
         | FeeBurnCauseV1::PreyListReroll(cause)
         | FeeBurnCauseV1::QuestAccessPurchase(cause)
-        | FeeBurnCauseV1::TaskBoardTalisman(cause),
+        | FeeBurnCauseV1::TaskBoardTalisman(cause)
+        | FeeBurnCauseV1::BosstiarySlot(cause),
     ) = value.cause.as_ref().and_then(|v| v.cause.as_ref())
         && !cause.atelier_proof.is_empty()
     {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::BosstiarySlot(cause))
+            if cause.service_key == "oteryn:bosstiary.slot_remove"
+                && (100000..=76000000).contains(&value.fee_gold_units)
+                && (value.fee_gold_units + 500000).is_multiple_of(300000) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::TaskBoardTalisman(cause))
             if cause.service_key == "oteryn:taskboard.talisman"
                 && value.fee_gold_units == oteryn_gameplay_quests::quest::task_board::full::TALISMAN_PURCHASE_GOLD =>

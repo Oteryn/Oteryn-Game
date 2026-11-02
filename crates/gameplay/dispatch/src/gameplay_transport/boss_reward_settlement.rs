@@ -12,7 +12,7 @@ use oteryn_gameplay_encounters::bosses::reward_chest::{
     FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_eligibility,
     reward_expiry, top_contributor,
 };
-use oteryn_gameplay_items::loot_plan::{LootPlan, LootPlanError, plan_boss_loot};
+use oteryn_gameplay_items::loot_plan::{LootPlan, LootPlanError, plan_boss_loot_with_bonus};
 use sha2::{Digest, Sha256};
 
 #[cfg(test)]
@@ -134,11 +134,23 @@ fn materialize_plan(
     Ok(items)
 }
 
+#[cfg(test)]
 fn plan_personal_death(
     death: [u8; 16],
     boss_key: &str,
     frozen: &boss_reward_contribution::FrozenBossDeath,
     facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
+) -> Result<BossRewardDeath, PlanError> {
+    plan_personal_death_with_slots(death, boss_key, frozen, facts, &[], |_| false)
+}
+
+fn plan_personal_death_with_slots(
+    death: [u8; 16],
+    boss_key: &str,
+    frozen: &boss_reward_contribution::FrozenBossDeath,
+    facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
+    bonuses: &[([u8; 16], u16)],
+    equipment: impl Fn(&str) -> bool,
 ) -> Result<BossRewardDeath, PlanError> {
     if frozen.participants.len() > BOSS_REWARD_CONTRIBUTORS_MAX {
         return Err(PlanError::InvalidCensus);
@@ -195,13 +207,20 @@ fn plan_personal_death(
                 .iter()
                 .position(|row| row.character == character)
                 .ok_or(PlanError::InvalidCensus)?;
-            let loot = plan_boss_loot(
+            let bonus = bonuses
+                .iter()
+                .find(|(c, _)| *c == character)
+                .map_or(0, |(_, b)| *b);
+            let rolls = crate::gameplay_transport::boss_encounter::slot_bonus_rolls(bonus, death);
+            let loot = plan_boss_loot_with_bonus(
                 death,
                 character,
                 &frozen.reward.loot_table_ref,
                 &frozen.reward.loot_table,
                 factors[index],
                 top == Some(character),
+                rolls,
+                &equipment,
             )
             .map_err(PlanError::Loot)?;
             materialize_plan(loot, &facts)
@@ -350,13 +369,18 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .boss
             .as_ref()
             .map_or(entry.creature.as_str(), |boss| boss.key.as_str());
-        let plan = match plan_personal_death(
+        let plan = match plan_personal_death_with_slots(
             personal_death_id(entry.facts.death),
             key,
             frozen,
             |definition| {
                 super::super::item_ref_admission::generation_item_facts(native, definition).ok()
             },
+            entry
+                .boss_slot_bonuses
+                .get()
+                .map_or(&[][..], |v| v.as_slice()),
+            |key| admission.reward_table().is_daily_boss_equipment(key),
         ) {
             Ok(plan) => plan,
             Err(error) => {

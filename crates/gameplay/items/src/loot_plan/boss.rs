@@ -13,6 +13,34 @@ pub fn plan_boss_loot(
     loot_factor: f64,
     top_score: bool,
 ) -> Result<LootPlan, LootPlanError> {
+    plan_boss_loot_with_bonus(
+        death,
+        character,
+        reference,
+        table,
+        loot_factor,
+        top_score,
+        0,
+        |_| false,
+    )
+}
+
+/// Crystal reward_chest.lua:84-111: extra equipment-only rolls retain each recipient's
+/// contribution factor, exclude unique items and never acquire top-contributor privileges.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing personal loot identity plus bounded bonus rolls"
+)]
+pub fn plan_boss_loot_with_bonus(
+    death: [u8; 16],
+    character: [u8; 16],
+    reference: &LootDefinitionRef,
+    table: &LootTableDefinition,
+    loot_factor: f64,
+    top_score: bool,
+    extra_rolls: u8,
+    is_equipment: impl Fn(&str) -> bool,
+) -> Result<LootPlan, LootPlanError> {
     if !loot_factor.is_finite() || loot_factor < 0.0 {
         return Err(LootPlanError::InvalidProbability);
     }
@@ -29,6 +57,18 @@ pub fn plan_boss_loot(
     if count * 2 > COMBAT01_LOOT_RNG_DRAWS_MAX {
         return Err(LootPlanError::TooManyRngDraws);
     }
+    let equipment: Vec<_> = table
+        .entries
+        .iter()
+        .filter(|e| !e.details.unique && is_equipment(&e.item.production_key))
+        .cloned()
+        .collect();
+    let extra_count = validate_tree(&equipment, 0)?;
+    if extra_rolls > 3
+        || (count + extra_count * usize::from(extra_rolls)) * 2 > COMBAT01_LOOT_RNG_DRAWS_MAX
+    {
+        return Err(LootPlanError::TooManyRngDraws);
+    }
     let mut state = RollState {
         entries: Vec::new(),
         unique: std::collections::HashSet::new(),
@@ -43,6 +83,13 @@ pub fn plan_boss_loot(
         top_score,
     };
     roll(&context, &table.entries, None, &mut state)?;
+    let extra = BossRoll {
+        top_score: false,
+        ..context
+    };
+    for _ in 0..extra_rolls {
+        roll(&extra, &equipment, None, &mut state)?;
+    }
     Ok(LootPlan {
         loot_table: reference.clone(),
         entries: state.entries,
@@ -174,6 +221,59 @@ mod tests {
                 },
             }],
         }
+    }
+
+    #[test]
+    fn bosstiary_slot_bonus_rerolls_equipment_only_without_unique_duplicates() {
+        let mut source = table(false);
+        source.entries[0].item =
+            LootDefinitionRef::new("Item", "oteryn:item.sword", "definition-r1");
+        source.entries[0].details.stackable = false;
+        let mut unique = source.entries[0].clone();
+        unique.details.unique = true;
+        unique.item = LootDefinitionRef::new("Item", "oteryn:item.unique", "definition-r1");
+        source.entries.push(unique);
+        source.entries.push(table(false).entries.remove(0));
+        let plan = plan_boss_loot_with_bonus(
+            [1; 16],
+            [2; 16],
+            &reference(),
+            &source,
+            100.0,
+            true,
+            2,
+            |key| key != "oteryn:item.gold",
+        )
+        .expect("bonus");
+        assert_eq!(
+            plan.entries
+                .iter()
+                .filter(|e| e.item.production_key == "oteryn:item.sword")
+                .count(),
+            3
+        );
+        assert_eq!(plan.entries.iter().filter(|e| e.unique).count(), 1);
+        assert_eq!(
+            plan.entries
+                .iter()
+                .filter(|e| e.item.production_key == "oteryn:item.gold")
+                .count(),
+            1
+        );
+        assert_eq!(
+            plan,
+            plan_boss_loot_with_bonus(
+                [1; 16],
+                [2; 16],
+                &reference(),
+                &source,
+                100.0,
+                true,
+                2,
+                |key| key != "oteryn:item.gold"
+            )
+            .expect("replay")
+        );
     }
 
     #[test]

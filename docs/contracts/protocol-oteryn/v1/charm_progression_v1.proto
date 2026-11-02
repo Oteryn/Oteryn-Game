@@ -4,8 +4,8 @@ package oteryn.protocol.v1;
 // Strict bounded codec: duplicate/unknown fields refused; zero fields omitted.
 // Views: BestiaryViewV1 and CharmViewV1 of charm_bestiary_v1.proto, as of the reply.
 message CharmProgressionRequestV1 {
-  uint32 action = 1; // 1 query, 2 unlock next stage, 3 assign, 4 remove (gold fee level * 100)
-  uint32 charm = 2; // 1..=32; absent only on query
+  uint32 action = 1; // 1 query, 2 unlock next stage, 3 assign, 4 remove, 5 reset all
+  uint32 charm = 2; // 1..=32; absent on query/reset all
   uint32 race = 3; // 1..=1024; present only on assign
   uint32 expected_stage = 4; // 0..=2; only on unlock
 }
@@ -14,7 +14,16 @@ message CharmProgressionReplyV1 {
   uint32 disposition = 2; // CharmUnlock/CharmAssign result codes; remove: 1 removed,
                           // 2 not assigned, 3 not enough gold, 4 change does not fit,
                           // 5 unknown charm, 6 rejected; query: 1
-  uint64 fee_gold = 3; // non-zero exactly on remove/removed, <= i64::MAX
+  uint64 fee_gold = 3; // non-zero exactly on remove or reset all / removed, <= i64::MAX
   bytes bestiary = 4; // BestiaryViewV1, <= 21504 bytes
   bytes charms = 5; // CharmViewV1, <= 554 bytes
 }
+
+// WB2/P01 action 5 resets all stages and assignments and refunds earned balances.
+// Price: 100000 through level 100; above it 100000 + level*11000; Expansion pays 75%.
+// Crystal src/io/iobestiary.cpp:648-672. Dispositions reuse remove codes; success=1.
+// Reset retains promotion and Expansion. Premium without Expansion has six slots
+// (Crystal src/io/iobestiary.cpp:603-607); Free two; Expansion unlimited.
+// Expansion purchase stays PENDING PLATFORM: migration 0568 is the existing durable hook;
+// the Platform Store producer must grant that character entitlement through its accepted
+// commercial/control-plane integration. Game exposes no player-grant command or Store purchase.
