@@ -1,0 +1,17 @@
+{
+  "mechanic": "0250-hireling-management",
+  "kind": "handlers",
+  "id": "0250-hireling-management-unsupported",
+  "status": "unsupported",
+  "reason": "Server identity and appearance management uses capability250; native management input is not yet implemented.",
+  "commands": [
+    470
+  ],
+  "not_applicable": {
+    "state": "Bounded command result contains at most ten owned Hirelings.",
+    "protocol": "Command470 uses the Hireling management v1 contract.",
+    "view": "Placed Hirelings are ordinary NPC actors.",
+    "input": "Native Hireling management input is pending.",
+    "settings": "No persistent client settings."
+  }
+}

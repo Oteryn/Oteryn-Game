@@ -49,6 +49,17 @@ impl WheelPremiumGate for Premium<'_> {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Observe existing native slots for the actual current House admission.
+    /// Initialization remains the genuine source Channel's separate owner.
+    pub(super) async fn read_house_admission_prey(
+        &self, admitted: &AdmittedSession,
+    ) -> Result<Option<(wire::Reply, [bool; 3])>, Error> {
+        let Some(catalogue) = self.prey_catalogue() else { return Ok(None); };
+        let fence = admitted.item_fence.ok_or(Error::AuthorityRejected)?;
+        self.root.read_house_prey_state(self.character, self.holder, fence,
+            admitted.channel_id, &catalogue, &Premium(self.premium_coordinator)).await.map(Some)
+    }
+
     pub(super) fn prey_catalogue(&self) -> Option<PreyCatalogue> {
         PreyCatalogue::try_from(self.active_generation?.native_gameplay()?).ok()
     }
@@ -228,14 +239,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         result.ok()
     }
 
-    pub(super) async fn admit_prey(&self, admitted: AdmittedSession) -> bool {
+    /// Native admission initialization is independent from physical placement.
+    /// The fresh House path uses its genuine pre-handoff Channel session here;
+    /// the same owner checks its current durable fence and unique slot rows.
+    pub(super) async fn prepare_admission_prey(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(wire::Reply, [bool; 3])>, ()> {
         if self.prey_catalogue().is_none() {
-            return true;
+            return Ok(None);
         }
         // Each admission may initialize newly unlocked slots. Existing typed rows are never
         // redrawn; their unique Character+slot key serializes retry and concurrent admission.
         let Some(mut occurrence) = super::SecureIdentifiers::random::<16>() else {
-            return false;
+            return Err(());
         };
         occurrence[6] = (occurrence[6] & 15) | 0x70;
         occurrence[8] = (occurrence[8] & 63) | 0x80;
@@ -244,7 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .is_err()
         {
-            return false;
+            return Err(());
         }
         // A receipt replay returns its original bytes; admission needs the current projection.
         let Ok((reply, permanent)) = self
@@ -255,7 +272,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         else {
+            return Err(());
+        };
+        Ok(Some((reply, permanent)))
+    }
+
+    pub(super) async fn admit_prey(&self, admitted: AdmittedSession) -> bool {
+        let Ok(prepared) = self.prepare_admission_prey(admitted).await else {
             return false;
+        };
+        let Some((reply, permanent)) = prepared else {
+            return true;
         };
         if let Some(actor) = admitted.runtime_actor {
             let Some(catalogue) = self.prey_catalogue() else { return false; };

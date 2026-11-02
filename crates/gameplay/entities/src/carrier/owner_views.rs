@@ -309,7 +309,9 @@ impl ChannelRuntimeV1 {
                     visible.creatures.push(actor(version));
                 }
                 Slot::NpcOccupied {
-                    position: version, ..
+                    position: version,
+                    hireling: None,
+                    ..
                 } if version.context == context => visible.npcs.push(actor(version)),
                 _ => {}
             }

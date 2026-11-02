@@ -203,6 +203,19 @@ pub trait PlayerLethalVitals {
         None
     }
 
+    /// Current-owner counterpart of the same atomic Player/Creature appearance batch.
+    /// Implementations without the shared appearance transaction explicitly refuse.
+    fn apply_source_appearance_batch_current(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _stamp: crate::foundation::RuntimeWorkStamp,
+        _source: ExactActorRef,
+        _definitions: &[crate::foundation::ConditionDefinition],
+        _targets: &[SourceAppearanceTarget<'_>],
+    ) -> Option<Vec<SourceAppearanceReceipt>> {
+        None
+    }
+
     /// Independently current actor/session HP view for composed source preflight.
     /// No caller-supplied maximum or HP field becomes current authority.
     fn source_player_health(
@@ -359,6 +372,87 @@ pub trait PlayerLethalVitals {
             fence,
             stamp,
         )
+    }
+
+    /// Current-owner typed commit keeps each source, policy and work-stamp input explicit.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_typed_composite_attack_damage_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_composite_attack_damage_current(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            stamp,
+        )
+    }
+
+    /// Current-cycle counterpart; the owning implementation independently reads the
+    /// runtime's live fence before its atomic condition admission and commit.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_attack_conditions_current(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _occurrence: &str,
+        _source: ExactActorRef,
+        _definitions: &[crate::foundation::ConditionDefinition],
+        _facts: &crate::foundation::ApplicationFacts<'_>,
+        _immunities: &[crate::foundation::ConditionType],
+        _stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        false
+    }
+
+    /// Current-cycle atomic HP plus secondary-condition commit. An owner that does
+    /// not implement that transaction refuses without applying primary damage.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_composite_attack_damage_current(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _magnitude: u32,
+        _occurrence: &str,
+        _source: ExactActorRef,
+        _definitions: &[crate::foundation::ConditionDefinition],
+        _facts: &crate::foundation::ApplicationFacts<'_>,
+        _immunities: &[crate::foundation::ConditionType],
+        _stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<PlayerDamageReceipt> {
+        None
+    }
+
+    /// Current-cycle invisibility removal; unsupported owners refuse.
+    #[allow(clippy::too_many_arguments)]
+    fn remove_attack_invisibility_current(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _source: ExactActorRef,
+        _now: u64,
+        _stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        false
     }
 
     fn apply_attack_damage(

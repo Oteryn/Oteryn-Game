@@ -20,6 +20,8 @@ pub mod grizzly_adams;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod rotten_blood;
+pub mod soul_war;
 pub mod task_board;
 pub mod world_callbacks;
 

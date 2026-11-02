@@ -713,6 +713,8 @@ fn scenario_with_creature_charmed(
                                 1_000_000
                             } else if charm.is_some() {
                                 30
+                            } else if radiant == Some("templar") {
+                                51 // Above the Wheel threshold for life-drain resistance below.
                             } else {
                                 50
                             },
@@ -783,6 +785,11 @@ fn scenario_with_creature_charmed(
                         extra_session,
                         crate::spell::cast::CharacterCastFacts {
                             vocation: crate::spell::Vocation::Monk,
+                            level: if radiant == Some("templar") {
+                                51
+                            } else {
+                                crate::gameplay_transport::actor_spell::tests::FACTS.level
+                            },
                             max_health: 500,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
@@ -819,6 +826,20 @@ fn scenario_with_creature_charmed(
                     },
                 ));
                 if matches!(radiant, Some("paragon" | "templar")) {
+                    if radiant == Some("templar") {
+                        // The general monster owner now also executes its independent
+                        // life-drain source. Isolate the holy/energy proof from that hit.
+                        state
+                            .apply_owner_promotion_transition(true, true, Some(u64::MAX))
+                            .map_err(debug)?;
+                        let mut effects =
+                            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+                        effects
+                            .sockets
+                            .gem_values_milli
+                            .insert(("Life Drain Resistance".into(), "".into()), 100_000);
+                        state.install_wheel_effects(effects);
+                    }
                     // Qualify the circle and holy independently despite both being scheduled.
                     state.install_equipped_energy_protection(Some(
                         crate::content::ReferenceRationalPercent {

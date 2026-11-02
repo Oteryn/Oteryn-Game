@@ -8,6 +8,7 @@
 
 mod crystal_parity;
 pub(super) mod movement_fixtures;
+mod native_parity;
 
 use super::behaviour_profile::{CREATUREAI0_PROPOSALS_PER_THINK, ProfileRefusal};
 use super::profile_schedule::ScheduleList;

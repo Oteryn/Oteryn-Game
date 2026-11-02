@@ -828,13 +828,14 @@ fn accepted_d140_layout_receipt_is_separate_from_the_local_spell_candidate_budge
     );
     assert_eq!(
         std::mem::size_of::<Slot>(),
-        // D314: measured on the merged tree with COND-1c's boxed lifecycle; budget 184.
-        176,
+        // D314's existing 184-byte budget includes the owner's derived translation
+        // revision (176 + one u64); the accepted historical layout above is unchanged.
+        184,
         "explicit local SPELL-BATCH candidate"
     );
     assert_eq!(
-        176 * 32,
-        5632,
+        std::mem::size_of::<Slot>() * 32,
+        5888,
         "candidate 32-slot inline storage; heap state separately bounded"
     );
 }
@@ -964,6 +965,7 @@ fn source_relocation_stages_same_slot_with_batch_and_reserves_destination_until_
     }
     let mut f = fixture_with_position(1, true);
     let expected = f.runtime.read_actor_position(f.caster).unwrap();
+    assert_eq!(expected.last_translation_revision(), 0);
     let p = expected.position();
     let destination = MovementLocalPosition { x: p.x + 1, ..p };
     let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
@@ -1008,6 +1010,7 @@ fn source_relocation_stages_same_slot_with_batch_and_reserves_destination_until_
     let current = f.runtime.read_actor_position(f.caster).unwrap();
     assert_eq!(current.position(), destination);
     assert_eq!(current.revision(), expected.revision() + 1);
+    assert_eq!(current.last_translation_revision(), current.revision());
     assert_eq!(current.facing(), expected.facing());
     assert_eq!(health(&f, 0), 17);
     let replay = f

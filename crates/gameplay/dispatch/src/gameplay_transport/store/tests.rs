@@ -3,6 +3,22 @@
 use super::*;
 
 #[test]
+fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revision() {
+    let catalogue=HIRELING_CATALOGUE.as_ref().expect("hireling catalogue");
+    assert_eq!(catalogue.rules.revision(),"store-hireling-crystal-201189f-v1");
+    // Crystal201189f gamestore.lua:6303-6472, generated together from the donor.
+    for (id,price) in [(25440,150),(25438,250),(25437,120),(1001,250),(1002,900),(1003,250),(1004,250),(2001,500),(2002,500),(2003,500),(2004,500),(2005,300),(2006,900),(2007,900),(2008,900),(2009,900)] {
+        let key=format!("store:hireling:{id}");
+        assert_eq!(catalogue.rules.offer(&key).expect("offer").price_coins,price);
+        assert_eq!(catalogue.hireling(&key).expect("metadata").source_id,id);
+    }
+    assert_eq!(catalogue.rules.offers_in_category("houses.hirelings",None,32).expect("page").len(),7);
+    assert_eq!(catalogue.rules.offers_in_category("houses.hireling-dresses",None,32).expect("page").len(),9);
+    assert_eq!(catalogue.item_revision("store:hireling:25440"),Some("definition-r1"));
+    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"store-catalogue-r1");
+}
+
+#[test]
 fn store_catalogue_admits_the_exercise_weapon_offers() {
     let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
     assert_eq!(catalogue.rules.revision(), "store-catalogue-r1");

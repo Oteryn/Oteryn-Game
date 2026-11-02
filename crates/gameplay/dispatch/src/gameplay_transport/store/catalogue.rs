@@ -25,6 +25,7 @@ struct Offer {
     enabled: bool,
     currency: String,
     item: Option<Item>,
+    hireling: Option<HirelingOffer>,
     #[serde(default)]
     unlock_key: Option<String>,
     #[serde(rename = "source_line")]
@@ -44,10 +45,18 @@ pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
 
 fn enabled_by_default() -> bool { true }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct HirelingOffer {
+    pub(super) effect: String,
+    pub(super) source_id: u16,
+}
+
 pub(super) struct RuntimeCatalogue {
     pub(super) rules: rules::Catalogue,
     titles: BTreeMap<String, String>,
     item_revisions: BTreeMap<String, String>,
+    hirelings: BTreeMap<String, HirelingOffer>,
 }
 
 impl RuntimeCatalogue {
@@ -59,6 +68,7 @@ impl RuntimeCatalogue {
         }
         let mut titles = BTreeMap::new();
         let mut item_revisions = BTreeMap::new();
+        let mut hirelings = BTreeMap::new();
         let mut offers = Vec::with_capacity(document.offers.len());
         for offer in document.offers {
             // Owner-priced offers remain unavailable while their price is a placeholder.
@@ -69,10 +79,21 @@ impl RuntimeCatalogue {
             if offer.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
                 return None;
             }
-            let (kind, delivery, eligibility) = match (offer.item, offer.unlock_key) {
+            let (kind, delivery, eligibility) = if let Some(hireling)=offer.hireling {
+                let valid=match hireling.effect.as_str() {
+                    "hire"=>hireling.source_id==25440 && offer.item.as_ref().is_some_and(|item|item.key=="oteryn:item.tibia.i29432" && item.revision=="definition-r1"),
+                    "unlock"=>(1001..=1004).contains(&hireling.source_id) || (2001..=2009).contains(&hireling.source_id),
+                    "rename"=>hireling.source_id==25438,
+                    "sex_change"=>hireling.source_id==25437,
+                    _=>false,
+                };
+                if offer.unlock_key.is_some() || !valid || (hireling.effect!="hire" && offer.item.is_some()) {return None}
+                hirelings.insert(offer.key.clone(),hireling);
+                (rules::OfferKind::Service,rules::DeliveryKind::Service,rules::Eligibility::default())
+            } else {
+                match (offer.item.as_ref(), offer.unlock_key.as_ref()) {
                 (Some(item), None) => {
-                    item_revisions.insert(offer.key.clone(), item.revision);
-                    (rules::OfferKind::Item, rules::DeliveryKind::Item { item_key: item.key, count: 1 }, rules::Eligibility::default())
+                    (rules::OfferKind::Item, rules::DeliveryKind::Item { item_key: item.key.clone(), count: 1 }, rules::Eligibility::default())
                 }
                 (None, Some(unlock_key)) if unlock_key == PREY_EXPANSION_UNLOCK => {
                     let eligibility = rules::Eligibility {
@@ -80,11 +101,13 @@ impl RuntimeCatalogue {
                         per_character_limit: Some(1),
                         ..rules::Eligibility::default()
                     };
-                    (rules::OfferKind::Service, rules::DeliveryKind::Unlock { unlock_key }, eligibility)
+                    (rules::OfferKind::Service, rules::DeliveryKind::Unlock { unlock_key: unlock_key.clone() }, eligibility)
                 }
                 _ => return None,
+            }
             };
             titles.insert(offer.key.clone(), offer.title);
+            if let Some(item) = offer.item.as_ref() { item_revisions.insert(offer.key.clone(),item.revision.clone()); }
             offers.push(rules::AdmittedOffer {
                 key: offer.key,
                 category: offer.category,
@@ -99,7 +122,12 @@ impl RuntimeCatalogue {
             rules: rules::Catalogue::admit(document.catalog_revision, offers).ok()?,
             titles,
             item_revisions,
+            hirelings,
         })
+    }
+
+    pub(super) fn hireling(&self, offer: &str) -> Option<&HirelingOffer> {
+        self.hirelings.get(offer)
     }
 
     pub(super) fn title(&self, offer: &str) -> &str {

@@ -2,8 +2,11 @@ use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
     let monk = name.starts_with("monk-guidance");
+    let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if monk {
+    let mut callback = callback(if rotten_purchase {
+        "rotten-blood/sacrifice"
+    } else if monk {
         "monk-guidance"
     } else if target_swap {
         "fish-napping-key"
@@ -157,6 +160,8 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
                 name.ends_with("capacity"),
             )
             .await?;
+        } else if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
+            super::rotten_blood::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger,rotten_purchase).await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"

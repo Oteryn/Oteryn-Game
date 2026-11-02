@@ -108,6 +108,9 @@ fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
         lines: Vec::new(),
         bank_debit: None,
         sell_all: false,
+        hireling_package: None,
+        house_furniture_kit: None,
+        house_key: None,
     }
 }
 
@@ -361,19 +364,19 @@ fn trade_rows_equal_the_registry() {
     for (id, value) in [
         (
             "DUR03-RL-01-NPC-TRADE-BUY",
-            BUY_RL01_TOUCHED_ITEM_INSTANCES_MAX,
+            PACKAGE_RL01_TOUCHED_ITEM_INSTANCES_MAX,
         ),
         (
             "DUR03-RL-02-NPC-TRADE-BUY",
-            BUY_RL02_LOCATION_CUSTODY_LINES_MAX,
+            PACKAGE_RL02_LOCATION_CUSTODY_LINES_MAX,
         ),
         (
             "DUR03-RL-06-NPC-TRADE-BUY-PARTICIPANTS",
-            BUY_RL06_PARTICIPANTS_MAX,
+            PACKAGE_RL06_PARTICIPANTS_MAX,
         ),
         (
             "DUR03-RL-06-NPC-TRADE-BUY-EFFECT-WORK-UNITS",
-            BUY_RL06_EFFECT_WORK_UNITS_MAX,
+            PACKAGE_RL06_EFFECT_WORK_UNITS_MAX,
         ),
         (
             "DUR03-RL-01-NPC-TRADE-SELL",
@@ -539,6 +542,161 @@ fn worst_case_payload_and_envelope_are_the_registered_rows() {
     );
 }
 
+/// Source packages keep real item keys while all admissible revisions, House key and numeric
+/// metadata take their longest encodings. Nineteen one-gold stacks plus a final crystal stack
+/// reach all twenty whole BURNs at every donor package price, with both change denominations.
+fn worst_case_hireling_package(source: &crate::domain::hireling::catalogue::Package) -> OneItemNpcTradeV1 {
+    let long = "r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
+    let mut value = trade(SIDE_BUY, 1, source.gold);
+    let cause = value.cause.as_mut().unwrap();
+    cause.npc_key = crate::durability::house_hireling::npc_key(fixed(60));
+    cause.catalogue_revision = u64::MAX;
+    cause.offer_index = u32::MAX;
+    value.command.as_mut().unwrap().command_id = u64::MAX;
+    value.runtime_scope_ownership_generation = u64::MAX;
+    let prefix = "oteryn:content.house.";
+    value.house_key = Some(format!("{prefix}{}", "h".repeat(512-prefix.len())));
+    value.lines = (0..19).map(|n| burn(LINE_COIN_BURN, 100+n,
+        coin(Coin::Gold, &long), u64::MAX-3-u64::from(n), 1, 0)).collect();
+    let crystals = u32::try_from((source.gold-19).div_ceil(Coin::Crystal.worth())).unwrap();
+    value.lines.push(burn(LINE_COIN_BURN, 119, coin(Coin::Crystal, &long),
+        u64::MAX-22, crystals, 0));
+    value.burned_gold_units = 19 + u64::from(crystals)*Coin::Crystal.worth();
+    value.minted_gold_units = value.burned_gold_units-source.gold;
+    let platinum = u32::try_from(value.minted_gold_units/100).unwrap();
+    let gold = u32::try_from(value.minted_gold_units%100).unwrap();
+    assert!(platinum>0 && gold>0);
+    value.lines.extend([
+        mint_line(LINE_COIN_MINT, 200, coin(Coin::Platinum, &long), u64::MAX-2, platinum),
+        mint_line(LINE_COIN_MINT, 201, coin(Coin::Gold, &long), u64::MAX-1, gold),
+        mint_line(LINE_ITEM_MINT, 202, definition("Item", "oteryn:item.tibia.i2856", &long), u64::MAX, 1),
+    ]);
+    value.hireling_package = Some(OneItemHirelingPackageV1 {
+        hireling_id: uuid(60), name: source.name.into(), present_item_instance_id: uuid(202),
+        children: source.items.iter().enumerate().map(|(n,(item,count))|
+            mint_line(LINE_ITEM_MINT, 210+n as u8,
+                definition("Item", &format!("oteryn:item.tibia.i{item}"), &long), n as u64+1, *count)).collect(),
+    });
+    value
+}
+
+#[test]
+fn hireling_package_resource_and_byte_worst_cases_are_bounded_by_existing_rows() {
+    let mut largest = (0, 0);
+    for source in crate::domain::hireling::catalogue::PACKAGES {
+        let value = worst_case_hireling_package(source);
+        check_npc_trade(&value).unwrap();
+        let usage = npc_trade_usage(&value);
+        assert_eq!((usage.touched_item_instances,usage.location_custody_lines,
+            usage.participants,usage.effect_work_units,usage.container_expansion), (26,26,26,72,3));
+        let payload = OneItemTransactionV1 { interpretation_revision: mint::INTERPRETATION_REVISION,
+            operation: Some(OneItemOperationV1::NpcTrade(value.clone())) }.encoded_len();
+        let build = "b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX);
+        let event = NpcTradeEventIdentity { occurred_at_unix_ms: i64::MAX, server_build_id: &build, ..identity() };
+        let wire = encode_npc_trade_event(event,value.clone(),Type2EventTuple::V2).unwrap();
+        assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, value);
+        assert!(payload<=SELL_ALL_RL07_PAYLOAD_BYTES_MAX);
+        assert!(wire.len()<=SELL_ALL_RL07_ENVELOPE_BYTES_MAX);
+        largest = largest.max((payload,wire.len()));
+        // The only partial BURN may be the final input. Its nonzero remainder adds two
+        // protobuf bytes even though its work/custody usage is lower than a whole BURN.
+        let mut partial = value.clone();
+        let last = &mut partial.lines[19];
+        let consumed = last.before.as_ref().unwrap().quantity;
+        last.before.as_mut().unwrap().quantity = 100;
+        let after = last.after.as_mut().unwrap();
+        after.quantity = 100-consumed;
+        after.lifecycle = ITEM_LIFECYCLE_LIVE;
+        check_npc_trade(&partial).unwrap();
+        assert_eq!(npc_trade_usage(&partial).effect_work_units,71);
+        let partial_payload = OneItemTransactionV1 { interpretation_revision: mint::INTERPRETATION_REVISION,
+            operation: Some(OneItemOperationV1::NpcTrade(partial.clone())) }.encoded_len();
+        let partial_wire = encode_npc_trade_event(event,partial,Type2EventTuple::V2).unwrap();
+        assert_eq!((partial_payload,partial_wire.len()),(payload+2,wire.len()+2));
+        largest = largest.max((partial_payload,partial_wire.len()));
+        let mut over = usage;
+        over.participants += 1;
+        assert_eq!(check_npc_trade_usage(SIDE_BUY,false,true,false,false,&over),Err(AuditError::CapacityExceeded));
+        let mut ordinary = value.clone();
+        ordinary.hireling_package = None;
+        assert_eq!(npc_trade_usage(&ordinary).effect_work_units,66);
+        check_npc_trade(&ordinary).unwrap();
+        let mut extra_child = value;
+        let children = &mut extra_child.hireling_package.as_mut().unwrap().children;
+        children.push(children[0].clone());
+        assert_eq!(check_npc_trade(&extra_child),Err(AuditError::InvalidInput));
+    }
+    // Exact numbers are checked independently of the looser existing SELL_ALL byte ceiling.
+    assert_eq!(largest, (28_386,28_700));
+}
+
+#[test]
+fn furniture_kit_source_metadata_and_worst_case_stay_in_the_existing_buy_rows() {
+    use crate::domain::hireling::catalogue;
+    let long="r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
+    let build="b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX);
+    let event=NpcTradeEventIdentity {occurred_at_unix_ms:i64::MAX,server_build_id:&build,..identity()};
+    let mut largest=(0,0);
+    for (row,source) in catalogue::ROWS.iter().enumerate().filter(|(row,_)|catalogue::wrapped_buy(*row).is_some()) {
+        let mut value=trade(SIDE_BUY,1,source.buy);
+        let cause=value.cause.as_mut().unwrap();
+        cause.npc_key=crate::durability::house_hireling::npc_key(fixed(60));
+        cause.catalogue_revision=u64::MAX;cause.offer_index=u32::MAX;
+        value.command.as_mut().unwrap().command_id=u64::MAX;
+        value.runtime_scope_ownership_generation=u64::MAX;
+        let prefix="oteryn:content.house.";
+        value.house_key=Some(format!("{prefix}{}","h".repeat(512-prefix.len())));
+        value.lines=(0..19).map(|n|burn(LINE_COIN_BURN,100+n,coin(Coin::Gold,&long),
+            u64::MAX-3-u64::from(n),1,0)).collect();
+        value.lines.push(burn(LINE_COIN_BURN,119,coin(Coin::Crystal,&long),u64::MAX-22,1,0));
+        value.burned_gold_units=10_019;value.minted_gold_units=10_019-source.buy;
+        value.lines.extend([
+            mint_line(LINE_COIN_MINT,200,coin(Coin::Platinum,&long),u64::MAX-2,(value.minted_gold_units/100) as u32),
+            mint_line(LINE_COIN_MINT,201,coin(Coin::Gold,&long),u64::MAX-1,(value.minted_gold_units%100) as u32),
+            mint_line(LINE_ITEM_MINT,202,definition("Item","oteryn:item.tibia.i23398","definition-r1"),u64::MAX,1),
+        ]);
+        value.house_furniture_kit=Some(OneItemHouseFurnitureKitV1 {item_instance_id:uuid(202),source_row:row as u32,
+            target:Some(definition("Item",&format!("oteryn:item.tibia.i{}",source.item_id),"definition-r1"))});
+        check_npc_trade(&value).unwrap();
+        let usage=npc_trade_usage(&value);
+        assert_eq!((usage.touched_item_instances,usage.location_custody_lines,usage.participants,usage.effect_work_units),(23,23,23,67));
+        for partial in [false,true] {
+            let mut candidate=value.clone();
+            if partial {
+                candidate.lines[19].before.as_mut().unwrap().quantity=100;
+                let after=candidate.lines[19].after.as_mut().unwrap();
+                after.quantity=99;after.lifecycle=ITEM_LIFECYCLE_LIVE;
+            }
+            let payload=OneItemTransactionV1 {interpretation_revision:mint::INTERPRETATION_REVISION,
+                operation:Some(OneItemOperationV1::NpcTrade(candidate.clone()))}.encoded_len();
+            let encoded=encode_npc_trade_event(event,candidate.clone(),Type2EventTuple::V2).unwrap();
+            assert_eq!(decode_npc_trade_envelope(&encoded).unwrap().1,candidate);
+            assert!(payload<=SELL_ALL_RL07_PAYLOAD_BYTES_MAX && encoded.len()<=SELL_ALL_RL07_ENVELOPE_BYTES_MAX);
+            largest=largest.max((payload,encoded.len()));
+        }
+        let mut forged=value.clone();
+        forged.house_furniture_kit.as_mut().unwrap().target.as_mut().unwrap().production_key="oteryn:item.tibia.i3657".into();
+        assert_eq!(check_npc_trade(&forged),Err(AuditError::InvalidInput));
+        let mut forged=value;
+        forged.house_furniture_kit.as_mut().unwrap().item_instance_id=uuid(203);
+        assert_eq!(check_npc_trade(&forged),Err(AuditError::InvalidInput));
+    }
+    assert_eq!(largest,(26_097,26_411));
+    println!("HIRELING_FURNITURE_KIT_D50 payload={} envelope={}",largest.0,largest.1);
+}
+
+#[test]
+fn virtual_all_loot_row_can_never_audit_a_physical_pouch_sale() {
+    let mut value=trade(SIDE_SELL,1,1);
+    value.cause.as_mut().unwrap().npc_key=crate::durability::house_hireling::npc_key(fixed(60));
+    value.house_key=Some("oteryn:content.house.admiral_s_avenue_1".into());
+    value.lines=vec![burn(LINE_ITEM_BURN,30,definition("Item","oteryn:item.tibia.i23721","definition-r1"),1,1,0),
+        mint_line(LINE_COIN_MINT,31,coin(Coin::Gold,"definition-r1"),2,1)];
+    value.minted_gold_units=1;
+    assert!(!sell_hireling::audit_source(&value));
+    assert_eq!(check_npc_trade(&value),Err(AuditError::InvalidInput));
+}
+
 #[test]
 fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
     let mut value = trade(SIDE_BUY, 1, 250);
@@ -560,7 +718,7 @@ fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
     let mut over_value_lines = npc_trade_usage(&value);
     over_value_lines.value_lines = 2;
     assert_eq!(
-        check_npc_trade_usage(SIDE_BUY, false, &over_value_lines),
+        check_npc_trade_usage(SIDE_BUY, false, false, false, false, &over_value_lines),
         Err(AuditError::InvalidInput)
     );
     // Prost accepts a repeated singular message by merging it. The canonical native gate

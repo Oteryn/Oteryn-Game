@@ -27,12 +27,23 @@ use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1};
 use crate::domain::currency::{COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin, FEE_INPUTS_MAX};
 use prost::Message;
 use sha2::{Digest, Sha256};
+use super::npc_trade::sell_hireling;
+mod hireling;
+pub use hireling::{OneItemHirelingPackageV1, OneItemHouseFurnitureKitV1};
 
 /// BUY rows (NPC-0 §5.5): 20 coin BURN lines, 2 change MINTs and the item MINT.
 pub const BUY_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 23;
 pub const BUY_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 23;
 pub const BUY_RL06_PARTICIPANTS_MAX: u64 = 23;
 pub const BUY_RL06_EFFECT_WORK_UNITS_MAX: u64 = 66;
+/// The same BUY rows additionally admit the closed Hireling present with exactly three children.
+/// Ordinary BUY keeps the original shape above; these are the registered overall maxima.
+/// A source furniture kit adds one immutable origin write (23 participants /67 work units),
+/// within the same rows, without admitting package children or another item owner.
+pub const PACKAGE_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = BUY_RL01_TOUCHED_ITEM_INSTANCES_MAX + 3;
+pub const PACKAGE_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = BUY_RL02_LOCATION_CUSTODY_LINES_MAX + 3;
+pub const PACKAGE_RL06_PARTICIPANTS_MAX: u64 = BUY_RL06_PARTICIPANTS_MAX + 3;
+pub const PACKAGE_RL06_EFFECT_WORK_UNITS_MAX: u64 = BUY_RL06_EFFECT_WORK_UNITS_MAX + 6;
 /// SELL rows (NPC-0 §5.5): the item BURN and 3 coin MINTs.
 pub const SELL_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 4;
 pub const SELL_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 4;
@@ -54,7 +65,8 @@ pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 27_408;
 /// 0101, 34,816 B) and the payload that ceiling less the measured envelope overhead (314 B). The
 /// measured worst case (20 whole item burns and 3 coin MINTs, every key and revision at 512 bytes)
 /// is 51,075 / 51,389 B and is refused fail closed (`CapacityExceeded`, nothing written); only a
-/// `sell_all` trade may exceed the trade rows above.
+/// sell-all or admitted named-House trade may use this existing byte resource group. The exact
+/// encoded bytes still fail closed at this ceiling, including packages and House attribution.
 pub const SELL_ALL_RL07_PAYLOAD_BYTES_MAX: usize = 34_502;
 pub const SELL_ALL_RL07_ENVELOPE_BYTES_MAX: usize = 34_816;
 /// The measured worst-case sell-all, above the rows.
@@ -145,6 +157,14 @@ pub struct OneItemNpcTradeV1 {
     /// NPC-TRADE-SELLALL-1: a SELL of every eligible stack; `quantity` is the units sold.
     #[prost(bool, tag = "15")]
     pub sell_all: bool,
+    #[prost(message, optional, tag = "16")]
+    pub hireling_package: Option<OneItemHirelingPackageV1>,
+    /// Hireling only: actual named House; channel_id is its origin attribution.
+    #[prost(string, optional, tag = "17")]
+    pub house_key: Option<String>,
+    /// The original source target carried by this newly minted decoration kit.
+    #[prost(message, optional, tag = "18")]
+    pub house_furniture_kit: Option<OneItemHouseFurnitureKitV1>,
 }
 
 /// Resource usage of one trade: each line is a participant; a whole burn adds its location
@@ -158,19 +178,21 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
         .filter(burn)
         .filter(|line| line.after.as_ref().is_some_and(|after| after.quantity == 0))
         .count() as u64;
+    let children=value.hireling_package.as_ref().map_or(0,|package|package.children.len() as u64);
     let count = value.lines.len() as u64;
     let minted = count - burns;
     TransactionResourceUsage {
-        touched_item_instances: count,
-        location_custody_lines: whole + minted,
+        touched_item_instances: count + children,
+        location_custody_lines: whole + minted + children,
         value_lines: u64::from(value.bank_debit.is_some()),
         transform_lines: 0,
-        container_expansion: 0,
-        participants: count + u64::from(value.bank_debit.is_some()),
+        container_expansion: children,
+        participants: count + children + u64::from(value.bank_debit.is_some()),
         effect_work_units: 3 * whole
             + 2 * (burns - whole)
             + 2 * minted
-            + 2 * u64::from(value.bank_debit.is_some()),
+            + 2 * u64::from(value.bank_debit.is_some()) + 2 * children
+            + u64::from(value.house_furniture_kit.is_some()),
         events: 1,
     }
 }
@@ -178,9 +200,19 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
 fn check_npc_trade_usage(
     side: u32,
     sell_all: bool,
+    package: bool,
+    kit: bool,
+    hireling_sell: bool,
     usage: &TransactionResourceUsage,
 ) -> Result<(), AuditError> {
-    let (touched, custody, participants, work) = if sell_all {
+    let (touched, custody, participants, work) = if package || kit {
+        (
+            PACKAGE_RL01_TOUCHED_ITEM_INSTANCES_MAX,
+            PACKAGE_RL02_LOCATION_CUSTODY_LINES_MAX,
+            PACKAGE_RL06_PARTICIPANTS_MAX,
+            PACKAGE_RL06_EFFECT_WORK_UNITS_MAX,
+        )
+    } else if sell_all || hireling_sell {
         (
             SELL_ALL_RL01_TOUCHED_ITEM_INSTANCES_MAX,
             SELL_ALL_RL02_LOCATION_CUSTODY_LINES_MAX,
@@ -202,9 +234,10 @@ fn check_npc_trade_usage(
             SELL_RL06_EFFECT_WORK_UNITS_MAX,
         )
     };
+    let extra = if package {3} else {0};
     if usage.value_lines > u64::from(side == SIDE_BUY)
         || usage.transform_lines != 0
-        || usage.container_expansion != 0
+        || usage.container_expansion != extra
     {
         return Err(AuditError::InvalidInput);
     }
@@ -300,7 +333,14 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
     check_uuid_v7(&value.backpack_item_instance_id)?;
+    match (super::house_hireling::npc_identity(&cause.npc_key),value.house_key.as_deref()) {
+        (Some(id),Some(house)) if super::house_hireling::audit::valid(&value.world_id,house)=>check_uuid_v7(&id)?,
+        (None,None)=>{},
+        _=>return Err(AuditError::InvalidInput),
+    }
     let side = cause.side;
+    let hireling_sell=sell_hireling::audit_source(value);
+    if side==SIDE_SELL && value.house_key.is_some() && !hireling_sell {return Err(AuditError::InvalidInput); }
     let (burn_kind, mint_kinds, total_max) = match side {
         SIDE_BUY => (
             LINE_COIN_BURN,
@@ -310,7 +350,7 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         SIDE_SELL => (
             LINE_ITEM_BURN,
             [LINE_COIN_MINT, LINE_COIN_MINT],
-            NPC_TRADE_SELL_GOLD_UNITS_MAX,
+            if hireling_sell {sell_hireling::MAX_GOLD} else {NPC_TRADE_SELL_GOLD_UNITS_MAX},
         ),
         _ => return Err(AuditError::InvalidInput),
     };
@@ -463,6 +503,8 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
             return Err(AuditError::InvalidInput);
         }
         buy_change_coins(change.unwrap_or(0))
+    } else if hireling_sell {
+        sell_hireling::coins(value.total_gold_units).ok_or(AuditError::InvalidInput)?
     } else {
         sell_coins(value.total_gold_units).ok_or(AuditError::InvalidInput)?
     };
@@ -483,7 +525,9 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
             return Err(AuditError::InvalidInput);
         }
     }
-    check_npc_trade_usage(side, sell_all, &npc_trade_usage(value))
+    hireling::check_package(value)?;
+    hireling::check_kit(value)?;
+    check_npc_trade_usage(side, sell_all, value.hireling_package.is_some(), value.house_furniture_kit.is_some(), hireling_sell, &npc_trade_usage(value))
 }
 
 /// The RL-07 rows of a trade: a sell-all has its own.
@@ -534,7 +578,7 @@ fn decode_npc_trade_payload_within(wire: &[u8]) -> Result<OneItemNpcTradeV1, Aud
     let Some(OneItemOperationV1::NpcTrade(trade)) = value.operation else {
         return Err(AuditError::InvalidInput);
     };
-    if wire.len() > rl07_bounds(trade.sell_all).0 {
+    if wire.len() > rl07_bounds(trade.sell_all || trade.hireling_package.is_some() || trade.house_key.is_some()).0 {
         return Err(AuditError::CapacityExceeded);
     }
     check_npc_trade(&trade)?;
@@ -557,7 +601,7 @@ fn decode_npc_trade_envelope_within(
 ) -> Result<(EventEnvelopeV1, OneItemNpcTradeV1), AuditError> {
     let value = mint::decode_common_envelope_within(wire, SELL_ALL_RL07_ENVELOPE_BYTES_MAX)?;
     let trade = decode_npc_trade_payload(&value.payload)?;
-    if wire.len() > rl07_bounds(trade.sell_all).1 {
+    if wire.len() > rl07_bounds(trade.sell_all || trade.hireling_package.is_some() || trade.house_key.is_some()).1 {
         return Err(AuditError::CapacityExceeded);
     }
     let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
@@ -604,7 +648,7 @@ pub fn encode_npc_trade_event(
         return Err(AuditError::InvalidInput);
     }
     let (world_id, channel_id) = (trade.world_id.clone(), trade.channel_id.clone());
-    let (payload_max, envelope_max) = rl07_bounds(trade.sell_all);
+    let (payload_max, envelope_max) = rl07_bounds(trade.sell_all || trade.hireling_package.is_some() || trade.house_key.is_some());
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,

@@ -2,8 +2,8 @@
 //!
 //! It is the projection of the validated v2 behaviour authoring (`ProjectV2BehaviorAuthoring`)
 //! onto what the think consumes: `targeting` (all fields), `movement.wander`, `attacks[]` and
-//! `defenses[]`, with the Ability profiles those entries name. `summons`, `voices`, periodic
-//! audio and event bindings are not projected (MONSTER-SUMMON-1 and later decisions). The carrier
+//! `defenses[]`, with the Ability profiles those entries name. Native projection also retains
+//! summons and event bindings; voices and periodic audio remain with their existing owners. The carrier
 //! holds one per creature, given at admission; a creature without one is refused
 //! (`PROFILE_MISSING`) and never defaulted. This module holds no profile literal: every value
 //! arrives from content (or, until SPAWN-1a, from test data).
@@ -15,7 +15,9 @@ use std::collections::BTreeMap;
 
 mod summon_projection;
 
-use crate::ai_think::profile_schedule::{MAX_ATTACK_ENTRIES, MAX_DEFENCE_ENTRIES, validate_entry};
+use crate::ai_think::profile_schedule::{
+    MAX_ATTACK_ENTRIES, MAX_DEFENCE_ENTRIES, ScheduleError, validate_entry,
+};
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2AbilityKind, ProjectV2BehaviorAuthoring,
     ProjectV2DefinitionRef, ProjectV2Targeting, ProjectV2Wander,
@@ -52,6 +54,7 @@ pub struct CreatureBehaviourProfile {
     behavior: ProjectV2BehaviorAuthoring,
     abilities: BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
     melee: Option<MeleeEntry>,
+    native: bool,
 }
 
 impl CreatureBehaviourProfile {
@@ -60,6 +63,23 @@ impl CreatureBehaviourProfile {
     pub fn project(
         behavior: Option<&ProjectV2BehaviorAuthoring>,
         abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+    ) -> Result<Self, ProfileRefusal> {
+        Self::project_mode(behavior, abilities, false)
+    }
+
+    /// Native source arrays retain unresolved callback entries and their original indices.
+    /// A missing executable body cannot disable another entry whose body is qualified.
+    pub(crate) fn project_native(
+        behavior: Option<&ProjectV2BehaviorAuthoring>,
+        abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+    ) -> Result<Self, ProfileRefusal> {
+        Self::project_mode(behavior, abilities, true)?.with_summons(behavior)
+    }
+
+    fn project_mode(
+        behavior: Option<&ProjectV2BehaviorAuthoring>,
+        abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+        native: bool,
     ) -> Result<Self, ProfileRefusal> {
         let behavior = behavior.ok_or(ProfileRefusal::Missing)?;
         if behavior.attacks.len() > MAX_ATTACK_ENTRIES
@@ -70,27 +90,40 @@ impl CreatureBehaviourProfile {
         let mut melee = None;
         let mut projected_abilities = BTreeMap::new();
         for (index, entry) in behavior.attacks.iter().enumerate() {
-            let details = validate_entry(entry, abilities).map_err(|_| ProfileRefusal::Invalid)?;
+            let details = match validate_entry(entry, abilities) {
+                Ok(details) => details,
+                Err(ScheduleError::MissingAbilityProfile) if native => continue,
+                Err(_) => return Err(ProfileRefusal::Invalid),
+            };
             if details.kind == ProjectV2AbilityKind::Melee {
-                let magnitude = entry.magnitude.ok_or(ProfileRefusal::Invalid)?;
-                if melee.is_some() || magnitude.maximum == 0 {
+                if !native && (melee.is_some() || entry.magnitude.is_none_or(|m| m.maximum == 0)) {
                     return Err(ProfileRefusal::Invalid);
                 }
-                melee = Some(MeleeEntry {
-                    index: u16::try_from(index).map_err(|_| ProfileRefusal::Invalid)?,
-                    interval_ms: entry.interval_ms,
-                    chance_ppm: entry.chance_ppm,
-                    minimum: magnitude.minimum,
-                    maximum: magnitude.maximum,
-                });
+                // Native melee execution reads every source entry through AutoAttackOwner;
+                // this legacy accessor describes only the first explicit magnitude.
+                if melee.is_none()
+                    && let Some(magnitude) = entry.magnitude
+                {
+                    melee = Some(MeleeEntry {
+                        index: u16::try_from(index).map_err(|_| ProfileRefusal::Invalid)?,
+                        interval_ms: entry.interval_ms,
+                        chance_ppm: entry.chance_ppm,
+                        minimum: magnitude.minimum,
+                        maximum: magnitude.maximum,
+                    });
+                }
             }
             if let Some(ability) = abilities.get(&entry.ability) {
                 projected_abilities.insert(entry.ability.clone(), ability.clone());
             }
         }
         for entry in &behavior.defenses {
-            let details = validate_entry(entry, abilities).map_err(|_| ProfileRefusal::Invalid)?;
-            if details.kind == ProjectV2AbilityKind::Melee {
+            let details = match validate_entry(entry, abilities) {
+                Ok(details) => details,
+                Err(ScheduleError::MissingAbilityProfile) if native => continue,
+                Err(_) => return Err(ProfileRefusal::Invalid),
+            };
+            if !native && details.kind == ProjectV2AbilityKind::Melee {
                 return Err(ProfileRefusal::Invalid);
             }
             if let Some(ability) = abilities.get(&entry.ability) {
@@ -102,12 +135,20 @@ impl CreatureBehaviourProfile {
         projected.summons = None;
         projected.periodic_audio = None;
         projected.faction = None;
-        projected.event_bindings = Vec::new();
+        if !native {
+            projected.event_bindings.clear();
+        }
         Ok(Self {
             behavior: projected,
             abilities: projected_abilities,
             melee,
+            native,
         })
+    }
+
+    #[must_use]
+    pub const fn is_native(&self) -> bool {
+        self.native
     }
 
     #[must_use]

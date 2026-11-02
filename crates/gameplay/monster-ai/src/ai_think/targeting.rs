@@ -11,7 +11,7 @@
 
 use crate::ai::ResourceLimit;
 use crate::content::{ProjectV2StrategyWeights, ProjectV2Targeting};
-use crate::foundation::{ExactActorRef, MovementLocalPosition};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 
 /// One player the owner offers to a think. `eligible` folds the owner's facts of §2.1 item 3
@@ -166,4 +166,80 @@ pub fn select(
         }
     };
     chosen.map(|(_, _, candidate)| candidate.actor)
+}
+
+/// Crystal monster.cpp:771-789 uses a fixed percentile draw; any remainder is random.
+/// Unlike normalized legacy weights, an explicit all-zero native block therefore is random.
+#[must_use]
+pub fn pick_native_strategy(weights: Option<ProjectV2StrategyWeights>, draw: u64) -> Strategy {
+    let Some(weights) = weights else {
+        return Strategy::Nearest;
+    };
+    let point = draw % 100;
+    let nearest = u64::from(weights.nearest);
+    let health = nearest + u64::from(weights.health);
+    let damage = health + u64::from(weights.damage);
+    if point < nearest {
+        Strategy::Nearest
+    } else if point < health {
+        Strategy::LowestHealth
+    } else if point < damage {
+        Strategy::MostDamage
+    } else {
+        Strategy::Random
+    }
+}
+
+/// Crystal monster.cpp:876-895 starts the damage comparison at the second candidate.
+/// Preserve that source behavior: the first remains the fallback, but its damage is not
+/// considered when a later candidate has a positive contribution.
+#[must_use]
+pub fn select_native(
+    strategy: Strategy,
+    creature: MovementLocalPosition,
+    eligible: &[TargetCandidate],
+    random_draw: u64,
+) -> Option<ExactActorRef> {
+    if strategy != Strategy::MostDamage {
+        return select(strategy, creature, eligible, random_draw);
+    }
+    let mut chosen = eligible.first()?;
+    let mut most_damage = 0;
+    for candidate in eligible.iter().skip(1) {
+        if candidate.damage > most_damage {
+            chosen = candidate;
+            most_damage = candidate.damage;
+        }
+    }
+    Some(chosen.actor)
+}
+
+/// Native damage strategy reads the existing exact-creature contribution owner. A session
+/// or character lease that no longer binds the perceived actor never transfers its damage.
+pub(super) fn with_current_damage(
+    runtime: &mut ChannelRuntimeV1,
+    creature: ExactActorRef,
+    position: MovementLocalPosition,
+    players: &[TargetCandidate],
+) -> Option<Vec<TargetCandidate>> {
+    let shares = runtime
+        .borrow_combat_death()
+        .current_session_damage_shares(creature)
+        .ok()?;
+    let mut perceived = perceive(position, players);
+    for candidate in &mut perceived {
+        candidate.damage = shares
+            .iter()
+            .find_map(|share| {
+                let session = share.session?;
+                let lease = runtime
+                    .bound_attacker_lease(candidate.actor, session)
+                    .ok()?;
+                (lease.character_id() == share.character
+                    && Some(lease.generation()) == share.lease_generation)
+                    .then_some(share.total)
+            })
+            .unwrap_or(0);
+    }
+    Some(perceived)
 }

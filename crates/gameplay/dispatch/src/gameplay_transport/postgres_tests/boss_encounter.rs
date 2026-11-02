@@ -30,7 +30,7 @@ async fn exchange(
     exchange_kind(owner, admitted, id, COMMAND_TYPE_BOSS_COOLDOWNS, payload).await
 }
 
-async fn exchange_kind(
+pub(super) async fn exchange_kind(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

@@ -118,6 +118,7 @@ pub mod boss_reward;
 mod contents;
 mod grizzly;
 mod monk;
+mod soul_war;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;

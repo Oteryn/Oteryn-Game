@@ -1070,8 +1070,9 @@ fn validate_session_claims(
         || lease.character_id() != commit.character_id()
         || lease.generation() < commit.character_lease_generation()
         || snapshot.current_connection_generation().get() < commit.connection_generation().get()
-        || (snapshot.current_runtime_scope()
-            == RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id())
+        || ((snapshot.current_game_session_id() == commit.game_session_id()
+            || snapshot.current_runtime_scope()
+                == RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()))
             && snapshot.current_scope_generation().get() < commit.scope_ownership_generation())
         || snapshot.current_runtime_scope().world_id() != commit.world_id()
         || !matches!(
@@ -1637,6 +1638,229 @@ impl AdmissionAuthorityPublicationFlowV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct ReleaseOwner {
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        evidence: AdmissionClaimTransitionEvidenceV1,
+    }
+    impl fresh_source_sealed::Sealed for ReleaseOwner {}
+    impl AdmissionClaimOwningSourceV1 for ReleaseOwner {
+        fn prepare_fresh_claim(
+            &self,
+            _: &super::super::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+            _: i64,
+        ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>
+        {
+            Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+        }
+        fn prepare_lifecycle_claim(
+            &self,
+            operation: &AdmissionClaimLifecycleOperationV1,
+            _: i64,
+        ) -> Result<AdmissionClaimLifecycleResolutionV1, AdmissionAuthorityPublicationErrorV1>
+        {
+            if operation.current_session() != self.current {
+                return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+            }
+            Ok(AdmissionClaimLifecycleResolutionV1 {
+                current_session: self.current,
+                evidence: self.evidence.clone(),
+            })
+        }
+    }
+
+    fn release_owner(
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        predecessors: Vec<AdmissionAuthorityPublicationChangeV1>,
+    ) -> ReleaseOwner {
+        let mut successors = predecessors.clone();
+        for next in &mut successors {
+            next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: next.publication_revision,
+            };
+            next.publication_revision += 1;
+            next.source.source_revision += 1;
+            next.source.decision_identity = "terminal-release".into();
+            next.source.source_observed_at = 100;
+            match &mut next.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, security } => {
+                    *presence = None;
+                    security.provenance.publication_revision = next.publication_revision;
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = None,
+                _ => unreachable!(),
+            }
+        }
+        ReleaseOwner {
+            current,
+            evidence: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: 100,
+            },
+        }
+    }
+
+    #[test]
+    fn transferred_claim_release_orders_generations_only_within_the_proven_scope()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        use super::super::{
+            ChannelId, CharacterLease, CharacterWorldEligibilityClaimV1, ConnectionGeneration,
+            FreshAdmissionCommit, FreshAdmissionFacts, ScopeOwnershipGeneration,
+        };
+        use AdmissionAuthorityPublicationErrorV1::Invalid;
+        let id = |last| {
+            let mut bytes = [0; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            bytes
+        };
+        let source = GameSessionId::decode(&id(10)).map_err(|_| Invalid)?;
+        let destination = GameSessionId::decode(&id(11)).map_err(|_| Invalid)?;
+        let mut account = Owner.resolve_publication(100)?.remove(0);
+        let mut character = game_domain_changes()?.remove(0);
+        let (character_id, world) = match (&character.key, &character.state) {
+            (
+                AdmissionAuthorityGuardKeyV1::Character(id),
+                AdmissionAuthorityGuardStateV1::Character { world_id, .. },
+            ) => (*id, *world_id),
+            _ => unreachable!(),
+        };
+        let account_id = match &account.key {
+            AdmissionAuthorityGuardKeyV1::Account { account_id } => account_id.clone(),
+            _ => unreachable!(),
+        };
+        if let AdmissionAuthorityGuardStateV1::Account { presence, .. } = &mut account.state {
+            *presence = Some((character_id, source));
+        }
+        if let AdmissionAuthorityGuardStateV1::Character { holder, .. } = &mut character.state {
+            *holder = Some(source);
+        }
+        let original_claims = vec![account, character];
+        let mut proposed = original_claims.clone();
+        for next in &mut proposed {
+            next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: next.publication_revision,
+            };
+            next.publication_revision += 1;
+            next.source.source_revision += 1;
+            next.source.decision_identity = "house-transfer".into();
+            match &mut next.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, security } => {
+                    *presence = Some((character_id, destination));
+                    security.provenance.publication_revision = next.publication_revision;
+                }
+                AdmissionAuthorityGuardStateV1::Character {
+                    holder,
+                    lease_generation,
+                    ..
+                } => {
+                    *holder = Some(destination);
+                    *lease_generation += 1;
+                }
+                _ => unreachable!(),
+            }
+        }
+        let original_rows = original_claims
+            .iter()
+            .cloned()
+            .map(Some)
+            .collect::<Vec<_>>();
+        let transfer = AdmissionAuthorityPublicationV1::prepare_house_transfer(
+            &ChangedOwner(proposed),
+            &original_rows,
+            character_id,
+            (source, destination),
+            100,
+        )?;
+        let claims = transfer.changes().to_vec();
+        let channel = ChannelId::decode(&id(12)).map_err(|_| Invalid)?;
+        let transport = AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(|_| Invalid)?;
+        let commit = FreshAdmissionCommit::from_facts(
+            source,
+            FreshAdmissionFacts::new([3; 32], character_id, world, channel, 2, 3)
+                .map_err(|_| Invalid)?,
+            transport,
+        )
+        .map_err(|_| Invalid)?;
+        let house = RuntimeScopeRefV1::instance(world, id(13)).map_err(|_| Invalid)?;
+        let current = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            destination,
+            commit,
+            GameSessionState::Active,
+            ConnectionGeneration::new(1).map_err(|_| Invalid)?,
+            Some(transport),
+            CharacterLease::new(character_id, 3).map_err(|_| Invalid)?,
+            Some(CharacterWorldEligibilityClaimV1::new(character_id, world)),
+            house,
+            ScopeOwnershipGeneration::new(1).map_err(|_| Invalid)?,
+        )
+        .map_err(|_| Invalid)?;
+        let owner = release_owner(current, claims.clone());
+        let release = TerminalReleaseClaimTransitionV1::prepare(&owner, &account_id, current, 100)?;
+        let rows = claims.iter().cloned().map(Some).collect::<Vec<_>>();
+        release.validate_locked(&rows, current, 100)?;
+        assert_eq!(
+            release.evidence().operation.current_session().commit(),
+            commit
+        );
+        assert_eq!(
+            release
+                .evidence()
+                .operation
+                .current_session()
+                .current_game_session_id(),
+            destination
+        );
+        assert!(
+            release
+                .validate_locked(&original_rows, current, 100)
+                .is_err(),
+            "origin claims do not authorize releasing the transferred session"
+        );
+        let mut missing = rows.clone();
+        missing[1] = None;
+        assert!(release.validate_locked(&missing, current, 100).is_err());
+
+        // Changing only a scope label is not a persisted transfer. A real new
+        // identity also cannot roll back the generation of its original scope.
+        let same_id = GameSessionAuthoritySnapshot::from_current_facts(
+            commit,
+            GameSessionState::Active,
+            current.current_connection_generation(),
+            Some(transport),
+            CharacterLease::new(character_id, 2).map_err(|_| Invalid)?,
+            current.current_character_world_eligibility(),
+            house,
+            current.current_scope_generation(),
+        )
+        .map_err(|_| Invalid)?;
+        let same_scope = current
+            .with_current_runtime_scope(RuntimeScopeRefV1::channel(world, channel))
+            .map_err(|_| Invalid)?;
+        for (label, candidate, candidate_claims) in [
+            (
+                "same identity with an unproven foreign scope",
+                same_id,
+                original_claims,
+            ),
+            ("lower generation in the same Channel", same_scope, claims),
+        ] {
+            let changed = release_owner(candidate, candidate_claims);
+            assert!(
+                TerminalReleaseClaimTransitionV1::prepare(&changed, &account_id, candidate, 100)
+                    .is_err(),
+                "{label}"
+            );
+            assert!(
+                release.validate_locked(&rows, candidate, 100).is_err(),
+                "{label}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn house_transfer_claims_require_exact_source_next_lease_and_unchanged_ownership()
     -> Result<(), AdmissionAuthorityPublicationErrorV1> {

@@ -315,6 +315,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     if let Some(outcome) = super::grizzly::resume(admission, actor, command).await {
         return Some(outcome);
     }
+    if let Some(outcome) = super::endgame::resume(admission, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::monk::resume(admission, command).await {
         return Some(outcome);
     }

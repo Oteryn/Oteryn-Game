@@ -49,8 +49,8 @@ pub const BANK_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 22;
 /// `DUR03-RL-03-BANK`: 1, or 2 for a transfer.
 pub const BANK_RL03_VALUE_LINES_MAX: u64 = 2;
 /// Measured worst case of this schema (the `worst_case_*` test), D50 method.
-pub const BANK_RL07_PAYLOAD_BYTES_MAX: usize = 25_419;
-pub const BANK_RL07_ENVELOPE_BYTES_MAX: usize = 25_719;
+pub const BANK_RL07_PAYLOAD_BYTES_MAX: usize = 25_955;
+pub const BANK_RL07_ENVELOPE_BYTES_MAX: usize = 26_255;
 // Inherited ANL-01 envelope string ceiling.
 const ANL_ENVELOPE_STRING_MAX: usize = 128;
 
@@ -161,6 +161,15 @@ pub struct BankOperationCauseV1 {
     pub cause: Option<BankCauseV1>,
 }
 
+/// The actual named House of a Hireling service. The envelope Channel is only origin provenance.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct BankHirelingHouseV1 {
+    #[prost(string, tag = "1")]
+    pub house_key: String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub hireling_id: Vec<u8>,
+}
+
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct BankOperationV1 {
     #[prost(uint32, tag = "1")]
@@ -188,6 +197,8 @@ pub struct BankOperationV1 {
     /// The recipient of a transfer; empty otherwise.
     #[prost(bytes = "vec", tag = "11")]
     pub recipient_character_id: Vec<u8>,
+    #[prost(message, optional, tag = "12")]
+    pub hireling_house: Option<BankHirelingHouseV1>,
 }
 
 /// The coin of a line state: one of the closed worth table's definitions.
@@ -406,6 +417,11 @@ pub fn check_bank_operation(value: &BankOperationV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.acting_character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
+    if let Some(house) = &value.hireling_house {
+        check_uuid_v7(&house.hireling_id)?;
+        let world = crate::foundation::WorldId::decode(&value.world_id).map_err(|_|AuditError::InvalidInput)?;
+        super::house_scope_handoff::HouseId::new(world,&house.house_key).ok_or(AuditError::InvalidInput)?;
+    }
     if value.runtime_scope_ownership_generation == 0 {
         return Err(AuditError::InvalidInput);
     }
@@ -641,6 +657,7 @@ mod tests {
             coin_lines: Vec::new(),
             value_lines: Vec::new(),
             recipient_character_id: Vec::new(),
+            hireling_house: None,
         }
     }
 
@@ -946,6 +963,8 @@ mod tests {
             }),
             amount,
         );
+        // Named-House extension: 515-byte House key field +18-byte identity +3-byte wrapper.
+        value_.hireling_house = Some(BankHirelingHouseV1 {house_key:format!("oteryn:content.house.{}","h".repeat(512-"oteryn:content.house.".len())),hireling_id:uuid(72)});
         value_.runtime_scope_ownership_generation = u64::MAX;
         value_.backpack_item_instance_id = uuid(50);
         value_.coin_lines = lines;
@@ -963,6 +982,23 @@ mod tests {
     // Within the ANL-01 ceilings (payload 196,608 B, envelope 262,144 B).
     const _: () = assert!(BANK_RL07_PAYLOAD_BYTES_MAX <= 196_608);
     const _: () = assert!(BANK_RL07_ENVELOPE_BYTES_MAX <= 262_144);
+
+    #[test]
+    fn hireling_house_scope_is_explicit_and_closed() {
+        let old = deposit();
+        let old_bytes = old.encode_to_vec();
+        assert_eq!(BankOperationV1::decode(old_bytes.as_slice()).unwrap().hireling_house,None);
+        let mut value = old.clone();
+        value.hireling_house = Some(BankHirelingHouseV1 {house_key:"oteryn:content.house.fixture".into(),hireling_id:uuid(72)});
+        assert!(check_bank_operation(&value).is_ok());
+        let bytes = encode_bank_event(identity(),value.clone()).unwrap();
+        assert_eq!(decode_bank_envelope(&bytes).unwrap().1,value);
+        value.hireling_house.as_mut().unwrap().house_key.clear();
+        assert!(check_bank_operation(&value).is_err());
+        value.hireling_house = Some(BankHirelingHouseV1 {house_key:"oteryn:content.house.fixture".into(),hireling_id:vec![0;16]});
+        assert!(check_bank_operation(&value).is_err());
+        assert_eq!(old.encode_to_vec(),old_bytes);
+    }
 
     #[test]
     fn worst_case_payload_and_envelope_are_the_registered_rows() {

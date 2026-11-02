@@ -130,6 +130,7 @@ mod tests {
             let mut vitals = PlayerBiteVitals {
                 quest_sessions: Some(&sessions),
                 charm: None,
+                conditions: None,
                 states: &mut states,
                 attack: &mut attack,
                 formula: None,

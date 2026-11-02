@@ -63,7 +63,7 @@ def apply_native(root, generated, encode):
             row = by_key[key]
             record["source_qualification"] = row["qualification"]
             if key in {"oteryn:creature.radiant_acolyte", "oteryn:creature.radiant_paragon",
-                       "oteryn:creature.radiant_templar"}:
+                       "oteryn:creature.radiant_templar", "oteryn:creature.phosphorus_final"}:
                 record["attack_definitions"] = attack_definitions(root, record)
             if "attacks" in row:
                 melee = [(index, attack["fields"]) for index, attack in
@@ -110,6 +110,17 @@ def apply_native(root, generated, encode):
                     "Scalable encounter difficulty is owned by BOSSENC-1; "
                     "these base values do not implement difficulty scaling."
                 )
+                if "/bosses/" in source["path"]:
+                    record["source_qualification"] += (
+                        " W16_ADMISSION_AND_PHASE_SOURCE_MISSING: admission anchors, party gates, "
+                        "cooldowns and normal-to-final transitions are unavailable."
+                    )
+                if key == "oteryn:creature.phosphorus_final":
+                    # The closure keeps decision 22's active HP/XP projection, rather than
+                    # reviving the definition's pre-override final-form XP (Crystal final.lua:5).
+                    for profile in record["attack_definitions"]["profiles"]:
+                        if profile["target"] == record["profile"]["target"]:
+                            profile["data"] = copy.deepcopy(record["profile"]["data"])
             seen.add(key)
     if seen != set(by_key):
         raise ValueError("Summer source qualification names a missing runtime Creature")

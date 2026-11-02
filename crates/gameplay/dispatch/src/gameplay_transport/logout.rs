@@ -61,6 +61,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &mut crate::foundation::ChannelRuntimeV1,
         actor: ExactActorRef,
     ) -> Option<bool> {
+        if let Some((_, house)) = runtime.house_observer(actor).ok()? {
+            return self
+                .logout_zones_for_cell(
+                    runtime,
+                    crate::content::LogicalCell {
+                        x: house.position.x,
+                        y: house.position.y,
+                        z: i32::from(house.position.floor),
+                    },
+                )
+                .map(|zones| zones.no_logout);
+        }
         match self.movement_cells.index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_) => {
                 let at = super::bundle_map_position(runtime, self.movement_cells, actor)?;
@@ -162,22 +174,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ),
             });
         }
+        let position = if let Some((_, house)) = runtime.house_observer(actor).ok()? {
+            crate::foundation::MovementLocalPosition {
+                x: house.position.x,
+                y: house.position.y,
+                floor: house.position.floor,
+            }
+        } else {
+            let position = runtime.borrow_movement_position().read(actor).ok()?;
+            if position.context() != runtime.pinned_movement_context() {
+                return None;
+            }
+            position.position()
+        };
+        let cell = crate::content::LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        };
+        self.logout_zones_for_cell(&runtime, cell)
+    }
+
+    fn logout_zones_for_cell(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        cell: crate::content::LogicalCell,
+    ) -> Option<LogoutZones> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         let scope = self.movement_cells.scope();
         if scope.world_id != runtime.binding().world_id()
             || scope.world_id != runtime.content_pin().world_id()
         {
             return None;
         }
-        let position = runtime.borrow_movement_position().read(actor).ok()?;
-        if position.context() != runtime.pinned_movement_context() {
-            return None;
-        }
-        let position = position.position();
-        let cell = crate::content::LogicalCell {
-            x: position.x,
-            y: position.y,
-            z: i32::from(position.floor),
-        };
         match self.movement_cells.index() {
             NativeMovementCollisionIndex::Bundle(index) => {
                 use crate::map::boot::BundleCollisionIndexExt;
@@ -323,12 +352,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .kills()
             .discard_gone(session, None);
         // Another release of the session already removed the slot.
-        let gone = self
-            .runtime
-            .lock()
-            .await
-            .player_control_facts(actor, session)
-            .is_err();
+        let gone = {
+            let runtime = self.runtime.lock().await;
+            runtime.house_actor_state(actor, session).is_err()
+                && runtime.player_control_facts(actor, session).is_err()
+        };
         if gone {
             self.release_premium(controller.account_id, session);
             // This already-gone path only forgot fences; keep broader retirement cleanup separate.

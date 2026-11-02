@@ -1,6 +1,7 @@
 """Replay old165 import bytes explicitly; independently guard current Forge3332."""
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -67,7 +68,13 @@ def hardlink_tree(source, target, excluded, detached=()):
             ):
                 shutil.copy2(p, q)
             else:
-                os.link(p, q)
+                try:
+                    os.link(p, q)
+                except OSError as error:
+                    if error.errno != errno.EXDEV:
+                        raise
+                    # Sandboxed inputs may sit on a different mount; keep their exact bytes.
+                    shutil.copy2(p, q)
 
 
 @contextmanager

@@ -8,12 +8,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_callback_profiles as profiles
+import timed_item_profiles as timed
 import writable_item_profiles as writing
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 MANIFEST = 'content/items/native-manifest.json'
 KEY = 'oteryn:item.tibia.i7934'
+BLOODY_TEAR = 'oteryn:item.tibia.i32594'
 
 
 class QuestCallbackProfiles(unittest.TestCase):
@@ -32,7 +34,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
-                                     'oteryn:item.tibia.i9388')]
+                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
 
@@ -66,6 +68,68 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(row['production_binding']['target']['key'], key)
             self.assertEqual(row['semantics']['physical']['value']['pickupable'],
                              {'state': 'KNOWN', 'value': True})
+
+    def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
+        # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
+        # inventory cannot supply this already admitted source Item by itself.
+        self.assertFalse(any(
+            (callback.get('item_on_target') or {}).get('item') == BLOODY_TEAR
+            or any(offering['item'] == BLOODY_TEAR for offering in callback['offerings'])
+            for callback in self.callbacks['callbacks']))
+        self.admit()
+        rows = [row for row in json.loads(self.generated[PROFILE])['records']
+                if row['production_definition']['production_key'] == BLOODY_TEAR]
+        self.assertEqual(len(rows), 1)
+        canonical = [row['definition']
+                     for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
+                     for row in json.loads(path.read_bytes())['records']
+                     if row['definition']['identity']['key'] == BLOODY_TEAR]
+        self.assertEqual(len(canonical), 1)
+        definition = canonical[0]
+        identity = definition['identity']
+        self.assertEqual(rows[0]['production_definition'], {
+            'family': identity['family'], 'production_key': BLOODY_TEAR,
+            'revision_ref': identity['revision']})
+        self.assertEqual(rows[0]['semantics'], definition['semantics'])
+        self.assertEqual(rows[0]['admission'], {
+            'materializable': True, 'stack_class': definition['stack_class'],
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(rows[0]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows[0]['production_binding']['target'], identity)
+        self.assertEqual(str(rows[0]['production_binding']['external_id']), '32594')
+        first = self.generated[PROFILE]
+        self.admit()
+        self.assertEqual(self.generated[PROFILE], first)
+
+    def test_existing_chest_children_keep_canonical_food_and_potion_consumption(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for number in (238, 6569, 6574, 7377):
+            key = f'oteryn:item.tibia.i{number}'
+            with self.subTest(key=key):
+                self.assertEqual(rows[key]['semantics']['consumption']['state'], 'KNOWN')
+
+    def test_chest_children_preserve_timed_ring_ability_ownership(self):
+        generated = {PROFILE: b'{"records":[]}',
+                     MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
+        timed.admit(ROOT, generated, PROFILE, MANIFEST,
+                    lambda r: r['production_definition']['production_key'],
+                    lambda v: json.dumps(v, sort_keys=True).encode())
+        timed_rows = {r['production_definition']['production_key']: r
+                      for r in json.loads(generated[PROFILE])['records']}
+        for i, row in enumerate(self.document['records']):
+            key = row['production_definition']['production_key']
+            if key in timed_rows:
+                self.document['records'][i] = copy.deepcopy(timed_rows[key])
+        self.generated[PROFILE] = json.dumps(self.document).encode()
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        for key, expected in timed_rows.items():
+            with self.subTest(key=key):
+                self.assertEqual(rows[key]['semantics']['skill_modifiers'],
+                                 expected['semantics']['skill_modifiers'])
 
     def test_unadmitted_replacement_refuses_instead_of_manufacturing_a_profile(self):
         callback = next(c for c in self.callbacks['callbacks'] if c.get('item_on_target'))
