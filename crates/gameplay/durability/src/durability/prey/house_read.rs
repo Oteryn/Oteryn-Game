@@ -18,12 +18,14 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         origin_channel: ChannelId,
+        catalogue: &super::PreyCatalogue,
         gate: &G,
     ) -> Result<(Reply, [bool; 3]), Error> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| Error::AuthorityRejected)?;
         let node = node.clone();
+        let rules = catalogue.rules().clone();
         let mut gate = gate;
         self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -61,7 +63,13 @@ impl DurabilityRoot {
                 "SELECT balance FROM game_account_prey_wildcards WHERE account_id=$1::text::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE",
             ).bind(&account).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0);
             let balance = u8::try_from(balance).map_err(|_| DurabilityError::InvalidStoredState)?;
-            let reply = super::storage::load(&mut tx, character, &access, balance).await?;
+            let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(character.as_slice()).fetch_one(&mut **tx).await?;
+            let level = u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let expansion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_prey_expansions WHERE character_id=encode($1,'hex')::uuid)")
+                .bind(character.as_slice()).fetch_one(&mut **tx).await?;
+            let (mut reply, _) = super::storage::load(&mut tx, character, balance, level, expansion, &rules).await?;
+            super::command::mask_locked(&mut reply, &access);
             tx.commit(deadline).await?;
             Ok(Ok((reply, permanent)))
         })).await?

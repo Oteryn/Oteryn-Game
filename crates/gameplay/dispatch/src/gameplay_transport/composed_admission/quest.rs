@@ -39,6 +39,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         for session in due {
             self.refresh_quest_session(session, false).await;
+            let wheel_deferred = self
+                .states
+                .wheel_sessions
+                .lock()
+                .ok()
+                .is_some_and(|sessions| sessions.get(&session).is_some_and(Option::is_none));
+            if wheel_deferred {
+                self.admit_wheel_session(session).await;
+            }
         }
     }
 

@@ -46,6 +46,7 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         }
         Some(FeeBurnCauseV1::HirelingService(cause)) if cause.service_key.starts_with("oteryn:service.hireling.") && value.fee_gold_units > 0 => { check_content_key(&cause.service_key)?; check_uuid_v7(&cause.occurrence) },
         Some(FeeBurnCauseV1::PreyListReroll(cause)) if ["oteryn:prey.list_reroll.1","oteryn:prey.list_reroll.2","oteryn:prey.list_reroll.3"].contains(&cause.service_key.as_str()) && value.fee_gold_units>0 && value.fee_gold_units.is_multiple_of(200) => check_uuid_v7(&cause.occurrence),
+        Some(FeeBurnCauseV1::PreyListReroll(cause)) if ["oteryn:prey.pick_again.1","oteryn:prey.pick_again.2","oteryn:prey.pick_again.3"].contains(&cause.service_key.as_str()) && value.fee_gold_units > 0 => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::MarketFee(cause))
             if (20..=1_000_000).contains(&value.fee_gold_units)
                 && value.lines.is_empty()

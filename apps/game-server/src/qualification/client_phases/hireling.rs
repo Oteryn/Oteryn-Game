@@ -1,6 +1,7 @@
 use super::*;
 pub(super) async fn hireling(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
     use oteryn_dev_client::{client_runtime::hireling, client_ui::hireling as ui};
+    // Hireling (165) requires NPC service (3) and staff (51), neither advertised by this client.
     if !client
         .selected_capabilities()
         .contains(&hireling::hireling::CAPABILITY_HIRELING_V1)

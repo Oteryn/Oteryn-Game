@@ -12,10 +12,12 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     {
         return Ok(());
     }
-    let (revision, state, inventory) = authority
+    let Some((revision, state, inventory)) = authority
         .player_trade_observation(session.admitted.game_session_id)
         .await
-        .ok_or(ServeEnd::Disconnected)?;
+    else {
+        return Ok(());
+    };
     let base = session.admitted.continuity.player_trade_revision;
     if revision < base {
         return Err(ServeEnd::Disconnected);
@@ -45,10 +47,13 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     }
     if inventory {
         let view = session.item_view.as_mut().ok_or(ServeEnd::Disconnected)?;
-        let deltas = authority
+        let Some(deltas) = authority
             .player_trade_inventory(session.admitted, view, session.container_views.as_mut())
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+        else {
+            // Do not acknowledge delivery: the visibility cadence retries this inventory.
+            return Ok(());
+        };
         session.admitted.continuity.item_view = view.continuity();
         for delta in deltas {
             let (sequence, frame) = item_view_delta(session.generation, session.sequence, &delta)

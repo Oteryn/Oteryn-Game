@@ -77,6 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map_or(GuildReply::Unavailable, GuildReply::Payload)
             }
+            Err(GuildError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) => GuildReply::Rejected,
             Err(GuildError::Unavailable(_)) => GuildReply::Unavailable,
             Err(_) => GuildReply::Rejected,
         }

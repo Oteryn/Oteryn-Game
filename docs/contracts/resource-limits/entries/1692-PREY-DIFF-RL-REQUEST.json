@@ -1,0 +1,21 @@
+{
+  "id": "PREY-DIFF-RL-REQUEST",
+  "owner_contract": "protocol-oteryn/v1/prey_v1.proto",
+  "resource": "Prey request transport bound",
+  "unit": "encoded bytes per request",
+  "hard_maximum": 273,
+  "configurable_range": {
+    "minimum": 273,
+    "maximum": 273
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded native Prey codec; list sizes remain server configuration (9/12 by default).",
+  "client_visible": true,
+  "boundary_tests": [
+    "replies_round_trip_including_maximum_projection"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/prey.rs MAX_REQUEST_BYTES"
+  ],
+  "notes": "OWNER-DEVIATION PREY-DIFF 2026-11-01; extends capability140/command160 without adding a new capability."
+}

@@ -283,6 +283,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     reply,
                     permanent,
+                    self.prey_catalogue()
+                        .ok_or(Unavailable)?
+                        .rules()
+                        .defense_mode,
                 )
                 .ok_or(Unavailable)?;
         }

@@ -140,7 +140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // principal's queue. Drain it before changing the board, then retain the
         // lane only after checking that no intervening death remains unresolved.
         let Some(permit) = self.task_board_lane_after_kills().await else {
-            return TaskBoardReply::Unavailable;
+            return TaskBoardReply::Rejected;
         };
         let Ok(Some(fence)) = self.current_quest_fence(admitted.game_session_id).await else {
             return TaskBoardReply::Rejected;
@@ -160,7 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(backpack) => backpack,
-                Err(_) => return TaskBoardReply::Unavailable,
+                Err(_) => return TaskBoardReply::Rejected,
             };
             let runtime = self.runtime.lock().await;
             super::charm_progression::fee_change(
@@ -189,8 +189,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             action,
             payload_binding: payload.to_vec(),
         };
-        let Some(result) = self.commit_task_board(fence, request, Some(&permit)).await else {
-            return TaskBoardReply::Unavailable;
+        let result = match self.commit_task_board(fence, request, Some(&permit)).await {
+            Ok(result) => result,
+            Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                crate::durability::DurabilityError::RootUnavailable,
+            )) => return TaskBoardReply::Rejected,
+            Err(_) => return TaskBoardReply::Unavailable,
         };
         drop(permit);
         self.refresh_quest_session(admitted.game_session_id, false)
@@ -209,7 +213,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         request: TaskBoardCommand,
         permit: Option<&SpellLanePermit>,
-    ) -> Option<TaskBoardCommit> {
+    ) -> Result<TaskBoardCommit, crate::durability::character_progression::CharacterProgressionError> {
         let catalogue = Arc::new(match self.task_board_catalogue() {
             Some(catalogue) => catalogue,
             None if matches!(request.action, TaskBoardAction::CreditKill { .. }) => {
@@ -222,7 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     progression: None,
                 }
             }
-            None => return None,
+            None => return Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput),
         });
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
@@ -237,13 +241,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         drop(slot);
-        match result {
-            Ok(result) => Some(result),
-            Err(error) => {
-                operator_event(&format!("task_board_write_failed reason={error:?}"));
-                None
-            }
+        if let Err(error) = &result {
+            operator_event(&format!("task_board_write_failed reason={error:?}"));
         }
+        result
     }
 
     /// Credit every eligible recipient with the already memoized per-Character death occurrence.
@@ -266,7 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             payload_binding: Vec::new(),
             fee_change: None,
         };
-        if self.commit_task_board(fence, request, None).await.is_some() {
+        if self.commit_task_board(fence, request, None).await.is_ok() {
             self.refresh_quest_session(session, false).await;
             true
         } else {

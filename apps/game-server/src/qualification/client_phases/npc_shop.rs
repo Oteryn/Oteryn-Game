@@ -1,6 +1,7 @@
 use super::*;
 pub(super) async fn npc_shop(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
     use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
+    // NPC shop (81) requires NPC service (3), which this client does not advertise.
     if !client
         .selected_capabilities()
         .contains(&npc_shop::npc_shop::CAPABILITY_NPC_SHOP_V1)

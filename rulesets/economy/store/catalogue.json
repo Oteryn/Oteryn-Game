@@ -305,6 +305,16 @@
         "charges": 14400
       },
       "source_line": 217
+    },
+    {
+      "key": "store:prey-list-expansion",
+      "category": "useful-things.prey",
+      "title": "Prey List Expansion",
+      "price": null,
+      "enabled": false,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "prey-list-expansion",
+      "source_line": 0
     }
   ]
 }

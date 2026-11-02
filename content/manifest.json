@@ -331,6 +331,12 @@
       "path": "content/creatures/definitions/spell-native-profiles.json"
     },
     {
+      "path": "content/creatures/prey-slot-values.json"
+    },
+    {
+      "path": "content/creatures/prey-tiers.json"
+    },
+    {
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
@@ -915,7 +921,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "dc34e6773c41f1bbdccf7d80ced52f9eb77dde65ab5c3dbc764febcbba09c359"
+          "sha256": "1a3831fabac576143c2fdb77385550d24c1f91776f6b4ee37b8233c7037478a3"
         },
         {
           "creates_canonical_identities": false,

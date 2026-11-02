@@ -137,6 +137,27 @@ pub(super) async fn dev_client<'a>(
         )
         .into());
     }
+    // CHAT-PM-CHANNELS-1 sends the initial channel list as a pushed domain-12 delta,
+    // not in the join snapshot (chat-private-channel-world-v1.md). Assert it before
+    // the door scenario so its arrival cannot race that scenario's exact event lists.
+    if dev_client.selected_capabilities().contains(
+        &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+    ) {
+        let events = dev_client_door_events(&mut dev_client).await?;
+        dev_client_expect(
+            "initial channel list",
+            &events,
+            &vec![oteryn_dev_client::SessionEvent::ChatChannelList(
+                oteryn_dev_client::AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: oteryn_protocol_oteryn::chat::private_channel::ChatChannelList::default(
+                    ),
+                },
+            )],
+        )?;
+    }
     dev_client_door_scenario(
         &mut dev_client,
         &dev_client_snapshot,
@@ -204,9 +225,21 @@ async fn dev_client_door_scenario(
         use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
         use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
         let spatial_baseline = dev_client_snapshot.world_spatial_revision;
+        let sequence_base = u64::from(dev_client.selected_capabilities().contains(
+            &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+        ));
+        dev_client_expect(
+            "door scenario numbering",
+            &(
+                dev_client.next_command_id(),
+                dev_client.last_server_sequence(),
+            ),
+            &(1, sequence_base),
+        )?;
         let content_generation = dev_client_content_generation;
-        let moved =
-            |command_id: u64, result_sequence: u64, base: u64, x: i32, y: i32| CommandOutcome {
+        let moved = |command_id: u64, result_sequence: u64, base: u64, x: i32, y: i32| {
+            let result_sequence = sequence_base + result_sequence;
+            CommandOutcome {
                 command_id,
                 status: CommandStatus::Accepted,
                 disposition: StepDisposition::Moved,
@@ -222,7 +255,8 @@ async fn dev_client_door_scenario(
                 }),
                 world_object_overlay_delta: None,
                 gate_message_id: None,
-            };
+            }
+        };
         let door_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
             content_generation,
             placement: door_placement.to_vec(),
@@ -235,14 +269,14 @@ async fn dev_client_door_scenario(
             command_id,
             status: CommandStatus::Accepted,
             disposition: UseDisposition::Committed,
-            result_server_sequence: result_sequence,
+            result_server_sequence: sequence_base + result_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
             gate_message_id: None,
         };
         let door_event = |result_sequence: u64, base: u64, state: &str| {
             SessionEvent::WorldObjectOverlay(AppliedDelta {
-                server_sequence: result_sequence + 1,
+                server_sequence: sequence_base + result_sequence + 1,
                 base_revision: base,
                 new_revision: base + 1,
                 value: door_entry(state, base + 1),
@@ -318,7 +352,7 @@ async fn dev_client_door_scenario(
         )?;
 
         // The session's own applied state: back at (1,0,0), door closed at revision + 2, every
-        // CommandId (1..=5) and server sequence (1..=10) consumed.
+        // CommandId (1..=5) and ten more server sequences consumed.
         dev_client_expect(
             "final position",
             dev_client.world_spatial(),
@@ -345,7 +379,7 @@ async fn dev_client_door_scenario(
                 dev_client.next_command_id(),
                 dev_client.last_server_sequence(),
             ),
-            &(6, 10),
+            &(6, sequence_base + 10),
         )?;
     }
     Ok(())

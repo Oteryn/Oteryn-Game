@@ -7,10 +7,13 @@ mod hireling_delivery;
 mod hireling_model;
 mod hireling_reservation;
 mod outbox;
+mod prey_expansion;
+mod prey_purchase;
 mod purchase;
 mod storage;
 pub use codec::{DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError};
 pub use hireling_model::{HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase, canonical_hireling_name};
+pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]
 mod tests;

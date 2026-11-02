@@ -2,12 +2,83 @@ use oteryn_protocol_oteryn::charm::{
     COMMAND_TYPE_CHARM_ASSIGN_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
 };
 
+
+#[test]
+fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_selection() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        block_on(async {
+            for selected in [false, true] {
+                let (client, mut server) = tokio::io::duplex(128 * 1024);
+                let requests = [
+                    prey::Request::SetTier { slot: 1, tier: 3 },
+                    prey::Request::OfferedToday { slot: 1, after: String::new() },
+                    prey::Request::PickAgain { slot: 1, creature: "oteryn:creature.dragon".into(), expected_price_gold: 45000 },
+                ];
+                let expected = requests.clone();
+                let peer = tokio::spawn(async move {
+                    join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES,
+                        if selected { &[140] } else { &[] }, &[], (1, spatial(0)), &[]).await?;
+                    if selected {
+                        for (index, expected) in expected.into_iter().enumerate() {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            let id = 7 + index as u64;
+                            assert_eq!((command.command_type, command.command_id), (160, id));
+                            assert_eq!(prey::decode_request(command.payload).map_err(|_| "request")?, expected);
+                            let reply = prey::Reply {
+                                status: 0, wildcard_balance: 10, slots: Vec::new(),
+                                list_size: 12, expansion_owned: true,
+                                offered_today: vec![prey::OfferedCreature {
+                                    creature: "oteryn:creature.dragon".into(), price_gold: 45000, occupied_slot: 0,
+                                }],
+                                offered_next: String::new(),
+                            };
+                            let payload = prey::encode_reply(&reply).map_err(|_| "reply")?;
+                            write_frame(&mut server, &encode_command_result(1, 34 + id, id,
+                                CommandStatus::Accepted, &payload)?).await?;
+                        }
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut admission = admission()?;
+                admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                let mut session = Session::admit(client, admission).await?;
+                for request in requests {
+                    let payload = prey::encode_request(&request).map_err(|_| "request")?;
+                    let result = session.gated_command(140, 160, &payload).await;
+                    if selected {
+                        let reply = prey::decode_reply(&result?.payload).map_err(|_| "reply")?;
+                        assert_eq!(reply.list_size, 12);
+                        assert_eq!(reply.offered_today[0].price_gold, 45000);
+                    } else {
+                        assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: 140 })));
+                    }
+                }
+                peer.await??;
+            }
+            Ok::<(), BoxError>(())
+        })?
+    })?.join().map_err(|_| "Prey selection thread panicked")?
+}
+
 #[test]
 fn derived_gated_routes_match_previous_table() {
     // Former GATED_ROUTES contents plus the PKG5 hotkey command and carried extension.
     // Compare sets because
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
+        (40, &[40, 41], &[]),
+        (42, &[45, 46], &[]),
+        (43, &[48, 49, 50], &[]),
+        (60, &[78], &[26]),
+        (62, &[79], &[27]),
+        (63, &[80], &[28]),
+        (68, &[85], &[]),
+        (72, &[89], &[]),
+        (81, &[97], &[]),
+        (140, &[160], &[]),
+        (165, &[220], &[]),
         (16, &[22], &[16]),
         (18, &[], &[17]),
         (37, &[36], &[]),
@@ -19,6 +90,8 @@ fn derived_gated_routes_match_previous_table() {
         (14, &[21], &[14]),
         (179, &[348], &[]),
         (180, &[], &[]),
+        // PREY-DIFF: native Prey controls use the existing command160.
+        (140, &[160], &[]),
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424], &[]),
@@ -493,7 +566,7 @@ fn a_resume_never_changes_the_selected_set() {
 
 #[test]
 fn p17c_client_advertises_exiva_and_field_prerequisites() {
-    for id in [147, 91, 4, 6, 11, 15, 18, 22, 30] {
+    for id in [140, 147, 91, 4, 6, 11, 15, 18, 22, 30] {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&id), "missing {id}");
     }
 }
@@ -645,4 +718,58 @@ fn p17c_exiva_selection_routes_command_170_and_refuses_without_selection() -> Re
         })?
         .join()
         .map_err(|_| "Exiva selection thread panicked")?
+}
+
+#[test]
+fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                // The adapters for CLIENT-E2E-1 all call gated_command, including opt-in panels.
+                for (capability, command_type) in [
+                    (40, 40),
+                    (42, 45),
+                    (43, 48),
+                    (60, 78),
+                    (62, 79),
+                    (63, 80),
+                    (68, 85),
+                    (72, 89),
+                    (81, 97),
+                    (140, 160),
+                    (165, 220),
+                ] {
+                    assert!(
+                        gated_routes().any(|(id, commands, _)| id == capability
+                            && commands.contains(&command_type)),
+                        "missing panel route for capability {capability}"
+                    );
+                }
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[40], &[40], &[]).await?;
+                    let frame = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&frame)?
+                            .client_command(1)?
+                            .command_type,
+                        40
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"guild")?,
+                    )
+                    .await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[40])?).await?;
+                assert!(session.is_selected(40));
+                assert_eq!(session.gated_command(40, 40, b"").await?.payload, b"guild");
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "panel routes thread panicked")?
 }

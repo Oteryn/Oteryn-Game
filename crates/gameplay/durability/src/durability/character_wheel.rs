@@ -632,7 +632,7 @@ impl DurabilityRoot {
 /// The admission step of fresh admission and resume (§4 "Wheel reset" and "Load"): the Wheel
 /// reset in the Character's revision slot, then the load. `None` when the load failed: Wheel
 /// actions of the session then fail closed, and login does not. A reset that did not commit
-/// leaves the allocation not current, so every stage derives as 0.
+/// defers the load, so no allocation is published as current before a successful reset.
 pub async fn admit_character_wheel(
     sequencer: &CharacterRevisionSequencer,
     root: &DurabilityRoot,
@@ -648,6 +648,7 @@ pub async fn admit_character_wheel(
     drop(slot);
     if let Err(error) = &reset {
         eprintln!("oteryn-game-server: Wheel reset at admission did not commit: {error}");
+        return None;
     }
     root.read_character_wheel(
         authority,

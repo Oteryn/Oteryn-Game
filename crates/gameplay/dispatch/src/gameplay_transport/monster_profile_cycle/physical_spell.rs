@@ -268,8 +268,30 @@ pub(super) async fn execute(
                 &mut reader,
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
             );
+            let activity_time =
+                spells.retained_activity_time(proposal.issuer, proposal.list, proposal.entry_index);
             states.monster_spells = spells;
             if let Ok(outcome) = result {
+                if let Some(activity_time) = activity_time
+                    && let Ok(snapshot) = runtime.companion_snapshot(proposal.issuer)
+                {
+                    for (target, hit) in &outcome.targets {
+                        if let Ok(hit) = hit
+                            && let Some((_, session)) =
+                                reader.players.iter().find(|(actor, _)| actor == target)
+                        {
+                            states.prey_activity(runtime, *target, *session, super::super::prey::PreyActivity {
+                                creature: &snapshot.state.policy.definition_key,
+                                kind: if hit.damage.is_some_and(|damage| damage.applied > 0) {
+                                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::ReceivedDamage
+                                } else {
+                                    oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::Attacked
+                                },
+                                now: activity_time.get(),
+                            });
+                        }
+                    }
+                }
                 record_hits(
                     runtime,
                     attack,

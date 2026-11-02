@@ -20,6 +20,8 @@ use std::sync::{Arc, LazyLock};
 
 #[path = "store/catalogue.rs"]
 mod catalogue;
+#[path = "store/prey_retry.rs"]
+mod prey_retry;
 #[path = "store/hireling.rs"]
 mod hireling;
 use catalogue::{RuntimeCatalogue, currency_text};
@@ -227,6 +229,14 @@ async fn purchase(
     let Some(platform) = owner.store.clone() else {
         return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
     };
+    // A retained Prey purchase may already have debited Platform under an older quote.
+    // Resolve only that exact binding before applying today's catalogue to fresh requests.
+    if request.offer_key == prey_retry::OFFER_KEY
+        && let prey_retry::Resume::Completed(result) =
+            prey_retry::resume(owner, &platform, admitted, &request).await?
+    {
+        return Some(result);
+    }
     let hireling_action=if let Some(offer)=catalogue.hireling(&request.offer_key) {
         if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return None}
         let Some(action)=hireling::action(offer,customization.as_ref()) else {return Some(refusal(wire::StorePurchaseCode::OfferUnavailable))};
@@ -262,6 +272,10 @@ async fn purchase(
         character_id,
         binding: hireling::request_binding(binding.binding_digest(),hireling_action.as_ref())?,
     };
+    let prey_expansion = matches!(
+        &catalogue.rules.offer(&binding.offer_key)?.delivery,
+        rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::PREY_EXPANSION_UNLOCK
+    );
     let hireling_purchase=hireling_action.as_ref().map(|action|HirelingStorePurchase {purchase_request_id:request.purchase_request_id,origin_channel:*admitted.channel_id.as_bytes(),action:action.clone()});
     let request_state=if let Some(action)=hireling_action {
         let current=gameplay_fence(owner,admitted).await?;
@@ -276,10 +290,14 @@ async fn purchase(
     let saved = match request_state {
         PurchaseRequestState::Answered(saved) => saved,
         PurchaseRequestState::Sent => {
-            let answer = platform
-                .lock()
-                .await
-                .purchase(&PurchaseStoreOffer {
+            let reserved = if prey_expansion {
+                let fence = gameplay_fence(owner, admitted).await?;
+                owner.root.reserve_prey_expansion_purchase(
+                    owner.character, owner.holder, fence, journal.clone()
+                ).await.ok()?
+            } else { true };
+            let answer = if reserved {
+                platform.lock().await.purchase(&PurchaseStoreOffer {
                     purchase_request_id: uuid_text(&request.purchase_request_id),
                     account_id: uuid_text(&account),
                     character_id: uuid_text(&character_id),
@@ -287,18 +305,28 @@ async fn purchase(
                     catalog_revision: binding.catalog_revision.clone(),
                     price: binding.price,
                     currency: currency_text(binding.currency).into(),
-                })
-                .await
-                // No answer: the debit may have happened, so only a retry of this id resolves it.
-                .ok()?;
+                }).await
+                // Unknown debit outcome retains the permanent-offer reservation for this id.
+                .ok()?
+            } else {
+                PurchaseResult::OfferUnavailable
+            };
             let bytes = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
-            owner.root.record_store_answer(journal, bytes).await.ok()?
+            owner.root.record_store_answer(journal.clone(), bytes).await.ok()?
         }
     };
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
     let code = answer.code()?;
     if code != wire::StorePurchaseCode::Accepted {
+        if prey_expansion {
+            owner.root.release_refused_prey_expansion_purchase(owner.character, journal).await.ok()?;
+        }
         return Some(refusal(code));
+    }
+    if prey_expansion {
+        // This permanent product has exactly one effect; reject a malformed retained
+        // order or several operations before committing even the first entitlement.
+        prey_retry::delivery_ids(&answer)?;
     }
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     if hireling_purchase.is_some() && answer.operation_ids.len()!=1 {return None}
@@ -364,6 +392,18 @@ async fn deliver(
         &rules::CharacterStoreView::default(),
     )
     .ok()?;
+    if let [rules::DeliveryEffect::GrantUnlock { unlock_key }] = effects.as_slice() {
+        if unlock_key != catalogue::PREY_EXPANSION_UNLOCK { return None; }
+        let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
+            operation_id, account_id: account, world_id,
+            fulfilment_unit_id: intent.fulfilment_unit_id,
+        }).await?;
+        let bytes = serde_json::to_vec(&receipt).ok()?;
+        if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
+            let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
+        }
+        return Some(());
+    }
     let item_key=if purchase.is_some() {"oteryn:item.tibia.i29432"} else {
         let [rules::DeliveryEffect::MintStoreInbox {item_key,count:1}]=effects.as_slice() else {return None};
         item_key.as_str()
