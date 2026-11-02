@@ -6,9 +6,10 @@ fn index(value: u32) -> NonZeroU32 {
     NonZeroU32::new(value).expect("non-zero")
 }
 
-fn actions() -> [CharmProgressionAction; 4] {
+fn actions() -> [CharmProgressionAction; 5] {
     [
         CharmProgressionAction::Query,
+        CharmProgressionAction::ResetAll,
         CharmProgressionAction::Unlock {
             charm: index(MAX_CHARM),
             expected_stage: MAX_CHARM_STAGE - 1,
@@ -40,7 +41,8 @@ fn charm_progression_request_round_trips_and_refuses_contradictions() {
     }
     for refused in [
         &[][..],
-        &[0x08, 0x05],
+        // WB2/P01 registers action 5; action 6 remains unknown.
+        &[0x08, 0x06],
         &[0x08, 0x01, 0x10, 0x01],
         &[0x08, 0x02],
         &[0x08, 0x02, 0x10, 0x01, 0x18, 0x01],
@@ -102,15 +104,20 @@ fn charm_progression_reply_round_trips_every_outcome_within_its_bound() {
     let (bestiary, charms) = largest_views();
     let mut outcomes = vec![CharmProgressionOutcome::Query];
     for code in 1..=9 {
-        for action in 2..=4 {
+        for action in 2..=5 {
             if let Ok(outcome) = CharmProgressionOutcome::from_codes(action, code) {
                 outcomes.push(outcome);
             }
         }
     }
-    assert_eq!(outcomes.len(), 1 + 6 + 9 + 6);
+    // WB2/P01 adds the six reset dispositions to the existing strict roundtrip.
+    assert_eq!(outcomes.len(), 1 + 6 + 9 + 6 + 6);
     for outcome in outcomes {
-        let removed = outcome == CharmProgressionOutcome::Remove(CharmRemoveDisposition::Removed);
+        let removed = matches!(
+            outcome,
+            CharmProgressionOutcome::Remove(CharmRemoveDisposition::Removed)
+                | CharmProgressionOutcome::ResetAll(CharmRemoveDisposition::Removed)
+        );
         let reply = CharmProgressionReply {
             outcome,
             fee_gold: if removed { i64::MAX as u64 } else { 0 },
@@ -160,4 +167,18 @@ fn charm_progression_reply_refuses_malformed_payloads() {
         decode_charm_progression_reply(&[0; MAX_REPLY_BYTES + 1]),
         Err(CyclopediaWireError::LimitExceeded)
     );
+}
+
+#[test]
+fn reset_all_request_and_reply_roundtrip_and_reject_extra_fields() -> Result<(), CyclopediaWireError>
+{
+    let bytes = encode_charm_progression_request(&CharmProgressionAction::ResetAll)?;
+    assert_eq!(bytes, vec![8, 5]);
+    assert_eq!(
+        decode_charm_progression_request(&bytes)?,
+        CharmProgressionAction::ResetAll
+    );
+    assert!(decode_charm_progression_request(&[8, 5, 16, 1]).is_err());
+    assert!(decode_charm_progression_request(&[8, 5, 24, 1]).is_err());
+    Ok(())
 }

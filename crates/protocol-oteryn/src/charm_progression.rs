@@ -40,6 +40,7 @@ pub const MAX_REPLY_BYTES: usize =
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharmProgressionAction {
+    ResetAll,
     Query,
     /// Unlock the next stage of `charm`, which the client saw at `expected_stage`.
     Unlock {
@@ -73,6 +74,7 @@ pub enum CharmRemoveDisposition {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharmProgressionOutcome {
+    ResetAll(CharmRemoveDisposition),
     Query,
     Unlock(CharmUnlockDisposition),
     Assign(CharmAssignDisposition),
@@ -92,6 +94,7 @@ impl CharmProgressionAction {
     fn fields(&self) -> [u32; 4] {
         match *self {
             Self::Query => [1, 0, 0, 0],
+            Self::ResetAll => [5, 0, 0, 0],
             Self::Unlock {
                 charm,
                 expected_stage,
@@ -130,6 +133,7 @@ pub fn decode_charm_progression_request(payload: &[u8]) -> WireResult<CharmProgr
     let charm_index = NonZeroU32::new(charm);
     let decoded = match (action, charm_index, race, stage) {
         (1, None, 0, 0) => CharmProgressionAction::Query,
+        (5, None, 0, 0) => CharmProgressionAction::ResetAll,
         (2, Some(charm), 0, stage) => CharmProgressionAction::Unlock {
             charm,
             expected_stage: u8::try_from(stage).map_err(|_| CyclopediaWireError::Malformed)?,
@@ -149,6 +153,7 @@ impl CharmProgressionOutcome {
     fn codes(self) -> (u32, u32) {
         match self {
             Self::Query => (1, 1),
+            Self::ResetAll(d) => (5, d as u32),
             Self::Unlock(disposition) => (2, disposition as u32),
             Self::Assign(disposition) => (3, disposition as u32),
             Self::Remove(disposition) => (4, disposition as u32),
@@ -159,6 +164,12 @@ impl CharmProgressionOutcome {
         use CharmAssignDisposition as A;
         use CharmRemoveDisposition as R;
         use CharmUnlockDisposition as U;
+        if action == 5 {
+            return match Self::from_codes(4, disposition)? {
+                Self::Remove(d) => Ok(Self::ResetAll(d)),
+                _ => Err(CyclopediaWireError::Malformed),
+            };
+        }
         Ok(match (action, disposition) {
             (1, 1) => Self::Query,
             (2, 1) => Self::Unlock(U::Unlocked),
@@ -188,7 +199,11 @@ impl CharmProgressionOutcome {
 }
 
 pub fn encode_charm_progression_reply(reply: &CharmProgressionReply) -> WireResult<Vec<u8>> {
-    let removed = reply.outcome == CharmProgressionOutcome::Remove(CharmRemoveDisposition::Removed);
+    let removed = matches!(
+        reply.outcome,
+        CharmProgressionOutcome::Remove(CharmRemoveDisposition::Removed)
+            | CharmProgressionOutcome::ResetAll(CharmRemoveDisposition::Removed)
+    );
     if removed != (reply.fee_gold != 0) || reply.fee_gold > i64::MAX as u64 {
         return Err(CyclopediaWireError::Malformed);
     }

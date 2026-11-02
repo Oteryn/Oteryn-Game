@@ -5,7 +5,7 @@
 use sha2::{Digest, Sha256};
 
 mod boss;
-pub use boss::plan_boss_loot;
+pub use boss::{plan_boss_loot, plan_boss_loot_with_bonus};
 
 /// Source entries per death, including descendants (the native section record bound).
 pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 4096;
