@@ -2079,6 +2079,8 @@ pub(super) mod tests {
                 // W03 collection keeps the caller's Type2Transaction through delivery
                 // and binds its selected tuple in both the envelope and outbox.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
+                // W15b container children bind the root transaction's selected Type2 tuple.
+                "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]
         );

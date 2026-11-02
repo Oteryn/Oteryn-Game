@@ -31,10 +31,11 @@
 //! timed state or contents).
 
 use oteryn_gameplay_economy::npc_trade as rules;
-use oteryn_gameplay_progression::npc_trade_achievement;
+mod grizzly;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
+use oteryn_gameplay_progression::npc_trade_achievement;
 
 use super::account_achievement::grant_missing;
 use super::character_authority::{
@@ -704,6 +705,9 @@ impl DurabilityRoot {
                     }
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
 
+                    if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let backpack = sqlx::query(
                         "SELECT i.item_instance_id::text, i.definition_family, \
                                 i.definition_production_key, i.definition_revision_ref \

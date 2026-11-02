@@ -164,6 +164,19 @@ async fn assert_clock_owner(
     key: &BossClockKey,
     generation: ScopeOwnershipGeneration,
 ) -> Result<()> {
+    assert_channel_owner(tx, recovery, node, key.world, key.channel, generation).await
+}
+
+/// Current native Channel assignment proof, shared with quest-owned room cleanup.
+/// This grants no boss clock or actor and retains every authority lock in this TX.
+pub(super) async fn assert_channel_owner(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    world: WorldId,
+    channel: ChannelId,
+    generation: ScopeOwnershipGeneration,
+) -> Result<()> {
     assert_recovery_fence(tx, recovery).await?;
     lock_admission_relations(tx).await?;
     // Native assignment reads reject a materialized row not backed by the retained writer
@@ -184,9 +197,9 @@ async fn assert_clock_owner(
             AND holder_node_id=encode($5,'hex')::uuid \
             AND holder_registration_revision=$6::text::numeric(20,0) FOR SHARE",
     )
-    .bind(scope_key(key.world, key.channel).as_slice())
-    .bind(key.world.as_bytes().as_slice())
-    .bind(key.channel.as_bytes().as_slice())
+    .bind(scope_key(world, channel).as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
     .bind(generation.get().to_string())
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())

@@ -1,0 +1,2698 @@
+{
+  "achievement_entries": [
+    {
+      "line": 181,
+      "name": "Annihilator",
+      "unique_id": 6085
+    },
+    {
+      "line": 182,
+      "name": "Annihilator",
+      "unique_id": 6086
+    },
+    {
+      "line": 183,
+      "name": "Annihilator",
+      "unique_id": 6087
+    },
+    {
+      "line": 184,
+      "name": "Annihilator",
+      "unique_id": 6088
+    }
+  ],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "entries": [
+    {
+      "line": 402,
+      "setting": {
+        "container": 2853,
+        "isKey": true,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32648,
+          "y": 31905,
+          "z": 3
+        },
+        "keyAction": {
+          "expr": "Storage.Quest.Key.ID3801"
+        },
+        "reward": [
+          [
+            2970,
+            1
+          ],
+          [
+            3598,
+            27
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U6_1.EmperorsCookies.Rewards.Cookies"
+        },
+        "weight": 12.0
+      },
+      "unique_id": 5004
+    },
+    {
+      "line": 435,
+      "setting": {
+        "container": 2853,
+        "isKey": true,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32201,
+          "y": 31571,
+          "z": 10
+        },
+        "keyAction": {
+          "expr": "Storage.Quest.Key.ID4502"
+        },
+        "reward": [
+          [
+            2970,
+            1
+          ],
+          [
+            3031,
+            23
+          ],
+          [
+            3147,
+            1
+          ],
+          [
+            3298,
+            4
+          ],
+          [
+            3384,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.Key.ID4502"
+        },
+        "weight": 80.0
+      },
+      "unique_id": 5008
+    },
+    {
+      "line": 748,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32803,
+          "y": 31582,
+          "z": 2
+        },
+        "questName": "draconia1",
+        "reward": [
+          [
+            3284,
+            1
+          ],
+          [
+            3297,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 64.0
+      },
+      "unique_id": 6023
+    },
+    {
+      "line": 757,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32804,
+          "y": 31582,
+          "z": 2
+        },
+        "questName": "draconia2",
+        "reward": [
+          [
+            3081,
+            5
+          ],
+          [
+            3051,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 15.8
+      },
+      "unique_id": 6024
+    },
+    {
+      "line": 1042,
+      "setting": {
+        "container": 2853,
+        "itemId": 4024,
+        "itemPos": {
+          "x": 32778,
+          "y": 32282,
+          "z": 11
+        },
+        "keyAction": {
+          "expr": "Storage.Quest.Key.ID3702"
+        },
+        "reward": [
+          [
+            2971,
+            1
+          ],
+          [
+            3509,
+            1
+          ],
+          [
+            3351,
+            1
+          ],
+          [
+            3424,
+            1
+          ],
+          [
+            2821,
+            1
+          ],
+          [
+            3271,
+            1
+          ],
+          [
+            3085,
+            1
+          ],
+          [
+            3048,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.PreU6_0.OrnamentedShield.Rewards.OrnamentedShield"
+        },
+        "weight": 195.0
+      },
+      "unique_id": 6062
+    },
+    {
+      "line": 1051,
+      "setting": {
+        "container": 2859,
+        "itemId": 2480,
+        "itemPos": {
+          "x": 32769,
+          "y": 32302,
+          "z": 10
+        },
+        "questName": "ornamentedshield",
+        "reward": [
+          [
+            2949,
+            1
+          ],
+          [
+            3059,
+            1
+          ],
+          [
+            3083,
+            1
+          ],
+          [
+            3035,
+            5
+          ],
+          [
+            3053,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 44.0
+      },
+      "unique_id": 6063
+    },
+    {
+      "line": 1061,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32644,
+          "y": 32131,
+          "z": 8
+        },
+        "questName": "panpipe",
+        "reward": [
+          [
+            3033,
+            2
+          ],
+          [
+            3050,
+            1
+          ],
+          [
+            2953,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 18.0
+      },
+      "unique_id": 6065
+    },
+    {
+      "line": 1070,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33199,
+          "y": 31923,
+          "z": 11
+        },
+        "reward": [
+          [
+            3031,
+            98
+          ],
+          [
+            3031,
+            77
+          ],
+          [
+            3026,
+            3
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U6_4.BerserkerTreasure.Rewards.WhitePearls"
+        },
+        "weight": 27.0
+      },
+      "unique_id": 6066
+    },
+    {
+      "line": 1079,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33078,
+          "y": 31656,
+          "z": 11
+        },
+        "questName": "fireaxe1",
+        "reward": [
+          [
+            3098,
+            1
+          ],
+          [
+            3085,
+            200
+          ],
+          [
+            3028,
+            7
+          ],
+          [
+            3320,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 56.0
+      },
+      "unique_id": 6067
+    },
+    {
+      "line": 1089,
+      "setting": {
+        "container": 2854,
+        "itemId": 2473,
+        "itemPos": {
+          "x": 33155,
+          "y": 31880,
+          "z": 11
+        },
+        "questName": "poisondaggers",
+        "reward": [
+          [
+            3448,
+            30
+          ],
+          [
+            3299,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 51.0
+      },
+      "unique_id": 6068
+    },
+    {
+      "line": 1099,
+      "setting": {
+        "container": 2853,
+        "itemId": 4024,
+        "itemPos": {
+          "x": 33127,
+          "y": 31885,
+          "z": 9
+        },
+        "questName": "shamantreasure",
+        "reward": [
+          [
+            3147,
+            3
+          ]
+        ],
+        "useKV": true,
+        "weight": 15.0
+      },
+      "unique_id": 6069
+    },
+    {
+      "line": 1110,
+      "setting": {
+        "container": 2857,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33163,
+          "y": 31603,
+          "z": 15
+        },
+        "reward": [
+          [
+            237,
+            5
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.StrongPotions.Reward"
+        },
+        "weight": 23.0
+      },
+      "unique_id": 6070
+    },
+    {
+      "line": 1119,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33188,
+          "y": 31682,
+          "z": 14
+        },
+        "questName": "vampireshield1",
+        "reward": [
+          [
+            3058,
+            1
+          ],
+          [
+            3027,
+            1
+          ],
+          [
+            3078,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 16.0
+      },
+      "unique_id": 6071
+    },
+    {
+      "line": 1131,
+      "setting": {
+        "container": 2854,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33072,
+          "y": 32169,
+          "z": 2
+        },
+        "reward": [
+          [
+            268,
+            1
+          ],
+          [
+            266,
+            1
+          ],
+          [
+            3449,
+            30
+          ],
+          [
+            3448,
+            60
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack1"
+        },
+        "weight": 99.0
+      },
+      "unique_id": 6073
+    },
+    {
+      "line": 1140,
+      "setting": {
+        "container": 2854,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33078,
+          "y": 32169,
+          "z": 2
+        },
+        "reward": [
+          [
+            3350,
+            1
+          ],
+          [
+            3029,
+            2
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack2"
+        },
+        "weight": 50.0
+      },
+      "unique_id": 6074
+    },
+    {
+      "line": 1150,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33294,
+          "y": 31658,
+          "z": 13
+        },
+        "questName": "behemothquest1",
+        "reward": [
+          [
+            3028,
+            3
+          ],
+          [
+            3029,
+            4
+          ],
+          [
+            3007,
+            1
+          ],
+          [
+            3052,
+            1
+          ],
+          [
+            3055,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 17.0
+      },
+      "unique_id": 6075
+    },
+    {
+      "line": 1161,
+      "setting": {
+        "container": 2853,
+        "itemId": 2474,
+        "itemPos": {
+          "x": 33063,
+          "y": 31624,
+          "z": 15
+        },
+        "keyAction": {
+          "expr": "Storage.Quest.Key.ID6010"
+        },
+        "reward": [
+          [
+            2972,
+            1
+          ],
+          [
+            3114,
+            1
+          ],
+          [
+            3034,
+            2
+          ],
+          [
+            3049,
+            1
+          ],
+          [
+            3115,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_2.ParchmentRoom.Bag"
+        },
+        "weight": 42
+      },
+      "unique_id": 6076
+    },
+    {
+      "line": 1216,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32845,
+          "y": 31917,
+          "z": 6
+        },
+        "reward": [
+          [
+            3026,
+            1
+          ],
+          [
+            3207,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_6.ExplorerSociety.SkullOfRatha.Bag1"
+        },
+        "weight": 31.0
+      },
+      "unique_id": 6083
+    },
+    {
+      "line": 1225,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32847,
+          "y": 31917,
+          "z": 6
+        },
+        "reward": [
+          [
+            3012,
+            1
+          ],
+          [
+            3097,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_6.ExplorerSociety.SkullOfRatha.Bag2"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6084
+    },
+    {
+      "line": 1256,
+      "setting": {
+        "container": 2856,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33233,
+          "y": 31656,
+          "z": 13
+        },
+        "reward": [
+          [
+            3213,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_24.TheAnnihilator.Reward"
+        },
+        "weight": 50.0
+      },
+      "unique_id": 6088
+    },
+    {
+      "line": 1324,
+      "setting": {
+        "container": 2854,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33057,
+          "y": 31029,
+          "z": 7
+        },
+        "reward": [
+          [
+            7439,
+            1
+          ],
+          [
+            7440,
+            1
+          ],
+          [
+            7443,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_54.TheNewFrontier.Reward.Potions"
+        },
+        "weight": 25.0
+      },
+      "unique_id": 6097
+    },
+    {
+      "line": 1448,
+      "setting": {
+        "container": 2854,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32149,
+          "y": 32105,
+          "z": 11
+        },
+        "questName": "presentBox",
+        "reward": [
+          [
+            2882,
+            1
+          ],
+          [
+            2856,
+            1
+          ],
+          [
+            2881,
+            1
+          ],
+          [
+            2905,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 35.0
+      },
+      "unique_id": 6113
+    },
+    {
+      "line": 1458,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32146,
+          "y": 32097,
+          "z": 11
+        },
+        "questName": "bearChest1",
+        "reward": [
+          [
+            3447,
+            12
+          ],
+          [
+            3031,
+            40
+          ]
+        ],
+        "useKV": true,
+        "weight": 21.0
+      },
+      "unique_id": 6114
+    },
+    {
+      "line": 1490,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 31973,
+          "y": 32209,
+          "z": 12
+        },
+        "questName": "goblintemple",
+        "reward": [
+          [
+            3551,
+            1
+          ],
+          [
+            1781,
+            5
+          ],
+          [
+            3031,
+            50
+          ]
+        ],
+        "useKV": true,
+        "weight": 37.0
+      },
+      "unique_id": 6118
+    },
+    {
+      "line": 1499,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 31977,
+          "y": 32209,
+          "z": 12
+        },
+        "questName": "goblintemple2",
+        "reward": [
+          [
+            3466,
+            1
+          ],
+          [
+            2992,
+            4
+          ],
+          [
+            2874,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 31.0
+      },
+      "unique_id": 6119
+    },
+    {
+      "line": 1516,
+      "setting": {
+        "container": 2853,
+        "itemId": 2473,
+        "itemPos": {
+          "x": 32127,
+          "y": 32065,
+          "z": 12
+        },
+        "questName": "minohell2",
+        "reward": [
+          [
+            3447,
+            10
+          ],
+          [
+            3448,
+            4
+          ]
+        ],
+        "useKV": true,
+        "weight": 19.0
+      },
+      "unique_id": 6121
+    },
+    {
+      "line": 1593,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32443,
+          "y": 32238,
+          "z": 11
+        },
+        "questName": "lifering",
+        "reward": [
+          [
+            3052,
+            1
+          ],
+          [
+            3085,
+            200
+          ]
+        ],
+        "useKV": true,
+        "weight": 18.0
+      },
+      "unique_id": 6131
+    },
+    {
+      "line": 1618,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32456,
+          "y": 32008,
+          "z": 13
+        },
+        "questName": "geomancer",
+        "reward": [
+          [
+            3029,
+            1
+          ],
+          [
+            3028,
+            1
+          ],
+          [
+            3097,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 10.0
+      },
+      "unique_id": 6134
+    },
+    {
+      "line": 1727,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32651,
+          "y": 31969,
+          "z": 9
+        },
+        "questName": "longsword3",
+        "reward": [
+          [
+            3147,
+            3
+          ],
+          [
+            2989,
+            1
+          ],
+          [
+            3031,
+            76
+          ],
+          [
+            3463,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 40.0
+      },
+      "unique_id": 6148
+    },
+    {
+      "line": 1745,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33089,
+          "y": 32030,
+          "z": 9
+        },
+        "questName": "orcshaman",
+        "reward": [
+          [
+            3046,
+            1
+          ],
+          [
+            3092,
+            1
+          ],
+          [
+            3147,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 26.0
+      },
+      "unique_id": 6150
+    },
+    {
+      "line": 1770,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32357,
+          "y": 32130,
+          "z": 9
+        },
+        "questName": "scalearmor",
+        "reward": [
+          [
+            3377,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 113.0
+      },
+      "unique_id": 6153
+    },
+    {
+      "line": 1788,
+      "setting": {
+        "container": 2853,
+        "itemId": 2476,
+        "itemPos": {
+          "x": 32775,
+          "y": 32006,
+          "z": 11
+        },
+        "questName": "silverbrooch",
+        "reward": [
+          [
+            3017,
+            1
+          ],
+          [
+            3030,
+            2
+          ],
+          [
+            3028,
+            3
+          ]
+        ],
+        "useKV": true,
+        "weight": 10.0
+      },
+      "unique_id": 6155
+    },
+    {
+      "line": 1813,
+      "setting": {
+        "container": 2857,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32675,
+          "y": 32069,
+          "z": 8
+        },
+        "questName": "desert2",
+        "reward": [
+          [
+            3084,
+            250
+          ],
+          [
+            3098,
+            1
+          ],
+          [
+            3046,
+            1
+          ],
+          [
+            3077,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 34.0
+      },
+      "unique_id": 6158
+    },
+    {
+      "line": 1831,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32565,
+          "y": 32119,
+          "z": 3
+        },
+        "questName": "triangletower",
+        "reward": [
+          [
+            3083,
+            150
+          ],
+          [
+            3029,
+            2
+          ],
+          [
+            3097,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 14.0
+      },
+      "unique_id": 6160
+    },
+    {
+      "line": 1841,
+      "setting": {
+        "container": 2853,
+        "itemId": 4025,
+        "itemPos": {
+          "x": 32179,
+          "y": 32224,
+          "z": 9
+        },
+        "questName": "dragoncorpse",
+        "reward": [
+          [
+            3374,
+            1
+          ],
+          [
+            3430,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 102.0
+      },
+      "unique_id": 6161
+    },
+    {
+      "line": 1895,
+      "setting": {
+        "container": 2854,
+        "itemId": 4240,
+        "itemPos": {
+          "x": 32769,
+          "y": 32225,
+          "z": 7
+        },
+        "questName": "ironhelmet",
+        "reward": [
+          [
+            3123,
+            1
+          ],
+          [
+            3155,
+            3
+          ],
+          [
+            3361,
+            1
+          ],
+          [
+            3353,
+            1
+          ],
+          [
+            3285,
+            1
+          ],
+          [
+            3506,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 162.0
+      },
+      "unique_id": 6168
+    },
+    {
+      "line": 1905,
+      "setting": {
+        "container": 2853,
+        "itemId": 4240,
+        "itemPos": {
+          "x": 32514,
+          "y": 32303,
+          "z": 10
+        },
+        "questName": "deadarcher",
+        "reward": [
+          [
+            3350,
+            1
+          ],
+          [
+            3448,
+            5
+          ],
+          [
+            268,
+            1
+          ],
+          [
+            266,
+            1
+          ]
+        ],
+        "useKV": true,
+        "weight": 49.0
+      },
+      "unique_id": 6169
+    },
+    {
+      "line": 1915,
+      "setting": {
+        "container": 2853,
+        "itemId": 4240,
+        "itemPos": {
+          "x": 32816,
+          "y": 32279,
+          "z": 8
+        },
+        "questName": "powerbolt1",
+        "reward": [
+          [
+            3450,
+            5
+          ],
+          [
+            3449,
+            12
+          ]
+        ],
+        "useKV": true,
+        "weight": 24.0
+      },
+      "unique_id": 6170
+    },
+    {
+      "line": 2017,
+      "setting": {
+        "container": 2853,
+        "itemId": 1983,
+        "itemPos": {
+          "x": 33049,
+          "y": 32399,
+          "z": 10
+        },
+        "reward": [
+          [
+            3436,
+            1
+          ],
+          [
+            3567,
+            1
+          ],
+          [
+            3324,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_3.TheMedusaQuest"
+        },
+        "weight": 105.0
+      },
+      "unique_id": 6183
+    },
+    {
+      "line": 2057,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32867,
+          "y": 31909,
+          "z": 8
+        },
+        "questName": "WitchHouseQuest",
+        "reward": [
+          [
+            3027,
+            2
+          ],
+          [
+            3008,
+            1
+          ],
+          [
+            3031,
+            100
+          ]
+        ],
+        "useKV": true,
+        "weight": 23.3
+      },
+      "unique_id": 6188
+    },
+    {
+      "line": 2116,
+      "setting": {
+        "container": 2854,
+        "itemId": 4240,
+        "itemPos": {
+          "x": 32860,
+          "y": 32249,
+          "z": 9
+        },
+        "reward": [
+          [
+            2816,
+            1
+          ],
+          [
+            3285,
+            1
+          ],
+          [
+            3352,
+            1
+          ],
+          [
+            3558,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.BPLongSword"
+        },
+        "weight": 150.0
+      },
+      "unique_id": 6195
+    },
+    {
+      "line": 2131,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32749,
+          "y": 32341,
+          "z": 14
+        },
+        "reward": [
+          [
+            6498,
+            1
+          ],
+          [
+            2874,
+            1
+          ],
+          [
+            3602,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.ChestsWine"
+        },
+        "weight": 15.3
+      },
+      "unique_id": 6197
+    },
+    {
+      "line": 2139,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32751,
+          "y": 32341,
+          "z": 14
+        },
+        "reward": [
+          [
+            6498,
+            1
+          ],
+          [
+            2874,
+            1
+          ],
+          [
+            3602,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.ChestsWine"
+        },
+        "weight": 15.3
+      },
+      "unique_id": 6198
+    },
+    {
+      "line": 2147,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32753,
+          "y": 32341,
+          "z": 14
+        },
+        "reward": [
+          [
+            6498,
+            1
+          ],
+          [
+            2874,
+            1
+          ],
+          [
+            3602,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.ChestsWine"
+        },
+        "weight": 15.3
+      },
+      "unique_id": 6199
+    },
+    {
+      "line": 2155,
+      "setting": {
+        "container": 2853,
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32755,
+          "y": 32341,
+          "z": 14
+        },
+        "reward": [
+          [
+            6498,
+            1
+          ],
+          [
+            2874,
+            1
+          ],
+          [
+            3602,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.ChestsWine"
+        },
+        "weight": 15.3
+      },
+      "unique_id": 6200
+    },
+    {
+      "line": 2185,
+      "setting": {
+        "container": 5926,
+        "itemId": 5972,
+        "itemPos": {
+          "x": 32832,
+          "y": 32277,
+          "z": 10
+        },
+        "reward": [
+          [
+            6561,
+            1
+          ],
+          [
+            6299,
+            1
+          ],
+          [
+            3052,
+            1
+          ],
+          [
+            5021,
+            3
+          ],
+          [
+            3026,
+            5
+          ],
+          [
+            3035,
+            11
+          ],
+          [
+            5944,
+            2
+          ],
+          [
+            3160,
+            3
+          ],
+          [
+            3155,
+            2
+          ],
+          [
+            3147,
+            1
+          ],
+          [
+            238,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.ThePitsOfInferno.CorpsePirateBP"
+        },
+        "weight": 40.9
+      },
+      "unique_id": 6204
+    },
+    {
+      "line": 2193,
+      "setting": {
+        "container": 3253,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32826,
+          "y": 32232,
+          "z": 11
+        },
+        "reward": [
+          [
+            11605,
+            1
+          ],
+          [
+            11607,
+            1
+          ],
+          [
+            11609,
+            1
+          ],
+          [
+            11603,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestBP"
+        },
+        "weight": 20.7
+      },
+      "unique_id": 6205
+    },
+    {
+      "line": 2251,
+      "setting": {
+        "container": 2853,
+        "itemId": 4024,
+        "itemPos": {
+          "x": 32121,
+          "y": 31106,
+          "z": 12
+        },
+        "reward": [
+          [
+            3450,
+            20
+          ],
+          [
+            3349,
+            1
+          ],
+          [
+            7443,
+            1
+          ],
+          [
+            3031,
+            100
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.TheIceIslands.FormorgarGlacierSkeleton"
+        },
+        "weight": 97.0
+      },
+      "unique_id": 6213
+    },
+    {
+      "line": 2267,
+      "setting": {
+        "container": 7343,
+        "itemId": 2523,
+        "itemPos": {
+          "x": 32483,
+          "y": 31110,
+          "z": 8
+        },
+        "reward": [
+          [
+            7158,
+            3
+          ],
+          [
+            3031,
+            48
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.ShardsofAncientWinters.Inukaya"
+        },
+        "weight": 67.8
+      },
+      "unique_id": 6215
+    },
+    {
+      "line": 2275,
+      "setting": {
+        "container": 2853,
+        "itemId": 2523,
+        "itemPos": {
+          "x": 32431,
+          "y": 31235,
+          "z": 8
+        },
+        "reward": [
+          [
+            6525,
+            1
+          ],
+          [
+            3031,
+            89
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.ShardsofAncientWinters.Tyrsung"
+        },
+        "weight": 45.9
+      },
+      "unique_id": 6216
+    },
+    {
+      "line": 2283,
+      "setting": {
+        "container": 2853,
+        "itemId": 2473,
+        "itemPos": {
+          "x": 32146,
+          "y": 31430,
+          "z": 8
+        },
+        "reward": [
+          [
+            7443,
+            1
+          ],
+          [
+            3035,
+            10
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.ShardsofAncientWinters.Okolnir"
+        },
+        "weight": 45.9
+      },
+      "unique_id": 6217
+    },
+    {
+      "line": 2291,
+      "setting": {
+        "container": 2853,
+        "itemId": 4024,
+        "itemPos": {
+          "x": 32490,
+          "y": 31192,
+          "z": 10
+        },
+        "reward": [
+          [
+            7439,
+            1
+          ],
+          [
+            3031,
+            200
+          ],
+          [
+            6499,
+            3
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.ShardsofAncientWinters.Helheim"
+        },
+        "weight": 52.0
+      },
+      "unique_id": 6218
+    },
+    {
+      "line": 2299,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32154,
+          "y": 31116,
+          "z": 9
+        },
+        "reward": [
+          [
+            7400,
+            1
+          ],
+          [
+            3035,
+            2
+          ],
+          [
+            7290,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.ShardsofAncientWinters.FormorgarMines"
+        },
+        "weight": 32.2
+      },
+      "unique_id": 6219
+    },
+    {
+      "line": 2308,
+      "setting": {
+        "container": 2856,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32231,
+          "y": 31065,
+          "z": 7
+        },
+        "reward": [
+          [
+            2995,
+            1
+          ],
+          [
+            6570,
+            1
+          ],
+          [
+            6574,
+            1
+          ],
+          [
+            6569,
+            10
+          ],
+          [
+            7377,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornPresent"
+        },
+        "weight": 25.1
+      },
+      "unique_id": 6220
+    },
+    {
+      "line": 2316,
+      "setting": {
+        "container": 7342,
+        "itemId": 2480,
+        "itemPos": {
+          "x": 32231,
+          "y": 31068,
+          "z": 7
+        },
+        "reward": [
+          [
+            7364,
+            100
+          ],
+          [
+            7365,
+            100
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornBP"
+        },
+        "weight": 158.0
+      },
+      "unique_id": 6221
+    },
+    {
+      "line": 2346,
+      "setting": {
+        "container": 2856,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32231,
+          "y": 31058,
+          "z": 7
+        },
+        "reward": [
+          [
+            6569,
+            10
+          ],
+          [
+            7375,
+            1
+          ],
+          [
+            6574,
+            1
+          ],
+          [
+            7183,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperPresent"
+        },
+        "weight": 25.1
+      },
+      "unique_id": 6225
+    },
+    {
+      "line": 2354,
+      "setting": {
+        "container": 7342,
+        "itemId": 2480,
+        "itemPos": {
+          "x": 32231,
+          "y": 31061,
+          "z": 7
+        },
+        "reward": [
+          [
+            7365,
+            100
+          ],
+          [
+            3450,
+            200
+          ],
+          [
+            11605,
+            1
+          ],
+          [
+            11615,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperBP"
+        },
+        "weight": 270.4
+      },
+      "unique_id": 6226
+    },
+    {
+      "line": 2384,
+      "setting": {
+        "container": 2856,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32231,
+          "y": 31051,
+          "z": 7
+        },
+        "reward": [
+          [
+            6569,
+            10
+          ],
+          [
+            6574,
+            1
+          ],
+          [
+            7372,
+            1
+          ],
+          [
+            5080,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordPresent"
+        },
+        "weight": 13.6
+      },
+      "unique_id": 6230
+    },
+    {
+      "line": 2392,
+      "setting": {
+        "container": 7342,
+        "itemId": 2480,
+        "itemPos": {
+          "x": 32231,
+          "y": 31054,
+          "z": 7
+        },
+        "reward": [
+          [
+            11603,
+            1
+          ],
+          [
+            11609,
+            1
+          ],
+          [
+            7443,
+            1
+          ],
+          [
+            7440,
+            1
+          ],
+          [
+            6528,
+            100
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordBP"
+        },
+        "weight": 115.3
+      },
+      "unique_id": 6231
+    },
+    {
+      "line": 2422,
+      "setting": {
+        "container": 2853,
+        "itemId": 2473,
+        "itemPos": {
+          "x": 32015,
+          "y": 31409,
+          "z": 7
+        },
+        "reward": [
+          [
+            3035,
+            5
+          ],
+          [
+            7158,
+            3
+          ],
+          [
+            7159,
+            3
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.FishingBox"
+        },
+        "weight": 68.5
+      },
+      "unique_id": 6235
+    },
+    {
+      "line": 2566,
+      "setting": {
+        "container": 2853,
+        "itemId": 2434,
+        "itemPos": {
+          "x": 32588,
+          "y": 31645,
+          "z": 3
+        },
+        "reward": [
+          [
+            237,
+            1
+          ],
+          [
+            3147,
+            1
+          ],
+          [
+            3059,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.ToBlindTheEnemy.BP1"
+        },
+        "weight": 31.0
+      },
+      "unique_id": 6255
+    },
+    {
+      "line": 2574,
+      "setting": {
+        "container": 2853,
+        "itemId": 2434,
+        "itemPos": {
+          "x": 32588,
+          "y": 31644,
+          "z": 3
+        },
+        "reward": [
+          [
+            3028,
+            2
+          ],
+          [
+            3031,
+            100
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.ToBlindTheEnemy.BP2"
+        },
+        "weight": 18.2
+      },
+      "unique_id": 6256
+    },
+    {
+      "line": 2591,
+      "setting": {
+        "container": 5926,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32970,
+          "y": 32646,
+          "z": 8
+        },
+        "reward": [
+          [
+            6096,
+            1
+          ],
+          [
+            3097,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.WaterfallQuest"
+        },
+        "weight": 7.0
+      },
+      "unique_id": 6258
+    },
+    {
+      "line": 2607,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32661,
+          "y": 31855,
+          "z": 13
+        },
+        "reward": [
+          [
+            3469,
+            1
+          ],
+          [
+            2821,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.WhatAFoolishQuest.BagBookKnife"
+        },
+        "weight": 22.0
+      },
+      "unique_id": 6269
+    },
+    {
+      "line": 2709,
+      "setting": {
+        "container": 2867,
+        "itemId": 1983,
+        "itemPos": {
+          "x": 32546,
+          "y": 31522,
+          "z": 11
+        },
+        "reward": [
+          [
+            3035,
+            13
+          ],
+          [
+            3003,
+            1
+          ],
+          [
+            3457,
+            1
+          ],
+          [
+            268,
+            1
+          ],
+          [
+            239,
+            2
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.BPTheUndeathStare"
+        },
+        "weight": 82.0
+      },
+      "unique_id": 6283
+    },
+    {
+      "line": 2822,
+      "setting": {
+        "container": 2853,
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33074,
+          "y": 31169,
+          "z": 8
+        },
+        "reward": [
+          [
+            11695,
+            1
+          ],
+          [
+            10326,
+            1
+          ],
+          [
+            5801,
+            1
+          ],
+          [
+            3041,
+            1
+          ],
+          [
+            3027,
+            10
+          ],
+          [
+            9058,
+            5
+          ],
+          [
+            5882,
+            10
+          ],
+          [
+            3043,
+            10
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_6.WrathOfTheEmperor.ChestBag"
+        },
+        "weight": 151.0
+      },
+      "unique_id": 6298
+    },
+    {
+      "line": 2861,
+      "setting": {
+        "container": 2853,
+        "itemId": 2478,
+        "itemPos": {
+          "x": 33468,
+          "y": 32083,
+          "z": 8
+        },
+        "reward": [
+          [
+            21203,
+            5
+          ],
+          [
+            21333,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U10_50.DarkTrails.Reward05GlothAndBelongings"
+        },
+        "weight": 189.0
+      },
+      "unique_id": 6303
+    },
+    {
+      "line": 2869,
+      "setting": {
+        "container": 2853,
+        "itemId": 2478,
+        "itemPos": {
+          "x": 33487,
+          "y": 32085,
+          "z": 9
+        },
+        "reward": [
+          [
+            21203,
+            10
+          ],
+          [
+            21334,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U10_50.DarkTrails.Reward10GlothAndBelongings"
+        },
+        "weight": 338.0
+      },
+      "unique_id": 6304
+    }
+  ],
+  "handler_blob_sha1": "709a1d76512b284933a04d707a634d8c538309ce",
+  "handler_path": "data-global/scripts/actions/system/quest_reward_common.lua",
+  "handler_sha256": "9b38b43e800e05bd0262753198ec3b9adcb64a523ff3b085bf2e79fba05b95ad",
+  "key_item_evidence": {
+    "blob_sha1": "ea4196beae8f77be898f05de89db81de134886b6",
+    "entries": [
+      {
+        "item_id": 2969,
+        "line": 6502,
+        "type_line": 6504
+      },
+      {
+        "item_id": 2970,
+        "line": 6507,
+        "type_line": 6509
+      },
+      {
+        "item_id": 2971,
+        "line": 6512,
+        "type_line": 6514
+      },
+      {
+        "item_id": 2972,
+        "line": 6517,
+        "type_line": 6519
+      }
+    ],
+    "path": "data/items/items.xml"
+  },
+  "leaf_entries": [
+    {
+      "line": 676,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32171,
+          "y": 32197,
+          "z": 7
+        },
+        "questName": "shortswordbook",
+        "reward": [
+          [
+            2821,
+            1
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6013
+    },
+    {
+      "line": 1207,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32572,
+          "y": 32195,
+          "z": 14
+        },
+        "questName": "madmageroom3",
+        "reward": [
+          [
+            3081,
+            5
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6082
+    },
+    {
+      "line": 1294,
+      "setting": {
+        "isKey": true,
+        "itemId": 2474,
+        "itemPos": [
+          {
+            "x": 32802,
+            "y": 31576,
+            "z": 7
+          }
+        ],
+        "reward": [
+          [
+            2969,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.Key.ID3002"
+        }
+      },
+      "unique_id": 6093
+    },
+    {
+      "line": 1440,
+      "setting": {
+        "itemId": 4240,
+        "itemPos": {
+          "x": 32814,
+          "y": 32281,
+          "z": 8
+        },
+        "questName": "powerbolt2",
+        "reward": [
+          [
+            2821,
+            1
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6112
+    },
+    {
+      "line": 1985,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32467,
+          "y": 31962,
+          "z": 4
+        },
+        "questName": "steelhelmet4",
+        "reward": [
+          [
+            2815,
+            1
+          ]
+        ],
+        "useKV": true
+      },
+      "unique_id": 6179
+    },
+    {
+      "line": 2049,
+      "setting": {
+        "itemId": 2523,
+        "itemPos": {
+          "x": 32786,
+          "y": 32254,
+          "z": 8
+        },
+        "reward": [
+          [
+            2821,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_6.ExplorerSociety.Books.Hengis"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6187
+    },
+    {
+      "line": 2124,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32850,
+          "y": 32285,
+          "z": 14
+        },
+        "reward": [
+          [
+            2821,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.ChestBook"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6196
+    },
+    {
+      "line": 2171,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32828,
+          "y": 32340,
+          "z": 7
+        },
+        "reward": [
+          [
+            2836,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.ThePitsOfInferno.ChestTible"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6202
+    },
+    {
+      "line": 2178,
+      "setting": {
+        "itemId": 5972,
+        "itemPos": {
+          "x": 32854,
+          "y": 32325,
+          "z": 11
+        },
+        "reward": [
+          [
+            2816,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.ThePitsOfInferno.CorpseBook"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6203
+    },
+    {
+      "line": 2259,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32027,
+          "y": 31104,
+          "z": 11
+        },
+        "reward": [
+          [
+            2820,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_0.TheIceIslands.FormorgarGlacierChest"
+        },
+        "weight": 0.5
+      },
+      "unique_id": 6214
+    },
+    {
+      "line": 2530,
+      "setting": {
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32872,
+          "y": 31958,
+          "z": 11
+        },
+        "reward": [
+          [
+            5956,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_1.SecretService.LotteryTicket"
+        },
+        "weight": 1.2
+      },
+      "unique_id": 6250
+    },
+    {
+      "line": 2630,
+      "setting": {
+        "itemId": 2473,
+        "itemPos": {
+          "x": 32367,
+          "y": 31781,
+          "z": 8
+        },
+        "reward": [
+          [
+            8117,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_2.TheThievesGuildQuest.RewardBook"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6272
+    },
+    {
+      "line": 2807,
+      "setting": {
+        "itemId": 2469,
+        "itemPos": {
+          "x": 33004,
+          "y": 31530,
+          "z": 10
+        },
+        "reward": [
+          [
+            11699,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_6.AnInterestInBotany.BotanyAlmanach"
+        },
+        "weight": 15.0
+      },
+      "unique_id": 6296
+    },
+    {
+      "line": 3167,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 32316,
+          "y": 32260,
+          "z": 8
+        },
+        "reward": [
+          [
+            2821,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U8_2.TheInquisitionQuest.RewardRoomText"
+        },
+        "weight": 13.0
+      },
+      "unique_id": 6500
+    }
+  ],
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "schema": "OTERYN_CRYSTAL_CONTAINER_REWARD_SOURCE/v1",
+  "shared_choice_entries": [
+    {
+      "line": 1235,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33227,
+          "y": 31656,
+          "z": 13
+        },
+        "reward": [
+          [
+            3388,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_24.TheAnnihilator.Reward"
+        }
+      },
+      "unique_id": 6085
+    },
+    {
+      "line": 1242,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33229,
+          "y": 31656,
+          "z": 13
+        },
+        "reward": [
+          [
+            3288,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_24.TheAnnihilator.Reward"
+        }
+      },
+      "unique_id": 6086
+    },
+    {
+      "line": 1249,
+      "setting": {
+        "itemId": 2472,
+        "itemPos": {
+          "x": 33231,
+          "y": 31656,
+          "z": 13
+        },
+        "reward": [
+          [
+            3319,
+            1
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_24.TheAnnihilator.Reward"
+        }
+      },
+      "unique_id": 6087
+    }
+  ],
+  "source_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+  "source_path": "data-global/startup/tables/chest.lua",
+  "source_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "text_entries": [
+    {
+      "item_id": 2821,
+      "line": 6,
+      "text": "Hardek *\nBozo *\nSam ****\nOswald\nPartos ***\nQuentin *\nTark ***\nHarsky ***\nStutch *\nFerumbras *\nFrodo **\nNoodles ****",
+      "unique_id": 6013
+    },
+    {
+      "item_id": 2821,
+      "line": 22,
+      "text": "... the dream master retreated to the world behind the curtains of awareness, I can't reach him, now that the last hall of dreams is lost to the forces of evil.\nI sealed Goshnar's grave so no one can enter the pits without knowing our secret.\nI will try to retreat to Knightwatch Tower and wait for a dreamer in possession of the key.\nSo we can travel on one of the dream paths to a saver place to regroup and to plan a counter-attack.\nI fear we have to recruit new members and we have only little time left to train them.\nI hope Taciror will not waste our last forces in a futile attack on the Ruthless Seven.\nOur order has never truly recovered from the losses in our war against Goshnar and his undead hordes.\nNow that our leaders and best warriors have died in the attack on the demonic forces, we don't stand a chance against our enemies.\nOur only hope is to gather new forces and to recapture the chamber of dreams.\nOf course I know the right method to distract Hugo long enough to get past him.\nThe dream master is important to teach our recruits in the old ways and in the art of dreamwalking.\nWe need a leader for our cause and we need him badly. Headless we will fail and fall.\nIt is already uncertain who took the Nightmare Chronicles out of the pits and I have no idea where they are hidden.\nThey are fighting about power and influence but unity is the key to success. Our whole order is centred about unity.\nAll our rituals and procedures rooted on unity and sharing, they can't neglect that.\n",
+      "unique_id": 6112
+    },
+    {
+      "item_id": 2815,
+      "line": 42,
+      "text": "Looks like the fox is out!\nMore luck next time!\nSigned:\nthe horned fox\n",
+      "unique_id": 6179
+    },
+    {
+      "item_id": 2821,
+      "line": 51,
+      "text": "Diary of Hengis Wulfson\n... I can only hope I can escape the cyclopes someday. For now I have occupied their chief with an attempt to learn to read and write, but for how long? I'm so desperate. What a foolish idea to travel here to search the famous treasures of this ancient, knightly order. I wish I had never heard about it. I wish I never had sung thant song. No clue how many unfortunate souls I have lured to death with it.",
+      "unique_id": 6187
+    },
+    {
+      "item_id": 2816,
+      "line": 57,
+      "text": "I am doomed!\nI know that Hugo lurks somewhere in the bushes in the North. I won't survive his deadly breath which would kill even the mightiest warrior!\nI have no clue how to trick the infamous Hugo but there has to be a way! Perhaps alchemy is the key to success. I will mix these two potions I bought from the travelling dwarf. We'll see what is going to happen. Perhaps it makes me invulnerable to the deadly breath! Then the secrets of the Nightmare Knights are at my grasp.",
+      "unique_id": 6195
+    },
+    {
+      "item_id": 2821,
+      "line": 64,
+      "text": "Askuro\nMantar\nIldoni\nMaxmof\nXemodo\nOxanti",
+      "unique_id": 6196
+    },
+    {
+      "item_id": 2836,
+      "line": 74,
+      "text": "Banor I praise your name.\nBe with me in the battle.\nBe my shield, let me be your sword.\nI will honour the godly spark in my soul.\nMay it flourish and grow.",
+      "unique_id": 6202
+    },
+    {
+      "item_id": 2816,
+      "line": 83,
+      "text": "look at the 4 and ignore the 2\nend the 7 with 5 in mind\nvalue of 6 is 9\nexplain the second of 4\nrun past the 7\nsubstract 10\nuse the northeast first\nsee the colors change\nerrors are red\nlook what changes\nexpect no mercy\nsix times 10\nstupidity is red.",
+      "unique_id": 6203
+    },
+    {
+      "item_id": 2820,
+      "line": 100,
+      "text": ".... the lever points to the left, the hoist will bring you one level higher. If it points to the right you will go one level deeper.\n\nThese are the construction plans of the hoist. You now understand the mechanism and can use it according to your wishes.",
+      "unique_id": 6214
+    },
+    {
+      "item_id": 5956,
+      "line": 107,
+      "text": "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!\n",
+      "unique_id": 6250
+    },
+    {
+      "item_id": 8117,
+      "line": 113,
+      "text": "Knight Brave: At last we meet face-to-face!\nDoctor Darkness: Too late, puny knight. You can't stop my master plan anymore!\n1st Knave: Watch out! It's a trap!\nKnight Brave: Don't quail, my faithful follower! We have mastered worse obstacles to get here!\nDoctor Darkness: Haha! You may not fear for your own life, but how about hers!?\n2nd Knave: Oh no! Look! It's Princess Buttercup! He's holding her hostage!\nDoctor Darkness: Indeed I do! Wouldn't it be a pity for such a beautiful young lady to die so tragically?\nPrincess Buttercup: Don't care about me! Save the world!\nDoctor Darkness: Keep quiet! Else your hair will make the acquaintance of these scissors!\nAll: You're such a monster!\nDoctor Darkness: Hahaha! Now drop your weapons or else...\n1st Knave: Never!\n2nd Knave: But what about the princess?\nKnight Brave: Trust me, my loyal minions. Drop your weapons.\nDoctor Darkness: At last! The brave Knight Brave in my hands! Your death is near!\nKnight Brave: Not that fast, Doctor Dumbness!\nDoctor Darkness: How dare you? Are you mad? I hold the princess hostage and you drop your weapons. You're all lost!\nKnight Brave: I don't think so, dear doctor!\n1st Knave: What's this? Behind the doctor?\n2nd Knave: Look! It's Lucky, the wonder dog!\nLucky: Woof! Woof!\nDoctor Darkness: Noooooo!\nKnight Brave: Get him, boy!\nLucky: Grrr!\nDoctor Darkness: Ahhhhhh!\nAll: Hooray!\nKnight Brave: Lucky, once again you saved the day!\nLucky: Woof!\n",
+      "unique_id": 6272
+    },
+    {
+      "item_id": 11699,
+      "line": 146,
+      "text": "Rabaz' Unabridged Almanach Of Botany\n----------------------------\n\nFirst Edition\nRabaz, Farmine\n\nAn unfinished passage of the almanach reads:\n'Dreadcoil': Probably the most salient out of the manifold variations of plants befallen by corruption in Zao. (...) Strangely deformed but majestically developed, often aculeate. Blind. It twines constantly to find and catch small insects and even pollen foreign to the species. (...) those found in dry regions or steppes (often underground) are corrupted but still physiognomically intact and ideal for gathering samples. (#133, D, very rare, no sample)\n\n'Giant Verminous': These mutations of various common deciduous trees are usually quite high. Leaves and branches are generally bound upwards (periwinkle, non-weeping) which makes them nearly impossible to gather. (...) some specimens grow subterranean (broad crown, tendriled treetop) and should be easier to reach. Typical locations are dry and secure from animals. (#137, A, very rare, no sample)",
+      "unique_id": 6296
+    },
+    {
+      "item_id": 2821,
+      "line": 160,
+      "text": "I\n\nIt is of utmost importance to keep the subject unaware that he is under survey. To begin an inquiry it is necessary to start as casual as possible. The best thing to do is to ask 'how are you?' immediately after the exchange of greeting phrases. If the suspect answers that something troubles him, than immediately ask him about that subject. If not, ask the subject if he had any TROUBLE lately.\n\nII\n\nNext, ask him if he thinks that the AUTHORITIES will handle the subject that troubles him. If he states that the authorities will solve the trouble, ask him if he thinks that they could have AVOIDED the trouble in the first place. If he confirms that the trouble could have been avoided, he is to be observed for heretical tendencies. If the suspect has yet not shown any heretic opinion, ask him why he thinks that the GODS would ALLOW that such things are happening. If he claims that he doesn't know, it is implied that he doubts this godly decision and is to be observed for heretical tendencies. If he comes up with an explanation that suggests that the gods lack the power to prevent that such a thing happens, than he is to be observed for heretical tendencies as well. If he answers that only the gods know the answer or that the gods had some plausible reason, like testing humanity, he may have no heretical tendencies at all.\n\nIII\n\nIf the suspect claims that he has no trouble at all, ask him if he thinks that the lack of trouble is explained by the FORESIGHT of the AUTHORITIES. If he denies, he is to be observed for heretical tendencies. If he agrees, ask him if he thinks that it is ALSO for the GODS' will that he has no trouble. If he disagrees, he is to be observed for heretical tendencies. If the subject does not show any suspicious behaviour at this point, ask him if he thinks that any TROUBLE will arise in the near FUTURE. If he negates, he obviously will become lax in the line of his duty and he is to be observed for heretical tendencies. If he confirms that trouble might arise, continue as in paragraph II.\n",
+      "unique_id": 6500
+    }
+  ]
+}

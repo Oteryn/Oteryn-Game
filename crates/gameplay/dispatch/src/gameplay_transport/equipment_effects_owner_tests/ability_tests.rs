@@ -22,6 +22,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // 53 exact Grizzly shop keys admitted from Crystal 201189f through
+    // tools/content-migration/grizzly_shop_profiles.py. All have speed_bonus=0.
+    // Twelve are already admitted by main's Task Board cohort; count each key once.
+    ("GRIZZLY-SHOP", 41),
     // E12 captures 1425 bound Hireling items from Crystal 201189f; 516 reuse
     // main 149bf364f profiles and 909 are new (hireling-item-profiles.json).
     // Main has 2210 profiles; its union with the draft's 2104 is exactly 3119.
@@ -87,6 +91,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // reward_claims quest_transition placements (tools/content-migration/quest_callback_profiles.py).
     // Both have speed_bonus=0.
     ("QUESTCHEST-1", 2),
+    // W15: Holy Icon 9388 and 96 additional chest-reward profiles from Crystal 201189f
+    // (tools/content-migration/quest_callback_profiles.py). Shop profile 7400 is counted
+    // by GRIZZLY-SHOP above. Existing text carriers 2815/5956 are already counted.
+    // All 97 additions have speed_bonus=0.
+    // Ten also belong to cohorts added on main; W15 contributes 87 distinct new keys.
+    ("QUESTCHEST-W15", 87),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),

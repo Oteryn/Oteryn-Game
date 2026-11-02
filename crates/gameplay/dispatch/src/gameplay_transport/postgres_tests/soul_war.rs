@@ -637,6 +637,7 @@ async fn reward_delivery(
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef { family: "RewardClaim".into(), production_key: SOUL_WAR_REWARD_CLAIM.into(), revision_ref: SOUL_WAR_REWARD_REVISION.into() },
         source_placement: SOUL_WAR_REWARD_PLACEMENT.into(), item, quantity: 1, backpack,
+        contents: Vec::new(), root_text: None,
         content_revision: format!("sha256:{}", native.source_digest().iter().map(|byte| format!("{byte:02x}")).collect::<String>()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),

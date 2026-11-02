@@ -92,6 +92,18 @@ pub(super) struct Mailbox {
     pub(super) hireling_shutdown: bool,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
+    // CL26s1
+    pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
+    pub(super) chat_public_shutdown: bool,
+    // CL26s2: player-typing panel state and native-window shutdown.
+    pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
+    pub(super) player_typing_shutdown: bool,
+    // CL26s3
+    pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) daily_reward_shutdown: bool,
+    // CL26s4
+    pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,
+    pub(super) boss_rewards_shutdown: bool,
 }
 
 const MAX_COMBAT_REPORTS: usize = 8;
@@ -132,6 +144,14 @@ impl Outbox {
 
     pub(super) fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
+        for event in &events {
+            if let SessionEvent::PlayerTyping(update) = event {
+                oteryn_client_ui::player_typing::protocol::reduce(
+                    &mut mailbox.player_typing,
+                    update.value,
+                );
+            }
+        }
         coalesce_pushed(&mut mailbox.pushed, events);
         mailbox.check_server_messages();
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
@@ -148,7 +168,12 @@ impl Outbox {
     }
 
     pub(super) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
-        lock(&self.0).pushed.entities = Some(entities);
+        let mut mailbox = lock(&self.0);
+        oteryn_client_ui::player_typing::protocol::retain_visible(
+            &mut mailbox.player_typing,
+            &entities,
+        );
+        mailbox.pushed.entities = Some(entities);
     }
 
     pub(super) fn combat(&self, report: CombatReport) {
@@ -245,5 +270,13 @@ impl Drop for PlayLink {
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;
+        // CL26s1
+        mailbox.chat_public_shutdown = true;
+        // CL26s2: stop the player-typing native panel with the session.
+        mailbox.player_typing_shutdown = true;
+        // CL26s3
+        mailbox.daily_reward_shutdown = true;
+        // CL26s4
+        mailbox.boss_rewards_shutdown = true;
     }
 }

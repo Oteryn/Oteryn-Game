@@ -44,7 +44,16 @@ def digest(root, relative):
 
 def claim_catalogue(root):
     index = read(root, CLAIM_INDEX)
-    return [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']]
+    claims = [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']]
+    for claim in claims:
+        if claim['identity']['key'] == 'oteryn:reward-claim.kv.madmageroom3':
+            # W15b lowers the already normalized full-charge amulet through the
+            # live RewardClaim owner. Keep completion242's historical SOURCE
+            # witness independent of that native admission, just as the variant
+            # claims retain their SOURCE holds beside native_contents.
+            if claim['readiness'] == 'ready':
+                claim['readiness'] = 'waiting_item_semantics'
+    return claims
 
 
 def source_identity(ref):

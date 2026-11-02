@@ -22,9 +22,11 @@ SHARED_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i23721": (150, 0, 47233),
 }
 
-# Package merge: main 149bf364f owns the rounded weights of these Task Board
+# Package merge: main owns the rounded weights of these Task Board and chest
 # items. Preserve its exact known values; the raw Hireling capture stays unchanged.
 MERGED_MAIN_NATIVE_WEIGHTS = {
+    "oteryn:item.tibia.i2953": (820, 819, 6435),
+    "oteryn:item.tibia.i3017": (116, 115, 6739),
     "oteryn:item.tibia.i10317": (113, 112, 26957),
     "oteryn:item.tibia.i10454": (115, 114, 27704),
     "oteryn:item.tibia.i18924": (510, 509, 38605),

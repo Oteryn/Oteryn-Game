@@ -2,19 +2,47 @@
   {
     "mechanic": "0182-daily-reward",
     "kind": "handlers",
-    "id": "0182-daily-reward-unsupported",
-    "status": "unsupported",
-    "reason": "DAILY30B implements the server claim; the client reward view and claim input remain pending (Build 7).",
+    "id": "0182-daily-reward-claim",
+    "status": "supported",
     "commands": [
-      354,
+      354
+    ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Claim authority is server-owned."
+    }
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "keybindings",
+    "id": "0182-daily-reward-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+D",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "panels",
+    "id": "0182-daily-reward-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "handlers",
+    "id": "0182-daily-reward-query",
+    "status": "supported",
+    "commands": [
       355
     ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Daily reward state is server-owned."
     }
   }
 ]

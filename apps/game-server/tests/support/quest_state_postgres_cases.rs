@@ -1165,12 +1165,55 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         ] {
             expect_rejected(pool, case, &script, rule).await?;
         }
+        // Grizzly entitlements (0760) and visits (0761) correctly reference their
+        // earning receipts. PostgreSQL rejects TRUNCATE of that referenced table
+        // before firing its guard. Exercise receipt-less row writes directly.
+        let mut orphan = Receipt::new(2, 2, &[(FLAG, 0, 1)]);
+        orphan.quest = OTHER.into();
+        expect_rejected(pool, "track without a receipt", &orphan.tracks(), TRACK).await?;
+        expect_rejected(
+            pool,
+            "state without a receipt",
+            &orphan.state_insert(),
+            STATE,
+        )
+        .await?;
+
+        // Preserve the receipt no-truncate guard check without truncating a
+        // referenced table: verify its binding and run the same guard on a probe.
+        let receipt_guard: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM pg_trigger \
+             WHERE tgrelid = 'game_character_quest_receipts'::regclass \
+               AND tgname = 'game_character_quest_receipts_no_truncate' \
+               AND tgfoid = 'game_character_reject_truncate()'::regprocedure \
+               AND tgtype = 34 AND tgenabled = 'O' \
+               AND tgqual IS NULL AND tgnargs = 0)",
+        )
+        .fetch_one(pool)
+        .await?;
+        assert!(
+            receipt_guard,
+            "receipt no-truncate guard must remain installed"
+        );
+        expect_rejected(
+            pool,
+            "receipt no-truncate guard",
+            "CREATE TEMP TABLE quest_receipts_truncate_probe \
+               (LIKE game_character_quest_receipts); \
+             CREATE TRIGGER receipt_no_truncate BEFORE TRUNCATE \
+               ON quest_receipts_truncate_probe \
+               EXECUTE FUNCTION game_character_reject_truncate(); \
+             TRUNCATE quest_receipts_truncate_probe;",
+            TRUNCATE,
+        )
+        .await?;
         for relation in [
             // Include the FK-dependent offering evidence, Monk entitlements (0548)
-            // and Rotten Blood access fees (0710)
+            // and Rotten Blood access fees (0710) and Grizzly obligations (0760-0761)
             // so PostgreSQL reaches the receipt's no-truncate guard first.
             "game_character_quest_receipts, game_quest_callback_consumptions, \
-             game_character_monk_reward_entitlements, game_rotten_blood_access_fees",
+             game_character_monk_reward_entitlements, game_rotten_blood_access_fees, \
+             game_character_grizzly_reward_entitlements, game_character_grizzly_boss_entries",
             "game_character_quest_tracks",
             "game_character_quest_states",
             "game_character_quest_obligations",

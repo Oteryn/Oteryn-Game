@@ -210,6 +210,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 source_placement: SOUL_WAR_REWARD_PLACEMENT.into(),
                 item,
                 quantity: 1,
+                contents: Vec::new(),
+                root_text: None,
                 backpack,
                 content_revision: format!(
                     "sha256:{}",

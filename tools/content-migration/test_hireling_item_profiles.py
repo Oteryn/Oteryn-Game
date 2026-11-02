@@ -142,12 +142,34 @@ class HirelingItemProfiles(unittest.TestCase):
                 {"state": "KNOWN", "value": False})
             self.assertIn(number, self.overlay["nonportable_ids"])
 
+    def test_chest_admission_retains_trader_equipment_decay_and_classification(self):
+        equipment = self.profiles["oteryn:item.tibia.i5926"]["semantics"]["equipment"]
+        self.assertEqual(equipment["state"], "KNOWN")
+        self.assertEqual(equipment["value"]["patterns"]["state"], "KNOWN")
+        self.assertEqual(equipment["value"]["patterns"]["value"][0]["primary_slot"],
+                         {"state": "KNOWN", "value": "CONTAINER"})
+        classification = self.profiles["oteryn:item.tibia.i2856"]["semantics"]["classification"]
+        self.assertEqual(classification["state"], "KNOWN")
+        self.assertEqual(classification["value"]["item_type"],
+                         {"state": "KNOWN", "value": "CONTAINER"})
+        decay = self.profiles["oteryn:item.tibia.i7377"]["semantics"]["temporal"]
+        self.assertEqual(decay["state"], "KNOWN")
+        self.assertEqual(decay["value"]["duration"], {"state": "KNOWN", "value": 120000})
+        potion = self.profiles["oteryn:item.tibia.i238"]["semantics"]["consumption"]
+        self.assertEqual(potion["state"], "KNOWN")
+        self.assertEqual(potion["value"]["kind"], "POTION")
+        description = self.profiles["oteryn:item.tibia.i238"]["semantics"]["presentation"]["value"]["description"]
+        self.assertEqual(description["state"], "KNOWN")
+        self.assertIn("level 80", description["value"])
+
     def test_answer_q14_preserves_only_the_five_asserted_shared_weights(self):
         self.assertEqual(len(hireling.SHARED_NATIVE_WEIGHTS), 5)
         self.check_shared_weights(hireling.SHARED_NATIVE_WEIGHTS)
 
     def test_package_merge_preserves_exactly_main_task_board_weights(self):
         self.assertEqual(hireling.MERGED_MAIN_NATIVE_WEIGHTS, {
+            "oteryn:item.tibia.i2953": (820, 819, 6435),
+            "oteryn:item.tibia.i3017": (116, 115, 6739),
             "oteryn:item.tibia.i10317": (113, 112, 26957),
             "oteryn:item.tibia.i10454": (115, 114, 27704),
             "oteryn:item.tibia.i18924": (510, 509, 38605),

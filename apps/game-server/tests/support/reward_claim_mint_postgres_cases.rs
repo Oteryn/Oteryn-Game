@@ -806,6 +806,8 @@ fn chest(
         source_placement: "fixture:placement.chest".into(),
         item,
         quantity,
+        contents: Vec::new(),
+        root_text: None,
         backpack: backpack_facts(),
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),

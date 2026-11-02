@@ -3,11 +3,13 @@
 
 use super::ComposedFreshAdmission;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
-use super::item_ref_admission::{generation_item_facts, pinned_index};
+use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
 use crate::content::world_reward_claims::bind_embedded_reward_claims;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimMintRequest};
+use crate::durability::reward_claim_mint::{
+    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -45,7 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Unsupported shapes and unadmitted rewards remain closed in the existing binder.
         let report = bind_embedded_reward_claims(map.overlay.base().as_ref(), &|item| {
             generation_item_facts(native, &item_ref(item)).is_ok_and(|facts| {
-                facts.container_capacity.is_none()
+                facts.container_capacity.is_none_or(|capacity| capacity > 0)
                     && !matches!(
                         facts.stack,
                         crate::durability::item_transfer::ItemStackClass::Unknown
@@ -146,6 +148,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return outcome(UseDisposition::Rejected);
                 };
+                let contents = bound
+                    .contents
+                    .iter()
+                    .map(|child| {
+                        generation_item_facts(native, &item_ref(&child.item)).map(|item| {
+                            RewardClaimMintContent {
+                                item,
+                                quantity: child.count,
+                                key_number: child.key_number,
+                                text: child.text.clone(),
+                            }
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>();
+                let Ok(contents) = contents else {
+                    return outcome(UseDisposition::Rejected);
+                };
                 let request = RewardClaimMintRequest {
                     command: CommandRef::new(command.game_session_id, command_id),
                     claim: TypedDefinitionRef {
@@ -156,6 +175,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     source_placement: bound.placement.placement.as_str().into(),
                     item,
                     quantity: reward.count,
+                    contents,
+                    root_text: bound.root_text.clone(),
                     backpack,
                     content_revision: format!(
                         "sha256:{}",
@@ -167,7 +188,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ),
                     ruleset_revision: entry_chest::RULESET_REVISION.into(),
                     sim_revision: entry_chest::SIM_REVISION.into(),
-                    achievement: None,
+                    achievement: bound.placement.achievement.as_ref().map(|key| {
+                        RewardClaimAchievement {
+                            key: key.clone(),
+                            catalogue: self.achievements.lookup(key),
+                        }
+                    }),
                     quest_transition: bound.placement.quest_transition.clone(),
                     key_number: bound.placement.key_number,
                 };
@@ -179,15 +205,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let result = async {
                     let mut candidate = self
                         .root
-                        .freeze_reward_claim_mint(self.character, self.holder, fence, request)
+                        .freeze_reward_claim_mint_weighted(
+                            self.character,
+                            self.holder,
+                            fence,
+                            request,
+                            &NativeItemWeights(native),
+                        )
                         .await?;
                     self.root
-                        .commit_reward_claim_mint_noticed(
+                        .commit_reward_claim_mint_weighted_noticed(
                             self.character,
                             self.holder,
                             fence,
                             &mut candidate,
                             Some(self.achievements.len()),
+                            &NativeItemWeights(native),
                         )
                         .await
                 }

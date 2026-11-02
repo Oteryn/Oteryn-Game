@@ -147,6 +147,70 @@ impl SessionCommands {
         })
     }
 
+    /// A family may forget its retained request only after this owner has terminalized
+    /// the original reservation. Expired terminal results are not replayed here.
+    pub(super) fn original_terminalized(&self, command: crate::foundation::CommandRef) -> bool {
+        self.0.lock().is_ok_and(|commands| {
+            commands
+                .get(&command.game_session_id())
+                .is_some_and(|entry| {
+                    entry.lock().is_ok_and(|state| {
+                        semantic(command.command_id()).is_some_and(|identity| {
+                            matches!(
+                                state
+                                    .ingress
+                                    .classify_duplicate(command.command_id(), &identity),
+                                DuplicateDisposition::ReplayRetainedOutcome(_)
+                                    | DuplicateDisposition::OutcomeExpired
+                            )
+                        })
+                    })
+                })
+        })
+    }
+
+    /// Only the inactive stream's exact original command may be reconciled before open.
+    /// This does not release its reservation or authorize any gameplay mutation.
+    pub(super) fn reconcilable(&self, command: crate::foundation::CommandRef) -> bool {
+        self.0.lock().is_ok_and(|commands| {
+            commands
+                .get(&command.game_session_id())
+                .is_some_and(|entry| {
+                    entry.lock().is_ok_and(|state| {
+                        !state.active
+                            && state.ingress.outstanding() == 1
+                            && state.pending_delivery.is_some_and(|pending| {
+                                pending.command == command.command_id().get()
+                            })
+                            && semantic(command.command_id()).is_some_and(|identity| {
+                                matches!(
+                                    state
+                                        .ingress
+                                        .classify_duplicate(command.command_id(), &identity),
+                                    DuplicateDisposition::PendingOriginal
+                                )
+                            })
+                    })
+                })
+        })
+    }
+
+    /// The NPC owner has resolved its frozen actions using their original durable keys.
+    pub(super) fn complete_npc(
+        &self,
+        command: crate::foundation::CommandRef,
+        disposition: oteryn_protocol_oteryn::npc_service::NpcIntentDisposition,
+    ) -> Option<()> {
+        if !self.reconcilable(command) {
+            return None;
+        }
+        self.complete_reconciled(
+            command,
+            disposition == oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected,
+            &oteryn_protocol_oteryn::npc_service::encode_npc_intent_result(disposition),
+        )
+    }
+
     /// A disconnected stream retains its exact outstanding original. Family
     /// recovery may resolve that occurrence; a caller counter is never proof.
     pub(super) fn pending_reconciliation(&self, command: crate::foundation::CommandRef) -> bool {
