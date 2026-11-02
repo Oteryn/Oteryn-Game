@@ -1,0 +1,9 @@
+{
+  "mechanic": "0152-item-forge",
+  "kind": "keybindings",
+  "id": "0152-item-forge-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+F",
+  "entry": "input.rs::open_key"
+}

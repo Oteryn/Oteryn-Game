@@ -2,6 +2,35 @@
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 
+#[path = "features/0225-boss-difficulty/mod.rs"]
+pub mod boss_difficulty;
+#[path = "features/0230-browse-field/mod.rs"]
+pub mod browse_field;
+#[path = "features/0240-chat-party-room/mod.rs"]
+pub mod chat_party_room;
+#[path = "features/0199-cyclopedia-character/mod.rs"]
+pub mod cyclopedia_character;
+#[path = "features/0197-cyclopedia-tracker/mod.rs"]
+pub mod cyclopedia_tracker;
+#[path = "features/0151-daily-boost/mod.rs"]
+pub mod daily_boost;
+#[path = "features/0153-depot-search/mod.rs"]
+pub mod depot_search;
+#[path = "features/0179-hotkey-equip/mod.rs"]
+pub mod hotkey_equip;
+#[path = "features/0152-item-forge/mod.rs"]
+pub mod item_forge;
+#[path = "features/0154-store/mod.rs"]
+pub mod store;
+#[path = "features/0258-vip-presence/mod.rs"]
+pub mod vip_presence;
+#[path = "features/0195-weapon-proficiency/mod.rs"]
+pub mod weapon_proficiency;
+
+/// Shared state for server-owned mechanic panels.
+#[path = "components/server_mechanic.rs"]
+mod server_mechanic;
+
 /// Completed species and bounded Animus mastery pages.
 #[path = "features/0168-animus-mastery/mod.rs"]
 pub mod animus_mastery;

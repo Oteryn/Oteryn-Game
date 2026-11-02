@@ -247,9 +247,10 @@ fn item_peer(
 fn the_advertised_set_carries_capability_4_with_its_requirement() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&item_view::CAPABILITY_ITEM_VIEW_MOVE_V1));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES));
-    // Capabilities 12 and 14 (equipment, Ground, the container tree) are not advertised.
-    assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
-    assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
+    // CL25J: hotkey equip, forge and browse field now use the existing equipment
+    // decoder and gated container-tree route, so their prerequisites are advertised.
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
 }
 
 #[test]

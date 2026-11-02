@@ -1,0 +1,9 @@
+{
+  "mechanic": "0151-daily-boost",
+  "kind": "keybindings",
+  "id": "0151-daily-boost-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+B",
+  "entry": "input.rs::open_key"
+}

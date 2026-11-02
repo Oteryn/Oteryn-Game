@@ -40,6 +40,16 @@ fn derived_gated_routes_match_previous_table() {
         (92, &[], &[57]),
         (168, &[232], &[]),
         (274, &[488], &[]),
+        // CL25J: native feature adapters now use these existing gated wire routes.
+        (151, &[177], &[]),
+        (152, &[181], &[]),
+        (153, &[182], &[]),
+        (154, &[183, 184, 185, 186], &[]),
+        (195, &[378, 379, 380, 392, 393, 394, 395], &[]),
+        (197, &[383, 384], &[98]),
+        (199, &[387, 388], &[]),
+        (225, &[431], &[]),
+        (230, &[440], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
@@ -677,6 +687,17 @@ fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
                     (81, 97),
                     (140, 160),
                     (165, 220),
+                    // CL25J: include every newly composed feature route.
+                    (151, 177),
+                    (152, 181),
+                    (153, 182),
+                    (154, 183),
+                    (179, 348),
+                    (195, 378),
+                    (197, 383),
+                    (199, 387),
+                    (225, 431),
+                    (230, 440),
                 ] {
                     assert!(
                         gated_routes().any(|(id, commands, _)| id == capability

@@ -160,6 +160,16 @@ pub mod wheel_allocation;
 #[path = "features/0072-task-board/protocol.rs"]
 pub mod task_board;
 
+/// Push-only chat and VIP presence values consumed by native panels.
+pub mod cl25a_protocol {
+    pub use oteryn_session::{ChatLine, ChatRoomSet, VipPresenceBatch};
+}
+
+/// Admitted command transport for feature-local protocol adapters.
+pub mod raw_feature;
+/// Command and result vocabulary for server-owned mechanic panels.
+pub mod server_mechanic;
+
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
 pub mod stash;
