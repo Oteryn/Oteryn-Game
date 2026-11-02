@@ -7,7 +7,8 @@
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_last_position::{
-    FinalLastPosition, LastPositionKey, LastPositionWrite, upsert_last_position,
+    FinalLastPosition, HouseLastPosition, LastPositionKey, LastPositionWrite,
+    upsert_scoped_last_position,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -61,12 +62,27 @@ impl BedSleepOwner<'_, '_, '_> {
     /// returns the first receipt; a changed intent, stale fence or occupied bed
     /// cannot write. This transaction emits no type-2 audit event.
     pub async fn commit(self) -> Result<BedSleepOutcome, DurabilityError> {
+        self.commit_with_house_position(None).await
+    }
+
+    /// Native House capture retains its origin routing metadata in the same transaction.
+    pub async fn commit_with_house_position(
+        self,
+        final_house: Option<(HouseLastPosition, String)>,
+    ) -> Result<BedSleepOutcome, DurabilityError> {
+        let (final_house, account) = match final_house {
+            Some((house, account)) => (Some(house), Some(account)),
+            None => (None, None),
+        };
         let request = self.request;
         if request.final_position.is_some_and(|final_position| {
             final_position.write_sequence == 0
                 || final_position.record.world_id != request.house.world_id()
                 || final_position.record.rest.is_none()
-        }) || request.command_id == 0
+        }) || final_house
+            .as_ref()
+            .is_some_and(|house| request.final_position.is_none() || house.house != request.house)
+            || request.command_id == 0
             || !(1..=6).contains(&request.skill)
             || request.fence.runtime_scope != request.house.runtime_scope()?
             || self.presence.world() != request.house.world_id()
@@ -81,73 +97,143 @@ impl BedSleepOwner<'_, '_, '_> {
             .record_for(self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = self.node.clone();
+        let plan = BedSleepPlan {
+            request,
+            recovery,
+            node,
+            final_house,
+        };
+        if let Some(account) = account {
+            let store = super::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .with_house_release_owner(&plan.node);
+            let (current, now) = store
+                .current_session_at(plan.request.fence.game_session_id)
+                .await?;
+            if current.session_state() != crate::foundation::GameSessionState::Active
+                || current.current_transport() != Some(plan.request.transport)
+            {
+                return Ok(BedSleepOutcome::Stale);
+            }
+            let Some(transition) = store
+                .prepare_current_claims_release(current, now, &account)
+                .await?
+            else {
+                return Ok(BedSleepOutcome::Stale);
+            };
+            let (_, outcome) = store.release_with_bed(&transition, Some(plan)).await?;
+            return outcome.ok_or(DurabilityError::InvalidStoredState);
+        }
         self.root
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    if !prove_current_incarnation(&mut tx, &node).await? {
-                        return Ok(BedSleepOutcome::Stale);
-                    }
-                    // Serialize the historical-receipt check with the SQL sleep owner.
-                    sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
-                        .bind(request.fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                    let replayed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bed_sleep_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
-                        .bind(request.fence.game_session_id.as_bytes().as_slice()).bind(request.command_id.to_string()).fetch_one(&mut *tx).await?;
-                    let fact = node.fact();
-                    let value: String = sqlx::query_scalar(
-                        "SELECT game_house_bed_sleep(encode($1,'hex')::uuid,\
-                         encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,\
-                         $5::text::numeric,$6::text::numeric,$7::text::numeric,\
-                         $8,$9::text::numeric,$10,$11,$12,$13,$14,\
-                         encode($15,'hex')::uuid,$16::text::numeric)",
-                    )
-                    .bind(request.fence.game_session_id.as_bytes().as_slice())
-                    .bind(request.fence.character_id.as_bytes().as_slice())
-                    .bind(request.house.world_id().as_bytes().as_slice())
-                    .bind(request.house.house_key())
-                    .bind(request.fence.connection_generation.get().to_string())
-                    .bind(request.fence.character_lease_generation.to_string())
-                    .bind(request.fence.scope_ownership_generation.get().to_string())
-                    .bind(request.transport.to_bytes().as_slice())
-                    .bind(request.command_id.to_string())
-                    .bind(request.head.x)
-                    .bind(request.head.y)
-                    .bind(request.head.z)
-                    .bind(match request.sex {
-                        Sex::Female => "female",
-                        Sex::Male => "male",
-                    })
-                    .bind(i32::from(request.skill))
-                    .bind(fact.node_id().as_bytes().as_slice())
-                    .bind(fact.registration_revision().to_string())
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    let outcome = match value.as_str() {
-                        "slept" => BedSleepOutcome::Slept,
-                        "stale" => BedSleepOutcome::Stale,
-                        "denied" => BedSleepOutcome::Denied,
-                        "occupied" => BedSleepOutcome::Occupied,
-                        "conflict" => BedSleepOutcome::Conflict,
-                        _ => return Err(DurabilityError::InvalidStoredState),
-                    };
-                    if outcome == BedSleepOutcome::Slept && !replayed
-                        && let Some(final_position) = request.final_position
-                    {
-                        let key = LastPositionKey {
-                            character_lease_generation: request.fence.character_lease_generation,
-                            write_sequence: final_position.write_sequence,
-                        };
-                        if upsert_last_position(&mut tx, request.fence.character_id.as_bytes(), key, &final_position.record).await? != LastPositionWrite::Written {
-                            return Err(DurabilityError::InvalidStoredState);
-                        }
-                    }
+                    let outcome = plan.apply(&mut tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(outcome)
                 })
             })
             .await
+    }
+}
+
+/// Owned transaction participant; only the validated BedSleepOwner constructs it.
+pub(in crate::durability) struct BedSleepPlan {
+    request: BedSleepRequest,
+    recovery: crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: NodeIncarnationProof,
+    final_house: Option<HouseLastPosition>,
+}
+impl BedSleepPlan {
+    pub(in crate::durability) async fn apply(
+        self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<BedSleepOutcome, DurabilityError> {
+        let request = &self.request;
+        let recovery = &self.recovery;
+        let node = &self.node;
+        assert_recovery_fence(tx, recovery).await?;
+        lock_admission_relations(tx).await?;
+        if !prove_current_incarnation(tx, node).await? {
+            return Ok(BedSleepOutcome::Stale);
+        }
+        // Serialize the historical-receipt check with the SQL sleep owner.
+        sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(request.fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        let replayed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bed_sleep_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
+        .bind(request.fence.game_session_id.as_bytes().as_slice()).bind(request.command_id.to_string()).fetch_one(&mut **tx).await?;
+        if !replayed
+            && let Some(house) = &self.final_house
+            && super::house_hireling::fence::assert_house_custody_fence(
+                tx,
+                node,
+                &request.fence,
+                *house.origin_channel.as_bytes(),
+            )
+            .await?
+            .as_ref()
+                != Some(&request.house)
+        {
+            return Ok(BedSleepOutcome::Stale);
+        }
+        let fact = node.fact();
+        let value: String = sqlx::query_scalar(
+            "SELECT game_house_bed_sleep(encode($1,'hex')::uuid,\
+         encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,\
+         $5::text::numeric,$6::text::numeric,$7::text::numeric,\
+         $8,$9::text::numeric,$10,$11,$12,$13,$14,\
+         encode($15,'hex')::uuid,$16::text::numeric)",
+        )
+        .bind(request.fence.game_session_id.as_bytes().as_slice())
+        .bind(request.fence.character_id.as_bytes().as_slice())
+        .bind(request.house.world_id().as_bytes().as_slice())
+        .bind(request.house.house_key())
+        .bind(request.fence.connection_generation.get().to_string())
+        .bind(request.fence.character_lease_generation.to_string())
+        .bind(request.fence.scope_ownership_generation.get().to_string())
+        .bind(request.transport.to_bytes().as_slice())
+        .bind(request.command_id.to_string())
+        .bind(request.head.x)
+        .bind(request.head.y)
+        .bind(request.head.z)
+        .bind(match request.sex {
+            Sex::Female => "female",
+            Sex::Male => "male",
+        })
+        .bind(i32::from(request.skill))
+        .bind(fact.node_id().as_bytes().as_slice())
+        .bind(fact.registration_revision().to_string())
+        .fetch_one(&mut **tx)
+        .await?;
+        let outcome = match value.as_str() {
+            "slept" => BedSleepOutcome::Slept,
+            "stale" => BedSleepOutcome::Stale,
+            "denied" => BedSleepOutcome::Denied,
+            "occupied" => BedSleepOutcome::Occupied,
+            "conflict" => BedSleepOutcome::Conflict,
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+        if outcome == BedSleepOutcome::Slept
+            && !replayed
+            && let Some(final_position) = request.final_position
+        {
+            let key = LastPositionKey {
+                character_lease_generation: request.fence.character_lease_generation,
+                write_sequence: final_position.write_sequence,
+            };
+            if upsert_scoped_last_position(
+                tx,
+                request.fence.character_id.as_bytes(),
+                key,
+                &final_position.record,
+                self.final_house.as_ref(),
+            )
+            .await?
+                != LastPositionWrite::Written
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
+        Ok(outcome)
     }
 }

@@ -29,6 +29,18 @@ pub(super) async fn finish_owner(
     intent: BedSleepIntent,
     owner: crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>,
 ) -> Result<UseOutcome, crate::durability::DurabilityError> {
+    finish_owner_with_house_position(command, intent, owner, None).await
+}
+
+pub(super) async fn finish_owner_with_house_position(
+    command: UseCommand,
+    intent: BedSleepIntent,
+    owner: crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>,
+    house: Option<(
+        crate::durability::character_last_position::HouseLastPosition,
+        String,
+    )>,
+) -> Result<UseOutcome, crate::durability::DurabilityError> {
     use crate::durability::bed_sleep::BedSleepOutcome;
     if command.item_fence != Some(owner.request.fence)
         || command.game_session_id != owner.request.fence.game_session_id
@@ -37,7 +49,7 @@ pub(super) async fn finish_owner(
     {
         return Ok(UseOutcome::rejected());
     }
-    let disposition = match owner.commit().await? {
+    let disposition = match owner.commit_with_house_position(house).await? {
         BedSleepOutcome::Slept => UseDisposition::OfflineTraining,
         BedSleepOutcome::Occupied => UseDisposition::BedOccupied,
         BedSleepOutcome::Stale | BedSleepOutcome::Conflict => UseDisposition::StaleState,
