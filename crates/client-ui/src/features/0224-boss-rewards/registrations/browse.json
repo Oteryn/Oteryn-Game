@@ -1,0 +1,1 @@
+{"mechanic":"0224-boss-rewards","kind":"handlers","id":"0224-boss-rewards-browse","status":"supported","commands":[428],"direction":"client_to_server","capability":224,"entry":"protocol.rs::request","not_applicable":{"settings":"Reward entitlement and custody are server-owned."}}

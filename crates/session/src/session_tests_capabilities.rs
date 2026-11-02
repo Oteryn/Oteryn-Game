@@ -510,6 +510,11 @@ fn p17c_client_advertises_exiva_and_field_prerequisites() {
 }
 
 #[test]
+fn cl26s3_client_advertises_daily_reward_v2() {
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&182));
+}
+
+#[test]
 fn p17c_field_functions_select_with_prerequisites_on_the_default_client() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)

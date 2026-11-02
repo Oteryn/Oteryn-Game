@@ -80,7 +80,7 @@ repository = "https://github.com/Oteryn/Oteryn-Game"
 publish = false
 
 [workspace.dependencies]
-aws-lc-rs = { version = "=1.18.2", default-features = false, features = ["aws-lc-sys"] }
+aws-lc-rs = { version = "=1.19.0", default-features = false, features = ["aws-lc-sys"] }
 base64 = "=0.22.1"
 cap-fs-ext = "=4.0.3"
 cap-std = "=4.0.3"
@@ -89,7 +89,7 @@ pollster = { version = "=1.0.1", default-features = false }
 lzma-rs = "=0.3.0"
 prost = "=0.14.4"
 reqwest = { version = "=0.13.5", default-features = false, features = ["form", "json", "rustls", "stream"] }
-rustix = { version = "=1.1.5", default-features = false, features = ["fs"] }
+rustix = { version = "=1.1.6", default-features = false, features = ["fs"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["aws_lc_rs", "std"] }
 serde = "=1.0.229"
 serde_json = "=1.0.154"
