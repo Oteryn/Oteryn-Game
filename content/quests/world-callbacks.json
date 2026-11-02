@@ -2831,6 +2831,68 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-up",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31045,
+        "floor": -2
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-down",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31044,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
     }
   ]
 }
