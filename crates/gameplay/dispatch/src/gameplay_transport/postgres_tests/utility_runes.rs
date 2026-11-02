@@ -681,8 +681,12 @@ fn utility_runes_postgres_disintegrate_refuses_house_target_without_payment() ->
 }
 
 async fn utility_case(admin: String, case: WorldItemCase) -> TestResult {
+    // Hang guard only, not a latency assertion. Each case compiles the full production
+    // generation; #2802 grew the native item profiles from 2,372 to 3,517 records, and the
+    // same 14 cases went from 540 s to 844 s on Molehill. Under PG partition 9 contention
+    // three cases passed 120 s (job 125339719593) while every assertion still held.
     tokio::time::timeout(
-        std::time::Duration::from_secs(120),
+        std::time::Duration::from_secs(240),
         utility_inner(admin, case),
     )
     .await?
