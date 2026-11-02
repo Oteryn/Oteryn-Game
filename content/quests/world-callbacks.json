@@ -1357,6 +1357,80 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_castle_entrace.lua:1-19"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/children-of-the-revolution-battle-passage-1",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33356,
+          "y": 31124,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33261,
+        "y": 31077,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/children-of-the-revolution-battle-passage-2",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33261,
+          "y": 31076,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33356,
+        "y": 31126,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27"
+      ]
     }
   ]
 }
