@@ -8,6 +8,6 @@
     232
   ],
   "state_domains": [],
-  "offered": false,
-  "offer_gate": "ANIMUS-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 232 returns the admitted Character's own server-owned, immutable Animus Mastery completions; without the capability selected, command type 232 is refused as unsupported."
+  "offered": true,
+  "offer_gate": "The composed Character authority offers ANIMUS_MASTERY_V1 when it can serve a current-session-fenced durable mastery query. Unsupported authorities remove it from every offer set. Historical mastery queries do not require a currently available Soulpit arena; acquisition remains gated by that activity's existing owner. Command 232 is refused unless capability 168 was selected."
 }

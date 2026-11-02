@@ -268,7 +268,7 @@ where
 {
     let mut deadline = WaitDeadline::new(due);
     loop {
-        let event = deadline.next(poll::next(stream, session)).await;
+        let event = deadline.next(poll::next(stream, authority, session)).await;
         let reached_deadline = event.is_none();
         let event = match event {
             Some(event) => event,

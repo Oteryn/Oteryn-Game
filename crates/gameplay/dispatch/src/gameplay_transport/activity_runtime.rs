@@ -776,6 +776,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         self.states.npc_conversations.forget(old);
         self.states.tutorial_sessions.forget(old);
         self.states.newhaven_travel.forget(old);
+        if Arc::ptr_eq(
+            &self.states.server_messages,
+            &destination.states.server_messages,
+        ) {
+            self.states
+                .server_messages
+                .transfer_connection(source, next)?;
+        }
+        destination.states.gameplay_idle_presence.observe(next);
+        self.states.gameplay_idle_presence.forget(old);
         Ok(())
     }
 
@@ -874,12 +884,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 &world_policy_revision,
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
-        let states = ChannelSessionStates {
-            gameplay_idle_policy: self.states.gameplay_idle_policy,
-            // One node shutdown gate covers commands in every scoped owner.
-            input_gate: Arc::clone(&self.states.input_gate),
-            ..Default::default()
-        };
+        let states = self.states.for_activity();
         self.activity_runtimes
             .insert(RegisteredRuntime {
                 scope: assignment.scope,

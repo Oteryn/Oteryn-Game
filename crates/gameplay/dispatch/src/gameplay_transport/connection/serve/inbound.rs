@@ -29,6 +29,23 @@ where
             None => return Ok(None),
         },
         Next::Held(frame, behind_step) => (frame, behind_step),
+        Next::ServerMessage => {
+            return match tokio::time::timeout(
+                session.policy.interval,
+                zones_nologout_transport::drain(
+                    stream,
+                    authority,
+                    &mut session.admitted,
+                    &mut session.sequence,
+                ),
+            )
+            .await
+            {
+                Ok(Some(())) => Ok(None),
+                Ok(None) => Err(ServeEnd::Disconnected),
+                Err(_) => Err(ServeEnd::ControlLost),
+            };
+        }
         Next::Serene => {
             refresh::serene(stream, authority, session).await?;
             return Ok(None);

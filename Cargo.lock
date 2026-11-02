@@ -1959,6 +1959,8 @@ dependencies = [
 name = "oteryn-dev-client"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client-runtime",
+ "oteryn-client-ui",
  "oteryn-protocol-oteryn",
  "oteryn-session",
  "oteryn-session-tcp",
@@ -2155,6 +2157,7 @@ dependencies = [
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
  "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
  "oteryn-gameplay-encounters",
  "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
@@ -2248,6 +2251,8 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
  "sha2 0.11.1",
 ]
 

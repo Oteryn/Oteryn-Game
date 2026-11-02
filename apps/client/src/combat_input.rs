@@ -5,9 +5,11 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 /// What the shell asks of the session task.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayCommand {
+    Animus(Vec<u8>),
     /// Capability-16 query encoded by its feature controls.
     QuestLog(Vec<u8>),
     Exiva(Vec<u8>),
+    LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Step(StepDir),
     Combat(CombatCommand),

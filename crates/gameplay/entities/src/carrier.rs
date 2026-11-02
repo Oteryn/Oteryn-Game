@@ -115,6 +115,8 @@ mod player_control;
 
 mod positions;
 
+mod raid_spawn;
+
 #[path = "carrier/runtime_actor_companion.rs"]
 pub mod runtime_actor_companion;
 
@@ -208,6 +210,9 @@ use native_summon::NativeSummonLinks;
 pub use native_summon::NativeSummonMovementOutcome;
 pub use native_summon::NativeSummonOrigin;
 use native_summon::copy_native_summon_key;
+pub use raid_spawn::{
+    NativeRaidSpawnSpec, RaidCreatureStatus, RaidSpawnIdentity, RaidSpawnOutcome, RaidSpawnReceipt,
+};
 pub use spawn_realization::AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR;
 pub use spawn_realization::ActivationSpawnFacts;
 pub use spawn_realization::ActivationSpawnPointFacts;
@@ -1078,6 +1083,7 @@ pub struct ScopeRuntimeV1 {
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
+    raid_spawns: raid_spawn::RaidSpawnLedger,
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
@@ -1223,6 +1229,7 @@ impl ChannelRuntimeV1 {
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
+            raid_spawns: raid_spawn::RaidSpawnLedger::default(),
             daily_boost: None,
             echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,

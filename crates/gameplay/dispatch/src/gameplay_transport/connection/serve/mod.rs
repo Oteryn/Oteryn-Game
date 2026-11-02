@@ -127,6 +127,9 @@ where
 {
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
+    // Keep one guard across owner changes. It must also drop the transferred
+    // recipient if a handoff write is cancelled before destination setup.
+    let mut server_messages = None;
     let mut scoped_authority: Option<A> = None;
     loop {
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
@@ -150,13 +153,20 @@ where
                 .runtime_actor
                 .is_none_or(|actor| actor.runtime_scope() != fence.runtime_scope)
         }) {
-            admitted =
-                match house_transfer::serve(stream, admitted, authority, policy, &mut integrity)
-                    .await
-                {
-                    Ok(next) => next,
-                    Err(end) => return *end,
-                };
+            admitted = match house_transfer::serve(
+                stream,
+                admitted,
+                authority,
+                root_authority,
+                &mut server_messages,
+                policy,
+                &mut integrity,
+            )
+            .await
+            {
+                Ok(next) => next,
+                Err(end) => return *end,
+            };
         }
         let playable = matches!(
             admitted.first_entry,
@@ -182,6 +192,16 @@ where
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };
+        if server_messages.is_none() {
+            server_messages =
+                crate::gameplay_transport::raid_notices::ServerMessageConnection::join(
+                    root_authority,
+                    session.admitted,
+                );
+            if server_messages.is_none() {
+                return ConnectionEnd::AdmittedThenDisconnected(session.admitted);
+            }
+        }
         loop {
             if !authority.remember_activity_connection(session.admitted) {
                 return ConnectionEnd::AdmittedThenDisconnected(session.admitted);
@@ -195,7 +215,7 @@ where
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
             }
-            let next = poll::next(stream, &mut session).await;
+            let next = poll::next(stream, authority, &mut session).await;
             // A member who did not issue the lever may have changed owner while
             // waiting for input. Its buffered source command never reaches the
             // destination's fresh command stream.

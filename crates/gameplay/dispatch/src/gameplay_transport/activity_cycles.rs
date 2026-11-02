@@ -72,13 +72,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut pass = pin!(async {
                 let _ = self.activity_lifecycle_pass().await;
+                let _ = self.publish_activity_raid_presence().await;
                 tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             });
             let mut stopping = pin!(shutdown.cancelled());
             let mut stopped = shutdown.is_cancelled();
             let mut pass_done = false;
             poll_fn(|context| {
-                if stopping.as_mut().poll(context).is_ready() {
+                // `cancelled()` panics if polled again after it completed, and this pass keeps
+                // polling while stopped jobs drain.
+                if !stopped && stopping.as_mut().poll(context).is_ready() {
                     stopped = true;
                 }
                 if stopped {

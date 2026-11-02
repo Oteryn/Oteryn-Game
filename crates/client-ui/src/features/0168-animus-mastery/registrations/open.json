@@ -1,0 +1,9 @@
+{
+  "mechanic": "0168-animus-mastery",
+  "kind": "keybindings",
+  "id": "0168-animus-mastery-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+A",
+  "entry": "input.rs::open_key"
+}

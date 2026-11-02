@@ -123,6 +123,28 @@ impl ChannelRuntimeV1 {
         self.carrier
             .bind_continuation(&self.continuity, actor.0, game_session_id, reconcile)
     }
+    /// Current physical player census, including grace actors and actors whose
+    /// position has not been installed yet. Session projections use this to
+    /// prove complete coverage without treating an absent observation as idle.
+    pub fn current_player_session_count(&self) -> Result<usize, CarrierError> {
+        self.owner_fence()?;
+        Ok(self
+            .carrier
+            .slots
+            .iter()
+            .filter(|slot| {
+                matches!(
+                    slot,
+                    Slot::Occupied {
+                        game_session_id: Some(_),
+                        committed: true,
+                        ..
+                    }
+                )
+            })
+            .count())
+    }
+
     /// Test-only census: (committed player actors, pending player reservations).
     #[cfg(any(test, feature = "test-support"))]
     pub fn player_slot_counts(&self) -> (usize, usize) {

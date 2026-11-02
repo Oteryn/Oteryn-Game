@@ -917,6 +917,82 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Reads this session's trained build and Platform account loyalty in one fenced
+    /// transaction. Neither the skill owner nor the account projection is mutated.
+    pub async fn read_loyalty_build_state(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+        content_digest: [u8; 32],
+    ) -> Result<(DurableBuildState, u32)> {
+        if content_digest == [0; 32] {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let fence = *fence;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let current = match fence.runtime_scope {
+                        RuntimeScopeRefV1::Channel { world_id, channel_id } => {
+                            // Same lock order as the existing equipment read; activation
+                            // cannot advance between its proof and the projection read.
+                            sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea, 'hex')::uuid::text || ':' || encode($2::bytea, 'hex')::uuid::text, 0))")
+                                .bind(world_id.as_bytes().as_slice())
+                                .bind(channel_id.as_bytes().as_slice())
+                                .execute(&mut *tx).await?;
+                            if !super::item_transfer::character_item_fence_for_scope_is_current(
+                                &mut tx, &node, &fence, command, fence.character_id, fence.runtime_scope,
+                            ).await? {
+                                return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                            }
+                            let digest: Option<Vec<u8>> = sqlx::query_scalar(
+                                "SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1",
+                            ).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+                                .fetch_optional(&mut *tx).await?;
+                            digest.as_deref() == Some(content_digest.as_slice())
+                        }
+                        RuntimeScopeRefV1::Instance { .. } => {
+                            // Private activities use their own assignment and immutable
+                            // content binding; an origin Channel never grants authority.
+                            super::item_transfer::assert_activity_item_content(
+                                &mut tx, &node, &fence, command, content_digest,
+                            ).await?
+                        }
+                    };
+                    if !current {
+                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    }
+                    let row = sqlx::query(concat!(
+                        "SELECT b.vocation, ", family_columns!("b.", ""),
+                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points ",
+                        "FROM game_character_roots r ",
+                        "LEFT JOIN game_character_build_state b USING(character_id) ",
+                        "LEFT JOIN game_account_loyalty_projections l ON l.account_id=r.account_id ",
+                        "WHERE r.character_id=encode($1,'hex')::uuid"
+                    )).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                    let build = if row.try_get::<Option<String>, _>("vocation")?.is_some() {
+                        DurableBuildState::stored(&row, "vocation", "")?
+                    } else {
+                        DurableBuildState::default()
+                    };
+                    let points = u32::try_from(row.try_get::<i64, _>("loyalty_points")?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok((build, points)))
+                })
+            })
+            .await?
+    }
+
     /// The admission load (A13 §4.1): the build row a new runtime actor starts from, or the seed
     /// when the Character has none. It writes nothing. A stored value outside the bounds fails
     /// closed with `Unavailable(InvalidStoredState)`.

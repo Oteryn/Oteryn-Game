@@ -1,10 +1,40 @@
 {
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "kind": "static_content",
-  "notes": "Raid/invasion definitions.",
-  "owner": "Encounter",
-  "path": "content/encounters/raids/",
-  "population_state": "READY_UNPOPULATED",
-  "repository": "Oteryn/Oteryn-Game",
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
+  "active_count": 135,
+  "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
+  "catalogue_sha256": "cc4346529768b8143c54af6e88ec7aba12f5c1b0fb980908e9f26de535cdd548",
+  "evidence_record_count": 122,
+  "evidence_shards": [
+    "content/encounters/raids/evidence-00000-00121.json"
+  ],
+  "family": "Encounter.Raid",
+  "generator": "tools/content-migration/raid_catalogue.py",
+  "population_state": "POPULATED",
+  "record_count": 239,
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "shards": [
+    "content/encounters/raids/catalogue.json"
+  ],
+  "source_capture_sha256": "902319f52a2825e1f7722b919d44526377657e8201139b512e4b9bb178f9b720",
+  "totals": {
+    "area": {
+      "active": 34,
+      "total": 102
+    },
+    "boss": {
+      "active": 70,
+      "total": 86
+    },
+    "calendar": {
+      "active": 0,
+      "total": 5
+    },
+    "city": {
+      "active": 2,
+      "total": 16
+    },
+    "multi_variant": {
+      "active": 29,
+      "total": 30
+    }
+  }
 }

@@ -190,7 +190,7 @@ async fn execute_ready_frame(
     authority: &SlowOwner,
     session: &mut ServeState,
 ) -> TestResult {
-    let next = poll::next(stream, session).await;
+    let next = poll::next(stream, authority, session).await;
     assert!(
         matches!(next, Next::Frame(Ok(_))),
         "the ready client command must run before a second visibility refresh"
@@ -237,7 +237,7 @@ async fn scenario(browse: bool) -> TestResult {
         );
         command_id += 1;
     }
-    let first = poll::next(&mut server, &mut session).await;
+    let first = poll::next(&mut server, &authority, &mut session).await;
     assert!(matches!(first, Next::Visibility));
     let close = encode_container_view_intent(&ContainerViewIntent::Close { view_id: 15 })
         .map_err(|error| format!("{error:?}"))?;
@@ -268,14 +268,14 @@ async fn scenario(browse: bool) -> TestResult {
         assert_eq!(session.admitted.continuity.next_command_id, command_id + 1);
         assert_eq!(authority.browse_reads.get(), 1);
         assert!(matches!(
-            poll::next(&mut server, &mut session).await,
+            poll::next(&mut server, &authority, &mut session).await,
             Next::Visibility
         ));
         assert!(tokio::time::Instant::now() - finished >= VISIBILITY_REFRESH);
     } else {
         // Sessions without capability 230 retain their pre-existing scheduling semantics.
         assert!(matches!(
-            poll::next(&mut server, &mut session).await,
+            poll::next(&mut server, &authority, &mut session).await,
             Next::Visibility
         ));
         assert_eq!(tokio::time::Instant::now(), finished);

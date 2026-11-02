@@ -67,6 +67,7 @@ WORLD_PINS = "content/world/pins/"
 PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 
 AUTHORING_TOOLS = (
+    "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",

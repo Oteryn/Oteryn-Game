@@ -7,17 +7,19 @@
     "crates/gameplay/encounter-rules/src/raid/mod.rs",
     "crates/gameplay/encounter-rules/src/raid/definition.rs",
     "crates/gameplay/encounter-rules/src/raid/schedule.rs",
-    "crates/gameplay/durability/src/durability/raid_schedule.rs"
+    "crates/gameplay/durability/src/durability/raid_schedule.rs",
+    "crates/gameplay/encounter-rules/src/raid/catalogue.rs"
   ],
   "resource": "Waves in one raid definition",
   "unit": "waves",
-  "hard_maximum": 32,
+  "hard_maximum": 50,
   "configurable_range": {
-    "minimum": 32,
-    "maximum": 32
+    "minimum": 50,
+    "maximum": 50
   },
-  "allocation_impact": "Bounded pure schedule metadata only. No runtime activation, content admission or channel target enumeration is authorized.",
+  "allocation_impact": "RAIDS-GLOBAL owner decision 2026-11-01: Crystal 201189f data-global/raids/oramond/walkers.xml:4-53 contains 50 scheduled spawn events. Validate the complete selected variant before allocation; reject the 51st wave.",
   "boundary_tests": [
-    "raid_definition_capacity_and_deadline_boundaries"
+    "raid_definition_capacity_and_deadline_boundaries",
+    "source_maxima_and_post_spawn_announcement_remain_executable"
   ]
 }
