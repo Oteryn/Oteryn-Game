@@ -619,7 +619,7 @@ mod item_appearance_tests {
             matches!(store.displayed_temporary_appearance_at(u64::MAX - 1),
             Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key() == "oteryn:item.tibia.i26087")
         );
-        store.remove_type(crate::domain::condition::ConditionType::Outfit);
+        store.remove_type(ConditionType::Outfit);
         assert!(store.displayed_temporary_appearance_at(1000).is_none());
     }
 
