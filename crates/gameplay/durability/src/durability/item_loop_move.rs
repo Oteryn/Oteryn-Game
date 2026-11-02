@@ -653,6 +653,29 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         size,
         destination,
     } = plan;
+    // Ground relocation never enters the carried tree: it needs neither a backpack
+    // nor free carrying capacity. Custody and quantity use the same loop lines below.
+    if source == SourceKind::Ground
+        && let LoopDestination::Ground(ground) = destination
+    {
+        let Ok((maximum, _)) = stack_maximum(facts.stack) else {
+            return refuse(LoopMoveRefusal::NotSupported);
+        };
+        if quantity > maximum {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        return Ok(PlannedDestination {
+            target: Target::Ground(GroundPlacement {
+                spatial_position: ground.spatial_position.clone(),
+                corpse_ref: Vec::new(),
+                map_revision: ground.map_revision.clone(),
+                content_revision: ground.content_revision.clone(),
+                native_room_placement_context: ground.placement_context.clone(),
+            }),
+            receiver: None,
+            rest: count,
+        });
+    }
     let Some(slot) = load_slot(tx, character).await? else {
         return refuse(LoopMoveRefusal::NoBackpack);
     };
@@ -935,7 +958,8 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
-                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, \
+                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
+                COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) AS loop_pickup \
            FROM game_item_instances i \
@@ -1010,6 +1034,17 @@ async fn apply_loop_move<C: ItemLoopContent>(
         }
         if !row.try_get::<bool, _>("loop_pickup")? {
             return refuse(LoopMoveRefusal::NotSupported);
+        }
+        // Map-MINT's exact source proof binds its context to the bundle digest (0130),
+        // whereas the destination loop drop uses the actor's frame. A loop drop keeps
+        // its frame context; both sources must keep their map and Content pins.
+        if let LoopDestination::Ground(to) = &request.destination
+            && (row.try_get::<String, _>("ground_map")? != to.map_revision
+                || row.try_get::<String, _>("ground_content")? != to.content_revision
+                || (row.try_get::<bool, _>("loop_drop")?
+                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context))
+        {
+            return refuse(LoopMoveRefusal::Stale);
         }
         SourceKind::Ground
     } else {
@@ -1125,7 +1160,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
             .bind(channel.map(|id| id.to_vec())).bind(scope_kind).bind(instance.map(|id| id.to_vec()))
             .fetch_one(&mut **tx)
             .await?;
-            if dropped + 1 > ITEM_LOOP_CHANNEL_DROPS_MAX {
+            if dropped + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?) > ITEM_LOOP_CHANNEL_DROPS_MAX {
                 return refuse(LoopMoveRefusal::Blocked);
             }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();
@@ -1209,7 +1244,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
             revision: None,
         });
     }
-    let operation = if matches!(source, SourceKind::Ground | SourceKind::Corpse) {
+    let operation = if source == SourceKind::Ground && matches!(target, Target::Ground(_)) {
+        OPERATION_MOVE
+    } else if matches!(source, SourceKind::Ground | SourceKind::Corpse) {
         OPERATION_PICKUP
     } else if matches!(target, Target::Ground(_)) {
         OPERATION_DROP
@@ -1478,8 +1515,7 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let world = fence.runtime_scope.world_id();
-                        if matches!(destination, LoopDestination::Ground(_))
-                            || mint.item.container_capacity.is_some()
+                        if mint.item.container_capacity.is_some()
                             || content.loop_facts(&mint.item.definition).as_ref()
                                 != Some(&mint.item)
                         {
