@@ -2610,6 +2610,28 @@ mod client_use_wire;
 
 #[path = "qualification/client_phases/dev_client.rs"]
 mod client_dev_client;
+#[path = "qualification/client_phases/guild.rs"]
+mod client_guild;
+#[path = "qualification/client_phases/hireling.rs"]
+mod client_hireling;
+#[path = "qualification/client_phases/imbue.rs"]
+mod client_imbue;
+#[path = "qualification/client_phases/market.rs"]
+mod client_market;
+#[path = "qualification/client_phases/npc_shop.rs"]
+mod client_npc_shop;
+#[path = "qualification/client_phases/party.rs"]
+mod client_party;
+#[path = "qualification/client_phases/player_trade.rs"]
+mod client_player_trade;
+#[path = "qualification/client_phases/prey.rs"]
+mod client_prey;
+#[path = "qualification/client_phases/stash.rs"]
+mod client_stash;
+#[path = "qualification/client_phases/task_board.rs"]
+mod client_task_board;
+#[path = "qualification/client_phases/vip.rs"]
+mod client_vip;
 
 #[path = "qualification/client_phases/readmission.rs"]
 mod client_readmission;

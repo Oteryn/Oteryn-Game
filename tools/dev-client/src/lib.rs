@@ -41,6 +41,9 @@ use std::net::SocketAddr;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
+pub use oteryn_client_runtime as client_runtime;
+pub use oteryn_client_ui as client_ui;
+
 /// Everything `connect_and_join` needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]
 pub struct JoinRequest<'a> {
@@ -185,6 +188,12 @@ pub struct DevClientSession {
 }
 
 impl DevClientSession {
+    /// The session used by the native feature adapters. Qualification code deliberately uses
+    /// this instead of manufacturing command frames or decoding replies itself.
+    pub fn session_mut(&mut self) -> &mut Session<TcpTlsStream> {
+        &mut self.session
+    }
+
     /// The join snapshot exactly as decoded, before any command.
     pub fn join_snapshot(&self) -> &JoinSnapshot {
         self.session.join_snapshot()
