@@ -536,9 +536,37 @@ async fn trade_until_loss(
         );
         assert_eq!(snapshot(h).await?, before);
         drop(client_a);
+        // The listener records the same loss when it sees EOF on client_a. While its pass holds
+        // the durability root this call reads `RootUnavailable` and returns `Unknown`, which the
+        // listener itself retries (control_loss.rs commit_loss_cause); whichever call lands second
+        // finds the session already Reconnectable (`NotApplicable`). Retry `Unknown` the same way,
+        // then prove the durable loss directly (PC: 6/6 runs hit `Unknown` without the retry).
+        let lost = tokio::time::timeout(Duration::from_secs(30), async {
+            loop {
+                match owner.lose_control(a, Duration::ZERO, None).await {
+                    crate::gameplay_transport::connection::ControlLossResult::Unknown => {
+                        tokio::time::sleep(Duration::from_millis(50)).await;
+                    }
+                    other => return other,
+                }
+            }
+        })
+        .await?;
+        assert!(
+            matches!(
+                lost,
+                crate::gameplay_transport::connection::ControlLossResult::Recorded
+                    | crate::gameplay_transport::connection::ControlLossResult::NotApplicable
+            ),
+            "control loss of the trade initiator: {lost:?}"
+        );
         assert_eq!(
-            owner.lose_control(a, Duration::ZERO, None).await,
-            crate::gameplay_transport::connection::ControlLossResult::Recorded
+            FreshAdmissionStore::from_root(h.root.clone())
+                .current_session(a.game_session_id)
+                .await?
+                .session_state(),
+            crate::foundation::GameSessionState::Reconnectable,
+            "the lost controller's session is durably Reconnectable"
         );
         let late = trade_send(&mut client_b, 2, trade::Intent::Accept { trade_id }).await?;
         assert_ne!(late, trade::ResultCode::Completed.payload());
