@@ -188,7 +188,13 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         for status in &statuses {
             let RaidSpawnOutcome::Placed(actor) = status.outcome else { return Err("placed actor".into()); };
             let health = runtime.companion_snapshot(actor).map_err(debug)?.maximum_health;
-            runtime.commit_monster_lab_damage(actor, &status.identity.index.to_be_bytes(), health).map_err(debug)?;
+            // The carrier rejects an unsequenced occurrence containing a NUL byte, so the raw
+            // big-endian index (e.g. [0, 0]) cannot name the hit; use a NUL-free text identity.
+            let occurrence = format!(
+                "raid-live-death:{}:{}:{}",
+                status.identity.wave, status.identity.entry, status.identity.index
+            );
+            runtime.commit_monster_lab_damage(actor, occurrence.as_bytes(), health).map_err(debug)?;
             assert!(!runtime.contains_live_creature(actor));
             deaths.push(RaidCreatureIdentity { wave: status.identity.wave, entry: status.identity.entry, index: status.identity.index });
         }
