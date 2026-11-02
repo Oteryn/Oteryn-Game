@@ -1,10 +1,10 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 1,
-    "not_playable": 96,
-    "supported_unqualified": 239
+    "dispatch_pg_qualified": 8,
+    "not_playable": 28,
+    "supported_unqualified": 300
   },
-  "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
+  "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
     {
       "chests": [
@@ -122,8 +122,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/alawar_s_vault_quest"
@@ -155,8 +155,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/an_interest_in_botany_quest"
@@ -188,8 +189,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
@@ -216,8 +217,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
@@ -306,6 +307,7 @@
                   "unique_id": 6226
                 },
                 {
+                  "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
                   "citation": "crystal:data-global/startup/tables/chest.lua:2354",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -314,8 +316,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
@@ -342,8 +344,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
@@ -440,8 +442,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
@@ -468,8 +470,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
@@ -658,8 +660,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "quest_container_chests_bear_bag_once_and_replay",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.bear_chest2",
@@ -808,8 +810,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.behemothquest2",
@@ -925,8 +927,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/berserker_treasure_quest"
@@ -1510,8 +1512,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
@@ -1538,8 +1540,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook",
@@ -1660,8 +1662,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/dead_archer_quest"
@@ -2344,8 +2346,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED, TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id3002",
@@ -2372,8 +2374,8 @@
               ]
             }
           ],
-          "reason": "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "quest_container_chests_crystal_key3002_is_minted_once",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id3008",
@@ -2433,8 +2435,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/dragon_corpse_quest"
@@ -2466,8 +2468,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
@@ -2494,8 +2496,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/dragon_tower_quest"
@@ -2527,8 +2529,9 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "quest_container_chests_authored_book_text_survives_replay",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
@@ -2555,8 +2558,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
@@ -2890,8 +2894,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "quest_container_chests_key_attributes_are_atomic",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/emperor_s_cookies_quest"
@@ -3167,8 +3171,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/fishing_box_quest"
@@ -3429,8 +3433,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/geomancer_quest"
@@ -3551,8 +3555,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.goblintemple2",
@@ -3856,8 +3860,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/inukaya_quest"
@@ -3922,8 +3926,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/iron_helmet_quest"
@@ -4377,8 +4381,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/lion_trophy_quest"
@@ -4499,8 +4503,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/longsword_quest"
@@ -4588,8 +4592,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "quest_container_chests_full_definition_charges_mint_one_instance",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/mad_mage_room_quest"
@@ -4682,8 +4686,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.minohell3",
@@ -5058,8 +5062,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/orc_shaman_quest"
@@ -5185,8 +5189,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id4055",
@@ -5246,8 +5250,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED, KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/parchment_room_quest"
@@ -5312,8 +5316,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/poison_daggers_quest"
@@ -5345,8 +5349,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.powerbolt2",
@@ -5373,8 +5377,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "quest_container_chests_leaf_text_is_frozen_and_replayed",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/power_bolts_quest"
@@ -5650,8 +5655,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/scale_armor_quest"
@@ -5823,8 +5828,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_1.secret_service.magic_spellbook",
@@ -5987,7 +5993,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3115",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3124",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 6336
@@ -6009,8 +6015,9 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3106",
-                  "reward_matches_current_source": true,
+                  "accepted_override": "PR2770 Q6/A: retain Item9238 at32994,32405,12 over donor9237 at32629,32446,10",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3115",
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6335
                 }
@@ -6075,7 +6082,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3133",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3142",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 6338
@@ -6097,7 +6104,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3141",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3150",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 6339
@@ -6185,7 +6192,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3124",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3133",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 6337
@@ -6226,8 +6233,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/shaman_treasure_quest"
@@ -6259,8 +6266,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/short_sword_quest"
@@ -6325,8 +6333,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/silver_brooch_quest"
@@ -6569,8 +6577,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/steel_helmet_quest"
@@ -6602,8 +6611,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/strong_potions_quest"
@@ -6820,8 +6829,8 @@
               ]
             }
           ],
-          "reason": "ACHIEVEMENT_OWNER_ARCHITECTURE_AFTER_CLOSEOUT, CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/the_annihilator_quest"
@@ -6942,8 +6951,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
@@ -6990,8 +7000,9 @@
                   "unique_id": 6078
                 },
                 {
+                  "accepted_override": "PR2770 Q5/A: retain accepted Item12510 over donor3208",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1179",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6078
                 }
@@ -7054,8 +7065,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
@@ -7082,8 +7093,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/the_explorer_society_quest"
@@ -7115,8 +7126,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot",
@@ -7288,8 +7299,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
@@ -7316,8 +7328,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/the_ice_islands_quest"
@@ -7335,7 +7347,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3151",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3167",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 6500
@@ -7343,8 +7355,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
@@ -7516,8 +7529,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/the_new_frontier_quest"
@@ -7839,8 +7852,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book",
@@ -7867,8 +7881,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp",
@@ -7895,8 +7910,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp",
@@ -7923,8 +7938,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight",
@@ -8583,6 +8598,7 @@
                   "unique_id": 6105
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1383",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -8611,6 +8627,7 @@
                   "unique_id": 6106
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1391",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -8639,6 +8656,7 @@
                   "unique_id": 6109
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1415",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -8667,6 +8685,7 @@
                   "unique_id": 6108
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1407",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -8695,6 +8714,7 @@
                   "unique_id": 6107
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1399",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -8723,6 +8743,7 @@
                   "unique_id": 6110
                 },
                 {
+                  "accepted_override": "PR2770 Q3/A: retain accepted24hour repeat despite absent donor timerStorage",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1423",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -9077,8 +9098,9 @@
               ]
             }
           ],
-          "reason": "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
@@ -9424,8 +9446,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
@@ -9452,8 +9474,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
@@ -9839,8 +9861,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.vampireshield2",
@@ -9928,8 +9950,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/waterfall_quest"
@@ -10022,8 +10044,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch",
@@ -10111,8 +10133,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
@@ -10182,7 +10204,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3158",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3174",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 7825
@@ -10236,6 +10258,7 @@
                   "unique_id": 6218
                 },
                 {
+                  "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
                   "citation": "crystal:data-global/startup/tables/chest.lua:2291",
                   "reward_matches_current_source": false,
                   "server": "crystalserver",
@@ -10244,8 +10267,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "crystalserver:quest/berserk_potion_quest"
@@ -10277,8 +10300,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "crystalserver:quest/frost_dragon_quest"
@@ -10310,8 +10333,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "crystalserver:quest/skeleton_decoration_quest"
@@ -10362,7 +10385,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3481",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3497",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 14092
@@ -10384,7 +10407,7 @@
               },
               "sources": [
                 {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3487",
+                  "citation": "crystal:data-global/startup/tables/chest.lua:3503",
                   "reward_matches_current_source": true,
                   "server": "crystalserver",
                   "unique_id": 14093
@@ -10453,8 +10476,8 @@
               ]
             }
           ],
-          "reason": "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
-          "status": "not_playable"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id3620",
@@ -10488,14 +10511,14 @@
       "quest": "unlinked"
     }
   ],
-  "scope": "Generic once-only single-item chests; levers and step-in scripts are follow-up slices.",
+  "scope": "Once-only leaf/key/text chests and exact filled-container/shared-storage-choice recipes; levers and step-in scripts are separate owners.",
   "source_revisions": {
     "canary": "47dfd51f",
-    "crystalserver": "ff7ede59"
+    "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8"
   },
   "source_sha256": {
     "canary": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
-    "crystalserver": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+    "crystalserver": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
   },
-  "task": "PARITY-QUEST-CALLBACKS-1"
+  "task": "PARITY-QUEST-CALLBACKS-1+W15b"
 }

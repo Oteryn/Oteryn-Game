@@ -314,6 +314,8 @@ pub async fn prepare_chest_use(
         source_placement: request.chest.as_str().to_owned(),
         item,
         quantity: chest.quantity,
+        contents: Vec::new(),
+        root_text: None,
         backpack,
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,

@@ -194,6 +194,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
+        if self.states.grizzly_boss.has_pending(session) {
+            return true;
+        }
         self.states
             .quest_callbacks
             .records
@@ -212,6 +215,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_grizzly_boss(session).await {
+            return false;
+        }
         if !self.reconcile_quest_callback_receipts(session).await {
             return false;
         }

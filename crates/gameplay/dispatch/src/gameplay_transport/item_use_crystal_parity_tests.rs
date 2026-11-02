@@ -323,7 +323,7 @@ fn i14_global_consumables_are_admitted() {
     }
 }
 
-/// Great Mana needs a canonical correction stage; condition effects remain unsupported.
+/// W15b admits the exact Great Mana chest reward; condition effects remain unsupported.
 #[test]
 fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     let controller = native();
@@ -331,9 +331,17 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
-    for id in [238, 7644] {
-        assert!(policy_of(state, id).is_none(), "item {id}");
-    }
+    // W15b admits 238 as an exact chest child with its canonical potion facts.
+    // The condition-effect potion 7644 still has no native admission.
+    assert!(matches!(
+        &policy_of(state, 238)
+            .expect("W15b chest child")
+            .record()
+            .semantics
+            .consumption,
+        ReferenceItemField::Known(ReferenceItemConsumption::Potion(_))
+    ));
+    assert!(policy_of(state, 7644).is_none(), "item 7644");
 }
 
 /// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
@@ -365,8 +373,9 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
     }
     // TASKBOARD-P04 admits 8074 and 25699 through its source-qualified delivery cohort:
     // Crystal 201189f task_board_delivery_items.lua:85,281; items.xml:22081-22092,48934-48955.
-    // The basic spellbook 3059 and the other source ids remain unadmitted.
-    assert_eq!(admitted, vec![6120, 8074, 25699]);
+    // W15b admits the basic spellbook 3059 as an exact chest reward; the other
+    // source ids remain unadmitted.
+    assert_eq!(admitted, vec![3059, 6120, 8074, 25699]);
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

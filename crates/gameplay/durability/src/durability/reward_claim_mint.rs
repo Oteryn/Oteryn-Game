@@ -10,12 +10,14 @@
 //! nor resolve the claim and item facts from Content: the caller supplies
 //! them from the current compatible Content.
 //!
-//! First-slice scope (§5.1): `once` claims only (`next_allowed_at` stays
-//! NULL), one top-level reward item per claim, never a container (DUR03-RL-05
-//! = 0), never into an existing stack (DUR-03 §39.1) and never onto Ground.
+//! `once` claims keep `next_allowed_at` NULL and mint one top-level reward
+//! into a fresh backpack entry, never an existing stack or Ground. W15b also
+//! admits a source-authored container with at most 20 direct children. Its
+//! complete frozen plan, the root and every child's one-item audit event
+//! commit in one physical transaction. No single audit event expands a bag.
 //! Room (D92): the main backpack needs a free direct entry,
-//! `current_entry_count < definition_capacity`; weight is not checked here
-//! (a declared delivery gap closed with B3-3). A claim without room is
+//! `current_entry_count < definition_capacity`; the native bundle producer
+//! also weighs the full incoming plan and current carried custody. A claim without room is
 //! refused with nothing written, and the player can make room and retry.
 //!
 //! Lifecycle of one logical reward-claim MINT, keyed by its full CommandRef:
@@ -113,6 +115,8 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 pub mod boss_reward;
+mod contents;
+mod grizzly;
 mod monk;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
@@ -122,6 +126,9 @@ const INTENT_BINDING_VERSION: u8 = 2;
 const QUEST_TRANSITION_TAG: u8 = 0x51;
 /// Opens the intent binding's key number section.
 const KEY_NUMBER_TAG: u8 = 0x4b;
+/// Opens the optional, ordered direct-child intent. Empty legacy claims keep
+/// their exact previous intent bytes.
+const CONTENTS_TAG: u8 = 0x43;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 /// `source_kind` of the achievement grant requests a reward claim records.
 pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
@@ -132,6 +139,17 @@ pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
 pub struct RewardClaimAchievement {
     pub key: String,
     pub catalogue: AchievementCatalogueLookup,
+}
+
+/// A fresh direct child of the claim's reward container, in donor order.
+/// Nested container items may be empty; this shape never recursively expands them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RewardClaimMintContent {
+    pub item: ItemDefinitionFacts,
+    pub quantity: u32,
+    pub key_number: Option<u16>,
+    /// Public authored source text, never player-supplied writing.
+    pub text: Option<String>,
 }
 
 /// Complete semantic intent of one reward-claim MINT.
@@ -149,6 +167,10 @@ pub struct RewardClaimMintRequest {
     /// Facts of the one top-level reward item's definition.
     pub item: ItemDefinitionFacts,
     pub quantity: u32,
+    /// The exact complete container contents. No child is dropped on refusal.
+    pub contents: Vec<RewardClaimMintContent>,
+    /// Immutable source-authored text on the top-level reward.
+    pub root_text: Option<String>,
     /// Facts of the equipped main backpack's definition.
     pub backpack: ItemDefinitionFacts,
     pub content_revision: String,
@@ -172,7 +194,7 @@ pub enum RewardClaimRefusal {
     /// Another CommandRef's MINT of this claim is still pending
     /// (GAME-INTERACTION §17.2); resume or reconcile that CommandRef instead.
     ClaimPending,
-    /// A container reward waits for the nested-bags decision (RL-05 = 0).
+    /// A container reward has an unsupported native capacity or shape.
     RewardIsContainer,
     /// Unknown stack class (D82: fail closed).
     UnknownStackClass,
@@ -386,7 +408,9 @@ pub fn plan_reward_claim_mint(
     if input.claim_pending {
         return Err(Refusal::ClaimPending);
     }
-    if input.item.container_capacity.is_some() {
+    if input.item.container_capacity.is_some_and(|capacity| {
+        capacity == 0 || input.quantity != 1 || input.item.stack != ItemStackClass::NonStackable
+    }) {
         return Err(Refusal::RewardIsContainer);
     }
     let (maximum, _) = stack_maximum(input.item.stack).map_err(from_stack_refusal)?;
@@ -472,15 +496,50 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: RewardClaimMintRequest,
     ) -> Result<RewardClaimMintCandidate> {
+        self.freeze_reward_claim_mint_with_weights(authority, node, fence, request, None)
+            .await
+    }
+
+    /// Weigh the complete bundle reward before reservation, so capacity
+    /// refusal leaves no pending claim that could obstruct a new command.
+    pub async fn freeze_reward_claim_mint_weighted(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: RewardClaimMintRequest,
+        weights: &dyn super::item_transfer::ItemWeightLookup,
+    ) -> Result<RewardClaimMintCandidate> {
+        if !contents::weight_pin_matches(&request, weights) {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        self.freeze_reward_claim_mint_with_weights(authority, node, fence, request, Some(weights))
+            .await
+    }
+
+    async fn freeze_reward_claim_mint_with_weights(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: RewardClaimMintRequest,
+        weights: Option<&dyn super::item_transfer::ItemWeightLookup>,
+    ) -> Result<RewardClaimMintCandidate> {
         validate_request(&request)?;
+        if weights.is_none() && request.item.container_capacity.is_some() {
+            return Err(RewardClaimMintError::Refused(
+                RewardClaimRefusal::RewardIsContainer,
+            ));
+        }
         let intent_binding = intent_binding(&request, fence.character_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         let node = node.clone();
+        let mut weight_context = weights;
         let (request, reservation) = self
             .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut weight_context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -492,11 +551,27 @@ impl DurabilityRoot {
                             return Ok(Err(RewardClaimMintError::ConflictingCause));
                         }
                         let reservation = decode_reservation(&row)?;
-                        if load_receipt(&mut tx, request.command).await?.is_none()
-                            && let Err(error) =
+                        if !contents::reservation_matches(&row, &request, &reservation)? {
+                            return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+                        }
+                        if load_receipt(&mut tx, request.command).await?.is_none() {
+                            if let Err(error) =
                                 admit(&mut tx, &node, &fence, &request, &reservation).await?
-                        {
-                            return Ok(Err(error));
+                            {
+                                return Ok(Err(error));
+                            }
+                            if let Some(weights) = *weights
+                                && let Err(error) = contents::check_capacity(
+                                    &mut tx,
+                                    fence.character_id,
+                                    reservation.world_id,
+                                    &request,
+                                    weights,
+                                )
+                                .await?
+                            {
+                                return Ok(Err(error));
+                            }
                         }
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok((request, reservation)));
@@ -526,6 +601,18 @@ impl DurabilityRoot {
                     };
                     if let Err(error) =
                         admit(&mut tx, &node, &fence, &request, &reservation).await?
+                    {
+                        return Ok(Err(error));
+                    }
+                    if let Some(weights) = *weights
+                        && let Err(error) = contents::check_capacity(
+                            &mut tx,
+                            fence.character_id,
+                            reservation.world_id,
+                            &request,
+                            weights,
+                        )
+                        .await?
                     {
                         return Ok(Err(error));
                     }
@@ -646,6 +733,55 @@ impl DurabilityRoot {
         candidate: &mut RewardClaimMintCandidate,
         catalogue_len: Option<usize>,
     ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
+        self.commit_reward_claim_mint_with_weights(
+            authority,
+            node,
+            fence,
+            candidate,
+            catalogue_len,
+            None,
+        )
+        .await
+    }
+
+    /// Native bundle USE supplies the same pinned Content generation for
+    /// every carried and incoming item. The complete reward is weighed before
+    /// its root, child, claim, key or audit row is inserted.
+    pub async fn commit_reward_claim_mint_weighted_noticed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimMintCandidate,
+        catalogue_len: Option<usize>,
+        weights: &dyn super::item_transfer::ItemWeightLookup,
+    ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
+        if !contents::weight_pin_matches(&candidate.request, weights) {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        self.commit_reward_claim_mint_with_weights(
+            authority,
+            node,
+            fence,
+            candidate,
+            catalogue_len,
+            Some(weights),
+        )
+        .await
+    }
+
+    async fn commit_reward_claim_mint_with_weights(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimMintCandidate,
+        catalogue_len: Option<usize>,
+        weights: Option<&dyn super::item_transfer::ItemWeightLookup>,
+    ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
+        if weights.is_none() && candidate.request.item.container_capacity.is_some() {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -653,9 +789,10 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenClaim::of(candidate);
         let node = node.clone();
+        let mut weight_context = weights;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut weight_context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -692,6 +829,9 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(RewardClaimMintError::ConflictingCandidate));
                     }
+                    if !contents::reservation_matches(&row, &frozen.request, &reservation)? {
+                        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+                    }
                     let identity_reused: bool = sqlx::query_scalar(
                         "SELECT EXISTS (SELECT 1 FROM game_reward_claim_mint_receipts \
                                          WHERE transaction_id = encode($1,'hex')::uuid \
@@ -718,6 +858,18 @@ impl DurabilityRoot {
                             Ok(admitted) => admitted,
                             Err(error) => return Ok(Err(error)),
                         };
+                    if let Some(weights) = *weights
+                        && let Err(error) = contents::check_capacity(
+                            &mut tx,
+                            fence.character_id,
+                            reservation.world_id,
+                            &frozen.request,
+                            weights,
+                        )
+                        .await?
+                    {
+                        return Ok(Err(error));
+                    }
                     let message = claim_message(&frozen, &reservation, &fence, destination);
                     let tuple = tx.tuple();
                     let envelope = match audit::encode_reward_claim_mint_event(
@@ -1081,11 +1233,11 @@ async fn apply_claim(
            character_id, claim_family, claim_production_key, claim_revision_ref, \
            intent_binding, transaction_id, event_id, item_instance_id, quantity, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at) \
+           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            $4, $5, $6, $7, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid, $11, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
-           $14, $15, $16)",
+           $14, $15, $16, $17, $18, $19)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1103,6 +1255,9 @@ async fn apply_claim(
     .bind(frozen.occurred_at_unix_ms)
     .bind(envelope_sha256.as_slice())
     .bind(committed_at)
+    .bind(contents::capacity(request))
+    .bind(sqlx::types::Json(contents::plan(request, reservation)))
+    .bind(&request.root_text)
     .execute(&mut **tx)
     .await?;
     if let Some(number) = request.key_number {
@@ -1132,6 +1287,17 @@ async fn apply_claim(
         .execute(&mut **tx)
         .await?;
     }
+    if let Some(text) = &request.root_text {
+        super::item_text::initialize_authored_reward_text(
+            tx,
+            frozen.item_instance_id,
+            frozen.transaction_id,
+            text,
+            frozen.occurred_at_unix_ms,
+        )
+        .await?;
+    }
+    contents::apply(tx, frozen, reservation, envelope, tuple).await?;
     Ok(CommittedRewardClaimMint {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1167,7 +1333,7 @@ async fn load_reservation(
     Ok(sqlx::query(
         "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
-                work_units_used \
+                work_units_used, contents_capacity, contents_plan, root_text \
            FROM game_reward_claim_mint_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
             AND command_id = $2::text::numeric(20,0)",
@@ -1206,11 +1372,11 @@ async fn insert_reservation(
         "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, claim_family, claim_production_key, \
            claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
-           occurred_at, work_units_used, reserved_at) \
+           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6, $7, $8, $9, \
            encode($10,'hex')::uuid, encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
@@ -1225,6 +1391,9 @@ async fn insert_reservation(
     .bind(reservation.event_id.as_slice())
     .bind(reservation.item_instance_id.as_slice())
     .bind(reservation.occurred_at_unix_ms)
+    .bind(contents::capacity(request))
+    .bind(sqlx::types::Json(contents::plan(request, reservation)))
+    .bind(&request.root_text)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -1320,6 +1489,17 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     }) {
         return Err(RewardClaimMintError::InvalidInput);
     }
+    if request.root_text.as_deref().is_some_and(|text| {
+        !super::item_text::valid_authored_reward_text(text)
+            || request.quantity != 1
+            || request.item.stack != ItemStackClass::NonStackable
+            || request.item.container_capacity.is_some()
+            || request.key_number.is_some()
+            || !request.contents.is_empty()
+    }) {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
+    contents::validate(request)?;
     Ok(())
 }
 
@@ -1395,6 +1575,23 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
     if let Some(number) = request.key_number {
         canonical.push(KEY_NUMBER_TAG);
         canonical.extend_from_slice(&number.to_be_bytes());
+    }
+    if !request.contents.is_empty() {
+        canonical.push(CONTENTS_TAG);
+        canonical.extend_from_slice(&(request.contents.len() as u32).to_be_bytes());
+        for child in &request.contents {
+            push_facts(&mut canonical, &child.item).map_err(from_transfer_input)?;
+            canonical.extend_from_slice(&child.quantity.to_be_bytes());
+            canonical.extend_from_slice(&child.key_number.unwrap_or(0).to_be_bytes());
+            if let Some(text) = &child.text {
+                canonical.push(0x54);
+                push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
+            }
+        }
+    }
+    if let Some(text) = &request.root_text {
+        canonical.push(0x54);
+        push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1535,6 +1732,9 @@ mod tests {
         );
         let mut bag = facts("fixture:b3.bag", ItemStackClass::NonStackable);
         bag.container_capacity = Some(8);
+        assert!(plan(&bag, 1, false, &[], 20).is_ok());
+        assert_eq!(plan(&bag, 2, false, &[], 20), Err(R::RewardIsContainer));
+        bag.container_capacity = Some(0);
         assert_eq!(plan(&bag, 1, false, &[], 20), Err(R::RewardIsContainer));
         assert_eq!(
             plan(&facts("u", ItemStackClass::Unknown), 1, false, &[], 20),
@@ -1625,6 +1825,8 @@ mod tests {
             source_placement: "fixture:placement.chest".into(),
             item: facts("fixture:b3.coin", COIN),
             quantity: 3,
+            contents: Vec::new(),
+            root_text: None,
             backpack: backpack_facts(20),
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),
@@ -1779,6 +1981,159 @@ mod tests {
             assert_eq!(binding[0], INTENT_BINDING_VERSION);
             assert!(bindings[index + 1..].iter().all(|other| other != binding));
         }
+    }
+
+    #[test]
+    fn container_contents_are_complete_bounded_and_part_of_the_frozen_intent() {
+        let mut container = request(None);
+        container.item = backpack_facts(24);
+        container.quantity = 1;
+        container.contents = vec![
+            RewardClaimMintContent {
+                item: facts("fixture:coin", COIN),
+                quantity: 100,
+                key_number: None,
+                text: None,
+            },
+            RewardClaimMintContent {
+                item: facts("fixture:key", ItemStackClass::NonStackable),
+                quantity: 1,
+                key_number: Some(3801),
+                text: None,
+            },
+        ];
+        assert!(validate_request(&container).is_ok());
+        assert!(plan(&container.item, 1, false, &[], 20).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let original = intent_binding(&container, character).expect("bound contents");
+        for mutation in ["count", "order", "key", "missing child", "definition"] {
+            let mut changed = container.clone();
+            match mutation {
+                "count" => changed.contents[0].quantity = 99,
+                "order" => changed.contents.reverse(),
+                "key" => changed.contents[1].key_number = Some(3802),
+                "missing child" => {
+                    changed.contents.pop();
+                }
+                _ => changed.contents[0].item.definition.revision_ref = "definition-r2".into(),
+            }
+            assert_ne!(
+                intent_binding(&changed, character).expect("changed intent"),
+                original,
+                "{mutation}"
+            );
+        }
+        for mutation in [
+            "not a container",
+            "root quantity",
+            "overfull",
+            "native bound",
+            "unknown stack",
+            "oversize stack",
+            "invalid key",
+            "key stack",
+        ] {
+            let mut changed = container.clone();
+            match mutation {
+                "not a container" => changed.item.container_capacity = None,
+                "root quantity" => changed.quantity = 2,
+                "overfull" => changed.item.container_capacity = Some(1),
+                "native bound" => changed.contents = vec![changed.contents[0].clone(); 21],
+                "unknown stack" => changed.contents[0].item.stack = ItemStackClass::Unknown,
+                "oversize stack" => changed.contents[0].quantity = 101,
+                "invalid key" => changed.contents[1].key_number = Some(0),
+                _ => changed.contents[0].key_number = Some(3801),
+            }
+            assert!(validate_request(&changed).is_err(), "{mutation}");
+        }
+    }
+
+    #[test]
+    fn authored_container_text_is_bounded_and_bound_to_the_frozen_intent() {
+        let mut container = request(None);
+        container.item = backpack_facts(20);
+        container.quantity = 1;
+        container.contents = vec![RewardClaimMintContent {
+            item: facts("fixture:book", ItemStackClass::NonStackable),
+            quantity: 1,
+            key_number: None,
+            text: Some("source-authored text".into()),
+        }];
+        assert!(validate_request(&container).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let original = intent_binding(&container, character).expect("text binding");
+        for body in [None, Some("different text".to_owned())] {
+            let mut changed = container.clone();
+            changed.contents[0].text = body;
+            assert_ne!(
+                intent_binding(&changed, character).expect("changed binding"),
+                original
+            );
+        }
+        for body in [
+            "".to_owned(),
+            "\0".to_owned(),
+            "x".repeat(4001),
+            "x".repeat(7997),
+            "é".repeat(3999),
+        ] {
+            let mut changed = container.clone();
+            changed.contents[0].text = Some(body);
+            assert!(validate_request(&changed).is_err());
+        }
+        let mut stack = container.clone();
+        stack.contents[0].item.stack = COIN;
+        assert!(validate_request(&stack).is_err());
+        let mut large = container;
+        large.contents[0].text = Some("é".repeat(3998));
+        assert!(validate_request(&large).is_ok());
+        large.contents = vec![large.contents[0].clone(); 4];
+        assert!(matches!(
+            validate_request(&large),
+            Err(RewardClaimMintError::CapacityExceeded)
+        ));
+    }
+
+    #[test]
+    fn authored_leaf_text_is_bounded_and_bound_to_the_frozen_intent() {
+        let mut book = request(None);
+        book.item = facts("fixture:book", ItemStackClass::NonStackable);
+        book.quantity = 1;
+        book.root_text = Some("source-authored text".into());
+        assert!(validate_request(&book).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let original = intent_binding(&book, character).expect("text binding");
+        for body in [None, Some("different text".to_owned())] {
+            let mut changed = book.clone();
+            changed.root_text = body;
+            assert_ne!(
+                intent_binding(&changed, character).expect("changed binding"),
+                original
+            );
+        }
+        for body in [
+            "".to_owned(),
+            "\0".to_owned(),
+            "x".repeat(4001),
+            "x".repeat(7997),
+            "é".repeat(3999),
+        ] {
+            let mut changed = book.clone();
+            changed.root_text = Some(body);
+            assert!(validate_request(&changed).is_err());
+        }
+        for mutation in ["quantity", "stack", "container", "key"] {
+            let mut changed = book.clone();
+            match mutation {
+                "quantity" => changed.quantity = 2,
+                "stack" => changed.item.stack = COIN,
+                "container" => changed.item.container_capacity = Some(8),
+                _ => changed.key_number = Some(3002),
+            }
+            assert!(validate_request(&changed).is_err(), "{mutation}");
+        }
+        book.root_text = Some("é".repeat(3998));
+        assert!(validate_request(&book).is_ok());
     }
 
     #[test]

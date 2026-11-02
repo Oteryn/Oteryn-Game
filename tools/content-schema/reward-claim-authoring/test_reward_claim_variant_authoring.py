@@ -1,8 +1,8 @@
 """Offline regressions for typed canonical variant DATA, never native readiness."""
 import copy
 import json
-from pathlib import Path
 import unittest
+
 import jsonschema
 import reward_claim_authoring as plain
 import reward_claim_variant_authoring as variants
@@ -31,12 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_219_12(self):
+    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 219)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 12)
+        self.assertEqual(index['readiness']['ready'], 220)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -123,9 +123,12 @@ class CanonicalVariantTests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'duplicate|collision'):
                 variants.derive_definitions(packet, self.items, plain.stack_problem)
 
-    def test_compiler_boundary_lists_all_variants_as_unsupported(self):
+    def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        self.assertEqual(len(errors), 105)
+        # W15b admits 67 exact container/leaf recipes without rewriting
+        # the immutable source dispositions of the105 original variant records.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 67)
+        self.assertEqual(len(errors), 38)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):
