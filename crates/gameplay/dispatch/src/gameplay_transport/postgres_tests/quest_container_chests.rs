@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 enum Case {
     Bear,
     DesertCoins,
+    Waterfall,
     BehemothBag,
     BehemothHalberd,
     BehemothShield,
@@ -52,6 +53,12 @@ fn quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner() -> Te
     execute(Case::BehemothHalberd, "QUESTS6_BEHEMOTH_HALBERD")?;
     execute(Case::BehemothShield, "QUESTS6_BEHEMOTH_SHIELD")?;
     execute(Case::BehemothArmor, "QUESTS6_BEHEMOTH_ARMOR")
+}
+
+// Crystal 201189f startup/tables/chest.lua:2591-2598.
+#[test]
+fn quests6_waterfall_source_bag_is_atomic_and_replayable() -> TestResult {
+    execute(Case::Waterfall, "QUESTS6_WATERFALL_BAG")
 }
 
 // Crystal 201189f startup/tables/chest.lua:1806-1812.
@@ -116,6 +123,16 @@ fn scenario(case: Case) -> TestResult {
             6157,
             "oteryn:item.tibia.i3035",
             vec![],
+        ),
+        Case::Waterfall => (
+            "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+            (32970, 32646, -8),
+            6258,
+            "oteryn:item.tibia.i5926",
+            vec![
+                ("oteryn:item.tibia.i6096", 1_i64, 0_i32),
+                ("oteryn:item.tibia.i3097", 1, 0),
+            ],
         ),
         Case::BehemothBag => (
             "oteryn:reward-claim.kv.behemothquest1",
