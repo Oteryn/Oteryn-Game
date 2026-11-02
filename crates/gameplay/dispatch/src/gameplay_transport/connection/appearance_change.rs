@@ -12,6 +12,7 @@ pub(super) struct SessionAppearance {
     selected: bool,
     item_view: bool,
     forge: bool,
+    empty_outfit: bool,
     revision: u64,
     high_water: u32,
     catalogue: Option<wire::Catalogue>,
@@ -37,6 +38,7 @@ impl SessionAppearance {
             selected: selected.contains(wire::CAPABILITY_APPEARANCE_V1),
             item_view: selected.contains(CAPABILITY_ITEM_VIEW_MOVE_V1),
             forge: selected.contains(wire::CAPABILITY_FORGE_CREATURE_V1),
+            empty_outfit: selected.contains(wire::CAPABILITY_EMPTY_OUTFIT_V1),
             ..Self::default()
         }
     }
@@ -155,7 +157,12 @@ impl SessionAppearance {
             self.select_hirelings(channel);
             let players = self.players(&snapshot.entities);
             let observation = authority
-                .appearance_observation(actor, admitted.game_session_id, players.clone())
+                .appearance_observation_projected(
+                    actor,
+                    admitted.game_session_id,
+                    self.empty_outfit,
+                    players.clone(),
+                )
                 .await?;
             self.upserts(observation, &players)?;
             self.attach(&mut snapshot.entities)?;

@@ -367,6 +367,27 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     if case == AttackCase::Rat {
         rat_movement_retry(&mut owner, &deps, monster).await?;
         after = health(&owner, &deps).await?;
+
+        // Crystal monster.cpp:52-54 scales runAwayHealth with initial max HP; the admitted
+        // 1x rat therefore flees at its authored 5 HP through the production AI cycle.
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.set_test_creature_health(monster, 5).map_err(debug)?;
+        }
+        owner.clock_origin -= Duration::from_millis(2_000);
+        owner.drain_monster_melee().await;
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .monster_melee
+                .creature_ai
+                .state(monster)
+                .is_some_and(|state| state.is_fleeing()),
+            "the production rat think uses its scaled flee threshold"
+        );
     }
 
     // Existing CHAR-VITALS-1 owns HP durability: its session-fenced transaction writes the

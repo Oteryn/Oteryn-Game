@@ -9,6 +9,7 @@ pub use crate::world_spatial_entities::EntityRef;
 
 pub const CAPABILITY_FORGE_CREATURE_V1: u32 = 104;
 pub const CAPABILITY_APPEARANCE_V1: u32 = 25;
+pub const CAPABILITY_EMPTY_OUTFIT_V1: u32 = 275;
 pub const COMMAND_TYPE_APPEARANCE_CHANGE: u32 = 25;
 pub const STATE_DOMAIN_APPEARANCE: u32 = 21;
 pub const SNAPSHOT_TYPE_APPEARANCE: u32 = 1;
@@ -63,6 +64,7 @@ pub struct Catalogue {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Look {
+    EmptyOutfit,
     Outfit {
         look_type: u32,
         colours: [u16; 4],

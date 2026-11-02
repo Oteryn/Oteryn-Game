@@ -3,8 +3,9 @@
 //! Activation realizes points in canonical order (source, point ordinal), at most
 //! [`REALIZATIONS_PER_WINDOW_MAX`] per owner window. Respawn keeps at most one pending occurrence
 //! per point ([`RESPAWN_PENDING_PER_CHANNEL_MAX`] in all) and walks the §6.3 chain: blocked by
-//! player interest (blockable points only) with a successor one full delay later; otherwise the
-//! warning, then admission [`SPAWN_WARNING_MICROS`] later; an occupied cell retries
+//! player interest (blockable points only) with a successor one full delay later; an unblocked
+//! blockable point admits immediately, while a non-blockable point warns and then admits
+//! [`SPAWN_WARNING_MICROS`] later; an occupied cell retries
 //! [`OCCUPANCY_RETRIES_MAX`] times one retry interval apart (each retry repeats the warning), then
 //! the chain ends skipped with a successor one full delay later. Times are owner semantic
 //! microseconds. Nothing here is durable (§6.5).
@@ -53,7 +54,7 @@ pub fn realization_windows(points: &[SpawnPoint]) -> Vec<Vec<SpawnPoint>> {
 /// The step a due occurrence runs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RespawnStep {
-    /// The occurrence is due: a blockable point checks player interest, then warns.
+    /// The occurrence is due: a blockable point checks player interest, then admits immediately.
     Due,
     /// A retry of the Occupied chain: it repeats the warning (never blocked).
     Retry,
@@ -77,6 +78,8 @@ pub struct PendingRespawn {
 pub enum RespawnOutcome {
     /// Player interest blocked the point; the successor is due one full delay later.
     Blocked { successor_due_micros: u64 },
+    /// A blockable point has no player interest and proceeds to admission now, without warning.
+    Immediate,
     /// The warning runs now; admission is due [`SPAWN_WARNING_MICROS`] later.
     Warned { admit_due_micros: u64 },
     /// The cell was occupied at admission; the retry is due one retry interval later.
@@ -160,7 +163,8 @@ impl RespawnSchedule {
         due
     }
 
-    /// Runs a due `Due` or `Retry` step: blocked (blockable `Due` only), else the warning.
+    /// Runs a due `Due` or `Retry` step: a blockable `Due` is blocked or proceeds immediately;
+    /// all other steps warn.
     pub fn run_warning_step(
         &mut self,
         point: SpawnPoint,
@@ -177,6 +181,10 @@ impl RespawnSchedule {
                 Ok(RespawnOutcome::Blocked {
                     successor_due_micros,
                 })
+            }
+            RespawnStep::Due if timing.blockable => {
+                pending.step = RespawnStep::Admit;
+                Ok(RespawnOutcome::Immediate)
             }
             RespawnStep::Due | RespawnStep::Retry => {
                 let admit_due_micros = after(now, SPAWN_WARNING_MICROS)?;
@@ -331,14 +339,21 @@ mod tests {
                 successor_due_micros: 2 * DELAY
             })
         );
-        // DIFF (recorded, D115): Crystal `spawn_monster.cpp:376-378` spawns a blockable point
-        // with no player in view at once, with no warning; Oteryn warns first as for every point.
+        // Crystal 201189f8 `spawn_monster.cpp:376-382`: a blockable point with no player in
+        // view spawns immediately; only a non-blockable point uses the warning delay.
         let mut schedule = RespawnSchedule::default();
         schedule.creature_gone(POINT, timing(true), 0).unwrap();
         assert_eq!(
             schedule.run_warning_step(POINT, timing(true), false, DELAY),
-            Ok(RespawnOutcome::Warned {
-                admit_due_micros: DELAY + SPAWN_WARNING_MICROS
+            Ok(RespawnOutcome::Immediate)
+        );
+        assert_eq!(
+            schedule.pending(POINT),
+            Some(PendingRespawn {
+                due_micros: DELAY,
+                step: RespawnStep::Admit,
+                attempt: 0,
+                successor: 0,
             })
         );
     }
@@ -358,9 +373,7 @@ mod tests {
         assert_eq!(schedule.len(), 1);
         assert_eq!(
             schedule.run_warning_step(POINT, timing(true), false, 2 * DELAY),
-            Ok(RespawnOutcome::Warned {
-                admit_due_micros: 2 * DELAY + SPAWN_WARNING_MICROS
-            })
+            Ok(RespawnOutcome::Immediate)
         );
     }
 

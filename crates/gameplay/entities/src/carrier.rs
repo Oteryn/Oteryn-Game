@@ -1416,8 +1416,9 @@ impl ChannelRuntimeV1 {
     /// Channel owner's creature pass. A point whose creature is gone (observed at the first
     /// drive of an owner window) gets its one occurrence one full delay later; due occurrences
     /// then run by deadline and point: blocked by a player's interest area (blockable points
-    /// only), else the warning and admission 4,200 ms later; an occupied cell runs the Occupied
-    /// chain. Nothing runs while an activation is in progress.
+    /// only); an unblocked blockable point admits immediately, while a non-blockable point warns
+    /// and admits 4,200 ms later. An occupied cell runs the Occupied chain. Nothing runs while an
+    /// activation is in progress.
     ///
     /// SPAWN-CEILINGS-1: the owner drives this once per connected session, so the gone scan is
     /// coalesced per Channel: it runs on the first drive of each owner window
@@ -1553,6 +1554,7 @@ impl ChannelRuntimeV1 {
             }
             match outcome {
                 RespawnOutcome::Warned { .. } => report.warnings.push(cell),
+                RespawnOutcome::Immediate => {}
                 RespawnOutcome::Blocked { .. } => report.blocked += 1,
                 RespawnOutcome::Retrying { .. } => report.retried += 1,
                 RespawnOutcome::Skipped { .. } => report.skipped += 1,
