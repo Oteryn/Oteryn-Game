@@ -129,6 +129,38 @@ class CanaryMapping(unittest.TestCase):
 
 
 class Sources(unittest.TestCase):
+    def test_active_power_ring_uses_base_wiki_modifier(self):
+        # Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
+        items, holds, _ = sources(
+            {3050: [(2184, {"attrib": "fist fighting +4"})]},
+            {3087: {"skillfist": "6"}},
+            {KEY.format(3050): charged(), KEY.format(3087): charged()},
+        )
+        active = next(item for item in items if item["item_key"] == KEY.format(3087))
+        self.assertEqual(holds, [])
+        self.assertEqual(
+            active["fallback"],
+            [
+                {
+                    "field_path": "skill_modifiers.modifiers",
+                    "value": [points("SKILL_FIST", 4)],
+                }
+            ],
+        )
+        self.assertEqual(active["sources"][0]["paired_base_item_id"], 3050)
+
+    def test_paired_power_ring_conflicting_or_malformed_wiki_fails(self):
+        for pages in (
+            [(1, {"attrib": "fist fighting +4"}), (2, {"attrib": "fist fighting +6"})],
+            [(1, {"attrib": "unparsed fist bonus"})],
+        ):
+            with self.subTest(pages=pages), self.assertRaises(ValueError):
+                sources(
+                    {3050: pages},
+                    {3087: {"skillfist": "6"}},
+                    {KEY.format(3050): charged(), KEY.format(3087): charged()},
+                )
+
     def test_wiki_first_and_fallback_where_silent(self):
         items, holds, pairs = sources(
             {2: [(2, {"attrib": "sword fighting +4"})], 3: [(3, {"weight": "1"})]},
