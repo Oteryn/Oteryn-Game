@@ -407,6 +407,237 @@ impl ChannelSpellStates {
     }
 }
 
+impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
+    /// M06-CLOSE: run while the successful step still owns the Channel lane. The runtime
+    /// census is taken after leaving; durable item moves finish before the door transition.
+    pub(super) async fn close_departed_door(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementLocalPosition,
+        movement_revision: u64,
+    ) {
+        use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey, loop_move};
+        use crate::map::door::{DoorStepOut, DoorTileItem, door_step_out};
+        use crate::map::overlay::AddedItem;
+        let (Some(map), Some(position)) = (self.bundle_map(), tile_position(origin)) else {
+            return;
+        };
+        let Some(entries) = tile_entries(map, origin) else {
+            return;
+        };
+        let doors: Vec<_> = entries
+            .entries
+            .iter()
+            .filter(|(key, facts)| {
+                map.facts.doors().contains(*key)
+                    && matches!(
+                        door_step_out::<ItemKey>(facts.appearance_id, position, false, true, &[]),
+                        DoorStepOut::Close { .. }
+                    )
+            })
+            .copied()
+            .collect();
+        if doors.is_empty() {
+            return;
+        }
+        let (index, east_enterable) = {
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return;
+            }
+            let Ok(at) = runtime.read_actor_position(actor) else {
+                return;
+            };
+            let Some(at) = tile_position(at.position()) else {
+                return;
+            };
+            if crate::gameplay_transport::map_door::doorway_occupied(&runtime, actor, at, position)
+            {
+                return;
+            }
+            let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
+            let east_enterable = east.is_some_and(|east| {
+                self.movement_cells
+                    .index()
+                    .lookup(
+                        self.movement_cells.scope(),
+                        crate::content::LogicalCell {
+                            x: i32::from(east.x),
+                            y: i32::from(east.y),
+                            z: -i32::from(east.floor),
+                        },
+                    )
+                    .ok()
+                    == Some(crate::content::CollisionClass::Walkable)
+                    && !map.facts.doors().blocks(east)
+                    && !crate::gameplay_transport::map_door::doorway_occupied(
+                        &runtime, actor, at, east,
+                    )
+            });
+            (
+                crate::gameplay_transport::item_ref_admission::pinned_index(
+                    &runtime,
+                    self.active_generation,
+                ),
+                east_enterable,
+            )
+        };
+        let Some(index) = index else {
+            return;
+        };
+        let Some(native) = self
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay)
+        else {
+            return;
+        };
+        let movable = |facts: &EntryFacts| {
+            use crate::content::ReferenceItemField;
+            let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
+                facts.definition
+            else {
+                return false;
+            };
+            let Some((key, revision)) = index.definition_at(reference) else {
+                return false;
+            };
+            native.item_policy(key, revision).is_some_and(|policy| {
+                matches!(&policy.record().semantics.physical, ReferenceItemField::Known(physical) if physical.movable == ReferenceItemField::Known(true))
+            })
+        };
+        let Some(ground) = loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
+        else {
+            return;
+        };
+        let mut items = Vec::new();
+        for (key, facts) in &entries.entries {
+            if map.facts.doors().contains(*key) || !movable(facts) {
+                continue;
+            }
+            let Some((_, ordinal)) = crate::map::view::placement_of(*key) else {
+                return;
+            };
+            if ground
+                .overlay()
+                .tile(position)
+                .is_some_and(|tile| tile.is_hidden(ordinal))
+            {
+                continue;
+            }
+            items.push(DoorTileItem {
+                item: ItemKey::MapBase {
+                    bundle_digest: map.overlay.base().digest(),
+                    placement_key: *key,
+                    reset_epoch: self.reset_epoch,
+                },
+                movable: true,
+                corpse: false,
+            });
+        }
+        if let Some(tile) = ground.overlay().tile(position) {
+            for entry in tile.added() {
+                let AddedItem::Ground(item) = entry.item() else {
+                    continue;
+                };
+                // Corpses have a separate runtime/custody owner and never enter this loop-drop
+                // projection. Temporal fields are immovable and are left on their own lane.
+                let Some(facts) = ground.facts(&map.facts).added_entry(entry.item()) else {
+                    return;
+                };
+                items.push(DoorTileItem {
+                    item: ItemKey::Instance(item.item_instance_id),
+                    movable: facts.pickupable && movable(&facts),
+                    corpse: false,
+                });
+            }
+        }
+        for (key, facts) in doors {
+            let revision = map.facts.doors().revision(key);
+            let DoorStepOut::Close {
+                item_moves,
+                closed_id: _,
+            } = door_step_out(facts.appearance_id, position, false, east_enterable, &items)
+            else {
+                continue;
+            };
+            let fence = if item_moves.is_empty() {
+                None
+            } else {
+                let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                    return;
+                };
+                Some(fence.item_fence())
+            };
+            for (item, to) in item_moves {
+                let mut hasher = Sha256::new()
+                    .chain_update(b"oteryn:door-step-out:v1")
+                    .chain_update(actor.placement_identity())
+                    .chain_update(self.reset_epoch.to_be_bytes())
+                    .chain_update(movement_revision.to_be_bytes())
+                    .chain_update(key.to_be_bytes());
+                match item {
+                    ItemKey::Instance(id) => hasher.update(id),
+                    ItemKey::MapBase {
+                        bundle_digest,
+                        placement_key,
+                        ..
+                    } => {
+                        hasher.update(bundle_digest);
+                        hasher.update(placement_key.to_be_bytes());
+                    }
+                    _ => return,
+                }
+                let digest = hasher.finalize();
+                let mut id = [0; 8];
+                id.copy_from_slice(&digest[..8]);
+                let command = UseCommand {
+                    game_session_id: session,
+                    command_id: u64::from_be_bytes(id).max(1),
+                    item_fence: fence,
+                };
+                let result =
+                    loop_move::relocate_door_item(self, permit, actor, command, item, position, to)
+                        .await;
+                if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {
+                    return;
+                }
+            }
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return;
+            }
+            let Ok(at) = runtime.read_actor_position(actor) else {
+                return;
+            };
+            let Some(at) = tile_position(at.position()) else {
+                return;
+            };
+            let occupied = crate::gameplay_transport::map_door::doorway_occupied(
+                &runtime, actor, at, position,
+            );
+            // Same CAS/revision/cache invalidation as explicit USE. Closing requires no
+            // level/storage predicate: only opening is gated by those donor requirements.
+            if !matches!(
+                map.facts
+                    .doors()
+                    .toggle(key, revision, occupied, u32::MAX, true),
+                Some(crate::map::door::DoorUse::Toggled { open: false, .. })
+            ) {
+                return;
+            }
+            items.clear();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
