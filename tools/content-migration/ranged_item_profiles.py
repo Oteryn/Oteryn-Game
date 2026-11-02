@@ -179,8 +179,8 @@ def apply_native(root, generated):
             row = rows[key]
             owner = row.get("authoring", {})
             record["authoring"]["ranged"] = resolved_profile(profiles[key]["profile"], owner)
-    # Preserve the established native profile file's pretty-print convention.
-    generated[PROFILES] = (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode()
+    # Match the active provider's compact serialization within its existing 8 MiB bound.
+    generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[PROFILES]).hexdigest()
     generated[MANIFEST] = encode(manifest)
