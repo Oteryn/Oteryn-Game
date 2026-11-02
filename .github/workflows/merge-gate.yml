@@ -1026,23 +1026,23 @@ jobs:
             rust-linux-v2-1.99.1-
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
-      - name: Build unit-test binaries with fingerprint logging
-        env:
-          CARGO_LOG: cargo::core::compiler::fingerprint=info
+      - name: Build unit-test binaries with dirty reasons
         run: |
           set -uo pipefail
           start=$(date +%s)
-          cargo +1.99.1 test --locked --workspace --lib --bins --no-run 2> "$RUNNER_TEMP/fp.log" || true
+          cargo +1.99.1 test --locked --workspace --lib --bins --no-run -v > "$RUNNER_TEMP/fp.out" 2> "$RUNNER_TEMP/fp.log" || true
           echo "build_seconds=$(( $(date +%s) - start ))"
-          echo '--- Compiling lines'
-          grep -E '^\s+Compiling ' "$RUNNER_TEMP/fp.log" | head -120
-          echo '--- dirty reasons (first per unit)'
-          grep -E 'dirty|stale|fingerprint mismatch|output not fresh|rerun-if' "$RUNNER_TEMP/fp.log" | sed -E 's/\x1b\[[0-9;]*m//g' | cut -c1-400 | head -300
-      - name: Second build without changes (should be all fresh)
-        run: |
+          echo "compiled_units=$(grep -cE '^\s+Compiling ' "$RUNNER_TEMP/fp.log" || true)"
+          echo '--- Dirty lines (cargo -v)'
+          grep -E '^\s+Dirty ' "$RUNNER_TEMP/fp.log" | sed -E 's/\x1b\[[0-9;]*m//g' | cut -c1-500 | head -200 || true
+          echo '--- build script runs'
+          grep -E 'Running .*build-script-build' "$RUNNER_TEMP/fp.log" | cut -c1-300 | head -40 || true
+          echo '--- second build (should compile nothing)'
           start=$(date +%s)
-          cargo +1.99.1 test --locked --workspace --lib --bins --no-run 2>&1 | grep -cE '^\s+Compiling ' || true
+          cargo +1.99.1 test --locked --workspace --lib --bins --no-run -v 2> "$RUNNER_TEMP/fp2.log" > /dev/null || true
           echo "second_build_seconds=$(( $(date +%s) - start ))"
+          grep -E '^\s+(Dirty|Compiling) ' "$RUNNER_TEMP/fp2.log" | cut -c1-500 | head -60 || true
+          exit 0
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
