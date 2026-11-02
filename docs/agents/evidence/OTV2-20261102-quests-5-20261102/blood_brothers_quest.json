@@ -1,0 +1,1891 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "blood_brothers_quest",
+    "elements": 66,
+    "auto": 1,
+    "manual": 65,
+    "statuses": {
+      "LEFT_OUT": 50,
+      "CALLBACK_DATA_IMPLEMENTED": 1,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 15
+    },
+    "new_callbacks": 1,
+    "prepared_npc": {
+      "rules": 57,
+      "reply_paragraphs": 77,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/blood-brothers-quest-castle-entrance"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Blood crystal",
+      "pattern": "P05",
+      "trigger": "Use uid58104",
+      "condition": "numeric storage58104≠1",
+      "effect": "daj8453;storage58104=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_blood_crystal.lua:1-15",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Blood goblet",
+      "pattern": "P05",
+      "trigger": "Use uid14052",
+      "condition": "BloodGoblet≠1",
+      "effect": "daj8531;po addItem sukces flag1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_blood_goblet.lua:3-17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Księga zamku",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14043",
+      "condition": "CastleBook≠1",
+      "effect": "daj28483 z pełnym tekstem;CastleBook1,LibraryDoor1 także gdy addItem się nie uda",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:3-35",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Ukryte wejście",
+      "pattern": "P03",
+      "trigger": "StepIn(32953,31486,6)",
+      "condition": "CastleHiddenEntrance=1",
+      "effect": "teleport(32953,31483,6);inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_castle_entrace.lua:1-19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Używa istniejącego kanonicznego /crystalserver/quest/u8_4/blood_brothers/castle_hidden_entrance; bez równoległego tracka.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.callbacks.json"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "Cztery symbole",
+      "pattern": "P03/P30",
+      "trigger": "StepIn jednego z4 padów",
+      "condition": "4 graczy;każdyMission05≥3;przyCastleEntranceSTG≠1 wymaga8225",
+      "effect": "CastleEntranceSTG1 dla brakujących;cztery różne teleporty;8225 pozostaje",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_unlock_entrace.lua:1-115",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cztery pola mają różnych uczestników, zależne wymaganie8225 i różne cele teleportu. Przyjęcie nie może być czterema niezależnymi callbackami ani split commit; właściciel grupowy poza zakresem pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Group admission / atomic player set",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Boreth: zapalenie roślin",
+      "pattern": "P02/P30",
+      "trigger": "fire bug na3 pozycje(32939..32941,31476,2)",
+      "condition": "Mission07=1",
+      "effect": "3 flagi Plant;środkowa statua8325→8326;przykomplecie spectators do(32940,31478,1),Boreth+2plaguethrower;flagi0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:29-79",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rytuały Boreth/Lersatio/Marziel/Arthei zmieniają rekwizyty, konsumują ofiary lub używają wspólnych liczników, przenoszą spectators i tworzą/czyszczą potwory. Pełna kompozycja wymaga ownera spotkania; pierwszego ANSWER pkt5. Marziel nie jest tworzony przez wskazany movement i nie dopisujemy spawnu.",
+      "missing_owner_function": "Właściciel spotkania / map props / combat lifecycle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Boreth: sprzątanie",
+      "pattern": "P25",
+      "trigger": "BorethDeath",
+      "condition": "śmierć wobszarze(32936,31474)..(32944,31482),z1",
+      "effect": "usuń potwory plaguethrower",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/boreth_death.lua:1-20",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rytuały Boreth/Lersatio/Marziel/Arthei zmieniają rekwizyty, konsumują ofiary lub używają wspólnych liczników, przenoszą spectators i tworzą/czyszczą potwory. Pełna kompozycja wymaga ownera spotkania; pierwszego ANSWER pkt5. Marziel nie jest tworzony przez wskazany movement i nie dopisujemy spawnu.",
+      "missing_owner_function": "Właściciel spotkania / map props / combat lifecycle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Lersatio: lustra",
+      "pattern": "P01/P16/P18/P30",
+      "trigger": "item8667 na3 pozycjach(32965,31457),(32966,31456),(32968,31456),z2",
+      "condition": "Mission08<2",
+      "effect": "lustro8667→8721 na30s;counter clamp0,+1;przy≥2 reset0,statua8325→8326,spectators teleport,Lersatio+2Vampire",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:1-81",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rytuały Boreth/Lersatio/Marziel/Arthei zmieniają rekwizyty, konsumują ofiary lub używają wspólnych liczników, przenoszą spectators i tworzą/czyszczą potwory. Pełna kompozycja wymaga ownera spotkania; pierwszego ANSWER pkt5. Marziel nie jest tworzony przez wskazany movement i nie dopisujemy spawnu.",
+      "missing_owner_function": "Właściciel spotkania / map props / combat lifecycle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Marziel: krew",
+      "pattern": "P19/P30",
+      "trigger": "StepIn8695 w(32940,31458,2)",
+      "condition": "kobieta;Mission09<2;vial2874 subtype5",
+      "effect": "zużyjvial;statua8325→8326;spawn2VampireBride;ten plik nie tworzy Marziela",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_marziel_blood.lua:3-44",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rytuały Boreth/Lersatio/Marziel/Arthei zmieniają rekwizyty, konsumują ofiary lub używają wspólnych liczników, przenoszą spectators i tworzą/czyszczą potwory. Pełna kompozycja wymaga ownera spotkania; pierwszego ANSWER pkt5. Marziel nie jest tworzony przez wskazany movement i nie dopisujemy spawnu.",
+      "missing_owner_function": "Właściciel spotkania / map props / combat lifecycle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_marziel_blood.lua:1-47",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Arthei: łza",
+      "pattern": "P02/P30",
+      "trigger": "item8746 na8325 w(32953,31440,2)",
+      "condition": "Mission10<2",
+      "effect": "8325→8326;spectators teleport(32953,31444,1);Arthei+2Vampire;zużyjłzę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_ghost_tear.lua:3-41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rytuały Boreth/Lersatio/Marziel/Arthei zmieniają rekwizyty, konsumują ofiary lub używają wspólnych liczników, przenoszą spectators i tworzą/czyszczą potwory. Pełna kompozycja wymaga ownera spotkania; pierwszego ANSWER pkt5. Marziel nie jest tworzony przez wskazany movement i nie dopisujemy spawnu.",
+      "missing_owner_function": "Właściciel spotkania / map props / combat lifecycle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 11,
+      "step": "Strona dziennika2",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14044",
+      "condition": "Page2≠1",
+      "effect": "daj641 zpełnym tekstem strony2;po sukcesie Page2=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:40-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Strona dziennika3",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14045",
+      "condition": "Page3≠1",
+      "effect": "daj641 zpełnym tekstem strony3;po sukcesie Page3=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:51-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Strona dziennika4",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14046",
+      "condition": "Page4≠1",
+      "effect": "daj641 zpełnym tekstem strony4;po sukcesie Page4=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:62-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Strona dziennika5",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14047",
+      "condition": "Page5≠1",
+      "effect": "daj641 zpełnym tekstem strony5;po sukcesie Page5=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:73-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Strona dziennika6",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14048",
+      "condition": "Page6≠1",
+      "effect": "daj641 zpełnym tekstem strony6;po sukcesie Page6=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:84-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Strona dziennika7",
+      "pattern": "P05/P14",
+      "trigger": "Use uid14051",
+      "condition": "Page7≠1",
+      "effect": "daj641 zpełnym tekstem strony7;po sukcesie Page7=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:95-128",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło wydaje przedmiot (księga/strony także pełny tekst) i zapisuje flagę. Wymagany jeden receipt i poprawna pojemność; nie przejmujemy błędu donora zapisującego claim mimo nieudanego addItem. pierwszego ANSWER pkt4–5, brak częściowego minta lub grantu stanu.",
+      "missing_owner_function": "RewardClaimMint / item text / quest state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Znacznik mapy BlackGap",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32943,31517,7..32951,31524,7",
+      "condition": "VengothAccess1;flagaBlackGap≠1",
+      "effect": "BlackGap=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:12-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Znacznik mapy BoneTotems",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32940,31492,7..32944,31496,7",
+      "condition": "VengothAccess1;flagaBoneTotems≠1",
+      "effect": "BoneTotems=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:18-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "Znacznik mapy HauntedRuins",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32911,31487,7..32916,31492,7",
+      "condition": "VengothAccess1;flagaHauntedRuins≠1",
+      "effect": "HauntedRuins=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:24-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "Znacznik mapy LonelyGrave",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32902,31468,7..32906,31470,7",
+      "condition": "VengothAccess1;flagaLonelyGrave≠1",
+      "effect": "LonelyGrave=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:30-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 21,
+      "step": "Znacznik mapy BurningTrees",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32880,31497,7..32884,31502,7",
+      "condition": "VengothAccess1;flagaBurningTrees≠1",
+      "effect": "BurningTrees=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:36-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 22,
+      "step": "Znacznik mapy OldShrine",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32932,31561,4..32934,31563,4",
+      "condition": "VengothAccess1;flagaOldShrine≠1",
+      "effect": "OldShrine=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:42-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "Znacznik mapy CastleGarden",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32963,31495,6..32966,31498,6",
+      "condition": "VengothAccess1;flagaCastleGarden≠1",
+      "effect": "CastleGarden=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:48-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 24,
+      "step": "Znacznik mapy CastleEntrance",
+      "pattern": "P02",
+      "trigger": "Use8200;gracz w32951,31486,6..32955,31488,6",
+      "condition": "VengothAccess1;flagaCastleEntrance≠1",
+      "effect": "CastleEntrance=1;MapMarks=(get or0)+1;missing -1 nie jest false wLua",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_julius_map.lua:54-95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każdy punkt mapy ustawia własną flagę oraz zwiększa MapMarks z donorowym zachowaniem wartości-1; wymagany item-use route i source map-mark presentation. Nie zastępujemy „get or 0” wymyślonym resetem ani nie mintujemy nowej mapy.",
+      "missing_owner_function": "Item use / map marks / source counter semantics",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 25,
+      "step": "Proch Boreth",
+      "pattern": "P02/P05",
+      "trigger": "5942 na corpse8109",
+      "condition": "Mission07=1;następna misja<1 (opróczArthei)",
+      "effect": "daj8717;bez zużycia corpse/zapisu storage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:204",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wspólnego skinning.lua wymaga source corpse i minta konkretnego prochu, bez konsumpcji corpse lub zapisu storage. Nie dodajemy drugiego handlera ani trwałej flagi; potrzebna kwalifikacja istniejącego skinning ownera zgodnie pierwszego ANSWER pkt6.",
+      "missing_owner_function": "Skinning / corpse proof / item mint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 26,
+      "step": "Proch Lersatio",
+      "pattern": "P02/P05",
+      "trigger": "5942 na corpse8109",
+      "condition": "Mission08=1;następna misja<1 (opróczArthei)",
+      "effect": "daj8718;bez zużycia corpse/zapisu storage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:208",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wspólnego skinning.lua wymaga source corpse i minta konkretnego prochu, bez konsumpcji corpse lub zapisu storage. Nie dodajemy drugiego handlera ani trwałej flagi; potrzebna kwalifikacja istniejącego skinning ownera zgodnie pierwszego ANSWER pkt6.",
+      "missing_owner_function": "Skinning / corpse proof / item mint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 27,
+      "step": "Proch Marziel",
+      "pattern": "P02/P05",
+      "trigger": "5942 na corpse8109",
+      "condition": "Mission09=1;następna misja<1 (opróczArthei)",
+      "effect": "daj8719;bez zużycia corpse/zapisu storage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:212",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wspólnego skinning.lua wymaga source corpse i minta konkretnego prochu, bez konsumpcji corpse lub zapisu storage. Nie dodajemy drugiego handlera ani trwałej flagi; potrzebna kwalifikacja istniejącego skinning ownera zgodnie pierwszego ANSWER pkt6.",
+      "missing_owner_function": "Skinning / corpse proof / item mint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 28,
+      "step": "Proch Arthei",
+      "pattern": "P02/P05",
+      "trigger": "5942 na corpse8109",
+      "condition": "Mission10=1;następna misja<1 (opróczArthei)",
+      "effect": "daj8720;bez zużycia corpse/zapisu storage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:216",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wspólnego skinning.lua wymaga source corpse i minta konkretnego prochu, bez konsumpcji corpse lub zapisu storage. Nie dodajemy drugiego handlera ani trwałej flagi; potrzebna kwalifikacja istniejącego skinning ownera zgodnie pierwszego ANSWER pkt6.",
+      "missing_owner_function": "Skinning / corpse proof / item mint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 29,
+      "step": "Cookie: armenius",
+      "pattern": "P09/P10",
+      "trigger": "armenius: cookie→yes",
+      "condition": "Mission02=1;8199>0;Cookies.Armenius<0;topic1",
+      "effect": "zabierz8199;flagaCookies=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/armenius.lua:58-69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 30,
+      "step": "Cookie: maris",
+      "pattern": "P09/P10",
+      "trigger": "maris: cookie→yes",
+      "condition": "Mission02=1;8199>0;Cookies.Maris<0;topic1",
+      "effect": "zabierz8199;flagaCookies=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maris.lua:57-69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 31,
+      "step": "Cookie: ortheus",
+      "pattern": "P09/P10",
+      "trigger": "ortheus: cookie→yes",
+      "condition": "Mission02=1;8199>0;Cookies.Ortheus<0;topic1",
+      "effect": "zabierz8199;flagaCookies=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ortheus.lua:57-69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 32,
+      "step": "Cookie: serafin",
+      "pattern": "P09/P10",
+      "trigger": "serafin: cookie→yes",
+      "condition": "Mission02=1;8199>0;Cookies.Serafin<0;topic1",
+      "effect": "zabierz8199;flagaCookies=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/serafin.lua:57-69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 33,
+      "step": "Cookie: lisander",
+      "pattern": "P09/P10",
+      "trigger": "lisander: cookie→yes",
+      "condition": "Mission02=1;8199>0;Cookies.Lisander<0;topic1",
+      "effect": "zabierz8199;flagaCookies=1;topic0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lisander.lua:57-69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 34,
+      "step": "Armenius: Alori Mort",
+      "pattern": "P09/P30",
+      "trigger": "Armenius: alori mort powtarzane;topics0,2,3,4,5",
+      "condition": "Mission03=1 i keyword LUB Mission03=2 (bez keyword przez priorytet operatorów)",
+      "effect": "los1..3:teleport do rats /teleport+spawnArmenius+HisTrueFace /nic;Mission03=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/armenius.lua:71-105",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Alori Mort Armeniusa losuje trzy source wyniki (teleport, spawn/achievement albo brak efektu) i aktualizuje misję. Nie zastąpiono tego deterministycznym teleportem ani samym SET; wymaga kwalifikowanego ownera spotkania i appearance/achievement, pierwszego ANSWER pkt5–6.",
+      "missing_owner_function": "NPC random encounter / achievement owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 35,
+      "step": "Harlow: podróż",
+      "pattern": "P09/P10",
+      "trigger": "vengoth→yes→yes albo transportation→yes",
+      "condition": "VengothAccess1;100gold",
+      "effect": "zabierz100gold;teleport(32858,31549,7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/harlow.lua:61-73",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 36,
+      "step": "Wandering Soul: naładowanie",
+      "pattern": "P09/P10/P11",
+      "trigger": "dokładnie blood crystal",
+      "condition": "Mission05≥2;8453≥1",
+      "effect": "zabierz8453;daj8225;Ghostwhisperer",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_wandering_soul.lua:83-101",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 37,
+      "step": "Kala: łza",
+      "pattern": "P09/P11/P17",
+      "trigger": "kala→diary→yes→vampire→free soul→awaken",
+      "condition": "Mission10<2;cooldown20h",
+      "effect": "daj8746;zapiszos.time();reset topic",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_fading_memory.lua:57-118",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 38,
+      "step": "Julius: Przyjęcie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission/note/vampire→yes",
+      "condition": "stage0;topic1",
+      "effect": "Trust1;Mission01=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:141",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 39,
+      "step": "Julius: Czosnek",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission",
+      "condition": "stage11;necklace3083 wslocie",
+      "effect": "Mission01=2;topic2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:146",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czosnek wymaga prawdziwego przedmiotu; storage/topic nie jest dowodem posiadania. Bez atomowego inventory proof adapter nie wykona Mission01=2; pierwszego ANSWER pkt5.",
+      "missing_owner_function": "NPC inventory predicate / guarded transition",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 40,
+      "step": "Julius: Garlic bread",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: garlic bread→yes",
+      "condition": "topic2→3",
+      "effect": "Mission01=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:228",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 41,
+      "step": "Julius: Próba oddechu",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→aaah",
+      "condition": "stage13;topic4;8194",
+      "effect": "zabierz8194;Mission01=4;topic5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:233",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 42,
+      "step": "Julius: Cookies: zlecenie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: yes→yes",
+      "condition": "topics5→6",
+      "effect": "Mission02=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:316",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 43,
+      "step": "Julius: Cookies: raport start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage21;topic7",
+      "effect": "topic8: lista podejrzanych",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:167",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 44,
+      "step": "Julius: Cookies: zamknięcie raportu",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: no",
+      "condition": "topic8;5Cookies=2",
+      "effect": "Mission02=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:515",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 45,
+      "step": "Julius: Alori Mort: zlecenie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→alori mort",
+      "condition": "stage22;topics9→10",
+      "effect": "Mission03=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:243",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 46,
+      "step": "Julius: Armenius: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→armenius",
+      "condition": "stage31;topic11",
+      "effect": "Mission03=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:249",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 47,
+      "step": "Julius: Mapa i dostęp",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage33;topic12",
+      "effect": "daj8200;Mission04=1;VengothAccess1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:338",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 48,
+      "step": "Julius: Mapa: obowiązkowy raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage41;topic13;CastleEntrance=1",
+      "effect": "Mission04=2;zabierz8200;nie testuje pięciu znaczników",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:347",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 49,
+      "step": "Julius: Kryształ: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→yes",
+      "condition": "stage42;topics19→20",
+      "effect": "Mission05=1;BloodCrystalDoor1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:364-375",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:372",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 50,
+      "step": "Julius: Kryształ: potwierdzenie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→yes",
+      "condition": "stage51;topics21→22;8453",
+      "effect": "Mission05=2;8453 pozostaje",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:382",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 51,
+      "step": "Julius: Kryształ: przygotowanie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→yes→yes",
+      "condition": "stage52;topics23→24→25",
+      "effect": "Mission05=3;bez sprawdzenia8225",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:393-411",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:393",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 52,
+      "step": "Julius: Wejście do zamku: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→yes",
+      "condition": "stage53;topics26→27;CastleEntranceSTG1",
+      "effect": "Mission05=4;CastleHiddenEntrance1;Mission06=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:412",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 53,
+      "step": "Julius: Księga: oddanie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes→yes",
+      "condition": "stage54lub6;CastleBook1;28483;topics28→29",
+      "effect": "zabierz28483;Mission06=2;Mission07=1;BorethDoor1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:430",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 54,
+      "step": "Julius: Boreth: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage7;topic30;8717",
+      "effect": "zabierz8717;Mission07=2;Mission08=1;LersatioDoor1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:450",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 55,
+      "step": "Julius: Lersatio: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage8;topic31;8718",
+      "effect": "zabierz8718;Mission08=2;Mission09=1;Arthei_Marziel_Door1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:467",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 56,
+      "step": "Julius: Marziel: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage9;topic32;8719",
+      "effect": "zabierz8719;Mission09=2;Mission10=1;ArtheiDoor1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:484",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 57,
+      "step": "Julius: Arthei: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: mission→yes",
+      "condition": "stage10;topic33;8720",
+      "effect": "zabierz8720;daj9041;Mission10=2;stage10 nadal po końcu",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:500",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 58,
+      "step": "Julius: Mapa zastępcza",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: map",
+      "condition": "Mission04≥1;MapCompleted≠1;brak8200",
+      "effect": "daj8200",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:539",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 59,
+      "step": "Julius: Mapa: nagroda dodatkowa",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: map",
+      "condition": "Mission04≥1;MapCompleted≠1;8200;MapMarks≥7",
+      "effect": "zabierz8200;MapCompleted1;XP7500",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:554",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 60,
+      "step": "Julius: Mapa: niepełny zwrot",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: map",
+      "condition": "Mission04≥1;MapCompleted≠1;8200;MapMarks<7",
+      "effect": "zabierz8200;bezXP",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:565",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 61,
+      "step": "Julius: Strony: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Julius: diary",
+      "condition": "pierwsza Page2..7=1 zDiarySTG<page-1;641",
+      "effect": "zabierz641;DiarySTG=page-1;XP1000",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:573",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałąź wymaga rzeczywistego posiadania/konsumpcji/minta, pieniędzy, czasowego claimu lub XP razem z postępem. Pełna atomowa wymiana/guard nie jest częścią closed SET/XP adaptera; kontrakt0831/0832 nie jest rozszerzany (pierwszego ANSWER pkt4–5). Pełne obsługiwane prompty pozostają w danych; trwały krok nie jest wykonywany częściowo.",
+      "missing_owner_function": "NPC atomic item/money/state/XP/time owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 62,
+      "step": "Julius: raport Armenius",
+      "pattern": "P09",
+      "trigger": "Julius: armenius",
+      "condition": "topic8;Cookies.Armenius=1",
+      "effect": "Cookies.Armenius=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:249",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 63,
+      "step": "Julius: raport Maris",
+      "pattern": "P09",
+      "trigger": "Julius: maris",
+      "condition": "topic8;Cookies.Maris=1",
+      "effect": "Cookies.Maris=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:264",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 64,
+      "step": "Julius: raport Ortheus",
+      "pattern": "P09",
+      "trigger": "Julius: ortheus",
+      "condition": "topic8;Cookies.Ortheus=1",
+      "effect": "Cookies.Ortheus=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:275",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 65,
+      "step": "Julius: raport Serafin",
+      "pattern": "P09",
+      "trigger": "Julius: serafin",
+      "condition": "topic8;Cookies.Serafin=1",
+      "effect": "Cookies.Serafin=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:285",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 66,
+      "step": "Julius: raport Lisander",
+      "pattern": "P09",
+      "trigger": "Julius: lisander",
+      "condition": "topic8;Cookies.Lisander=1",
+      "effect": "Cookies.Lisander=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/julius.lua:295",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/blood_brothers_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "blood_brothers_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    }
+  ]
+}

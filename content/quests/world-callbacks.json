@@ -1320,6 +1320,43 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-quest-castle-entrance",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32953,
+          "y": 31486,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32953,
+        "y": 31483,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/castle_hidden_entrance",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "A strange force prevents you from entering.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/movements_castle_entrace.lua:1-19"
+      ]
     }
   ]
 }
