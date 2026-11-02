@@ -42,12 +42,12 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
-    prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+    prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
-    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+    atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
 ];
 
