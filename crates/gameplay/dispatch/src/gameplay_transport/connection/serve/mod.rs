@@ -154,7 +154,9 @@ where
                 .runtime_actor
                 .is_none_or(|actor| actor.runtime_scope() != fence.runtime_scope)
         }) {
-            admitted = match house_transfer::serve(
+            // House services carry their own routing and view futures. Keep that
+            // branch off the Channel connection's inline future, as for autowalk.
+            admitted = match Box::pin(house_transfer::serve(
                 stream,
                 admitted,
                 authority,
@@ -162,7 +164,7 @@ where
                 &mut server_messages,
                 policy,
                 &mut integrity,
-            )
+            ))
             .await
             {
                 Ok(next) => next,

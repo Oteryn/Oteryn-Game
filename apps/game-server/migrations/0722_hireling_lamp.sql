@@ -1,11 +1,22 @@
 -- E12: the existing native USE and Inbox owners remain the only item writers.
 -- All prior item-use causes and shapes remain admitted unchanged.
-ALTER TABLE game_item_use_records
- DROP CONSTRAINT game_item_use_records_cause_kind_check,
- ADD CONSTRAINT game_item_use_records_cause_kind_check CHECK(cause_kind IN(1,2,3,328,470,471,494,495,527)),
- DROP CONSTRAINT game_item_use_cause_shape,
- ADD CONSTRAINT game_item_use_cause_shape
- CHECK((cause_kind IN(1,328,470,471,494,495,527) AND shape=1) OR cause_kind=2 OR(cause_kind=3 AND shape IN(3,4)));
+DO $$
+DECLARE
+ constraint_name TEXT;
+ previous_rule TEXT;
+BEGIN
+ FOREACH constraint_name IN ARRAY ARRAY[
+   'game_item_use_records_cause_kind_check','game_item_use_cause_shape'
+ ] LOOP
+   SELECT pg_get_expr(c.conbin,c.conrelid) INTO STRICT previous_rule
+     FROM pg_constraint c
+    WHERE c.conrelid='game_item_use_records'::regclass
+      AND c.conname=constraint_name AND c.contype='c';
+   EXECUTE format(
+     'ALTER TABLE game_item_use_records DROP CONSTRAINT %I, ADD CONSTRAINT %I CHECK ((%s) OR (cause_kind IN (470,471) AND shape=1))',
+     constraint_name,constraint_name,previous_rule);
+ END LOOP;
+END $$;
 
 CREATE TABLE game_hireling_lamp_transitions (
  transaction_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(transaction_id)),

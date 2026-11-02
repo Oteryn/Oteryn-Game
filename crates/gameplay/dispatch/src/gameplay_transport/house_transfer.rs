@@ -721,7 +721,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             })
             .transpose()?;
-        if let Some(state) = &house {
+        // A saved-position admission must still qualify its interior cell.
+        // An ordinary transfer retains its reserved entry doorway until its
+        // first command; that sealed door is not a walkable interior cell.
+        if let Some(state) = &house
+            && recovered.admission_restore
+        {
             let doors = self.door.lock().await.blocking_cells().clone();
             let existing = runtime
                 .house_player_for_session(destination)

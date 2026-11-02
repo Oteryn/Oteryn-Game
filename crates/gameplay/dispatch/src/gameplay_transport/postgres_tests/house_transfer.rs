@@ -26,6 +26,7 @@ fn house_transfer_postgres_real_dispatch_entry_exit_recovery_and_fences() -> Tes
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "House transfer thread panicked")??;
+    eprintln!("HOUSE_TRANSFER POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 fn scenario() -> TestResult {
@@ -434,21 +435,41 @@ async fn case(h: &Harness) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
+    let (controller, native_pin) = super::death_ml_loss_composed::production_generation_with_pin(
+        base.admitted.world_id,
+        "content-1",
+    )?;
+    let generation = controller.active().ok_or("active native generation")?;
+    let room = native_pin.qualified_room().clone();
     let world = transfer_bundle(base.admitted.world_id, base.admitted.channel_id)?;
-    let cells = world
-        .movement_cells(base.room.movement_cells())
-        .map_err(debug)?;
+    let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     let pin = ChannelContentPin::from_activation(
         base.admitted.world_id,
         1,
         cells.scope().generation_digest,
-        [2; 32],
-        [3; 32],
+        native_pin.identity().client_artifact_digest(),
+        native_pin.frame_binding().digest(),
         [4; 32],
         (32309, 32805, 7),
     );
-    let deps = Dependencies::with_content(pin, base.room, base.spells)?;
+    // House recovery reads equipment under the same current Content activation
+    // as the runtime; publishing only an in-memory pin cannot satisfy that read.
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(base.admitted.world_id.as_bytes().as_slice())
+        .bind(base.admitted.channel_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(base.admitted.world_id.as_bytes().as_slice())
+        .bind(base.admitted.channel_id.as_bytes().as_slice())
+        .bind(pin.server_artifact_digest().as_slice())
+        .bind(pin.client_artifact_digest().as_slice())
+        .bind(pin.frame_binding_digest().as_slice())
+        .execute(&h.pool)
+        .await?;
+    let deps = Dependencies::with_content(pin, room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
+    owner.active_generation = Some(generation);
     owner.movement_cells = &cells;
     owner.evidence = &recovery_source.evidence;
     deps.initialize(&owner).await;
@@ -508,6 +529,22 @@ async fn case(h: &Harness) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
+    // Recovery reads the selection admitted by the real Channel login owner;
+    // the House reader deliberately cannot initialize missing Character state.
+    assert!(owner.admit_hazard(admitted).await);
+    let admission = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+    let equipment = h
+        .root
+        .initialize_admission_equipment(
+            &authority,
+            &h.node,
+            &admitted.item_fence.ok_or("source equipment fence")?,
+            cells.scope().generation_digest,
+            admission.operation(),
+        )
+        .await
+        .map_err(debug)?;
+    assert!(equipment.items.is_empty());
     let source = admitted;
     let mut unsupported = source;
     unsupported.continuity.selected_capabilities =
@@ -634,6 +671,7 @@ async fn case(h: &Harness) -> TestResult {
     )
     .map_err(debug)?;
     let mut restarted = deps.owner(h, &authority);
+    restarted.active_generation = Some(generation);
     restarted.movement_cells = &cells;
     restarted.evidence = &recovery_source.evidence;
     let token = RecoverySource::token(7)?;
@@ -645,9 +683,13 @@ async fn case(h: &Harness) -> TestResult {
     // NODEBOOT-1: a resume whose first read, its receipt, meets a busy holder retries it
     // instead of closing.
     let busy = hold_holder(restarted.root, std::time::Duration::from_millis(300))?;
-    let recovered = resume_transfer(&restarted, source.game_session_id, &token, 10).await?;
+    let recovered = resume_transfer(&restarted, source.game_session_id, &token, 10)
+        .await
+        .map_err(|e| format!("first House recovery: {e}"))?;
     busy.await??;
-    let replayed = resume_transfer(&restarted, source.game_session_id, &token, 10).await?;
+    let replayed = resume_transfer(&restarted, source.game_session_id, &token, 10)
+        .await
+        .map_err(|e| format!("House recovery replay: {e}"))?;
     assert_eq!(replayed.game_session_id, recovered.game_session_id);
     assert_eq!(replayed.runtime_actor, recovered.runtime_actor);
     assert_eq!(replayed.continuity.connection_generation, 2);
@@ -706,10 +748,13 @@ async fn case(h: &Harness) -> TestResult {
     )
     .map_err(debug)?;
     let mut restarted = deps.owner(h, &authority);
+    restarted.active_generation = Some(generation);
     restarted.movement_cells = &cells;
     restarted.evidence = &recovery_source.evidence;
     let token = RecoverySource::token(8)?;
-    let after = resume_transfer(&restarted, source.game_session_id, &token, 11).await?;
+    let after = resume_transfer(&restarted, source.game_session_id, &token, 11)
+        .await
+        .map_err(|e| format!("Channel exit recovery: {e}"))?;
     assert_eq!(after.game_session_id, pending_exit.game_session_id);
     assert_eq!(after.continuity.connection_generation, 2);
     assert_eq!(
@@ -1001,19 +1046,38 @@ impl RecoverySource {
                     reply["minimum_valid_generation"] = "1".into();
                 } else {
                     use base64::Engine;
-                    reply["issuer"] = if recovery { "urn:oteryn:platform:game-recovery" }
-                        else { "urn:oteryn:platform:game-admission" }.into();
-                    reply["profile"] = if recovery { "oteryn-reauth-recovery-v1" }
-                        else { "oteryn-pre-admission-v1" }.into();
-                    reply["key_purpose"] = if recovery { "existing_actor_recovery" }
-                        else { "fresh_admission" }.into();
-                    reply["key_id"] = if recovery { "house-recovery" } else { "house-fresh" }.into();
+                    reply["issuer"] = if recovery {
+                        "urn:oteryn:platform:game-recovery"
+                    } else {
+                        "urn:oteryn:platform:game-admission"
+                    }
+                    .into();
+                    reply["profile"] = if recovery {
+                        "oteryn-reauth-recovery-v1"
+                    } else {
+                        "oteryn-pre-admission-v1"
+                    }
+                    .into();
+                    reply["key_purpose"] = if recovery {
+                        "existing_actor_recovery"
+                    } else {
+                        "fresh_admission"
+                    }
+                    .into();
+                    reply["key_id"] = if recovery {
+                        "house-recovery"
+                    } else {
+                        "house-fresh"
+                    }
+                    .into();
                     reply["trusted"] = true.into();
                     reply["public_key"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
                         .encode(
-                            ed25519_dalek::SigningKey::from_bytes(&[if recovery { 23 } else { 31 }; 32])
-                                .verifying_key()
-                                .to_bytes(),
+                            ed25519_dalek::SigningKey::from_bytes(
+                                &[if recovery { 23 } else { 31 }; 32],
+                            )
+                            .verifying_key()
+                            .to_bytes(),
                         )
                         .into();
                 }
@@ -1063,9 +1127,12 @@ impl RecoverySource {
     pub(super) fn fresh_token(nonce: u8) -> TestResult<String> {
         use base64::Engine;
         use ed25519_dalek::Signer;
-        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
         let encode = |value: String| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(value);
-        let header = serde_json::json!({"alg":"Ed25519","kid":"house-fresh","typ":"oteryn-admission+jwt"});
+        let header =
+            serde_json::json!({"alg":"Ed25519","kid":"house-fresh","typ":"oteryn-admission+jwt"});
         let payload = serde_json::json!({
             "iss":"urn:oteryn:platform:game-admission", "aud":"urn:oteryn:game:admission",
             "iat":now, "nbf":now, "exp":now+10,
@@ -1082,9 +1149,16 @@ impl RecoverySource {
             "content_revision":"content-1", "map_revision":"map-1",
             "world_policy_revision":"policy-1", "offer_revision":"offer-1"
         });
-        let input = format!("{}.{}", encode(header.to_string()), encode(payload.to_string()));
-        let signature = ed25519_dalek::SigningKey::from_bytes(&[31;32]).sign(input.as_bytes());
-        Ok(format!("{input}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())))
+        let input = format!(
+            "{}.{}",
+            encode(header.to_string()),
+            encode(payload.to_string())
+        );
+        let signature = ed25519_dalek::SigningKey::from_bytes(&[31; 32]).sign(input.as_bytes());
+        Ok(format!(
+            "{input}.{}",
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(signature.to_bytes())
+        ))
     }
 }
 
