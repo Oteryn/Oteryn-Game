@@ -12,25 +12,10 @@ use feature_local_reference_preferences::settings::LocalPlayState;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
-    EntityRef, JoinSnapshot, SessionError, SessionEvent, WorldObjectOverlayEntry,
-    WorldSpatialEntity,
+    EntityRef, JoinSnapshot, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity,
 };
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
-
-/// Any session error ends play and returns to login with this public class.
-#[must_use]
-pub const fn public_class(_error: &SessionError) -> PublicClass {
-    PublicClass::SessionUnavailable
-}
-
-/// How a play session ended: the server ended it (back to login with this public class), or the
-/// player logged out and the server committed it (back to character selection).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PlayEnd {
-    Ended(PublicClass),
-    LoggedOut,
-}
 
 /// One input waiting for its turn on the session task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,11 +153,13 @@ impl PlayView {
     }
 }
 
+mod end;
 mod mailbox;
 mod session_loop;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
+pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
