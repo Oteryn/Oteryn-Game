@@ -89,6 +89,7 @@ pub(super) struct Mailbox {
     pub(super) vip: oteryn_client_ui::vip::VipPanel,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
+    pub(super) hireling_shutdown: bool,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
 }
@@ -243,5 +244,6 @@ impl Drop for PlayLink {
         mailbox.prey_shutdown = true;
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
+        mailbox.hireling_shutdown = true;
     }
 }

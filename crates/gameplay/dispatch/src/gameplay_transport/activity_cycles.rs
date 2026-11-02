@@ -79,7 +79,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut stopped = shutdown.is_cancelled();
             let mut pass_done = false;
             poll_fn(|context| {
-                if stopping.as_mut().poll(context).is_ready() {
+                // `cancelled()` panics if polled again after it completed, and this pass keeps
+                // polling while stopped jobs drain.
+                if !stopped && stopping.as_mut().poll(context).is_ready() {
                     stopped = true;
                 }
                 if stopped {
