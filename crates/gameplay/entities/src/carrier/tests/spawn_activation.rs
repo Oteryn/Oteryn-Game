@@ -236,10 +236,15 @@ fn a_player_on_another_floor_does_not_block_a_blockable_den() {
     runtime
         .drive_spawn_respawns(0, reference_view)
         .expect("observe");
-    let warned = runtime
+    let report = runtime
         .drive_spawn_respawns(SPAWN_DELAY, reference_view)
-        .expect("warned");
-    assert_eq!((warned.blocked, warned.warnings), (0, vec![DEN]));
+        .expect("respawn");
+    // W01b: a player on another floor is no interest, so the blockable den is not blocked and,
+    // per Crystal spawn_monster.cpp:376-382, admits at once without a warning (it used to warn
+    // first, recorded as DIFF D115).
+    assert_eq!((report.blocked, report.warnings), (0, vec![]));
+    assert_eq!(report.admitted.len(), 1);
+    assert_ne!(report.admitted[0], dead);
 }
 
 #[test]
