@@ -952,6 +952,68 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34015,
+          "y": 31892,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32728,
+        "y": 32880,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_exit.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-iksupan-exit-2",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34041,
+          "y": 31726,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32728,
+        "y": 32880,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_exit.lua:2"
+      ]
     }
   ]
 }
