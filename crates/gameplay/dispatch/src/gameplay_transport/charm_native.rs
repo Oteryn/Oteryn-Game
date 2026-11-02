@@ -384,6 +384,34 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
         )
     }
 
+    pub async fn reset_all(
+        &mut self,
+        occurrence: CharmCommandOccurrence,
+        fee: CharmRemoveFee,
+    ) -> (CharmRemoveDisposition, u64) {
+        let Ok(charm) = CharmKey::new("oteryn:charm.reset_all") else {
+            return (CharmRemoveDisposition::Rejected, 0);
+        };
+        let mut slot = self.sequencer.acquire(self.fence.character_id).await;
+        let original = match self.retained(occurrence).await {
+            Ok(receipt) => receipt.map(|r| r.original_character_revision),
+            Err(_) => return (CharmRemoveDisposition::Rejected, 0),
+        };
+        remove_disposition(
+            self.commit(
+                &mut slot,
+                occurrence,
+                CharmCommand::ResetAll {
+                    charm,
+                    fee: Box::new(fee),
+                },
+                original,
+                None,
+            )
+            .await,
+        )
+    }
+
     async fn retained(
         &self,
         occurrence: CharmCommandOccurrence,
@@ -620,7 +648,8 @@ fn remove_disposition(
             CharmCommandOutcome::Committed(receipt)
             | CharmCommandOutcome::AlreadyCommitted(receipt),
         ) => match receipt.effect {
-            CharmCommandEffect::Removed { fee_gold_units, .. } => {
+            CharmCommandEffect::Removed { fee_gold_units, .. }
+            | CharmCommandEffect::Reset { fee_gold_units } => {
                 (CharmRemoveDisposition::Removed, fee_gold_units)
             }
             _ => (CharmRemoveDisposition::Rejected, 0),

@@ -424,7 +424,7 @@ message OneItemDecayRetireV1 {
 
 // Closed FeeBurnCause (decision §4.4): one variant per admitted fee source.
 message OneItemCharmUnassignV1 {
-  string charm_key = 1; // oteryn:charm.<name>, <= 128 B
+  string charm_key = 1; // oteryn:charm.<name>, <= 128 B; WB2/P01 reset-all uses oteryn:charm.reset_all
   bytes occurrence = 2; // the unassign command occurrence, 16-byte UUIDv7
 }
 message OneItemFeeBurnCauseV1 {
@@ -443,6 +443,7 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 prey_list_reroll = 12; // service key fixes slot 1..3; level * 200 gold
     OneItemNpcPurchaseV1 task_board_talisman = 13; // oteryn:taskboard.talisman, exactly 5000 gold; Task Board receipt
     OneItemForgeV1 forge = 14; // P18; operation kind and occurrence in the bounded proof
+    OneItemNpcPurchaseV1 bosstiary_slot = 15; // WB2/P02; oteryn:bosstiary.slot_remove, same-transaction slot operation
   }
 }
 message OneItemMarketFeeV1 {

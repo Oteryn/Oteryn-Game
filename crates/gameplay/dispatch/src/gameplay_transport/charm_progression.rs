@@ -26,6 +26,7 @@ use oteryn_protocol_oteryn::charm_progression::{
 struct Bestiary {
     races: Vec<BestiaryRace>,
     facts: BestiaryCharmFacts,
+    bosses: Vec<crate::domain::bosstiary::BosstiaryBoss>,
 }
 
 /// W18: a podium of tenacity shows only a canonical Bestiary race.
@@ -56,7 +57,23 @@ fn bestiary() -> Option<&'static Bestiary> {
                 charm_points: *charm_points,
             }))
             .ok()?;
+        let bosses = crate::content::canonical_title_catalogue(ProjectEvidenceLimits {
+            max_documents: 5,
+            max_document_bytes: 2_500_000,
+            max_total_bytes: 8_000_000,
+            max_json_depth: 10,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
+            max_locator_bytes: 128,
+            max_locator_segments: 5,
+            max_reference_records: 4096,
+            max_import_records: 1,
+            max_reimport_states: 1,
+        })
+        .ok()?
+        .bosstiary;
         Some(Bestiary {
+            bosses,
             races: rows.into_iter().map(|(race, _)| race).collect(),
             facts,
         })
@@ -152,7 +169,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let derive =
             |tag: &[u8]| super::npc_trade_command::derived(tag, admitted.game_session_id, id.get());
-        let backpack = if matches!(action, CharmProgressionAction::Remove { .. }) {
+        let backpack = if matches!(
+            action,
+            CharmProgressionAction::Remove { .. } | CharmProgressionAction::ResetAll
+        ) {
             match self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
@@ -179,7 +199,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return GuildReply::Rejected;
             }
-            if matches!(action, CharmProgressionAction::Remove { .. }) {
+            if matches!(
+                action,
+                CharmProgressionAction::Remove { .. } | CharmProgressionAction::ResetAll
+            ) {
                 let ids = [
                     derive(b"charm-progression:change:0"),
                     derive(b"charm-progression:change:1"),
@@ -218,7 +241,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &self.revision_sequencer,
             current,
             &content,
-            bestiary.facts.clone(),
+            bestiary
+                .facts
+                .clone()
+                .with_premium_gate(self.session_premium_gate(admitted.game_session_id).await),
         )
         .await
         else {
@@ -254,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ),
                 0,
             ),
-            CharmProgressionAction::Remove { charm } => {
+            CharmProgressionAction::ResetAll | CharmProgressionAction::Remove { .. } => {
                 let Some(change) = change else {
                     return GuildReply::Rejected;
                 };
@@ -264,8 +290,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
                     change,
                 };
-                let (disposition, fee_gold) = port.remove(occurrence, charm, fee).await;
-                (CharmProgressionOutcome::Remove(disposition), fee_gold)
+                match action {
+                    CharmProgressionAction::Remove { charm } => {
+                        let (d, gold) = port.remove(occurrence, charm, fee).await;
+                        (CharmProgressionOutcome::Remove(d), gold)
+                    }
+                    _ => {
+                        let (d, gold) = port.reset_all(occurrence, fee).await;
+                        (CharmProgressionOutcome::ResetAll(d), gold)
+                    }
+                }
             }
         };
         let views = port.views().await;
@@ -346,3 +380,7 @@ pub(super) use composed_methods;
 #[cfg(test)]
 #[path = "charm_progression_tests.rs"]
 mod tests;
+
+pub(super) fn canonical_bosses() -> Option<&'static [crate::domain::bosstiary::BosstiaryBoss]> {
+    bestiary().map(|b| b.bosses.as_slice())
+}

@@ -85,6 +85,8 @@ fn bestiary_completion_affects_titles(outcome: &BestiaryKillOutcome) -> bool {
 /// KILLRW-RL-01: queued plus in-flight unsettled kills of one Channel.
 pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 
+type BossSlotBonuses = Vec<([u8; 16], u16)>;
+
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
@@ -92,6 +94,7 @@ pub struct PendingKillSettlement {
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
+    pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
     pub ground: DeathGroundContext,
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
@@ -151,6 +154,7 @@ impl PendingKillSettlement {
             creature: boss.key.clone(),
             row: None,
             bosstiary_only: Some(boss),
+            boss_slot_bonuses: Arc::new(OnceLock::new()),
             ground,
             target,
             activity_observed_at: observed_at,
@@ -1184,6 +1188,7 @@ pub fn record_creature_kill(
     else {
         return;
     };
+    facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
@@ -1220,6 +1225,9 @@ pub fn record_creature_kill(
             &damage_shares,
         )
     });
+    facts.boosted_boss = daily_boost
+        .as_ref()
+        .is_some_and(|choice| choice.boss == creature);
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
@@ -1236,6 +1244,7 @@ pub fn record_creature_kill(
                             creature,
                             row: None,
                             bosstiary_only: None,
+                            boss_slot_bonuses: Arc::new(OnceLock::new()),
                             ground,
                             target,
                             activity_observed_at: observed_at,
@@ -1554,6 +1563,7 @@ pub fn record_creature_kill(
         creature,
         row: Some(row),
         bosstiary_only: None,
+        boss_slot_bonuses: Arc::new(OnceLock::new()),
         ground,
         target,
         no_progression_logged: false,
@@ -2292,6 +2302,42 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         // W03 entitlement creation is independent of the top-damage principal's
         // current presence and must precede the proficiency-only early return.
+        if entry.boss_slot_bonuses.get().is_none() {
+            if let Some(boss) = entry.row.as_ref().and_then(|row| row.boss.as_ref()) {
+                let participants = entry.boss_reward.as_ref().map_or_else(
+                    || vec![*entry.facts.principal.character.as_bytes()],
+                    |death| {
+                        death
+                            .participants
+                            .iter()
+                            .map(|p| *p.character.as_bytes())
+                            .collect()
+                    },
+                );
+                let bonuses = admission
+                    .root
+                    .boss_slot_loot_bonuses(
+                        admission.character,
+                        admission.holder,
+                        entry.facts.death.runtime_scope(),
+                        entry.facts.death.scope_ownership_generation(),
+                        boss.clone(),
+                        participants,
+                        entry.facts.died_at_unix_ms,
+                        entry.facts.boosted_boss,
+                    )
+                    .await;
+                let Ok(bonuses) = bonuses else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
+                let _ = entry.boss_slot_bonuses.set(bonuses);
+            } else {
+                let _ = entry.boss_slot_bonuses.set(Vec::new());
+            }
+        }
         if !self.settle_personal_boss_rewards(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
@@ -2469,6 +2515,22 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .get()
                 .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
             apply_talisman_loot_bonus(&mut loot_table, bonus);
+        }
+        if entry.boss_reward.is_none() {
+            let bonus = entry
+                .boss_slot_bonuses
+                .get()
+                .and_then(|v| {
+                    v.iter()
+                        .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
+                })
+                .map_or(0, |(_, b)| *b);
+            super::boss_encounter::apply_slot_loot_bonus(
+                &mut loot_table,
+                bonus,
+                entry.facts.occurrence,
+                |key| admission.reward_table().is_daily_boss_equipment(key),
+            );
         }
         // The captured reward principal is Global's highest-damage loot owner. Read its live
         // session value only after the current fence has been requalified; party members' stamina

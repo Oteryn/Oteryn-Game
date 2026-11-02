@@ -101,6 +101,8 @@ pub enum FeeBurnCauseV1 {
     TaskBoardTalisman(OneItemNpcPurchaseV1),
     #[prost(message, tag = "14")]
     Forge(super::character_forge_dust::OneItemForgeV1),
+    #[prost(message, tag = "15")]
+    BosstiarySlot(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -132,6 +134,7 @@ pub struct OneItemFeeBurnCauseV1 {
             12, // PreyListReroll
             13, // TaskBoardTalisman: Crystal NPC purchase, 5000 gold
             14, // Native Forge
+            15, // Bosstiary slot removal
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -341,6 +344,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                         | FeeBurnCauseV1::Imbuement(_)
                         | FeeBurnCauseV1::NpcTravel(_)
                         | FeeBurnCauseV1::Forge(_)
+                        | FeeBurnCauseV1::BosstiarySlot(_)
                 )
             ) {
                 1

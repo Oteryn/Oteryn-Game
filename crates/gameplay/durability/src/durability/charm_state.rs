@@ -49,6 +49,7 @@ const CATALOGUE_DIGEST_VERSION: u8 = 1;
 const KIND_UNLOCK: i16 = 1;
 const KIND_ASSIGN: i16 = 2;
 const KIND_REMOVE: i16 = 3;
+const KIND_RESET: i16 = 4;
 /// Crystal `iobestiary.cpp` `sendBuyCharmRune` action 2 starts at `level * 100`; Global's
 /// Charm Expansion discount is 25%, so its integral result is `level * 75`.
 const REMOVE_FEE_GOLD_PER_LEVEL: u64 = 100;
@@ -129,9 +130,16 @@ pub struct BestiaryCharmEntry {
 #[derive(Debug, Clone)]
 pub struct BestiaryCharmFacts {
     entries: Arc<BTreeMap<String, BestiaryCharmEntry>>,
+    premium: crate::domain::premium::PremiumGate,
 }
 
 impl BestiaryCharmFacts {
+    /// The admitted session's current-only Premium gate. Expansion remains character-owned.
+    pub fn with_premium_gate(mut self, premium: crate::domain::premium::PremiumGate) -> Self {
+        self.premium = premium;
+        self
+    }
+
     /// Rejects a duplicate race and a race key that is not a Bestiary race key.
     pub fn new(entries: impl IntoIterator<Item = BestiaryCharmEntry>) -> Result<Self> {
         let mut map = BTreeMap::new();
@@ -147,6 +155,7 @@ impl BestiaryCharmFacts {
         }
         Ok(Self {
             entries: Arc::new(map),
+            premium: crate::domain::premium::PremiumGate::CLOSED,
         })
     }
 }
@@ -228,6 +237,9 @@ impl CharmFacts for BestiaryCharmFacts {
         .await?;
         Ok(if expanded {
             CharmSlotEntitlement::CharmExpansion
+        } else if self.premium.premium_current() {
+            // Crystal src/io/iobestiary.cpp:603-607: Premium without Expansion has six slots.
+            CharmSlotEntitlement::Premium
         } else {
             CharmSlotEntitlement::Free
         })
@@ -245,6 +257,10 @@ fn removal_fee_gold(level: u64, entitlement: CharmSlotEntitlement) -> Option<u64
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CharmCommand {
+    ResetAll {
+        charm: CharmKey,
+        fee: Box<CharmRemoveFee>,
+    },
     UnlockNextStage {
         charm: CharmKey,
     },
@@ -265,7 +281,8 @@ impl CharmCommand {
         match self {
             Self::UnlockNextStage { charm }
             | Self::Assign { charm, .. }
-            | Self::Remove { charm, .. } => charm,
+            | Self::Remove { charm, .. }
+            | Self::ResetAll { charm, .. } => charm,
         }
     }
 }
@@ -292,6 +309,9 @@ pub struct CharmCommandRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CharmCommandEffect {
+    Reset {
+        fee_gold_units: u64,
+    },
     Unlocked {
         /// 0 when the charm was locked.
         stage_before: u8,
@@ -700,6 +720,14 @@ impl DurabilityRoot {
                                 Err(error) => return Ok(Err(CharmStateError::Rule(error))),
                             }
                         }
+                        CharmCommand::ResetAll { .. } => {
+                            let level = u64::try_from(state.try_get::<i64, _>("level")?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let entitlement = facts.slot_entitlement(&mut tx, fence.character_id).await?;
+                            let fee_gold_units = crate::domain::charm::reset_all_fee(level, entitlement)
+                                .ok_or(DurabilityError::InvalidStoredState)?;
+                            (CharmCategory::Major, CharmCommandEffect::Reset { fee_gold_units })
+                        }
                         CharmCommand::Remove { charm, .. } => {
                             let category = match request.catalogue.get(charm) {
                                 Ok(definition) => definition.category,
@@ -759,6 +787,10 @@ impl DurabilityRoot {
                     }
 
                     let (kind, stage_before, stage_after, cost, race, fee_gold) = match &effect {
+                        CharmCommandEffect::Reset { fee_gold_units } => (
+                            KIND_RESET, None, None, None, None,
+                            Some(i64::try_from(*fee_gold_units).map_err(|_| DurabilityError::InvalidStoredState)?),
+                        ),
                         CharmCommandEffect::Unlocked {
                             stage_before,
                             stage_after,
@@ -790,7 +822,7 @@ impl DurabilityRoot {
                         ),
                     };
                     let fee_transaction = match &request.command {
-                        CharmCommand::Remove { fee, .. } => Some(fee.transaction_id),
+                        CharmCommand::Remove { fee, .. } | CharmCommand::ResetAll { fee, .. } => Some(fee.transaction_id),
                         _ => None,
                     };
                     let charm = request.command.charm();
@@ -815,7 +847,9 @@ impl DurabilityRoot {
                            CASE WHEN $7 = 1 THEN 1 ELSE (\
                              SELECT count(*) + 1 FROM game_character_charm_receipts p \
                               WHERE p.character_id = s.character_id AND p.charm_key = $8 \
-                                AND p.command_kind = $7) END, \
+                                AND p.command_kind = $7
+                                AND p.committed_character_revision > COALESCE((SELECT max(z.committed_character_revision)
+                                FROM game_character_charm_receipts z WHERE z.character_id=s.character_id AND z.command_kind=4),0)) END, \
                            CASE WHEN $15::bytea IS NULL THEN NULL \
                                 ELSE encode($15,'hex')::uuid END, $16 \
                            FROM game_character_progression_state s \
@@ -883,19 +917,26 @@ impl DurabilityRoot {
                             .execute(&mut **tx)
                             .await?;
                         }
-                        CharmCommandEffect::Removed { fee_gold_units, .. } => {
+                        CharmCommandEffect::Reset { fee_gold_units }
+                        | CharmCommandEffect::Removed { fee_gold_units, .. } => {
+                            let reset = matches!(effect, CharmCommandEffect::Reset { .. });
                             let deleted = sqlx::query(
                                 "DELETE FROM game_character_charm_assignments \
-                                  WHERE character_id = encode($1,'hex')::uuid AND charm_key = $2",
+                                  WHERE character_id = encode($1,'hex')::uuid AND ($3 OR charm_key = $2)",
                             )
                             .bind(fence.character_id.as_bytes().as_slice())
                             .bind(charm.as_str())
+                            .bind(reset)
                             .execute(&mut **tx)
                             .await?;
-                            if deleted.rows_affected() != 1 {
+                            if !reset && deleted.rows_affected() != 1 {
                                 return Err(DurabilityError::InvalidStoredState);
                             }
-                            let CharmCommand::Remove { fee, .. } = &request.command else {
+                            if reset {
+                                sqlx::query("DELETE FROM game_character_charm_unlocks WHERE character_id=encode($1,'hex')::uuid")
+                                    .bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+                            }
+                            let (CharmCommand::Remove { fee, .. } | CharmCommand::ResetAll { fee, .. }) = &request.command else {
                                 return Err(DurabilityError::InvalidStoredState);
                             };
                             let burn = FeeBurnRequest {
@@ -1077,6 +1118,10 @@ fn command_binding(
             push_text(&mut semantic, charm.as_str())?;
             push_text(&mut semantic, race.as_str())?;
         }
+        CharmCommand::ResetAll { charm, .. } => {
+            semantic.extend_from_slice(&KIND_RESET.to_be_bytes());
+            push_text(&mut semantic, charm.as_str())?;
+        }
         CharmCommand::Remove { charm, .. } => {
             semantic.extend_from_slice(&KIND_REMOVE.to_be_bytes());
             push_text(&mut semantic, charm.as_str())?;
@@ -1143,6 +1188,12 @@ fn decode_receipt(
                     .ok_or(DurabilityError::InvalidStoredState)?,
             }
         }
+        KIND_RESET => CharmCommandEffect::Reset {
+            fee_gold_units: row
+                .try_get::<Option<i64>, _>("fee_gold_units")?
+                .and_then(|n| u64::try_from(n).ok())
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        },
         KIND_ASSIGN => CharmCommandEffect::Assigned { race: race(row)? },
         KIND_REMOVE => CharmCommandEffect::Removed {
             race: race(row)?,
@@ -1228,7 +1279,10 @@ mod tests {
 
     #[test]
     fn charm_expansion_discounts_removal_price_by_twenty_five_percent() {
-        assert_eq!(removal_fee_gold(140, CharmSlotEntitlement::Free), Some(14_000));
+        assert_eq!(
+            removal_fee_gold(140, CharmSlotEntitlement::Free),
+            Some(14_000)
+        );
         assert_eq!(
             removal_fee_gold(140, CharmSlotEntitlement::CharmExpansion),
             Some(10_500)
