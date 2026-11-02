@@ -166,6 +166,71 @@ fn session_ingress_unknown_pending_work_cannot_resume_or_reexecute()
 }
 
 #[test]
+fn session_ingress_npc_recovery_requires_the_original_inactive_reservation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, decode_npc_intent_result};
+    for disposition in [NpcIntentDisposition::Ok, NpcIntentDisposition::Rejected] {
+        let owner = SessionCommands::default();
+        let mut admitted = session()?;
+        let original =
+            crate::foundation::CommandRef::new(admitted.game_session_id, CommandId::new(1)?);
+        let other =
+            crate::foundation::CommandRef::new(admitted.game_session_id, CommandId::new(2)?);
+        let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
+        assert!(matches!(
+            stream.begin(1, 1, 0, false),
+            Ok(CommandAction::Execute)
+        ));
+        assert!(!owner.original_terminalized(original));
+        assert!(!owner.reconcilable(original));
+        assert!(
+            owner.complete_npc(original, disposition).is_none(),
+            "active stream owns its result"
+        );
+        admitted.continuity.next_command_id = stream.next_command_id();
+        drop(stream);
+        assert!(owner.reconcilable(original));
+        assert!(!owner.reconcilable(other));
+        assert!(
+            owner.complete_npc(other, disposition).is_none(),
+            "a new command cannot consume the original"
+        );
+        assert!(SessionCommandStream::open(Some(&owner), &admitted).is_none());
+        owner
+            .complete_npc(original, disposition)
+            .ok_or("original terminal verdict")?;
+        assert!(owner.original_terminalized(original));
+        assert!(!owner.original_terminalized(other));
+        assert!(
+            owner.complete_npc(original, disposition).is_none(),
+            "terminalize once"
+        );
+        owner
+            .recover_trade_continuity(&mut admitted)
+            .ok_or("recovered sequence")?;
+        assert_eq!(admitted.continuity.server_sequence, 1);
+        assert!(owner.resumable(&admitted));
+        admitted.continuity.connection_generation = 2;
+        let mut resumed =
+            SessionCommandStream::open(Some(&owner), &admitted).ok_or("resumed stream")?;
+        let CommandAction::Replay(frame) = resumed
+            .begin(1, 2, 1, false)
+            .map_err(|_| "original replay")?
+        else {
+            return Err("resolved NPC command must replay".into());
+        };
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+        let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+        assert_eq!(result.status, CommandStatus::DuplicateReplay);
+        assert_eq!(
+            decode_npc_intent_result(result.payload).map_err(|error| format!("{error:?}"))?,
+            disposition
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn session_ingress_logout_can_terminalize_after_retirement()
 -> Result<(), Box<dyn std::error::Error>> {
     let owner = SessionCommands::default();

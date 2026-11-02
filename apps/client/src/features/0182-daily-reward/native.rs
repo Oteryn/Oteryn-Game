@@ -2,7 +2,7 @@
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::daily_reward::{DailyRewardPanel, Intent, panel_text, request};
+use oteryn_client_ui::daily_reward::{Intent, panel_text, request};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;

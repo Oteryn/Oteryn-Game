@@ -14,15 +14,32 @@ impl DurabilityRoot {
         weights: &dyn super::super::item_transfer::ItemWeightLookup,
     ) -> Result<RewardClaimMintOutcome> {
         validate_request(&request)?;
-        if request.achievement.is_some() || request.quest_transition.is_some()
-            || request.key_number.is_some() || request.quantity != 1 {
+        if request.achievement.is_some()
+            || request.quest_transition.is_some()
+            || request.key_number.is_some()
+            || request.quantity != 1
+            || !request.contents.is_empty()
+            || request.root_text.is_some()
+        {
             return Err(RewardClaimMintError::InvalidInput);
         }
         let binding = intent_binding(&request, fence.character_id)?;
-        let weight_pin = format!("sha256:{}", weights.generation_digest().iter().map(|b| format!("{b:02x}")).collect::<String>());
-        if request.content_revision != weight_pin { return Err(RewardClaimMintError::InvalidInput) }
-        let recovery = authority.record_for(self).map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        let node = node.clone(); let transition = transition.to_owned();
+        let weight_pin = format!(
+            "sha256:{}",
+            weights
+                .generation_digest()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        );
+        if request.content_revision != weight_pin {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
+        let node = node.clone();
+        let transition = transition.to_owned();
         let mut context = weights;
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, weights| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;

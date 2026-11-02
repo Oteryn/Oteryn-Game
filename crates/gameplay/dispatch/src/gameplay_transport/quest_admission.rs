@@ -42,6 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut retry = admission.retry || admission.copy.is_none();
                 if let Some(copy) = admission.copy.as_mut() {
                     if let Some(binding) = self.progression_binding(session) {
+                        let attempted_experience = !copy.xp_obligations().is_empty();
                         retry |= Box::pin(
                             crate::durability::quest_state::request_pending_quest_experience(
                                 &self.revision_sequencer,
@@ -54,6 +55,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             ),
                         )
                         .await;
+                        if attempted_experience {
+                            // The XP owner may have committed before an acknowledgement
+                            // was lost. LEVELUP-LIVE-1 reads committed facts and retries;
+                            // the quest path never invents live levels or vital maxima.
+                            self.states.level_refresh.mark([fence.character_id]);
+                        }
                     } else {
                         deferred = true;
                     }
@@ -92,6 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if log_deferred {
             operator_event("quest_experience_deferred reason=no_progression_binding");
         }
+        self.refresh_grizzly_kill_snapshot(session).await;
     }
 
     /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy
