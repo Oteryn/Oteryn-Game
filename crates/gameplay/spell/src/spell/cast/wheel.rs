@@ -388,12 +388,13 @@ impl PlayerSpellState {
         // Crystal game.cpp:7708-7715 adds Ascetic after the normal Wheel flat bonus,
         // not to the raw roll before critical or armor.
         let ascetic = i64::from(
-            self.ascetic_attack_bonus(
+            self.ascetic_attack_bonus_at(
                 effects
                     .revelation_stages
                     .get("ascetic")
                     .copied()
                     .unwrap_or(0),
+                now_us,
             ),
         );
         primary = primary.checked_add(ascetic)?;

@@ -464,6 +464,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let mut bonuses = crate::spell::harmony::VirtuePartyBonuses::default();
                 let parameters = crate::spell::stance_execution::virtue_party_parameters()
                     .ok_or(DurabilityError::Unavailable)?;
+                let mut mantra_holder = None;
                 for (monk_actor, _, _, monk_state) in &world.physical {
                     use oteryn_gameplay_spell_rules::native_actor_states::{
                         PartyBonusKind, StandardStance, plan_party_bonuses_with_guiding,
@@ -504,9 +505,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, character, &ruleset,
                         ).await?
                     } else { false };
-                    // PR #2771 ANSWER6544065111 leaves shared Mantra unprojected.
-                    // Crystal player_wheel.cpp:4194-4210 reads own six-slot Mantra;
-                    // whole-party per-item absorption has a separate missing owner.
+                    // PR #2771 ANSWER6544065111's unprojected decision is superseded by
+                    // the owner-approved mechanic C11 wave plan. Canary party.cpp:308-350
+                    // selects the strongest Guiding holder and shares integer-half Mantra
+                    // with every other party player; shared experience is not consulted.
+                    if guiding
+                        && mantra_holder.is_none_or(|(_, mantra)| {
+                            monk_state.equipped_mantra() > mantra
+                        })
+                    {
+                        mantra_holder = Some((*monk_actor, monk_state.equipped_mantra()));
+                    }
 
                     if !matches!(
                         monk_state.standard_stance(),
@@ -544,6 +553,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             }
                         }
                     }
+                }
+                if let Some((holder, mantra)) = mantra_holder
+                    && holder != actor
+                {
+                    bonuses.mantra = mantra / 2;
                 }
                 let state = states
                     .get_mut(runtime, actor, session)
