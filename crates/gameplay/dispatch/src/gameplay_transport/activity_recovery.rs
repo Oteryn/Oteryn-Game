@@ -20,8 +20,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return false;
         };
-        ActivityHandoffOwner::new(self.root.clone())
-            .note_transfer_input(self.holder, fence, controller.transport)
+        // This idempotent input receipt shares the root with background enrichment.
+        // Wait briefly for its holder, re-proving the same transport/fences on every
+        // attempt. Exhaustion and every non-busy error still refuse before dispatch.
+        super::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                ActivityHandoffOwner::new(self.root.clone())
+                    .note_transfer_input(self.holder, fence, controller.transport)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootUnavailable => {
+                            super::connection::AdmissionRefusal::Unavailable
+                        }
+                        _ => super::connection::AdmissionRefusal::Rejected,
+                    })
+            })
             .await
             .is_ok()
     }
