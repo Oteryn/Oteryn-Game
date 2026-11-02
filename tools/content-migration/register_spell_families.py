@@ -350,6 +350,9 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     import quest_callback_profiles
     grizzly_shop_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Shop/chest admission adds ranged Items after the earlier owner overlays.
+    # Complete their existing source authoring too before pinning the provider.
+    ranged_item_profiles.apply_native(root, generated)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

@@ -199,9 +199,15 @@ class EventItemProfilePrecedence(unittest.TestCase):
         records = [row for row in json.loads(generated[PROFILE])['records']
                    if row['production_definition']['production_key'] == key]
         self.assertEqual(len(records), 1)
-        # Compare the complete semantic value, including armor, market policy and
-        # EQUIP transformation, rather than a small portable-admission projection.
-        self.assertEqual(records[0]['semantics'], definitions[0]['semantics'])
+        source = json.loads((ROOT / event_item_profiles.PATH).read_bytes())
+        expected = next(row['semantics'] for row in source['records']
+                        if row['production_definition']['production_key'] == key)
+        # Main's complete Item closure fills unknown facts from the pinned source.
+        # Keep that full expectation plus canonical armor, market policy and EQUIP
+        # transformation; the canonical definition alone now has unknown groups.
+        for group in ('protection', 'trade_restrictions', 'use_transform'):
+            expected[group] = definitions[0]['semantics'][group]
+        self.assertEqual(records[0]['semantics'], expected)
         self.assertEqual(records[0]['production_binding']['disposition'], 'EXACT')
         self.assertEqual(records[0]['admission']['materializable'], True)
 
