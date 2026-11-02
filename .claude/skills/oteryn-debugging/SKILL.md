@@ -74,6 +74,50 @@ Note the failure and its root cause in the report; the wave retro
 (`oteryn-waves`, *Close the wave*) decides whether it becomes a check or a
 skill line.
 
+## 6. Red main: targeted fix
+
+A red post-merge run blocks every merge, so the loop above must run in
+minutes, not CI cycles. The owner's default (2026-11-02) is a targeted fix,
+not a revert. MAINRED13 was red for about 37 hours because three rounds
+searched the whole code base and used CI (about 30 minutes per try) as the
+loop; the CI history named the culprit commit in minutes.
+
+1. **Bisect the CI history before reading code.** For each failing leaf job,
+   find the last green and the first red commit on `main` from the
+   post-merge runs (`main-health.sh 30`, then the jobs of each run). A
+   cancelled run has no result: dispatch the failing workflow
+   (`gameplay-server-seam.yml`, `node-boot-qualification.yml`, or the
+   post-merge gate) on the commits in between, or run `git bisect run` with
+   the local loop from step 3. One commit in the range is the culprit.
+2. **Read the last meaningful log line before the symptom**, not the symptom.
+   "connection closed" said nothing; the line before it, `Wheel reset at
+   admission did not commit`, pointed at the code in the culprit's diff.
+3. **Reproduce locally, red before and green after.** Seam and node boot run
+   on a developer machine with Docker and a Platform checkout at the
+   harness's `PLATFORM_SHA`:
+   - seam: `PLATFORM_SOURCE=<platform> OTERYN_TEST_POSTGRES_ADMIN_URL=<admin
+     url> WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh`,
+     pass line `S3B_RESULT=SEAM_PASS`;
+   - node boot: `PLATFORM_SOURCE=<platform> bash
+     tools/qualification/node_boot/run.sh`, pass line
+     `NODE_BOOT_RESULT=NODE_BOOT_PASS`;
+   - PostgreSQL cases: the failing test filtered by name against a running
+     PostgreSQL 18.6, never the full suite.
+   Never export or print the admin URL in a shared log.
+4. **Scope the fix by the evidence.** The fix packet names the culprit SHA,
+   the failing log line, the code it points to and the local command from
+   step 3. It does not ask for a search of the whole code base and does not
+   restrict the fix to a file list.
+5. **Push once.** Before the PR, dispatch seam and node boot on the fix branch
+   and wait for both; then the PR, merged before anything else. Waiting PRs
+   take `origin/main` afterwards (`oteryn-dev` `references/ci-merge.md`,
+   *Reading a red check*, step 3).
+6. **Revert is the fallback, not the default.** Offer the owner a revert of
+   the culprit when step 3 cannot reproduce the failure within about an
+   hour, or when the culprit is too large to fix in place. Name its cost:
+   later commits may conflict, and the feature leaves `main` until it comes
+   back with the fix.
+
 ## Known signatures in this repository
 
 | symptom | usual cause |
@@ -83,6 +127,7 @@ skill line.
 | passes locally, fails in CI only | nextest per-process isolation, runner stack size, or `main` moved (CI tests the merge with `main`) |
 | integration count or file-family test red after a content change | a new import batch or spawn file nobody counted (#2684, #2691) |
 | red only on the post-merge run | a job the PR gate never runs (`oteryn-dev` `references/ci-merge.md`, *Blind spot*) |
+| post-merge red for several commits, mixed with cancelled runs | the culprit is the first red after the last green of that job; bisect with dispatched runs (section 6) |
 
 ## Sources
 
