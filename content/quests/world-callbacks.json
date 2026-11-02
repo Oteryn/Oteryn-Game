@@ -2551,6 +2551,139 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:128-144"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-blood-exit",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34070,
+          "y": 31974,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32955,
+        "y": 32398,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:53",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-enter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34120,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34101,
+        "y": 31679,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-leave",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34101,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34120,
+        "y": 31980,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-full-counter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34065,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32972,
+        "y": 32336,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task",
+          "minimum": 100,
+          "maximum": 2147483647,
+          "set": 100,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You need to reach 100 points to enter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3070",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
+      ]
     }
   ]
 }
