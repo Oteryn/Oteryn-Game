@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 #[derive(Clone, Copy)]
 enum Case {
     Bear,
+    DesertCoins,
     BehemothBag,
     BehemothHalberd,
     BehemothShield,
@@ -51,6 +52,15 @@ fn quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner() -> Te
     execute(Case::BehemothHalberd, "QUESTS6_BEHEMOTH_HALBERD")?;
     execute(Case::BehemothShield, "QUESTS6_BEHEMOTH_SHIELD")?;
     execute(Case::BehemothArmor, "QUESTS6_BEHEMOTH_ARMOR")
+}
+
+// Crystal 201189f startup/tables/chest.lua:1806-1812.
+// Crystal's fixed 100 platinum coins follow Q6-D05 and the coordinator's ANSWER.
+// https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589439756
+// https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280
+#[test]
+fn quests6_desert_fixed_coin_reward_preserves_quantity_and_once_claim() -> TestResult {
+    execute(Case::DesertCoins, "QUESTS6_DESERT_COINS")
 }
 
 #[test]
@@ -100,6 +110,13 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 fn scenario(case: Case) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::DesertCoins => (
+            "oteryn:reward-claim.kv.desert1",
+            (32668, 32069, -8),
+            6157,
+            "oteryn:item.tibia.i3035",
+            vec![],
+        ),
         Case::BehemothBag => (
             "oteryn:reward-claim.kv.behemothquest1",
             (33294, 31658, -13),
@@ -531,7 +548,10 @@ fn scenario(case: Case) -> TestResult {
                     .ok_or("backpack")?;
                 assert_eq!(bag.entries.len(), 1);
                 let root = &bag.entries[0].item;
-                assert_eq!(root.quantity, 1);
+                assert_eq!(
+                    root.quantity,
+                    if matches!(case, Case::DesertCoins) { 100 } else { 1 }
+                );
                 assert_eq!(root.definition.production_key, root_key);
                 if let Some(original) = first_root {
                     assert_eq!(root.item_instance_id, original)
