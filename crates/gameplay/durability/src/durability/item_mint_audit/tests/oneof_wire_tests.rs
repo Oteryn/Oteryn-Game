@@ -286,6 +286,16 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 proof: vec![0x81, 0x07],
             }),
         ),
+        // WB2: Bosstiary slot removal fee, a closed NPC-purchase-shaped cause.
+        (
+            15,
+            "BosstiarySlot",
+            FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:bosstiary.slot_remove".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -318,6 +328,10 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         (
             "TaskBoardTalisman",
             "6a1f0a196f746572796e3a7461736b626f6172642e74616c69736d616e12028107",
+        ),
+        (
+            "BosstiarySlot",
+            "7a220a1c6f746572796e3a626f737374696172792e736c6f745f72656d6f766512028107",
         ),
         ("CharmUnassign", "0a0b0a05636861726d12028107"),
         ("PromotionPurchase", "120f0a0970726f6d6f74696f6e12028107"),

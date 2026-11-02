@@ -606,8 +606,8 @@ async fn native_assign<F: CharmFacts + Clone>(
     Ok(disposition)
 }
 
-/// A remove fee whose coin facts are never read: the remove it pays refuses first.
-fn unassigned_remove_fee(tag: u8) -> crate::durability::charm_state::CharmRemoveFee {
+/// Compatible coin and backpack facts for native charm fees.
+fn charm_fee(tag: u8) -> crate::durability::charm_state::CharmRemoveFee {
     use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
     let definition = |key: &str| crate::durability::item_mint::TypedDefinitionRef {
         family: "Item".into(),
@@ -1024,6 +1024,139 @@ fn restart_readback_after_charm_commands() -> TestResult {
     })
 }
 
+#[test]
+fn native_reset_all_burns_level_entitlement_fee_and_replays_without_charging() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async |admin| {
+                use oteryn_protocol_oteryn::charm_progression::CharmRemoveDisposition;
+
+                let harness = Harness::create(admin, "native_reset", true).await?;
+                seed_remove_fee_items(&harness.pool).await?;
+                // Twenty crystal coins leave enough for another reset, so replay must retain
+                // the result rather than succeed by burning a second fee.
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query(
+                    "UPDATE game_item_instances SET definition_production_key = \
+                     'oteryn:item.tibia.i3043', quantity = 20 \
+                     WHERE item_instance_id = encode($1,'hex')::uuid",
+                )
+                .bind(id(83).as_slice())
+                .execute(&mut *tx)
+                .await?;
+                tx.commit().await?;
+
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let authority = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let facts = Facts::new(&[1000], &[("rat", 3)]);
+                for (revision, request) in [
+                    (1, unlock(60, "wound")),
+                    (2, unlock(61, "wound")),
+                    (3, unlock(62, "gut")),
+                    (4, assign(63, "wound", "rat")),
+                    (5, assign(64, "gut", "rat")),
+                ] {
+                    committed(&harness, &authority, revision, request, &facts).await?;
+                }
+                let content = native_content(vec![crate::domain::bestiary::BestiaryRace::new(
+                    "oteryn:creature.rat",
+                    "definition-r1",
+                    vec![1, 2, 3],
+                )
+                .map_err(debug)?])?;
+                let sequencer = CharacterRevisionSequencer::new();
+                let mut port = NativeCharmProgressionPort::bind(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    &sequencer,
+                    fence(6)?,
+                    &content,
+                    facts,
+                )
+                .await
+                .map_err(debug)?;
+                let before = port.views().await.map_err(debug)?;
+                assert_eq!(
+                    before.charms.charms.iter().filter(|c| c.unlocked_stage > 0).count(),
+                    2
+                );
+                assert_eq!(
+                    before.charms.charms.iter().filter(|c| c.assigned_race.is_some()).count(),
+                    2
+                );
+                // The seeded character is level 50 with Free entitlement: reset costs 100,000 gold.
+                let level: i64 = sqlx::query_scalar(
+                    "SELECT level FROM game_character_progression_state",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(level, 50);
+                let expected_fee = 100_000;
+                assert_eq!(
+                    crate::domain::charm::reset_all_fee(
+                        u64::try_from(level)?,
+                        CharmSlotEntitlement::Free,
+                    ),
+                    Some(expected_fee)
+                );
+                let result = port.reset_all(occurrence(70), charm_fee(70)).await;
+                assert_eq!(result, (CharmRemoveDisposition::Removed, expected_fee));
+                assert_eq!(revision(&harness.pool).await?, "7");
+                let after = port.views().await.map_err(debug)?;
+                assert!(after.charms.charms.iter().all(|c| {
+                    c.unlocked_stage == 0 && c.assigned_race.is_none()
+                }));
+                assert_eq!(after.charms.charm_points_available, 1000);
+                assert_eq!(after.charms.minor_charm_echoes_available, 0);
+                let cleared: (i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_character_charm_unlocks), \
+                            (SELECT count(*) FROM game_character_charm_assignments)",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(cleared, (0, 0));
+                let fee_state = async || -> TestResult<(i64, i64, i64, i64)> {
+                    Ok(sqlx::query_as(
+                        "SELECT (SELECT count(*) FROM game_item_fee_burns), \
+                         (SELECT sum(fee_gold_units)::bigint FROM game_item_fee_burns), \
+                         (SELECT sum(burned_gold_units)::bigint FROM game_item_fee_burns), \
+                         (SELECT quantity::bigint FROM game_item_instances \
+                          WHERE item_instance_id = encode($1,'hex')::uuid)",
+                    )
+                    .bind(id(83).as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?)
+                };
+                let burned = fee_state().await?;
+                assert_eq!(burned, (1, 100_000, 100_000, 10));
+                let retained = snapshot(&harness.pool).await?;
+                assert_eq!(port.reset_all(occurrence(70), charm_fee(70)).await, result);
+                assert_eq!(fee_state().await?, burned);
+                assert_eq!(snapshot(&harness.pool).await?, retained);
+                assert_eq!(port.views().await.map_err(debug)?, after);
+                drop(port);
+                drop(authority);
+                drop(seal);
+                harness.cleanup().await?;
+                eprintln!("WB2_F_NATIVE_RESET_ALL_POSTGRES_COMPLETED level=50 entitlement=Free fee_gold=100000");
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "native reset PostgreSQL test thread panicked")?
+        .map_err(Into::into)
+}
+
 /// The production facts over real CHARM-2 kill counters: kills and charm commands share one
 /// CharacterRevision chain, a completed entry earns its charm points, and a restart reopens
 /// Character authority over both receipt kinds.
@@ -1146,7 +1279,7 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             port.remove(
                 occurrence(62),
                 std::num::NonZeroU32::new(4).ok_or("charm index")?,
-                unassigned_remove_fee(62),
+                charm_fee(62),
             )
             .await,
             (

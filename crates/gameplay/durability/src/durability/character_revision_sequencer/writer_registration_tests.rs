@@ -34,7 +34,9 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 // Revision-advancing fees run inside their sequenced Character source.
 // ITEM-TIMED-1 and P18 Forge are item-only exceptions under the same locked root;
 // Forge's fee cause retains CharacterRevision and shares its native item transaction.
+// WB2 boss-slot fees also retain CharacterRevision inside their fenced slot transaction.
 const FEE_WRITERS: &[&str] = &[
+    "durability/bosstiary/slots.rs",
     "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",
     "durability/charm_state.rs",
@@ -184,6 +186,7 @@ fn the_structural_gate_catches_a_bypass_writer() {
         .is_empty()
     );
     assert!(bypasses("durability/task_board/fee.rs", fee).is_empty());
+    assert!(bypasses("durability/bosstiary/slots.rs", fee).is_empty());
     // Test modules and definitions are not writers.
     let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";
     assert!(bypasses("src/durability/charm_state.rs", tested).is_empty());
