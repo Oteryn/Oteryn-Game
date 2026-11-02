@@ -34,6 +34,8 @@ pub struct ChannelSessionStates {
     pub fence_holders: FenceHolders,
     /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
     pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
+    /// RAIDS-GLOBAL: copies of the idle owner's facts, removed with the session.
+    pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
@@ -75,6 +77,8 @@ pub struct ChannelSessionStates {
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
     pub(super) resting_areas: super::resting_area::RestingAreaSessions,
+    /// RAIDS-GLOBAL: the Channel and its Activity scopes share current recipients.
+    pub(super) server_messages: std::sync::Arc<super::raid_notices::ServerMessageHub>,
     /// PARITY-EVENT-CALLBACKS-1: the currently due server-save countdown minute.
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
@@ -110,12 +114,24 @@ pub struct ChannelSessionStates {
 }
 
 impl ChannelSessionStates {
+    /// Activity owners retain independent gameplay state, the origin Channel's
+    /// connection recipients, and its existing node shutdown/input gate.
+    pub(super) fn for_activity(&self) -> Self {
+        Self {
+            gameplay_idle_policy: self.gameplay_idle_policy,
+            input_gate: std::sync::Arc::clone(&self.input_gate),
+            server_messages: std::sync::Arc::clone(&self.server_messages),
+            ..Default::default()
+        }
+    }
+
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
+        self.gameplay_idle_presence.forget(session);
         self.player_trades.forget(session);
         self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
@@ -136,6 +152,7 @@ impl ChannelSessionStates {
         }
         self.last_positions.forget(session);
         self.tutorial_sessions.forget(session);
+        self.server_messages.forget(session);
         self.newhaven_travel.forget(session);
     }
 }

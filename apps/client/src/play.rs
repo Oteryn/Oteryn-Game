@@ -68,6 +68,8 @@ pub struct PlayView {
     combat_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
+    /// Recent server messages in their validated delivery order, owned by this connection.
+    server_messages: VecDeque<oteryn_session::AppliedDelta<oteryn_session::ServerMessage>>,
 }
 
 impl PlayView {
@@ -102,6 +104,7 @@ impl PlayView {
             entities: Vec::new(),
             combat_line: None,
             logout_line: None,
+            server_messages: VecDeque::new(),
         };
         for entry in overlay {
             view.set_marker(entry);
@@ -172,6 +175,7 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
 use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
+pub use feature_0092_zones_nologout::state::ServerMessageInbox;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
 pub use session_loop::{Stepper, run_session};
 

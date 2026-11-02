@@ -265,6 +265,7 @@ where
                         .activity(activity_at);
                 }
                 session.buffered = Some(BufferedStep { frame, due });
+                authority.observe_gameplay_idle(session.admitted);
                 return Ok(());
             }
             route::StepAction::Dispatch(dispatch) => dispatch,
@@ -288,6 +289,7 @@ where
             .gameplay_idle
             .activity(activity_at);
     }
+    authority.observe_gameplay_idle(session.admitted);
     let mut no_path = false;
     if autowalk::too_far(&dispatch)
         && let Some(target) = walk_target

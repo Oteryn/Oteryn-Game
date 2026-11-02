@@ -92,11 +92,34 @@ impl ChannelRuntimeV1 {
         {
             return Err(E::Native(CarrierError::CreatureTargetMismatch));
         }
+        self.admit_native_masterless_at(
+            &spec.child,
+            &spec.child_revision,
+            spec.content,
+            at,
+            map_admits,
+        )
+    }
+
+    /// Shared physical admission for source encounters and channel-owned raids.
+    /// Each caller has proved its current owner before entering this helper.
+    pub(super) fn admit_native_masterless_at(
+        &mut self,
+        creature: &str,
+        revision: &str,
+        content: [u8; 32],
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        use EncounterSpawnError as E;
+        if content != self.content_pin().server_artifact_digest() {
+            return Err(E::Native(CarrierError::ContentPinWorldMismatch));
+        }
         // This reads the active loader-installed qualified table. A matching display name
         // cannot substitute for the exact child definition or revision.
-        let policy = self.companion_policy(&spec.child).map_err(E::Native)?;
-        if policy.definition_key.as_str() != spec.child.as_ref()
-            || policy.definition_revision.as_str() != spec.child_revision.as_ref()
+        let policy = self.companion_policy(creature).map_err(E::Native)?;
+        if policy.definition_key.as_str() != creature
+            || policy.definition_revision.as_str() != revision
         {
             return Err(E::Native(CarrierError::CreatureTargetMismatch));
         }
@@ -118,14 +141,24 @@ impl ChannelRuntimeV1 {
             .map_err(E::Native)?;
         // Existing carrier compare-commit behavior: either all physical fields are installed,
         // or every modified slot/free-list field is restored before returning a rejection.
-        let slots_before = self.carrier.slots.clone();
+        // Admission, position and policy touch only the selected free slot. Retain that
+        // slot, not a copy of the whole Channel for every creature in a raid wave.
         let free_before = self.carrier.free_head;
-        let occupied_before = self.carrier.occupied.clone();
+        let selected = free_before.ok_or(E::Native(CarrierError::CapacityExceeded))?;
+        let index = usize::try_from(selected)
+            .map_err(|_| E::Native(CarrierError::CapacityArithmeticOverflow))?;
+        let slot_before = self
+            .carrier
+            .slots
+            .get(index)
+            .filter(|slot| matches!(slot, Slot::VacantReusable { .. }))
+            .ok_or(E::Native(CarrierError::InvalidSpawnDefinition))?
+            .clone();
         let result = (|| {
             let actor = self.carrier.admit_creature(
                 &self.continuity,
                 ActorState(0),
-                &spec.child,
+                creature,
                 policy.maximum_health,
             )?;
             self.carrier.initialize_position(
@@ -139,13 +172,13 @@ impl ChannelRuntimeV1 {
                 },
             )?;
             let actor = ExactActorRef(actor);
-            self.install_creature_policy(actor, &spec.child)?;
+            self.install_creature_policy(actor, creature)?;
             Ok(actor)
         })();
         if result.is_err() {
-            self.carrier.slots = slots_before;
+            self.carrier.slots[index] = slot_before;
             self.carrier.free_head = free_before;
-            self.carrier.occupied = occupied_before;
+            self.carrier.unindex_occupied(selected);
         }
         result.map_err(E::Native)
     }
@@ -165,6 +198,15 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
+        self.remove_native_masterless_subject(actor, expected_key, expected_content)
+    }
+
+    pub(super) fn remove_native_masterless_subject(
+        &mut self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+    ) -> Result<(), CarrierError> {
         if self.content_pin().server_artifact_digest() != expected_content
             || !self.matches_live_creature_identity(actor, expected_key.as_bytes())
         {

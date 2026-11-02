@@ -369,24 +369,69 @@ async fn publish_readiness(
     node: &NodeIncarnationProof,
     ownership_generation: u64,
 ) -> TestResult {
+    publish_readiness_for_scope(pool, root, node, ownership_generation, scope()?).await
+}
+
+/// Reuse the same genuine readiness issuer for an explicitly assigned test scope.
+pub(crate) async fn publish_readiness_for_scope(
+    pool: &sqlx::PgPool,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    ownership_generation: u64,
+    scope: RuntimeScopeRefV1,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
             .fetch_one(pool)
             .await?;
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(scope);
+    let previous =
+        crate::durability::admission_authority_guards::AdmissionGuardStore::from_root(root.clone())
+            .load(std::slice::from_ref(&key))
+            .await
+            .map_err(debug)?
+            .pop()
+            .flatten();
+    let (precondition, publication_revision, source_revision) = match previous {
+        Some(previous) => {
+            if previous.source.source_observed_at > now {
+                return Err("test readiness clock regressed".into());
+            }
+            (
+                AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: previous.publication_revision,
+                },
+                previous
+                    .publication_revision
+                    .checked_add(1)
+                    .ok_or("publication revision")?,
+                previous
+                    .source
+                    .source_revision
+                    .checked_add(1)
+                    .ok_or("source revision")?,
+            )
+        }
+        None => (
+            AdmissionPublicationPreconditionV1::Bootstrap {
+                restored_publication_high_water: Some(0),
+            },
+            1,
+            1,
+        ),
+    };
     let change = AdmissionAuthorityPublicationChangeV1 {
-        key: AdmissionAuthorityGuardKeyV1::Runtime(scope()?),
+        key,
         source: AdmissionPublicationSourceV1 {
             authority: "game-runtime-publisher".into(),
             purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
-            source_revision: 1,
-            decision_identity: "bestiary-runtime-ready-1".into(),
+            source_revision,
+            decision_identity: format!("bestiary-runtime-ready-{publication_revision}"),
             source_observed_at: now,
             clock_uncertainty_seconds: 0,
         },
-        precondition: AdmissionPublicationPreconditionV1::Bootstrap {
-            restored_publication_high_water: Some(0),
-        },
-        publication_revision: 1,
+        precondition,
+        publication_revision,
         state: AdmissionAuthorityGuardStateV1::Runtime {
             ownership_generation,
             ready: true,

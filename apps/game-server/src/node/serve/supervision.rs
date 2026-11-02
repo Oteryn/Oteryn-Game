@@ -39,6 +39,20 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let achievements = owners.achievements;
     let runtime = owners.runtime;
     let config = &material.config;
+    let raids = super::super::raid_scheduler::RaidScheduler {
+        root,
+        character: authority,
+        node: proof,
+        runtime,
+        world: material.world,
+        channel: material.channel,
+        generation,
+        reset_epoch,
+        bundle_digest: config
+            .world_bundle
+            .as_ref()
+            .and_then(|bundle| bundle.digest_bytes()),
+    };
     let loops_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
     let mut gameplay = pin!(world_reset::serve_watching_reset(
@@ -83,7 +97,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                         ),
                     )
                 ),
-                super::super::raid_scheduler::run(root, material.channel, generation, &loops_stop,)
+                super::super::raid_scheduler::run(raids, &loops_stop)
             ),
             account_characters_loop(
                 root,
