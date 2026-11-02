@@ -1450,8 +1450,11 @@ mod weapon_tests {
     fn a_held_melee_weapon_swings_with_its_attack_and_anything_else_with_fists() {
         let production = production();
         let weapon_of = |items: &[(u8, u32)]| weapon_of(&production, items);
-        // Sword (3264, attack 14), staff (3289, club, attack 10), wooden shield (3412),
+        // Sword (3264, attack 14), mace (3286, club, attack 16), wooden shield (3412),
         // spear (3277, distance), arrow (3447, ammunition), wand of darkness (25760).
+        // The staff (3289) is a Monk fist weapon with attack 22 since the Monk Vocation
+        // Update (MONKFIX-1); before that it was a club weapon with attack 10, which is why
+        // the club cases below use the mace.
         assert_eq!(weapon_of(&[]), Some(SwingWeapon::Fists));
         assert_eq!(
             weapon_of(&[(5, 3264)]),
@@ -1461,10 +1464,17 @@ mod weapon_tests {
             })
         );
         assert_eq!(
+            weapon_of(&[(6, 3286)]),
+            Some(SwingWeapon::Melee {
+                attack: 16,
+                skill: MeleeSkill::Club
+            })
+        );
+        assert_eq!(
             weapon_of(&[(6, 3289)]),
             Some(SwingWeapon::Melee {
-                attack: 10,
-                skill: MeleeSkill::Club
+                attack: 22,
+                skill: MeleeSkill::Fist
             })
         );
         assert_eq!(
@@ -1476,9 +1486,9 @@ mod weapon_tests {
             "a shield is skipped for the other hand"
         );
         assert_eq!(
-            weapon_of(&[(6, 3289), (5, 3264)]),
+            weapon_of(&[(6, 3286), (5, 3264)]),
             Some(SwingWeapon::Melee {
-                attack: 10,
+                attack: 16,
                 skill: MeleeSkill::Club
             }),
             "the left hand is read first"

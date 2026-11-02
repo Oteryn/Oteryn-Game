@@ -305,7 +305,9 @@ def ability_sources(snapshot, canary, item_ids, definitions):
         fallback = []
         base_id = PAIRED_MODIFIER_BASES.get(item_id)
         if base_id is not None and not any(
-            name in obs["fields"] for obs in observations for name in WIKI_MODIFIER_FIELDS
+            name in obs["fields"]
+            for obs in observations
+            for name in WIKI_MODIFIER_FIELDS
         ):
             paired_values = []
             for obs in wiki.get(base_id, []):
@@ -315,15 +317,24 @@ def ability_sources(snapshot, canary, item_ids, definitions):
                 if typed == "MALFORMED":
                     raise ValueError(f"malformed paired wiki modifiers: {base_id}")
                 paired_values.append(typed["value"])
-                wiki_sources.append({
-                    "class": "TIBIAWIKI", "paired_base_item_id": base_id,
-                    "page_id": obs["page_id"], "revision_id": obs["revision_id"],
-                    "values": raw,
-                })
+                wiki_sources.append(
+                    {
+                        "class": "TIBIAWIKI",
+                        "paired_base_item_id": base_id,
+                        "page_id": obs["page_id"],
+                        "revision_id": obs["revision_id"],
+                        "values": raw,
+                    }
+                )
             if paired_values:
                 if any(value != paired_values[0] for value in paired_values):
                     raise ValueError(f"conflicting paired wiki modifiers: {base_id}")
-                fallback.append({"field_path": "skill_modifiers.modifiers", "value": paired_values[0]})
+                fallback.append(
+                    {
+                        "field_path": "skill_modifiers.modifiers",
+                        "value": paired_values[0],
+                    }
+                )
         for field_path, wiki_fields, (observed, typed) in groups:
             if observed is None:
                 continue
@@ -480,7 +491,9 @@ def main(argv=None):
     if args.facts == FACTS:
         pin_text, count = re.subn(
             r'(pub const EQUIP_ABILITIES_V1_FACTS_SHA256: &str =\s*")[0-9a-f]{64}(";)',
-            lambda match: match[1] + hashlib.sha256(outputs[0][1]).hexdigest() + match[2],
+            lambda match: (
+                match[1] + hashlib.sha256(outputs[0][1]).hexdigest() + match[2]
+            ),
             RUST_FACTS_PIN.read_text(encoding="utf-8"),
         )
         if count != 1:
