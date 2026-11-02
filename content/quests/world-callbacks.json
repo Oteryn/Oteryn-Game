@@ -952,6 +952,134 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/alawars-vault-entrance",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32187,
+          "y": 31622,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32107,
+        "y": 31567,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/alawars-vault-exit",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32107,
+          "y": 31566,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32189,
+        "y": 31625,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:679-684",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/alawars-vault-lever",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30008,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32186,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32187,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32188,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32189,
+            "y": 31626,
+            "floor": -8
+          },
+          "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 32180,
+            "y": 31633,
+            "floor": -8
+          },
+          "appearance": 2772
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/alawars_vault/action-lever.lua:1-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:793",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:194",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/items/item_functions.cpp:274"
+      ]
     }
   ]
 }
