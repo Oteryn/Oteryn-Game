@@ -33,11 +33,15 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
+    animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+    loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+    loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,

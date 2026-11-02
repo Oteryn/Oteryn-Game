@@ -17,6 +17,19 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn animus_selected(&self) -> bool {
+        false
+    }
+    fn animus(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async {
+            Err(SessionError::CapabilityNotSelected {
+                capability: oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+            })
+        }
+    }
     fn wheel_selected(&self) -> bool {
         false
     }
@@ -39,6 +52,19 @@ pub trait Stepper: Send {
     }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         oteryn_client_runtime::quest_log::QuestState::default()
+    }
+    fn loyalty_skills_selected(&self) -> bool {
+        false
+    }
+    fn loyalty_skills(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async {
+            Err(SessionError::CapabilityNotSelected {
+                capability: oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+            })
+        }
     }
     fn quest_log(
         &mut self,
@@ -189,6 +215,20 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn animus_selected(&self) -> bool {
+        self.is_selected(oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1)
+    }
+    async fn animus(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        self.gated_command(
+            oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+            oteryn_session::animus_mastery::COMMAND_TYPE_ANIMUS_MASTERY_QUERY,
+            payload,
+        )
+        .await
+    }
     fn wheel_selected(&self) -> bool {
         self.is_selected(oteryn_session::wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
     }
@@ -206,6 +246,20 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         payload: &[u8],
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
         self.gated_command(147, 170, payload).await
+    }
+    fn loyalty_skills_selected(&self) -> bool {
+        self.is_selected(oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1)
+    }
+    async fn loyalty_skills(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        self.gated_command(
+            oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+            oteryn_session::loyalty_skills::COMMAND_TYPE_LOYALTY_SKILLS_QUERY,
+            payload,
+        )
+        .await
     }
     fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
         super::feature_0016_quest_log::protocol::initial(self)
@@ -368,8 +422,10 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
+    outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());
@@ -388,6 +444,14 @@ pub async fn run_session<T: Stepper>(
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::Animus(payload)) => match session.animus(&payload).await {
+                Ok(result) => {
+                    outbox.animus_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Wheel(request)) => match session.wheel(&request).await {
                 Ok(response) => {
                     outbox.wheel_result(&response);
@@ -422,6 +486,15 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::LoyaltySkills(payload)) => match session.loyalty_skills(&payload).await
+            {
+                Ok(result) => {
+                    outbox.loyalty_skills_result(&result);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

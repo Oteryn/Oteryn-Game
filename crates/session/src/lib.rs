@@ -25,6 +25,8 @@ mod gated_command;
 mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
+/// Server-owned Animus mastery pages for the native client feature.
+pub use oteryn_protocol_oteryn::animus_mastery;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;
@@ -83,6 +85,8 @@ pub use oteryn_protocol_oteryn::exiva;
 pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// Loyalty-adjusted absolute skill levels from the admitted character's owner.
+pub use oteryn_protocol_oteryn::loyalty_skills;
 /// Shared NPC trade enums carried by capability-81 shop messages.
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
 /// Capability-81 NPC shop wire values consumed by the native client adapter.

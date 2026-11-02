@@ -57,9 +57,11 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
+    pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,
@@ -141,11 +143,17 @@ impl Outbox {
 
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
-        lock(&self.0).ended.get_or_insert(PlayEvent::Ended(class));
+        let mut mailbox = lock(&self.0);
+        mailbox.animus = Default::default();
+        mailbox.loyalty_skills = Default::default();
+        mailbox.ended.get_or_insert(PlayEvent::Ended(class));
     }
 
     pub(super) fn logged_out(&self) {
-        lock(&self.0).ended.get_or_insert(PlayEvent::LoggedOut);
+        let mut mailbox = lock(&self.0);
+        mailbox.animus = Default::default();
+        mailbox.loyalty_skills = Default::default();
+        mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
     }
 }
 

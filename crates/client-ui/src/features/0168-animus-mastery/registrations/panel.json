@@ -1,0 +1,7 @@
+{
+  "mechanic": "0168-animus-mastery",
+  "kind": "panels",
+  "id": "0168-animus-mastery-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}
