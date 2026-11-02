@@ -954,6 +954,285 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/grimvale-curse-exit-6",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33180,
+          "y": 32011,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33167,
+        "y": 31978,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:67-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-curse-exit-7",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33055,
+          "y": 31888,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33055,
+        "y": 31911,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:71-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-curse-exit-8",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33120,
+          "y": 31996,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33128,
+        "y": 31972,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:75-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-curse-exit-9",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33395,
+          "y": 32111,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33403,
+        "y": 32097,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:79-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-curse-exit-10",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33446,
+          "y": 32040,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33442,
+        "y": 32052,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:83-143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-ancient-exit-5",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33154,
+          "y": 32245,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33123,
+        "y": 32240,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:58-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-ancient-exit-6",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33119,
+          "y": 32278,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33130,
+        "y": 32252,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:62-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-ancient-exit-7",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33087,
+          "y": 32239,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33123,
+        "y": 32264,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:66-135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grimvale-ancient-exit-8",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33148,
+          "y": 32283,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33115,
+        "y": 32252,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:70-135"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
       "quest": "oteryn:quest.adventures_of_galthen_quest",
       "trigger": "step_in",
