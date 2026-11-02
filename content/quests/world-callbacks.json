@@ -1233,6 +1233,876 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/poi-maze-28810",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28810,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32838,
+        "y": 32304,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28811",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28811,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32839,
+        "y": 32320,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28812",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28812,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32844,
+        "y": 32310,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28813",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28813,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32847,
+        "y": 32307,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28814",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28814,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32856,
+        "y": 32306,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28815",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28815,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32827,
+        "y": 32308,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28816",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28816,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32840,
+        "y": 32317,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28817",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28817,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32296,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28818",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28818,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32857,
+        "y": 32307,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28819",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28819,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32856,
+        "y": 32289,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28820",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28820,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32843,
+        "y": 32313,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:12"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28821",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28821,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32320,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28822",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28822,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32841,
+        "y": 32323,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28823",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28823,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32847,
+        "y": 32287,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:15"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28824",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28824,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32854,
+        "y": 32323,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28825",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28825,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32304,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:17"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28826",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28826,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32841,
+        "y": 32323,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28827",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28827,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32317,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:19"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28828",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28828,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32827,
+        "y": 32314,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28829",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28829,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32858,
+        "y": 32296,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28830",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28830,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32301,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:22"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28831",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28831,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32321,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28832",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28832,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32320,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28833",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28833,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32318,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-maze-28834",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 28834,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32855,
+        "y": 32319,
+        "floor": -9
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-bazir-16772",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 16772,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32754,
+        "y": 32365,
+        "floor": -15
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-bazir-16773",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 16773,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32725,
+        "y": 32381,
+        "floor": -15
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-bazir-16774",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 16774,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32827,
+        "y": 32241,
+        "floor": -12
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-bazir-50082",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50082,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32745,
+        "y": 32394,
+        "floor": -14
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/poi-bazir-50083",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50083,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32745,
+        "y": 32394,
+        "floor": -14
+      },
+      "storage": [],
+      "minimum_level": null,
+      "experience": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:6"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
       "quest": "oteryn:quest.adventures_of_galthen_quest",
       "trigger": "step_in",
