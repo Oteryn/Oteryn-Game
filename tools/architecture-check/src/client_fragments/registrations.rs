@@ -53,8 +53,37 @@ pub(super) fn validate(
             return Err("server handler cannot be not_applicable".into());
         }
         let commands = entry["commands"].as_array().ok_or("handler commands")?;
-        if status == "supported" && commands.len() != 1 {
+        if status == "supported" && commands.len() > 1 {
             return Err("one handler fragment per command".into());
+        }
+        if status == "supported" && commands.is_empty() {
+            let pushes = entry["push_messages"]
+                .as_array()
+                .ok_or("commandless supported handler needs pushed messages")?;
+            if pushes.is_empty() {
+                return Err("commandless supported handler needs pushed messages".into());
+            }
+            symbol(
+                feature,
+                entry["reducer"].as_str().ok_or("push handler reducer")?,
+            )?;
+            symbol(feature, entry["test"].as_str().ok_or("push handler test")?)?;
+            for command in entry["shared_commands"].as_array().into_iter().flatten() {
+                let id = command.as_u64().ok_or("shared command id")?;
+                let dir = root.join("docs/contracts/protocol-oteryn/v1/registry/command_types");
+                let mut owner = None;
+                for path in super::listing(&dir)? {
+                    if path.extension().is_some_and(|e| e == "json") {
+                        let descriptor = read(&path)?;
+                        if descriptor["id"] == *command {
+                            owner = descriptor["capability"].as_u64();
+                        }
+                    }
+                }
+                if owner.is_none() || owner == fact["id"].as_u64() {
+                    return Err(format!("shared command {id} has no other capability owner"));
+                }
+            }
         }
         for command in commands {
             let id = command.as_u64().ok_or("command id")?;

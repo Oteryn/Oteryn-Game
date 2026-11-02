@@ -69,6 +69,16 @@
         "type": "integer"
       }
     },
+    "shared_commands": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "push_messages": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reducer": { "type": "string" },
+    "test": { "type": "string" },
     "capability": {
       "type": "integer"
     },

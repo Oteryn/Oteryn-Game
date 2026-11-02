@@ -5,5 +5,7 @@ pub struct ChatPartyRoomPanel {
     pub open: bool,
     pub rooms: ChatRoomSet,
     pub lines: Vec<ChatLine>,
+    pub text: String,
+    pub pending: bool,
     pub feedback: Option<String>,
 }

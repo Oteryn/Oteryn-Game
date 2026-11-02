@@ -149,6 +149,9 @@ pub mod player_trade;
 #[path = "features/0233-player-typing/protocol.rs"]
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
+pub use oteryn_session::{
+    boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker, weapon_proficiency,
+};
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]
 pub mod prey;
@@ -162,7 +165,10 @@ pub mod task_board;
 
 /// Push-only chat and VIP presence values consumed by native panels.
 pub mod cl25a_protocol {
-    pub use oteryn_session::{ChatLine, ChatRoomSet, VipPresenceBatch};
+    pub use oteryn_session::{
+        ChatLine, ChatRoomSet, VipPresenceBatch, VipPresenceEntry, VipPresenceStatus,
+        encode_chat_intent,
+    };
 }
 
 /// Admitted command transport for feature-local protocol adapters.
@@ -197,3 +203,9 @@ pub mod market;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;
+/// Protocol codecs consumed by the native controls for the CUI-3 feature set.
+pub mod cui3 {
+    pub use oteryn_session::{
+        browse_field, daily_boost, depot_search, hotkey_equip, item_forge, item_view, store,
+    };
+}

@@ -1,14 +1,12 @@
 use super::CyclopediaCharacterPanel;
 #[must_use]
-pub fn panel_text(panel: &CyclopediaCharacterPanel) -> String {
-    if !panel.selected {
-        return "Unavailable".into();
-    }
-    if let Some(feedback) = panel.feedback {
-        return feedback.into();
-    }
-    match panel.last_command {
-        Some(command) => format!("Command {command}: {} response bytes", panel.result.len()),
-        None => "Ready".into(),
+pub fn panel_text(p: &CyclopediaCharacterPanel) -> String {
+    let state = p
+        .result
+        .as_deref()
+        .unwrap_or("No server character view yet");
+    match p.feedback {
+        Some(f) => format!("Cyclopedia character\n{state}\n{f}"),
+        None => format!("Cyclopedia character\n{state}"),
     }
 }
