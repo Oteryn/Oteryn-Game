@@ -7,7 +7,7 @@ use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
 };
 use crate::foundation::{
-    ChannelContentPin, CharacterId, CharacterLease, MovementLocalPosition, WorldId,
+    ChannelContentPin, CharacterId, CharacterLease, GameSessionId, MovementLocalPosition, WorldId,
 };
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
@@ -33,10 +33,14 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
     }
     large_stack(|| {
         run(async |admin| {
-            let h = Harness::create_with_admission_seed(admin, "a4_invisible", true, false).await?;
+            let h = if WITH_OBSERVER {
+                Harness::create_appearance(admin, "a4_invisible").await?
+            } else {
+                Harness::create_with_admission_seed(admin, "a4_invisible", true, false).await?
+            };
             prepare_current_session(&h).await?;
             if WITH_OBSERVER {
-                h.seed_pvp_target().await?;
+                h.seed_appearance_observer().await?;
                 super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
             }
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -46,13 +50,51 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 .await
                 .map_err(debug)?;
             let world = WorldId::decode(&id(42)).map_err(debug)?;
-            let (controller, pin) = production_generation_with_source(
-                world,
-                "content-1",
-                Some(include_bytes!(
-                    "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-                )),
-            )?;
+            let source = include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            );
+            let (controller, pin) = if WITH_OBSERVER {
+                use crate::content::native_gameplay::{NativeGameplayInput, PinnedGameplayBytes};
+                use crate::content::{
+                    ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
+                    activate_native_entry_room_with_gameplay,
+                };
+                use sha2::Digest;
+                let mut supplied = NativeGameplayInput::from_manifest(
+                    &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("../../../content/spells.manifest.json"),
+                )
+                .map_err(debug)?;
+                let mut cosmetics = crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet();
+                cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
+                let pinned = |bytes: Vec<u8>| PinnedGameplayBytes {
+                    sha256: sha2::Sha256::digest(&bytes)
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect(),
+                    bytes,
+                };
+                supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
+                supplied.source_world = Some(pinned(source.to_vec()));
+                supplied.build_training.as_mut().ok_or("build training")?.content_revision = "content-1".into();
+                let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
+                    .map_err(debug)?;
+                let issuance = NativeEntryActivationIssuance {
+                    world_id: world,
+                    activation_sequence: 1,
+                    server_artifact_digest: room.compiled().server_digest(),
+                    client_artifact_digest: room.compiled().client_digest(),
+                    frame_binding_digest: room.frame_binding().digest(),
+                };
+                let mut controller = ContentActivationController::new();
+                let pin = activate_native_entry_room_with_gameplay(
+                    &mut controller, &NodeBootQuiescence::before_channel_runtime(),
+                    world, &issuance, &supplied,
+                ).map_err(debug)?;
+                (controller, pin)
+            } else {
+                production_generation_with_source(world, "content-1", Some(source))?
+            };
             let active = controller.active().ok_or("active")?;
             let native = active.native_gameplay().ok_or("native")?;
             let room = pin.qualified_room();
@@ -240,6 +282,44 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                         && entity.entity.generation == actor.actor_local_generation()),
                     "the spectator receives the invisible player's exact entity"
                 );
+                let entity = oteryn_protocol_oteryn::appearance::EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                let observer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+                assert!(owner.appearance_available());
+                let own = owner
+                    .appearance_observation_projected(actor, session, true, vec![entity])
+                    .await
+                    .ok_or("own invisible appearance")?;
+                assert!(matches!(own.bindings[0].look, oteryn_protocol_oteryn::appearance::Look::Outfit { .. }));
+                let projected = owner
+                    .appearance_observation_projected(
+                        observer,
+                        observer_session,
+                        true,
+                        vec![entity],
+                    )
+                    .await
+                    .ok_or("invisible appearance projection")?;
+                assert_eq!(
+                    projected.bindings[0].look,
+                    oteryn_protocol_oteryn::appearance::Look::EmptyOutfit,
+                    "Crystal protocolgame.cpp:9233 sends an empty outfit to another observer"
+                );
+                let legacy = owner
+                    .appearance_observation_projected(
+                        observer,
+                        observer_session,
+                        false,
+                        vec![entity],
+                    )
+                    .await
+                    .ok_or("legacy invisible appearance projection")?;
+                assert!(matches!(
+                    legacy.bindings[0].look,
+                    oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
+                ));
             }
             owner.clock_origin -= std::time::Duration::from_secs(2);
             owner.drain_monster_melee().await;
@@ -263,6 +343,25 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                         "a rat without sense_invisible loses the caster"
                     );
                 }
+            }
+            if let Some(observer) = observer {
+                owner.clock_origin -= std::time::Duration::from_secs(199);
+                let restored = owner
+                    .appearance_observation_projected(
+                        observer,
+                        GameSessionId::decode(&id(110)).map_err(debug)?,
+                        true,
+                        vec![oteryn_protocol_oteryn::appearance::EntityRef {
+                            identity: actor.placement_identity(),
+                            generation: actor.actor_local_generation(),
+                        }],
+                    )
+                    .await
+                    .ok_or("expired invisibility appearance projection")?;
+                assert!(matches!(
+                    restored.bindings[0].look,
+                    oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
+                ));
             }
             drop(owner);
             drop(authority);
