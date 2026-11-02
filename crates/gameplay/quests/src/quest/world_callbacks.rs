@@ -256,6 +256,10 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
 }
 
 #[cfg(test)]
+#[path = "world_callbacks/quests6_tests.rs"]
+mod quests6_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
