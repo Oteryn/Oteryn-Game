@@ -1,0 +1,3889 @@
+{
+  "schema": "OTERYN_GRIZZLY_ADAMS/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "source_repository": "zimbadev/crystalserver",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/lib/quests/killing_in_the_name_of.lua",
+      "git_blob": "1e051f206687ccc2904de52d6c0348a8f3bf2b1e",
+      "sha256": "e2327f53c1696dff9d84cb107907b0f7098a1b9296a10a621675ce53d16efd77"
+    },
+    {
+      "path": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua",
+      "git_blob": "4220280abdca9db1c6d5b12113dcdcf9756de764",
+      "sha256": "cbd900fea9c1d14b75356b6e3ea0b8c4cefea2770f3734b748c5cf8bef7ca013"
+    },
+    {
+      "path": "data-global/lib/core/storages.lua",
+      "git_blob": "1a9a7e931eb984a75b285be01df6b1dba36476d8",
+      "sha256": "9e7edb4f311cd62424f129526e95e32c4b455e74755599197de629d3e5e63160"
+    },
+    {
+      "path": "data-global/npc/grizzly_adams.lua",
+      "git_blob": "5dacc4024d2574dd0bfa5ea69e88a0a6cd8ccc58",
+      "sha256": "e9e044c42e17216f12adecd21b6307a8e81c122e8f2c3b17b2f97be246d98875"
+    },
+    {
+      "path": "data-global/scripts/quests/killing_in_the_name_of/creaturescripts_monster_kill.lua",
+      "git_blob": "c740ef1297187fe6ec06f3419eafc4ac9605389e",
+      "sha256": "00d8149f35e9b7af89d9b6320c68f974a002705a5e972272b26eb5b8db2d228c"
+    },
+    {
+      "path": "data-global/scripts/quests/killing_in_the_name_of/creaturescripts_boss_kill.lua",
+      "git_blob": "444e23c65e62056c2ffd80cc63403470341545c0",
+      "sha256": "580c62321da5128f8d9e34bf789e44124fcab3576d47a6e38bce9261b27522e4"
+    },
+    {
+      "path": "data/libs/functions/functions.lua",
+      "git_blob": "6aeb1fdb7891a45b3bb344b3728ebb0268c91e52",
+      "sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a"
+    },
+    {
+      "path": "data/libs/functions/party.lua",
+      "git_blob": "1c177559978c8f7d4a1cc4bf71aba86e28e28d38",
+      "sha256": "f2db68fb466c2b4fcee7b4c9a0fc4e30ce551d30bf2f761365d8225eaee35202"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "name": "Crocodiles",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 1,
+      "creatures": [
+        {
+          "name": "crocodile",
+          "key": "oteryn:creature.crocodile",
+          "alt_storage": null
+        }
+      ],
+      "experience": 800,
+      "points": 1,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 214
+    },
+    {
+      "id": 2,
+      "name": "Badgers",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "badger",
+          "key": "oteryn:creature.badger",
+          "alt_storage": null
+        }
+      ],
+      "experience": 500,
+      "points": 1,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 231
+    },
+    {
+      "id": 3,
+      "name": "Tarantulas",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 2,
+      "creatures": [
+        {
+          "name": "tarantula",
+          "key": "oteryn:creature.tarantula",
+          "alt_storage": null
+        }
+      ],
+      "experience": 1500,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 244
+    },
+    {
+      "id": 4,
+      "name": "Carniphilas",
+      "required": 150,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 3,
+      "creatures": [
+        {
+          "name": "carniphila",
+          "key": "oteryn:creature.carniphila",
+          "alt_storage": null
+        }
+      ],
+      "experience": 2500,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 261
+    },
+    {
+      "id": 5,
+      "name": "Stone Golems",
+      "required": 200,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "stone golem",
+          "key": "oteryn:creature.stone_golem",
+          "alt_storage": null
+        }
+      ],
+      "experience": 2000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 278
+    },
+    {
+      "id": 6,
+      "name": "Mammoths",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 4,
+      "creatures": [
+        {
+          "name": "mammoth",
+          "key": "oteryn:creature.mammoth",
+          "alt_storage": null
+        }
+      ],
+      "experience": 4000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 291
+    },
+    {
+      "id": 7,
+      "name": "Gnarlhounds",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "gnarlhound",
+          "key": "oteryn:creature.gnarlhound",
+          "alt_storage": null
+        }
+      ],
+      "experience": 1000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 308
+    },
+    {
+      "id": 8,
+      "name": "Terramites",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "terramite",
+          "key": "oteryn:creature.terramite",
+          "alt_storage": null
+        }
+      ],
+      "experience": 1000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 321
+    },
+    {
+      "id": 9,
+      "name": "Apes",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "kongra",
+          "key": "oteryn:creature.kongra",
+          "alt_storage": 42450
+        },
+        {
+          "name": "merlkin",
+          "key": "oteryn:creature.merlkin",
+          "alt_storage": 42451
+        },
+        {
+          "name": "sibang",
+          "key": "oteryn:creature.sibang",
+          "alt_storage": 42452
+        }
+      ],
+      "experience": 1000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 334
+    },
+    {
+      "id": 10,
+      "name": "Thornback Tortoises",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "thornback tortoise",
+          "key": "oteryn:creature.thornback_tortoise",
+          "alt_storage": null
+        }
+      ],
+      "experience": 1500,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 349
+    },
+    {
+      "id": 11,
+      "name": "Gargoyles",
+      "required": 300,
+      "minimum_level": 6,
+      "maximum_level": 49,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "gargoyle",
+          "key": "oteryn:creature.gargoyle",
+          "alt_storage": null
+        }
+      ],
+      "experience": 1500,
+      "points": null,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 362
+    },
+    {
+      "id": 12,
+      "name": "Ice Golems",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 5,
+      "creatures": [
+        {
+          "name": "ice golem",
+          "key": "oteryn:creature.ice_golem",
+          "alt_storage": null
+        }
+      ],
+      "experience": 12000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 374
+    },
+    {
+      "id": 13,
+      "name": "Quara Scouts",
+      "required": 400,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "quara constrictor scout",
+          "key": "oteryn:creature.quara_constrictor_scout",
+          "alt_storage": 42453
+        },
+        {
+          "name": "quara hydromancer scout",
+          "key": "oteryn:creature.quara_hydromancer_scout",
+          "alt_storage": 42454
+        },
+        {
+          "name": "quara mantassin scout",
+          "key": "oteryn:creature.quara_mantassin_scout",
+          "alt_storage": 42455
+        },
+        {
+          "name": "quara pincher scout",
+          "key": "oteryn:creature.quara_pincher_scout",
+          "alt_storage": 42456
+        },
+        {
+          "name": "quara predator scout",
+          "key": "oteryn:creature.quara_predator_scout",
+          "alt_storage": 42457
+        }
+      ],
+      "experience": 10000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 391
+    },
+    {
+      "id": 14,
+      "name": "Mutated Rats",
+      "required": 400,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 6,
+      "creatures": [
+        {
+          "name": "mutated rat",
+          "key": "oteryn:creature.mutated_rat",
+          "alt_storage": null
+        }
+      ],
+      "experience": 10000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 408
+    },
+    {
+      "id": 15,
+      "name": "Ancient Scarabs",
+      "required": 250,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 7,
+      "creatures": [
+        {
+          "name": "ancient scarab",
+          "key": "oteryn:creature.ancient_scarab",
+          "alt_storage": null
+        }
+      ],
+      "experience": 15000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 425
+    },
+    {
+      "id": 16,
+      "name": "Wyverns",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "wyvern",
+          "key": "oteryn:creature.wyvern",
+          "alt_storage": null
+        }
+      ],
+      "experience": 12000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 442
+    },
+    {
+      "id": 17,
+      "name": "Lancer Beetles",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "lancer beetle",
+          "key": "oteryn:creature.lancer_beetle",
+          "alt_storage": null
+        }
+      ],
+      "experience": 8000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 455
+    },
+    {
+      "id": 18,
+      "name": "Wailing Widows",
+      "required": 400,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "wailing widow",
+          "key": "oteryn:creature.wailing_widow",
+          "alt_storage": null
+        }
+      ],
+      "experience": 12000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 468
+    },
+    {
+      "id": 19,
+      "name": "Killer Caimans",
+      "required": 250,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "killer caiman",
+          "key": "oteryn:creature.killer_caiman",
+          "alt_storage": null
+        }
+      ],
+      "experience": 10000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 481
+    },
+    {
+      "id": 20,
+      "name": "Bonebeasts",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 8,
+      "creatures": [
+        {
+          "name": "bonebeast",
+          "key": "oteryn:creature.bonebeast",
+          "alt_storage": null
+        }
+      ],
+      "experience": 12000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 494
+    },
+    {
+      "id": 21,
+      "name": "Crystal Spiders",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 9,
+      "creatures": [
+        {
+          "name": "crystal spider",
+          "key": "oteryn:creature.crystal_spider",
+          "alt_storage": null
+        }
+      ],
+      "experience": 15000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 511
+    },
+    {
+      "id": 22,
+      "name": "Mutated Tigers",
+      "required": 300,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "mutated tiger",
+          "key": "oteryn:creature.mutated_tiger",
+          "alt_storage": null
+        }
+      ],
+      "experience": 12000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 528
+    },
+    {
+      "id": 23,
+      "name": "Underwater Quara",
+      "required": 600,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 10,
+      "creatures": [
+        {
+          "name": "quara constrictor",
+          "key": "oteryn:creature.quara_constrictor",
+          "alt_storage": 42458
+        },
+        {
+          "name": "quara hydromancer",
+          "key": "oteryn:creature.quara_hydromancer",
+          "alt_storage": 42459
+        },
+        {
+          "name": "quara mantassin",
+          "key": "oteryn:creature.quara_mantassin",
+          "alt_storage": 42460
+        },
+        {
+          "name": "quara pincher",
+          "key": "oteryn:creature.quara_pincher",
+          "alt_storage": 42461
+        },
+        {
+          "name": "quara predator",
+          "key": "oteryn:creature.quara_predator",
+          "alt_storage": 42462
+        }
+      ],
+      "experience": 15000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 541
+    },
+    {
+      "id": 24,
+      "name": "Giant Spiders",
+      "required": 500,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 11,
+      "creatures": [
+        {
+          "name": "giant spider",
+          "key": "oteryn:creature.giant_spider",
+          "alt_storage": null
+        }
+      ],
+      "experience": 20000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 562
+    },
+    {
+      "id": 25,
+      "name": "Werewolves",
+      "required": 300,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 12,
+      "creatures": [
+        {
+          "name": "werewolf",
+          "key": "oteryn:creature.werewolf",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 4,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 579
+    },
+    {
+      "id": 26,
+      "name": "Nightmares",
+      "required": 400,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 13,
+      "creatures": [
+        {
+          "name": "nightmare",
+          "key": "oteryn:creature.nightmare",
+          "alt_storage": 42463
+        },
+        {
+          "name": "nightmare scion",
+          "key": "oteryn:creature.nightmare_scion",
+          "alt_storage": 42464
+        }
+      ],
+      "experience": 25000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 596
+    },
+    {
+      "id": 27,
+      "name": "Hellspawns",
+      "required": 600,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 14,
+      "creatures": [
+        {
+          "name": "hellspawn",
+          "key": "oteryn:creature.hellspawn",
+          "alt_storage": null
+        }
+      ],
+      "experience": 25000,
+      "points": null,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 614
+    },
+    {
+      "id": 28,
+      "name": "High Class Lizards",
+      "required": 800,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 15,
+      "creatures": [
+        {
+          "name": "lizard chosen",
+          "key": "oteryn:creature.lizard_chosen",
+          "alt_storage": 42465
+        },
+        {
+          "name": "lizard dragon priest",
+          "key": "oteryn:creature.lizard_dragon_priest",
+          "alt_storage": 42466
+        },
+        {
+          "name": "lizard high guard",
+          "key": "oteryn:creature.lizard_high_guard",
+          "alt_storage": 42467
+        },
+        {
+          "name": "lizard legionnaire",
+          "key": "oteryn:creature.lizard_legionnaire",
+          "alt_storage": 42468
+        },
+        {
+          "name": "lizard zaogun",
+          "key": "oteryn:creature.lizard_zaogun",
+          "alt_storage": 42469
+        }
+      ],
+      "experience": 30000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 630
+    },
+    {
+      "id": 29,
+      "name": "Stampors",
+      "required": 600,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 16,
+      "creatures": [
+        {
+          "name": "stampor",
+          "key": "oteryn:creature.stampor",
+          "alt_storage": null
+        }
+      ],
+      "experience": 20000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 651
+    },
+    {
+      "id": 30,
+      "name": "Brimstone Bugs",
+      "required": 500,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 17,
+      "creatures": [
+        {
+          "name": "brimstone bug",
+          "key": "oteryn:creature.brimstone_bug",
+          "alt_storage": null
+        }
+      ],
+      "experience": 15000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 668
+    },
+    {
+      "id": 31,
+      "name": "Mutated Bats",
+      "required": 400,
+      "minimum_level": 80,
+      "maximum_level": 129,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": 3,
+      "boss_id": 18,
+      "creatures": [
+        {
+          "name": "mutated bat",
+          "key": "oteryn:creature.mutated_bat",
+          "alt_storage": null
+        }
+      ],
+      "experience": 20000,
+      "points": 2,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 685
+    },
+    {
+      "id": 32,
+      "name": "Hydras",
+      "required": 650,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 19,
+      "creatures": [
+        {
+          "name": "hydra",
+          "key": "oteryn:creature.hydra",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 702
+    },
+    {
+      "id": 33,
+      "name": "Serpent Spawns",
+      "required": 800,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 20,
+      "creatures": [
+        {
+          "name": "serpent spawn",
+          "key": "oteryn:creature.serpent_spawn",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 4,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 720
+    },
+    {
+      "id": 34,
+      "name": "Medusae",
+      "required": 500,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 21,
+      "creatures": [
+        {
+          "name": "medusa",
+          "key": "oteryn:creature.medusa",
+          "alt_storage": null
+        }
+      ],
+      "experience": 40000,
+      "points": 5,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 738
+    },
+    {
+      "id": 35,
+      "name": "Behemoths",
+      "required": 700,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 22,
+      "creatures": [
+        {
+          "name": "behemoth",
+          "key": "oteryn:creature.behemoth",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 4,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 756
+    },
+    {
+      "id": 36,
+      "name": "Sea Serpents",
+      "required": 900,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 23,
+      "creatures": [
+        {
+          "name": "sea serpent",
+          "key": "oteryn:creature.sea_serpent",
+          "alt_storage": 42470
+        },
+        {
+          "name": "young sea serpent",
+          "key": "oteryn:creature.young_sea_serpent",
+          "alt_storage": 42471
+        }
+      ],
+      "experience": 30000,
+      "points": 4,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 774
+    },
+    {
+      "id": 37,
+      "name": "Hellhounds",
+      "required": 250,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 24,
+      "creatures": [
+        {
+          "name": "hellhound",
+          "key": "oteryn:creature.hellhound",
+          "alt_storage": null
+        }
+      ],
+      "experience": 40000,
+      "points": 5,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 793
+    },
+    {
+      "id": 38,
+      "name": "Ghastly Dragons",
+      "required": 500,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 25,
+      "creatures": [
+        {
+          "name": "ghastly dragon",
+          "key": "oteryn:creature.ghastly_dragon",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 5,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 811
+    },
+    {
+      "id": 39,
+      "name": "Drakens",
+      "required": 900,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 26,
+      "creatures": [
+        {
+          "name": "draken abomination",
+          "key": "oteryn:creature.draken_abomination",
+          "alt_storage": 42472
+        },
+        {
+          "name": "draken elite",
+          "key": "oteryn:creature.draken_elite",
+          "alt_storage": 42473
+        },
+        {
+          "name": "draken spellweaver",
+          "key": "oteryn:creature.draken_spellweaver",
+          "alt_storage": 42474
+        },
+        {
+          "name": "draken warmaster",
+          "key": "oteryn:creature.draken_warmaster",
+          "alt_storage": 42475
+        }
+      ],
+      "experience": 30000,
+      "points": 3,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 829
+    },
+    {
+      "id": 40,
+      "name": "Destroyers",
+      "required": 650,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 27,
+      "creatures": [
+        {
+          "name": "destroyer",
+          "key": "oteryn:creature.destroyer",
+          "alt_storage": null
+        }
+      ],
+      "experience": 30000,
+      "points": 4,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 850
+    },
+    {
+      "id": 41,
+      "name": "Undead Dragons",
+      "required": 400,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 0,
+      "repeat_limit": null,
+      "boss_id": 28,
+      "creatures": [
+        {
+          "name": "undead dragon",
+          "key": "oteryn:creature.undead_dragon",
+          "alt_storage": null
+        }
+      ],
+      "experience": 50000,
+      "points": 6,
+      "item": null,
+      "completion_storage": null,
+      "donor_line": 868
+    },
+    {
+      "id": 42,
+      "name": "Demons",
+      "required": 6666,
+      "minimum_level": 130,
+      "maximum_level": 9999,
+      "premium": true,
+      "minimum_rank": 6,
+      "repeat_limit": 1,
+      "boss_id": null,
+      "creatures": [
+        {
+          "name": "demon",
+          "key": "oteryn:creature.demon",
+          "alt_storage": null
+        }
+      ],
+      "experience": null,
+      "points": null,
+      "item": {
+        "source_id": 9388,
+        "count": 1
+      },
+      "completion_storage": {
+        "storage": 41300,
+        "value": 1
+      },
+      "donor_line": 886
+    }
+  ],
+  "bosses": [
+    {
+      "id": 1,
+      "task_id": 1,
+      "name": "Snapper",
+      "achievement": "Blood-Red Snapper",
+      "kill_storage": 42350,
+      "creature_name": "the snapper",
+      "creature_key": "oteryn:creature.the_snapper",
+      "storage": 34100,
+      "portal": {
+        "x": 32608,
+        "y": 32714,
+        "z": 8
+      },
+      "player_position": {
+        "x": 32610,
+        "y": 32723,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32617,
+        "y": 32732,
+        "z": 8
+      },
+      "center": {
+        "x": 32613,
+        "y": 32727,
+        "z": 8
+      },
+      "range_x": 5,
+      "range_y": 5,
+      "donor_line": 2
+    },
+    {
+      "id": 2,
+      "task_id": 3,
+      "name": "Hide",
+      "achievement": "No More Hiding",
+      "kill_storage": 42351,
+      "creature_name": "hide",
+      "creature_key": "oteryn:creature.hide",
+      "storage": 34101,
+      "portal": {
+        "x": 32822,
+        "y": 32693,
+        "z": 8
+      },
+      "player_position": {
+        "x": 32815,
+        "y": 32703,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32816,
+        "y": 32712,
+        "z": 8
+      },
+      "center": {
+        "x": 32816,
+        "y": 32707,
+        "z": 8
+      },
+      "range_x": 6,
+      "range_y": 5,
+      "donor_line": 13
+    },
+    {
+      "id": 3,
+      "task_id": 4,
+      "name": "Deathbine",
+      "achievement": "Rootless Behaviour",
+      "kill_storage": 42352,
+      "creature_name": "deathbine",
+      "creature_key": "oteryn:creature.deathbine",
+      "storage": 34102,
+      "portal": {
+        "x": 32722,
+        "y": 32762,
+        "z": 8
+      },
+      "player_position": {
+        "x": 32715,
+        "y": 32736,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32714,
+        "y": 32713,
+        "z": 8
+      },
+      "center": {
+        "x": 32716,
+        "y": 32724,
+        "z": 8
+      },
+      "range_x": 9,
+      "range_y": 13,
+      "donor_line": 24
+    },
+    {
+      "id": 4,
+      "task_id": 6,
+      "name": "Bloodtusk",
+      "achievement": "Meat Skewer",
+      "kill_storage": 42353,
+      "creature_name": "the bloodtusk",
+      "creature_key": "oteryn:creature.the_bloodtusk",
+      "storage": 34103,
+      "portal": {
+        "x": 32104,
+        "y": 31116,
+        "z": 2
+      },
+      "player_position": {
+        "x": 32102,
+        "y": 31124,
+        "z": 2
+      },
+      "boss_position": {
+        "x": 32102,
+        "y": 31134,
+        "z": 2
+      },
+      "center": {
+        "x": 32101,
+        "y": 31129,
+        "z": 2
+      },
+      "range_x": 5,
+      "range_y": 6,
+      "donor_line": 35
+    },
+    {
+      "id": 5,
+      "task_id": 12,
+      "name": "Shardhead",
+      "achievement": "Breaking The Ice",
+      "kill_storage": 42354,
+      "creature_name": "shardhead",
+      "creature_key": "oteryn:creature.shardhead",
+      "storage": 34104,
+      "portal": {
+        "x": 32141,
+        "y": 31144,
+        "z": 3
+      },
+      "player_position": {
+        "x": 32152,
+        "y": 31137,
+        "z": 3
+      },
+      "boss_position": {
+        "x": 32159,
+        "y": 31132,
+        "z": 3
+      },
+      "center": {
+        "x": 32155,
+        "y": 31136,
+        "z": 3
+      },
+      "range_x": 5,
+      "range_y": 7,
+      "donor_line": 46
+    },
+    {
+      "id": 6,
+      "task_id": 14,
+      "name": "Esmeralda",
+      "achievement": "Twisted Mutation",
+      "kill_storage": 42355,
+      "creature_name": "esmeralda",
+      "creature_key": "oteryn:creature.esmeralda",
+      "storage": 34105,
+      "portal": {
+        "x": 32758,
+        "y": 31245,
+        "z": 9
+      },
+      "player_position": {
+        "x": 32759,
+        "y": 31252,
+        "z": 9
+      },
+      "boss_position": {
+        "x": 32759,
+        "y": 31258,
+        "z": 9
+      },
+      "center": {
+        "x": 32759,
+        "y": 31254,
+        "z": 9
+      },
+      "range_x": 4,
+      "range_y": 4,
+      "donor_line": 57
+    },
+    {
+      "id": 7,
+      "task_id": 15,
+      "name": "Fleshcrawler",
+      "achievement": "Crawling Death",
+      "kill_storage": 42356,
+      "creature_name": "fleshcrawler",
+      "creature_key": "oteryn:creature.fleshcrawler",
+      "storage": 34106,
+      "portal": {
+        "x": 33044,
+        "y": 32794,
+        "z": 11
+      },
+      "player_position": {
+        "x": 33100,
+        "y": 32785,
+        "z": 11
+      },
+      "boss_position": {
+        "x": 33121,
+        "y": 32797,
+        "z": 11
+      },
+      "center": {
+        "x": 33112,
+        "y": 32789,
+        "z": 11
+      },
+      "range_x": 15,
+      "range_y": 13,
+      "donor_line": 68
+    },
+    {
+      "id": 8,
+      "task_id": 20,
+      "name": "Ribstride",
+      "achievement": "Spareribs for Dinner",
+      "kill_storage": 42357,
+      "creature_name": "ribstride",
+      "creature_key": "oteryn:creature.ribstride",
+      "storage": 34107,
+      "portal": {
+        "x": 33109,
+        "y": 32803,
+        "z": 13
+      },
+      "player_position": {
+        "x": 33012,
+        "y": 32813,
+        "z": 13
+      },
+      "boss_position": {
+        "x": 33013,
+        "y": 32801,
+        "z": 13
+      },
+      "center": {
+        "x": 33012,
+        "y": 32805,
+        "z": 13
+      },
+      "range_x": 10,
+      "range_y": 9,
+      "donor_line": 79
+    },
+    {
+      "id": 9,
+      "task_id": 21,
+      "name": "Bloodweb",
+      "achievement": "Arachnoise",
+      "kill_storage": 42358,
+      "creature_name": "the bloodweb",
+      "creature_key": "oteryn:creature.the_bloodweb",
+      "storage": 34108,
+      "portal": {
+        "x": 32122,
+        "y": 31188,
+        "z": 4
+      },
+      "player_position": {
+        "x": 32019,
+        "y": 31037,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32032,
+        "y": 31033,
+        "z": 8
+      },
+      "center": {
+        "x": 32023,
+        "y": 31033,
+        "z": 8
+      },
+      "range_x": 11,
+      "range_y": 11,
+      "donor_line": 90
+    },
+    {
+      "id": 10,
+      "task_id": 23,
+      "name": "Thul",
+      "achievement": "Back into the Abyss",
+      "kill_storage": 42359,
+      "creature_name": "thul",
+      "creature_key": "oteryn:creature.thul",
+      "storage": 34109,
+      "portal": {
+        "x": 32085,
+        "y": 32782,
+        "z": 12
+      },
+      "player_position": {
+        "x": 32078,
+        "y": 32780,
+        "z": 13
+      },
+      "boss_position": {
+        "x": 32088,
+        "y": 32780,
+        "z": 13
+      },
+      "center": {
+        "x": 32083,
+        "y": 32781,
+        "z": 13
+      },
+      "range_x": 6,
+      "range_y": 6,
+      "donor_line": 101
+    },
+    {
+      "id": 11,
+      "task_id": 24,
+      "name": "Old Widow",
+      "achievement": "Choking on Her Venom",
+      "kill_storage": 42360,
+      "creature_name": "the old widow",
+      "creature_key": "oteryn:creature.the_old_widow",
+      "storage": 34110,
+      "portal": {
+        "x": 32814,
+        "y": 32280,
+        "z": 8
+      },
+      "player_position": {
+        "x": 32805,
+        "y": 32280,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32797,
+        "y": 32281,
+        "z": 8
+      },
+      "center": {
+        "x": 32801,
+        "y": 32276,
+        "z": 8
+      },
+      "range_x": 5,
+      "range_y": 5,
+      "donor_line": 112
+    },
+    {
+      "id": 12,
+      "task_id": 25,
+      "name": "Hemming",
+      "achievement": "Howly Silence",
+      "kill_storage": 42361,
+      "creature_name": "hemming",
+      "creature_key": "oteryn:creature.hemming",
+      "storage": 34111,
+      "portal": {
+        "x": 32992,
+        "y": 31443,
+        "z": 7
+      },
+      "player_position": {
+        "x": 32999,
+        "y": 31452,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 33013,
+        "y": 31441,
+        "z": 8
+      },
+      "center": {
+        "x": 33006,
+        "y": 31445,
+        "z": 8
+      },
+      "range_x": 9,
+      "range_y": 7,
+      "donor_line": 123
+    },
+    {
+      "id": 13,
+      "task_id": 26,
+      "name": "Tormentor",
+      "achievement": "Dream's Over",
+      "kill_storage": 42362,
+      "creature_name": "tormentor",
+      "creature_key": "oteryn:creature.tormentor",
+      "storage": 34112,
+      "portal": {
+        "x": 32072,
+        "y": 31283,
+        "z": 10
+      },
+      "player_position": {
+        "x": 32043,
+        "y": 31258,
+        "z": 11
+      },
+      "boss_position": {
+        "x": 32058,
+        "y": 31267,
+        "z": 11
+      },
+      "center": {
+        "x": 32051,
+        "y": 31264,
+        "z": 11
+      },
+      "range_x": 11,
+      "range_y": 14,
+      "donor_line": 134
+    },
+    {
+      "id": 14,
+      "task_id": 27,
+      "name": "Flameborn",
+      "achievement": "Scorched Flames",
+      "kill_storage": 42363,
+      "creature_name": "flameborn",
+      "creature_key": "oteryn:creature.flameborn",
+      "storage": 34113,
+      "portal": {
+        "x": 32816,
+        "y": 31026,
+        "z": 7
+      },
+      "player_position": {
+        "x": 32940,
+        "y": 31064,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32947,
+        "y": 31058,
+        "z": 8
+      },
+      "center": {
+        "x": 32944,
+        "y": 31060,
+        "z": 8
+      },
+      "range_x": 11,
+      "range_y": 10,
+      "donor_line": 145
+    },
+    {
+      "id": 15,
+      "task_id": 28,
+      "name": "Fazzrah",
+      "achievement": "Zzztill Zzztanding!",
+      "kill_storage": 42364,
+      "creature_name": "fazzrah",
+      "creature_key": "oteryn:creature.fazzrah",
+      "storage": 34114,
+      "portal": {
+        "x": 33310,
+        "y": 31183,
+        "z": 7
+      },
+      "player_position": {
+        "x": 32993,
+        "y": 31175,
+        "z": 7
+      },
+      "boss_position": {
+        "x": 33005,
+        "y": 31174,
+        "z": 7
+      },
+      "center": {
+        "x": 33003,
+        "y": 31177,
+        "z": 7
+      },
+      "range_x": 14,
+      "range_y": 6,
+      "donor_line": 156
+    },
+    {
+      "id": 16,
+      "task_id": 29,
+      "name": "Tromphonyte",
+      "achievement": "Stepped on a Big Toe",
+      "kill_storage": 42365,
+      "creature_name": "tromphonyte",
+      "creature_key": "oteryn:creature.tromphonyte",
+      "storage": 34115,
+      "portal": {
+        "x": 33136,
+        "y": 31186,
+        "z": 8
+      },
+      "player_position": {
+        "x": 33111,
+        "y": 31184,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 33120,
+        "y": 31195,
+        "z": 8
+      },
+      "center": {
+        "x": 33113,
+        "y": 31188,
+        "z": 8
+      },
+      "range_x": 11,
+      "range_y": 18,
+      "donor_line": 167
+    },
+    {
+      "id": 17,
+      "task_id": 30,
+      "name": "Sulphur Scuttler",
+      "achievement": "Something Smells",
+      "kill_storage": 42366,
+      "creature_name": "sulphur scuttler",
+      "creature_key": "oteryn:creature.sulphur_scuttler",
+      "storage": 34116,
+      "portal": {
+        "x": 33286,
+        "y": 31112,
+        "z": 8
+      },
+      "player_position": {
+        "x": 33269,
+        "y": 31046,
+        "z": 9
+      },
+      "boss_position": {
+        "x": 33274,
+        "y": 31037,
+        "z": 9
+      },
+      "center": {
+        "x": 33088,
+        "y": 31012,
+        "z": 8
+      },
+      "range_x": 11,
+      "range_y": 11,
+      "donor_line": 178
+    },
+    {
+      "id": 18,
+      "task_id": 31,
+      "name": "Bruise Payne",
+      "achievement": "Kapow!",
+      "kill_storage": 42367,
+      "creature_name": "bruise payne",
+      "creature_key": "oteryn:creature.bruise_payne",
+      "storage": 34117,
+      "portal": {
+        "x": 32679,
+        "y": 31114,
+        "z": 3
+      },
+      "player_position": {
+        "x": 33237,
+        "y": 31006,
+        "z": 2
+      },
+      "boss_position": {
+        "x": 33266,
+        "y": 31016,
+        "z": 2
+      },
+      "center": {
+        "x": 33251,
+        "y": 31016,
+        "z": 2
+      },
+      "range_x": 22,
+      "range_y": 11,
+      "donor_line": 189
+    },
+    {
+      "id": 19,
+      "task_id": 32,
+      "name": "Many",
+      "achievement": "One Less",
+      "kill_storage": 42368,
+      "creature_name": "the many",
+      "creature_key": "oteryn:creature.the_many",
+      "storage": 34118,
+      "portal": {
+        "x": 32920,
+        "y": 32883,
+        "z": 8
+      },
+      "player_position": {
+        "x": 32921,
+        "y": 32893,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 32926,
+        "y": 32903,
+        "z": 8
+      },
+      "center": {
+        "x": 32921,
+        "y": 32898,
+        "z": 8
+      },
+      "range_x": 5,
+      "range_y": 6,
+      "donor_line": 200
+    },
+    {
+      "id": 20,
+      "task_id": 33,
+      "name": "Noxious Spawn",
+      "achievement": "Hissing Downfall",
+      "kill_storage": 42369,
+      "creature_name": "the noxious spawn",
+      "creature_key": "oteryn:creature.the_noxious_spawn",
+      "storage": 34119,
+      "portal": {
+        "x": 32842,
+        "y": 32660,
+        "z": 11
+      },
+      "player_position": {
+        "x": 32842,
+        "y": 32667,
+        "z": 11
+      },
+      "boss_position": {
+        "x": 32843,
+        "y": 32675,
+        "z": 11
+      },
+      "center": {
+        "x": 32843,
+        "y": 32670,
+        "z": 11
+      },
+      "range_x": 5,
+      "range_y": 5,
+      "donor_line": 211
+    },
+    {
+      "id": 21,
+      "task_id": 34,
+      "name": "Gorgo",
+      "achievement": "The Serpent's Bride",
+      "kill_storage": 42370,
+      "creature_name": "gorgo",
+      "creature_key": "oteryn:creature.gorgo",
+      "storage": 34120,
+      "portal": {
+        "x": 32799,
+        "y": 32501,
+        "z": 11
+      },
+      "player_position": {
+        "x": 32759,
+        "y": 32447,
+        "z": 11
+      },
+      "boss_position": {
+        "x": 32763,
+        "y": 32435,
+        "z": 11
+      },
+      "center": {
+        "x": 32759,
+        "y": 32440,
+        "z": 11
+      },
+      "range_x": 9,
+      "range_y": 10,
+      "donor_line": 222
+    },
+    {
+      "id": 22,
+      "task_id": 35,
+      "name": "Stonecracker",
+      "achievement": "Just Cracked Me Up!",
+      "kill_storage": 42371,
+      "creature_name": "stonecracker",
+      "creature_key": "oteryn:creature.stonecracker",
+      "storage": 34121,
+      "portal": {
+        "x": 33251,
+        "y": 31719,
+        "z": 14
+      },
+      "player_position": {
+        "x": 33259,
+        "y": 31694,
+        "z": 15
+      },
+      "boss_position": {
+        "x": 33257,
+        "y": 31705,
+        "z": 15
+      },
+      "center": {
+        "x": 33259,
+        "y": 31670,
+        "z": 15
+      },
+      "range_x": 5,
+      "range_y": 7,
+      "donor_line": 233
+    },
+    {
+      "id": 23,
+      "task_id": 36,
+      "name": "Leviathan",
+      "achievement": "The Drowned Sea God",
+      "kill_storage": 42372,
+      "creature_name": "leviathan",
+      "creature_key": "oteryn:creature.leviathan",
+      "storage": 34122,
+      "portal": {
+        "x": 31926,
+        "y": 31071,
+        "z": 10
+      },
+      "player_position": {
+        "x": 31915,
+        "y": 31071,
+        "z": 10
+      },
+      "boss_position": {
+        "x": 31903,
+        "y": 31072,
+        "z": 10
+      },
+      "center": {
+        "x": 31909,
+        "y": 31072,
+        "z": 10
+      },
+      "range_x": 8,
+      "range_y": 7,
+      "donor_line": 244
+    },
+    {
+      "id": 24,
+      "task_id": 37,
+      "name": "Kerberos",
+      "achievement": "The Gates of Hell",
+      "kill_storage": 42373,
+      "creature_name": "kerberos",
+      "creature_key": "oteryn:creature.kerberos",
+      "storage": 34123,
+      "portal": {
+        "x": 32044,
+        "y": 32547,
+        "z": 14
+      },
+      "player_position": {
+        "x": 32048,
+        "y": 32581,
+        "z": 15
+      },
+      "boss_position": {
+        "x": 32032,
+        "y": 32565,
+        "z": 15
+      },
+      "center": {
+        "x": 32041,
+        "y": 32569,
+        "z": 15
+      },
+      "range_x": 11,
+      "range_y": 13,
+      "donor_line": 255
+    },
+    {
+      "id": 25,
+      "task_id": 38,
+      "name": "Ethershreck",
+      "achievement": "Beautiful Agony",
+      "kill_storage": 42374,
+      "creature_name": "ethershreck",
+      "creature_key": "oteryn:creature.ethershreck",
+      "storage": 34124,
+      "portal": {
+        "x": 33115,
+        "y": 31004,
+        "z": 8
+      },
+      "player_position": {
+        "x": 33089,
+        "y": 31021,
+        "z": 8
+      },
+      "boss_position": {
+        "x": 33085,
+        "y": 31004,
+        "z": 8
+      },
+      "center": {
+        "x": 33088,
+        "y": 31012,
+        "z": 8
+      },
+      "range_x": 11,
+      "range_y": 11,
+      "donor_line": 266
+    },
+    {
+      "id": 26,
+      "task_id": 39,
+      "name": "Paiz the Pauperizer",
+      "achievement": "Enter zze Draken!",
+      "kill_storage": 42375,
+      "creature_name": "paiz the pauperizer",
+      "creature_key": "oteryn:creature.paiz_the_pauperizer",
+      "storage": 34125,
+      "portal": {
+        "x": 33066,
+        "y": 31104,
+        "z": 2
+      },
+      "player_position": {
+        "x": 33069,
+        "y": 31110,
+        "z": 1
+      },
+      "boss_position": {
+        "x": 33082,
+        "y": 31105,
+        "z": 1
+      },
+      "center": {
+        "x": 33076,
+        "y": 31110,
+        "z": 1
+      },
+      "range_x": 8,
+      "range_y": 6,
+      "donor_line": 277
+    },
+    {
+      "id": 27,
+      "task_id": 40,
+      "name": "Bretzecutioner",
+      "achievement": "King of the Ring",
+      "kill_storage": 42376,
+      "creature_name": "bretzecutioner",
+      "creature_key": "oteryn:creature.bretzecutioner",
+      "storage": 34126,
+      "portal": {
+        "x": 32003,
+        "y": 31189,
+        "z": 10
+      },
+      "player_position": {
+        "x": 31973,
+        "y": 31184,
+        "z": 10
+      },
+      "boss_position": {
+        "x": 31979,
+        "y": 31176,
+        "z": 10
+      },
+      "center": {
+        "x": 31973,
+        "y": 31177,
+        "z": 10
+      },
+      "range_x": 15,
+      "range_y": 10,
+      "donor_line": 288
+    },
+    {
+      "id": 28,
+      "task_id": 41,
+      "name": "Zanakeph",
+      "achievement": "Back from the Dead",
+      "kill_storage": 42377,
+      "creature_name": "zanakeph",
+      "creature_key": "oteryn:creature.zanakeph",
+      "storage": 34127,
+      "portal": {
+        "x": 33095,
+        "y": 31075,
+        "z": 12
+      },
+      "player_position": {
+        "x": 33077,
+        "y": 31040,
+        "z": 12
+      },
+      "boss_position": {
+        "x": 33082,
+        "y": 31056,
+        "z": 12
+      },
+      "center": {
+        "x": 33077,
+        "y": 31050,
+        "z": 12
+      },
+      "range_x": 13,
+      "range_y": 10,
+      "donor_line": 299
+    },
+    {
+      "id": 29,
+      "task_id": null,
+      "name": "tiquandas revenge",
+      "achievement": null,
+      "kill_storage": 42378,
+      "creature_name": "tiquandas revenge",
+      "creature_key": "oteryn:creature.tiquandas_revenge",
+      "storage": 42167,
+      "portal": {
+        "x": 32877,
+        "y": 32583,
+        "z": 7
+      },
+      "player_position": {
+        "x": 32888,
+        "y": 32580,
+        "z": 4
+      },
+      "boss_position": {
+        "x": 32888,
+        "y": 32586,
+        "z": 4
+      },
+      "center": {
+        "x": 32748,
+        "y": 32293,
+        "z": 10
+      },
+      "range_x": 8,
+      "range_y": 7,
+      "donor_line": 310
+    },
+    {
+      "id": 30,
+      "task_id": null,
+      "name": "demodras",
+      "achievement": null,
+      "kill_storage": 42379,
+      "creature_name": "demodras",
+      "creature_key": "oteryn:creature.demodras",
+      "storage": 42168,
+      "portal": {
+        "x": 32769,
+        "y": 32290,
+        "z": 10
+      },
+      "player_position": {
+        "x": 32748,
+        "y": 32287,
+        "z": 10
+      },
+      "boss_position": {
+        "x": 32747,
+        "y": 32294,
+        "z": 10
+      },
+      "center": {
+        "x": 32887,
+        "y": 32583,
+        "z": 4
+      },
+      "range_x": 6,
+      "range_y": 5,
+      "donor_line": 321
+    }
+  ],
+  "shop": [
+    {
+      "source_id": 10297,
+      "source_name": "antlers",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10297",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 50,
+      "minimum_points": 10,
+      "donor_line": 29
+    },
+    {
+      "source_id": 9633,
+      "source_name": "bloody pincers",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9633",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 100,
+      "minimum_points": 10,
+      "donor_line": 30
+    },
+    {
+      "source_id": 10272,
+      "source_name": "crab pincers",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10272",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 35,
+      "minimum_points": 10,
+      "donor_line": 31
+    },
+    {
+      "source_id": 9657,
+      "source_name": "cyclops toe",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9657",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 55,
+      "minimum_points": 10,
+      "donor_line": 32
+    },
+    {
+      "source_id": 12316,
+      "source_name": "cavebear skull",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12316",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 550,
+      "minimum_points": 10,
+      "donor_line": 33
+    },
+    {
+      "source_id": 17818,
+      "source_name": "cheesy figurine",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17818",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 150,
+      "minimum_points": 10,
+      "donor_line": 34
+    },
+    {
+      "source_id": 11514,
+      "source_name": "colourful feather",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11514",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 110,
+      "minimum_points": 10,
+      "donor_line": 35
+    },
+    {
+      "source_id": 7398,
+      "source_name": "cyclops trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7398",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 500,
+      "minimum_points": 10,
+      "donor_line": 36
+    },
+    {
+      "source_id": 10398,
+      "source_name": "draken trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10398",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 15000,
+      "minimum_points": 10,
+      "donor_line": 37
+    },
+    {
+      "source_id": 12309,
+      "source_name": "draptor scales",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12309",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 800,
+      "minimum_points": 10,
+      "donor_line": 38
+    },
+    {
+      "source_id": 18994,
+      "source_name": "elven hoof",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18994",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 115,
+      "minimum_points": 10,
+      "donor_line": 39
+    },
+    {
+      "source_id": 9648,
+      "source_name": "frosty ear of a troll",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9648",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 30,
+      "minimum_points": 10,
+      "donor_line": 40
+    },
+    {
+      "source_id": 12317,
+      "source_name": "giant crab pincer",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12317",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 950,
+      "minimum_points": 10,
+      "donor_line": 41
+    },
+    {
+      "source_id": 11539,
+      "source_name": "goblin ear",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11539",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 20,
+      "minimum_points": 10,
+      "donor_line": 42
+    },
+    {
+      "source_id": 12314,
+      "source_name": "hollow stampor hoof",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12314",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 400,
+      "minimum_points": 10,
+      "donor_line": 43
+    },
+    {
+      "source_id": 10282,
+      "source_name": "hydra head",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10282",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 600,
+      "minimum_points": 10,
+      "donor_line": 44
+    },
+    {
+      "source_id": 10455,
+      "source_name": "lancer beetle shell",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10455",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 80,
+      "minimum_points": 10,
+      "donor_line": 45
+    },
+    {
+      "source_id": 10419,
+      "source_name": "lizard trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10419",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 8000,
+      "minimum_points": 10,
+      "donor_line": 46
+    },
+    {
+      "source_id": 11489,
+      "source_name": "mantassin tail",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11489",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 280,
+      "minimum_points": 10,
+      "donor_line": 47
+    },
+    {
+      "source_id": 17461,
+      "source_name": "marsh stalker beak",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17461",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 65,
+      "minimum_points": 10,
+      "donor_line": 48
+    },
+    {
+      "source_id": 17462,
+      "source_name": "marsh stalker feather",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17462",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 50,
+      "minimum_points": 10,
+      "donor_line": 49
+    },
+    {
+      "source_id": 12315,
+      "source_name": "maxilla",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12315",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 250,
+      "minimum_points": 10,
+      "donor_line": 50
+    },
+    {
+      "source_id": 7401,
+      "source_name": "minotaur trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7401",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 500,
+      "minimum_points": 10,
+      "donor_line": 51
+    },
+    {
+      "source_id": 9662,
+      "source_name": "mutated bat ear",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9662",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 420,
+      "minimum_points": 10,
+      "donor_line": 52
+    },
+    {
+      "source_id": 12039,
+      "source_name": "panther head",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12039",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 750,
+      "minimum_points": 10,
+      "donor_line": 53
+    },
+    {
+      "source_id": 12040,
+      "source_name": "panther paw",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12040",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 300,
+      "minimum_points": 10,
+      "donor_line": 54
+    },
+    {
+      "source_id": 11491,
+      "source_name": "quara bone",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11491",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 500,
+      "minimum_points": 10,
+      "donor_line": 55
+    },
+    {
+      "source_id": 11491,
+      "source_name": "quara eye",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11488",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 350,
+      "minimum_points": 10,
+      "donor_line": 56
+    },
+    {
+      "source_id": 11490,
+      "source_name": "quara pincers",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11490",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 410,
+      "minimum_points": 10,
+      "donor_line": 57
+    },
+    {
+      "source_id": 11487,
+      "source_name": "quara tentacle",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i11487",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 140,
+      "minimum_points": 10,
+      "donor_line": 58
+    },
+    {
+      "source_id": 12172,
+      "source_name": "rabbit's foot",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12172",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 50,
+      "minimum_points": 10,
+      "donor_line": 59
+    },
+    {
+      "source_id": 18993,
+      "source_name": "rorc feather",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18993",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 70,
+      "minimum_points": 10,
+      "donor_line": 60
+    },
+    {
+      "source_id": 10311,
+      "source_name": "sabretooth",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10311",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 400,
+      "minimum_points": 10,
+      "donor_line": 61
+    },
+    {
+      "source_id": 10456,
+      "source_name": "sandcrawler shell",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10456",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 20,
+      "minimum_points": 10,
+      "donor_line": 62
+    },
+    {
+      "source_id": 9631,
+      "source_name": "scarab pincers",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9631",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 280,
+      "minimum_points": 10,
+      "donor_line": 63
+    },
+    {
+      "source_id": 12312,
+      "source_name": "stampor horn",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12312",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 280,
+      "minimum_points": 10,
+      "donor_line": 64
+    },
+    {
+      "source_id": 12313,
+      "source_name": "stampor talons",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i12313",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 150,
+      "minimum_points": 10,
+      "donor_line": 65
+    },
+    {
+      "source_id": 10454,
+      "source_name": "terramite legs",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10454",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 60,
+      "minimum_points": 10,
+      "donor_line": 66
+    },
+    {
+      "source_id": 10452,
+      "source_name": "terramite shell",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10452",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 170,
+      "minimum_points": 10,
+      "donor_line": 67
+    },
+    {
+      "source_id": 10273,
+      "source_name": "terrorbird beak",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10273",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 95,
+      "minimum_points": 10,
+      "donor_line": 68
+    },
+    {
+      "source_id": 5907,
+      "source_name": "slingshot",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5907",
+        "revision": "definition-r1"
+      },
+      "direction": "SellToPlayer",
+      "unit_price": 35000,
+      "minimum_points": 20,
+      "donor_line": 70
+    },
+    {
+      "source_id": 10244,
+      "source_name": "bonebeast trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10244",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 6000,
+      "minimum_points": 40,
+      "donor_line": 73
+    },
+    {
+      "source_id": 7397,
+      "source_name": "deer trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7397",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 3000,
+      "minimum_points": 40,
+      "donor_line": 74
+    },
+    {
+      "source_id": 7400,
+      "source_name": "lion trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7400",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 3000,
+      "minimum_points": 40,
+      "donor_line": 75
+    },
+    {
+      "source_id": 7395,
+      "source_name": "orc trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7395",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 1000,
+      "minimum_points": 40,
+      "donor_line": 76
+    },
+    {
+      "source_id": 7394,
+      "source_name": "wolf trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7394",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 3000,
+      "minimum_points": 40,
+      "donor_line": 77
+    },
+    {
+      "source_id": 7396,
+      "source_name": "behemoth trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7396",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 20000,
+      "minimum_points": 70,
+      "donor_line": 81
+    },
+    {
+      "source_id": 7393,
+      "source_name": "demon trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7393",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 40000,
+      "minimum_points": 70,
+      "donor_line": 82
+    },
+    {
+      "source_id": 7399,
+      "source_name": "dragon lord trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i7399",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 10000,
+      "minimum_points": 70,
+      "donor_line": 83
+    },
+    {
+      "source_id": 10421,
+      "source_name": "disgusting trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i10421",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 3000,
+      "minimum_points": 70,
+      "donor_line": 84
+    },
+    {
+      "source_id": 22101,
+      "source_name": "werebadger trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22101",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 9000,
+      "minimum_points": 70,
+      "donor_line": 85
+    },
+    {
+      "source_id": 22102,
+      "source_name": "wereboar trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22102",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 10000,
+      "minimum_points": 70,
+      "donor_line": 86
+    },
+    {
+      "source_id": 22103,
+      "source_name": "werebear trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22103",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 11000,
+      "minimum_points": 70,
+      "donor_line": 87
+    },
+    {
+      "source_id": 27706,
+      "source_name": "werefox trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i27706",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 9000,
+      "minimum_points": 70,
+      "donor_line": 88
+    },
+    {
+      "source_id": 34219,
+      "source_name": "werehyaena trophy",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i34219",
+        "revision": "definition-r1"
+      },
+      "direction": "BuyFromPlayer",
+      "unit_price": 12000,
+      "minimum_points": 70,
+      "donor_line": 89
+    },
+    {
+      "source_id": 9601,
+      "source_name": "demon backpack",
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i9601",
+        "revision": "definition-r1"
+      },
+      "direction": "SellToPlayer",
+      "unit_price": 1000,
+      "minimum_points": 70,
+      "donor_line": 91
+    }
+  ],
+  "storages": [
+    {
+      "id": 1500,
+      "key": "oteryn:quest-progress/storage/1500"
+    },
+    {
+      "id": 1501,
+      "key": "oteryn:quest-progress/storage/1501"
+    },
+    {
+      "id": 1502,
+      "key": "oteryn:quest-progress/storage/1502"
+    },
+    {
+      "id": 1503,
+      "key": "oteryn:quest-progress/storage/1503"
+    },
+    {
+      "id": 1504,
+      "key": "oteryn:quest-progress/storage/1504"
+    },
+    {
+      "id": 1505,
+      "key": "oteryn:quest-progress/storage/1505"
+    },
+    {
+      "id": 1506,
+      "key": "oteryn:quest-progress/storage/1506"
+    },
+    {
+      "id": 1507,
+      "key": "oteryn:quest-progress/storage/1507"
+    },
+    {
+      "id": 1508,
+      "key": "oteryn:quest-progress/storage/1508"
+    },
+    {
+      "id": 1509,
+      "key": "oteryn:quest-progress/storage/1509"
+    },
+    {
+      "id": 1510,
+      "key": "oteryn:quest-progress/storage/1510"
+    },
+    {
+      "id": 1511,
+      "key": "oteryn:quest-progress/storage/1511"
+    },
+    {
+      "id": 1512,
+      "key": "oteryn:quest-progress/storage/1512"
+    },
+    {
+      "id": 1513,
+      "key": "oteryn:quest-progress/storage/1513"
+    },
+    {
+      "id": 1514,
+      "key": "oteryn:quest-progress/storage/1514"
+    },
+    {
+      "id": 1515,
+      "key": "oteryn:quest-progress/storage/1515"
+    },
+    {
+      "id": 1516,
+      "key": "oteryn:quest-progress/storage/1516"
+    },
+    {
+      "id": 1517,
+      "key": "oteryn:quest-progress/storage/1517"
+    },
+    {
+      "id": 1518,
+      "key": "oteryn:quest-progress/storage/1518"
+    },
+    {
+      "id": 1519,
+      "key": "oteryn:quest-progress/storage/1519"
+    },
+    {
+      "id": 1520,
+      "key": "oteryn:quest-progress/storage/1520"
+    },
+    {
+      "id": 1521,
+      "key": "oteryn:quest-progress/storage/1521"
+    },
+    {
+      "id": 1522,
+      "key": "oteryn:quest-progress/storage/1522"
+    },
+    {
+      "id": 1523,
+      "key": "oteryn:quest-progress/storage/1523"
+    },
+    {
+      "id": 1524,
+      "key": "oteryn:quest-progress/storage/1524"
+    },
+    {
+      "id": 1525,
+      "key": "oteryn:quest-progress/storage/1525"
+    },
+    {
+      "id": 1526,
+      "key": "oteryn:quest-progress/storage/1526"
+    },
+    {
+      "id": 1527,
+      "key": "oteryn:quest-progress/storage/1527"
+    },
+    {
+      "id": 1528,
+      "key": "oteryn:quest-progress/storage/1528"
+    },
+    {
+      "id": 1529,
+      "key": "oteryn:quest-progress/storage/1529"
+    },
+    {
+      "id": 1530,
+      "key": "oteryn:quest-progress/storage/1530"
+    },
+    {
+      "id": 1531,
+      "key": "oteryn:quest-progress/storage/1531"
+    },
+    {
+      "id": 1532,
+      "key": "oteryn:quest-progress/storage/1532"
+    },
+    {
+      "id": 1533,
+      "key": "oteryn:quest-progress/storage/1533"
+    },
+    {
+      "id": 1534,
+      "key": "oteryn:quest-progress/storage/1534"
+    },
+    {
+      "id": 1535,
+      "key": "oteryn:quest-progress/storage/1535"
+    },
+    {
+      "id": 1536,
+      "key": "oteryn:quest-progress/storage/1536"
+    },
+    {
+      "id": 1537,
+      "key": "oteryn:quest-progress/storage/1537"
+    },
+    {
+      "id": 1538,
+      "key": "oteryn:quest-progress/storage/1538"
+    },
+    {
+      "id": 1539,
+      "key": "oteryn:quest-progress/storage/1539"
+    },
+    {
+      "id": 1540,
+      "key": "oteryn:quest-progress/storage/1540"
+    },
+    {
+      "id": 1541,
+      "key": "oteryn:quest-progress/storage/1541"
+    },
+    {
+      "id": 1542,
+      "key": "oteryn:quest-progress/storage/1542"
+    },
+    {
+      "id": 2500,
+      "key": "oteryn:quest-progress/storage/2500"
+    },
+    {
+      "id": 34100,
+      "key": "oteryn:quest-progress/storage/34100"
+    },
+    {
+      "id": 34101,
+      "key": "oteryn:quest-progress/storage/34101"
+    },
+    {
+      "id": 34102,
+      "key": "oteryn:quest-progress/storage/34102"
+    },
+    {
+      "id": 34103,
+      "key": "oteryn:quest-progress/storage/34103"
+    },
+    {
+      "id": 34104,
+      "key": "oteryn:quest-progress/storage/34104"
+    },
+    {
+      "id": 34105,
+      "key": "oteryn:quest-progress/storage/34105"
+    },
+    {
+      "id": 34106,
+      "key": "oteryn:quest-progress/storage/34106"
+    },
+    {
+      "id": 34107,
+      "key": "oteryn:quest-progress/storage/34107"
+    },
+    {
+      "id": 34108,
+      "key": "oteryn:quest-progress/storage/34108"
+    },
+    {
+      "id": 34109,
+      "key": "oteryn:quest-progress/storage/34109"
+    },
+    {
+      "id": 34110,
+      "key": "oteryn:quest-progress/storage/34110"
+    },
+    {
+      "id": 34111,
+      "key": "oteryn:quest-progress/storage/34111"
+    },
+    {
+      "id": 34112,
+      "key": "oteryn:quest-progress/storage/34112"
+    },
+    {
+      "id": 34113,
+      "key": "oteryn:quest-progress/storage/34113"
+    },
+    {
+      "id": 34114,
+      "key": "oteryn:quest-progress/storage/34114"
+    },
+    {
+      "id": 34115,
+      "key": "oteryn:quest-progress/storage/34115"
+    },
+    {
+      "id": 34116,
+      "key": "oteryn:quest-progress/storage/34116"
+    },
+    {
+      "id": 34117,
+      "key": "oteryn:quest-progress/storage/34117"
+    },
+    {
+      "id": 34118,
+      "key": "oteryn:quest-progress/storage/34118"
+    },
+    {
+      "id": 34119,
+      "key": "oteryn:quest-progress/storage/34119"
+    },
+    {
+      "id": 34120,
+      "key": "oteryn:quest-progress/storage/34120"
+    },
+    {
+      "id": 34121,
+      "key": "oteryn:quest-progress/storage/34121"
+    },
+    {
+      "id": 34122,
+      "key": "oteryn:quest-progress/storage/34122"
+    },
+    {
+      "id": 34123,
+      "key": "oteryn:quest-progress/storage/34123"
+    },
+    {
+      "id": 34124,
+      "key": "oteryn:quest-progress/storage/34124"
+    },
+    {
+      "id": 34125,
+      "key": "oteryn:quest-progress/storage/34125"
+    },
+    {
+      "id": 34126,
+      "key": "oteryn:quest-progress/storage/34126"
+    },
+    {
+      "id": 34127,
+      "key": "oteryn:quest-progress/storage/34127"
+    },
+    {
+      "id": 41300,
+      "key": "oteryn:quest-progress/storage/41300"
+    },
+    {
+      "id": 42167,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/mission_tiquandas_revenge"
+    },
+    {
+      "id": 42168,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/mission_demodras"
+    },
+    {
+      "id": 42169,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_points"
+    },
+    {
+      "id": 42170,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry"
+    },
+    {
+      "id": 42171,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/paw_and_fur_rank"
+    },
+    {
+      "id": 42179,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/kill_count"
+    },
+    {
+      "id": 42180,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/crocodile_count"
+    },
+    {
+      "id": 42181,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/badger_count"
+    },
+    {
+      "id": 42182,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/tarantula_count"
+    },
+    {
+      "id": 42183,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/carniphilas_count"
+    },
+    {
+      "id": 42184,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/stone_golem_count"
+    },
+    {
+      "id": 42185,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/mammoth_count"
+    },
+    {
+      "id": 42186,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/gnarlhound_count"
+    },
+    {
+      "id": 42187,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/terramite_count"
+    },
+    {
+      "id": 42188,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/apes_count"
+    },
+    {
+      "id": 42189,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/thornback_tortoise_count"
+    },
+    {
+      "id": 42190,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/gargoyle_count"
+    },
+    {
+      "id": 42191,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/ice_golem_count"
+    },
+    {
+      "id": 42192,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/quara_scouts_count"
+    },
+    {
+      "id": 42193,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/mutated_rat_count"
+    },
+    {
+      "id": 42194,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/ancient_scarab_count"
+    },
+    {
+      "id": 42195,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/wyvern_count"
+    },
+    {
+      "id": 42196,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/lancer_beetle_count"
+    },
+    {
+      "id": 42197,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/wailing_widow_count"
+    },
+    {
+      "id": 42198,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/killer_caiman_count"
+    },
+    {
+      "id": 42199,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/bonebeast_count"
+    },
+    {
+      "id": 42200,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/crystal_spider_count"
+    },
+    {
+      "id": 42201,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/mutated_tiger_count"
+    },
+    {
+      "id": 42202,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/underwater_quaras_count"
+    },
+    {
+      "id": 42203,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/giant_spider_count"
+    },
+    {
+      "id": 42204,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/werewolve_count"
+    },
+    {
+      "id": 42205,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/nightmare_count"
+    },
+    {
+      "id": 42206,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/hellspawn_count"
+    },
+    {
+      "id": 42207,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/high_class_lizard_count"
+    },
+    {
+      "id": 42208,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/stampor_count"
+    },
+    {
+      "id": 42209,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/brimstone_bug_count"
+    },
+    {
+      "id": 42210,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/mutated_bat_count"
+    },
+    {
+      "id": 42211,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/hydra_count"
+    },
+    {
+      "id": 42212,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/serpent_spawn_count"
+    },
+    {
+      "id": 42213,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/medusa_count"
+    },
+    {
+      "id": 42214,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/behemoth_count"
+    },
+    {
+      "id": 42215,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/sea_serpents_count"
+    },
+    {
+      "id": 42216,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/hellhound_count"
+    },
+    {
+      "id": 42217,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/ghastly_dragon_count"
+    },
+    {
+      "id": 42218,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/draken_count"
+    },
+    {
+      "id": 42219,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/destroyer_count"
+    },
+    {
+      "id": 42220,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/undead_dragon_count"
+    },
+    {
+      "id": 42221,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/monster_kill_count/demon_count"
+    },
+    {
+      "id": 42350,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/snapper_count"
+    },
+    {
+      "id": 42351,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/hide_count"
+    },
+    {
+      "id": 42352,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/deathbine_count"
+    },
+    {
+      "id": 42353,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/bloodtusk_count"
+    },
+    {
+      "id": 42354,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/shardhead_count"
+    },
+    {
+      "id": 42355,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/esmeralda_count"
+    },
+    {
+      "id": 42356,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/fleshcrawler_count"
+    },
+    {
+      "id": 42357,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/ribstride_count"
+    },
+    {
+      "id": 42358,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/bloodweb_count"
+    },
+    {
+      "id": 42359,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/thul_count"
+    },
+    {
+      "id": 42360,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/widow_count"
+    },
+    {
+      "id": 42361,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/hemming_count"
+    },
+    {
+      "id": 42362,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/tormentor_count"
+    },
+    {
+      "id": 42363,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/flameborn_count"
+    },
+    {
+      "id": 42364,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/fazzrah_count"
+    },
+    {
+      "id": 42365,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/tromphonyte_count"
+    },
+    {
+      "id": 42366,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/scuttler_count"
+    },
+    {
+      "id": 42367,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/payne_count"
+    },
+    {
+      "id": 42368,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/many_count"
+    },
+    {
+      "id": 42369,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/noxious_count"
+    },
+    {
+      "id": 42370,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/gorgo_count"
+    },
+    {
+      "id": 42371,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/stonecracker_count"
+    },
+    {
+      "id": 42372,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/leviathan_count"
+    },
+    {
+      "id": 42373,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/kerberos_count"
+    },
+    {
+      "id": 42374,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/ethershreck_count"
+    },
+    {
+      "id": 42375,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/pauperizer_count"
+    },
+    {
+      "id": 42376,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/bretzecutioner_count"
+    },
+    {
+      "id": 42377,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/zanakeph_count"
+    },
+    {
+      "id": 42378,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/tiquandas_count"
+    },
+    {
+      "id": 42379,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_kill_count/demodras_count"
+    },
+    {
+      "id": 42450,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/kongra_count"
+    },
+    {
+      "id": 42451,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/merlkin_count"
+    },
+    {
+      "id": 42452,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/sibang_count"
+    },
+    {
+      "id": 42453,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_constrictor_scout_count"
+    },
+    {
+      "id": 42454,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_hydromancer_scout_count"
+    },
+    {
+      "id": 42455,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quaram_mntassin_scout_count"
+    },
+    {
+      "id": 42456,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_pincher_scout_count"
+    },
+    {
+      "id": 42457,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_predator_scout_count"
+    },
+    {
+      "id": 42458,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_constrictor_count"
+    },
+    {
+      "id": 42459,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_hydromancer_count"
+    },
+    {
+      "id": 42460,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_mantassin_count"
+    },
+    {
+      "id": 42461,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_pincher_count"
+    },
+    {
+      "id": 42462,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/quara_predator_count"
+    },
+    {
+      "id": 42463,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/nightmare_count"
+    },
+    {
+      "id": 42464,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/nightmare_scion_count"
+    },
+    {
+      "id": 42465,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/lizard_chosen_count"
+    },
+    {
+      "id": 42466,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/lizard_dragon_priest_count"
+    },
+    {
+      "id": 42467,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/lizard_high_guard_count"
+    },
+    {
+      "id": 42468,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/lizard_legionnaire_count"
+    },
+    {
+      "id": 42469,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/lizard_zaogun_count"
+    },
+    {
+      "id": 42470,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/sea_serpent_count"
+    },
+    {
+      "id": 42471,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/young_sea_serpent_count"
+    },
+    {
+      "id": 42472,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/draken_abomination_count"
+    },
+    {
+      "id": 42473,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/draken_elite_count"
+    },
+    {
+      "id": 42474,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/draken_spellweaver_count"
+    },
+    {
+      "id": 42475,
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/alt_kill_count/draken_warmaster_count"
+    },
+    {
+      "id": 48951,
+      "key": "oteryn:quest-progress/storage/48951"
+    },
+    {
+      "id": 48952,
+      "key": "oteryn:quest-progress/storage/48952"
+    },
+    {
+      "id": 48953,
+      "key": "oteryn:quest-progress/storage/48953"
+    },
+    {
+      "id": 48954,
+      "key": "oteryn:quest-progress/storage/48954"
+    },
+    {
+      "id": 48955,
+      "key": "oteryn:quest-progress/storage/48955"
+    },
+    {
+      "id": 48956,
+      "key": "oteryn:quest-progress/storage/48956"
+    },
+    {
+      "id": 48957,
+      "key": "oteryn:quest-progress/storage/48957"
+    },
+    {
+      "id": 48958,
+      "key": "oteryn:quest-progress/storage/48958"
+    },
+    {
+      "id": 48959,
+      "key": "oteryn:quest-progress/storage/48959"
+    },
+    {
+      "id": 48960,
+      "key": "oteryn:quest-progress/storage/48960"
+    },
+    {
+      "id": 48961,
+      "key": "oteryn:quest-progress/storage/48961"
+    },
+    {
+      "id": 48962,
+      "key": "oteryn:quest-progress/storage/48962"
+    },
+    {
+      "id": 48963,
+      "key": "oteryn:quest-progress/storage/48963"
+    },
+    {
+      "id": 48964,
+      "key": "oteryn:quest-progress/storage/48964"
+    },
+    {
+      "id": 48965,
+      "key": "oteryn:quest-progress/storage/48965"
+    },
+    {
+      "id": 48966,
+      "key": "oteryn:quest-progress/storage/48966"
+    },
+    {
+      "id": 48967,
+      "key": "oteryn:quest-progress/storage/48967"
+    },
+    {
+      "id": 48968,
+      "key": "oteryn:quest-progress/storage/48968"
+    },
+    {
+      "id": 48969,
+      "key": "oteryn:quest-progress/storage/48969"
+    },
+    {
+      "id": 48970,
+      "key": "oteryn:quest-progress/storage/48970"
+    },
+    {
+      "id": 48971,
+      "key": "oteryn:quest-progress/storage/48971"
+    },
+    {
+      "id": 48972,
+      "key": "oteryn:quest-progress/storage/48972"
+    },
+    {
+      "id": 48973,
+      "key": "oteryn:quest-progress/storage/48973"
+    },
+    {
+      "id": 48974,
+      "key": "oteryn:quest-progress/storage/48974"
+    },
+    {
+      "id": 48975,
+      "key": "oteryn:quest-progress/storage/48975"
+    },
+    {
+      "id": 48976,
+      "key": "oteryn:quest-progress/storage/48976"
+    },
+    {
+      "id": 48977,
+      "key": "oteryn:quest-progress/storage/48977"
+    },
+    {
+      "id": 48978,
+      "key": "oteryn:quest-progress/storage/48978"
+    },
+    {
+      "id": 48979,
+      "key": "oteryn:quest-progress/storage/48979"
+    },
+    {
+      "id": 48980,
+      "key": "oteryn:quest-progress/storage/48980"
+    },
+    {
+      "id": 48981,
+      "key": "oteryn:quest-progress/storage/48981"
+    },
+    {
+      "id": 48982,
+      "key": "oteryn:quest-progress/storage/48982"
+    },
+    {
+      "id": 48983,
+      "key": "oteryn:quest-progress/storage/48983"
+    },
+    {
+      "id": 48984,
+      "key": "oteryn:quest-progress/storage/48984"
+    },
+    {
+      "id": 48985,
+      "key": "oteryn:quest-progress/storage/48985"
+    },
+    {
+      "id": 48986,
+      "key": "oteryn:quest-progress/storage/48986"
+    },
+    {
+      "id": 48987,
+      "key": "oteryn:quest-progress/storage/48987"
+    },
+    {
+      "id": 48988,
+      "key": "oteryn:quest-progress/storage/48988"
+    },
+    {
+      "id": 48989,
+      "key": "oteryn:quest-progress/storage/48989"
+    },
+    {
+      "id": 48990,
+      "key": "oteryn:quest-progress/storage/48990"
+    },
+    {
+      "id": 48991,
+      "key": "oteryn:quest-progress/storage/48991"
+    },
+    {
+      "id": 48992,
+      "key": "oteryn:quest-progress/storage/48992"
+    },
+    {
+      "id": 65001,
+      "key": "oteryn:quest-progress/storage/65001"
+    },
+    {
+      "id": 65002,
+      "key": "oteryn:quest-progress/storage/65002"
+    },
+    {
+      "id": 65003,
+      "key": "oteryn:quest-progress/storage/65003"
+    },
+    {
+      "id": 65004,
+      "key": "oteryn:quest-progress/storage/65004"
+    },
+    {
+      "id": 65005,
+      "key": "oteryn:quest-progress/storage/65005"
+    },
+    {
+      "id": 65006,
+      "key": "oteryn:quest-progress/storage/65006"
+    },
+    {
+      "id": 65007,
+      "key": "oteryn:quest-progress/storage/65007"
+    },
+    {
+      "id": 65008,
+      "key": "oteryn:quest-progress/storage/65008"
+    },
+    {
+      "id": 65009,
+      "key": "oteryn:quest-progress/storage/65009"
+    },
+    {
+      "id": 65010,
+      "key": "oteryn:quest-progress/storage/65010"
+    },
+    {
+      "id": 65011,
+      "key": "oteryn:quest-progress/storage/65011"
+    },
+    {
+      "id": 65012,
+      "key": "oteryn:quest-progress/storage/65012"
+    },
+    {
+      "id": 65013,
+      "key": "oteryn:quest-progress/storage/65013"
+    },
+    {
+      "id": 65014,
+      "key": "oteryn:quest-progress/storage/65014"
+    },
+    {
+      "id": 65015,
+      "key": "oteryn:quest-progress/storage/65015"
+    },
+    {
+      "id": 65016,
+      "key": "oteryn:quest-progress/storage/65016"
+    },
+    {
+      "id": 65017,
+      "key": "oteryn:quest-progress/storage/65017"
+    },
+    {
+      "id": 65018,
+      "key": "oteryn:quest-progress/storage/65018"
+    },
+    {
+      "id": 65019,
+      "key": "oteryn:quest-progress/storage/65019"
+    },
+    {
+      "id": 65020,
+      "key": "oteryn:quest-progress/storage/65020"
+    },
+    {
+      "id": 65021,
+      "key": "oteryn:quest-progress/storage/65021"
+    },
+    {
+      "id": 65022,
+      "key": "oteryn:quest-progress/storage/65022"
+    },
+    {
+      "id": 65023,
+      "key": "oteryn:quest-progress/storage/65023"
+    },
+    {
+      "id": 65024,
+      "key": "oteryn:quest-progress/storage/65024"
+    },
+    {
+      "id": 65025,
+      "key": "oteryn:quest-progress/storage/65025"
+    },
+    {
+      "id": 65026,
+      "key": "oteryn:quest-progress/storage/65026"
+    },
+    {
+      "id": 65027,
+      "key": "oteryn:quest-progress/storage/65027"
+    },
+    {
+      "id": 65028,
+      "key": "oteryn:quest-progress/storage/65028"
+    },
+    {
+      "id": 65029,
+      "key": "oteryn:quest-progress/storage/65029"
+    },
+    {
+      "id": 65030,
+      "key": "oteryn:quest-progress/storage/65030"
+    },
+    {
+      "id": 65031,
+      "key": "oteryn:quest-progress/storage/65031"
+    },
+    {
+      "id": 65032,
+      "key": "oteryn:quest-progress/storage/65032"
+    },
+    {
+      "id": 65033,
+      "key": "oteryn:quest-progress/storage/65033"
+    },
+    {
+      "id": 65034,
+      "key": "oteryn:quest-progress/storage/65034"
+    },
+    {
+      "id": 65035,
+      "key": "oteryn:quest-progress/storage/65035"
+    },
+    {
+      "id": 65036,
+      "key": "oteryn:quest-progress/storage/65036"
+    },
+    {
+      "id": 65037,
+      "key": "oteryn:quest-progress/storage/65037"
+    },
+    {
+      "id": 65038,
+      "key": "oteryn:quest-progress/storage/65038"
+    },
+    {
+      "id": 65039,
+      "key": "oteryn:quest-progress/storage/65039"
+    },
+    {
+      "id": 65040,
+      "key": "oteryn:quest-progress/storage/65040"
+    },
+    {
+      "id": 65041,
+      "key": "oteryn:quest-progress/storage/65041"
+    },
+    {
+      "id": 65042,
+      "key": "oteryn:quest-progress/storage/65042"
+    },
+    {
+      "id": 100157,
+      "key": "oteryn:quest-progress/storage/100157"
+    }
+  ]
+}

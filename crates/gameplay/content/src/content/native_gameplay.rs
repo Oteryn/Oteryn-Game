@@ -1875,15 +1875,24 @@ mod tests {
             assert_eq!(text.max_text_length, F::Known(maximum));
             assert_eq!(text.write_once_target, F::NotApplicable);
         }
-        // The two source mappings form a cycle; neither is silently chosen.
-        for id in [2816, 2837] {
-            assert!(
-                decoded
-                    .state
-                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
-                    .is_none()
-            );
-        }
+        // W15b admits the quest book 2816 as a chest child. The cyclic
+        // write-once mapping remains unqualified, and 2837 stays unadmitted.
+        let book = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i2816", "definition-r1")
+            .unwrap()
+            .record();
+        assert!(book.admission.materializable);
+        assert!(matches!(&book.semantics.readable_writeable,
+            F::Known(text) if text.write_once_target == F::Unknown
+                && text.writeable == F::Known(true)
+                && text.max_text_length == F::Known(1023)));
+        assert!(
+            decoded
+                .state
+                .item_policy("oteryn:item.tibia.i2837", "definition-r1")
+                .is_none()
+        );
         for (source, target) in [(2817, 2819), (2818, 2834), (2839, 2824)] {
             let record = decoded
                 .state

@@ -87,7 +87,9 @@ fn ten_actual_item_appearance_operations_have_no_exact_active_policy_and_are_not
                         || (record["production_definition"]["production_key"] == item.key
                             && record["production_definition"]["revision_ref"] == item.revision)
                 });
-            assert!(!found);
+            // W15b admits the ring of the sky as an exact chest reward. Its
+            // canonical Item reference stays unchanged; the other ids stay held.
+            assert_eq!(found, item.key == "oteryn:item.tibia.i3058");
             count += 1;
         }
     }

@@ -13,6 +13,10 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_build(", "durability/character_revision_sequencer.rs"),
     (".commit_character_death(", "durability/character_revision_sequencer.rs"),
     (".commit_character_experience(", "durability/character_revision_sequencer.rs"),
+    // Grizzly's computed quest rules advance the same fenced Character revision chain.
+    (".commit_character_grizzly_boss_entry(", "durability/character_revision_sequencer/grizzly.rs"),
+    (".commit_character_grizzly_kill(", "durability/character_revision_sequencer/grizzly.rs"),
+    (".commit_character_grizzly_transition(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
     (".commit_character_proficiency(", "durability/character_revision_sequencer.rs"),
     (".commit_character_proficiency_modification(", "durability/character_revision_sequencer.rs"),
