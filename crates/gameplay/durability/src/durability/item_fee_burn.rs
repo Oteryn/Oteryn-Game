@@ -65,6 +65,9 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    BosstiarySlot {
+        occurrence: [u8; 16],
+    },
     /// P05: exactly one bounty talisman, at the Crystal NPC price.
     TaskBoardTalisman {
         occurrence: [u8; 16],
@@ -406,6 +409,7 @@ async fn burn_fee_at_channel(
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
                 | FeeBurnCause::Forge { .. }
+                | FeeBurnCause::BosstiarySlot { .. }
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;

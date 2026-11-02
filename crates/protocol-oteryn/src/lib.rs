@@ -29,6 +29,7 @@ pub mod bestiary;
 pub mod boss_difficulty;
 pub mod boss_encounter;
 pub mod boss_rewards;
+pub mod bosstiary_slots;
 pub mod browse_field;
 pub mod capability_tables;
 pub mod channel_list;

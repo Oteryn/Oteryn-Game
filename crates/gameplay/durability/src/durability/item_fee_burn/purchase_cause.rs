@@ -9,6 +9,7 @@ impl FeeBurnCause {
             Self::Forge { .. } => 14,
             Self::QuestAccessPurchase { .. } => 15,
             Self::HirelingService { .. } => 472,
+            Self::BosstiarySlot { .. } => 16,
             Self::PreyListReroll { .. } | Self::PreyPickAgain { .. } => 12,
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
@@ -25,7 +26,9 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
-            Self::TaskBoardTalisman { occurrence } => occurrence,
+            Self::TaskBoardTalisman { occurrence } | Self::BosstiarySlot { occurrence } => {
+                occurrence
+            }
             Self::HirelingService { occurrence, .. } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
             Self::QuestAccessPurchase { occurrence }
@@ -55,6 +58,7 @@ impl FeeBurnCause {
             Self::Forge { .. } => "oteryn:service.forge",
             Self::QuestAccessPurchase { .. } => "oteryn:service.quest.rotten-blood.access",
             Self::HirelingService { service, .. } => service,
+            Self::BosstiarySlot { .. } => "oteryn:bosstiary.slot_remove",
             Self::PreyListReroll { slot, .. } => match slot {
                 1 => "oteryn:prey.list_reroll.1",
                 2 => "oteryn:prey.list_reroll.2",
@@ -82,7 +86,7 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
-            Self::TaskBoardTalisman { .. } => Ok(()),
+            Self::TaskBoardTalisman { .. } | Self::BosstiarySlot { .. } => Ok(()),
             Self::Forge { occurrence, proof } => {
                 let value = crate::durability::character_forge_dust::live::audit::decode(proof)
                     .map_err(|_| FeeBurnError::InvalidInput)?;
@@ -133,6 +137,13 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::BosstiarySlot { occurrence } => {
+                FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
+                    service_key: self.key().into(),
+                    occurrence: occurrence.to_vec(),
+                    atelier_proof: Vec::new(),
+                })
+            }
             Self::TaskBoardTalisman { occurrence } => {
                 FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

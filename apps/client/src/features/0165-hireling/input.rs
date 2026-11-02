@@ -10,7 +10,7 @@ impl PlayLink {
         }
         self.hireling_request(Intent::Refresh);
         #[cfg(windows)]
-        super::view::open_window(self);
+        self.open_hireling_panel();
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).hireling.open = true;

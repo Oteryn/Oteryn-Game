@@ -108,6 +108,8 @@ pub enum FeeBurnCauseV1 {
     // W11: the fixed-price Quest access source reuses the fee ledger owner.
     #[prost(message, tag = "15")]
     QuestAccessPurchase(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "16")]
+    BosstiarySlot(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
@@ -142,6 +144,7 @@ pub struct OneItemFeeBurnCauseV1 {
             13, // TaskBoardTalisman: Crystal NPC purchase, 5000 gold
             14, // Native Forge
             15, // QuestAccessPurchase: Rotten Blood access, fixed 5m source
+            16, // Bosstiary slot removal
             472, // HirelingService
         )
     )]
@@ -367,6 +370,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                         | FeeBurnCauseV1::Imbuement(_)
                         | FeeBurnCauseV1::NpcTravel(_)
                         | FeeBurnCauseV1::Forge(_)
+                        | FeeBurnCauseV1::BosstiarySlot(_)
                 )
             ) {
                 1
