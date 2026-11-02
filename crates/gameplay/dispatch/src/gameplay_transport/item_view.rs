@@ -525,6 +525,8 @@ pub struct SessionItemView {
     views_revision: u64,
     view_commands: ViewCommandWindow,
     inventory: InventoryItems,
+    /// A post-commit display read is retried on the existing visibility cadence.
+    pub(super) inventory_refresh_pending: bool,
     open: Option<OpenCorpse>,
     open_entries: Vec<ViewItem>,
     /// The open corpse carried from the previous connection until the snapshot decides it.
@@ -550,6 +552,7 @@ impl SessionItemView {
             views_revision: continuity.views_revision,
             view_commands: continuity.view_commands,
             inventory: InventoryItems::default(),
+            inventory_refresh_pending: false,
             open: None,
             open_entries: Vec::new(),
             carried_open: continuity.open_corpse,

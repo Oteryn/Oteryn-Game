@@ -189,9 +189,11 @@ fn reply(result: Result<GuildBankReply, GuildError>) -> GuildReply {
 }
 fn failure(error: GuildError) -> GuildReply {
     match error {
-        GuildError::InvalidInput | GuildError::NotCurrent | GuildError::ConflictingOccurrence => {
-            GuildReply::Rejected
-        }
+        // No semantic pass was issued, so this command cannot have committed.
+        GuildError::Unavailable(crate::durability::DurabilityError::RootUnavailable)
+        | GuildError::InvalidInput
+        | GuildError::NotCurrent
+        | GuildError::ConflictingOccurrence => GuildReply::Rejected,
         GuildError::Unavailable(_) => GuildReply::Unavailable,
     }
 }

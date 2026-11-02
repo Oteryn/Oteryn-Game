@@ -20,6 +20,8 @@ struct FactsAuthority {
     periodic: bool,
     lose_control_after_use: bool,
     unavailable_after_first_use: bool,
+    missing_facts_after_first_use: bool,
+    trade_reads: Cell<usize>,
 }
 
 impl FactsAuthority {
@@ -34,6 +36,8 @@ impl FactsAuthority {
             periodic: false,
             lose_control_after_use: false,
             unavailable_after_first_use: false,
+            missing_facts_after_first_use: false,
+            trade_reads: Cell::new(0),
         }
     }
 
@@ -101,11 +105,47 @@ impl FreshAdmissionAuthority for FactsAuthority {
         if self.unavailable_after_first_use && self.uses.get() == 1 {
             return None;
         }
+        if self.missing_facts_after_first_use && self.uses.get() == 1 {
+            return Some(AchievementNoticeObservation {
+                facts: None,
+                ..self.observation()
+            });
+        }
         let reads = self.reads.replace(self.reads.get() + 1);
         if self.periodic && reads != 0 {
             self.grant();
         }
         Some(self.observation())
+    }
+
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        (self.uses.get() != 1).then_some(Default::default())
+    }
+
+    async fn player_trade_open(&self, _admitted: AdmittedSession) -> Option<()> {
+        Some(())
+    }
+
+    async fn player_trade_observation(
+        &self,
+        _session: GameSessionId,
+    ) -> Option<(u64, oteryn_protocol_oteryn::player_trade::State, bool)> {
+        self.trade_reads.set(self.trade_reads.get() + 1);
+        (self.uses.get() != 1).then_some((0, Default::default(), false))
+    }
+
+    async fn guild_command(
+        &self,
+        _admitted: AdmittedSession,
+        _id: u64,
+        _kind: u32,
+        _payload: &[u8],
+    ) -> crate::gameplay_transport::guild_intent::GuildReply {
+        crate::gameplay_transport::guild_intent::GuildReply::Unavailable
     }
 
     async fn use_object(
@@ -403,6 +443,85 @@ fn unavailable_achievement_refresh_does_not_disconnect_committed_use() -> Result
             2,
             "deferred facts must be delivered after recovery"
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn missing_achievement_facts_does_not_disconnect_committed_use() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = FactsAuthority {
+            missing_facts_after_first_use: true,
+            ..FactsAuthority::new(false)
+        };
+        let commands = [1, 2].map(|id| {
+            use_command(1, id, u64::from(COMMAND_TYPE_USE_INTENT), b"oteryn:placement/entry-door", 0)
+        });
+        let (_, frames) = drive_session(&authority, controlled(selected(&[31]))?, &commands).await?;
+        assert_eq!(authority.uses.get(), 2, "missing display facts ended gameplay");
+        assert_eq!(outputs(&frames)?.1.len(), 2, "recovery lost deferred facts");
+        Ok(())
+    })
+}
+
+#[test]
+fn unavailable_guild_query_does_not_disconnect_after_committed_use() -> Result<(), Box<dyn Error>> {
+    run(async {
+        use oteryn_protocol_oteryn::guild as wire;
+        let authority = FactsAuthority::new(false);
+        let mut continuity = selected(&[]);
+        continuity.selected_capabilities = SelectedCapabilities::select(
+            &[OfferedCapability { id: wire::CAPABILITY_GUILD_V1, requires: &[] }],
+            &[wire::CAPABILITY_GUILD_V1],
+        ).ok_or("guild capability")?;
+        let use_frame = |id| use_command(1, id, u64::from(COMMAND_TYPE_USE_INTENT), b"oteryn:placement/entry-door", 0);
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, 2);
+        scalar(&mut payload, 2, u64::from(wire::COMMAND_TYPE_GUILD_QUERY));
+        bytes(&mut payload, 4, &wire::encode_guild_query(&wire::GuildQuery::Own).map_err(|e| format!("{e:?}"))?);
+        let query = envelope(7, 1, &payload);
+        let (_, frames) = drive_session(&authority, controlled(continuity)?, &[use_frame(1), query, use_frame(3)]).await?;
+        assert_eq!(authority.uses.get(), 2, "unavailable guild read ended gameplay");
+        let results: Vec<_> = frames.iter().filter_map(|frame| {
+            let envelope = decode_wire_envelope(frame).ok()?;
+            (envelope.message_type() == MessageType::CommandResult).then(|| oteryn_protocol_oteryn::decode_command_result(envelope.payload()).ok()).flatten()
+        }).collect();
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[1].status, CommandStatus::Rejected);
+        Ok(())
+    })
+}
+
+#[test]
+fn unavailable_trade_refresh_does_not_disconnect_committed_use() -> Result<(), Box<dyn Error>> {
+    run(async {
+        use oteryn_protocol_oteryn::player_trade::CAPABILITY_PLAYER_TRADE_V1;
+        let authority = FactsAuthority::new(false);
+        let mut continuity = selected(&[]);
+        continuity.selected_capabilities = SelectedCapabilities::select(
+            &[OfferedCapability { id: CAPABILITY_PLAYER_TRADE_V1, requires: &[] }],
+            &[CAPABILITY_PLAYER_TRADE_V1],
+        ).ok_or("trade capability")?;
+        let commands = [1, 2].map(|id| use_command(1, id, u64::from(COMMAND_TYPE_USE_INTENT), b"oteryn:placement/entry-door", 0));
+        drive_session(&authority, controlled(continuity)?, &commands).await?;
+        assert_eq!(authority.uses.get(), 2, "unavailable trade display ended gameplay");
+        assert_eq!(authority.trade_reads.get(), 3, "refresh must retry after recovery");
+        Ok(())
+    })
+}
+
+#[test]
+fn unavailable_inventory_refresh_does_not_disconnect_committed_use() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = FactsAuthority::new(false);
+        let mut continuity = selected(&[]);
+        continuity.selected_capabilities = SelectedCapabilities::select(
+            &[OfferedCapability { id: 4, requires: &[6] }, OfferedCapability { id: 6, requires: &[] }],
+            &[4, 6],
+        ).ok_or("item capabilities")?;
+        let commands = [1, 2].map(|id| use_command(1, id, u64::from(COMMAND_TYPE_USE_INTENT), b"oteryn:placement/entry-door", 0));
+        drive_session(&authority, controlled(continuity)?, &commands).await?;
+        assert_eq!(authority.uses.get(), 2, "unavailable inventory display ended gameplay");
         Ok(())
     })
 }

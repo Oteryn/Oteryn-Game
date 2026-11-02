@@ -37,7 +37,9 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         // publishing; unavailable authority never permits a notice or a gameplay write.
         return Ok(());
     };
-    let facts = observed.facts.ok_or(ServeEnd::Disconnected)?;
+    let Some(facts) = observed.facts else {
+        return Ok(());
+    };
     for fact in facts {
         deliver(stream, session, &fact).await?;
     }
@@ -52,32 +54,22 @@ pub(super) async fn immediate<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>
     session: &mut ServeState,
     notice: &EarnedNotice,
 ) -> Result<(), ServeEnd> {
-    if notice == &EarnedNotice::Unknown
-        && session.notices_selected
-        && session
-            .admitted
-            .continuity
-            .achievement_notice_revision
-            .is_some()
-    {
-        return Err(ServeEnd::Disconnected);
-    }
     if let EarnedNotice::Earned(earned) = notice {
         if session.achievement_notices.is_some() {
             // The source committed earlier; its transport may have been replaced while
             // the ordinary result/inventory updates were being written. Apply the same
             // current account/session gate before the immediate notice, and take its
             // name/watermark from the catalogue-backed observation as well.
-            let observed = authority
+            let Some(current) = authority
                 .observe_achievement_notice_facts(session.admitted)
                 .await
-                .ok_or(ServeEnd::Disconnected)?;
-            let current = observed
-                .facts
-                .ok_or(ServeEnd::Disconnected)?
-                .into_iter()
-                .find(|fact| fact.key == earned.key)
-                .ok_or(ServeEnd::Disconnected)?;
+                .and_then(|observed| observed.facts)
+                .and_then(|facts| facts.into_iter().find(|fact| fact.key == earned.key))
+            else {
+                // The committed source result stands. A later refresh re-proves control
+                // and delivers the notice without consuming its key or revision here.
+                return Ok(());
+            };
             deliver(stream, session, &current).await?;
         } else {
             // Historical injected authorities expose only a watermark; retain their

@@ -120,11 +120,15 @@ pub(super) async fn execute(
     if request.action >= 5 && crate::durability::bank::fee_payer_is_junior(fence.character_id) {
         return refused(13);
     }
-    owner
+    if owner
         .root
         .advance_market(owner.character, owner.holder, admitted.world_id)
         .await
-        .ok()?;
+        .is_err()
+    {
+        // The requested trade has not started; background market work can retry later.
+        return refused(9);
+    }
     if request.action == 8 {
         let offers = owner
             .root

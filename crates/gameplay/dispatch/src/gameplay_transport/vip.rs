@@ -92,11 +92,15 @@ pub(super) async fn execute(
         request.operation,
         Operation::Add | Operation::GroupAdd | Operation::GroupRename
     );
-    let prepared = owner
+    let prepared = match owner
         .root
         .prepare_vip(owner.character, owner.holder, fence, command, request)
         .await
-        .ok()?;
+    {
+        Ok(prepared) => prepared,
+        // Preparation only reads fences/receipts; no new VIP write has started.
+        Err(_) => return wire::encode_result(9, 0, 0, 0, "").ok(),
+    };
     let result = match prepared {
         VipPrepared::Replayed(result) => result,
         // Immutable replay above remains available while the relay is down. A new write
