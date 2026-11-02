@@ -141,7 +141,7 @@ pub trait Stepper: Send {
     }
     fn prey(
         &mut self,
-        _command: &oteryn_client_runtime::prey::PreyCommand,
+        _command: &oteryn_client_runtime::prey::prey::Request,
     ) -> impl Future<Output = Result<oteryn_client_runtime::prey::PreyResponse, SessionError>> + Send
     {
         async { Err(SessionError::CapabilityNotSelected { capability: 140 }) }

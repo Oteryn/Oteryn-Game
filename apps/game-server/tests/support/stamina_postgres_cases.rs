@@ -23,8 +23,15 @@ fn hunting_stamina_postgres_logout_login_preserves_pending_minutes() -> TestResu
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             states.load_stamina(&runtime,deps.actor,deps.admitted.game_session_id,2520);
-            states.hunting_activity(&runtime,deps.actor,deps.admitted.game_session_id,0);
-            states.hunting_activity(&runtime,deps.actor,deps.admitted.game_session_id,60_000_000);
+            // PREY-DIFF (2026-11-01): chosen-race activity remains independent of Stamina.
+            for now in [0,60_000_000] {
+                states.prey_activity(&runtime,deps.actor,deps.admitted.game_session_id,
+                    crate::gameplay_transport::prey::PreyActivity {
+                        creature: "oteryn:creature.rat",
+                        kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::DealtDamage,
+                        now,
+                    });
+            }
             // docs/reference/hunting-stamina.md:15-17: activity without kill XP spends no stamina.
             assert_eq!(states.live_stamina(deps.actor,deps.admitted.game_session_id),Some(2520));
             assert!(!states.stamina_to_flush(deps.actor,deps.admitted.game_session_id));
