@@ -83,5 +83,8 @@ pub(super) async fn dispatch(
             ..UseOutcome::rejected()
         });
     }
-    authority.sleep_in_bed(actor, command, intent, target).await
+    // C10: the production bed owner (House fence re-proof, bed head and House
+    // position capture) made this future large; boxing keeps it off the stack of
+    // every connection command future that only might route a bed USE.
+    Box::pin(authority.sleep_in_bed(actor, command, intent, target)).await
 }

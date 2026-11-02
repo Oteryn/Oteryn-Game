@@ -245,7 +245,9 @@ const INVENTORY: &[Entry] = &[
             // Activity construction inherits this gate; it cannot promote a bundle origin.
             ("gameplay_transport/activity_content.rs", 1),
             ("gameplay_transport/attack.rs", 1),
-            ("gameplay_transport/bed_sleep_production.rs", 1),
+            // C10: bed sleep production no longer calls this gate; it checks the bundle map
+            // digest or the source artifact digest itself and proves the bed head and House
+            // from that same map (`bed_sleep_production.rs`).
             ("gameplay_transport/composed_admission/objects.rs", 2),
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
