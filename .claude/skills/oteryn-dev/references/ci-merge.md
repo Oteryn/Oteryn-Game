@@ -29,13 +29,15 @@ authorised; this file only says how the flow behaves.
 
 ## Blind spot
 
-`Node boot against the real Platform` and the
+`Node boot against the real Platform`, `Server Seam` and the
 `Rust Linux workspace (integration-heavy | integration-rest)` shards run
 **only after the merge**; the PR `game-gate` never runs them. A PR that
 touches node startup, stack size, the dispatch runtime, integration tests,
 or `content/` and `imports/` (the integration tests count their files) must
 run the matching tests locally (`local-checks.md`) because CI will
 only report them once `main` is already red.
+When one of them turns `main` red, fix it with `oteryn-debugging` section 6
+(*Red main: targeted fix*): bisect the CI history first, then a local loop.
 
 ## Merge conditions
 

@@ -25,8 +25,6 @@ mod gated_command;
 mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
-/// Server-owned Animus mastery pages for the native client feature.
-pub use oteryn_protocol_oteryn::animus_mastery;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;
@@ -37,12 +35,14 @@ pub use oteryn_protocol_oteryn::hotkey_equip;
 pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
-/// Player-trade wire values for the selected native-client feature.
-pub use oteryn_protocol_oteryn::player_trade;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
+/// Server-owned Animus and daily-reward values for native client features.
+pub use oteryn_protocol_oteryn::{animus_mastery, daily_reward};
 /// Wheel and Atelier wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
+/// Player-trade wire values for the selected native-client feature.
+pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 mod guild_chat;
 mod private_channels;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
@@ -79,7 +79,7 @@ pub use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
 mod tutorial_notices;
-pub use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
+pub use oteryn_protocol_oteryn::{boss_rewards, zones_nologout::ServerMessage};
 mod vip_presence;
 /// Exiva permission-list wire contract.
 pub use oteryn_protocol_oteryn::exiva;

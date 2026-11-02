@@ -185,6 +185,19 @@ impl<S: SessionStream> Session<S> {
                             batch,
                         ))
                     }
+                    player_typing::DELTA_TYPE_PLAYER_TYPING_V1 => {
+                        if !self.is_selected(player_typing::CAPABILITY_PLAYER_TYPING_V1) {
+                            return Err(SessionError::CapabilityNotSelected {
+                                capability: player_typing::CAPABILITY_PLAYER_TYPING_V1,
+                            });
+                        }
+                        SessionEvent::PlayerTyping(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            player_typing::decode_update(delta.payload)?,
+                        ))
+                    }
                     chat::private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1 => {
                         let list =
                             private_channels::decode(delta.payload, &self.selected_capabilities)?;

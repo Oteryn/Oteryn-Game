@@ -1,0 +1,1 @@
+{"mechanic":"0182-daily-reward","kind":"handlers","id":"0182-daily-reward-claim","status":"supported","commands":[354],"direction":"client_to_server","capability":182,"entry":"protocol.rs::request","not_applicable":{"settings":"Claim authority is server-owned."}}

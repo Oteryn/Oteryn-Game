@@ -11,6 +11,15 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn player_typing_selected(&self) -> bool {
+        self.is_selected(oteryn_session::player_typing::CAPABILITY_PLAYER_TYPING_V1)
+    }
+    async fn player_typing(
+        &mut self,
+        command: &oteryn_client_runtime::player_typing::PlayerTypingCommand,
+    ) -> Result<oteryn_client_runtime::player_typing::PlayerTypingResponse, SessionError> {
+        oteryn_client_runtime::player_typing::send(self, command).await
+    }
     fn animus_selected(&self) -> bool {
         self.is_selected(oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1)
     }
@@ -123,6 +132,15 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError> {
         oteryn_client_runtime::npc_shop::send(self, command).await
     }
+    fn boss_rewards_selected(&self) -> bool {
+        self.is_selected(oteryn_session::boss_rewards::CAPABILITY_BOSS_REWARDS_V1)
+    }
+    async fn boss_rewards(
+        &mut self,
+        command: &oteryn_client_runtime::boss_rewards::BossRewardsCommand,
+    ) -> Result<oteryn_client_runtime::boss_rewards::BossRewardsResponse, SessionError> {
+        oteryn_client_runtime::boss_rewards::send(self, command).await
+    }
     fn prey_selected(&self) -> bool {
         self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
     }
@@ -131,6 +149,17 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         command: &oteryn_client_runtime::prey::prey::Request,
     ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
         oteryn_client_runtime::prey::send(self, command).await
+    }
+    fn daily_reward_selected(&self) -> bool {
+        self.is_selected(
+            oteryn_client_runtime::daily_reward::daily_reward::CAPABILITY_DAILY_REWARD_V2,
+        )
+    }
+    async fn daily_reward(
+        &mut self,
+        command: &oteryn_client_runtime::daily_reward::DailyRewardCommand,
+    ) -> Result<oteryn_client_runtime::daily_reward::DailyRewardResponse, SessionError> {
+        oteryn_client_runtime::daily_reward::send(self, command).await
     }
     fn imbue_selected(&self) -> bool {
         self.is_selected(oteryn_session::imbuement::CAPABILITY_IMBUE_V1)
@@ -198,5 +227,18 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         request: &oteryn_client_runtime::market::MarketCommand,
     ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
         oteryn_client_runtime::market::send(self, request).await
+    }
+    fn chat_public_selected(&self) -> bool {
+        self.is_selected(259)
+    }
+    fn chat_state(&self) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
+        self.chat_log()
+            .map(|log| (log.rooms(), log.lines().cloned().collect()))
+    }
+    async fn chat_public(
+        &mut self,
+        intent: &oteryn_session::ChatIntent,
+    ) -> Result<oteryn_session::ChatOutcome, SessionError> {
+        self.chat(intent).await
     }
 }
