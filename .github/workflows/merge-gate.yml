@@ -995,6 +995,55 @@ jobs:
           path: ${{ runner.temp }}/jobresult
           key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
+  # TEMPORARY (CI-AUDIT A, draft PR only, never merged): log why Cargo rebuilds workspace
+  # crates after restoring the protected-main cache. Not needed by game_gate.
+  cache_fingerprint_probe:
+    name: Merge gate / TEMP cache fingerprint probe
+    needs: [scope]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.99.1-
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+      - name: Build unit-test binaries with fingerprint logging
+        env:
+          CARGO_LOG: cargo::core::compiler::fingerprint=info
+        run: |
+          set -uo pipefail
+          start=$(date +%s)
+          cargo +1.99.1 test --locked --workspace --lib --bins --no-run 2> "$RUNNER_TEMP/fp.log" || true
+          echo "build_seconds=$(( $(date +%s) - start ))"
+          echo '--- Compiling lines'
+          grep -E '^\s+Compiling ' "$RUNNER_TEMP/fp.log" | head -120
+          echo '--- dirty reasons (first per unit)'
+          grep -E 'dirty|stale|fingerprint mismatch|output not fresh|rerun-if' "$RUNNER_TEMP/fp.log" | sed -E 's/\x1b\[[0-9;]*m//g' | cut -c1-400 | head -300
+      - name: Second build without changes (should be all fresh)
+        run: |
+          start=$(date +%s)
+          cargo +1.99.1 test --locked --workspace --lib --bins --no-run 2>&1 | grep -cE '^\s+Compiling ' || true
+          echo "second_build_seconds=$(( $(date +%s) - start ))"
+
   rust_supply_chain:
     name: Merge gate / Rust supply chain
     needs: [scope, lanes]
