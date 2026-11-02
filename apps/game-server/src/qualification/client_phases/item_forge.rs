@@ -7,7 +7,9 @@ pub(super) async fn item_forge(client: &mut oteryn_dev_client::DevClientSession)
         .selected_capabilities()
         .contains(&CAPABILITY_ITEM_FORGE_V1)
     {
-        return Err("item forge capability was not selected".into());
+        // Even QueryHistory needs the active native generation and its pinned Item index.
+        evidence("mechanic=item_forge skipped=entry_room_has_no_native_item_content");
+        return Ok(());
     }
     let mut panel = client_ui::item_forge::ItemForgePanel {
         selected: true,

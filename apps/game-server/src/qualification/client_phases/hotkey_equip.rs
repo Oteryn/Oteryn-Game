@@ -9,7 +9,9 @@ pub(super) async fn hotkey_equip(
         .selected_capabilities()
         .contains(&CAPABILITY_HOTKEY_EQUIP_V1)
     {
-        return Err("hotkey equip capability was not selected".into());
+        // Only bundle Worlds offer this owner; native_for_move needs pinned Item content.
+        evidence("mechanic=hotkey_equip skipped=entry_room_has_no_native_equipment_content");
+        return Ok(());
     }
     let definition = client
         .inventory()

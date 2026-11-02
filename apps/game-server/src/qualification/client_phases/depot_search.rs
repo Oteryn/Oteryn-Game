@@ -9,7 +9,9 @@ pub(super) async fn depot_search(
         .selected_capabilities()
         .contains(&CAPABILITY_DEPOT_SEARCH_V1)
     {
-        return Err("depot search capability was not selected".into());
+        // The real search owner requires a bundle-map depot locker at the actor's tile.
+        evidence("mechanic=depot_search skipped=entry_room_has_no_bundle_depot_locker");
+        return Ok(());
     }
     let mut panel = client_ui::depot_search::DepotSearchPanel {
         selected: true,

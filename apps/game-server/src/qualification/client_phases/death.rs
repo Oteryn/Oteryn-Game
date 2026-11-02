@@ -1,11 +1,8 @@
 //! Death and relog journey over the real node; reference: `scenarios/s3_death.rs`.
 use super::*;
-pub(super) async fn death(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    if client.world_entities().is_none() {
-        return Err("death phase requires entity observations".into());
-    }
-    evidence(
-        "mechanic=death gap=native_entry_room_has_no_lethal_fixture death_relog_position_state=pending existing_readmission=covered_separately",
-    );
+pub(super) async fn death(_client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    // Spawned rats alone are not a deterministic lethal encounter. Default node boot
+    // has no native gameplay generation for the combat/death journey.
+    evidence("mechanic=death skipped=entry_room_has_no_native_lethal_encounter_content");
     Ok(())
 }

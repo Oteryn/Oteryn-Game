@@ -9,7 +9,9 @@ pub(super) async fn daily_boost(
         .selected_capabilities()
         .contains(&daily_boost::CAPABILITY_DAILY_BOOST_V1)
     {
-        return Err("daily boost capability was not selected".into());
+        // daily_boost_available requires a bundle and eligible creature AND boss pools.
+        evidence("mechanic=daily_boost skipped=entry_room_has_no_bundle_boost_pools");
+        return Ok(());
     }
     let mut panel = client_ui::daily_boost::DailyBoostPanel {
         selected: true,

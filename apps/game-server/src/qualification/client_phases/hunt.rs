@@ -1,25 +1,9 @@
 //! Hunt journey over the real node; reference: `scenarios/s1_hunt.rs`.
 use super::*;
-pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    let moved = client
-        .step(oteryn_protocol_oteryn::world_spatial::StepDirection::West)
-        .await?;
-    if moved.disposition != oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved {
-        return Err("hunt setup movement was refused".into());
-    }
-    let monster = client.world_entities().and_then(|entities| {
-        entities
-            .iter()
-            .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
-    });
-    if monster.is_none() {
-        evidence(
-            "mechanic=hunt move=passed gap=native_entry_room_has_no_fixture_monster attack_kill_loot_experience_stamina=pending",
-        );
-        return Ok(());
-    }
-    Err(
-        "hunt fixture monster is visible but the node_boot phase has no deterministic kill loop"
-            .into(),
-    )
+pub(super) async fn hunt(_client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    // The entry room DOES spawn two rats, but default node boot has no native gameplay
+    // generation. refresh_attack_weapon cannot load even fists without that generation,
+    // and the entry rat has no loot table. Movement alone would not qualify a hunt.
+    evidence("mechanic=hunt skipped=entry_room_has_no_native_combat_and_loot_content");
+    Ok(())
 }

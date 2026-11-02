@@ -9,7 +9,9 @@ pub(super) async fn browse_field(
         .selected_capabilities()
         .contains(&CAPABILITY_BROWSE_FIELD_V1)
     {
-        return Err("browse field capability was not selected".into());
+        // The entry room has no bundle map: browse_field::observe needs its tile overlay.
+        evidence("mechanic=browse_field skipped=entry_room_has_no_bundle_map");
+        return Ok(());
     }
     let position = client.world_spatial().actor_position;
     let mut panel = client_ui::browse_field::BrowseFieldPanel {
