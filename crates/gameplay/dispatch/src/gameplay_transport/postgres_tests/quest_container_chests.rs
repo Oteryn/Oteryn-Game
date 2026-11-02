@@ -15,6 +15,10 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 #[derive(Clone, Copy)]
 enum Case {
     Bear,
+    BehemothBag,
+    BehemothHalberd,
+    BehemothShield,
+    BehemothArmor,
     Key,
     Choice,
     Text,
@@ -36,6 +40,17 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
         .map_err(|_| "reward container scenario panicked")??;
     println!("{marker} POSTGRES_CASE_COMPLETED");
     Ok(())
+}
+
+// Crystal 201189f startup/tables/chest.lua:970-990,1150-1158.
+// These go through literal USE, the embedded binder and actual durable MINT,
+// including stale authority, duplicate replay and a reconstructed owner.
+#[test]
+fn quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner() -> TestResult {
+    execute(Case::BehemothBag, "QUESTS6_BEHEMOTH_BAG")?;
+    execute(Case::BehemothHalberd, "QUESTS6_BEHEMOTH_HALBERD")?;
+    execute(Case::BehemothShield, "QUESTS6_BEHEMOTH_SHIELD")?;
+    execute(Case::BehemothArmor, "QUESTS6_BEHEMOTH_ARMOR")
 }
 
 #[test]
@@ -85,6 +100,40 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 fn scenario(case: Case) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::BehemothBag => (
+            "oteryn:reward-claim.kv.behemothquest1",
+            (33294, 31658, -13),
+            6075,
+            "oteryn:item.tibia.i2853",
+            vec![
+                ("oteryn:item.tibia.i3028", 3_i64, 0_i32),
+                ("oteryn:item.tibia.i3029", 4, 0),
+                ("oteryn:item.tibia.i3007", 1, 0),
+                ("oteryn:item.tibia.i3052", 1, 0),
+                ("oteryn:item.tibia.i3055", 1, 0),
+            ],
+        ),
+        Case::BehemothHalberd => (
+            "oteryn:reward-claim.kv.behemothquest2",
+            (33295, 31658, -13),
+            6052,
+            "oteryn:item.tibia.i3315",
+            vec![],
+        ),
+        Case::BehemothShield => (
+            "oteryn:reward-claim.kv.behemothquest3",
+            (33297, 31658, -13),
+            6053,
+            "oteryn:item.tibia.i3420",
+            vec![],
+        ),
+        Case::BehemothArmor => (
+            "oteryn:reward-claim.kv.behemothquest4",
+            (33298, 31658, -13),
+            6054,
+            "oteryn:item.tibia.i3360",
+            vec![],
+        ),
         Case::RootText => (
             "oteryn:reward-claim.kv.powerbolt2",
             (32814, 32281, -8),
