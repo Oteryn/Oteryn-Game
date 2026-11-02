@@ -2782,7 +2782,9 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
                     "game_character_charm_unlocks".to_owned(),
                     true,
                     true,
-                    false,
+                    // 0785: reset-all deletes every unlock; the deferred trigger proves the
+                    // reset receipt and its exact gold burn.
+                    true,
                     false
                 ),
             ]
