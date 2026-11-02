@@ -109,11 +109,12 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
     // Capability 272 adds live Atelier balances and retains its prerequisite 148.
+    // pkg4 adds 92 (zones_nologout raid messages), 168 (animus mastery) and 274 (loyalty skills).
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
             4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 60, 62, 63,
-            68, 72, 91, 140, 147, 148, 272
+            68, 72, 91, 92, 140, 147, 148, 168, 272, 274
         ]
     );
 }

@@ -53,6 +53,11 @@ impl GameplayIdleState {
         })
     }
 
+    /// Read the existing monotonic source; projections never refresh it.
+    pub(in crate::gameplay_transport) const fn last_activity(&self) -> Option<Instant> {
+        self.since
+    }
+
     pub(super) fn warning_due(&mut self, now: Instant, policy: GameplayIdlePolicy) -> bool {
         if !self.training
             && !self.warned

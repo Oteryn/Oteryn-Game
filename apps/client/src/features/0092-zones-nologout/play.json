@@ -1,0 +1,10 @@
+{
+  "concerns": [
+    "state",
+    "protocol",
+    "view"
+  ],
+  "events": {
+    "ServerMessage": "message"
+  }
+}

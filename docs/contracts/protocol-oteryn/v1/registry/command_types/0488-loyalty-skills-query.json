@@ -1,0 +1,10 @@
+{
+  "id": 488,
+  "name": "LOYALTY_SKILLS_QUERY",
+  "owner_decision": "ANIMUS-LOYALTY-19; Crystal re-audit P13",
+  "capability": 274,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/loyalty-skills-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/loyalty-skills-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 58
+}

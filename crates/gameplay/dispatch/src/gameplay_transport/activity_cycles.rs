@@ -72,6 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut pass = pin!(async {
                 let _ = self.activity_lifecycle_pass().await;
+                let _ = self.publish_activity_raid_presence().await;
                 tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             });
             let mut stopping = pin!(shutdown.cancelled());
