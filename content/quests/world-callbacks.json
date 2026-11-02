@@ -2872,6 +2872,459 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/quests.lua:2819-2828",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:16-17"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-challenge-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32945,
+          "y": 32313,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33101,
+        "y": 32381,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-color-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32942,
+          "y": 32283,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32942,
+        "y": 32288,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-darashia-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32958,
+          "y": 32322,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 4930,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33110,
+        "y": 32387,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_parth_of_defiances_desert/movements_teleportTo.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-falcon-access",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33344,
+          "y": 31348,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_80/the_secret_library/falcon_bastion/access",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/movements_access_storage.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-falcon-anteroom-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33329,
+          "y": 31333,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4920,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33308,
+        "y": 31325,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/movements_boss_entrance.lua:1-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-ghulosh-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32755,
+          "y": 32729,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32664,
+        "y": 32711,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-gorzindel-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32687,
+          "y": 32726,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32662,
+        "y": 32734,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-liquid-ruins-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32881,
+          "y": 32473,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4900,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32871,
+        "y": 32513,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/liquid_death/movements_teleportTo.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-liquid-temple-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33560,
+          "y": 31395,
+          "floor": -13
+        },
+        "unique": null,
+        "action": 4900,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33561,
+        "y": 31391,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/liquid_death/movements_teleportTo.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-lokathmor-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32750,
+          "y": 32696,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32466,
+        "y": 32652,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-main-ascent",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 32601,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32674,
+        "y": 32738,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:7-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-main-descent",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32672,
+          "y": 32736,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32480,
+        "y": 32597,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:1-25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-mazzinor-exit",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32724,
+          "y": 32728,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4950,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32618,
+        "y": 32527,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/library_area/movements_timers.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-museum-last-room",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33344,
+          "y": 32117,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 4907,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33363,
+        "y": 32146,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/movements_teleportTo.lua:49-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/secret-library-svargrond-return",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32119,
+          "y": 31734,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4935,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32127,
+        "y": 31665,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_stepIn.lua:79-82"
+      ]
     }
   ]
 }
