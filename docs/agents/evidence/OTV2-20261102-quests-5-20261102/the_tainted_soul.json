@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "the_tainted_soul",
+    "elements": 3,
+    "auto": 0,
+    "manual": 3,
+    "statuses": {
+      "LEFT_OUT": 3
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Star herb na antlers",
+      "pattern": "P02",
+      "trigger": "item3736 na10297",
+      "condition": "tylko targetitem",
+      "effect": "target10297→22008;zużyj3736×1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_tainted_soul/actions_star_herb.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Holy water na talizman",
+      "pattern": "P02",
+      "trigger": "holywater na22008",
+      "condition": "tylko targetitem w tejgałęzi",
+      "effect": "22008→22009;zużyj1holywater;pełnycallback wspólny z innymiquestami",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:48",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Dalszy quest",
+      "pattern": "P30",
+      "trigger": "NIEZNANE",
+      "condition": "TheTaintedSouls={} w storages; brak dalszych rejestracji22009 w scripts",
+      "effect": "brak określonego postępu/NPC/zakończenia w przypiętym donorze",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2281",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nie znaleziono w przypiętym donorze dalszego przejścia po 22009; nie wymyślono celu, NPC, storage ani nagrody. Global API pozostaje 403.",
+      "missing_owner_function": "Brak źródłowego writera dalszego etapu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433027"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589433027",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}
