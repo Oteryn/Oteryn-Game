@@ -130,12 +130,12 @@ pub use oteryn_session::exiva;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 
-/// Daily reward wall query and claim execution through the admitted session.
-#[path = "features/0182-daily-reward/protocol.rs"]
-pub mod daily_reward;
 /// Personal boss reward commands through the admitted session.
 #[path = "features/0224-boss-rewards/protocol.rs"]
 pub mod boss_rewards;
+/// Daily reward wall query and claim execution through the admitted session.
+#[path = "features/0182-daily-reward/protocol.rs"]
+pub mod daily_reward;
 /// Guild command execution through the admitted session.
 #[path = "features/0040-guild/protocol.rs"]
 pub mod guild;

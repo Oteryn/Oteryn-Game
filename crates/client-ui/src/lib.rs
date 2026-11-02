@@ -46,12 +46,12 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
-/// Daily reward wall and one-click claim controls.
-#[path = "features/0182-daily-reward/mod.rs"]
-pub mod daily_reward;
 /// Personal boss reward browsing and custody collection.
 #[path = "features/0224-boss-rewards/mod.rs"]
 pub mod boss_rewards;
+/// Daily reward wall and one-click claim controls.
+#[path = "features/0182-daily-reward/mod.rs"]
+pub mod daily_reward;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;
