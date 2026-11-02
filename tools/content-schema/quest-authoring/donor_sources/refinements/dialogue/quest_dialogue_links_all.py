@@ -1,6 +1,11 @@
 """Bounded exact Quest-progress-to-Source-dialogue joins; never runtime admission."""
 import argparse, base64, gzip, hashlib, importlib.util, json, tarfile
 from pathlib import Path
+import sys
+_AUTHORING = Path(__file__).resolve().parents[3]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip
 QUESTS = ['oteryn:quest.a_father_s_burden_quest','oteryn:quest.the_djinn_war_efreet_faction','oteryn:quest.threatened_dreams_quest','oteryn:quest.tibia_tales']
 def stable(x):return json.dumps(x,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()
 def sha(b):return hashlib.sha256(b).hexdigest()
@@ -259,5 +264,5 @@ def qualify(packet,corpus_manifest,ast_root,repo_root,all_source_quests=False):
 def main():
     p=argparse.ArgumentParser()
     for k in ('corpus-manifest','ast-root','repo-root','out'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--all-source-quests',action='store_true');a=p.parse_args();out=build(a.corpus_manifest,a.ast_root,a.repo_root,a.all_source_quests);raw=stable(out)+b'\n';a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_bytes(gzip.compress(raw,mtime=0) if a.out.suffix=='.gz' else raw);print(json.dumps(out['summary']))
+    p.add_argument('--all-source-quests',action='store_true');a=p.parse_args();out=build(a.corpus_manifest,a.ast_root,a.repo_root,a.all_source_quests);raw=stable(out)+b'\n';a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_bytes(stable_gzip(raw) if a.out.suffix=='.gz' else raw);print(json.dumps(out['summary']))
 if __name__=='__main__':main()

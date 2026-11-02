@@ -4,13 +4,15 @@ Existing lexical masking is reused; full donor bytes remain authoritative.
 Literal argument syntax is a candidate fact, not recipient/charge/count semantics.
 """
 import argparse
-import gzip
-import io
 import hashlib
 import json
 from pathlib import Path
 import re
 import sys
+_AUTHORING = Path(__file__).resolve().parents[1]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip
 
 METHODS = {'addItem': 'reward_call', 'addItemEx': 'reward_call', 'createItem': 'item_constructor',
  'createItemEx': 'item_constructor', 'doPlayerAddItem': 'reward_call', 'doPlayerAddItemEx': 'reward_call',
@@ -129,11 +131,7 @@ def main():
       'summary':{'files_checked':len(inventory),'components_captured':len(components),'semantic_decoded':0,'native_bound':0}}
     packet['summary']['semantic_scope']='No expression semantic or Native qualification performed by this lexical capture; zero counts do not measure existing server implementation.'
     args.out.parent.mkdir(parents=True,exist_ok=True);raw=(json.dumps(packet,ensure_ascii=True,indent=2)+'\n').encode()
-    if args.out.suffix=='.gz':
-        out=io.BytesIO()
-        with gzip.GzipFile(fileobj=out,mode='wb',filename='',mtime=0,compresslevel=9)as stream:stream.write(raw)
-        args.out.write_bytes(out.getvalue())
-    else:args.out.write_bytes(raw)
+    args.out.write_bytes(stable_gzip(raw) if args.out.suffix=='.gz' else raw)
     print(packet['summary'])
 
 

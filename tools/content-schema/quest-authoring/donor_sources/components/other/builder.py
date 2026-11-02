@@ -4,8 +4,14 @@ import base64
 import gzip
 import hashlib
 import json
+import sys
 import tarfile
 from pathlib import Path
+
+_AUTHORING = Path(__file__).resolve().parents[3]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip  # noqa: E402
 
 SCHEMA = 'OTERYN_QUEST_SOURCE_OTHER_COMPONENTS/v1'
 CONTROL = {'If', 'ElseIf', 'While', 'Repeat', 'Fornum', 'Forin', 'Do', 'Return', 'Break', 'Goto', 'Label'}
@@ -182,7 +188,7 @@ def main():
     data = build(args.assignment, args.corpus_manifest, args.ast_root)
     encoded = (json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode()
     path = Path(args.out); path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(gzip.compress(encoded, mtime=0) if path.suffix == '.gz' else encoded)
+    path.write_bytes(stable_gzip(encoded) if path.suffix == '.gz' else encoded)
     print(json.dumps(data['summary'], sort_keys=True))
 
 if __name__ == '__main__': main()

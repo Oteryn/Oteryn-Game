@@ -581,7 +581,7 @@
     },
     {
       "path": "dialogue.json.gz",
-      "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+      "sha256": "f6793b8061c3e704df23d75022fd21a330b9c5a737373009c4be14a2ecdd96ae"
     }
   ],
   "schema": "OTERYN_QUEST_DONOR_REFINEMENT_COVERAGE/v1",

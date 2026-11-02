@@ -10,6 +10,7 @@ import tarfile
 import tempfile
 
 import jsonschema
+from donor_sources.stable_gzip import stable_gzip
 from donor_sources.validate_archive import verify_archive
 
 DIRECTORY = 'tools/content-schema/quest-authoring/samples/donor-source/components248'
@@ -26,7 +27,7 @@ def read(path):
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     raw = (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + '\n').encode()
-    path.write_bytes(gzip.compress(raw, mtime=0) if path.suffix == '.gz' else raw)
+    path.write_bytes(stable_gzip(raw) if path.suffix == '.gz' else raw)
 
 
 def partition(records):

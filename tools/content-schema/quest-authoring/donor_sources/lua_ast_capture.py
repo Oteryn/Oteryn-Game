@@ -3,6 +3,11 @@ from __future__ import annotations
 import argparse, base64, concurrent.futures, contextlib, enum, gzip, hashlib, io, json
 from collections import Counter
 from pathlib import Path
+import sys
+_AUTHORING = Path(__file__).resolve().parents[1]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from luaparser import ast
@@ -56,7 +61,7 @@ def process(args):
     if hashlib.sha256(raw).hexdigest()!=sha: raise ValueError('SOURCE_HASH_MISMATCH '+path)
     result=capture(raw)
     payload=json.dumps(result,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
-    target=Path(out_dir)/f'{sha}.json.gz'; container=gzip.compress(payload+b'\n',compresslevel=6,mtime=0); target.write_bytes(container)
+    target=Path(out_dir)/f'{sha}.json.gz'; container=stable_gzip(payload+b'\n',level=6); target.write_bytes(container)
     return {'sha256':sha,'capture_sha256':hashlib.sha256(payload+b'\n').hexdigest(),'status':result['status'],'token_count':len(result['tokens']),'diagnostics':result['diagnostics'],'capture_path':str(target),'container_sha256':hashlib.sha256(container).hexdigest(),'compression':'gzip-mtime0-level6'}
 
 def is_lua_source(path):

@@ -6,7 +6,13 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 import tarfile
+
+_AUTHORING = Path(__file__).resolve().parents[3]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip  # noqa: E402
 
 
 def digest(raw):
@@ -258,7 +264,7 @@ def main():
     packet = build(json.loads(args.assignment.read_text()), args.corpus_manifest, args.ast_root)
     encoded = (json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_bytes(gzip.compress(encoded, mtime=0) if args.out.suffix == '.gz' else encoded)
+    args.out.write_bytes(stable_gzip(encoded) if args.out.suffix == '.gz' else encoded)
     print(json.dumps(packet['summary'], sort_keys=True))
 
 

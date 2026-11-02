@@ -1,6 +1,11 @@
 """Pinned AST-derived dialogue supplement; no Lua execution or native admission."""
 import argparse, base64, gzip, hashlib, json, tarfile
 from pathlib import Path
+import sys
+_AUTHORING = Path(__file__).resolve().parents[3]
+if str(_AUTHORING) not in sys.path:
+    sys.path.insert(0, str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip
 PINS = {"canary":"04b83b512114bfd888000d6e1433ed8ecaec7c5b", "crystalserver":"9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"}
 FILES = {"tereban.lua", "tereban_functions.lua", "alesar.lua", "alesar_functions.lua", "captain_haba.lua", "captain_haba_open_sea.lua"}
 def digest(b): return hashlib.sha256(b).hexdigest()
@@ -168,5 +173,5 @@ def qualify(packet,corpus_manifest,ast_root,repo_root):
     return expected["summary"]
 def main():
     p=argparse.ArgumentParser(); p.add_argument("--corpus-manifest",type=Path,required=True);p.add_argument("--ast-root",type=Path,required=True);p.add_argument("--repo-root",type=Path,required=True);p.add_argument("--out",type=Path,required=True); a=p.parse_args()
-    data=build(a.corpus_manifest,a.ast_root,a.repo_root);a.out.parent.mkdir(parents=True,exist_ok=True);payload=stable(data)+b"\n"; a.out.write_bytes(gzip.compress(payload,mtime=0) if a.out.suffix==".gz" else payload); print(json.dumps(data["summary"]))
+    data=build(a.corpus_manifest,a.ast_root,a.repo_root);a.out.parent.mkdir(parents=True,exist_ok=True);payload=stable(data)+b"\n"; a.out.write_bytes(stable_gzip(payload) if a.out.suffix==".gz" else payload); print(json.dumps(data["summary"]))
 if __name__=="__main__": main()

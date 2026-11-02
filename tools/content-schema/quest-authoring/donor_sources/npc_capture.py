@@ -1,5 +1,8 @@
 """Lossless pinned NPC/helper source capture. No networking or Lua execution."""
-import argparse,collections,gzip,hashlib,json,pathlib,re
+import argparse,collections,hashlib,json,pathlib,re,sys
+_AUTHORING=pathlib.Path(__file__).resolve().parents[1]
+if str(_AUTHORING) not in sys.path:sys.path.insert(0,str(_AUTHORING))
+from donor_sources.stable_gzip import stable_gzip
 SCHEMA='OTERYN_QUEST_DONOR_DIALOGUE_CAPTURE/v1'
 PINS={'canary':('opentibiabr/canary','04b83b512114bfd888000d6e1433ed8ecaec7c5b'),'crystalserver':('zimbadev/crystalserver','9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d')}
 def sha(b):return hashlib.sha256(b).hexdigest()
@@ -110,7 +113,7 @@ def main():
  ap=argparse.ArgumentParser();ap.add_argument('--reference-engine',type=pathlib.Path);ap.add_argument('--crystalserver',type=pathlib.Path);ap.add_argument('--corpus-manifest',type=pathlib.Path);ap.add_argument('--repo-root',type=pathlib.Path);ap.add_argument('--out',type=pathlib.Path,required=True);ap.add_argument('--summary-out',type=pathlib.Path);a=ap.parse_args()
  if not a.corpus_manifest and not (a.reference_engine and a.crystalserver):ap.error('Supply corpus manifest or both donor roots')
  packet=build({'canary':a.reference_engine,'crystalserver':a.crystalserver} if not a.corpus_manifest else {},a.repo_root,a.corpus_manifest);a.out.parent.mkdir(parents=True,exist_ok=True);payload=(json.dumps(packet,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n').encode()
- encoded=gzip.compress(payload,mtime=0) if a.out.suffix=='.gz' else payload;a.out.write_bytes(encoded)
+ encoded=stable_gzip(payload) if a.out.suffix=='.gz' else payload;a.out.write_bytes(encoded)
  if a.summary_out:
   summary={'schema':SCHEMA+'/index','capture_artifact':{'path':a.out.name,'sha256':sha(encoded),'encoding':'gzip' if a.out.suffix=='.gz' else 'json'},'summary':packet['summary'],'donor_pins':packet['donor_pins'],'corpus_manifest_sha256':sha(a.corpus_manifest.read_bytes()) if a.corpus_manifest else None}
   a.summary_out.write_text(json.dumps(summary,ensure_ascii=False,sort_keys=True,indent=2)+'\n')
