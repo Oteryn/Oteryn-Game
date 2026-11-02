@@ -2723,6 +2723,114 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35005",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35005,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33234,
+        "y": 32278,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35006",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35006,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33162,
+        "y": 31320,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35007",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35007,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33002,
+        "y": 31595,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35008",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35008,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32278,
+        "y": 31367,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
     }
   ]
 }
