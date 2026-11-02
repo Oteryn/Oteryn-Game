@@ -2267,6 +2267,611 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_secret_wall.lua:3"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-1",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40032,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-2",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40033,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-3",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40034,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign3",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-4",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40035,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign4",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-5",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40036,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign5",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-6",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40037,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign6",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-7",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40038,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign7",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-diprath-sign-8",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40039,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign8",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_dipthrah_signs_doors.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-mahrdis-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40084,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33190,
+        "y": 32947,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/mahrdis_treasure",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_mahrdis_room.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-1",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50139,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-2",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50140,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-3",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50141,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-4",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50142,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage4",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-5",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50143,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage5",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-6",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50144,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage6",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-flame-7",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50145,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage7",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 50146,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33163,
+        "y": 32694,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_blue_flame_storage7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:27",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_step_morguthis_blue_flames.lua:41-45",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/quests.lua:2819-2828",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:16-17"
+      ]
     }
   ]
 }
