@@ -26,17 +26,19 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/grizzly_shop_profiles.py. All have speed_bonus=0.
     // Twelve are already admitted by main's Task Board cohort; count each key once.
     ("GRIZZLY-SHOP", 41),
-    // E12 captures 1425 bound Hireling items from Crystal 201189f; 516 reuse
-    // main 149bf364f profiles and 909 are new (hireling-item-profiles.json).
-    // Main has 2210 profiles; its union with the draft's 2104 is exactly 3119.
-    // The merge adds 381 shared keys, counted once by their main cohorts.
+    // E12 captures 1425 bound Hireling items from Crystal 201189f.
+    // Counted by production_definition.production_key against main d78ed6d6's
+    // 2372 profiles: 564 already exist and 861 are new (hireling-item-profiles.json).
+    // The old 909 count predates main's newer overlapping owner cohorts.
     // The native importer preserves shared attributes/richer ability facts;
     // every raw speed and the exact unknown-speed set remain checked below.
-    ("HIRELING-E12", 909),
-    // Package 2's monster-AI/hireling/primal-hazard derived-content regeneration
-    // (ab265074) was unioned with main's newer item overlay during the port. That intended
-    // union contributes 288 additional raw profiles; their attributes are checked below.
-    ("PKG2-CONTENT-UNION", 288),
+    ("HIRELING-E12", 861),
+    // Count event-item-profiles.json's 328 production_definition.production_key values
+    // minus the union of main d78ed6d6 and Hireling keys: 44 overlap, 284 are new.
+    // The old 288 count from 3ae3372a5 predates the merged chest/shop overlap.
+    // The exact source-key union is 2372 + 861 + 284 = 3517; no main key is missing.
+    // Every raw speed and the exact unknown-speed set remain checked below.
+    ("PKG2-CONTENT-UNION", 284),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I05 skill rings: the inactive and active power 3050/3087, sword 3091/3094, axe 3092/3095

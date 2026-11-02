@@ -5,6 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 
 import writable_item_profiles as writing
+import timed_item_profiles as timed
 
 SOURCE = 'imports/canary/items-xml/items.xml'
 SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -71,6 +72,12 @@ def complete_native_stack(root, record, definition, binding):
     # their known facts, but do not lose the canonical food/potion, protection
     # or trade policy merely because the physical Item was admitted first.
     for group, fact in grant_semantics(root, definition).items():
+        # I05/TIMED owns these ability groups, including deliberately UNKNOWN
+        # inactive forms. Filling them from canonical chest facts would add the
+        # inactive bonus to the active form's bonus when the ring is worn.
+        if group == 'skill_modifiers' and identity['key'] in {
+                f'oteryn:item.tibia.i{number}' for number in timed.IDS}:
+            continue
         if (fact.get('state') == 'KNOWN'
                 and semantics.get(group, {'state': 'UNKNOWN'}).get('state')
                 in ('UNKNOWN', 'NOT_APPLICABLE')):

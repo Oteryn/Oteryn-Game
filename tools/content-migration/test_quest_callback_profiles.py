@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_callback_profiles as profiles
+import timed_item_profiles as timed
 import writable_item_profiles as writing
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -108,6 +109,27 @@ class QuestCallbackProfiles(unittest.TestCase):
             key = f'oteryn:item.tibia.i{number}'
             with self.subTest(key=key):
                 self.assertEqual(rows[key]['semantics']['consumption']['state'], 'KNOWN')
+
+    def test_chest_children_preserve_timed_ring_ability_ownership(self):
+        generated = {PROFILE: b'{"records":[]}',
+                     MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
+        timed.admit(ROOT, generated, PROFILE, MANIFEST,
+                    lambda r: r['production_definition']['production_key'],
+                    lambda v: json.dumps(v, sort_keys=True).encode())
+        timed_rows = {r['production_definition']['production_key']: r
+                      for r in json.loads(generated[PROFILE])['records']}
+        for i, row in enumerate(self.document['records']):
+            key = row['production_definition']['production_key']
+            if key in timed_rows:
+                self.document['records'][i] = copy.deepcopy(timed_rows[key])
+        self.generated[PROFILE] = json.dumps(self.document).encode()
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        for key, expected in timed_rows.items():
+            with self.subTest(key=key):
+                self.assertEqual(rows[key]['semantics']['skill_modifiers'],
+                                 expected['semantics']['skill_modifiers'])
 
     def test_unadmitted_replacement_refuses_instead_of_manufacturing_a_profile(self):
         callback = next(c for c in self.callbacks['callbacks'] if c.get('item_on_target'))
