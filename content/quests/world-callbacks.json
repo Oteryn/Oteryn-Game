@@ -2446,6 +2446,36 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:15"
       ],
       "success_message": "Documents were burnt here recently. Only the part of one scroll still lies in front of the chimney but it's too sooted to read."
+    },
+    {
+      "key": "oteryn:quest-callback/krailos-depot-entrance",
+      "quest": "oteryn:quest.krailos_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 19049,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33657,
+        "y": 31658,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:21"
+      ]
     }
   ]
 }

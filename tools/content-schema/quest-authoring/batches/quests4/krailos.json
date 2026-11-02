@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "quest_directory": "krailos",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/krailos-depot-entrance",
+      "quest": "oteryn:quest.krailos_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 19049,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33657,
+        "y": 31658,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:21"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "krailos",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Wejście do depozytu",
+      "patterns": "P03",
+      "trigger": "StepIn AID19049",
+      "condition": "creature jest graczem; brak gate questowego",
+      "effect": "Teleport33657,31658,8",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Pozostały przebieg Krailos",
+      "patterns": "P09",
+      "trigger": "NPC/misje NIEZNANE",
+      "condition": "Storage.Quest.U10_90.Krailos jest puste; katalog ma1skrypt",
+      "effect": "Nie wywodzić całego questa z jednego portalu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2365"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}
