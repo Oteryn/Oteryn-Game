@@ -110,17 +110,14 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     // and healing 3098 -> 3100 need regeneration; neither effect is production-ready.
     for base in [3049, 3052, 3098] {
         let definition = typed_of(native, base);
-        // W15b admits the base stealth/life rings as chest rewards. Their
-        // unqualified active forms remain unavailable: wearing keeps the base.
+        // W15b admits the base stealth/life rings as chest rewards and E12 (915cc3787) admits
+        // the base healing ring as Trader stock. E12 also closes their equipment path until
+        // invisibility/regeneration are hosted (`unhosted_equipment_effect`, pinned by
+        // `i05_trader_custody_keeps_unhosted_ring_equipment_closed`), so no worn form exists.
         let equipped = definition
             .as_ref()
             .and_then(|definition| equipped_definition(native, definition));
-        if matches!(base, 3049 | 3052) {
-            let definition = definition.as_ref().expect("W15b base ring reward");
-            assert_eq!(equipped.as_ref(), Some(definition), "{base}");
-        } else {
-            assert!(equipped.is_none(), "{base}");
-        }
+        assert!(equipped.is_none(), "{base}");
         assert!(
             definition
                 .as_ref()
