@@ -60,6 +60,7 @@ enum Step {
     /// and drop the stream before the rest is in the pipe.
     SendTogether(Vec<Vec<u8>>),
     ReadCommand,
+    Delay(Duration),
 }
 
 /// Joins (core domains only, no selected capability) and plays `script`, then holds the
@@ -95,6 +96,7 @@ async fn play_step(server: &mut DuplexStream, step: Step) -> Result<(), BoxError
         Step::ReadCommand => {
             read_frame(server).await?;
         }
+        Step::Delay(duration) => tokio::time::sleep(duration).await,
     }
     Ok(())
 }
@@ -105,12 +107,31 @@ fn together(steps: Vec<Step>) -> Result<Step, BoxError> {
         .into_iter()
         .map(|step| match step {
             Step::Send(frame) => Ok(frame),
-            Step::SendTogether(_) | Step::ReadCommand => {
+            Step::SendTogether(_) | Step::ReadCommand | Step::Delay(_) => {
                 Err("only Send steps can be joined".into())
             }
         })
         .collect::<Result<Vec<_>, BoxError>>()
         .map(Step::SendTogether)
+}
+
+#[test]
+fn event_wait_ignores_empty_idle_windows_until_the_overlay_delta_arrives() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, peer) = script_peer(vec![
+            Step::Delay(Duration::from_millis(300)),
+            overlay_push(41, 2, 3)?,
+        ]);
+        let mut session = Session::admit(client, admission()?).await?;
+        let events = session.wait_for_events(Duration::from_secs(1)).await?;
+        assert!(matches!(
+            events.as_slice(),
+            [SessionEvent::WorldObjectOverlay(delta)] if delta.new_revision == 3
+        ));
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
 }
 
 fn result_frame(sequence: u64, id: u64, disposition: StepDisposition) -> Result<Step, BoxError> {
