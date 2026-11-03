@@ -1,0 +1,531 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_way_of_the_monk_quest",
+  "runtime_enabled": false,
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+  "npc_owner_question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211",
+  "purpose": "Pinned full dialogue and atomic native branches held for an approved owner; not a second NPC handler.",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.ambassador_manop",
+      "fragments": [
+        {
+          "line": 86,
+          "literal_parts": [
+            "May the Three-Fold Path guide your steps."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:86"
+        },
+        {
+          "line": 94,
+          "literal_parts": [
+            "I welcome you, traveller of fate's unsearchable roads. On behalf of the {Merudri}, let this be an invitation from a humble guide along the way of enlightenment."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:94"
+        },
+        {
+          "line": 97,
+          "literal_parts": [
+            "Congratulations, fortunate {seeker}. You are one step closer to becoming a true warrior {monk} and ready to leave this island. Let me hold you on your path."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:97"
+        },
+        {
+          "line": 100,
+          "literal_parts": [
+            "I am glad you take your acquaintance, {seeker}. You must have a lot of questions for which I would gladly prove answers. If you are interested in joining us as a true warrior {monk}, just ask."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:100"
+        },
+        {
+          "line": 107,
+          "literal_parts": [
+            "I am a {Merudri} ambassador. Sent from the heart of the {Blue Valley} I am stationed here to {guide} seekers on our path and {pilgrimage}.",
+            "I have introduced myself as a guide: take my advice or choose a different path, you have every choice and every choice is yours. I can also provide assistance with magic {spells} for monks."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:107"
+        },
+        {
+          "line": 115,
+          "literal_parts": [
+            "We are Merudri, warrior monks. Honing serenity, preserving our legacy, defending the {Blue Valley} and beyond."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:115"
+        },
+        {
+          "line": 120,
+          "literal_parts": [
+            "The Blue Valley is our ancestral home and heart of the {Merudri} culture, or what is left of it. Our ancestors from the Valley have long been separated from the true home of the {Merudri}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:120"
+        },
+        {
+          "line": 125,
+          "literal_parts": [
+            "I am here to communicate the ways and customs of the {Merudri} on our path to serenity. Please let me know if you are interested in our {pilgrimage}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:125"
+        },
+        {
+          "line": 130,
+          "literal_parts": [
+            "Look for the four shrines around the outpost and return to me after you have honoured the Merudri."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:130"
+        },
+        {
+          "line": 135,
+          "literal_parts": [
+            "Harmony, enlightenment and power are the keys and control is the door to true serenity."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:135"
+        },
+        {
+          "line": 140,
+          "literal_parts": [
+            "This place has been the starting point for many generations of heroes. Try to focus on learning the basics here and return to me once you found our {shrines} and are experienced enough to take on the {pilgrimage}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:140"
+        },
+        {
+          "line": 145,
+          "literal_parts": [
+            "The shrines you can find here are part of the Three-Fold Path. They are the first stage of this {pilgrimage} that every {monk} must undertake."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:145"
+        },
+        {
+          "line": 150,
+          "literal_parts": [
+            "Our Enpa is guiding us, a keeper of our {legacy} and spirituality. You will meet Enpa Rudra once you take on the pilgrimage."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:150"
+        },
+        {
+          "line": 155,
+          "literal_parts": [
+            "The pilgrimage is the sacred Three-Fold Path every {monk} must go. Are you familiar with the {Merudri} ways of the {monks}?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:155"
+        },
+        {
+          "line": 160,
+          "literal_parts": [
+            "Your path has led you to an ambassador of the Merudri. I am Manop and will do my best to explain you our {purpose}, legacy and role in it. Shall I continue?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:160"
+        },
+        {
+          "line": 166,
+          "literal_parts": [
+            "I am glad you take your acquaintance, {seeker}. You must have a lot of questions for which I would gladly prove answers. If you are interested in joining us as a true warrior {monk}, just ask."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:166"
+        },
+        {
+          "line": 179,
+          "literal_parts": [
+            "Like an orphan, fate has put your soul gently on the doorstep of a new world. You will view this reality with different eyes.",
+            "You will change your ways to adapt as you follow the Three-Fold Path. It has guided the most powerful warriors across countless planes of existence to a higher state of consciousness.",
+            "If you accept, I will send you to our temple in the Blue Valley as a MONK."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:179"
+        },
+        {
+          "line": 186,
+          "literal_parts": [
+            "Look for one of our shrines around the outpost and return to me after you have honoured the Merudri."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:186"
+        },
+        {
+          "line": 188,
+          "literal_parts": [
+            "You have honoured one shrine, seeker. There are three more waiting for you around the outpost. Keep walking the path."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:188"
+        },
+        {
+          "line": 190,
+          "literal_parts": [
+            "Two shrines honoured, seeker. You are halfway there. Do not stop now."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:190"
+        },
+        {
+          "line": 192,
+          "literal_parts": [
+            "Three shrines honoured, seeker. One remains. Find it and return to me."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:192"
+        },
+        {
+          "line": 199,
+          "literal_parts": [
+            "You need to reach at least level 8 before you can become a monk."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:199"
+        },
+        {
+          "line": 213,
+          "literal_parts": [
+            "You are now a pilgrim on the Three-Fold Path. Welcome to the Blue Valley, Seeker."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:213"
+        }
+      ],
+      "source_sha256": "3b1bd3db14c3a19b93f6017f457388eefa75ec31ee1c8ace3f6d43c79cd70cb8"
+    },
+    {
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "fragments": [
+        {
+          "line": 73,
+          "literal_parts": [
+            "Every warrior monk takes the three-fold path at least once. It is difficult but necessary. You may now visit the shrines to honor the Merudri legacy."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:73"
+        },
+        {
+          "line": 80,
+          "literal_parts": [
+            "You have honored our legacy! On behalf of all Merudri, I thank you, venerable traveler."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:80"
+        },
+        {
+          "line": 95,
+          "literal_parts": [
+            "You have already completed the pilgrimage and honored our legacy."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:95"
+        },
+        {
+          "line": 98,
+          "literal_parts": [
+            "Your pilgrimage is incomplete. You must visit all sacred shrines across Tibia to prove your dedication."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:98"
+        },
+        {
+          "line": 143,
+          "literal_parts": [
+            "Harmony, friend. Allow me to welcome you in the {Blue Valley}. I offer guidance for the {pilgrimage} and can provide {healing}. Or can I help you otherwise?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:143"
+        },
+        {
+          "line": 145,
+          "literal_parts": [
+            "May your path remain clear."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:145"
+        }
+      ],
+      "source_sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5"
+    }
+  ],
+  "blocked_branches": [
+    {
+      "key": "manop-vocation-change",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 8
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_town",
+          "source_id": 32
+        },
+        {
+          "kind": "set_vocation",
+          "source_id": 9
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33614,
+            "y": 31494,
+            "floor": -7
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i50257",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i50195",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i50171",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questlog",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You are now a pilgrim on the Three-Fold Path. Welcome to the Blue Valley, Seeker."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:198",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:202",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:203",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:204",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:206",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:209",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:211",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:213"
+      ],
+      "donor_bug_fix_question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102441",
+      "left_out": "Vocation/town/teleport/items must commit through an approved existing composite owner; no partial state or reward and no new owner in this batch."
+    },
+    {
+      "key": "pema-completion",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questlog",
+          "value": 4
+        },
+        {
+          "kind": "quest_kv_set",
+          "scope": "the_way_of_the_monk_quest",
+          "key": "boolPointsWheel",
+          "value": true
+        },
+        {
+          "kind": "conditional_title",
+          "name": "Pensive Wanderer",
+          "when": "title exists and id != 0"
+        },
+        {
+          "kind": "achievement",
+          "name": "Hope of the Merudri"
+        }
+      ],
+      "reply": [
+        "You have honored our legacy! On behalf of all Merudri, I thank you, venerable traveler."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:61",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:79",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:81",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:83",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:90"
+      ],
+      "left_out": "Existing qualified native final-report/Wheel/title owner is retained; this capture is not a second completion handler."
+    },
+    {
+      "key": "pema-already-completed",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "op": "ge",
+          "value": 4
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "quest_kv_set_if_absent",
+          "scope": "the_way_of_the_monk_quest",
+          "key": "boolPointsWheel",
+          "value": true
+        }
+      ],
+      "reply": [
+        "You have already completed the pilgrimage and honored our legacy."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:91",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:92",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:93",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:95"
+      ],
+      "left_out": "Do not overwrite or mirror the already qualified final-report/Wheel grant."
+    }
+  ],
+  "notes": [
+    "The complete scoped source dialogue is retained, including held branches; healing and shop features have separate existing owners.",
+    "Mainland shrine admission stays at the existing qualified threshold 3; this batch does not change shrine rewards or stored zero defaults.",
+    "Manop confirmation questKV scope repair is an explicit donor bug fix; two matching KV/legacy aliases produce two logical track writes.",
+    "New generic NPC source plans have no approved durable caller. Existing native Monk invitation/start/finish remains the active owner."
+  ]
+}
