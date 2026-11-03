@@ -55,31 +55,20 @@ pub(super) async fn resume_session(
     }
     evidence("resume unsupported_recovery=refused_recovery_capability_required admissions=2");
     let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
-    // Do not pipeline replacement input ahead of ServerResumeAccepted and its snapshot. A slow
-    // owner may still be completing PREPARE; sending the deliberate gap in the same TCP write
-    // lets it win the setup/result writes and turns the qualification into a transport race.
-    let segments = [
-        (0, framed(&resume(&session, token.as_bytes()))),
-        (
-            4,
-            framed(&client_command_at(
-                2,
-                7,
-                step,
-                &encode_step_intent(StepDirection::East),
-            )),
-        ),
-        (
-            6,
-            framed(&client_command_at(
-                2,
-                9,
-                step,
-                &encode_step_intent(StepDirection::East),
-            )),
-        ),
-    ];
-    let reply = exchange_must_close_paced(address, exact, &segments).await?;
+    let mut raw = framed(&resume(&session, token.as_bytes()));
+    raw.extend_from_slice(&framed(&client_command_at(
+        2,
+        7,
+        step,
+        &encode_step_intent(StepDirection::East),
+    )));
+    raw.extend_from_slice(&framed(&client_command_at(
+        2,
+        9,
+        step,
+        &encode_step_intent(StepDirection::East),
+    )));
+    let reply = exchange_must_close(address, exact, &raw).await?;
     let expected = resume_frames(
         WorldId::decode(&world)?,
         &session,
@@ -156,28 +145,20 @@ pub(super) async fn resumed_loss_and_expiry(
         now_seconds()?,
         [0x5f; 32],
     );
-    let segments = [
-        (0, framed(&resume(&session, token.as_bytes()))),
-        (
-            4,
-            framed(&client_command_at(
-                3,
-                8,
-                step,
-                &encode_step_intent(StepDirection::West),
-            )),
-        ),
-        (
-            6,
-            framed(&client_command_at(
-                3,
-                10,
-                step,
-                &encode_step_intent(StepDirection::West),
-            )),
-        ),
-    ];
-    let reply = exchange_must_close_paced(address, exact, &segments).await?;
+    let mut raw = framed(&resume(&session, token.as_bytes()));
+    raw.extend_from_slice(&framed(&client_command_at(
+        3,
+        8,
+        step,
+        &encode_step_intent(StepDirection::West),
+    )));
+    raw.extend_from_slice(&framed(&client_command_at(
+        3,
+        10,
+        step,
+        &encode_step_intent(StepDirection::West),
+    )));
+    let reply = exchange_must_close(address, exact, &raw).await?;
     let expected = resume_frames(
         WorldId::decode(&world)?,
         &session,
