@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.serpentine_tower_quest",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/serpentine-tower-torch",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5632,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33151,
+            "y": 32866,
+            "floor": -8
+          },
+          "appearance": 1345,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:2-13"
+      ]
+    }
+  ]
+}
