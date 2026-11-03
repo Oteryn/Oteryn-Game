@@ -184,7 +184,9 @@ fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() 
             .await
             .map_err(debug)?;
         assert!(active.iter().any(|row| row.placement == b"test-ground"));
-        sqlx::query("UPDATE game_item_fluid_splashes SET expires_at=clock_timestamp()-interval '1 second' WHERE transaction_id=encode($1,'hex')::uuid")
+        // Age the splash past its lifetime. Both stamps move together because the table
+        // requires expires_at = created_at + 10 seconds.
+        sqlx::query("UPDATE game_item_fluid_splashes SET created_at=created_at-interval '11 seconds',expires_at=expires_at-interval '11 seconds' WHERE transaction_id=encode($1,'hex')::uuid")
             .bind(id(174).as_slice()).execute(&used.harness.pool).await?;
         // A map/object read filters an expired object but never writes. The periodic Channel
         // tick below is the durable decay owner.
