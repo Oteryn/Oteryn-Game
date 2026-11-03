@@ -2029,7 +2029,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Citizen outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2043,7 +2045,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Citizen outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2057,7 +2061,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Hunter outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2071,7 +2077,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Hunter outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2085,7 +2093,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Mage outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2099,7 +2109,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Mage outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2113,7 +2125,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Knight outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2127,7 +2141,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Knight outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2141,7 +2157,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Nobleman outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2155,7 +2173,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Nobleman outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2169,7 +2189,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Summoner outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2183,7 +2205,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Summoner outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2197,7 +2221,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Warrior outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2211,7 +2237,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Warrior outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2225,7 +2253,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Barbarian outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2239,7 +2269,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Barbarian outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2253,7 +2285,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Druid outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2267,7 +2301,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Druid outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2281,7 +2317,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wizard outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2295,7 +2333,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wizard outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2309,7 +2349,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Oriental outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2323,7 +2365,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Oriental outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2337,7 +2381,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Pirate outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2351,7 +2397,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Pirate outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2365,7 +2413,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Assassin outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2379,7 +2429,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Assassin outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2393,7 +2445,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Beggar outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2407,7 +2461,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Beggar outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2421,7 +2477,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Shaman outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2435,7 +2493,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Shaman outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2449,7 +2509,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Norseman outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2463,7 +2525,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Norseman outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2477,7 +2541,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Nightmare outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2491,7 +2557,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Nightmare outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2505,7 +2573,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Jester outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2519,7 +2589,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Jester outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2533,7 +2605,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Brotherhood outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2547,7 +2621,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Brotherhood outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2561,7 +2637,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Demonhunter outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2575,7 +2653,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Demonhunter outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2589,7 +2669,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Yalaharian outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2603,7 +2685,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Yalaharian outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2617,7 +2701,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wayfarer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2631,7 +2717,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wayfarer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2645,7 +2733,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Warmaster outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2659,7 +2749,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Warmaster outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2673,7 +2765,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wedding outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2687,7 +2781,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Wedding outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2701,7 +2797,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Afflicted outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2715,7 +2813,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Afflicted outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2729,7 +2829,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Elementalist outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2743,7 +2845,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Elementalist outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2757,7 +2861,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Deepling outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2771,7 +2877,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Deepling outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2785,7 +2893,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Insectoid outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2799,7 +2909,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Insectoid outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2813,7 +2925,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Entrepreneur outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2827,7 +2941,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Entrepreneur outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2841,7 +2957,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Crystal Warlord outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2855,7 +2973,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Crystal Warlord outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2869,7 +2989,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Soil Guardian outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2883,7 +3005,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Soil Guardian outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2897,7 +3021,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Demon outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2911,7 +3037,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Demon outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2925,7 +3053,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Cave Explorer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2939,7 +3069,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Cave Explorer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2953,7 +3085,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Dream Warden outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2967,7 +3101,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Dream Warden outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2981,7 +3117,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Glooth Engineer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -2995,7 +3133,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Glooth Engineer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3009,7 +3149,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Jungle Explorer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3023,7 +3165,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Jungle Explorer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3037,7 +3181,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Chaos Acolyte outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3051,7 +3197,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Chaos Acolyte outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3065,7 +3213,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Death Herald outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3079,7 +3229,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Death Herald outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3093,7 +3245,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Ranger outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3107,7 +3261,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Ranger outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3121,7 +3277,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Ceremonial Garb outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3135,7 +3293,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Ceremonial Garb outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3149,7 +3309,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Puppeteer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3163,7 +3325,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Puppeteer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3177,7 +3341,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Spirit Caller outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3191,7 +3357,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Spirit Caller outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3205,7 +3373,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Evoker outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3219,7 +3389,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Evoker outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3233,7 +3405,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Conjurer outfit with addon 1!",
+          "owned_feedback": "You already have this outfit with this addon."
         },
         {
           "grants": [
@@ -3247,7 +3421,9 @@
               "binding": "canary.appearance:effect/gift_wraps",
               "effect_id": 28
             }
-          ]
+          ],
+          "feedback": "You received the Conjurer outfit with addon 2!",
+          "owned_feedback": "You already have this outfit with this addon."
         }
       ]
     },
@@ -4290,7 +4466,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Fire War Horse!",
+          "owned_feedback": "You already own the store mount: Fire War Horse."
         },
         {
           "grants": [
@@ -4303,7 +4481,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Shadow Draptor!",
+          "owned_feedback": "You already own the store mount: Shadow Draptor."
         },
         {
           "grants": [
@@ -4316,7 +4496,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Flamesteed!",
+          "owned_feedback": "You already own the store mount: Flamesteed."
         },
         {
           "grants": [
@@ -4329,7 +4511,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Jade Lion!",
+          "owned_feedback": "You already own the store mount: Jade Lion."
         },
         {
           "grants": [
@@ -4342,7 +4526,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Jade Pincer!",
+          "owned_feedback": "You already own the store mount: Jade Pincer."
         },
         {
           "grants": [
@@ -4355,7 +4541,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Nethersteed!",
+          "owned_feedback": "You already own the store mount: Nethersteed."
         },
         {
           "grants": [
@@ -4368,7 +4556,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Tempest!",
+          "owned_feedback": "You already own the store mount: Tempest."
         },
         {
           "grants": [
@@ -4381,7 +4571,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Winter King!",
+          "owned_feedback": "You already own the store mount: Winter King."
         },
         {
           "grants": [
@@ -4394,7 +4586,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Flying Divan!",
+          "owned_feedback": "You already own the store mount: Flying Divan."
         },
         {
           "grants": [
@@ -4407,7 +4601,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Magic Carpet!",
+          "owned_feedback": "You already own the store mount: Magic Carpet."
         },
         {
           "grants": [
@@ -4420,7 +4616,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Floating Kaupang!",
+          "owned_feedback": "You already own the store mount: Floating Kaupang."
         },
         {
           "grants": [
@@ -4433,7 +4631,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Armoured War Horse!",
+          "owned_feedback": "You already own the store mount: Armoured War Horse."
         },
         {
           "grants": [
@@ -4446,7 +4646,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Blessed Deer!",
+          "owned_feedback": "You already own the store mount: Blessed Deer."
         },
         {
           "grants": [
@@ -4459,7 +4661,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Ancient Lion Knight!",
+          "owned_feedback": "You already own the store mount: Ancient Lion Knight."
         },
         {
           "grants": [
@@ -4472,7 +4676,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Ironblight!",
+          "owned_feedback": "You already own the store mount: Ironblight."
         },
         {
           "grants": [
@@ -4485,7 +4691,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Magma Crawler!",
+          "owned_feedback": "You already own the store mount: Magma Crawler."
         },
         {
           "grants": [
@@ -4498,7 +4706,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Dragonling!",
+          "owned_feedback": "You already own the store mount: Dragonling."
         },
         {
           "grants": [
@@ -4511,7 +4721,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Gnarlhound!",
+          "owned_feedback": "You already own the store mount: Gnarlhound."
         },
         {
           "grants": [
@@ -4524,7 +4736,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Crimson Ray!",
+          "owned_feedback": "You already own the store mount: Crimson Ray."
         },
         {
           "grants": [
@@ -4537,7 +4751,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Steelbeak!",
+          "owned_feedback": "You already own the store mount: Steelbeak."
         },
         {
           "grants": [
@@ -4550,7 +4766,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Water Buffalo!",
+          "owned_feedback": "You already own the store mount: Water Buffalo."
         },
         {
           "grants": [
@@ -4563,7 +4781,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Golden Dragonfly!",
+          "owned_feedback": "You already own the store mount: Golden Dragonfly."
         },
         {
           "grants": [
@@ -4576,7 +4796,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Shock Head!",
+          "owned_feedback": "You already own the store mount: Shock Head."
         },
         {
           "grants": [
@@ -4589,7 +4811,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Walker!",
+          "owned_feedback": "You already own the store mount: Walker."
         },
         {
           "grants": [
@@ -4602,7 +4826,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Azudocus!",
+          "owned_feedback": "You already own the store mount: Azudocus."
         },
         {
           "grants": [
@@ -4615,7 +4841,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Carpacosaurus!",
+          "owned_feedback": "You already own the store mount: Carpacosaurus."
         },
         {
           "grants": [
@@ -4628,7 +4856,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Death Crawler!",
+          "owned_feedback": "You already own the store mount: Death Crawler."
         },
         {
           "grants": [
@@ -4641,7 +4871,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Flamemane!",
+          "owned_feedback": "You already own the store mount: Flamemane."
         },
         {
           "grants": [
@@ -4654,7 +4886,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Hailtorm Fury!",
+          "owned_feedback": "You already own the store mount: Hailtorm Fury."
         },
         {
           "grants": [
@@ -4667,7 +4901,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Leafscuttler!",
+          "owned_feedback": "You already own the store mount: Leafscuttler."
         },
         {
           "grants": [
@@ -4680,7 +4916,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Sparkion!",
+          "owned_feedback": "You already own the store mount: Sparkion."
         },
         {
           "grants": [
@@ -4693,7 +4931,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Swamp Snapper!",
+          "owned_feedback": "You already own the store mount: Swamp Snapper."
         },
         {
           "grants": [
@@ -4706,7 +4946,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Venompaw!",
+          "owned_feedback": "You already own the store mount: Venompaw."
         },
         {
           "grants": [
@@ -4719,7 +4961,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Void Watcher!",
+          "owned_feedback": "You already own the store mount: Void Watcher."
         },
         {
           "grants": [
@@ -4732,7 +4976,9 @@
               "binding": "canary.appearance:effect/firework_red",
               "effect_id": 30
             }
-          ]
+          ],
+          "feedback": "You received the store mount: Feral Tiger!",
+          "owned_feedback": "You already own the store mount: Feral Tiger."
         }
       ]
     },
