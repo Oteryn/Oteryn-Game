@@ -300,7 +300,8 @@ fn scenario() -> TestResult {
         // CLEAR is free and frees the slot (TibiaWiki Updates/15.30.a30dad).
         let cleared = modify(14, ModificationOperation::Clear).await?;
         assert_eq!((cleared.result, cleared.slot), (ModificationResult::Accepted, None));
-        assert_eq!(dust().await?, 750);
+        // CLEAR refunds nothing: the 125 dust of the shaping-r2 RANK_UP above stays spent.
+        assert_eq!(dust().await?, 625);
         live_agrees(None).await?;
 
         // A second MODIFY, then ORB_RANK burns the last orb; a third finds none.
@@ -326,7 +327,8 @@ fn scenario() -> TestResult {
             modify(19, ModificationOperation::OrbRank).await?.result,
             ModificationResult::NoOrb
         );
-        assert_eq!((dust().await?, burns().await?), (250, 2));
+        // Two more MODIFYs at 250 each from 625 (shaping-r2 RANK_UP spent 125 above).
+        assert_eq!((dust().await?, burns().await?), (125, 2));
         eprintln!("proficiency_modification: cases executed");
         Ok(())
     })
