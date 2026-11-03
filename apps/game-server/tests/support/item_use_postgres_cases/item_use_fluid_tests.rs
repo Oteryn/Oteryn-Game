@@ -2,6 +2,7 @@ use super::*;
 use crate::durability::item_use::fluid::{
     ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
 };
+use crate::foundation::RuntimeScopeRefV1;
 
 // I10a (migration 0560): a carried vial is filled and emptied through `commit_item_fluid` under
 // the Character's item fence. Only setup bypasses guards.
@@ -197,6 +198,8 @@ fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() 
                 .map_err(debug)?
                 .is_empty()
         );
+        drop(authority);
+        drop(seal);
         used.cleanup().await
     })
 }
