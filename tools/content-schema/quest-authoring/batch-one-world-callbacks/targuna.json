@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.targuna_quest",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/targuna-crimson-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32414,
+          "y": 32691,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31962,
+        "y": 31898,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-inner-portal",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32424,
+          "y": 32652,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32432,
+        "y": 32656,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/herald_killed",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You cannot enter the room beyond ... yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-lever-room-exit",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32432,
+          "y": 32652,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32426,
+        "y": 32652,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:17"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-matilda-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33478,
+          "y": 32729,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31925,
+        "y": 31907,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_aragonia.lua:36"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-temple-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31941,
+          "y": 31928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31935,
+        "y": 31861,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_temple_teleport.lua:1"
+      ]
+    }
+  ]
+}

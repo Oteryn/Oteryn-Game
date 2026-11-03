@@ -1,0 +1,1751 @@
+{
+  "schema": "oteryn.quests1.targuna-dialogue-source.v1",
+  "source_only": false,
+  "npc_count": 6,
+  "text_count": 154,
+  "records": [
+    {
+      "npc": "lizzie",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/lizzie.lua",
+        "sha256": "b9c21dd38b13c54bedabc2492031134a3c098b0eefa383b7ac91c39752a09d74"
+      },
+      "text_records": [
+        {
+          "key": "lizzie:68",
+          "source_line": 68,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hey there. I need your help urgently, we have to {save} Targuna!"
+          ],
+          "text_sha256": "6b86a17ad3def3906b54d1c948ab0ff9ce148dcb0c9c82b5f02f790bbeb3fc57"
+        },
+        {
+          "key": "lizzie:70",
+          "source_line": 70,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "There you are! How's our {mission} doing?"
+          ],
+          "text_sha256": "847fdb2a97c565019c59948c54a3ff5e5fa12118bc347424af2d9a2805c85ba2"
+        },
+        {
+          "key": "lizzie:88",
+          "source_line": 88,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you again for putting an end to that ancient lizard clan. Make sure to visit {Camilla} at her office, and talk to {Sterling} and {Emiliana} if you're in for more trouble."
+          ],
+          "text_sha256": "9085295d2198d06af26b350698b1e3471e575a39032cc0035c2871416104f6d7"
+        },
+        {
+          "key": "lizzie:93",
+          "source_line": 93,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you for finally putting an end to this ancient lizard clan hidden inside the temple here on Targuna.",
+            "Make sure to visit Camilla at her office, if you haven't already. And if you're in for more trouble then I'd suggest talking to Sterling and Emiliana."
+          ],
+          "text_sha256": "2c1092610ca3c83c03a219f2f3ad8ab6900b471eb9e42fcb82a650eff21ad53f"
+        },
+        {
+          "key": "lizzie:101",
+          "source_line": 101,
+          "kind": "scripted_reply",
+          "parts": [
+            "The lizards still lurk inside the temple. Find and defeat their {Lizard Commander} deep within, then come back to me!"
+          ],
+          "text_sha256": "7a6eccaa84c1bc1bf579a550c777514b6884f489125a98835fc4e586814bfe54"
+        },
+        {
+          "key": "lizzie:108",
+          "source_line": 108,
+          "kind": "scripted_reply",
+          "parts": [
+            "We've already started, the lizards won't wait for us! Tell me about our {mission}."
+          ],
+          "text_sha256": "f61a07fbfe53a3718384bdd0a53022428c44f6e64ed89c630f2d0c06c7e21bdd"
+        },
+        {
+          "key": "lizzie:111",
+          "source_line": 111,
+          "kind": "scripted_reply",
+          "parts": [
+            "Finally! I need your help here adventurer.",
+            "My research suggests there is an ancient lizard group, which poses a real threat to us here on Targuna. We need to put a stop to that NOW! Are you ready?"
+          ],
+          "text_sha256": "ab886113e63207bfad33e9ebb4f1e714c950b65cc157fa912e5fb56fffca93f1"
+        },
+        {
+          "key": "lizzie:122",
+          "source_line": 122,
+          "kind": "scripted_reply",
+          "parts": [
+            "I finally found someone to help me, seriously thank you!",
+            "Though we must start now, the lizards won't wait for us! I've marked the temple entrance on your map."
+          ],
+          "text_sha256": "8bde6ebbad9d15e1ba3b170d2e3e25e50df98d5363fb25543b60c21d0d04a3e4"
+        },
+        {
+          "key": "lizzie:139",
+          "source_line": 139,
+          "kind": "scripted_reply",
+          "parts": [
+            "Please come back when your interests might have changed for the better."
+          ],
+          "text_sha256": "af15d9146c41adcb5d1cb9433426f8fe71f4913439d3f1ef87b028023c40f1d1"
+        },
+        {
+          "key": "lizzie:149",
+          "source_line": 149,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "It's Lizzie, with double z."
+          ],
+          "text_sha256": "943bd08f076baea46332d16bf1f621825dc68326bbf40283a7dfd82d3e6e9c6c"
+        },
+        {
+          "key": "lizzie:150",
+          "source_line": 150,
+          "kind": "keyword",
+          "keywords": [
+            "lizzie"
+          ],
+          "parts": [
+            "That's the name, I bet you are here for the lizards."
+          ],
+          "text_sha256": "716361fa6f9c6e91d0cd4a9bdae44e70bd74148dfe3d919def4befa5cdff4dc0"
+        },
+        {
+          "key": "lizzie:151",
+          "source_line": 151,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "Well, short and simple - I research many types of lizards."
+          ],
+          "text_sha256": "21d58e620df515dad5d46bed11805965957d6970a2708abe271747e39a10bc77"
+        },
+        {
+          "key": "lizzie:152",
+          "source_line": 152,
+          "kind": "keyword",
+          "keywords": [
+            "targuna"
+          ],
+          "parts": [
+            "What a beautiful place it has become over the years. Especially after we constructed more buildings and opened more stores and offices, in order to make sure that every visitor has their need fulfilled."
+          ],
+          "text_sha256": "fcf8723be9f339a5e02adb7b46f7dff9303ca845edf259d68463e8d83346c2b0"
+        },
+        {
+          "key": "lizzie:153",
+          "source_line": 153,
+          "kind": "keyword",
+          "keywords": [
+            "indigo"
+          ],
+          "parts": [
+            "She's done quite the traveling to get here, if I remember correctly she started her journey somewhere in Ankrahmun, had to deal with something in Svargrond and ended up here on Targuna. What a journey!"
+          ],
+          "text_sha256": "857be9005fb53f4fff7ad8680c78af1d2f03fc97e343456f77acd3415ea1aefc"
+        },
+        {
+          "key": "lizzie:154",
+          "source_line": 154,
+          "kind": "keyword",
+          "keywords": [
+            "captain"
+          ],
+          "parts": [
+            "The boat on the south side of this island can bring you to Thais and back to Targuna. You should talk to the Captain whenever you're ready for the Tibian Mainland."
+          ],
+          "text_sha256": "a6d8ce2f5ff891b3efbc35e1ade71a8942e714e85ccf2c392ab74a27ed30556d"
+        },
+        {
+          "key": "lizzie:155",
+          "source_line": 155,
+          "kind": "keyword",
+          "keywords": [
+            "travel"
+          ],
+          "parts": [
+            "We have a few main travel options here, you can travel with Captain Indigo to Thais or use the turtle to travel to Aragonia. Though I keep forgetting the turtle's name ... What was it again, arrg!"
+          ],
+          "text_sha256": "9d1519cc2ae2ad9bfa55adf03708451497d51616845dc9cbeecb31b74107729a"
+        },
+        {
+          "key": "lizzie:156",
+          "source_line": 156,
+          "kind": "keyword",
+          "keywords": [
+            "turtle"
+          ],
+          "parts": [
+            "What turtle? I do research on lizards."
+          ],
+          "text_sha256": "8ad2d881b6456848a1b7bde61cab149607a436e74a06513f108ee41ec75d05eb"
+        },
+        {
+          "key": "lizzie:157",
+          "source_line": 157,
+          "kind": "keyword",
+          "keywords": [
+            "aragonia"
+          ],
+          "parts": [
+            "That pirate island?! I wouldn't want to mess with them, no thank you!"
+          ],
+          "text_sha256": "1b81f7e0ac442d3a42d3a228d4cd4de1e22ce5908514d48c25953921d2ed90f2"
+        },
+        {
+          "key": "lizzie:158",
+          "source_line": 158,
+          "kind": "keyword",
+          "keywords": [
+            "pirate",
+            "pirates"
+          ],
+          "parts": [
+            "Nothing in this world will bring me close to any of these dangerous pirates on Aragonia. But if we're talking about Sterling, well then I have another opinion ..."
+          ],
+          "text_sha256": "36f8f0c844389cc0212bcf20ebbf8d3df2b73da2b79cab35e22b57e7edc2f248"
+        },
+        {
+          "key": "lizzie:159",
+          "source_line": 159,
+          "kind": "keyword",
+          "keywords": [
+            "sterling"
+          ],
+          "parts": [
+            "He's great, I always enjoyed the after hours while fishing on the beach in the south. You can really talk about a lot with him, he's always open for adventures."
+          ],
+          "text_sha256": "8aef29abf2087b283405f3ecd37ba9dc2cd808bdd3ba19ff5aab03e69fe93652"
+        },
+        {
+          "key": "lizzie:160",
+          "source_line": 160,
+          "kind": "keyword",
+          "keywords": [
+            "adrian"
+          ],
+          "parts": [
+            "At the bank you can deposit your well earned money, withdraw from your already existing fortune and even make transactions for other things in the tibian world."
+          ],
+          "text_sha256": "140e266d7882a60f29348422ceb7d38abc9a6a72dc9628da49af38007d5dad7f"
+        },
+        {
+          "key": "lizzie:161",
+          "source_line": 161,
+          "kind": "keyword",
+          "keywords": [
+            "bank"
+          ],
+          "parts": [
+            "Adrian has been doing all of our finances for quite some time now. The bank can be found right next to us, you can spot it easily with the sign next to it."
+          ],
+          "text_sha256": "e23310b22fd1fa8a4c854f9720290d4cf26064d75fcbf317dfcf322449bfd100"
+        },
+        {
+          "key": "lizzie:162",
+          "source_line": 162,
+          "kind": "keyword",
+          "keywords": [
+            "aurelia"
+          ],
+          "parts": [
+            "Aurelia is taking care of all supplies that come in on a regular basis from Thais. She sells these in her shop south of the depot."
+          ],
+          "text_sha256": "3975d9374a187a1e26137ee08043a7bfb614b9d6e0eb7fbaccc666c3e3aa64aa"
+        },
+        {
+          "key": "lizzie:163",
+          "source_line": 163,
+          "kind": "keyword",
+          "keywords": [
+            "shop"
+          ],
+          "parts": [
+            "The shop is right here, you can resupply and freshen up before heading into battle, Aurelia will take care of all these needs."
+          ],
+          "text_sha256": "5cab37b7d4ceae4ea8097df23a668c0fdeb9460071d868d3c4f47a8da4b253ce"
+        },
+        {
+          "key": "lizzie:164",
+          "source_line": 164,
+          "kind": "keyword",
+          "keywords": [
+            "camilla"
+          ],
+          "parts": [
+            "Our mayor Camilla can be found in the upper levels of the depot. Once you're done with my mission you can make a report on my research and your findings."
+          ],
+          "text_sha256": "efc965777bc11711495ffa476cc6c1fc2989d6a05c7b02e20fd472eeb622d685"
+        },
+        {
+          "key": "lizzie:165",
+          "source_line": 165,
+          "kind": "keyword",
+          "keywords": [
+            "mayor"
+          ],
+          "parts": [
+            "The mayor was elected unanimously, Camilla does such a great job of representing our island and us as citizens."
+          ],
+          "text_sha256": "5036a92bd7fff6a0e4daf92c49a59987179de8ff9afc56b3a967ef7baec01def"
+        },
+        {
+          "key": "lizzie:166",
+          "source_line": 166,
+          "kind": "keyword",
+          "keywords": [
+            "emiliana"
+          ],
+          "parts": [
+            "Isn't she the imbuement expert?! I heard she made quite the fortune with that and then settled down here on Targuna. I bet she has a lot to tell."
+          ],
+          "text_sha256": "a1d83b7e12b3dda56a5cdfb65b56113129421f977ab788ce125108bb7f342589"
+        },
+        {
+          "key": "lizzie:167",
+          "source_line": 167,
+          "kind": "keyword",
+          "keywords": [
+            "leonora"
+          ],
+          "parts": [
+            "Leonora runs the post office here in Targuna. Everything related to parcels and letters can be done in the post office."
+          ],
+          "text_sha256": "6a265c7aff90dd3010dbd87f58c544d7345c697dd813de1109e4d1b543c871ad"
+        },
+        {
+          "key": "lizzie:168",
+          "source_line": 168,
+          "kind": "keyword",
+          "keywords": [
+            "post office",
+            "post"
+          ],
+          "parts": [
+            "If there's ever a need to send a letter or a parcel, Leonora has you covered. Her office is in the northern part of the island."
+          ],
+          "text_sha256": "7f12a5c5a3e999a5d5cc1feadc13cdcdfd650d0e26e0590d3b896456920f2095"
+        },
+        {
+          "key": "lizzie:169",
+          "source_line": 169,
+          "kind": "keyword",
+          "keywords": [
+            "morla"
+          ],
+          "parts": [
+            "Who? I don't know anybody of that name ..."
+          ],
+          "text_sha256": "1d823cc12621a58b96c236f78264967326e10dd503add8fbfbc0b1be9e7c175b"
+        },
+        {
+          "key": "lizzie:171",
+          "source_line": 171,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hey there. I need your help urgently, we have to {save} Targuna!"
+          ],
+          "text_sha256": "6b86a17ad3def3906b54d1c948ab0ff9ce148dcb0c9c82b5f02f790bbeb3fc57"
+        },
+        {
+          "key": "lizzie:172",
+          "source_line": 172,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Goodbye!"
+          ],
+          "text_sha256": "a9722cbc275c6cf5c886fabd13ddade8c2ed2d7a8629799071cc5b20853a0736"
+        },
+        {
+          "key": "lizzie:173",
+          "source_line": 173,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Goodbye!"
+          ],
+          "text_sha256": "a9722cbc275c6cf5c886fabd13ddade8c2ed2d7a8629799071cc5b20853a0736"
+        }
+      ]
+    },
+    {
+      "npc": "camilla",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/camilla.lua",
+        "sha256": "ecf0ea2c2e0a21c7efa8045007708bf7d80654d912f0c876d2fb0f4ba53aa288"
+      },
+      "text_records": [
+        {
+          "key": "camilla:74",
+          "source_line": 74,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you again for ending the threat of those ancient lizards. Targuna is safe thanks to you."
+          ],
+          "text_sha256": "2d73d845dd1d94ceee97a4fc274008bfae1e4d54a8f8ee45a0bf2c4f4e263834"
+        },
+        {
+          "key": "camilla:79",
+          "source_line": 79,
+          "kind": "scripted_reply",
+          "parts": [
+            "What mission? I didn't order any mission here."
+          ],
+          "text_sha256": "3e137644bd2c6a48c5b180c8b9e7b08496e6f7029cc620da2aeb4b5748598715"
+        },
+        {
+          "key": "camilla:83",
+          "source_line": 83,
+          "kind": "scripted_reply",
+          "parts": [
+            "What mission? The hidden temple?! Ohh my, they were hiding inside the temple ruins on Targuna? How many you say?! How could we be so blind ...",
+            "Now tell me, did you put an end to their commander?"
+          ],
+          "text_sha256": "40f9ea5724a16a3df522c9ee50b38f0f08d2a57ba5fcec1edb014cc48ac298a7"
+        },
+        {
+          "key": "camilla:94",
+          "source_line": 94,
+          "kind": "scripted_reply",
+          "parts": [
+            "You have already received my gratitude, my friend."
+          ],
+          "text_sha256": "66a02651a2a0e6e96ec9312a6780a2c63b675893d324a4c6a870c2c8531c7817"
+        },
+        {
+          "key": "camilla:98",
+          "source_line": 98,
+          "kind": "scripted_reply",
+          "parts": [
+            "Ohh ... Wow, these lizards ... I'm glad you could put an end to it, I don't want to think about what could've happened if this problem had gone under our radar.",
+            "Thank you! There's a gift as a sign of gratitude for all you've done. I'm sure you'll find some interesting things in Aurelia's shop."
+          ],
+          "text_sha256": "52d497c38ed175768cd266e00f8c83154636100d178ac6c24a76f5f76a1ed935"
+        },
+        {
+          "key": "camilla:112",
+          "source_line": 112,
+          "kind": "scripted_reply",
+          "parts": [
+            "Then make sure to deal with that commander deep inside the temple. We can't take any risks."
+          ],
+          "text_sha256": "e21feb133c2d827b30d2b316910aa20f8341ca8f212a3e8fc2e55c9cc14b580f"
+        },
+        {
+          "key": "camilla:122",
+          "source_line": 122,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "I am Camilla."
+          ],
+          "text_sha256": "d6d8e71a193baac7077ee34788194df54cd3ac418c75be6ebce3fb2e17fce4fe"
+        },
+        {
+          "key": "camilla:123",
+          "source_line": 123,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "I am the {mayor} of this isle."
+          ],
+          "text_sha256": "2bada647a2eeaf10382c4afa5ec5c72414a7053c1d22ebccd660fff6e2b2ee24"
+        },
+        {
+          "key": "camilla:124",
+          "source_line": 124,
+          "kind": "keyword",
+          "keywords": [
+            "mayor"
+          ],
+          "parts": [
+            "Well, mayor is perhaps a bit of an exaggeration. Targuna is very small, after all. Nevertheless, I take care of important matters, represent the village in Thais if necessary, and try to ensure that everyone here is doing well and that there are no disputes."
+          ],
+          "text_sha256": "ed9ea11c92c7113a5c8d6bcd9a3c763020ee27759fd7f7de9a1820accd39b1b9"
+        },
+        {
+          "key": "camilla:125",
+          "source_line": 125,
+          "kind": "keyword",
+          "keywords": [
+            "thais"
+          ],
+          "parts": [
+            "Thais is our capital city, on the main continent. Captain Indigo offers a passage, if you want to go there. You can find her on her ship east of here."
+          ],
+          "text_sha256": "f29e749f266aa1e74c37fac3d99738962b500fd0b1e9ce01a5a6c6096e45301a"
+        },
+        {
+          "key": "camilla:126",
+          "source_line": 126,
+          "kind": "keyword",
+          "keywords": [
+            "targuna"
+          ],
+          "parts": [
+            "This is our small island here, our safe haven. Not many things of interest here for an adventurer, I assume."
+          ],
+          "text_sha256": "2b8f6d6343c89712f3d198fe01a29b524693e478494c5a0e31839727b44fa305"
+        },
+        {
+          "key": "camilla:127",
+          "source_line": 127,
+          "kind": "keyword",
+          "keywords": [
+            "isle"
+          ],
+          "parts": [
+            "We call our small island Targuna."
+          ],
+          "text_sha256": "41f88fa341f7e5472c7bcdec33157d0a607a6b990dcac4d3dadbcc37015a63d7"
+        },
+        {
+          "key": "camilla:128",
+          "source_line": 128,
+          "kind": "keyword",
+          "keywords": [
+            "king",
+            "tibianus"
+          ],
+          "parts": [
+            "Tibianus III is our king. He resides in the capital Thais."
+          ],
+          "text_sha256": "c968172e2b8e99599b409259817242cff65ca7f2822412bce46eb0bff1157c73"
+        },
+        {
+          "key": "camilla:129",
+          "source_line": 129,
+          "kind": "keyword",
+          "keywords": [
+            "sell",
+            "buy"
+          ],
+          "parts": [
+            "You should visit Aurelia's shop if you wish to sell or buy something."
+          ],
+          "text_sha256": "7424b107bb816ef0ba0e7f665de3ae8194d30794f2c2f021d7bb65d5ee054310"
+        },
+        {
+          "key": "camilla:130",
+          "source_line": 130,
+          "kind": "keyword",
+          "keywords": [
+            "lizzie"
+          ],
+          "parts": [
+            "Lizzie does important research on the dangers around Targuna. You'll find her to the south-west."
+          ],
+          "text_sha256": "202e167983858418985cbcfa77e3cd35f93405a1d19d360d62a5bcd9969a1841"
+        },
+        {
+          "key": "camilla:131",
+          "source_line": 131,
+          "kind": "keyword",
+          "keywords": [
+            "aurelia"
+          ],
+          "parts": [
+            "Aurelia runs a fine shop. I'm sure you'll find some interesting things there."
+          ],
+          "text_sha256": "96be9ef7748158f4e5b57fa3b340d8e5f564f7ee987d8b9134dc06118e43a1b1"
+        },
+        {
+          "key": "camilla:133",
+          "source_line": 133,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Greetings my friend!"
+          ],
+          "text_sha256": "296543b245a25814c67fb56539eb9c28e75937f0fcdb9188808603fe93a7ac7e"
+        },
+        {
+          "key": "camilla:134",
+          "source_line": 134,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Farewell!"
+          ],
+          "text_sha256": "a090b8bfd381270b2af5dca9b5fdead3f589cabc07238a2af4cac0140b59ee9b"
+        },
+        {
+          "key": "camilla:135",
+          "source_line": 135,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Farewell!"
+          ],
+          "text_sha256": "a090b8bfd381270b2af5dca9b5fdead3f589cabc07238a2af4cac0140b59ee9b"
+        }
+      ]
+    },
+    {
+      "npc": "sterling",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/sterling.lua",
+        "sha256": "3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"
+      },
+      "text_records": [
+        {
+          "key": "sterling:72",
+          "source_line": 72,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Ahoyyy there, you might be just who I'm looking for. I need some help on an adventure ..."
+          ],
+          "text_sha256": "6f690d8debf015090f1fb08b507775d952e8376ac3b19e96dec7c89c38eba511"
+        },
+        {
+          "key": "sterling:74",
+          "source_line": 74,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Ahoyyy there, back from your quest I see."
+          ],
+          "text_sha256": "a6baa582ab5cd82428a9514e55a923feab68540907bdb9a35520d5ff79703212"
+        },
+        {
+          "key": "sterling:91",
+          "source_line": 91,
+          "kind": "scripted_reply",
+          "parts": [
+            "I do have something that's been bothering me as of late. On the closest island, Aragonia, some pirates crash landed.",
+            "Ever since they arrived, these pirates have been wreaking havoc on the surrounding islands and capturing wild turtles, including Targuna itself. Could you help me and this island by taking care of this threat with that?"
+          ],
+          "text_sha256": "e92d1fe7c095cb016eb8183ec9588ebdb2696dd962e2f9ad2e01ee9d62c8aa60"
+        },
+        {
+          "key": "sterling:100",
+          "source_line": 100,
+          "kind": "scripted_reply",
+          "parts": [
+            "Matilda is waiting for you, just sit on her back whenever you're ready to travel to Aragonia."
+          ],
+          "text_sha256": "8938c814ce9fa78462c15f19d2bd570ea397d8a9bc89e866eb18ceef5373022b"
+        },
+        {
+          "key": "sterling:105",
+          "source_line": 105,
+          "kind": "scripted_reply",
+          "parts": [
+            "Have you dealt with those pirates on Aragonia and saved the turtle eggs yet? Once you have, speak to Morla in the cave to the south of the island."
+          ],
+          "text_sha256": "0e212107e468fb61eab082efdf9ef733b0556165a85baedeefb7514b6b4ad3a0"
+        },
+        {
+          "key": "sterling:110",
+          "source_line": 110,
+          "kind": "scripted_reply",
+          "parts": [
+            "Oh, would you look at that, you really helped us out here. I'm glad to see you alive and well!",
+            "Did Morla hand you anything for your service?"
+          ],
+          "text_sha256": "a76166ba401ec2bd6fa3692661f63bc2cdc7bc8d02a1719ce19a62a7720e278f"
+        },
+        {
+          "key": "sterling:119",
+          "source_line": 119,
+          "kind": "scripted_reply",
+          "parts": [
+            "The X that marks the spot is here on Targuna. Don't wait too long to grab the treasure, it'd be a shame if you were too late ..."
+          ],
+          "text_sha256": "e47b88a1aa23a0982740eedcd064e7979fed20b93989717c6a42c631ccbc705d"
+        },
+        {
+          "key": "sterling:128",
+          "source_line": 128,
+          "kind": "scripted_reply",
+          "parts": [
+            "I respect your interest, but you're not strong enough yet. We don't want to risk anything here! Please come back when you're stronger."
+          ],
+          "text_sha256": "9f633bf1cb69842e5d4b86a540d4f43145b56307ef020175642a0ae1cc32277d"
+        },
+        {
+          "key": "sterling:133",
+          "source_line": 133,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you adventurer! In order to travel to Aragonia just sit down on the back of my turtle Matilda here and enjoy the ride - free of charge of course!"
+          ],
+          "text_sha256": "d739bdfd61216226f805ff95b6255242656951b65ba938474e85cf910107f28d"
+        },
+        {
+          "key": "sterling:144",
+          "source_line": 144,
+          "kind": "scripted_reply",
+          "parts": [
+            "It seems Morla hasn't handed you anything yet. Make sure to speak with her first."
+          ],
+          "text_sha256": "a5607194e1180efa31cf1fb9310ec7437fc7c7f820baf7e063f6cf482e2e8c77"
+        },
+        {
+          "key": "sterling:148",
+          "source_line": 148,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you for bringing me that map. If I see that correctly the X that marks the spot seems to be here on Targuna.",
+            "Let me mark it for you, don't wait too long to grab it. It'd be a shame if you were too late ..."
+          ],
+          "text_sha256": "69056303bf573864e60438bd1e9801926cafdb4469a56568bc4483706b415e81"
+        },
+        {
+          "key": "sterling:164",
+          "source_line": 164,
+          "kind": "scripted_reply",
+          "parts": [
+            "Alright, come back if you change your mind."
+          ],
+          "text_sha256": "21c0390e0502367e64756c8168cdb2d3fb208fdbbb1a7e9c6e5029bcfce437c8"
+        },
+        {
+          "key": "sterling:174",
+          "source_line": 174,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "Sterling's the name, adventuring's the game!"
+          ],
+          "text_sha256": "8bd291b4fbb2de4667f17f5bcd1acd5511c8ac32a81f7b4c4d7ec22c43b934d7"
+        },
+        {
+          "key": "sterling:175",
+          "source_line": 175,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "I'm an old adventurer who's seen his fair share of the seas."
+          ],
+          "text_sha256": "55fa134e9954f53a72f52625ee12604b993208c9c7289371ac238e0a5864c687"
+        },
+        {
+          "key": "sterling:176",
+          "source_line": 176,
+          "kind": "keyword",
+          "keywords": [
+            "aragonia"
+          ],
+          "parts": [
+            "The closest island, where those pesky pirates crash landed."
+          ],
+          "text_sha256": "ea7dccbb847e5c0480d94ff46a30f4a0963b4e2b8e7398c9bed934e0e8988bf4"
+        },
+        {
+          "key": "sterling:177",
+          "source_line": 177,
+          "kind": "keyword",
+          "keywords": [
+            "pirates",
+            "pirate"
+          ],
+          "parts": [
+            "They've been wreaking havoc and capturing wild turtles. Someone has to stop them!"
+          ],
+          "text_sha256": "f0b2f68fde2e8a8f5b20f2eb120806d20b2137ce3e69921880a3e9025aa7b097"
+        },
+        {
+          "key": "sterling:178",
+          "source_line": 178,
+          "kind": "keyword",
+          "keywords": [
+            "morla"
+          ],
+          "parts": [
+            "A dear friend of mine. You'll find her in the cave to the south of Aragonia."
+          ],
+          "text_sha256": "6b3e54150c449a82c703cbe877b9d1c5e14e012f689570e563ad3ea9aefad490"
+        },
+        {
+          "key": "sterling:179",
+          "source_line": 179,
+          "kind": "keyword",
+          "keywords": [
+            "matilda"
+          ],
+          "parts": [
+            "My trusty turtle! Sit on her back and she'll carry you to Aragonia."
+          ],
+          "text_sha256": "72993c1d40c45181921ec7762d2976f87e834a3b5671ed08593d33e1c6393ed7"
+        },
+        {
+          "key": "sterling:181",
+          "source_line": 181,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Ahoyyy there, you might be just who I'm looking for. I need some help on an adventure ..."
+          ],
+          "text_sha256": "6f690d8debf015090f1fb08b507775d952e8376ac3b19e96dec7c89c38eba511"
+        },
+        {
+          "key": "sterling:182",
+          "source_line": 182,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Safe travels, adventurer!"
+          ],
+          "text_sha256": "49fe13e3440ac67599410f334104c1f86bfc2ae800a642109ab88a8fc23215bb"
+        },
+        {
+          "key": "sterling:183",
+          "source_line": 183,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Safe travels, adventurer!"
+          ],
+          "text_sha256": "49fe13e3440ac67599410f334104c1f86bfc2ae800a642109ab88a8fc23215bb"
+        }
+      ]
+    },
+    {
+      "npc": "morla",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/morla.lua",
+        "sha256": "6d4996501d42f7750acf94e99f8e9b6fc36e65d88d77ae190f5d73875b5b62ec"
+      },
+      "text_records": [
+        {
+          "key": "morla:73",
+          "source_line": 73,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you again for saving my eggs and dealing with those pirates. Go and see where that map leads you!"
+          ],
+          "text_sha256": "5fe5b31598640491ead5ee97f92e84d87e2c43adbb4f3d0d550128bbf67e66a7"
+        },
+        {
+          "key": "morla:78",
+          "source_line": 78,
+          "kind": "scripted_reply",
+          "parts": [
+            "Oh, you wandered all the way here? Talk to Sterling on Targuna, he'll tell you how you can help us."
+          ],
+          "text_sha256": "60c2d7b08255fe6bfabd413af3a0fe869ef55a2c21dfd5f1e9ce62552a99bed7"
+        },
+        {
+          "key": "morla:82",
+          "source_line": 82,
+          "kind": "scripted_reply",
+          "parts": [
+            "Yes, I indeed have a mission for you though I bet Sterling might have already told you about it.",
+            "Please take care of these pirates and collect and save my eggs around the island, did you already complete your objective?"
+          ],
+          "text_sha256": "6ce4fe1203ebd2a1585db2a5dd9ea2e4455ef0178c9532285ce7b566eafc2752"
+        },
+        {
+          "key": "morla:95",
+          "source_line": 95,
+          "kind": "scripted_reply",
+          "parts": [
+            "You already saved my eggs, thank you again!"
+          ],
+          "text_sha256": "8fbcf237da8b3984d218bad6aa622a5c407d43bd8f66a28ecbdef64523b50630"
+        },
+        {
+          "key": "morla:102",
+          "source_line": 102,
+          "kind": "scripted_reply",
+          "parts": [
+            "Not quite yet! You still need to defeat %d more pirates and rescue %d more eggs around the island."
+          ],
+          "format": "lua_string_format",
+          "arguments": [
+            "math . max ( PIRATES_REQUIRED - pirates , 0 )",
+            "math . max ( EGGS_REQUIRED - eggs , 0 )"
+          ],
+          "text_sha256": "0c3f0aca1221bf08ead826617a869c9f4e6627559a78769bc099995c6417d070"
+        },
+        {
+          "key": "morla:106",
+          "source_line": 106,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you so much for taking care of these pirates and collecting these precious eggs. Here take this as a sign of gratitude, I found it laying around in the sand near a rock, it might be useful once you've encrypted it.",
+            "I bet Sterling can help you with that, now go and see where this map leads you, take care adventurer!"
+          ],
+          "text_sha256": "40f026819e40e7786795df6d71d3bdb09111e375018fa3514b45dda0f9a46160"
+        },
+        {
+          "key": "morla:121",
+          "source_line": 121,
+          "kind": "scripted_reply",
+          "parts": [
+            "Please hurry, those pirates won't stop on their own and my eggs need saving!"
+          ],
+          "text_sha256": "4d20201d16b27bebe7b9481d3b8b520b7f0795e1150f58ba2cd5f90baddc974a"
+        },
+        {
+          "key": "morla:131",
+          "source_line": 131,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "I am Morla, guardian of these turtles."
+          ],
+          "text_sha256": "8109ac16c445944ed495c35681c49d22c636a6cd3a27b5a56a827108eb9bdc72"
+        },
+        {
+          "key": "morla:132",
+          "source_line": 132,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "I watch over the wild turtles and their eggs on Aragonia."
+          ],
+          "text_sha256": "4e5c21cd67409cb48231256259a3378d3b69e67bbe035c140dce233c2ab7a306"
+        },
+        {
+          "key": "morla:133",
+          "source_line": 133,
+          "kind": "keyword",
+          "keywords": [
+            "sterling"
+          ],
+          "parts": [
+            "An old friend of mine from Targuna. I bet he sent you here."
+          ],
+          "text_sha256": "95ca0041f667828788db5d7a4075494eec26a02a5692a51f6835dfd5f969bff8"
+        },
+        {
+          "key": "morla:134",
+          "source_line": 134,
+          "kind": "keyword",
+          "keywords": [
+            "pirates",
+            "pirate"
+          ],
+          "parts": [
+            "They've been capturing turtles and stealing eggs. Please put a stop to them!"
+          ],
+          "text_sha256": "eafccda7e4c55866e918cea79c17dec0372cb576b61f590acebc397336e1e72a"
+        },
+        {
+          "key": "morla:135",
+          "source_line": 135,
+          "kind": "keyword",
+          "keywords": [
+            "eggs",
+            "egg"
+          ],
+          "parts": [
+            "My precious turtle eggs are scattered all over the island. Please rescue them!"
+          ],
+          "text_sha256": "f2385cb24e2916320e2b9d9bb833cd67da9d2c0de707a9174e8c4876a82c441e"
+        },
+        {
+          "key": "morla:137",
+          "source_line": 137,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Oh hello, I wasn't expecting anyone so soon ... What has Sterling told you?"
+          ],
+          "text_sha256": "f712b6922d2c92347c986b757ef5c7810281d7c9992546d3327f9bc782c06362"
+        },
+        {
+          "key": "morla:138",
+          "source_line": 138,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Take care, adventurer!"
+          ],
+          "text_sha256": "b467c8aef7f696f0049a441ad99adaa522853581bb87e4f71f7c6b1769c7f86c"
+        },
+        {
+          "key": "morla:139",
+          "source_line": 139,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Take care, adventurer!"
+          ],
+          "text_sha256": "b467c8aef7f696f0049a441ad99adaa522853581bb87e4f71f7c6b1769c7f86c"
+        }
+      ]
+    },
+    {
+      "npc": "emiliana",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/emiliana.lua",
+        "sha256": "df5227b88b39c47254c03316c58582674015f242d795ea0beefa77f455004dd0"
+      },
+      "text_records": [
+        {
+          "key": "emiliana:90",
+          "source_line": 90,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Well well well, if that isn't the glorious |PLAYERNAME|!"
+          ],
+          "text_sha256": "256e15d3ee88d59573b998ead255a4eeea9be7f8f31cdf334eb0602326b90340"
+        },
+        {
+          "key": "emiliana:92",
+          "source_line": 92,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hello there traveller. What brings you here today?"
+          ],
+          "text_sha256": "cb66d1e118caf272e989efb291cf3d00f351eaada8f1a358c0666f668115066d"
+        },
+        {
+          "key": "emiliana:94",
+          "source_line": 94,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hey, I really need your {help} on an important mission urgently."
+          ],
+          "text_sha256": "488a72c4838e44f0751b8943e7c66b69b3b64be5921545d100b4af9b86fb00cb"
+        },
+        {
+          "key": "emiliana:98",
+          "source_line": 98,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hey adventurer |PLAYERNAME|! Is it just me or has it gotten hotter in here, anyways ... Tell me about your {mission}."
+          ],
+          "text_sha256": "5aaeaea109f64a4185155e594bb8963ec76369ecd7e2ab9af98f975ce19ec9fd"
+        },
+        {
+          "key": "emiliana:100",
+          "source_line": 100,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Great that you're here, we need to move quickly!"
+          ],
+          "text_sha256": "919a24ecee179a7762ac88b32ddd31efc0a6f367efe340984e40ee5c1d8a8d8d"
+        },
+        {
+          "key": "emiliana:120",
+          "source_line": 120,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you again for your help, adventurer. Take good care of that ram of yours!"
+          ],
+          "text_sha256": "a4d176185feb2a5834d4baa2537c8485c9c26aa95a86bda24e4d3fa86a558de4"
+        },
+        {
+          "key": "emiliana:125",
+          "source_line": 125,
+          "kind": "scripted_reply",
+          "parts": [
+            "I can feel it already, the Herald has been defeated by your very own hands.",
+            "I can't tell you how happy I am that my wicked portal won't be the beginning of a tragedy. Here this is for you, take it as a sign of gratitude for your hard work. Would you like to have it now?"
+          ],
+          "text_sha256": "3f9a76b34c44957b213b3c6b0a2a57c4b53dfb33e829a6bd61f7b81d3eb6ba07"
+        },
+        {
+          "key": "emiliana:133",
+          "source_line": 133,
+          "kind": "scripted_reply",
+          "parts": [
+            "Go upstairs, open the door and walk through the portal. I'll be waiting for you on the other side."
+          ],
+          "text_sha256": "01aa7d7d8355fbb88125f032e851f8ac41f3d5f30ab385a7e77e04345cc36771"
+        },
+        {
+          "key": "emiliana:138",
+          "source_line": 138,
+          "kind": "scripted_reply",
+          "parts": [
+            "I respect your interest, but you're not strong enough yet for this challenge. Please come back when you're stronger."
+          ],
+          "text_sha256": "dff27fa1d0547c7c214f7c70ee4a40d73e59376c4916942fa8bdc659e4799746"
+        },
+        {
+          "key": "emiliana:141",
+          "source_line": 141,
+          "kind": "scripted_reply",
+          "parts": [
+            "Ah yes, finally someone's ready for a real challenge. Are you willing to help me defeat the yet unknown danger inside the portal upstairs?"
+          ],
+          "text_sha256": "d61e606fd34456df14c5e2f4cd1a5bbda9a85d7f0b8817f75fbf9e0b415cfaf2"
+        },
+        {
+          "key": "emiliana:149",
+          "source_line": 149,
+          "kind": "scripted_reply",
+          "parts": [
+            "You haven't earned your reward yet, there's nothing for me to replace."
+          ],
+          "text_sha256": "197ce2010d6a9336342f79915fa71bf9ad75329750a4fa8fdae365b8164353ad"
+        },
+        {
+          "key": "emiliana:152",
+          "source_line": 152,
+          "kind": "scripted_reply",
+          "parts": [
+            "Did you lose your Bunch of Turnips? I can get you another one for 1000 gold coins. Would you like that?"
+          ],
+          "text_sha256": "c78565a794f2add93a412705be4fd3e2716a078689083e7735e8d37ad991707a"
+        },
+        {
+          "key": "emiliana:160",
+          "source_line": 160,
+          "kind": "scripted_reply",
+          "parts": [
+            "Great! Here's what I need you to do: Go upstairs, open the door and walk through the portal. I will hand you more information once we're inside."
+          ],
+          "text_sha256": "e90c1286408a1adba7dcefbae6b085167a24efb99ca2902c75a516e8ceccd335"
+        },
+        {
+          "key": "emiliana:170",
+          "source_line": 170,
+          "kind": "scripted_reply",
+          "parts": [
+            "You've already received my gratitude, adventurer."
+          ],
+          "text_sha256": "95e68aa1a39683ebded7ac1edf839f5f9c33db8cc85cd67e77f9ecbfec2d7b92"
+        },
+        {
+          "key": "emiliana:173",
+          "source_line": 173,
+          "kind": "scripted_reply",
+          "parts": [
+            "Well there you go, let me gift you this as a form of my gratitude for your help. Maybe the lonely ram on Targuna wouldn't mind taking a bite or two ...",
+            "Anyways, I'll see you around."
+          ],
+          "text_sha256": "50fe076a8162579b24111a91d17bd9442d65049d144ebe2bd8edcf4fe95687b7"
+        },
+        {
+          "key": "emiliana:187",
+          "source_line": 187,
+          "kind": "scripted_reply",
+          "parts": [
+            "My apologies, I can't seem to find one right now."
+          ],
+          "text_sha256": "80ef7fcd0e1f0b47bbfb757301df4b8d88aae88a31663f3491e17b39d4308ae1"
+        },
+        {
+          "key": "emiliana:192",
+          "source_line": 192,
+          "kind": "scripted_reply",
+          "parts": [
+            "Here you go, take good care of it this time!"
+          ],
+          "text_sha256": "b0deb2eb83cbe46e82cc9a0287b0abe0a33158a6e1a75245be5fc1ac31b8d0f9"
+        },
+        {
+          "key": "emiliana:194",
+          "source_line": 194,
+          "kind": "scripted_reply",
+          "parts": [
+            "You don't have enough gold."
+          ],
+          "text_sha256": "196b2120ae74dd7ec968870fd64cd1bb787394bcbc903c004cd9c44c41d60d7f"
+        },
+        {
+          "key": "emiliana:201",
+          "source_line": 201,
+          "kind": "scripted_reply",
+          "parts": [
+            "Good bye!"
+          ],
+          "text_sha256": "c133430eb8dc0b1f7012ff239ac04ba78f24b161edaddc3edde36c8fffd46d26"
+        },
+        {
+          "key": "emiliana:216",
+          "source_line": 216,
+          "kind": "scripted_reply",
+          "parts": [
+            "Thank you again for ending the Herald's reign of terror. I'll see you around."
+          ],
+          "text_sha256": "f91de2be2f04d7e9ecf9e3ac4d456538dba1e35e576fe6a11a575fdb0277dc95"
+        },
+        {
+          "key": "emiliana:221",
+          "source_line": 221,
+          "kind": "scripted_reply",
+          "parts": [
+            "How did you even get here? Speak to me back on Targuna first, we'll need to go through the portal together."
+          ],
+          "text_sha256": "67d983800f94beab6b0dc8607da3cc919eefdfdeb5a982dd717b33082e8f493f"
+        },
+        {
+          "key": "emiliana:226",
+          "source_line": 226,
+          "kind": "scripted_reply",
+          "parts": [
+            "You've done it! Now hurry back to Targuna and speak to me there, I have something for you."
+          ],
+          "text_sha256": "6dcfcb88ced52e5e3563325ed4b2e3881a58748a94a37785cffabb187abe2dd8"
+        },
+        {
+          "key": "emiliana:231",
+          "source_line": 231,
+          "kind": "scripted_reply",
+          "parts": [
+            "Right, so I gathered some information. We currently are at an upper level of the Crimson Court. Down below are at least two more areas, though I haven't scouted anything related to the Herald yet.",
+            "Your task is to do exactly that, find out where the Herald resides and defeat him to end his reign of terror once and for all."
+          ],
+          "text_sha256": "2fb05cfd78c4873137f90239078dd2749c192d1dddf7d058f23e8f3bb0597d14"
+        },
+        {
+          "key": "emiliana:240",
+          "source_line": 240,
+          "kind": "scripted_reply",
+          "parts": [
+            "The Herald still resides somewhere below us. Find him and defeat him to end his reign of terror!"
+          ],
+          "text_sha256": "11b7c84e665bec9948f46fbfa546a5f3b44d390cdad633a4cb629bc5d8589ecf"
+        },
+        {
+          "key": "emiliana:248",
+          "source_line": 248,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "Nice to meet you |PLAYERNAME|, the name's Emiliana."
+          ],
+          "text_sha256": "62880b850c4a4bb26fdf9dc52b10e8dee40f4aad33a7de6082c3f68b38c9de48"
+        },
+        {
+          "key": "emiliana:249",
+          "source_line": 249,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "I used to teach imbuing all around the tibian world, maybe someday you will meet up with Alibinius at Thais. Imbuement is such a powerful thing if done correctly."
+          ],
+          "text_sha256": "3b6b4b864f13353aa033467e70645107bd80829aa2917de0ba6126aa56842ffe"
+        },
+        {
+          "key": "emiliana:250",
+          "source_line": 250,
+          "kind": "keyword",
+          "keywords": [
+            "imbuement",
+            "imbuing"
+          ],
+          "parts": [
+            "Having the option to imbue astral power into your gear making it stronger, more potent and fitting for your style really can make a night and day difference. You should try it out for yourself someday as well."
+          ],
+          "text_sha256": "7f25677f658d0dc9d1d82744b10c0b88e95c0fbc0b748e37685247a23b8f728b"
+        },
+        {
+          "key": "emiliana:251",
+          "source_line": 251,
+          "kind": "keyword",
+          "keywords": [
+            "targuna"
+          ],
+          "parts": [
+            "Such a pleasant little island, it's the perfect place to enjoy my peace and finally go after my hobbies again after travelling around Tibia for quite some time."
+          ],
+          "text_sha256": "9e4bf39fdd7c0fad7b296aca536d25a8afdfe56837765716e66099a25a92465c"
+        },
+        {
+          "key": "emiliana:252",
+          "source_line": 252,
+          "kind": "keyword",
+          "keywords": [
+            "travel"
+          ],
+          "parts": [
+            "I'd say you got two options, one reasonable and another one not as much. You could even travel with Matilda to Aragonia and see what the pirates are up to ... or you could be sane and travel to Thais with Captain Indigo and get to see the beauty of the Tibian mainland, your choice I suppose ..."
+          ],
+          "text_sha256": "c9fa95121a2f2602a66d809e01aa15d210b2f7d76c5a248cad36429b0edd9077"
+        },
+        {
+          "key": "emiliana:253",
+          "source_line": 253,
+          "kind": "keyword",
+          "keywords": [
+            "matilda"
+          ],
+          "parts": [
+            "Isn't that his turtle? She once got me to Aragonia and back for free. I definitely wasn't the smoothest ride, but I won't complain for that price ..."
+          ],
+          "text_sha256": "07324b5055ebcc34b761ff8895204bc496b6b5f0582db286722dc90df759f0f8"
+        },
+        {
+          "key": "emiliana:254",
+          "source_line": 254,
+          "kind": "keyword",
+          "keywords": [
+            "captain indigo"
+          ],
+          "parts": [
+            "Our beloved Captain Indigo is the only way to travel to mainland from here, therefore she is the only connection for other resources, supplies and things alike. You can find and sell supplies at Aurelia's shop just south of my home."
+          ],
+          "text_sha256": "2b3241f316c834bac3f8d129d8607ee1094885250147af0ecae093bea7985bc2"
+        },
+        {
+          "key": "emiliana:255",
+          "source_line": 255,
+          "kind": "keyword",
+          "keywords": [
+            "indigo"
+          ],
+          "parts": [
+            "She owns the boat on the east of Targuna, which can take you straight to Thais, whenever you so desire. I heard if you hand her a ticket you get your ride free of charge. I tell you, that's a deal!"
+          ],
+          "text_sha256": "1a7783c4d35b1f87d8d281adba426e0d2a84edf215b662c01d1eb1ef6f298861"
+        },
+        {
+          "key": "emiliana:256",
+          "source_line": 256,
+          "kind": "keyword",
+          "keywords": [
+            "aurelia"
+          ],
+          "parts": [
+            "Aurelia has a little shop just south of me, so whenever you might need new supplies or want to sell some stuff, I'd suggest paying her a visit."
+          ],
+          "text_sha256": "4dc0f6de9acfc043dbd3c858cd14df0f51c01377ce9c92dada392d98eaa02dd6"
+        },
+        {
+          "key": "emiliana:257",
+          "source_line": 257,
+          "kind": "keyword",
+          "keywords": [
+            "shop"
+          ],
+          "parts": [
+            "Selling and buying supplies is all taken care off by our dearest Aurelia. You can find her at the south east side of Targuna, basically right south of my house."
+          ],
+          "text_sha256": "8a451621d780ace9d5ac8e0494fa44ac83797899968edd7922fda199322e4ba0"
+        },
+        {
+          "key": "emiliana:258",
+          "source_line": 258,
+          "kind": "keyword",
+          "keywords": [
+            "aragonia"
+          ],
+          "parts": [
+            "That pirate island, yeah. Not going to be there anytime soon and I'd advise you to do the same, if you still want to leave alive. Those pirates are more dangerous than they might seem."
+          ],
+          "text_sha256": "3e51e9e3a1ba45439bd57979f688b4c72703d4e854ac7d8c6bae49fb861691e3"
+        },
+        {
+          "key": "emiliana:259",
+          "source_line": 259,
+          "kind": "keyword",
+          "keywords": [
+            "pirate",
+            "pirates"
+          ],
+          "parts": [
+            "Who? Sterling?! Well I'd say that's not a real pirate, though if you're talking about these pesky pirates on Aragonia, then wow these are definitely pirates to be scared of. I wouldn't want to be around them."
+          ],
+          "text_sha256": "06e294132c41fe938c9efe6cff79a5aeef7b9cea0546a7242dedbb79179a368a"
+        },
+        {
+          "key": "emiliana:260",
+          "source_line": 260,
+          "kind": "keyword",
+          "keywords": [
+            "sterling"
+          ],
+          "parts": [
+            "He's not a real pirate honestly, I think part-time seems more fitting here, nevertheless he's a nice pirate to have around. If you ever feel the need to travel to Aragonia, you should talk to him about it."
+          ],
+          "text_sha256": "49cefb718a2ee11643921864d31310d5e08169d578f74f3d926ddfac3a0238c9"
+        },
+        {
+          "key": "emiliana:261",
+          "source_line": 261,
+          "kind": "keyword",
+          "keywords": [
+            "camilla"
+          ],
+          "parts": [
+            "Our precious mayor Camilla takes care of every official request and everything representative in and around Targuna. She's rather new here, though we couldn't be better off with anyone else."
+          ],
+          "text_sha256": "32a0cd5e1365b56b40620dceff0b0b12223cef5b43c0c4f21461d9dc3015d0e6"
+        },
+        {
+          "key": "emiliana:262",
+          "source_line": 262,
+          "kind": "keyword",
+          "keywords": [
+            "mayor"
+          ],
+          "parts": [
+            "The mayor of Targuna has historically been residing in the upper floors and room of the depot in the middle of the Island, so if there's ever a need to visit Camilla at her office, you'll know exactly where to look."
+          ],
+          "text_sha256": "9a0d46a3b9617419e71664e407252d0e4c98eed7ae634bb14049c6cb5c989f0e"
+        },
+        {
+          "key": "emiliana:263",
+          "source_line": 263,
+          "kind": "keyword",
+          "keywords": [
+            "adrian"
+          ],
+          "parts": [
+            "Having Adrian as our financial advisor and helper here is surely nothing short of a blessing, so whenever you find yourself having little fortune in your pockets, pay him a visit and make sure you deposit it."
+          ],
+          "text_sha256": "d9fc033e6fb7da083a85da1cc444ea8bdab1ed5dcc5e7991376f55278c49113c"
+        },
+        {
+          "key": "emiliana:264",
+          "source_line": 264,
+          "kind": "keyword",
+          "keywords": [
+            "leonora"
+          ],
+          "parts": [
+            "Everybody has to use the post office and so do we here on Targuna. Leonora takes care of all the work, by making it able to send and receive parcels, letters and many other things."
+          ],
+          "text_sha256": "11f10004dbdbf2db3acc95482c39bd52b6a8c86883cd83a8cb8287d0531a179e"
+        },
+        {
+          "key": "emiliana:265",
+          "source_line": 265,
+          "kind": "keyword",
+          "keywords": [
+            "post office",
+            "post"
+          ],
+          "parts": [
+            "Leonora is responsible for all our parcel and letter service here on Targuna, you can find her at her office just north of us."
+          ],
+          "text_sha256": "5c148cd56367b327a75c7cacbb02bbba4695e814cae76731248b28e49f5d27a9"
+        },
+        {
+          "key": "emiliana:266",
+          "source_line": 266,
+          "kind": "keyword",
+          "keywords": [
+            "lizzie"
+          ],
+          "parts": [
+            "She told me about her research on ancient lizard groups ... May sound interesting at first, but I wouldn't want to hear that again, I'll tell you that!"
+          ],
+          "text_sha256": "5eada36ce046974389e75f99c4396450df0841554c37905bf08b238d5f02f117"
+        },
+        {
+          "key": "emiliana:267",
+          "source_line": 267,
+          "kind": "keyword",
+          "keywords": [
+            "lizard",
+            "lizards"
+          ],
+          "parts": [
+            "We once had a lizard problem at the north of the island, but I think it has been there for quite some time now ... Maybe you could ask Lizzie about it, she's been researching them for some time now."
+          ],
+          "text_sha256": "8371d8e6bb5df80cc69b5d254718f30e82ca4562b8cb7af7202ddb00c4b58389"
+        },
+        {
+          "key": "emiliana:268",
+          "source_line": 268,
+          "kind": "keyword",
+          "keywords": [
+            "morla"
+          ],
+          "parts": [
+            "She's the cute turtle that Sterling once saved from a storm at Aragonia. Before these pirates took over it used to be paradise. If you're interested in turtles, you nearly have to pay her a visit."
+          ],
+          "text_sha256": "55df06bbc9de0c8f26371690079998cda389cbee1a79cd3aafe61d41b22b3856"
+        },
+        {
+          "key": "emiliana:270",
+          "source_line": 270,
+          "kind": "keyword",
+          "keywords": [
+            "portal"
+          ],
+          "parts": [
+            "My portal leads to the Crimson Court. Go upstairs, open the door and walk through it."
+          ],
+          "text_sha256": "3ebd0fdbedab01719292a00f060ac8eeb1c9c2ff8502b22b0f85421f9e7fcfeb"
+        },
+        {
+          "key": "emiliana:271",
+          "source_line": 271,
+          "kind": "keyword",
+          "keywords": [
+            "herald"
+          ],
+          "parts": [
+            "The Herald of Fire resides somewhere in the depths of the Crimson Court. He must be stopped."
+          ],
+          "text_sha256": "2a08657fd1285761ccb061fe6ea14dce2f22d03a240aa11fb85bcad93c105684"
+        },
+        {
+          "key": "emiliana:272",
+          "source_line": 272,
+          "kind": "keyword",
+          "keywords": [
+            "crimson court"
+          ],
+          "parts": [
+            "An ancient and dangerous place, reachable only through my portal."
+          ],
+          "text_sha256": "6c2894f380a87ca7e37351468a4c19fa04969e30092684d0f93f00830ba5dcce"
+        },
+        {
+          "key": "emiliana:273",
+          "source_line": 273,
+          "kind": "keyword",
+          "keywords": [
+            "ram"
+          ],
+          "parts": [
+            "There's a lonely ram on Targuna. Maybe it wouldn't mind a bite of turnips ..."
+          ],
+          "text_sha256": "05eb59fe612c45afffa8c361f12c8bcaa582179bf719cf2a058b2d3c6b68b5a8"
+        },
+        {
+          "key": "emiliana:275",
+          "source_line": 275,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Hey, I really need your {help} on an important mission urgently."
+          ],
+          "text_sha256": "488a72c4838e44f0751b8943e7c66b69b3b64be5921545d100b4af9b86fb00cb"
+        },
+        {
+          "key": "emiliana:276",
+          "source_line": 276,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye!"
+          ],
+          "text_sha256": "c133430eb8dc0b1f7012ff239ac04ba78f24b161edaddc3edde36c8fffd46d26"
+        },
+        {
+          "key": "emiliana:277",
+          "source_line": 277,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Good bye!"
+          ],
+          "text_sha256": "c133430eb8dc0b1f7012ff239ac04ba78f24b161edaddc3edde36c8fffd46d26"
+        }
+      ]
+    },
+    {
+      "npc": "adrian",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/adrian.lua",
+        "sha256": "f684e0d18eefcdee3bb2ec94166238d7793881708cc2347771a45cc5e74d3593"
+      },
+      "text_records": [
+        {
+          "key": "adrian:93",
+          "source_line": 93,
+          "kind": "keyword",
+          "keywords": [
+            "name"
+          ],
+          "parts": [
+            "My name is Adrian, how may I assist you today?"
+          ],
+          "text_sha256": "cbe0ee4b46ffe3b93f9b7ce4ef54dc3aed833a5abdac9915e14a761d8dcd9beb"
+        },
+        {
+          "key": "adrian:94",
+          "source_line": 94,
+          "kind": "keyword",
+          "keywords": [
+            "adrian"
+          ],
+          "parts": [
+            "Mhm?"
+          ],
+          "text_sha256": "75da07322f5e409eaf7c5b1f61b624d60b2e4f52bfec690511380e556db03f72"
+        },
+        {
+          "key": "adrian:95",
+          "source_line": 95,
+          "kind": "keyword",
+          "keywords": [
+            "job"
+          ],
+          "parts": [
+            "I`m the banker here in Targuna. It's my job to manage your bank account and change currencies."
+          ],
+          "text_sha256": "73fe37cacf7cb625510f4a3bf2471781befe97c2d28531a25a18c48e0736c774"
+        },
+        {
+          "key": "adrian:96",
+          "source_line": 96,
+          "kind": "keyword",
+          "keywords": [
+            "mission",
+            "quest"
+          ],
+          "parts": [
+            "I'm just a banker, ask around maybe someone else could need your help."
+          ],
+          "text_sha256": "af170312994c2fb9830c225fe176c3405e6449ec36677948d3bcd05a7a81fa0c"
+        },
+        {
+          "key": "adrian:97",
+          "source_line": 97,
+          "kind": "keyword",
+          "keywords": [
+            "targuna"
+          ],
+          "parts": [
+            "This is our little island here. We are just a small community, but we have good trade relations with the Thais."
+          ],
+          "text_sha256": "9fb8f7f109103af005f12b84fb54b2e2bf27d625aff7b2f46ff7be3db037b86c"
+        },
+        {
+          "key": "adrian:98",
+          "source_line": 98,
+          "kind": "keyword",
+          "keywords": [
+            "thais"
+          ],
+          "parts": [
+            "Thais is our beautiful capital, ruled by our beloved king Tibianus III."
+          ],
+          "text_sha256": "582d7047e4705e1df1b3084726fe92b57f8bd672b22eab6c4864bb3118a8cd4f"
+        },
+        {
+          "key": "adrian:99",
+          "source_line": 99,
+          "kind": "keyword",
+          "keywords": [
+            "bank"
+          ],
+          "parts": [
+            "You can deposit and withdraw money from your bank account here. I can also change money for you."
+          ],
+          "text_sha256": "e0889c7f0015fe4b1b6899c924c72e18677e79f39e420023c1cd540cd49a6a3d"
+        },
+        {
+          "key": "adrian:100",
+          "source_line": 100,
+          "kind": "keyword",
+          "keywords": [
+            "functions"
+          ],
+          "parts": [
+            "Every Tibian has a global bank account. This means you can deposit your gold in one bank, and withdraw it from the same or any other Tibian bank in any city. ... Here on Targuna, I run the bank. I keep any gold you deposit safe, so you can't lose it when you're out fighting or dying, heh. Ask me for your {balance} to learn how much money you've already saved."
+          ],
+          "text_sha256": "8829f99f863f8d4d5089102e73168317002f868a3ef2b69487524aa1d50d7868"
+        },
+        {
+          "key": "adrian:104",
+          "source_line": 104,
+          "kind": "keyword",
+          "keywords": [
+            "advanced"
+          ],
+          "parts": [
+            "Your bank account will be used automatically when you want to rent a house or place an offer on an item on the market. Let me know if you want to know about how either one works."
+          ],
+          "text_sha256": "c3b475b9f0cb1aa061ca9165fd80ddb45f624ae4cd8142d9380611dfd9f3d494"
+        },
+        {
+          "key": "adrian:105",
+          "source_line": 105,
+          "kind": "keyword",
+          "keywords": [
+            "rent"
+          ],
+          "parts": [
+            "Renting a house has never been this easy. Simply make a bid for an auction on the house section of the official Tibia website. We will check immediately if you have enough money ... Please keep in mind that the sum you have used to bid will be unavailable unless somebody places a higher bid. Once you have acquired a house the rent will be charged automatically from your bank account every month."
+          ],
+          "text_sha256": "131dd14bb1aef98377a36373f9246d20e78e94310e63e94f9fe00c821b14e39f"
+        },
+        {
+          "key": "adrian:109",
+          "source_line": 109,
+          "kind": "keyword",
+          "keywords": [
+            "market"
+          ],
+          "parts": [
+            "If you buy an item from the market, the required gold will be deducted from your bank account automatically. On the other hand, money you earn for selling items via the market will be added to your account. It's easy!"
+          ],
+          "text_sha256": "7528b4e37c9f85827470f009d21c95b674aea73160fd7711ef7262eca6dd6412"
+        },
+        {
+          "key": "adrian:111",
+          "source_line": 111,
+          "kind": "message",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Welcome to the Tibian bank, young adventurer! Deposit your gold or withdraw your money from your bank account. Remember to deposit all of your gold before you leave here. I can also explain the {functions} of your bank account to you."
+          ],
+          "text_sha256": "0fcfaad7febe7f48e75d83c0817143bf392002e90b57052ec308e9d5ebb344a6"
+        },
+        {
+          "key": "adrian:112",
+          "source_line": 112,
+          "kind": "message",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Goodbye."
+          ],
+          "text_sha256": "8ac88eb3c8a281fb607a32f13754dddae5edf21c9b18583187c87857fb281290"
+        },
+        {
+          "key": "adrian:113",
+          "source_line": 113,
+          "kind": "message",
+          "event": "MESSAGE_WALKAWAY",
+          "parts": [
+            "Goodbye."
+          ],
+          "text_sha256": "8ac88eb3c8a281fb607a32f13754dddae5edf21c9b18583187c87857fb281290"
+        }
+      ]
+    }
+  ]
+}
