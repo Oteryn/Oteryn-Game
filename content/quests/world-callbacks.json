@@ -69,6 +69,32 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/deeper-fibula-well",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 15005,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32172,
+        "y": 32439,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeper_fibula/action-draw_well.lua:3-9"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/fish-napping-key",
       "quest": "oteryn:quest.the_thieves_guild_quest",
       "trigger": "use",
@@ -195,6 +221,36 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/isle-of-evil-upper-teleport",
+      "quest": "oteryn:quest.the_isle_of_evil_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32753,
+          "y": 31452,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32754,
+        "y": 31469,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_isle_of_evil_quest/movements_teleport_isle.lua:3-15"
       ]
     },
     {
@@ -871,6 +927,677 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/serpentine-tower-torch",
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5632,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33151,
+            "y": 32866,
+            "floor": -8
+          },
+          "appearance": 1345,
+          "replacement": null
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_serpentine_tower_torch.lua:2-13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4227",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4227,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32624,
+        "y": 31855,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4228",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4228,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32228,
+        "y": 32596,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4229",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4229,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4230",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4230,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32243,
+        "y": 32619,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:6",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:6",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4231",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4231,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4232",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4232,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32240,
+        "y": 32620,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4233",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4233,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4234",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4234,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32227,
+        "y": 32598,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:10",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:10",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4235",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4235,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4236",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4236,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32238,
+        "y": 32622,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4237",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4237,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:13",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:13",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4238",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4238,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32244,
+        "y": 32619,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4239",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4239,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4240",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4240,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32244,
+        "y": 32588,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4241",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4241,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:17",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:17",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4242",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4242,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32224,
+        "y": 32606,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4243",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4243,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:19",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:19",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-crimson-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32414,
+          "y": 32691,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31962,
+        "y": 31898,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-inner-portal",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32424,
+          "y": 32652,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32432,
+        "y": 32656,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/herald_killed",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You cannot enter the room beyond ... yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-lever-room-exit",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32432,
+          "y": 32652,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32426,
+        "y": 32652,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_crimson_court.lua:17"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-matilda-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33478,
+          "y": 32729,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31925,
+        "y": 31907,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_aragonia.lua:36"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/targuna-temple-return",
+      "quest": "oteryn:quest.targuna_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31941,
+          "y": 31928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31935,
+        "y": 31861,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/targuna/movements_temple_teleport.lua:1"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/travelling-trader-delivery",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "trigger": "use",
@@ -951,6 +1678,95 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/white-pearl-exit",
+      "quest": "oteryn:quest.white_pearl",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5631,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33147,
+        "y": 32864,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:8-11,35-45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/chayenne-realm/exit",
+      "quest": "oteryn:quest.chayenne_realm",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 55024,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33117,
+        "y": 32604,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:19"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/ferumbras-ascension/tarbaz-first-note",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 54388,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/tarbaz_notes",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz_notes.lua:3"
       ]
     }
   ]

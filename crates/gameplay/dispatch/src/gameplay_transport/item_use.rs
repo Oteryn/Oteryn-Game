@@ -46,6 +46,7 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[path = "condition_potions.rs"]
 pub(super) mod condition_potions;
+mod quest_appearance;
 
 /// `ITEMUSE0-RL-01`: item uses per actor per second.
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;
@@ -493,6 +494,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
+        if let Some(outcome) = quest_appearance::use_foolish_disguise(
+            self, actor, command, &permit, native, entry, record,
+        )
+        .await
+        {
+            return outcome;
+        }
         if let Some(potion) =
             oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
                 &entry.item.definition.production_key,

@@ -36,15 +36,21 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod coin_exchange;
+mod dark_trails;
 mod endgame;
+mod ferumbras;
 mod grizzly;
 mod grizzly_shop;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod isle_of_evil;
 mod monk;
 mod premium_purchase;
+mod quest_dialogue;
 mod service_context;
 mod session_transfer;
+mod spike_tasks;
+mod targuna;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
@@ -65,6 +71,8 @@ struct SessionNpc {
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    quest_dialogue: quest_dialogue::State,
+    targuna: Option<targuna::Pending>,
     endgame: Option<endgame::Pending>,
     hireling: Option<hireling_services::State>,
 }
@@ -631,6 +639,7 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    admission.refresh_level_up_vitals(actor, session).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -714,6 +723,26 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = spike_tasks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = ferumbras::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return ferumbras::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = targuna::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return targuna::apply(admission, actor, command, intent, step, ordinary).await;
+    }
+    if let Some(step) = isle_of_evil::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = endgame::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

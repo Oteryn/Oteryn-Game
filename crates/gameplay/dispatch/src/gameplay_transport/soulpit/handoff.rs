@@ -56,8 +56,9 @@ pub trait BossActivityHandoff: Send + Sync {
         request: SoulpitEntryIntent,
     ) -> Pin<Box<dyn Future<Output = Result<Option<UseOutcome>, ()>> + Send + 'a>>;
 
-    /// Called only after an actual STEP onto the source exit portal. The adapter proves
-    /// membership in the current Soulpit handoff and uses its existing return/recovery owner.
+    /// Called only after an authenticated USE of the source exit object. The caller
+    /// proves the current target revision and reach; the adapter revalidates membership
+    /// in the current Soulpit handoff and uses its existing return/recovery owner.
     fn return_from_soulpit<'a>(
         &'a self,
         admission: &'a ComposedFreshAdmission<'_, '_, '_>,

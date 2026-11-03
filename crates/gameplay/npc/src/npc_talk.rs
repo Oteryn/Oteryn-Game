@@ -7,6 +7,10 @@
 
 use std::collections::HashMap;
 
+mod isle_of_evil;
+mod quest_batch_one;
+mod targuna;
+
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
@@ -131,14 +135,20 @@ impl NpcTalkBook {
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
-            catalogue_revision: revision_of(
-                &crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest(),
+            catalogue_revision: revision_of(&format!(
+                "{}\0{}\0{}\0{}",
+                crate::content::npc_catalogue::grizzly_shop::book_digest(
+                    model.source_tree_digest()
                 ),
-            ),
+                quest_batch_one::revision_material(),
+                targuna::revision_material(),
+                isle_of_evil::revision_material(),
+            )),
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
+            let quest_messages = quest_batch_one::messages(&reference.key);
+            let isle_messages = isle_of_evil::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -184,6 +194,22 @@ impl NpcTalkBook {
                 // consumers. This admits their greeting, not their Lua/script
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
+            } else if let Some(messages) = quest_messages {
+                (
+                    messages.greet.text.clone(),
+                    messages.farewell.text.clone(),
+                    None,
+                    Vec::new(),
+                )
+            } else if let Some(messages) = &isle_messages {
+                (
+                    messages.greet.clone(),
+                    messages.farewell.clone(),
+                    None,
+                    Vec::new(),
+                )
+            } else if let Some((greeting, farewell)) = targuna::greeting(&reference.key) {
+                (greeting, farewell, None, Vec::new())
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -278,8 +304,10 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: false,
-                    source_walkaway: None,
+                    source_name_templates: quest_messages.is_some() || isle_messages.is_some(),
+                    source_walkaway: quest_messages
+                        .map(|messages| messages.walkaway.text.clone())
+                        .or_else(|| isle_messages.map(|messages| messages.walkaway)),
                     topic_reply,
                     dialogue_keywords,
                     offers: npc

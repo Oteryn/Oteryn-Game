@@ -33,7 +33,11 @@ use crate::domain;
 use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumGate;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use oteryn_gameplay_quests::quest::targuna::npc_rules::NpcState as TargunaNpcState;
 use oteryn_protocol_oteryn::chat::ChatRoomSet;
+
+#[path = "chat_intent/targuna_greeting.rs"]
+mod targuna_greeting;
 
 /// How often a connection drains the lines queued for its session.
 pub const CHAT_REFRESH: std::time::Duration = std::time::Duration::from_millis(250);
@@ -724,12 +728,35 @@ pub fn chat_in_channel(
 
 /// One intent of the admitted `actor`, under the runtime and spell-state locks the caller holds.
 /// `premium` is the speaker's Premium gate (PREM-WIRE-1), read for the yell level gate.
+#[cfg(test)]
 pub fn chat_in_premium_channel(
     chat: &ChatRuntime,
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
     (actor, session): (ExactActorRef, GameSessionId),
     premium: PremiumGate,
+    intent: &ChatIntent,
+    now: SemanticTimeMicros,
+) -> ChatIntentResult {
+    chat_in_premium_channel_inner(
+        chat,
+        runtime,
+        states,
+        (actor, session),
+        (premium, None),
+        intent,
+        now,
+    )
+}
+
+/// Presentation reads the same admitted quest copy used by the NPC selectors.
+/// No new state is persisted or cached in ChatRuntime.
+fn chat_in_premium_channel_inner(
+    chat: &ChatRuntime,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    (actor, session): (ExactActorRef, GameSessionId),
+    (premium, targuna_state): (PremiumGate, Option<TargunaNpcState>),
     intent: &ChatIntent,
     now: SemanticTimeMicros,
 ) -> ChatIntentResult {
@@ -816,6 +843,7 @@ pub fn chat_in_premium_channel(
             at,
             &text,
             &listeners,
+            targuna_state,
         );
     }
     result(ChatDisposition::Ok)
@@ -848,6 +876,7 @@ fn npc_answer(
     at: ChatPosition,
     text: &ChatText,
     listeners: &[(GameSessionId, ChatPosition)],
+    targuna_state: Option<TargunaNpcState>,
 ) {
     let visible = runtime.visible_entities();
     let mut spots = Vec::new();
@@ -901,7 +930,32 @@ fn npc_answer(
     let Some(player_name) = sessions.get(&session).map(|speaking| speaking.name.clone()) else {
         return;
     };
-    let rendered = entry.render_source_text(&reply.text, &player_name);
+    let opening = prior != Some(reply.id)
+        && sessions
+            .get(&session)
+            .is_some_and(|speaking| speaking.engaged == Some(reply.id));
+    let rendered = if opening {
+        match targuna_greeting::opening(
+            runtime.npc_key(*actor).unwrap_or(""),
+            targuna_state,
+            *position,
+            at,
+            &player_name,
+        ) {
+            targuna_greeting::Greeting::Line(line) => line,
+            targuna_greeting::Greeting::Other => {
+                entry.render_source_text(&reply.text, &player_name)
+            }
+            targuna_greeting::Greeting::Unavailable => {
+                if let Some(speaking) = sessions.get_mut(&session) {
+                    speaking.engaged = prior;
+                }
+                return;
+            }
+        }
+    } else {
+        entry.render_source_text(&reply.text, &player_name)
+    };
     if prior != Some(reply.id)
         && let Some(speaking) = sessions.get_mut(&session)
         && speaking.engaged == Some(reply.id)
@@ -1016,12 +1070,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
-        chat_in_premium_channel(
+        let targuna_state = self.states.quest_sessions.lock().ok().and_then(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|entry| entry.copy.as_ref())
+                .map(|copy| oteryn_gameplay_quests::quest::targuna::npc_state(copy.tracks()))
+        });
+        chat_in_premium_channel_inner(
             &self.states.chat,
             &runtime,
             &states,
             (actor, session),
-            premium,
+            (premium, targuna_state),
             intent,
             now,
         )
@@ -1138,6 +1198,41 @@ mod tests {
             0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
         ])
         .expect("session")
+    }
+
+    #[test]
+    fn qualified_npc_template_uses_only_its_current_admitted_customer_name() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let npc = book.get("oteryn:npc.ezebeth").ok_or("Ezebeth")?;
+        let chat = ChatRuntime::default();
+        let first = session_of(1);
+        let second = session_of(2);
+        chat.admit(first, "[|PLAYERNAME|] ${name} %s", BASE);
+        chat.admit(second, "Second Player", BASE);
+        assert_eq!(
+            chat.npc_source_reply(first, npc, npc.farewell()),
+            Some("Good bye, [|PLAYERNAME|] ${name} %s.".into())
+        );
+        assert_eq!(
+            chat.npc_source_reply(second, npc, npc.farewell()),
+            Some("Good bye, Second Player.".into())
+        );
+        assert_eq!(
+            chat.npc_source_walkaway(first, npc),
+            Some("Good bye.".into())
+        );
+        chat.forget(first);
+        assert_eq!(chat.npc_source_reply(first, npc, npc.farewell()), None);
+        Ok(())
     }
 
     /// Two admitted, positioned players at the entry tile; `far` is then walked east.
@@ -1736,6 +1831,209 @@ mod tests {
         assert!(chat.drain(second.1).is_empty());
         chat.forget(second.1);
         assert!(!chat.knows(second.1));
+    }
+
+    fn targuna_public_fixture(
+        key: &str,
+        name: &str,
+    ) -> (
+        ChannelRuntimeV1,
+        ChatRuntime,
+        (ExactActorRef, GameSessionId),
+        (ExactActorRef, GameSessionId),
+    ) {
+        use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+        let (mut runtime, chat, first, second) = two_players(0);
+        let spot = runtime
+            .read_actor_position(first.0)
+            .expect("position")
+            .position();
+        assert!(spot.floor <= 7, "surface fixture");
+        let table = NpcPlacementTable {
+            npcs: vec![NpcPlacements {
+                key: key.to_owned(),
+                placements: vec![NpcPlacement {
+                    floor: -i8::try_from(spot.floor).expect("source floor"),
+                    y: u16::try_from(spot.y).expect("y"),
+                    x: u16::try_from(spot.x + 2).expect("x"),
+                    direction: MovementFacing::South,
+                }],
+            }],
+        };
+        runtime.place_npcs(&table, |_| true, true).expect("placed");
+        chat.install_npc_talk(Arc::new(
+            NpcTalkBook::default().with(key, NpcTalkEntry::new(name, None)),
+        ));
+        chat.set_npc_service(first.1);
+        chat.set_npc_service(second.1);
+        (runtime, chat, first, second)
+    }
+
+    #[test]
+    fn targuna_public_hi_uses_the_speakers_live_source_state() {
+        use oteryn_gameplay_quests::quest::targuna::{
+            dialogue,
+            npc_rules::{Npc, NpcState, Reply},
+        };
+        for (key, npc, first_state, next_state, first_line, next_line) in [
+            (
+                "oteryn:npc.lizzie",
+                Npc::Lizzie,
+                NpcState::default(),
+                NpcState {
+                    ancient_mission: 2,
+                    ..NpcState::default()
+                },
+                68,
+                70,
+            ),
+            (
+                "oteryn:npc.sterling",
+                Npc::Sterling,
+                NpcState::default(),
+                NpcState {
+                    treasure_mission: 1,
+                    ..NpcState::default()
+                },
+                72,
+                74,
+            ),
+            (
+                "oteryn:npc.emiliana",
+                Npc::Emiliana,
+                NpcState {
+                    herald_killed: 1,
+                    ..NpcState::default()
+                },
+                NpcState {
+                    burning_mission: 4,
+                    ..NpcState::default()
+                },
+                92,
+                90,
+            ),
+        ] {
+            let (runtime, chat, first, second) = targuna_public_fixture(key, "Source NPC");
+            for (who, name, snapshot, line) in [
+                (first, "Aela", first_state, first_line),
+                (second, "Bryn", next_state, next_line),
+            ] {
+                assert_eq!(
+                    chat_in_premium_channel_inner(
+                        &chat,
+                        &runtime,
+                        &ChannelSpellStates::default(),
+                        who,
+                        (PremiumGate::CLOSED, Some(snapshot)),
+                        &say("hi"),
+                        BASE
+                    ),
+                    result(ChatDisposition::Ok)
+                );
+                let source = dialogue::render(
+                    npc,
+                    &Reply {
+                        source_line: line,
+                        numbers: Vec::new(),
+                    },
+                )
+                .expect("source");
+                let expected = source[0].replace("|PLAYERNAME|", name);
+                assert_eq!(
+                    texts(chat.drain(first.1))
+                        .last()
+                        .map(|(_, line)| line.as_str()),
+                    Some(expected.as_str())
+                );
+                assert_eq!(
+                    texts(chat.drain(second.1))
+                        .last()
+                        .map(|(_, line)| line.as_str()),
+                    Some(expected.as_str())
+                );
+                assert!(chat.engaged(who.1).is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn targuna_public_hi_without_a_quest_copy_does_not_open_or_emit_a_default() {
+        let (runtime, chat, first, second) =
+            targuna_public_fixture("oteryn:npc.lizzie", "Source NPC");
+        assert_eq!(
+            chat_in_premium_channel_inner(
+                &chat,
+                &runtime,
+                &ChannelSpellStates::default(),
+                first,
+                (PremiumGate::CLOSED, None),
+                &say("hi"),
+                BASE
+            ),
+            result(ChatDisposition::Ok)
+        );
+        let expected = vec![("Aela".to_owned(), "hi".to_owned())];
+        assert_eq!(texts(chat.drain(first.1)), expected);
+        assert_eq!(texts(chat.drain(second.1)), expected);
+        assert!(chat.engaged(first.1).is_none());
+        assert_eq!(chat.npc_conversation_generation(first.1), None);
+    }
+
+    #[test]
+    fn targuna_public_state_hook_does_not_intercept_static_foreign_npcs() {
+        let (runtime, chat, first, second) =
+            targuna_public_fixture("oteryn:npc.alice", "Source NPC");
+        assert_eq!(
+            chat_in_premium_channel_inner(
+                &chat,
+                &runtime,
+                &ChannelSpellStates::default(),
+                first,
+                (PremiumGate::CLOSED, None),
+                &say("hi"),
+                BASE
+            ),
+            result(ChatDisposition::Ok)
+        );
+        let expected = "Greetings, I am Source NPC.";
+        assert_eq!(
+            texts(chat.drain(first.1))
+                .last()
+                .map(|(_, line)| line.as_str()),
+            Some(expected)
+        );
+        assert_eq!(
+            texts(chat.drain(second.1))
+                .last()
+                .map(|(_, line)| line.as_str()),
+            Some(expected)
+        );
+        // The own hook must not alter the existing foreign-NPC admission even
+        // when that NPC's unrelated presentation fails the ordinary ChatText bound.
+        let (runtime, chat, first, second) =
+            targuna_public_fixture("oteryn:npc.alice", &"x".repeat(300));
+        assert_eq!(
+            chat_in_premium_channel_inner(
+                &chat,
+                &runtime,
+                &ChannelSpellStates::default(),
+                first,
+                (PremiumGate::CLOSED, None),
+                &say("hi"),
+                BASE
+            ),
+            result(ChatDisposition::Ok)
+        );
+        assert_eq!(
+            texts(chat.drain(first.1)),
+            vec![("Aela".to_owned(), "hi".to_owned())]
+        );
+        assert_eq!(
+            texts(chat.drain(second.1)),
+            vec![("Aela".to_owned(), "hi".to_owned())]
+        );
+        assert!(chat.engaged(first.1).is_some());
+        assert!(chat.npc_conversation_generation(first.1).is_some());
     }
 
     #[test]

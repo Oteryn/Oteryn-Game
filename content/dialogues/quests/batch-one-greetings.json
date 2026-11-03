@@ -1,0 +1,80 @@
+{
+  "schema": "OTERYN_QUESTS1_GREETINGS_V1",
+  "records": [
+    {
+      "npc": "oteryn:npc.ezebeth",
+      "greet": {
+        "text": "Hello! I guess you are here for a {mission}.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:118"
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82"
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:90"
+      }
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "greet": {
+        "text": "Hi!",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:278"
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82"
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:90"
+      }
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
+      "greet": {
+        "text": "Hi!",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:274"
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82"
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:90"
+      }
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "greet": {
+        "text": "Hi!",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:275"
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82"
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:90"
+      }
+    },
+    {
+      "npc": "oteryn:npc.mazarius",
+      "greet": {
+        "text": "Greetings, dear visitor. Please tell me what {brings} you here, to my humble adobe.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mazarius.lua:189"
+      },
+      "farewell": {
+        "text": "Good bye.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mazarius.lua:190"
+      },
+      "walkaway": {
+        "text": "Oh well.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mazarius.lua:191"
+      }
+    }
+  ]
+}

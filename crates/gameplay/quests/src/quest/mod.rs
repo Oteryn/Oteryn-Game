@@ -16,12 +16,17 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+pub mod dark_trails;
+pub mod ferumbras_ascension;
 pub mod grizzly_adams;
+pub mod isle_of_evil;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
 pub mod rotten_blood;
 pub mod soul_war;
+pub mod spike_tasks;
+pub mod targuna;
 pub mod task_board;
 pub mod world_callbacks;
 
