@@ -488,7 +488,7 @@ def validate_pr_metadata_workflow_text(
             "name": "Merge gate / governance",
             "needs": "scope",
             "runs-on": "ubuntu-24.04",
-            "timeout-minutes": "10",
+            "timeout-minutes": "20",
             "permissions": "",
             "steps": "",
         }
