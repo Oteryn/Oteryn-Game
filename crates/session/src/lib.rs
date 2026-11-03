@@ -910,6 +910,28 @@ const MAX_RETAINED_DUPLICATES: usize = 64;
 const SERVER_SILENCE_DEADLINE: Duration = Duration::from_secs(20);
 
 impl<S: SessionStream> Session<S> {
+    /// Service an idle connection until at least one pushed domain event is applied.
+    ///
+    /// The deadline bounds the whole wait; individual idle reads are deliberately short so
+    /// liveness traffic cannot make an event waiter return before the subscribed domain changes.
+    pub async fn wait_for_events(
+        &mut self,
+        deadline: Duration,
+    ) -> Result<Vec<SessionEvent>, SessionError> {
+        let until = tokio::time::Instant::now() + deadline;
+        loop {
+            let events = self.take_events();
+            if !events.is_empty() {
+                return Ok(events);
+            }
+            let Some(remaining) = until.checked_duration_since(tokio::time::Instant::now()) else {
+                return Err(SessionError::Timeout("pushed domain event"));
+            };
+            self.service_liveness(remaining.min(Duration::from_millis(250)))
+                .await?;
+        }
+    }
+
     /// Admits over the established `stream` with `admission` and decodes the join snapshot the
     /// server sends right after `ServerAccepted` (`SnapshotBegin`, `SnapshotChunk`,
     /// `SnapshotCommit` - FND-02 section 16), keeping the admitted connection: the returned
