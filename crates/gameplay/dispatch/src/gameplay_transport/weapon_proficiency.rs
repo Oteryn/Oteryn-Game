@@ -785,7 +785,7 @@ mod tests {
             shaping_key: resolved
                 .definition_key
                 .replace("oteryn:proficiency.", "oteryn:proficiency-shaping."),
-            shaping_revision: "shaping-r1".to_owned(),
+            shaping_revision: "shaping-r2".to_owned(),
             entry_index: 0,
             rank,
             pending_offer: None,

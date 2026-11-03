@@ -10,8 +10,7 @@ use oteryn_gameplay_content::content::{
     import_committed_proficiency_shaping, proficiency_perk_identity,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    PROFICIENCY_MODIFICATION_RANKS, ProficiencyModifiedPerk, ProficiencyShapingEntry,
-    ProficiencyShapingRevision,
+    ProficiencyModifiedPerk, ProficiencyShapingEntry, ProficiencyShapingRevision,
 };
 use std::sync::{Arc, OnceLock};
 
@@ -28,6 +27,56 @@ fn committed() -> Option<&'static Arc<ImportedProficiencyShaping>> {
     SHAPING
         .get_or_init(|| import_committed_proficiency_shaping().ok().map(Arc::new))
         .as_ref()
+}
+
+#[cfg(test)]
+fn retired_r1() -> Option<&'static Arc<ImportedProficiencyShaping>> {
+    static SHAPING: OnceLock<Option<Arc<ImportedProficiencyShaping>>> = OnceLock::new();
+    SHAPING
+        .get_or_init(|| {
+            oteryn_gameplay_content::content::import_retired_proficiency_shaping_r1()
+                .ok()
+                .map(Arc::new)
+        })
+        .as_ref()
+}
+
+fn revision(
+    shaping: &ImportedProficiencyShaping,
+    shaping_key: &str,
+) -> Option<ProficiencyShapingRevision> {
+    let definition = shaping_key
+        .strip_prefix("oteryn:proficiency-shaping.")
+        .map(|rest| format!("oteryn:proficiency.{rest}"))?;
+    let pool = shaping
+        .pools
+        .get(shaping.definition_vocations.get(&definition)?)?;
+    let [first, second] = shaping.modify_dust;
+    let revision = ProficiencyShapingRevision {
+        shaping_key: shaping_key.to_owned(),
+        revision: shaping.revision.clone(),
+        pool: Some(
+            pool.iter()
+                .map(|entry| ProficiencyShapingEntry {
+                    perk_identity: entry.identity.clone(),
+                    weight: Some(shaping.uniform_weight),
+                    rank_values: std::array::from_fn(|rank| {
+                        shaping.revision != "shaping-r1" || rank == 0 || rank == 10
+                    }),
+                })
+                .collect(),
+        ),
+        modify_cost: [Some(first), Some(second)],
+        rank_step_cost: if shaping.revision == "shaping-r1" {
+            [None; 10]
+        } else {
+            shaping.rank_step_dust.map(Some)
+        },
+        reshape_offer_cost: Some(shaping.reshape_offer_dust),
+        clear_cost: Some(shaping.clear_dust),
+        orb_count: Some(shaping.orb_count),
+    };
+    revision.is_well_formed().then_some(revision)
 }
 
 impl ProductionProficiencyShaping {
@@ -62,35 +111,7 @@ pub(super) fn modified_value(
 
 impl ProficiencyShapingSource for ProductionProficiencyShaping {
     fn active(&self, shaping_key: &str) -> Option<ProficiencyShapingRevision> {
-        let definition = shaping_key
-            .strip_prefix("oteryn:proficiency-shaping.")
-            .map(|rest| format!("oteryn:proficiency.{rest}"))?;
-        let pool = self
-            .shaping
-            .pools
-            .get(self.shaping.definition_vocations.get(&definition)?)?;
-        let mut rank_values = [false; PROFICIENCY_MODIFICATION_RANKS];
-        rank_values.fill(true);
-        let [first, second] = self.shaping.modify_dust;
-        let revision = ProficiencyShapingRevision {
-            shaping_key: shaping_key.to_owned(),
-            revision: self.shaping.revision.clone(),
-            pool: Some(
-                pool.iter()
-                    .map(|entry| ProficiencyShapingEntry {
-                        perk_identity: entry.identity.clone(),
-                        weight: Some(self.shaping.uniform_weight),
-                        rank_values,
-                    })
-                    .collect(),
-            ),
-            modify_cost: [Some(first), Some(second)],
-            rank_step_cost: self.shaping.rank_step_dust.map(Some),
-            reshape_offer_cost: Some(self.shaping.reshape_offer_dust),
-            clear_cost: Some(self.shaping.clear_dust),
-            orb_count: Some(self.shaping.orb_count),
-        };
-        revision.is_well_formed().then_some(revision)
+        revision(&self.shaping, shaping_key)
     }
 
     fn perk_identity(
@@ -178,9 +199,36 @@ mod tests {
     }
 
     #[test]
-    fn migration_0575_activates_exactly_the_shaped_definitions() {
+    fn shaping_r2_admits_rank_up_while_retained_r1_rejects_it() {
+        let row = ProficiencyModifiedPerk {
+            level: 0,
+            shaping_key: "oteryn:proficiency-shaping.tibia.p6".into(),
+            shaping_revision: "shaping-r2".into(),
+            entry_index: 0,
+            rank: 0,
+            pending_offer: None,
+        };
+        let current = source().active(&row.shaping_key).expect("current revision");
+        assert_eq!(current.revision, "shaping-r2");
+        assert!(
+            current
+                .admitted(ProficiencyModificationCommandKind::RankUp, 1, Some(&row))
+                .is_some()
+        );
+
+        let old = revision(retired_r1().expect("retained r1"), &row.shaping_key)
+            .expect("retained revision");
+        assert_eq!(old.revision, "shaping-r1");
+        assert!(
+            old.admitted(ProficiencyModificationCommandKind::RankUp, 1, Some(&row))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn migration_0915_activates_exactly_the_shaped_definitions() {
         const MIGRATION: &str = include_str!(
-            "../../../../../apps/game-server/migrations/0575_proficiency_perk_shaping.sql"
+            "../../../../../apps/game-server/migrations/0915_proficiency_shaping_r2.sql"
         );
         let shaping = import_committed_proficiency_shaping().expect("shaping");
         let list = &MIGRATION[MIGRATION.find("unnest(ARRAY[").expect("activation list")..];
@@ -198,7 +246,7 @@ mod tests {
             shaped.iter().map(String::as_str).collect(),
             "a shaping.json definition change needs a forward activation migration"
         );
-        assert!(MIGRATION.contains(&format!("'{}', NULL)", shaping.revision)));
+        assert!(MIGRATION.contains(&format!("'{}', ARRAY['shaping-r1']", shaping.revision)));
     }
 
     #[test]

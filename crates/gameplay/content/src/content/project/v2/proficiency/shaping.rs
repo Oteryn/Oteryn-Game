@@ -8,8 +8,10 @@ use super::*;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-const SHAPING: &str =
+const SHAPING_R1: &str =
     include_str!("../../../../../../../../rulesets/progression/weapon-proficiency/shaping.json");
+const SHAPING_R2: &str =
+    include_str!("../../../../../../../../rulesets/progression/weapon-proficiency/shaping-r2.json");
 
 /// Global ranks: an initial rank 0 and ten refinement steps (PROFICIENCY-1C).
 pub const PROFICIENCY_SHAPING_STEPS: usize = 10;
@@ -63,7 +65,7 @@ struct File {
     costs: Costs,
     weights: String,
     ranks: Ranks,
-    rank_value_curve: RankValueCurve,
+    rank_value_curve: Option<RankValueCurve>,
     universal: Vec<Entry>,
     spell_augments: Vec<Augment>,
     spell_augment_overrides: Vec<Override>,
@@ -179,6 +181,15 @@ fn rank_values(
     Ok(values)
 }
 
+fn endpoint_rank_values(
+    rank0: ProjectV2ExactRatio,
+    rank10: ProjectV2ExactRatio,
+) -> Result<[ProjectV2ExactRatio; PROFICIENCY_SHAPING_STEPS + 1], ProjectError> {
+    let mut values = [rank0; PROFICIENCY_SHAPING_STEPS + 1];
+    values[PROFICIENCY_SHAPING_STEPS] = rank10;
+    Ok(values)
+}
+
 fn rank_values_with_step(
     rank0: ProjectV2ExactRatio,
     rank10: ProjectV2ExactRatio,
@@ -240,7 +251,12 @@ pub fn proficiency_perk_identity(perk: &ProjectV2ProficiencyPerk) -> Option<Stri
 
 /// Import the repository's committed shaping values, validating the pool shape.
 pub fn import_committed_proficiency_shaping() -> Result<ImportedProficiencyShaping, ProjectError> {
-    import_shaping(SHAPING)
+    import_shaping(SHAPING_R2)
+}
+
+/// Import the retained first revision. It deliberately exposes only the endpoint ranks.
+pub fn import_retired_proficiency_shaping_r1() -> Result<ImportedProficiencyShaping, ProjectError> {
+    import_shaping(SHAPING_R1)
 }
 
 fn import_shaping(text: &str) -> Result<ImportedProficiencyShaping, ProjectError> {
@@ -249,8 +265,10 @@ fn import_shaping(text: &str) -> Result<ImportedProficiencyShaping, ProjectError
         &file.evidence,
         &file.costs.clear_evidence,
         &file.costs.orb_item,
-        &file.rank_value_curve.donor,
-        &file.rank_value_curve.curve_definitions,
+        file.rank_value_curve.as_ref().map(|curve| &curve.donor),
+        file.rank_value_curve
+            .as_ref()
+            .map(|curve| &curve.curve_definitions),
     );
     if file.schema != "oteryn.weapon-proficiency.shaping/v1"
         || file.weights != "ASSUMPTION_UNIFORM"
@@ -258,9 +276,11 @@ fn import_shaping(text: &str) -> Result<ImportedProficiencyShaping, ProjectError
         || usize::from(file.ranks.max) != PROFICIENCY_SHAPING_STEPS
         || file.ranks.evidenced != [0, file.ranks.max]
         || file.costs.orb_count > 1
-        || file.rank_value_curve.denominator != PROFICIENCY_SHAPING_STEPS as u8
-        || file.rank_value_curve.rank0_weights != [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-        || file.rank_value_curve.rank10_weights != [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        || file.rank_value_curve.as_ref().is_some_and(|curve| {
+            curve.denominator != PROFICIENCY_SHAPING_STEPS as u8
+                || curve.rank0_weights != [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+                || curve.rank10_weights != [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        })
     {
         return Err(invalid("proficiency shaping header"));
     }
@@ -276,7 +296,10 @@ fn import_shaping(text: &str) -> Result<ImportedProficiencyShaping, ProjectError
             unit: entry.unit,
             rank0,
             rank10,
-            rank_values: rank_values(rank0, rank10, &file.rank_value_curve)?,
+            rank_values: file.rank_value_curve.as_ref().map_or_else(
+                || endpoint_rank_values(rank0, rank10),
+                |curve| rank_values(rank0, rank10, curve),
+            )?,
         });
     }
     let mut pools = BTreeMap::new();
@@ -298,16 +321,22 @@ fn import_shaping(text: &str) -> Result<ImportedProficiencyShaping, ProjectError
                 let rank10 = ratio(rank10)?;
                 let rank_values = file
                     .rank_value_curve
-                    .rank_step_overrides
-                    .iter()
-                    .find(|override_| {
-                        override_.spell_client_id == spell.spell_client_id
-                            && override_.augment == augment.augment
+                    .as_ref()
+                    .and_then(|curve| {
+                        curve.rank_step_overrides.iter().find(|override_| {
+                            override_.spell_client_id == spell.spell_client_id
+                                && override_.augment == augment.augment
+                        })
                     })
                     .map(|override_| ratio(&override_.rank_step))
                     .transpose()?
                     .map_or_else(
-                        || rank_values(rank0, rank10, &file.rank_value_curve),
+                        || {
+                            file.rank_value_curve.as_ref().map_or_else(
+                                || endpoint_rank_values(rank0, rank10),
+                                |curve| rank_values(rank0, rank10, curve),
+                            )
+                        },
                         |step| rank_values_with_step(rank0, rank10, step),
                     )?;
                 pool.push(ImportedShapingEntry {
@@ -391,54 +420,28 @@ mod tests {
                 }
             )
         );
+        // Crystal 201189f, proficiencies.hpp:78-85 and proficiencies.cpp:244-329:
+        // value = rank0 + perRank * rank; Greater Flurry uses perRank 0.4.
         assert_eq!(
-            greater_flurry.rank_values,
-            [
-                ProjectV2ExactRatio {
-                    numerator: 1,
-                    denominator: 1
-                },
-                ProjectV2ExactRatio {
-                    numerator: 6,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 7,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 8,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 9,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 2,
-                    denominator: 1
-                },
-                ProjectV2ExactRatio {
-                    numerator: 11,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 12,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 13,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 14,
-                    denominator: 5
-                },
-                ProjectV2ExactRatio {
-                    numerator: 5,
-                    denominator: 1
-                },
-            ]
+            greater_flurry.rank_values[1],
+            ProjectV2ExactRatio {
+                numerator: 7,
+                denominator: 5
+            }
+        );
+        assert_eq!(
+            greater_flurry.rank_values[9],
+            ProjectV2ExactRatio {
+                numerator: 23,
+                denominator: 5
+            }
+        );
+        assert_eq!(
+            greater_flurry.rank_values[10],
+            ProjectV2ExactRatio {
+                numerator: 5,
+                denominator: 1
+            }
         );
         let alpha = &shaping.pools["knight"][0];
         assert_eq!(alpha.identity, "alpha_strike_damage");
