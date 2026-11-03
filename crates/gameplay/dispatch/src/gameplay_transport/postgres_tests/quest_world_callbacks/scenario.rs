@@ -1,6 +1,27 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
+    scenario_case(name, trigger, lever_fixture, None)
+}
+
+#[allow(
+    dead_code,
+    reason = "per-quest stateless PG cases are independently picked after the common harness"
+)]
+pub(crate) fn stateless_scenario(
+    name: &str,
+    trigger: Position,
+    expected_destination: Position,
+) -> TestResult {
+    scenario_case(name, trigger, false, Some(expected_destination))
+}
+
+fn scenario_case(
+    name: &str,
+    trigger: Position,
+    lever_fixture: bool,
+    stateless_destination: Option<Position>,
+) -> TestResult {
     let monk = name.starts_with("monk-guidance");
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
@@ -25,6 +46,9 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
         callback.selector.unique = Some(25012);
         callback.selector.appearance = Some(2772);
         callback.lever = Some([2772, 2773]);
+    }
+    if stateless_destination.is_some() {
+        assert_eq!(callback.selector.position, Some(trigger));
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
@@ -149,7 +173,18 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if monk {
+        if let Some(expected_destination) = stateless_destination {
+            super::stateless::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                expected_destination,
+            )
+            .await?;
+        } else if monk {
             super::super::monk_shrines::exercise(
                 &mut owner,
                 &mut admitted,
@@ -161,7 +196,17 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
             )
             .await?;
         } else if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
-            super::rotten_blood::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger,rotten_purchase).await?;
+            super::rotten_blood::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                trigger,
+                rotten_purchase,
+            )
+            .await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"

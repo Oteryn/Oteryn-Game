@@ -16,10 +16,16 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+// Source qualification only: the coordinator retained new NPC execution in
+// Left out. These evaluators are not a second production conversation adapter.
+#[cfg(test)]
+pub mod batch3_a;
 pub mod grizzly_adams;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+#[cfg(test)]
+pub mod npc_rules;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod task_board;

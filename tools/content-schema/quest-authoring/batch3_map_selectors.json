@@ -1,0 +1,198 @@
+{
+  "repository": "Oteryn/Oteryn-Game",
+  "base_pin": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+  "map_source_pin": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "region_count": 1208,
+  "requested": {
+    "unique": {
+      "3091": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091"
+      ],
+      "3092": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3092"
+      ],
+      "3093": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3093"
+      ],
+      "3094": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3094"
+      ],
+      "3095": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3095"
+      ],
+      "3096": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3096"
+      ],
+      "3097": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3097"
+      ],
+      "3098": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3098"
+      ],
+      "3099": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3099"
+      ],
+      "3100": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3100"
+      ],
+      "3101": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3101"
+      ],
+      "3102": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3102"
+      ],
+      "1018": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018"
+      ],
+      "1019": [
+        "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019"
+      ],
+      "40001": [
+        "oteryn:quest-callback/shattered-isles-plan-1"
+      ],
+      "40002": [
+        "oteryn:quest-callback/shattered-isles-plan-2"
+      ],
+      "40003": [
+        "oteryn:quest-callback/shattered-isles-plan-3"
+      ],
+      "3207": [
+        "oteryn:quest-callback/shattered-isles-turtle-3207"
+      ],
+      "3208": [
+        "oteryn:quest-callback/shattered-isles-turtle-3208"
+      ],
+      "3209": [
+        "oteryn:quest-callback/shattered-isles-turtle-3209"
+      ],
+      "3210": [
+        "oteryn:quest-callback/shattered-isles-turtle-3210"
+      ],
+      "3211": [
+        "oteryn:quest-callback/shattered-isles-turtle-3211"
+      ],
+      "3212": [
+        "oteryn:quest-callback/shattered-isles-turtle-3212"
+      ],
+      "3213": [
+        "oteryn:quest-callback/shattered-isles-turtle-3213"
+      ],
+      "3206": [
+        "oteryn:quest-callback/shattered-isles-turtle-3206"
+      ]
+    },
+    "action": {
+      "25018": [
+        "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+        "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+        "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+        "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35"
+      ],
+      "50092": [
+        "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50092"
+      ],
+      "50093": [
+        "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50093"
+      ],
+      "50111": [
+        "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/gap"
+      ],
+      "40029": [
+        "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/tunnel"
+      ],
+      "50091": [
+        "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/discover-ore-wagon"
+      ],
+      "47501": [
+        "oteryn:quest-callback/pirates-tail-cheesy-entry"
+      ],
+      "47502": [
+        "oteryn:quest-callback/pirates-tail-cheesy-chess"
+      ],
+      "24872": [
+        "oteryn:quest-callback/hero-rathleton-exit"
+      ],
+      "14321": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14321"
+      ],
+      "14322": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14322"
+      ],
+      "14324": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14324"
+      ],
+      "14325": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14325"
+      ],
+      "14340": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14340"
+      ],
+      "14341": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14341"
+      ],
+      "14343": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14343"
+      ],
+      "14345": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14345"
+      ],
+      "14347": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14347"
+      ],
+      "14348": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14348"
+      ],
+      "14350": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14350"
+      ],
+      "14352": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14352"
+      ],
+      "14354": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-14354"
+      ],
+      "48060": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48060"
+      ],
+      "48061": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48061"
+      ],
+      "48062": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48062"
+      ],
+      "48063": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48063"
+      ],
+      "48064": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48064"
+      ],
+      "48065": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48065"
+      ],
+      "48066": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48066"
+      ],
+      "48067": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48067"
+      ],
+      "48068": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48068"
+      ],
+      "48069": [
+        "oteryn:quest-callback/heart-of-destruction-teleport-48069"
+      ]
+    }
+  },
+  "input_evidence": {
+    "index_path": "content/world/placements/index.json",
+    "index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+    "index_identical_to_base_pin": true,
+    "region_manifest_rows": 1208,
+    "all_current_region_hashes_match_index": true,
+    "mismatches": [],
+    "item_bindings": {
+      "path": "imports/crystalserver/bindings/items.json",
+      "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+    }
+  }
+}
