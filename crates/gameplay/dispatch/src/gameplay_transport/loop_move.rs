@@ -14,8 +14,10 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
+mod seed_drop;
 
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
@@ -543,7 +545,7 @@ pub(super) async fn move_loop_item(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox) = {
+    let (native, pins, index, mailbox, seed_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -552,9 +554,11 @@ pub(super) async fn move_loop_item(
         let native = native_for_move(&runtime, admission.active_generation, dead, pending);
         let index = pinned_index(&runtime, admission.active_generation);
         let pin = runtime.content_pin();
-        let content_revision = sha256_revision(pin.server_artifact_digest());
+        let content_digest = pin.server_artifact_digest();
+        let content_revision = sha256_revision(content_digest);
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
+        let mut seed_target = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
@@ -566,6 +570,8 @@ pub(super) async fn move_loop_item(
                     )
                 {
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
+                    seed_target =
+                        seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
                 (
                     at.map.overlay.base().clone(),
@@ -574,7 +580,7 @@ pub(super) async fn move_loop_item(
                     placement_context,
                 )
             });
-        (native, pins, index, mailbox)
+        (native, pins, index, mailbox, seed_target)
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -634,23 +640,72 @@ pub(super) async fn move_loop_item(
         }
     };
     let touches_ground = pickup_cell.is_some() || matches!(destination, LoopDestination::Ground(_));
-    let committed = admission
-        .root
-        .commit_item_loop_move(
-            &permit,
-            admission.character,
-            admission.holder,
-            &fence,
-            CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-            LoopMoveRequest {
-                item,
-                count: request.count,
-                pickup_cell,
-                destination,
-            },
-        )
-        .await;
+    let loop_request = LoopMoveRequest {
+        item,
+        count: request.count,
+        pickup_cell,
+        destination,
+    };
+    let command_ref = CommandRef::new(command.game_session_id, command_id);
+    let seed_target = if seed_target.is_some() {
+        match admission
+            .root
+            .item_loop_is_seed(
+                &permit,
+                admission.character,
+                admission.holder,
+                fence,
+                &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                crate::durability::item_loop_move::SeedDropProbe {
+                    command: command_ref,
+                    item,
+                },
+            )
+            .await
+        {
+            Ok(true) => seed_target,
+            Ok(false) => None,
+            Err(_) => return LoopMoveResult::Unknown,
+        }
+    } else {
+        None
+    };
+    let seed_result = match seed_target {
+        Some(target) => {
+            admission
+                .root
+                .commit_item_loop_seed_drop(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request.clone(),
+                    target,
+                )
+                .await
+        }
+        None => Ok(None),
+    };
+    let committed = match seed_result {
+        Ok(Some(result)) => Ok(result),
+        Ok(None) => {
+            admission
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request,
+                )
+                .await
+        }
+        Err(error) => Err(error),
+    };
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {
@@ -667,6 +722,9 @@ pub(super) async fn move_loop_item(
         admission.states.loop_ground.invalidate();
     }
     drop(permit);
+    if touches_ground && matches!(committed, Ok(Ok(_))) {
+        admission.refresh_terrain_tools().await;
+    }
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
     admission
@@ -833,6 +891,14 @@ pub(super) async fn observe_container(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
+    if fence.is_some_and(|current| {
+        matches!(
+            current.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+    }) {
+        return house_container::observe(admission, actor, fence, target).await;
+    }
     if matches!(target, ItemKey::BrowseField { .. }) {
         return super::browse_field::observe(admission, actor, fence, target).await;
     }

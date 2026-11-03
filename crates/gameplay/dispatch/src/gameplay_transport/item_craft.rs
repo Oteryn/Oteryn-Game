@@ -16,6 +16,8 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 
 pub(super) mod enchanting;
+mod harvest;
+mod planting;
 mod rope;
 mod terrain;
 
@@ -48,6 +50,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        match self
+            .use_planting(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         if let Some(result) = self
             .use_enchanting(actor, command, &intent, source, target)
             .await
@@ -306,6 +316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .backpack
             .iter()
             .flat_map(|b| &b.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source);
         let target_id = request
             .station
@@ -313,20 +324,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|s| item_id(&s.production_key));
         if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
-            && oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
+            && (oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
+                || oteryn_gameplay_items::event_planting::planting_attempt(tool_id, target_id)
+                    .is_some())
         {
-            let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
-                tool_id,
-                target_id,
-                fishing_skill,
-                catch_roll,
-                gathering_roll(
-                    native.source_digest(),
-                    command.game_session_id,
-                    command.command_id,
-                    &request.intent,
-                )?,
-            )?;
+            let seed_attempt =
+                oteryn_gameplay_items::event_planting::planting_attempt(tool_id, target_id);
+            let attempt = seed_attempt.or_else(|| {
+                oteryn_gameplay_items::fishing::gathering_attempt(
+                    tool_id,
+                    target_id,
+                    fishing_skill,
+                    catch_roll,
+                    gathering_roll(
+                        native.source_digest(),
+                        command.game_session_id,
+                        command.command_id,
+                        &request.intent,
+                    )?,
+                )
+            })?;
             let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
                 return None;
             };
@@ -338,6 +355,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !map.facts.quest_callback_capacity(key, revision, 0)
             {
                 return disposition(UseDisposition::NothingToUse);
+            }
+            if seed_attempt.is_some() {
+                let after = attempt.after?;
+                let appearances = std::iter::once(u32::from(after)).chain(
+                    oteryn_gameplay_items::event_planting::planting_decays(after)
+                        .into_iter()
+                        .map(|(state, _)| state),
+                );
+                for appearance in appearances {
+                    let appearance = u16::try_from(appearance).ok()?;
+                    if map
+                        .facts
+                        .quest_callback_replacement(key, appearance)
+                        .is_none()
+                    {
+                        return disposition(UseDisposition::NotPossible);
+                    }
+                }
             }
             let mut placement = map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
@@ -359,6 +394,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
+                    } else if seed_attempt.is_some() {
+                        oteryn_gameplay_items::event_planting::planting_decays(attempt.after?)
                     } else {
                         Vec::new()
                     },
@@ -385,8 +422,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 false,
             )
-            .await
-            .ok()??;
+            .await;
+        let result = result.ok()??;
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;

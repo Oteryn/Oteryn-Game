@@ -249,6 +249,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        // Dryad watersplash54 is source metadata only until a live Item
+        // presentation consumer exists; the existing teleport owner still commits.
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
