@@ -458,16 +458,16 @@ where
 #[test]
 fn migration_activates_production_shaping_and_its_secret() -> TestResult {
     run("profshape_activation", async |a| {
-        // 0575 activates shaping-r1 for every shaped definition with no control-plane step.
+        // 0915 activates shaping-r2 and retains shaping-r1 for existing rows.
         let (active, sword): (i64, Option<String>) = sqlx::query_as(
-            "SELECT count(*) FILTER (WHERE shaping_revision = 'shaping-r1' AND active), \
+            "SELECT count(*) FILTER (WHERE shaping_revision = 'shaping-r2' AND active), \
              max(shaping_revision) FILTER (WHERE active \
                  AND shaping_key = 'oteryn:proficiency-shaping.tibia.p6') \
              FROM game_proficiency_shaping_revisions",
         )
         .fetch_one(&a.h.pool)
         .await?;
-        assert_eq!((active, sword.as_deref()), (422, Some("shaping-r1")));
+        assert_eq!((active, sword.as_deref()), (422, Some("shaping-r2")));
         // The draw secret exists once and reads the same every time (SIM-DETERMINISM-01 §10).
         let secret =
             a.h.root
