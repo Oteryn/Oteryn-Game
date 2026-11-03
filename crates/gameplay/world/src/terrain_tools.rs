@@ -23,16 +23,14 @@ impl TerrainTool {
         Some(match key {
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
-            // Global permits both machetes and the three Secret Agent Tools.  Crystal's
-            // shared onUseMachete path is also reached by tool gear (9594/9596/9598).
-            "oteryn:item.tibia.i3308"
-            | "oteryn:item.tibia.i3330"
-            | "oteryn:item.tibia.i9594"
-            | "oteryn:item.tibia.i9596"
-            | "oteryn:item.tibia.i9598" => Self::Machete,
-            "oteryn:item.tibia.i3453" => Self::Scythe,
+            // Crystal register_actions.lua:864-885 routes each Secret Agent multi-tool
+            // through the matching ordinary tool action.
+            "oteryn:item.tibia.i3308" | "oteryn:item.tibia.i3330" | "oteryn:item.tibia.i9594" => {
+                Self::Machete
+            }
+            "oteryn:item.tibia.i3453" | "oteryn:item.tibia.i9596" => Self::Scythe,
             "oteryn:item.tibia.i3293" => Self::Sickle,
-            "oteryn:item.tibia.i3304" => Self::Crowbar,
+            "oteryn:item.tibia.i3304" | "oteryn:item.tibia.i9598" => Self::Crowbar,
             _ => return None,
         })
     }
@@ -98,7 +96,7 @@ pub fn dispatch<'a>(
 /// until their yield has an audited mint owner. The sickle plan is Crystal 201189f8
 /// sickle.lua:12-15 (5463 to 5462, 5466 created on the target tile) with items.xml:14996-15027
 /// regrowth. Crystal data-crystal/scripts/lib/register_actions.lua:448-452 delegates
-/// crowbar use to destroyItem, with no terrain-specific target, so none is admitted here.
+/// crowbar cask row at register_actions.lua:946-954 transforms for three minutes.
 pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
     let mut bindings = vec![
         TerrainToolBinding {
@@ -196,6 +194,23 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             ],
         },
         TerrainToolBinding {
+            tool: TerrainTool::Scythe,
+            target: 5464,
+            required_action: None,
+            transformed: 5463,
+            yield_item: Some(5466),
+            decay: vec![
+                DecayStep {
+                    state: 5470,
+                    after: Duration::from_secs(240),
+                },
+                DecayStep {
+                    state: 5465,
+                    after: Duration::from_secs(240),
+                },
+            ],
+        },
+        TerrainToolBinding {
             tool: TerrainTool::Sickle,
             target: 5463,
             required_action: None,
@@ -211,6 +226,17 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
                     after: Duration::from_secs(240),
                 },
             ],
+        },
+        TerrainToolBinding {
+            tool: TerrainTool::Crowbar,
+            target: 4848,
+            required_action: Some(40041),
+            transformed: 3134,
+            yield_item: None,
+            decay: vec![DecayStep {
+                state: 4848,
+                after: Duration::from_secs(180),
+            }],
         },
     ];
     // M08B: pick holes without an items.xml duration/decayTo stay open until reset.
@@ -308,12 +334,16 @@ mod tests {
             ("oteryn:item.tibia.i9594", 17153, 17151),
             ("oteryn:item.tibia.i3308", 9001, 9002),
             ("oteryn:item.tibia.i3453", 3653, 3651),
+            ("oteryn:item.tibia.i9596", 3653, 3651),
+            ("oteryn:item.tibia.i3453", 5464, 5463),
+            ("oteryn:item.tibia.i9596", 5464, 5463),
             ("oteryn:item.tibia.i3293", 5463, 5462),
             ("oteryn:item.tibia.i3456", 593, 594),
             ("oteryn:item.tibia.i3456", 606, 615),
             ("oteryn:item.tibia.i3456", 608, 609),
             ("oteryn:item.tibia.i3293", 9020, 9021),
             ("oteryn:item.tibia.i3304", 9010, 9011),
+            ("oteryn:item.tibia.i9598", 9010, 9011),
             ("oteryn:item.tibia.i3457", 21341, 21342),
         ];
         for (tool, target, transformed) in cases {
@@ -365,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn m08b_pick_piles_decay_back_on_the_donor_clock_and_crowbar_has_no_terrain_target() {
+    fn m08_rows_preserve_harvest_yields_multitools_and_crowbar_cask_regrowth() {
         let catalogue = crystal_core_bindings();
         for (target, transformed, deadline) in
             [(593, 594, 70_000), (606, 615, 310_000), (608, 609, 310_000)]
@@ -387,10 +417,15 @@ mod tests {
         let sickle =
             dispatch(&catalogue, "oteryn:item.tibia.i3293", 5463, None, 0).expect("sickle binding");
         assert_eq!(sickle.binding.yield_item, Some(5466));
-        assert!(
-            catalogue
-                .iter()
-                .all(|binding| binding.tool != TerrainTool::Crowbar)
-        );
+        for tool in ["oteryn:item.tibia.i3304", "oteryn:item.tibia.i9598"] {
+            let cask = dispatch(&catalogue, tool, 4848, Some(40041), 10_000)
+                .expect("crowbar quest cask binding");
+            assert_eq!(cask.binding.transformed, 3134);
+            assert_eq!(cask.first_deadline_unix_ms, Some(190_000));
+        }
+        for tool in ["oteryn:item.tibia.i3453", "oteryn:item.tibia.i9596"] {
+            let cane = dispatch(&catalogue, tool, 5464, None, 10_000).expect("scythe cane binding");
+            assert_eq!(cane.binding.yield_item, Some(5466));
+        }
     }
 }

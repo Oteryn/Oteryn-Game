@@ -1,5 +1,5 @@
 //! P11 counters for successful donor gathering and completed NPC travel.
-//! Crystal `201189f`: `data-global/scripts/actions/tools/skinning.lua:317-321`,
+//! Crystal `201189f`: `data-global/scripts/actions/tools/skinning.lua:176-201,317-321`,
 //! `data-global/scripts/actions/other/fishing.lua:290-314`,
 //! `data-global/scripts/actions/other/mechanical_fishing.lua:348-372`, and
 //! `data/npclib/npc_system/modules.lua:243-245`;
@@ -46,6 +46,7 @@ pub fn gathering(tool_key: &str, yield_item: Option<u16>) -> Option<Counted> {
             Some(EXQUISITE_TASTE)
         }
         ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", 5905 | 5906) => Some(ASHES_TO_DUST),
+        ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", 10427..=10429) => None,
         ("oteryn:item.tibia.i5908" | "oteryn:item.tibia.i5942", _) => Some(SKIN_DEEP),
         _ => None,
     }
@@ -79,6 +80,17 @@ mod tests {
             assert_eq!(gathering(tool, None), None);
         }
         assert_eq!(gathering("oteryn:item.tibia.i3604", Some(3578)), None);
+    }
+
+    #[test]
+    fn marble_figurines_do_not_advance_corpse_skinning_achievements() {
+        // Crystal 201189f, skinning.lua:176-201 returns from marble handling
+        // before the corpse-only Skin-Deep / Ashes to Dust counters at 317-321.
+        for tool in ["oteryn:item.tibia.i5908", "oteryn:item.tibia.i5942"] {
+            for figurine in [10427, 10428, 10429] {
+                assert_eq!(gathering(tool, Some(figurine)), None);
+            }
+        }
     }
 
     #[test]
