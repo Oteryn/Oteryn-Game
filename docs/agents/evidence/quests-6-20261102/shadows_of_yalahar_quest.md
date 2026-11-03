@@ -8,7 +8,7 @@ Pierwsza inwentaryzacja: **65 elementów; AUTO 4, RĘCZNIE 61**. To historyczna 
 
 ## Dostarczony zakres
 
-- Dodano dwa callbacki: inkwell i strange energy. Oba wymagają brakujących powiązań z mapą.
+- Dodano dwa callbacki: inkwell i strange energy. AID4954/25031 nie odnaleziono w przeskanowanym world base; compiled binding pozostaje NIEZNANY.
 - Źródłowy licznik książek42557 dodaje istniejący mechanizm extend pod właścicielem Shadows, z dokładnym warunkiem >=8 i resetem do−1. Ten tor nie istniał w bazowym katalogu.
 - Przejrzano siedem pełnych plików NPC; ich mutujące gałęzie pozostają poza runtime do kwalifikacji atomowego wykonawcy.
 
@@ -30,7 +30,7 @@ Nowych rekordów w istniejącym `content/quests/world-callbacks.json`: **2**.
 
 [Q6-L12](https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589926429). Stosujemy [ogólne zasady koordynatora](https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280) i [rozstrzygnięcie kontraktu oraz prezentacji](https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589908362). [ANSWER6589944418](https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589944418) potwierdził pierwsze 16 list; [ANSWER6590303753](https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753) przyjął A dla Q6-L04/L05/L07/L14/L21. Wszystkie 21 list ma odpowiedź koordynatora.
 
-- Brak fizycznych AID4954/25031 i writera zwiększającego licznik książek. Same callbacki nie zamykają grywalnych kroków.
+- AID4954/25031 nie odnaleziono w przeskanowanym world base; compiled binding pozostaje NIEZNANY. Brakuje zakwalifikowanego writera zwiększającego licznik książek. Same callbacki nie zamykają grywalnych kroków.
 - Brakuje kwalifikowanych rozmieszczeń siedmiu NPC i pełnych atomowych wymian. Teleskop, folio RNG/timery, biblioteka napraw, disassembler oraz odczytowa bramka Fenrock pozostają odłożone.
 - Intencja poprawki D15 dla czerwonych filarów jest źródłowo uzasadniona, lecz pełny adapter teleskopu i jego poprawka nie są aktywne. Donorowe1s, osiem sukcesów folio,120s przygotowania głowy i pięć ticków obrażeń pozostają zgodne z decyzją Crystal.
 
