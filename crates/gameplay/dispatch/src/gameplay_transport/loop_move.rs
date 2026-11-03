@@ -530,7 +530,8 @@ pub(super) async fn move_loop_item(
         return refused(LoopMoveRefusal::Rejected);
     }
     if matches!(request.item, ItemKey::MapBase { .. }) {
-        let result = map_pickup::move_map_item(admission, actor, command, request, &permit).await;
+        let result =
+            map_pickup::move_map_item(admission, actor, command, request, &permit, None).await;
         if result == LoopMoveResult::Committed {
             admission
                 .states
@@ -703,6 +704,124 @@ fn drop_cell(
         return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
     }
     Ok(ground_cell(to.x, to.y, to.floor))
+}
+
+/// A door's step-out consequence uses the same item-loop receipt and custody writer as
+/// ground moves. Its Channel lane is already held; reach is the vacated doorway, rather
+/// than the player's new tile (which can be two tiles from the donor's destination).
+#[allow(clippy::too_many_arguments, reason = "one fenced door item relocation")]
+pub(super) async fn relocate_door_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    actor: ExactActorRef,
+    command: UseCommand,
+    item: ItemKey,
+    from: TilePos,
+    to: TilePos,
+) -> LoopMoveResult {
+    let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
+        x: i32::from(to.x),
+        y: i32::from(to.y),
+        floor: i16::from(to.floor),
+    };
+    if matches!(item, ItemKey::MapBase { .. }) {
+        return map_pickup::move_map_item(
+            admission,
+            actor,
+            command,
+            LoopMove {
+                item,
+                count: None,
+                target: LoopTarget::Ground(destination),
+            },
+            permit,
+            Some(from),
+        )
+        .await;
+    }
+    let ItemKey::Instance(item) = item else {
+        return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
+    };
+    let Some(fence) = command.item_fence else {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
+    };
+    let Ok(command_id) = CommandId::new(command.command_id) else {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
+    };
+    let (native, ground) = {
+        let runtime = admission.runtime.lock().await;
+        if !runtime
+            .player_control_facts(actor, command.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
+        }
+        let states = admission.states.spell_states.lock().await;
+        let native = native_for_move(
+            &runtime,
+            admission.active_generation,
+            states.is_dead(actor),
+            states.has_pending_spell_commit(actor, command.game_session_id),
+        );
+        let Some(map) = admission.bundle_map() else {
+            return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
+        };
+        let Some(ground) = drop_cell(
+            map.overlay.base(),
+            (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
+            destination,
+        )
+        .ok() else {
+            return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+        };
+        (
+            native,
+            LoopGround {
+                spatial_position: ground,
+                map_revision: map_revision(map.overlay.base()),
+                content_revision: sha256_revision(runtime.content_pin().server_artifact_digest()),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            },
+        )
+    };
+    let Some(native) = native else {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
+    };
+    let result = admission
+        .root
+        .commit_item_loop_move(
+            permit,
+            admission.character,
+            admission.holder,
+            &fence,
+            CommandRef::new(command.game_session_id, command_id),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+            LoopMoveRequest {
+                item,
+                count: None,
+                pickup_cell: Some(ground_cell(
+                    i32::from(from.x),
+                    i32::from(from.y),
+                    i16::from(from.floor),
+                )),
+                destination: LoopDestination::Ground(ground),
+            },
+        )
+        .await;
+    if !matches!(result, Ok(Err(_))) {
+        admission.states.loop_ground.invalidate();
+    }
+    match result {
+        Ok(Ok(_)) => {
+            admission
+                .states
+                .browse_fields
+                .committed_move(ItemKey::Instance(item), Some(destination));
+            LoopMoveResult::Committed
+        }
+        Ok(Err(reason)) => LoopMoveResult::Refused(reason),
+        Err(_) => LoopMoveResult::Unknown,
+    }
 }
 
 /// A carried container or a container below a proven Ground root, with direct entries.

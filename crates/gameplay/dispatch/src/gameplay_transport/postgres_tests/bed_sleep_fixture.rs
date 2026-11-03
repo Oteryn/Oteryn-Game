@@ -80,3 +80,37 @@ pub(super) fn request() -> TestResult<BedSleepRequest> {
         skill: 6,
     })
 }
+
+
+/// Bounded authored bed pair; the active native qualifier validates these records.
+/// Crystal items.xml:1671-1686 gives pillow/blanket and reciprocal east/west directions.
+pub(super) fn bed_profiles(input: &mut crate::content::native_gameplay::NativeGameplayInput) -> TestResult {
+    use sha2::Digest as _;
+    let profiles = input.item_profiles.as_mut().ok_or("item profiles")?;
+    let mut document: serde_json::Value = serde_json::from_slice(&profiles.bytes)?;
+    let records = document["records"].as_array_mut().ok_or("records")?;
+    let template = records.iter().find(|r| r["production_definition"]["production_key"] == "oteryn:item.tibia.i1629")
+        .ok_or("fixture bed template")?.clone();
+    for (id, part, direction) in [(696,"HEAD","EAST"),(697,"FOOT","WEST")] {
+        let mut record = template.clone();
+        let key = format!("oteryn:item.tibia.i{id}");
+        record["authoring"]["item"]["key"] = format!("candidate:item/{id}").into();
+        record["production_definition"]["production_key"] = key.clone().into();
+        record["production_binding"]["external_id"] = id.to_string().into();
+        record["production_binding"]["target"]["key"] = key.clone().into();
+        record["semantics"]["classification"]["value"]["item_type"]["value"] = "BED".into();
+        record["semantics"]["presentation"]["value"]["name"]["value"] = "bed".into();
+        record["semantics"]["bed"] = serde_json::json!({"state":"KNOWN","value":{
+            "part":part,"partner_direction":direction,
+            "occupied_male":{"key":key,"revision":"definition-r1"},
+            "occupied_female":{"key":key,"revision":"definition-r1"}
+        }});
+        record["attributes"]["blocks_movement"] = false.into();
+        record["attributes"]["blocks_projectile"] = false.into();
+        record["attributes"]["immovable_block_solid"] = false.into();
+        records.push(record);
+    }
+    profiles.bytes = serde_json::to_vec(&document)?;
+    profiles.sha256 = sha2::Sha256::digest(&profiles.bytes).iter().map(|byte| format!("{byte:02x}")).collect();
+    Ok(())
+}

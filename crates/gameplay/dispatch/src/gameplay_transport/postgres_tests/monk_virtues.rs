@@ -49,9 +49,9 @@ async fn cast(
     Ok(())
 }
 
-/// PR #2771 ANSWER6544065111: the existing percentage owner remains active;
-/// another member's Mantra is not a substitute for the absent complete-party owner.
-async fn assert_guiding_percentage_without_shared_mantra(
+/// Canary 47dfd51f party.cpp:308-350: the strongest living Guiding monk shares
+/// integer-half Mantra with every other party member, without a shared-XP gate.
+async fn assert_guiding_shared_mantra(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: (ExactActorRef, GameSessionId),
     recipient: (ExactActorRef, GameSessionId),
@@ -89,6 +89,7 @@ async fn assert_guiding_percentage_without_shared_mantra(
             .ok_or("Guiding recipient")?;
         let now = owner.owner_now().get();
         assert_eq!(state.virtue_party_bonuses(now).damage_reduction, 4);
+        assert_eq!(state.virtue_party_bonuses(now).mantra, source_mantra / 2);
         assert!(state.vitals().health > 100);
         let mut losses = Vec::new();
         for kind in [
@@ -139,6 +140,38 @@ async fn assert_guiding_percentage_without_shared_mantra(
         } else {
             without_shared_mantra = Some(losses);
         }
+    }
+
+    {
+        let runtime = owner.runtime.lock().await;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get_mut(&runtime, source.0, source.1)
+            .ok_or("Guiding source")?
+            .set_health_for_test(0);
+    }
+    owner
+        .refresh_source_party_serene(recipient.0, recipient.1)
+        .await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        assert_eq!(
+            states
+                .get(&runtime, recipient.0, recipient.1)
+                .ok_or("Guiding recipient")?
+                .virtue_party_bonuses(owner.owner_now().get())
+                .mantra,
+            0,
+            "a dead Guiding holder must stop sharing Mantra"
+        );
+        let source_state = states
+            .get_mut(&runtime, source.0, source.1)
+            .ok_or("Guiding source")?;
+        source_state.set_health_for_test(source_state.character_facts().max_health);
     }
     let runtime = owner.runtime.lock().await;
     owner
@@ -423,14 +456,29 @@ pub(super) async fn scenario(
             );
         }
         if guided {
-            assert_guiding_percentage_without_shared_mantra(owner, player, players[1]).await?;
+            assert_guiding_shared_mantra(owner, player, players[1]).await?;
+        } else {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, players[1].0, players[1].1)
+                    .ok_or("plain party recipient")?
+                    .virtue_party_bonuses(owner.owner_now().get())
+                    .mantra,
+                0,
+                "a plain party member gets no Mantra without Guiding Presence"
+            );
         }
         owner.refresh_source_party_serene(players[2].0, players[2].1).await;
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let recipient = states.get(&runtime, players[2].0, players[2].1).ok_or("mantra recipient")?;
-        assert_eq!(recipient.virtue_party_bonuses(owner.owner_now().get()).mantra, 0, "no local shared Mantra projection");
-        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), 0, "Crystal Ascetic ignores other members Mantra");
+        // party_buffs commits all three players as members; the third is distant,
+        // not outside the party. Canary party.cpp:308-322 shares without a range gate.
+        let expected_mantra = if guided { 17 / 2 } else { 0 };
+        assert_eq!(recipient.virtue_party_bonuses(owner.owner_now().get()).mantra, expected_mantra, "a distant party member gets Mantra only with Guiding Presence");
+        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), expected_mantra, "a distant party member consumes projected Mantra through Ascetic");
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.
     let target;

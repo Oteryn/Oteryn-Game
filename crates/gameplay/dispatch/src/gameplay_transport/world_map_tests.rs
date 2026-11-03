@@ -89,9 +89,21 @@ fn facts_of(id: u32) -> EntryFacts {
 struct Facts {
     houses: BTreeSet<TilePos>,
     revisions: BTreeMap<u64, u64>,
+    movement_items: BTreeMap<TilePos, Vec<ComposedEntry>>,
 }
 
 impl MapFacts for Facts {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, crate::map::overlay::EntryId)> {
+        self.movement_items.iter().find_map(|(pos, entries)| {
+            entries.iter().find_map(|entry| match entry.source {
+                EntrySource::Added(entry) if entry.get() == id => Some((*pos, entry)),
+                _ => None,
+            })
+        })
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<ComposedEntry> {
+        self.movement_items.get(&pos).cloned().unwrap_or_default()
+    }
     fn base_text(&self, _: u64) -> Option<&str> {
         None
     }
@@ -1821,6 +1833,58 @@ fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
     assert_eq!(
         map_look_target(&fixture.source(), at(ACTOR), hidden, &index),
         Err(ItemLookRefusal::NotAvailable)
+    );
+}
+
+#[test]
+fn item_look_m10_created_movement_item_handle() {
+    use crate::content::item_ref::ItemDefinitionIndex;
+    use crate::gameplay_transport::item_look::map_look_target;
+    use crate::map::view::EntrySource;
+    let near = tp(21, 20, -7);
+    let mut fixture = Fixture::new(vec![(near, vec![item(GRASS)])]);
+    let id = fixture
+        .overlay
+        .add_volatile(
+            near,
+            VolatileItem {
+                id: COIN,
+                count: 1,
+                attributes: vec![],
+            },
+            None,
+        )
+        .unwrap();
+    fixture.overlay.remove(near, id).unwrap();
+    // Movement-created items live in the callback overlay, alongside ordinary overlay items.
+    fixture.facts.movement_items.insert(
+        near,
+        vec![ComposedEntry {
+            source: EntrySource::Added(id),
+            facts: facts_of(COIN),
+        }],
+    );
+    let index = ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema":"OTERYN_NATIVE_ITEM_KEYS/v1", "records":[
+                ["item:a","r1"],["item:b","r1"],["item:c","r1"],["item:coin","r1"]
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let key = ItemKey::MapAdded(id.get());
+    assert_eq!(
+        map_look_target(&fixture.source(), at(ACTOR), key, &index)
+            .unwrap()
+            .0
+            .production_key,
+        "item:coin"
+    );
+    fixture.facts.movement_items.clear();
+    assert_eq!(
+        resolve_map_handle(&fixture.source(), key),
+        Err(UseDisposition::StaleState)
     );
 }
 

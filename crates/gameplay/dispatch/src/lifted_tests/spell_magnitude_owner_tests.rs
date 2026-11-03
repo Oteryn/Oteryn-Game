@@ -2380,13 +2380,13 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
 }
 
 #[test]
-fn ascetic_spell_and_rune_damage_use_own_mantra_after_flat_before_sanctuary() {
+fn ascetic_spell_and_rune_damage_use_own_or_guiding_mantra_after_flat_before_sanctuary() {
     use crate::spell::harmony::VirtuePartyBonuses;
     use crate::spell::{Carrier, Vocation, cast::CharacterCastFacts};
     use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
     for vocation in [Vocation::Monk, Vocation::ExaltedMonk] {
         for rune in [false, true] {
-            for (own_mantra, expected) in [(3, 139), (0, 129)] {
+            for (own_mantra, expected) in [(3, 139), (0, 185)] {
                 // This genuine creature policy also supplies Energy immunity, so
                 // the final source additions cannot revive a blocked-zero hit.
                 let mut f = fixture_with_damage_healing(100);
@@ -2496,7 +2496,8 @@ fn ascetic_spell_and_rune_damage_use_own_mantra_after_flat_before_sanctuary() {
                 }
                 // Crystal: raw 100 -> target mitigation 95 -> source 20% gives 114 -> flat 3 gives 117
                 // -> own Ascetic 3 x 3 gives 126 -> Sanctuary Harmony 5 rounds 138.6 to 139.
-                // Own 0 keeps 117 and rounds 128.7 to 129 despite the party's Mantra 17.
+                // Canary party.cpp:308-322: own 0 uses projected Mantra 17, so Ascetic
+                // adds 51 and Sanctuary rounds 184.8 to 185 on the real damage path.
             }
         }
     }
