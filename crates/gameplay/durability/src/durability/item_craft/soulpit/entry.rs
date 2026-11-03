@@ -61,6 +61,7 @@ pub(crate) async fn burn_entry_core(
         command: request.command,
         source: request.source,
         tool: None,
+        ingredient: None,
         station: None,
         intent: request.intent.clone(),
         gathering: None,

@@ -282,6 +282,7 @@ async fn write<C: ItemLoopContent>(
         command: request.command,
         source: request.source,
         tool: Some(request.target),
+        ingredient: None,
         station: None,
         intent: request.intent.clone(),
         gathering: None,

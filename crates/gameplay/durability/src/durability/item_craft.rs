@@ -12,7 +12,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_items::item_craft::{cooking_conversion, fishing_conversion};
+use oteryn_gameplay_items::item_craft::{carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion};
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
@@ -29,6 +29,8 @@ pub struct ItemCraftRequest {
     pub source: [u8; 16],
     /// An unchanged carried tool for conversions such as fishing.
     pub tool: Option<[u8; 16]>,
+    /// A second carried ingredient, locked and consumed in the same transaction.
+    pub ingredient: Option<[u8; 16]>,
     /// The cooking station; `None` selects the reward-bag draw for this command and source.
     pub station: Option<TypedDefinitionRef>,
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
@@ -210,7 +212,16 @@ async fn write<C: ItemLoopContent>(
                     )
                 })
             }
-            (Some(station), None) => cooking_conversion(native, &definition, station),
+            (Some(station), None) => {
+                if let Some(ingredient_id) = request.ingredient {
+                    if ingredient_id == request.source {
+                        return Ok(UseDisposition::Rejected);
+                    }
+                    let ingredient = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref,quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+                        .bind(ingredient_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+                    ingredient.and_then(|row| carried_cooking_conversion_with_sub_type(native, &definition, &TypedDefinitionRef { family: row.try_get("definition_family").ok()?, production_key: row.try_get("definition_production_key").ok()?, revision_ref: row.try_get("definition_revision_ref").ok()? }, row.try_get::<i64,_>("quantity").ok().and_then(|v| u32::try_from(v).ok()).filter(|v| matches!(v, 1 | 9))))
+                } else { cooking_conversion(native, &definition, station) }
+            },
             (None, _) => reward_bag_conversion(
                 native,
                 &definition,
@@ -358,6 +369,12 @@ async fn write<C: ItemLoopContent>(
     if consumes_source {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(request.source.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+    }
+    if let Some(ingredient) = request.ingredient {
+        sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(ingredient.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND (SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
+            .bind(ingredient.as_slice()).execute(&mut ***tx).await?;
     }
     if consumes_source && quantity == 1 {
         sqlx::query(

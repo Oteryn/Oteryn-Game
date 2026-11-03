@@ -57,6 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command: CommandRef::new(command.game_session_id, command_id),
             source: id,
             tool: None,
+            ingredient: None,
             gathering: None,
             enchanting: None,
             station: None,
