@@ -9,6 +9,55 @@ pub const MECHANICAL_FISHING_WATER: [u16; 13] = [
     4597, 4598, 4599, 4600, 4601, 4602, 629, 630, 631, 632, 633, 634, 21312,
 ];
 
+pub const MECHANICAL_FISHING_SPENT_WATER: [u16; 13] = [
+    4609, 4610, 4611, 4612, 4613, 4614, 4809, 4810, 4811, 4812, 4813, 4814, 21314,
+];
+
+/// Result of the Yalahar-sewer branch in Crystal's mechanical rod action.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MechanicalSewerAttempt {
+    NotHandled,
+    SpentWater,
+    Miss,
+    Shocked,
+    Caught { after: u16 },
+}
+
+/// Crystal `data-global/scripts/actions/other/mechanical_fishing.lua:203-248`.
+/// It classifies every donor branch; the durable gathering caller uses `Caught` to consume
+/// one nail, transform the water and mint the mechanical fish atomically.
+pub fn mechanical_sewer_attempt(
+    target: u16,
+    in_sewers: bool,
+    has_nail: bool,
+    caught: bool,
+    shock_roll: u32,
+) -> MechanicalSewerAttempt {
+    if !in_sewers || !has_nail {
+        return MechanicalSewerAttempt::NotHandled;
+    }
+    if MECHANICAL_FISHING_SPENT_WATER.contains(&target) {
+        return MechanicalSewerAttempt::SpentWater;
+    }
+    if !MECHANICAL_FISHING_WATER.contains(&target) {
+        return MechanicalSewerAttempt::NotHandled;
+    }
+    if !caught {
+        return if (1..=10).contains(&shock_roll) {
+            MechanicalSewerAttempt::Shocked
+        } else {
+            MechanicalSewerAttempt::Miss
+        };
+    }
+    let after = match target {
+        4597..=4602 => target + 12,
+        629..=634 => target + 4_180,
+        21312 => 21314,
+        _ => return MechanicalSewerAttempt::NotHandled,
+    };
+    MechanicalSewerAttempt::Caught { after }
+}
+
 /// Crystal mechanical_fishing.lua:85-97,203-248.
 pub fn is_yalahar_sewer_water(target: u16, x: u16, y: u16, floor: i8) -> bool {
     MECHANICAL_FISHING_WATER.contains(&target)
@@ -90,7 +139,7 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
         (5942, 8744) => (8742, 5905, 6000),
         (5942, 18958) => (18959, 5905, 6000),
         (5942, 18961) => (18959, 5905, 6000),
-        (5908 | 5942, 7441) => {
+        (5908, 7441) | (5942, 7441) => {
             return Some((
                 GatheringTarget::Ice { spent_item: 7442 },
                 GatheringYield {
@@ -195,11 +244,10 @@ pub fn gathering_attempt(
         if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
             return None;
         }
-        let after = match target {
-            4597..=4602 => target + 12,
-            629..=634 => target + 4_180,
-            21312 => 21314,
-            _ => return None,
+        let MechanicalSewerAttempt::Caught { after } =
+            mechanical_sewer_attempt(target, true, true, true, 100)
+        else {
+            return None;
         };
         return Some(GatheringAttempt {
             after: Some(after),
@@ -348,6 +396,61 @@ mod tests {
             })
         );
         assert_eq!(gathering_attempt(9306, 4597, 10, 10_001, 1), None);
+    }
+
+    #[test]
+    fn m09_mechanical_fishing_covers_every_sewer_branch() {
+        // Crystal data-global/scripts/actions/other/mechanical_fishing.lua:203-248.
+        assert_eq!(
+            mechanical_sewer_attempt(4597, false, true, true, 1),
+            MechanicalSewerAttempt::NotHandled
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, false, true, 1),
+            MechanicalSewerAttempt::NotHandled
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4609, true, true, true, 1),
+            MechanicalSewerAttempt::SpentWater
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, true, false, 11),
+            MechanicalSewerAttempt::Miss
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, true, false, 10),
+            MechanicalSewerAttempt::Shocked
+        );
+        for (target, after) in [(4597, 4609), (629, 4809), (21312, 21314)] {
+            assert_eq!(
+                mechanical_sewer_attempt(target, true, true, true, 100),
+                MechanicalSewerAttempt::Caught { after }
+            );
+        }
+    }
+
+    #[test]
+    fn m09_both_sculpting_tools_reach_the_non_simple_ice_row() {
+        // Crystal data-crystal/scripts/actions/tools/skinning.lua:289-305,392-403.
+        for tool in [5908, 5942] {
+            assert!(gathering_rule(tool, 7441).is_some());
+            assert_eq!(
+                gathering_attempt(tool, 7441, 10, 1, 22_000),
+                Some(GatheringAttempt {
+                    after: Some(7442),
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+            assert_eq!(
+                gathering_attempt(tool, 7441, 10, 1, 22_001),
+                Some(GatheringAttempt {
+                    after: None,
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+        }
     }
 
     #[test]
