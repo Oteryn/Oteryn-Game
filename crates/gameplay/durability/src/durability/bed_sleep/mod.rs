@@ -114,13 +114,12 @@ impl BedSleepOwner<'_, '_, '_> {
             {
                 return Ok(BedSleepOutcome::Stale);
             }
-            let Some(transition) = store
-                .prepare_current_claims_release(current, now, &account)
-                .await?
+            let Some(transition) =
+                Box::pin(store.prepare_current_claims_release(current, now, &account)).await?
             else {
                 return Ok(BedSleepOutcome::Stale);
             };
-            let (_, outcome) = store.release_with_bed(&transition, Some(plan)).await?;
+            let (_, outcome) = Box::pin(store.release_with_bed(&transition, Some(plan))).await?;
             return outcome.ok_or(DurabilityError::InvalidStoredState);
         }
         self.root

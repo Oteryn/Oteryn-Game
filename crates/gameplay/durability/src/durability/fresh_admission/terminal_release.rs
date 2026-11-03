@@ -4,7 +4,11 @@ use super::*;
 impl FreshAdmissionStore {
     /// Revalidate a prepared terminal release against current claims at the deciding transaction.
     pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
-        self.release_with_bed(transition, None).await.map(|(at, _)| at)
+        // Boxed: the bed-aware writer's state machine is large, and reconnect/loss
+        // release chains nest it under other large futures (stack overflow otherwise).
+        Box::pin(self.release_with_bed(transition, None))
+            .await
+            .map(|(at, _)| at)
     }
 
     pub(in crate::durability) async fn release_with_bed(
@@ -87,10 +91,12 @@ impl FreshAdmissionStore {
         now: i64,
         account_id: &str,
     ) -> Result<ExpiredLossReleaseV1> {
-        let Some(transition) = self.prepare_current_claims_release(current, now, account_id).await? else {
+        let Some(transition) =
+            Box::pin(self.prepare_current_claims_release(current, now, account_id)).await?
+        else {
             return Ok(ExpiredLossReleaseV1::NotApplicable);
         };
-        match self.release(&transition).await {
+        match Box::pin(self.release(&transition)).await {
             Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
             Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
                 Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
