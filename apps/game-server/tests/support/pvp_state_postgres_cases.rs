@@ -72,6 +72,23 @@ fn world_pass_roles_can_lock_the_reset_pointer_and_expire_unjustified_points() -
             .bind(id(WORLD).as_slice())
             .fetch_optional(&mut *tx)
             .await?;
+            // The lock is legal, but the pointer itself still only moves through the
+            // SECURITY DEFINER activation: a direct UPDATE by the role is refused.
+            sqlx::query("SAVEPOINT pointer_write")
+                .execute(&mut *tx)
+                .await?;
+            let write = sqlx::query(
+                "UPDATE game_world_reset_active SET reset_epoch=reset_epoch \
+                 WHERE world_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(WORLD).as_slice())
+            .execute(&mut *tx)
+            .await;
+            let refused = matches!(&write, Err(sqlx::Error::Database(e)) if e.code().as_deref() == Some("42501"));
+            assert!(refused, "{role} must not move the reset pointer: {write:?}");
+            sqlx::query("ROLLBACK TO SAVEPOINT pointer_write")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query(
                 "DELETE FROM game_character_unjustified_points \
                  WHERE character_id=encode($1,'hex')::uuid",
