@@ -96,6 +96,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
         // A field-enabled World reads dynamic Ground Items before committing its step.
         let origin = runtime.read_actor_position(actor).ok();
+        let snow_origin = self.bundle_map().is_some_and(|map| {
+            origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
+        });
         let outcome = if self.bundle_map().is_some()
             && self
                 .required_capabilities
@@ -158,6 +161,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
                 drop(states);
                 drop(runtime);
+                if snow_origin {
+                    use sha2::Digest;
+                    let event_id = sha2::Sha256::new()
+                        .chain_update(actor.placement_identity())
+                        .chain_update(session.as_bytes())
+                        .chain_update(now.to_be_bytes())
+                        .finalize();
+                    let mut event = [0_u8; 16];
+                    event.copy_from_slice(&event_id[..16]);
+                    let _ = self.add_snowbunny_progress(&permit, session, event).await;
+                }
                 if let Some(origin) = origin {
                     self.close_departed_door(
                         &permit,

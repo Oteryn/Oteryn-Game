@@ -2,6 +2,26 @@
 
 use super::*;
 
+fn movement_magic_effect_event(
+    ordinal: u32,
+    position: crate::map::overlay::TilePos,
+    effect_id: u16,
+) -> Option<oteryn_protocol_oteryn::presentation::PresentationEvent> {
+    Some(oteryn_protocol_oteryn::presentation::PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: ordinal,
+        kind: oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {
+            position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                x: i32::from(position.x),
+                y: i32::from(position.y),
+                floor: i16::from(position.floor).checked_neg()?,
+            },
+            effect_id: u32::from(effect_id),
+            source: oteryn_protocol_oteryn::presentation::PresentationSource::Own,
+        },
+    })
+}
+
 pub(super) async fn finish<S, A>(
     stream: &mut S,
     authority: &A,
@@ -90,6 +110,10 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let committed_step = matches!(
+        &dispatch,
+        Dispatch::Step(outcome, _) if outcome.disposition == StepDisposition::Moved
+    );
     // Every native action/trade/travel source can grant through the shared account owner.
     // Passive kill/event grants are observed on the existing liveness cadence as well.
     let observe_achievements = matches!(
@@ -395,6 +419,49 @@ where
     }
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
+    if committed_step
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+    {
+        let effects = authority.observe_movement_effects(session.movement_effect_revision);
+        if !effects.is_empty() {
+            let events: Vec<_> = effects
+                .iter()
+                .enumerate()
+                .filter_map(|(index, (_, position, effect_id))| {
+                    let ordinal = u32::try_from(index + 1).ok()?;
+                    movement_magic_effect_event(ordinal, *position, *effect_id)
+                })
+                .collect();
+            let payload = oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events)
+                .map_err(|_| ServeEnd::Disconnected)?;
+            let revision = effects
+                .last()
+                .map(|effect| effect.0)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let frame = encode_state_delta(
+                session.generation,
+                sequence,
+                oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION,
+                session.movement_effect_revision,
+                revision,
+                oteryn_protocol_oteryn::presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            session.movement_effect_revision = revision;
+        }
+    }
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
@@ -422,4 +489,50 @@ where
         achievement_notices::refresh(stream, authority, session).await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod movement_effect_tests {
+    use super::*;
+
+    #[test]
+    fn trap_effect_encodes_on_capability_23_wire_with_donor_id()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Crystal data/scripts/movements/trap.lua:36, CONST_ME_HITAREA = 11.
+        let event = movement_magic_effect_event(
+            1,
+            crate::map::overlay::TilePos {
+                x: 7,
+                y: 8,
+                floor: -7,
+            },
+            11,
+        )
+        .ok_or("movement effect position")?;
+        let payload = oteryn_protocol_oteryn::presentation::encode_presentation_batch(&[event])
+            .map_err(|error| format!("{error:?}"))?;
+        let frame = encode_state_delta(
+            1,
+            1,
+            oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION,
+            0,
+            1,
+            oteryn_protocol_oteryn::presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+            &payload,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)
+            .map_err(|error| format!("{error:?}"))?;
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            delta.domain_id,
+            oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION
+        );
+        let decoded =
+            oteryn_protocol_oteryn::presentation::decode_presentation_batch(delta.payload)
+                .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(decoded, vec![event]);
+        Ok(())
+    }
 }

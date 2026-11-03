@@ -35,6 +35,11 @@ use sqlx::Row;
 
 pub use oteryn_gameplay_progression::account_achievement::*;
 
+/// Canonical catalogue key used by Crystal's snow movement script.
+pub const SNOWBUNNY_KEY: &str = "oteryn:achievement/snowbunny";
+/// Crystal's number of footprints required for Snowbunny.
+pub const SNOWBUNNY_TOTAL: u32 = 10_000;
+
 /// An account's fact with the provenance of the request it was derived from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountAchievement {
@@ -316,6 +321,35 @@ pub(super) async fn add_progress(
     Ok(())
 }
 
+/// Crystal `data/scripts/movements/snow.lua:18-20`: one committed footprint counts toward
+/// Snowbunny, whose donor threshold is 10,000.
+pub async fn add_snowbunny_progress(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    event_id: &[u8],
+) -> std::result::Result<(), DurabilityError> {
+    add_progress(
+        tx,
+        character_id,
+        SNOWBUNNY_KEY,
+        SNOWBUNNY_TOTAL,
+        "oteryn:snow-footprint",
+        event_id,
+    )
+    .await
+}
+
+/// Count and commit one already-authorized Snowbunny footprint transaction.
+pub async fn commit_snowbunny_progress(
+    mut tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    event_id: &[u8],
+    deadline: std::time::Instant,
+) -> std::result::Result<(), DurabilityError> {
+    add_snowbunny_progress(&mut tx, character_id, event_id).await?;
+    commit_semantic_transaction(tx, deadline).await
+}
+
 async fn load_fact(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     account: &str,
@@ -553,6 +587,12 @@ mod granting_harness {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn snowbunny_uses_crystals_snow_footprint_threshold() {
+        // Crystal data/scripts/movements/snow.lua:18-20.
+        assert_eq!(super::SNOWBUNNY_KEY, "oteryn:achievement/snowbunny");
+        assert_eq!(super::SNOWBUNNY_TOTAL, 10_000);
+    }
     /// The PostgreSQL targets drive the negative harness.
     #[test]
     fn the_foreign_token_harness_is_linked() {

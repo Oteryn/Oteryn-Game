@@ -2033,7 +2033,9 @@ fn map_base_pickup_routes_only_to_the_carried_tree() -> TestResult {
             (source, LoopTarget::MainBackpack, true),
             (source, LoopTarget::Container(instance(2)), true),
             (source, LoopTarget::Ground(TILE), false),
-            (ItemKey::MapAdded(1), LoopTarget::MainBackpack, false),
+            // Crystal data/scripts/movements/trap.lua:39-42 creates caught wolf 12369;
+            // data/scripts/movements/thornfire_wolf.lua leaves that created item movable.
+            (ItemKey::MapAdded(1), LoopTarget::MainBackpack, true),
         ] {
             let shown = inventory(&[2]);
             let mut view = wearing(shown.clone()).with_map_view();
