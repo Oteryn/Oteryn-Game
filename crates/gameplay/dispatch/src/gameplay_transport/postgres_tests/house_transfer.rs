@@ -59,7 +59,7 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
@@ -72,7 +72,7 @@ fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_po
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(true, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(true, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "resumed-loss thread panicked")??;
     Ok(())
@@ -84,7 +84,7 @@ fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult 
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "condition reconnect thread panicked")??;
     Ok(())
@@ -97,13 +97,32 @@ fn c08_conditions_postgres_reconnect_with_delayed_pre_prepare_reads() -> TestRes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, true, true).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, true, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "delayed condition reconnect thread panicked")??;
     Ok(())
 }
 
-fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bool) -> TestResult {
+#[test]
+fn a_same_session_resume_keeps_its_item_fence_when_readback_holder_is_busy_postgres() -> TestResult
+{
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario(false, false, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "resume readback thread panicked")??;
+    Ok(())
+}
+
+fn resume_scenario(
+    history_read_fails: bool,
+    conditions: bool,
+    delayed_reads: bool,
+    delayed_readback: bool,
+) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -120,6 +139,7 @@ fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bo
             history_read_fails,
             conditions,
             delayed_reads,
+            delayed_readback,
         ))
     }));
     let cleanup = rt.block_on(h.cleanup());
@@ -158,6 +178,7 @@ async fn resume_case(
     history_read_fails: bool,
     conditions: bool,
     delayed_reads: bool,
+    delayed_readback: bool,
 ) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -183,8 +204,14 @@ async fn resume_case(
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    let supported = if delayed_readback {
+        oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1
+    } else {
+        wire::CAPABILITY_HOUSE_TRANSFER_V1
+    };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
+        SelectedCapabilities::select(owner.offered_capabilities(), &[supported])
+            .ok_or("selection")?;
     let before_conditions = if conditions {
         Some(install_reconnect_conditions(&owner, &deps).await?)
     } else {
@@ -210,12 +237,19 @@ async fn resume_case(
     let runtime = owner.runtime.lock().await;
     let barrier = std::sync::Arc::new(crate::gameplay_transport::resume::PrepareTestBarrier {
         delay: delayed_reads,
+        readback: delayed_readback,
         ..Default::default()
     });
     let mut resume = std::pin::pin!(
         crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
             barrier.clone(),
-            resume_same_session(&owner, admitted.game_session_id, &token, 10)
+            resume_same_session(
+                &owner,
+                admitted.game_session_id,
+                &token,
+                10,
+                u64::from(supported)
+            )
         )
     );
     if delayed_reads {
@@ -232,11 +266,55 @@ async fn resume_case(
     wait_for_resume_barrier(resume.as_mut(), &barrier.ready).await?;
     let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
     drop(runtime);
+    let readback_busy = if delayed_readback {
+        wait_for_resume_barrier(resume.as_mut(), &barrier.committed).await?;
+        let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
+        barrier.readback_release.notify_one();
+        Some(busy)
+    } else {
+        None
+    };
     let resumed = resume.await;
     busy.await??;
-    let resumed = resumed?;
+    if let Some(busy) = readback_busy {
+        busy.await??;
+    }
+    let mut resumed = resumed?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.continuity.connection_generation, 2);
+    if delayed_readback {
+        // Even an unregistered command must receive its ordered refusal. It traverses
+        // the same retained-NPC reconciliation that precedes the node seam's step.
+        let frame = encode_client_command(
+            resumed.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id: resumed.continuity.next_command_id,
+                command_type: 999,
+                payload: &[],
+            },
+        )
+        .map_err(debug)?;
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        client
+            .write_all(&(frame.len() as u32).to_be_bytes())
+            .await?;
+        client.write_all(&frame).await?;
+        client.shutdown().await?;
+        let before = resumed.continuity.server_sequence;
+        resumed = match serve_admitted(&mut server, resumed, &owner, IDLE_LIVENESS).await {
+            ConnectionEnd::AdmittedThenDisconnected(next) => next,
+            end => return Err(format!("resumed command end: {end:?}").into()),
+        };
+        assert_eq!(
+            resumed.continuity.server_sequence,
+            before + 1,
+            "first resumed command disconnected before its result"
+        );
+    }
+    assert!(
+        resumed.item_fence.is_some(),
+        "committed resume lost its current item fence"
+    );
     if let Some(before) = before_conditions {
         assert_eq!(resumed.runtime_actor, Some(deps.actor));
         let runtime = owner.runtime.lock().await;
@@ -396,6 +474,7 @@ async fn resume_same_session(
     source: crate::foundation::GameSessionId,
     token: &str,
     transport: u8,
+    supported: u64,
 ) -> TestResult<AdmittedSession> {
     let mut body = Vec::new();
     bytes(&mut body, 1, source.as_bytes());
@@ -404,7 +483,7 @@ async fn resume_same_session(
     scalar(&mut body, 4, 1);
     scalar(&mut body, 5, 1);
     scalar(&mut body, 6, 1);
-    scalar(&mut body, 7, 86);
+    scalar(&mut body, 7, supported);
     bytes(&mut body, 8, b"resume-busy-holder-test");
     let mut frame = vec![8, MessageType::ClientResume as u8];
     bytes(&mut frame, 4, &body);

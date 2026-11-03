@@ -55,6 +55,9 @@ pub(super) struct PrepareTestBarrier {
     pub delay: bool,
     pub entered: tokio::sync::Notify,
     pub release: tokio::sync::Notify,
+    pub readback: bool,
+    pub committed: tokio::sync::Notify,
+    pub readback_release: tokio::sync::Notify,
 }
 #[cfg(test)]
 tokio::task_local! {
@@ -668,7 +671,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // C2: the resumed session's item fence, from a current durable read of the session the
         // COMMIT made ACTIVE on this candidate connection. An unreadable or already moved
         // session leaves it `None`: the resume stands, and a chest `USE` is refused.
-        if let Ok((current, _)) = store.current_session_at(session_id).await
+        #[cfg(test)]
+        if let Ok(barrier) = PREPARE_TEST_BARRIER.try_with(Arc::clone)
+            && barrier.readback
+        {
+            barrier.committed.notify_one();
+            barrier.readback_release.notified().await;
+        }
+        // MAINRED14: a busy holder is not missing authority. Without this fence the first
+        // resumed command cannot reconcile retained NPC work and disconnects after its
+        // snapshot. Retry only the read, never the already committed reconnect.
+        let current = AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session_id)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootUnavailable => Unavailable,
+                        _ => Rejected,
+                    })
+            })
+            .await;
+        if let Ok((current, _)) = current
             && current.session_state() == GameSessionState::Active
             && current.current_connection_generation().get() == successor
             && current.current_transport() == Some(attempt.transport)
