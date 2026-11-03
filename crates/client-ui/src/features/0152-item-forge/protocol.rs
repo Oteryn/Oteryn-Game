@@ -1,17 +1,103 @@
-use oteryn_client_runtime::server_mechanic::{ServerMechanicCommand, ServerMechanicResponse};
+use super::ItemForgePanel;
+use oteryn_client_runtime::cui3::item_forge::{COMMAND_TYPE_ITEM_FORGE, Request};
+use oteryn_client_runtime::server_mechanic::{
+    CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
+};
+use std::num::NonZeroU64;
 pub fn command(payload: Vec<u8>) -> ServerMechanicCommand {
     ServerMechanicCommand {
         capability: 152,
-        command_type: 181,
+        command_type: COMMAND_TYPE_ITEM_FORGE,
         payload,
     }
 }
-pub fn request(
-    panel: &mut super::ItemForgePanel,
-    command: ServerMechanicCommand,
-) -> Option<ServerMechanicCommand> {
-    crate::server_mechanic::request(panel, command)
+pub fn control_request(p: &mut ItemForgePanel) -> Option<ServerMechanicCommand> {
+    let pair = p.operation.requires_pair();
+    let r = Request {
+        operation: p.operation,
+        occurrence: p.occurrence,
+        first_item: pair.then(|| NonZeroU64::new(p.first_item)).flatten(),
+        second_item: pair.then(|| NonZeroU64::new(p.second_item)).flatten(),
+        boost: p.boost,
+        protect: p.protect,
+        history_limit: if p.operation
+            == oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+        {
+            p.history_limit
+        } else {
+            0
+        },
+    };
+    let Some(bytes) = r.encode() else {
+        p.feedback = Some("Select valid items and forge options".into());
+        return None;
+    };
+    request(p, command(bytes.to_vec()))
 }
-pub fn apply_result(panel: &mut super::ItemForgePanel, result: &ServerMechanicResponse) {
-    crate::server_mechanic::apply_result(panel, result);
+pub fn request(p: &mut ItemForgePanel, c: ServerMechanicCommand) -> Option<ServerMechanicCommand> {
+    if !p.selected || p.pending {
+        return None;
+    }
+    p.pending = true;
+    p.feedback = None;
+    Some(c)
+}
+pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
+    p.pending = false;
+    if matches!(
+        r.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        p.response.clone_from(&r.payload);
+        p.feedback = Some("Forge result received".into())
+    } else {
+        p.feedback = Some(format!("Server refused forge action: {:?}", r.status))
+    }
+}
+#[cfg(test)]
+// Direct fixture construction keeps the wire assertions readable.
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+    #[test]
+    fn controls_encode_reply_and_refusal() {
+        let mut p = ItemForgePanel {
+            selected: true,
+            operation: oteryn_client_runtime::cui3::item_forge::Operation::Fusion,
+            occurrence: [1; 16],
+            first_item: 2,
+            second_item: 3,
+            ..Default::default()
+        };
+        let c = control_request(&mut p).unwrap();
+        assert_eq!(c.payload.len(), 51);
+        assert_eq!(
+            Request::decode(&c.payload)
+                .unwrap()
+                .first_item
+                .unwrap()
+                .get(),
+            2
+        );
+        apply_result(
+            &mut p,
+            &ServerMechanicResponse {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                server_sequence: 1,
+                payload: vec![7],
+            },
+        );
+        assert_eq!(p.response, [7]);
+        apply_result(
+            &mut p,
+            &ServerMechanicResponse {
+                command_id: 2,
+                status: CommandStatus::Rejected,
+                server_sequence: 2,
+                payload: vec![],
+            },
+        );
+        assert!(p.feedback.unwrap().contains("refused"));
+    }
 }

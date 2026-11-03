@@ -32,10 +32,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .spell_timers
                     .as_ref()
                     .and_then(|timer| timer.next_due_time())
+                    .map(|due| due.get())
+                    .into_iter()
+                    .chain(
+                        self.bundle_map()
+                            .and_then(|map| map.facts.next_movement_decay_time()),
+                    )
+                    .min()
                     .map_or(1_000_000, |due| {
                         // An unavailable due producer cannot cause a busy loop.
                         // A newly committed schedule wakes this pass immediately.
-                        let remaining = due.get().saturating_sub(now);
+                        let remaining = due.saturating_sub(now);
                         if remaining == 0 {
                             50_000
                         } else {
@@ -66,7 +73,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // One owner pass is one owner turn: the world-interaction cap starts anew, under
             // the runtime lock that every admitted act holds through its commit.
             {
-                let _runtime = self.runtime.lock().await;
+                let runtime = self.runtime.lock().await;
+                if runtime.owner_fence().is_err() {
+                    return;
+                }
+                if let Some(map) = self.bundle_map() {
+                    map.facts.expire_movement_items(self.owner_now().get());
+                }
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
                 }

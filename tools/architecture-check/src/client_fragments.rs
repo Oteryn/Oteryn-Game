@@ -173,6 +173,18 @@ pub(crate) fn scan(root: &Path) -> Result<(Vec<Value>, Vec<Value>), String> {
             return Err(format!("missing registrations: {name}"));
         }
         validate_layout(&feature, &discovered)?;
+        for handler in discovered
+            .iter()
+            .filter(|entry| entry["kind"] == "handlers" && entry["status"] == "supported")
+        {
+            if handler["commands"].as_array().is_some_and(Vec::is_empty)
+                && !discovered
+                    .iter()
+                    .any(|entry| entry["kind"] == "panels" && entry["status"] == "supported")
+            {
+                return Err(format!("push handler needs a supported window: {name}"));
+            }
+        }
         let golden = read(&feature.join("fixtures/registrations.json"))?;
         discovered.sort_by_key(|e| e["id"].as_str().unwrap_or_default().to_owned());
         if golden != json!(discovered) {

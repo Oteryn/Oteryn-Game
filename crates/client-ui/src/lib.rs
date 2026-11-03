@@ -27,10 +27,6 @@ pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
 
-/// Shared state for server-owned mechanic panels.
-#[path = "components/server_mechanic.rs"]
-mod server_mechanic;
-
 /// Completed species and bounded Animus mastery pages.
 #[path = "features/0168-animus-mastery/mod.rs"]
 pub mod animus_mastery;

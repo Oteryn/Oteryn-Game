@@ -1,14 +1,18 @@
 use super::DailyBoostPanel;
-#[must_use]
-pub fn panel_text(panel: &DailyBoostPanel) -> String {
-    if !panel.selected {
+pub fn panel_text(p: &DailyBoostPanel) -> String {
+    if !p.selected {
         return "Unavailable".into();
     }
-    if let Some(feedback) = panel.feedback {
-        return feedback.into();
+    if let Some(f) = p.feedback {
+        return f.into();
     }
-    match panel.last_command {
-        Some(command) => format!("Command {command}: {} response bytes", panel.result.len()),
-        None => "Ready".into(),
-    }
+    p.boost.as_ref().map_or_else(
+        || "Ready".into(),
+        |v| {
+            format!(
+                "Daily boost\nCreature: {}\nBoss: {}\nResets: {}",
+                v.creature_key, v.boss_key, v.reset_epoch
+            )
+        },
+    )
 }

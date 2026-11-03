@@ -7,6 +7,9 @@ impl Look {
     fn encode(&self) -> Result<Vec<u8>> {
         let mut out = Vec::new();
         match self {
+            Self::EmptyOutfit => {
+                uint(&mut out, 1, 3);
+            }
             Self::Outfit {
                 look_type,
                 colours,
@@ -37,6 +40,7 @@ impl Look {
             2 if !f.has(2) && !f.has(3) && !f.has(4) => Ok(Self::Item {
                 definition_ref: narrow(nonzero(f.u(5)?)?)?,
             }),
+            3 if !f.has(2) && !f.has(3) && !f.has(4) && !f.has(5) => Ok(Self::EmptyOutfit),
             _ => malformed(),
         }
     }

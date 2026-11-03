@@ -1,6 +1,5 @@
 {
   "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-  "catalog_revision": "store-catalogue-r1",
   "source": {
     "repository": "opentibiabr/canary",
     "commit": "52550d5e",

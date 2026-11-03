@@ -1,14 +1,22 @@
 use super::BossDifficultyPanel;
+use oteryn_client_runtime::boss_difficulty::Reply;
 #[must_use]
-pub fn panel_text(panel: &BossDifficultyPanel) -> String {
-    if !panel.selected {
-        return "Unavailable".into();
-    }
-    if let Some(feedback) = panel.feedback {
-        return feedback.into();
-    }
-    match panel.last_command {
-        Some(command) => format!("Command {command}: {} response bytes", panel.result.len()),
-        None => "Ready".into(),
+pub fn panel_text(p: &BossDifficultyPanel) -> String {
+    let state = match &p.reply {
+        Some(Reply::Window {
+            boss_key,
+            content_revision,
+            selected_difficulty,
+            ..
+        }) => format!(
+            "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}"
+        ),
+        Some(Reply::Closed { .. }) => "Difficulty window closed by server".into(),
+        Some(Reply::Refused { reason, .. }) => format!("Server refusal: {reason:?}"),
+        None => "Enter a boss id and open its server window".into(),
+    };
+    match p.feedback {
+        Some(f) => format!("{state}\n{f}"),
+        None => state,
     }
 }

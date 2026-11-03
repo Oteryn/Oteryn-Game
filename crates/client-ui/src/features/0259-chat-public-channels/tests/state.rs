@@ -37,6 +37,11 @@ fn every_extended_room_builds_the_real_existing_chat_intent() {
         );
         panel.pending = false;
         assert_eq!(
+            request(&mut panel, Intent::Close(room)),
+            Some(oteryn_client_runtime::chat_public_channels::ChatIntent::CloseRoom(room))
+        );
+        panel.pending = false;
+        assert_eq!(
             request(&mut panel, Intent::Send(room)),
             Some(
                 oteryn_client_runtime::chat_public_channels::ChatIntent::Room {

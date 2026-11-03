@@ -74,8 +74,10 @@ pub async fn serve_gameplay(
             owners.world_id,
             owners.channel_id,
         ),
-        // No accepted Store contract names the Platform producer yet: purchases are disabled.
-        store: None,
+        store: owners
+            .store
+            .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
+        store_purchases: owners.store_purchases,
     };
     authority
         .register_current_runtime()

@@ -1680,6 +1680,8 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         },
         GameplaySeamOwners {
             gameplay_idle_policy: Default::default(),
+            store_purchases: Default::default(),
+            store: None,
             emit: crate::node::serve::emit,
             root: &root,
             character: &authority,
@@ -2601,6 +2603,24 @@ mod client_negatives;
 
 #[path = "qualification/client_phases/admission.rs"]
 mod client_admission;
+#[path = "qualification/client_phases/browse_field.rs"]
+mod client_browse_field;
+#[path = "qualification/client_phases/daily_boost.rs"]
+mod client_daily_boost;
+#[path = "qualification/client_phases/death.rs"]
+mod client_death;
+#[path = "qualification/client_phases/depot_search.rs"]
+mod client_depot_search;
+#[path = "qualification/client_phases/disconnect_resume.rs"]
+mod client_disconnect_resume;
+#[path = "qualification/client_phases/hotkey_equip.rs"]
+mod client_hotkey_equip;
+#[path = "qualification/client_phases/hunt.rs"]
+mod client_hunt;
+#[path = "qualification/client_phases/item_forge.rs"]
+mod client_item_forge;
+#[path = "qualification/client_phases/store.rs"]
+mod client_store;
 
 #[path = "qualification/client_phases/recovery.rs"]
 mod client_recovery;

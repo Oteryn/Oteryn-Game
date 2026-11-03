@@ -35,11 +35,11 @@ pub use oteryn_protocol_oteryn::hotkey_equip;
 pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
-/// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
-/// Server-owned Animus and daily-reward values for native client features.
-pub use oteryn_protocol_oteryn::{animus_mastery, daily_reward};
-/// Wheel and Atelier wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::{
+    animus_mastery, browse_field, daily_boost, daily_reward, depot_search, item_forge, item_view,
+    store,
+};
 pub use oteryn_protocol_oteryn::{atelier, prey, wheel};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
@@ -69,6 +69,7 @@ use oteryn_protocol_oteryn::chat::{
 pub use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatLine, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode,
     ChatWireError, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
+    encode_chat_intent,
 };
 /// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
@@ -79,19 +80,18 @@ pub use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
 mod tutorial_notices;
-pub use oteryn_protocol_oteryn::{boss_rewards, zones_nologout::ServerMessage};
+pub use oteryn_protocol_oteryn::{
+    boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
+    weapon_proficiency, zones_nologout::ServerMessage,
+};
 mod vip_presence;
-/// Exiva permission-list wire contract.
 pub use oteryn_protocol_oteryn::exiva;
 /// Imbuement shrine wire values used by the native client adapter.
 pub use oteryn_protocol_oteryn::imbuement;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
-/// Loyalty-adjusted absolute skill levels from the admitted character's owner.
 pub use oteryn_protocol_oteryn::loyalty_skills;
-/// Shared NPC trade enums carried by capability-81 shop messages.
 pub use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeSide};
-/// Capability-81 NPC shop wire values consumed by the native client adapter.
 pub use oteryn_protocol_oteryn::npc_shop;
 /// Prey slot wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::vip_presence::{
@@ -102,7 +102,6 @@ use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
-/// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
 };
@@ -133,7 +132,7 @@ use oteryn_protocol_oteryn::{
     charm::CAPABILITY_BESTIARY_CHARMS_V1,
     container_tree::CAPABILITY_CONTAINER_TREE_V1,
     item_view::{
-        self, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
+        CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
         STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
     },
 };

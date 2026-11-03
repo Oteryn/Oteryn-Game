@@ -1922,6 +1922,21 @@ Before authoritative item/value mutation resumes after restore/integrity inciden
 
 Integrity failure keeps affected mutation closed until explicit safe repair/compensation path.
 
+### Store purchases on a restored stack (STORE-154-D6)
+
+Before booting **every node** of a stack restored from backup, set the top-level
+node TOML option `store_purchases = "disabled_restored_backup"`. Restore detection
+is operator-owned; the default is `"enabled"`. Unknown or malformed values prevent
+boot. Catalogue, balance and history reads remain available. Retained `Sent`
+requests still reconcile their original request IDs with Platform, and delivery
+of already-debited operations continues, so an uncertain debit is not lost.
+
+Keep new purchases disabled until the restore integrity checks above and
+reconciliation of Platform's authoritative orders, debits and Game delivery
+receipts establish that no lost purchase can be charged or delivered twice.
+Only then set `store_purchases = "enabled"` and restart the nodes. This switch
+does not replace recovery fences or authorize a repair/compensation.
+
 ## 42. Analytics/Game Intelligence boundary
 
 Analytics may reconcile evidence, detect duplicate location/lineage/value patterns, raise cases and reconstruct provenance.

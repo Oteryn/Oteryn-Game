@@ -595,6 +595,35 @@ mod item_appearance_tests {
     use super::*;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     #[test]
+    fn m10_permanent_item_outfit_has_no_expiry_and_removes_as_outfit() {
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        let facts = ApplicationFacts {
+            now: 1000,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([2; 16]),
+        };
+        let definition = ConditionDefinition::new_permanent_item_outfit("environment.bath", 1)
+            .unwrap()
+            .with_item_appearance("oteryn:item.tibia.i26087", "definition-r1", [4; 32])
+            .unwrap();
+        let mut store = ConditionStore::<String>::new();
+        store
+            .apply(&definition, None, ConditionSourceKind::Field, &[], &facts)
+            .unwrap();
+        assert!(
+            matches!(store.displayed_temporary_appearance_at(u64::MAX - 1),
+            Some(TemporaryDisplayedAppearance::Item(item)) if item.definition_key() == "oteryn:item.tibia.i26087")
+        );
+        store.remove_type(ConditionType::Outfit);
+        assert!(store.displayed_temporary_appearance_at(1000).is_none());
+    }
+
+    #[test]
     fn temporary_item_selection_never_becomes_an_outfit_unlock_and_expires_exactly() {
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
         let facts = ApplicationFacts {

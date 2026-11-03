@@ -182,6 +182,15 @@ pub(super) async fn dev_client<'a>(
     client_task_board::task_board(&mut dev_client).await?;
     client_prey::prey(&mut dev_client).await?;
     client_hireling::hireling(&mut dev_client).await?;
+    client_browse_field::browse_field(&mut dev_client).await?;
+    client_daily_boost::daily_boost(&mut dev_client).await?;
+    client_depot_search::depot_search(&mut dev_client).await?;
+    client_hotkey_equip::hotkey_equip(&mut dev_client).await?;
+    client_item_forge::item_forge(&mut dev_client).await?;
+    client_store::store(&mut dev_client).await?;
+    client_hunt::hunt(&mut dev_client).await?;
+    client_death::death(&mut dev_client).await?;
+    client_disconnect_resume::disconnect_resume(&mut dev_client).await?;
 
     // Dropped here, closing the TLS stream the same silent way the join-only stage did.
     drop(dev_client);

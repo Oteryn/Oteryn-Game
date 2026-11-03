@@ -100,3 +100,44 @@ fn synthetic_command_and_mechanic_extend_only_additive_sources() -> Result<(), S
     assert!(client_fragments::scan(&f.0).is_err());
     Ok(())
 }
+
+#[test]
+fn pushed_handler_requires_reducer_window_and_test() -> Result<(), String> {
+    for missing in ["reducer", "window", "test"] {
+        let f = Fixture::structure()?;
+        f.json(
+            "crates/protocol-oteryn/capabilities/1000-push-v1.json",
+            &json!({"id":1000,"name":"PUSH_V1","commands":[]}),
+        )?;
+        let feature = "crates/client-ui/src/features/1000-push";
+        f.write(&format!("{feature}/protocol.rs"), "fn reduce() {}")?;
+        f.write(
+            &format!("{feature}/tests/state.rs"),
+            "#[test] fn pushed_state_is_visible() {}",
+        )?;
+        f.write(&format!("{feature}/view.rs"), "fn panel() {}")?;
+        let mut handler = json!({"mechanic":"1000-push","kind":"handlers","id":"push-handler","status":"supported","commands":[],"capability":1000,"direction":"server_to_client","entry":"protocol.rs::reduce","push_messages":["Push"],"reducer":"protocol.rs::reduce","test":"tests/state.rs::pushed_state_is_visible","not_applicable":{"state":"stored by reducer","input":"push only","settings":"server owned"}});
+        if missing == "reducer" {
+            handler.as_object_mut().ok_or("handler")?.remove("reducer");
+        }
+        if missing == "test" {
+            handler.as_object_mut().ok_or("handler")?.remove("test");
+        }
+        let mut entries = vec![handler];
+        if missing != "window" {
+            entries.push(json!({"mechanic":"1000-push","kind":"panels","id":"push-panel","status":"supported","entry":"view.rs::panel","not_applicable":{"state":"stored by reducer","protocol":"push handler","input":"push only","settings":"server owned"}}));
+        }
+        let registrations = f.0.join(format!("{feature}/registrations"));
+        fs::create_dir_all(&registrations).map_err(|e| e.to_string())?;
+        for (index, entry) in entries.iter().enumerate() {
+            f.json(&format!("{feature}/registrations/{index}.json"), entry)?;
+        }
+        entries.sort_by_key(|entry| entry["id"].as_str().unwrap_or_default().to_owned());
+        f.json(
+            &format!("{feature}/fixtures/registrations.json"),
+            &json!(entries),
+        )?;
+        assert!(client_fragments::scan(&f.0).is_err(), "missing {missing}");
+    }
+    Ok(())
+}

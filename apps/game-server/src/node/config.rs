@@ -254,6 +254,9 @@ pub struct NodeConfig {
     /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
     #[serde(default)]
     pub server_motd: String,
+    /// Set before booting a stack restored from backup; reconciliation remains enabled.
+    #[serde(default)]
+    pub store_purchases: crate::gameplay_transport::StorePurchaseMode,
     #[serde(default)]
     pub gameplay_idle: crate::gameplay_transport::GameplayIdlePolicy,
     pub staff: Option<crate::durability::staff::StaffConfig>,
@@ -374,7 +377,13 @@ fn parse<T: serde::de::DeserializeOwned>(document: &[u8]) -> Result<T, ConfigErr
     }
     let text = std::str::from_utf8(document).map_err(|_| ConfigError { key: "<document>" })?;
     // Duplicate keys, unknown keys and missing values are all parse errors.
-    toml::from_str(text).map_err(|_| ConfigError { key: "<document>" })
+    toml::from_str(text).map_err(|error: toml::de::Error| ConfigError {
+        key: if error.to_string().contains("store_purchases") {
+            "store_purchases (expected enabled or disabled_restored_backup)"
+        } else {
+            "<document>"
+        },
+    })
 }
 
 /// ADMIT0: a node document whose `[readiness]` omits the explicit capability declaration
@@ -832,6 +841,37 @@ installed_at = 1790000000
 authorization_file = "/var/lib/oteryn-ops/launch-node-a.json"
 s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
+
+    #[test]
+    fn store_purchase_mode_defaults_accepts_both_values_and_fails_closed() {
+        assert_eq!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("enabled by default")
+                .store_purchases,
+            crate::gameplay_transport::StorePurchaseMode::Enabled
+        );
+        for mode in ["enabled", "disabled_restored_backup"] {
+            let document = format!("store_purchases = \"{mode}\"\n{NODE}");
+            let config =
+                NodeConfig::parse(document.as_bytes()).expect("explicit Store purchase mode");
+            assert_eq!(config.store_purchases.as_str(), mode);
+        }
+        for value in [
+            "\"unknown\"",
+            "true",
+            "42",
+            "[]",
+            "{}",
+            "\"ENABLED\"",
+            "\"enabled \"",
+            "",
+        ] {
+            let document = format!("store_purchases = {value}\n{NODE}");
+            let error =
+                NodeConfig::parse(document.as_bytes()).expect_err("invalid Store purchase mode");
+            assert!(error.key.starts_with("store_purchases"), "{value}: {error}");
+        }
+    }
 
     #[test]
     fn idle_kick_node_config_defaults_overrides_and_rejects_invalid_thresholds() {

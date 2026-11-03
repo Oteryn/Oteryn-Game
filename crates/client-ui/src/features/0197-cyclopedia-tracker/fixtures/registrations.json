@@ -3,7 +3,7 @@
     "mechanic": "0197-cyclopedia-tracker",
     "kind": "handlers",
     "id": "0197-cyclopedia-tracker-383",
-    "status": "unsupported",
+    "status": "supported",
     "direction": "client_to_server",
     "capability": 197,
     "entry": "protocol.rs::request",
@@ -12,14 +12,13 @@
     },
     "commands": [
       383
-    ],
-    "reason": "The panel refreshes domain 98 but has no native add/remove creature controls."
+    ]
   },
   {
     "mechanic": "0197-cyclopedia-tracker",
     "kind": "handlers",
     "id": "0197-cyclopedia-tracker-384",
-    "status": "unsupported",
+    "status": "supported",
     "direction": "client_to_server",
     "capability": 197,
     "entry": "protocol.rs::request",
@@ -28,8 +27,7 @@
     },
     "commands": [
       384
-    ],
-    "reason": "The panel refreshes domain 98 but has no native add/remove creature controls."
+    ]
   },
   {
     "mechanic": "0197-cyclopedia-tracker",
