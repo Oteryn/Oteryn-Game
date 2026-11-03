@@ -265,6 +265,9 @@ fn bundle_bed_head(
     pos: crate::map::overlay::TilePos,
     ordinal: u8,
 ) -> Option<LogicalCell> {
+    // Crystal 201189f `src/items/bed.cpp:91-100,112-123,145-160` requires the
+    // reciprocal physical half and accepts USE only through the pillow/head.
+    // Oteryn canonicalizes either visible half to that single reservation cell.
     use crate::content::{ReferenceBedDirection as Direction, ReferenceBedPart as Part};
     let source = super::house_query::source_house_id(house)?;
     if map.facts.house_id(pos) != Some(source) {

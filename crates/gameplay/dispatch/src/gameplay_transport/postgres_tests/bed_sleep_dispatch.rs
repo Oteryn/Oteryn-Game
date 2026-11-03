@@ -104,6 +104,20 @@ fn c10_production_bed_sleep_logout_fresh_login_saved_rest_postgres() -> TestResu
     result
 }
 
+#[test]
+fn s07_bed_pair_acl_reservation_wake_and_real_owner_postgres() -> TestResult {
+    let started = std::time::Instant::now();
+    let result = super::hireling_lifecycle::bed_rest_case();
+    if crate::bestiary_postgres_harness::configured_admin().is_some() {
+        eprintln!(
+            "PG_MARKER S07 reciprocal-pair acl reservation wake real-owner success={} duration={:.3}s",
+            result.is_ok(),
+            started.elapsed().as_secs_f64()
+        );
+    }
+    result
+}
+
 pub(super) async fn production_rest(
     h: &super::fixture::Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -185,6 +199,11 @@ pub(super) async fn production_rest(
     assert_eq!(released,(true,true),"sleep releases the genuine admission claims");
     let head: (i32,i32,i32) = sqlx::query_as("SELECT bed_x,bed_y,bed_z FROM game_house_bed_sleepers").fetch_one(&h.pool).await?;
     assert_eq!(head,(32310,32804,7),"the visible foot resolves to its reciprocal head");
+    // The production transaction, not a test `prepare_bed_sleep` adapter,
+    // independently applied the House ACL and reserved the canonical pair.
+    let reserved: (bool, bool) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND owner_character_id=encode($3,'hex')::uuid UNION ALL SELECT 1 FROM game_house_acl WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_id IN (-1,-2) AND (allow_everyone OR encode($3,'hex')::uuid=ANY(members))),EXISTS(SELECT 1 FROM game_house_bed_sleepers WHERE bed_x=32310 AND bed_y=32804 AND bed_z=7 AND freed_at IS NULL)")
+        .bind(id(42).as_slice()).bind("oteryn:content.house.admiral_s_avenue_1").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(reserved, (true, true));
     let saved: (i32,i32,Vec<i32>) = sqlx::query_as("SELECT health,mana,rest FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!((saved.0,saved.1,saved.2[0]),(10,5,5));
@@ -214,5 +233,6 @@ pub(super) async fn production_rest(
     assert_eq!(&restored.2[2..],&[1234,567]);
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_bed_sleepers").fetch_one(&h.pool).await?,0);
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_bed_regen_receipts").fetch_one(&h.pool).await?,1);
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_bed_sleepers WHERE freed_at IS NULL").fetch_one(&h.pool).await?,0,"fresh admission wakes and releases the reserved pair");
     Ok(())
 }
