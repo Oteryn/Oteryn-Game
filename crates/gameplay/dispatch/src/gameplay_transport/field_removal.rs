@@ -6,12 +6,14 @@ use crate::durability::spell_items_abi::SpellGroundTarget;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use sha2::{Digest, Sha256};
 
-/// The terrain-tool catalogue owns which qualified items act as a machete.
+/// Multi-tools retain machete use alongside their primary terrain action.
 fn is_machete(key: &str) -> bool {
+    // Crystal 201189f8 data/scripts/actions/tools/{squeezing_gear_of_girlpower,
+    // whacking_driller_of_fate}.lua fall through scythe/crowbar to onUseMachete.
     matches!(
         oteryn_gameplay_world::terrain_tools::TerrainTool::from_production_key(key),
         Some(oteryn_gameplay_world::terrain_tools::TerrainTool::Machete)
-    )
+    ) || matches!(key, "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598")
 }
 
 #[derive(Debug)]
@@ -164,6 +166,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition: UseDisposition::Committed,
                 ..super::connection::UseOutcome::rejected()
             })),
+            // A non-field target must reach the terrain owner (9596 harvests wheat;
+            // 9598 opens the quest cask). mining::dispatch_map_use falls through
+            // only on NothingToUse, so TargetIllegal would hide those uses.
+            Ok(false)
+                if matches!(
+                    tool_item.item.definition.production_key.as_str(),
+                    "oteryn:item.tibia.i9596" | "oteryn:item.tibia.i9598"
+                ) =>
+            {
+                Some(Some(super::connection::UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    ..super::connection::UseOutcome::rejected()
+                }))
+            }
             Ok(false) => refused(),
             Err(_) => {
                 if context.3 {
@@ -219,6 +235,28 @@ mod tests {
         }
         assert!(!is_machete("oteryn:item.tibia.i5908"));
         assert!(!is_machete("oteryn:item.tibia.i3457"));
+    }
+
+    #[test]
+    fn multi_tools_keep_their_target_specific_terrain_actions() -> Result<(), &'static str> {
+        use oteryn_gameplay_world::terrain_tools::{crystal_core_bindings, dispatch};
+
+        let catalogue = crystal_core_bindings();
+        for (id, target, action, transformed, yield_item) in [
+            (9596, 3653, None, 3651, Some(3605)),
+            (9596, 5464, None, 5463, Some(5466)),
+            (9598, 4848, Some(40041), 3134, None),
+        ] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            assert!(is_machete(&key));
+            let plan = dispatch(&catalogue, &key, target, action, 0).ok_or("terrain action")?;
+            assert_eq!(plan.binding.transformed, transformed);
+            assert_eq!(plan.binding.yield_item, yield_item);
+            for field in [2130, 3635, 30224] {
+                assert!(dispatch(&catalogue, &key, field, None, 0).is_none());
+            }
+        }
+        Ok(())
     }
 }
 

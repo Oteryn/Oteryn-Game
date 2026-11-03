@@ -434,10 +434,29 @@ impl BundleFacts {
         let Some((pos, _)) = view::placement_of(key) else {
             return false;
         };
+        let bound_allowed = !after.bound
+            || match self.terrain_tool_action(key) {
+                Some(Some(101)) => true,
+                Some(Some(40041))
+                    if matches!(after.definition, MapDefinition::Item(_))
+                        && matches!(after.appearance_id, 3134 | 4848) =>
+                {
+                    // M08's quest cask keeps its authored action through opening
+                    // and regrowth. That action never admits another bound item.
+                    self.placements
+                        .binary_search_by_key(&key, |(key, _)| *key)
+                        .ok()
+                        .and_then(|i| self.palette.get(self.placements[i].1.palette as usize))
+                        .is_some_and(|source| {
+                            source.family == Family::Item && source.facts.appearance_id == 4848
+                        })
+                }
+                _ => false,
+            };
         if revision == 0
             || self.house_tile(pos)
             || self.doors.contains(key)
-            || (after.bound && self.terrain_tool_action(key) != Some(Some(101)))
+            || !bound_allowed
             || after.pickupable
             || after.count != 1
             || after.sub_type != 0
@@ -1088,6 +1107,73 @@ mod tests {
         assert_eq!(facts.terrain_tool_action(key), Some(Some(101)));
         facts.placements[0].1.attrs.unique = Some(1);
         assert_eq!(facts.terrain_tool_action(key), None);
+    }
+
+    #[test]
+    fn terrain_projection_admits_only_the_bound_cask_pair_and_existing_pick_action() {
+        let key = placement_key(
+            TilePos {
+                x: 7,
+                y: 0,
+                floor: -7,
+            },
+            1,
+        )
+        .expect("placement");
+        for (action, source, target, allowed) in [
+            (40041, 4848, 3134, true),
+            (40041, 4848, 4848, true),
+            (40041, 3696, 3134, false),
+            (40042, 4848, 3134, false),
+            (40041, 4848, 5462, false),
+            (101, 354, 394, true),
+        ] {
+            let before = EntryFacts {
+                definition: MapDefinition::Item(NonZeroU32::MIN),
+                terrain_kind: None,
+                appearance_id: source,
+                blocks_projectile: false,
+                pickupable: false,
+                bound: true,
+                count: 1,
+                sub_type: 0,
+            };
+            let mut facts = BundleFacts::default();
+            facts.palette.push(PaletteFacts {
+                family: Family::Item,
+                id: 0,
+                facts: before,
+                solid: false,
+                door: PaletteDoor::No,
+            });
+            facts.placements.push((
+                key,
+                Placement {
+                    palette: 0,
+                    bound: true,
+                    dropped: false,
+                    count: 1,
+                    sub_type: 0,
+                    attrs: Attrs {
+                        action: Some(action),
+                        ..Attrs::default()
+                    },
+                    pickup: Err(pickup::Ineligible::NotPickupable),
+                },
+            ));
+            assert_eq!(
+                facts.install_terrain_state(
+                    key,
+                    1,
+                    EntryFacts {
+                        appearance_id: target,
+                        ..before
+                    }
+                ),
+                allowed,
+                "action={action} source={source} target={target}"
+            );
+        }
     }
 
     fn item_solid(key: &str) -> bool {

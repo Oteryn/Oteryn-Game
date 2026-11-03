@@ -43,6 +43,7 @@ mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
 mod composed_test_owner;
+mod condition_persistence;
 mod condition_snapshots;
 mod connection;
 mod consume_transform_use;
