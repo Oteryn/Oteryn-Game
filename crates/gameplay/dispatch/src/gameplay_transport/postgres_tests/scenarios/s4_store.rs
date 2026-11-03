@@ -114,7 +114,7 @@ fn scenario() -> TestResult {
         let purchase = wire::encode_purchase_request(&wire::StorePurchaseRequest {
             purchase_request_id: id(62),
             offer_key: "store:exercise-sword".into(),
-            catalog_revision: "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d"
+            catalog_revision: "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c"
                 .into(),
             price: 25,
             currency: "TIBIA_COIN".into(),

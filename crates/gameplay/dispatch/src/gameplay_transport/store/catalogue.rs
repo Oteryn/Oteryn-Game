@@ -42,6 +42,7 @@ struct Item {
 }
 
 pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
+pub(super) const CHARM_EXPANSION_UNLOCK: &str = "charm-expansion";
 
 fn enabled_by_default() -> bool { true }
 
@@ -97,7 +98,7 @@ impl RuntimeCatalogue {
                 (Some(item), None) => {
                     (rules::OfferKind::Item, rules::DeliveryKind::Item { item_key: item.key.clone(), count: 1 }, rules::Eligibility::default())
                 }
-                (None, Some(unlock_key)) if unlock_key == PREY_EXPANSION_UNLOCK => {
+                (None, Some(unlock_key)) if matches!(unlock_key.as_str(), PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK) => {
                     let eligibility = rules::Eligibility {
                         reject_if_unlock_owned: Some(unlock_key.clone()),
                         per_character_limit: Some(1),

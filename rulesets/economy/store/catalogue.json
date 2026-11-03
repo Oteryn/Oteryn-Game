@@ -1,11 +1,20 @@
 {
   "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
   "source": {
-    "repository": "opentibiabr/canary",
-    "commit": "52550d5e",
-    "path": "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
+    "repository": "opentibiabr/crystalserver",
+    "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/modules/scripts/gamestore/gamestore.lua"
   },
   "offers": [
+    {
+      "key": "store:charm-expansion",
+      "category": "useful-things.charms",
+      "title": "Charm Expansion",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "charm-expansion",
+      "source_line": 6554
+    },
     {
       "key": "store:durable-exercise-axe",
       "category": "consumables.exercise-weapons",
