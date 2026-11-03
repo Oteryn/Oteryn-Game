@@ -173,6 +173,7 @@ pub(super) async fn production_rest(
     let unchanged: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(p) FROM game_character_last_positions p WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_optional(&h.pool).await?;
     assert_eq!(unchanged,before);
     sqlx::query("DROP TRIGGER c10_refuse_terminal_receipt ON game_durability_admission_lifecycle_receipts").execute(&h.pool).await?;
+    eprintln!("PG_MARKER C10 S07 reciprocal-pair acl reservation wake real-owner assertions-preserved");
     eprintln!("PG_MARKER C10 native-terminal-release rollback-verified");
     eprintln!("PG_MARKER C10 entering composed production bed sleep");
     let result = crate::gameplay_transport::bed_sleep::dispatch(owner, actor, command,

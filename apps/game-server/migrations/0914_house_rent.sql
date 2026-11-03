@@ -42,6 +42,8 @@ CREATE TRIGGER game_house_rent_letter_mint_guard BEFORE UPDATE OR DELETE ON game
  FOR EACH ROW EXECUTE FUNCTION game_house_rent_letter_mint_guard();
 REVOKE ALL ON FUNCTION game_house_rent_letter_mint_guard() FROM PUBLIC;
 -- Extend the central deferred ItemInstance proof with this closed, transaction-local mint.
+-- The guard body is amended in place, as 0165-0762 do, so every earlier branch survives;
+-- replacing it with a copied body would drop the branches added after the copied migration.
 DO $$ DECLARE body TEXT; BEGIN
  body:=pg_get_functiondef('game_item_mint_consistency_guard()'::regprocedure);
  body:=regexp_replace(body,'BEGIN',E'BEGIN\n    IF EXISTS (SELECT 1 FROM game_house_rent_letter_mints m JOIN game_item_character_inbox_locations l ON l.item_instance_id=m.letter_id WHERE m.letter_id=NEW.item_instance_id AND m.transaction_id=NEW.minted_transaction_id AND m.world_id=NEW.world_id AND l.character_id=m.owner_character_id AND m.created_xact_id=pg_current_xact_id()) THEN RETURN NEW; END IF;');
@@ -125,14 +127,21 @@ BEGIN
  ELSE
   UPDATE game_house_rent_state SET next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key;
  END IF;
- IF s.warnings=7 THEN
+ IF s.warnings=7 AND NOT EXISTS(
+  SELECT 1 FROM game_house_dispositions d WHERE d.world_id=w AND d.house_key=p.house_key
+   AND d.cause='EVICTION' AND d.state<>4) THEN
   now_ms:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
-  INSERT INTO game_house_dispositions(world_id,house_key,owner_character_id,ownership_revision,state,noticed_at,due_at,cause)
-   SELECT w,p.house_key,o.owner_character_id,o.ownership_revision,1,now_ms,now_ms,'EVICTION' FROM game_house_ownership o
-    WHERE o.world_id=w AND o.house_key=p.house_key
-   ON CONFLICT DO NOTHING;
-  UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE world_id=w AND runtime_scope_kind=2
-   AND runtime_scope_house_key=p.house_key AND session_state IN(1,2);
+  BEGIN
+   INSERT INTO game_house_dispositions(world_id,house_key,owner_character_id,ownership_revision,state,noticed_at,due_at,cause)
+    SELECT w,p.house_key,o.owner_character_id,o.ownership_revision,1,now_ms,now_ms,'EVICTION' FROM game_house_ownership o
+     WHERE o.world_id=w AND o.house_key=p.house_key;
+   UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE world_id=w AND runtime_scope_kind=2
+    AND runtime_scope_house_key=p.house_key AND session_state IN(1,2);
+  EXCEPTION WHEN unique_violation THEN
+   -- A competing disposition belongs to this house only. Keep its warning
+   -- transition committed so the world worker can advance the next house.
+   NULL;
+  END;
  END IF;
  RETURN TRUE;
 END $$;
@@ -166,3 +175,5 @@ GRANT SELECT ON game_house_rent_config,game_house_rent_state,game_house_rent_inb
 GRANT SELECT ON game_house_rent_state,game_house_rent_inbox_letters,game_house_rent_payments TO oteryn_game_control;
 REVOKE ALL ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_house_disposition_is_personal_move_out(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_house_disposition_is_personal_move_out(UUID) TO oteryn_game_runtime,oteryn_game_control;
