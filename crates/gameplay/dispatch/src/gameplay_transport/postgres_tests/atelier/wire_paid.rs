@@ -169,7 +169,7 @@ fn atelier_wire_nested_gem_burns_and_replays_once() -> TestResult {
 }
 
 #[test]
-fn atelier_wire_deeply_nested_gem_burns_and_replays_once() -> TestResult {
+fn atelier_wire_nested_discovery_reaches_the_next_container_level_once() -> TestResult {
     check(Case::DeepNestedReveal)
 }
 
@@ -229,7 +229,7 @@ fn atelier_wire_grade_can_spend_the_last_stash_fragment() -> TestResult {
 }
 
 #[test]
-fn atelier_wire_stash_and_bank_upgrade_without_a_backpack() -> TestResult {
+fn atelier_cmd_424_upgrade_without_a_backpack_debits_supply_stash() -> TestResult {
     check(Case::NoBackpackStashGrade)
 }
 
