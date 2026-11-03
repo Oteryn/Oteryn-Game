@@ -1,0 +1,434 @@
+{
+  "schema": "OTERYN_HIDDEN_THREATS_SOURCE_DIALOGUE_V1",
+  "source_only": true,
+  "reason": "Full pinned source text only; no Hidden Threats NPC has a qualified placement in the current canonical World inputs (QUESTION 6590445954, ANSWER 6589524728 section 7). Canonical NPC keys are documentary joins to current Oteryn NPC declarations, never placement authority. This archive activates no greeting, quest write or reward.",
+  "records": [
+    {
+      "npc": "oteryn:npc.corym_butler",
+      "sha256": "a08ef70c03c864454243f582e765bca4feb1ccb99050a76b2d3b95286130ca04",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Every man is the architect of his own fortune. The times of {repression} are finally over."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_butler.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "We have to dig up valuable resources, but don't get enough to eat. The situation is terrible."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_butler.lua:62-62"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "We have to dig up valuable resources, but don't get enough to eat. The situation is terrible."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_butler.lua:75-77"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_butler.lua:87-87"
+        }
+      ],
+      "source_npc_file": "corym_butler"
+    },
+    {
+      "npc": "oteryn:npc.corym_footman",
+      "sha256": "c96874e628325984b936e154986e2d092a0719ec5193b5f8baed87eb04a7aaab",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Every man is the architect of his own fortune. We have nearly died of {hunger}."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_footman.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "What we get to eat is really ridiculous."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_footman.lua:62-62"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "What we get to eat is really ridiculous. Particularly in view of the fact that we should dig up an insane amount of ores."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_footman.lua:75-77"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_footman.lua:87-87"
+        }
+      ],
+      "source_npc_file": "corym_footman"
+    },
+    {
+      "npc": "oteryn:npc.corym_ratter",
+      "sha256": "331d801af697b28154467ec14b9b3d0d61bcd7f9d5aa06886f83fb685cdf71d7",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Welcome stranger! You might be surprised that I don't attack you immediately. The point is, that I think you could be useful to me. What you see in front of you is a great mine of the corym! ...",
+            "We dig up all what mother earth delivers to us, valuable natural resources. But the yield is getting worse and here I need your {help}."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_ratter.lua:58-61"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "You say the work takes place in a common way? The decreasing amount of ores is just unlucky. I can't believe that. I have to look for reinforcements and 'motivate' my workers a bit."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_ratter.lua:63-63"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "Recently the amount of delivered ores is decreasing. Could you find out the reason, why the situation has become worse?"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_ratter.lua:77-77"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "Nice! I have opened the mine for you. But take care of you! The monsters of depth won't spare you."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_ratter.lua:84-84"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_ratter.lua:92-92"
+        }
+      ],
+      "source_npc_file": "corym_ratter"
+    },
+    {
+      "npc": "oteryn:npc.corym_servant",
+      "sha256": "5f77be3110496e5c8037f7269583a0fa1d3841b9a9c83b3759883afe158e22d0",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Did you collected 20 rare earth by any chance? Would you give them to me?"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:61-63"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Well done! The riot progesses! No fight without weapons. In the mine the temperature is quite high, higher as expected in this depth. Therefore we need heat-resistent weapons and armors. ...",
+            "This effect can be reached by adding rare earth to the common materials. But this can only be found in the stomaches of stonerefiners. 20 of these should be enough. Did you collected 20 rare earth by any chance? Would you give them to me?"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:77-80"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "You have to liberate all the Corym I told you. Unlock the three affected areas."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:85-87"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "We work as hard we can, my master! Wait, I haven't seen you here before. You were sent by the Corym Ratter, I see. He misses the courage to visit us and find the reason for {decreasing resources}? He's the coward I have expected."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:91-93"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "We are very thankful, that you could help us. It won't take long and the riots will start!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:97-97"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "You have to know, that our work is very hard and the conditions we have are terrible. The wanted amount is abolutely unrealistic. Beyond that the food we get is never enough. ...",
+            "Our workers should give their best while starving. This is not possible. That's the point to {defy} the authority."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:112-115"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "I see you are interested to change our sitation. The first thing I like you to do is to liberate the jailed coryms. There are three areas with locked doors. You have to find a way to get access. ...",
+            "For this reason I will give you access to the second floor. It was closed because it wasn't possible to continue working at these enourmous high temperatures. Furthermore we were instantly attacked by stonerefiners. So take care of you!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:123-126"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "Thank you very much! Our smiths are now able to craft heat-resistent weapons and armor. A little reward for you is this. ...",
+            "There is one last thing I would like to say to you, there are rumours that this dungeon can only be entered alive. This could mean that there's an unknown dungeon keeper guarding this place, so take care of you!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:134-137"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "You don't have enough, return when could you bring 20 of rare earth to me."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:142-142"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_servant.lua:153-153"
+        }
+      ],
+      "source_npc_file": "corym_servant"
+    },
+    {
+      "npc": "oteryn:npc.corym_slave",
+      "sha256": "561c622718d824999ab2c99bd90727aaf7770d47944a81a21792e743e4129b30",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Every man is the architect of his own fortune. There will be the day of {pay back}."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_slave.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "The repression has taken too long. With our new weapons the respective people will get their just punishment."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_slave.lua:62-62"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "The repression has taken too long. With our new weapons the respective people will get their just punishment."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_slave.lua:75-77"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_slave.lua:86-86"
+        }
+      ],
+      "source_npc_file": "corym_slave"
+    },
+    {
+      "npc": "oteryn:npc.corym_worker_1",
+      "sha256": "9f5557cd45d8b37b1e617d05657a5159b9f17eb82e7315238d120fd747718061",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_01.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_01.lua:64-64"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_01.lua:70-70"
+        }
+      ],
+      "source_npc_file": "corym_worker_01"
+    },
+    {
+      "npc": "oteryn:npc.corym_worker_2",
+      "sha256": "7c014f744482660eae28ae20d3e414b216f8b83386f2754cfbc68016c9c76239",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Every man is the architect of his own fortune. The times of {repression} are finally over."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_02.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "We need weapons to overcome our situation."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_02.lua:62-62"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "We need weapons to overcome our situation."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_02.lua:75-77"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_02.lua:86-86"
+        }
+      ],
+      "source_npc_file": "corym_worker_02"
+    },
+    {
+      "npc": "oteryn:npc.corym_worker_3",
+      "sha256": "7d8e3034f760947d5e68afae48f34d2d1f5f078f9fe096cdc6f9f351d5af2052",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_03.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_03.lua:64-64"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_03.lua:70-70"
+        }
+      ],
+      "source_npc_file": "corym_worker_03"
+    },
+    {
+      "npc": "oteryn:npc.corym_worker_4",
+      "sha256": "6d60f87bb3124835f14cf32bfd14c8478c842bb4aa573b8a91908ad9de4723ba",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "Every man is the architect of his own fortune. The times of {repression} are finally over."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_04.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "We need weapons to overcome our situation."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_04.lua:62-62"
+        },
+        {
+          "kind": "say",
+          "event": null,
+          "parts": [
+            "We need weapons to overcome our situation."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_04.lua:75-77"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_04.lua:86-86"
+        }
+      ],
+      "source_npc_file": "corym_worker_04"
+    },
+    {
+      "npc": "oteryn:npc.corym_worker_5",
+      "sha256": "8931876c64e785effbfa06a26caf3848fa08e8863db06ccb3a8b1ed01a827c22",
+      "messages": [
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_05.lua:58-60"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_GREET",
+          "parts": [
+            "My hero! A friend of mine sent you to liberate me? A true friend!"
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_05.lua:64-64"
+        },
+        {
+          "kind": "setMessage",
+          "event": "MESSAGE_FAREWELL",
+          "parts": [
+            "Good bye, |PLAYERNAME|."
+          ],
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/corym_worker_05.lua:70-70"
+        }
+      ],
+      "source_npc_file": "corym_worker_05"
+    }
+  ]
+}
