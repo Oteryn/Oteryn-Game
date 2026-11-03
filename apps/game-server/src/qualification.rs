@@ -2763,17 +2763,11 @@ fn dev_client_step_event(
 async fn dev_client_door_events(
     session: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
-    for _ in 0..20 {
-        session
-            .service_liveness(std::time::Duration::from_millis(250))
-            .await
-            .map_err(|error| format!("dev client idle read: {error}"))?;
-        let events = session.take_events();
-        if !events.is_empty() {
-            return Ok(events);
-        }
-    }
-    Err("dev client door delta never arrived".into())
+    session
+        .session_mut()
+        .wait_for_events(std::time::Duration::from_secs(20))
+        .await
+        .map_err(|error| format!("dev client door delta never arrived: {error}").into())
 }
 
 /// Durable session state, current loss epoch and grace seconds counted from that loss's decision.
