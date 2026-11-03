@@ -182,6 +182,20 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     Ok(DevClientSession { session })
 }
 
+/// Connect a fresh TLS transport and recover the same server session with its retained selection.
+pub async fn resume_session(
+    transport: oteryn_session_tcp::TcpConnect<'_>,
+    previous: oteryn_session::RecoveryState,
+    recovery: oteryn_session::Recovery<'_>,
+) -> Result<DevClientSession, DevClientError> {
+    let stream = oteryn_session_tcp::connect(transport).await?;
+    let session = Session::resume(stream, previous, recovery).await?;
+    Ok(DevClientSession { session })
+}
+
+pub use oteryn_session::{Recovery, RecoveryState};
+pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
+
 /// An admitted, joined game session over the TLS/TCP adapter: `oteryn_session::Session` with the
 /// dev client's error type. Dropping it closes the connection.
 #[derive(Debug)]
@@ -190,6 +204,19 @@ pub struct DevClientSession {
 }
 
 impl DevClientSession {
+    /// Drops the TLS stream and retains only client continuity for a later recovery attempt.
+    pub fn disconnect(self) -> RecoveryState {
+        self.session.disconnect()
+    }
+
+    /// Close after flushing a step, leaving its outcome unread for recovery qualification.
+    pub async fn disconnect_after_step(
+        self,
+        direction: StepDirection,
+    ) -> Result<RecoveryState, DevClientError> {
+        Ok(self.session.disconnect_after_step(direction).await?)
+    }
+
     /// The session used by the native feature adapters. Qualification code deliberately uses
     /// this instead of manufacturing command frames or decoding replies itself.
     pub fn session_mut(&mut self) -> &mut Session<TcpTlsStream> {

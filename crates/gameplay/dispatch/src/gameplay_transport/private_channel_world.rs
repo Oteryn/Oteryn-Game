@@ -377,6 +377,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Option<ChatChannelList> {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_CHAT_PRIVATE_CHANNEL_V1)
+        {
+            return None;
+        }
+        // Snapshot admission can find the root's sole holder busy. Retry on the existing
+        // refresh cadence so that transient unavailability cannot suppress the initial list
+        // for the entire connection. Admission still re-proves the complete current fence.
+        if !self
+            .states
+            .chat
+            .private_world
+            .negotiated(admitted.game_session_id)
+        {
+            self.private_channel_admit(admitted, true).await;
+        }
         if !self
             .states
             .chat

@@ -18,6 +18,35 @@ pub struct TaskBoardPanel {
     pub pending: bool,
     pub state: Option<task_board::TaskBoardReply>,
     pub feedback: Option<&'static str>,
+    pub weekly: Option<task_board::full::Reply>,
+}
+
+/// The full weekly owner supersedes the legacy select/claim actions.
+pub fn weekly_request(
+    panel: &mut TaskBoardPanel,
+    difficulty: Option<u8>,
+) -> Option<task_board::full::Request> {
+    if !panel.selected || panel.pending {
+        return None;
+    }
+    let request = match difficulty {
+        Some(difficulty) => task_board::full::Request {
+            action: 5,
+            selection: u16::from(difficulty),
+            race: String::new(),
+        },
+        None => task_board::full::Request::query(),
+    };
+    task_board::full::encode_request(&request).ok()?;
+    panel.pending = true;
+    Some(request)
+}
+
+pub fn apply_weekly(panel: &mut TaskBoardPanel, reply: task_board::full::Reply) {
+    panel.pending = false;
+    panel.feedback =
+        (reply.refusal != 0).then_some("The server refused the weekly Task Board action");
+    panel.weekly = Some(reply);
 }
 
 pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<TaskBoardCommand> {
@@ -96,6 +125,23 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn weekly_controls_send_full_owner_actions_and_guard_pending() -> Result<(), &'static str> {
+        let mut panel = TaskBoardPanel {
+            selected: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            weekly_request(&mut panel, None),
+            Some(task_board::full::Request::query())
+        );
+        assert!(weekly_request(&mut panel, Some(0)).is_none());
+        panel.pending = false;
+        assert!(weekly_request(&mut panel, Some(4)).is_none());
+        let request = weekly_request(&mut panel, Some(0)).ok_or("weekly start")?;
+        assert_eq!((request.action, request.selection), (5, 0));
+        Ok(())
+    }
     fn reply(refused: bool) -> task_board::TaskBoardReply {
         task_board::TaskBoardReply {
             refused,

@@ -54,3 +54,44 @@ fn replies_render_state_and_refusals() {
     );
     assert!(panel_text(&panel).contains("stale"));
 }
+
+#[test]
+fn npc_prerequisite_reducer_uses_live_quote_and_clears_closed_window() -> Result<(), String> {
+    let npc = EntityRef {
+        identity: [1; 16],
+        generation: 9,
+    };
+    let mut panel = NpcServicePanel::default();
+    let window = npc_service::NpcTradeWindow {
+        open: Some((npc, 42)),
+        offers: vec![npc_service::NpcOffer {
+            item_definition_ref: 8,
+            side: NpcTradeSide::Buy,
+            count: 1,
+            unit_price: 17,
+        }],
+    };
+    assert!(apply_window(
+        &mut panel,
+        &npc_service::encode_npc_trade_window(&window).map_err(|e| format!("{e:?}"))?
+    ));
+    let request = buy_request(&panel, 0).ok_or("buy")?;
+    assert_eq!(
+        (
+            request.npc_actor,
+            request.catalogue_revision,
+            request.expected_unit_price
+        ),
+        (npc, 42, 17)
+    );
+    assert!(buy_request(&panel, 1).is_none());
+    assert!(!apply_window(&mut panel, &[255]));
+    assert_eq!(panel.window.as_ref(), Some(&window));
+    assert!(apply_conversation(
+        &mut panel,
+        &npc_service::encode_npc_conversation(&Default::default()).map_err(|e| format!("{e:?}"))?
+    ));
+    assert!(panel.window.is_none());
+    assert!(buy_request(&panel, 0).is_none());
+    Ok(())
+}
