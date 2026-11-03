@@ -340,6 +340,11 @@ pub async fn add_snowbunny_progress(
 }
 
 /// Count and commit one already-authorized Snowbunny footprint transaction.
+///
+/// The caller passes the transaction which already contains the durable step authority check;
+/// keeping the progress write here, before the sole commit, is intentional.  A failure of either
+/// half therefore rolls the entire footprint back rather than leaving a moved step with a
+/// separately committed counter.
 pub async fn commit_snowbunny_progress(
     mut tx: sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,

@@ -253,6 +253,9 @@ fn m09_gathering_wire_ice_sculpture_stays_on_map() -> TestResult { run_gathering
 fn m09_gathering_wire_failed_ice_removes_block() -> TestResult { run_gathering(5942,7441,None,None,true) }
 #[test]
 fn m09_gathering_wire_ice_hole_catches_rare_fish() -> TestResult { run_gathering(3483,7236,Some(7237),Some(7158),true) }
+
+#[test]
+fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> TestResult { run_gathering(9306,4597,Some(4609),Some(9307),true) }
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult { run_gathering(3483,7236,Some(7236),None,false) }
 

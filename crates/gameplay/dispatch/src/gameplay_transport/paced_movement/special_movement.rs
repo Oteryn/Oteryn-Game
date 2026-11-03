@@ -233,6 +233,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
+                // The authority read and Snowbunny +1 share this transaction and its only
+                // commit. Crystal donor: data/scripts/movements/snow.lua:13-20
+                // (commit 201189f871d23597b82caf88fd611454a2ddefb8).
                 crate::durability::account_achievement::commit_snowbunny_progress(
                     tx,
                     character_id,

@@ -327,19 +327,25 @@ fn killrw_rl_01_bounds_queued_plus_in_flight() {
 }
 
 #[test]
-fn w22a_reservation_counts_nested_children_and_unfit_plans_do_not_wait_forever() {
+fn w22a_reservation_counts_nested_children() {
     let queue = KillSettlementQueue::default();
     let mut entry = pending(2, 50, 3, 1);
     let table = &mut Arc::make_mut(entry.row.as_mut().expect("reward row")).loot_table;
-    let child = table.entries[0].clone();
+    let mut child = table.entries[0].clone();
+    child.details.container_capacity = Some(1);
+    child.details.children = vec![child.clone()];
     table.entries[0].details.container_capacity = Some(2);
-    table.entries[0].details.children = vec![child.clone(), child];
+    table.entries[0].details.children = vec![child];
     queue.append(entry);
     let held = taken(queue.take(session(50), 3));
     assert_eq!(queue.counts(), (0, 1, 3));
     held.finish();
     assert_eq!(queue.counts(), (0, 0, 0));
+}
 
+#[test]
+fn w22a_intrinsically_oversized_plan_reserves_nothing_and_reaches_settle() {
+    let queue = KillSettlementQueue::default();
     queue.append(pending(
         3,
         50,

@@ -313,9 +313,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|s| item_id(&s.production_key));
         if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
-            && oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
-        {
-            let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
+            // The real gathering dispatcher calls the complete donor classifier directly:
+            // M09's mechanical-water and tiered-sculpture branches are not simple table rows.
+            && let Some(attempt) = oteryn_gameplay_items::fishing::gathering_attempt(
                 tool_id,
                 target_id,
                 fishing_skill,
@@ -326,7 +326,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.command_id,
                     &request.intent,
                 )?,
-            )?;
+            )
+        {
             let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
                 return None;
             };

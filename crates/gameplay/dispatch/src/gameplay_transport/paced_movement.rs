@@ -6,6 +6,25 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
 
+fn snowbunny_progress_operation(
+    snow_origin: bool,
+    actor: [u8; 16],
+    session: GameSessionId,
+    now: u64,
+) -> Option<[u8; 16]> {
+    use sha2::Digest;
+    snow_origin.then(|| {
+        let digest = sha2::Sha256::new()
+            .chain_update(actor)
+            .chain_update(session.as_bytes())
+            .chain_update(now.to_be_bytes())
+            .finalize();
+        let mut event = [0_u8; 16];
+        event.copy_from_slice(&digest[..16]);
+        event
+    })
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn ordinary_paced_step(
         &self,
@@ -161,16 +180,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
                 drop(states);
                 drop(runtime);
-                if snow_origin {
-                    use sha2::Digest;
-                    let event_id = sha2::Sha256::new()
-                        .chain_update(actor.placement_identity())
-                        .chain_update(session.as_bytes())
-                        .chain_update(now.to_be_bytes())
-                        .finalize();
-                    let mut event = [0_u8; 16];
-                    event.copy_from_slice(&event_id[..16]);
-                    let _ = self.add_snowbunny_progress(&permit, session, event).await;
+                if let Some(event) = snowbunny_progress_operation(
+                    snow_origin,
+                    actor.placement_identity(),
+                    session,
+                    now,
+                ) && !self.add_snowbunny_progress(&permit, session, event).await
+                {
+                    super::operator_event("snowbunny_step_transaction_rolled_back");
                 }
                 if let Some(origin) = origin {
                     self.close_departed_door(
@@ -232,5 +249,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ),
             Err(_) => (StepOutcome::rejected(), None),
         }
+    }
+}
+
+#[cfg(test)]
+mod snowbunny_operation_tests {
+    use super::*;
+
+    #[test]
+    fn snowbunny_stages_at_most_one_progress_operation_per_action() -> Result<(), &'static str> {
+        let mut bytes = [0; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        let session = GameSessionId::decode(&bytes).map_err(|_| "session")?;
+        assert!(snowbunny_progress_operation(false, [3; 16], session, 1).is_none());
+        let first = snowbunny_progress_operation(true, [3; 16], session, 1)
+            .ok_or("snow action operation")?;
+        assert_eq!(
+            snowbunny_progress_operation(true, [3; 16], session, 1),
+            Some(first),
+            "one action is represented by one idempotent database operation"
+        );
+        Ok(())
     }
 }

@@ -181,6 +181,93 @@ fn target_move_real_dispatch_walk_turn_follow_and_cancel_on_postgres() -> TestRe
         .map_err(Into::into)
 }
 
+#[test]
+fn snowbunny_step_and_progress_share_one_postgres_transaction() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| snowbunny_transaction_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "snowbunny transaction scenario panicked")??;
+    Ok(())
+}
+
+fn snowbunny_transaction_scenario() -> TestResult {
+    run(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "snowbunny_step", true, false).await?;
+        let character = crate::domain::CharacterId::from_bytes(id(41))?;
+        let event = id(91);
+
+        // This table stands in for the durable movement write already present in the transaction
+        // handed to commit_snowbunny_progress.  It lets the test observe transaction rollback
+        // without adding a test-only branch to production SQL.
+        sqlx::query("CREATE TABLE snowbunny_step_probe(event BYTEA PRIMARY KEY)")
+            .execute(&h.pool)
+            .await?;
+        sqlx::query(
+            "CREATE FUNCTION reject_snowbunny_progress() RETURNS trigger LANGUAGE plpgsql AS \
+             $$ BEGIN RAISE EXCEPTION 'forced snowbunny progress failure'; END $$",
+        )
+        .execute(&h.pool)
+        .await?;
+        sqlx::query(
+            "CREATE TRIGGER reject_snowbunny_progress BEFORE INSERT ON \
+             game_character_achievement_progress FOR EACH ROW EXECUTE FUNCTION \
+             reject_snowbunny_progress()",
+        )
+        .execute(&h.pool)
+        .await?;
+
+        let mut failed = h.pool.begin().await?;
+        sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
+            .bind(event.as_slice())
+            .execute(&mut *failed)
+            .await?;
+        assert!(
+            crate::durability::account_achievement::commit_snowbunny_progress(
+                failed,
+                character,
+                &event,
+                std::time::Instant::now() + Duration::from_secs(5),
+            )
+            .await
+            .is_err()
+        );
+        let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM snowbunny_step_probe")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(steps, 0, "progress failure rolls the durable step back");
+
+        sqlx::query("DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress")
+            .execute(&h.pool)
+            .await?;
+        let mut committed = h.pool.begin().await?;
+        sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
+            .bind(event.as_slice())
+            .execute(&mut *committed)
+            .await?;
+        crate::durability::account_achievement::commit_snowbunny_progress(
+            committed,
+            character,
+            &event,
+            std::time::Instant::now() + Duration::from_secs(5),
+        )
+        .await?;
+        let progress: i64 = sqlx::query_scalar(
+            "SELECT progress FROM game_character_achievement_progress WHERE \
+             character_id=encode($1,'hex')::uuid AND achievement_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind(crate::durability::account_achievement::SNOWBUNNY_KEY)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(progress, 1, "one committed snow step adds exactly one");
+        Ok(())
+    })
+}
+
 fn scenario(target_move: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "autowalk", true, false).await?;

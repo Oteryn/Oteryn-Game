@@ -2022,7 +2022,7 @@ fn without_capability_12_the_backpack_is_read_once_and_no_slot_is_read() -> Test
 }
 
 #[test]
-fn map_base_pickup_routes_only_to_the_carried_tree() -> TestResult {
+fn map_base_and_map_added_pickup_route_to_the_real_loop_owner() -> TestResult {
     run(async {
         let source = ItemKey::MapBase {
             bundle_digest: [7; 32],

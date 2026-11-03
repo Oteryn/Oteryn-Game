@@ -529,7 +529,7 @@ pub(super) async fn move_loop_item(
     ) {
         return refused(LoopMoveRefusal::Rejected);
     }
-    if matches!(request.item, ItemKey::MapBase { .. }) {
+    if matches!(request.item, ItemKey::MapBase { .. } | ItemKey::MapAdded(_)) {
         let result =
             map_pickup::move_map_item(admission, actor, command, request, &permit, None).await;
         if result == LoopMoveResult::Committed {
