@@ -63,6 +63,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return None;
         }
+        // I10a: the real one-second Channel cadence owns splash expiry, independently of
+        // another fluid use or a map/object read.
+        let _ = self
+            .root
+            .expire_item_fluid_splashes(
+                self.character,
+                *self.world_id.as_bytes(),
+                *self.channel_id.as_bytes(),
+            )
+            .await;
         self.load_wheel_gift(actor, game_session_id).await;
         self.drain_monster_melee().await;
         let _ = self.save_wheel_gift(actor, game_session_id, false).await;

@@ -128,18 +128,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
-        {
-            let runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.lock().await;
-            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
-            {
-                return disposition(UseDisposition::Rejected);
-            }
-        }
         // Crystal 201189f8 data-global/scripts/actions/other/baking.lua:8-37,49-51 uses a
         // second carried ingredient for dough, chocolate/garlic dough, trays and sugar oat.
         // Resolve its exact current definition here; the durable owner locks and consumes it.
         if let Some(ItemKey::Instance(ingredient)) = target {
+            // I11's carried second-ingredient branch is an action in Crystal's baking handler;
+            // unlike the other craft owners above, it must not run while dead or casting.
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if !carried_ingredient_action_allowed(
+                states.is_dead(actor),
+                states.spell_idle(&runtime, actor, command.game_session_id),
+            ) {
+                return disposition(UseDisposition::Rejected);
+            }
+            drop(states);
+            drop(runtime);
             let inventory = self
                 .root
                 .read_item_use_inventory(self.character, self.holder, fence)
@@ -431,6 +435,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         disposition(result)
     }
+}
+
+/// Decision used by the real I11 two-carried-item baking handler.
+pub(super) fn carried_ingredient_action_allowed(is_dead: bool, spell_idle: bool) -> bool {
+    !is_dead && spell_idle
 }
 
 fn item_id(key: &str) -> Option<u16> {

@@ -236,11 +236,7 @@ fn i11_output_without_materializable_admission_is_not_minted() {
 
 #[test]
 fn i11_carried_ingredient_path_keeps_death_and_spell_idle_guards() {
-    let source = include_str!("item_craft.rs");
-    let guard = source.find("states.is_dead(actor)").expect("death guard");
-    let ingredient = source
-        .find("if let Some(ItemKey::Instance(ingredient))")
-        .expect("carried ingredient branch");
-    assert!(guard < ingredient);
-    assert!(source[guard..ingredient].contains("states.spell_idle"));
+    assert!(!super::carried_ingredient_action_allowed(true, true));
+    assert!(!super::carried_ingredient_action_allowed(false, false));
+    assert!(super::carried_ingredient_action_allowed(false, true));
 }

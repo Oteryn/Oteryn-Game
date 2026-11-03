@@ -186,6 +186,8 @@ fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() 
         assert!(active.iter().any(|row| row.placement == b"test-ground"));
         sqlx::query("UPDATE game_item_fluid_splashes SET expires_at=clock_timestamp()-interval '1 second' WHERE transaction_id=encode($1,'hex')::uuid")
             .bind(id(174).as_slice()).execute(&used.harness.pool).await?;
+        // A map/object read filters an expired object but never writes. The periodic Channel
+        // tick below is the durable decay owner.
         assert!(
             used.harness
                 .root
@@ -198,6 +200,35 @@ fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() 
                 .map_err(debug)?
                 .is_empty()
         );
+        let still_stored: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(174).as_slice())
+        .fetch_one(&used.harness.pool)
+        .await?;
+        assert_eq!(
+            still_stored, 1,
+            "map/object reads do not perform decay writes"
+        );
+        assert_eq!(
+            used.harness
+                .root
+                .expire_item_fluid_splashes(
+                    &authority,
+                    *world_id.as_bytes(),
+                    *channel_id.as_bytes(),
+                )
+                .await
+                .map_err(debug)?,
+            1
+        );
+        let expired: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(174).as_slice())
+        .fetch_one(&used.harness.pool)
+        .await?;
+        assert_eq!(expired, 0, "periodic decay removes the splash");
         drop(authority);
         drop(seal);
         used.cleanup().await

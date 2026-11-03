@@ -87,7 +87,7 @@ impl ItemFluidRequest {
 }
 
 impl DurabilityRoot {
-    /// Map-view refresh: expire old splash rows and return the active objects for this Channel.
+    /// Map/object-view read of the active splash objects for this Channel.
     pub async fn refresh_item_fluid_splashes(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -102,8 +102,6 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    sqlx::query("DELETE FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at<=clock_timestamp()")
-                        .bind(world.as_slice()).bind(channel.as_slice()).execute(&mut **tx).await?;
                     let rows = sqlx::query("SELECT placement,fluid_subtype,splash_item_id FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at>clock_timestamp() ORDER BY placement,transaction_id LIMIT 256")
                         .bind(world.as_slice()).bind(channel.as_slice()).fetch_all(&mut **tx).await?;
                     let mut active = Vec::with_capacity(rows.len());
@@ -116,6 +114,31 @@ impl DurabilityRoot {
                     }
                     tx.commit(deadline).await?;
                     Ok(Ok(active))
+                })
+            })
+            .await?
+    }
+
+    /// Periodic Channel tick owner for donor splash expiry. Reads never perform this mutation:
+    /// an invalid or out-of-range USE_WITH therefore cannot change durable map state.
+    pub async fn expire_item_fluid_splashes(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        channel: [u8; 16],
+    ) -> Result<u64> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let deleted = sqlx::query("DELETE FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at<=clock_timestamp()")
+                        .bind(world.as_slice()).bind(channel.as_slice()).execute(&mut **tx).await?.rows_affected();
+                    tx.commit(deadline).await?;
+                    Ok(Ok(deleted))
                 })
             })
             .await?

@@ -737,15 +737,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Some(UseOutcome::rejected());
         };
-        let splashes = self
-            .root
-            .refresh_item_fluid_splashes(
-                self.character,
-                *world_id.as_bytes(),
-                *channel_id.as_bytes(),
-            )
-            .await
-            .ok()?;
         let backpack = inventory.backpack.as_ref()?;
         let entry = backpack
             .entries
@@ -804,6 +795,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     _ => None,
                 })
         };
+        // Only read durable splash objects after the complete map target/range validation.
+        // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
+        let splashes = self
+            .root
+            .refresh_item_fluid_splashes(
+                self.character,
+                *world_id.as_bytes(),
+                *channel_id.as_bytes(),
+            )
+            .await
+            .ok()?;
         let target_item = splashes
             .iter()
             .find(|splash| splash.placement == placement)
