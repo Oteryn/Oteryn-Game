@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_shattered_isles_quest",
+  "runtime_enabled": false,
+  "presentations": [
+    {
+      "callback": "oteryn:quest-callback/shattered-isles-plan-1",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "text": "You have sucessfully read plan A.",
+      "speech_type": "TALKTYPE_MONSTER_SAY",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:4"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "reason": "Existing SpeechMode cannot project TALKTYPE_MONSTER_SAY; no substitute normal Say."
+    },
+    {
+      "callback": "oteryn:quest-callback/shattered-isles-plan-2",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "text": "You have sucessfully read plan B.",
+      "speech_type": "TALKTYPE_MONSTER_SAY",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:8"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "reason": "Existing SpeechMode cannot project TALKTYPE_MONSTER_SAY; no substitute normal Say."
+    },
+    {
+      "callback": "oteryn:quest-callback/shattered-isles-plan-3",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "text": "You have sucessfully read plan C.",
+      "speech_type": "TALKTYPE_MONSTER_SAY",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:12"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "reason": "Existing SpeechMode cannot project TALKTYPE_MONSTER_SAY; no substitute normal Say."
+    }
+  ]
+}
