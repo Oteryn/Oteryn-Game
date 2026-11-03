@@ -1,0 +1,378 @@
+{
+  "schema": "OTERYN_BATCH_ONE_NPC_SOURCE/v1",
+  "quest": "to_blind_the_enemy_quest",
+  "npc": "eroth",
+  "source_only": true,
+  "held_by": "https://github.com/Oteryn/Oteryn-Game/pull/2845#issuecomment-6589524728",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/npc/eroth.lua",
+    "git_blob": "adc5789d7f85d0310e802a63f8462084d19ec2c1",
+    "sha256": "a3ac2ea476eeae5fd9ba97a5347af9a510b854e0a4243511e491a6d096899836"
+  },
+  "records": [
+    {
+      "line": 61,
+      "kind": "reply",
+      "parts": [
+        "Have you ever heard of Elvenbane? It is the castle west of Ab'Dendriel which is inhabited by villains from all over the continent. Any support in this war is welcome. Are you willing to help?"
+      ]
+    },
+    {
+      "line": 65,
+      "kind": "reply",
+      "parts": [
+        "I heard the blow! The reflection must have caused a overcharge of magical energy leading to the contraction and the implosion. Just like I hoped! Please take this as a reward. Thank you very much."
+      ]
+    },
+    {
+      "line": 73,
+      "kind": "reply",
+      "parts": [
+        "Recently we found out that they are in the possession of a scrying crystal ball. They can hear all our discussions about tactics and upcoming attacks. ...",
+        "No wonder that they always have been so well prepared. Now you come into play, destroy the scrying crystal ball in Elvenbane. It should be on the top floor. ...",
+        "We don't really know how to destroy it but we suppose it may work if you reflect the invisible power of the ball. The beam should be adjusted to Ab'Dendriel. Take this mirror and give it a try. Good luck."
+      ]
+    },
+    {
+      "line": 86,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {apprentice's strike} magic spell for free?"
+      ]
+    },
+    {
+      "line": 89,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Chameleon} Rune spell for 1300 gold?"
+      ]
+    },
+    {
+      "line": 92,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {convince creature} magic spell for 800 gold?"
+      ]
+    },
+    {
+      "line": 95,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {creature illusion} magic spell for 1000 gold?"
+      ]
+    },
+    {
+      "line": 98,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Destroy Field} Rune spell for 700 gold?"
+      ]
+    },
+    {
+      "line": 101,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Energy Wall} Rune spell for 2500 gold?"
+      ]
+    },
+    {
+      "line": 104,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Energy Field} Rune spell for 700 gold?"
+      ]
+    },
+    {
+      "line": 107,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Fire Bomb} Rune spell for 1500 gold?"
+      ]
+    },
+    {
+      "line": 110,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Fire Wall} Rune spell for 2000 gold?"
+      ]
+    },
+    {
+      "line": 113,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Fire Field} Rune spell for 500 gold?"
+      ]
+    },
+    {
+      "line": 116,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Poison Wall} Rune spell for 1600 gold?"
+      ]
+    },
+    {
+      "line": 119,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {Poison Field} Rune spell for 300 gold?"
+      ]
+    },
+    {
+      "line": 122,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {summon creature} magic spell for 2000 gold?"
+      ]
+    },
+    {
+      "line": 125,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {invisibility} magic spell for 2000 gold?"
+      ]
+    },
+    {
+      "line": 128,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {magic shield} magic spell for 450 gold?"
+      ]
+    },
+    {
+      "line": 131,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {chill out} magic spell for free?"
+      ]
+    },
+    {
+      "line": 134,
+      "kind": "keyword_text",
+      "parts": [
+        "Would you like to learn {mud attack} magic spell for free?"
+      ]
+    },
+    {
+      "line": 139,
+      "kind": "keyword_text",
+      "parts": [
+        "I can teach you {attack} spells, {support} spells and spells for {runes}. What kind of spell do you wish to learn? I can also tell you which spells are available at your {level}."
+      ]
+    },
+    {
+      "line": 145,
+      "kind": "keyword_text",
+      "parts": [
+        "My attack spells are: {Apprentice's Strike}, {Chill Out} and {Mud Attack}."
+      ]
+    },
+    {
+      "line": 151,
+      "kind": "keyword_text",
+      "parts": [
+        "My support spells are: {Convince Creature}, {Creature Illusion}, {Invisibility}, {Magic Shield} and {Summon Creature}."
+      ]
+    },
+    {
+      "line": 157,
+      "kind": "keyword_text",
+      "parts": [
+        "My rune spells are: {Chameleon} Rune, {Destroy Field} Rune, {Energy Field} Rune, {Energy Wall} Rune, {Fire Bomb} Rune, {Fire Field} Rune, {Fire Wall} Rune, {Poison Field} Rune and {Poison Wall} Rune."
+      ]
+    },
+    {
+      "line": 163,
+      "kind": "keyword_text",
+      "parts": [
+        "I have spells for level {1}, {8}, {14}, {15}, {16}, {17}, {18}, {23}, {25}, {27}, {29}, {33}, {35} and {41}."
+      ]
+    },
+    {
+      "line": 166,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 41 I have {Energy Wall} Rune for 2500 gold."
+      ]
+    },
+    {
+      "line": 167,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 35 I have {Invisibility} for 2000 gold."
+      ]
+    },
+    {
+      "line": 168,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 33 I have {Fire Wall} Rune for 2000 gold."
+      ]
+    },
+    {
+      "line": 169,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 29 I have {Poison Wall} Rune for 1600 gold."
+      ]
+    },
+    {
+      "line": 170,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 27 I have {Chameleon} Rune for 1300 gold and {Fire Bomb} Rune for 1500 gold."
+      ]
+    },
+    {
+      "line": 171,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 25 I have {Summon Creature} for 2000 gold."
+      ]
+    },
+    {
+      "line": 172,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 23 I have {Creature Illusion} for 1000 gold."
+      ]
+    },
+    {
+      "line": 173,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 18 I have {Energy Field} Rune for 700 gold."
+      ]
+    },
+    {
+      "line": 174,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 17 I have {Destroy Field} Rune for 700 gold."
+      ]
+    },
+    {
+      "line": 175,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 16 I have {Convince Creature} for 800 gold."
+      ]
+    },
+    {
+      "line": 176,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 15 I have {Fire Field} Rune for 500 gold."
+      ]
+    },
+    {
+      "line": 177,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 14 I have {Magic Shield} for 450 gold and {Poison Field} Rune for 300 gold."
+      ]
+    },
+    {
+      "line": 178,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 8 I have {Apprentice's Strike} for free."
+      ]
+    },
+    {
+      "line": 179,
+      "kind": "keyword_text",
+      "parts": [
+        "For level 1 I have {Chill Out} for free and {Mud Attack} for free."
+      ]
+    },
+    {
+      "line": 181,
+      "kind": "keyword_text",
+      "parts": [
+        "I am the leader of the Cenath caste."
+      ]
+    },
+    {
+      "line": 182,
+      "kind": "keyword_text",
+      "parts": [
+        "The Kuridai are aggressive and victims of their instincts. Without our help they would surely die in a foolish war."
+      ]
+    },
+    {
+      "line": 183,
+      "kind": "keyword_text",
+      "parts": [
+        "Gods are for the weak. We will master the world on our own. We need no gods."
+      ]
+    },
+    {
+      "line": 184,
+      "kind": "keyword_text",
+      "parts": [
+        "They lack the understanding of unity. We are keeping them together and prevent them from being slaughtered one by one."
+      ]
+    },
+    {
+      "line": 185,
+      "kind": "keyword_text",
+      "parts": [
+        "We are the shepherds of our people. The other castes need our guidance."
+      ]
+    },
+    {
+      "line": 186,
+      "kind": "keyword_text",
+      "parts": [
+        "Magic comes almost naturally to the Cenath. We keep the secrets of ages."
+      ]
+    },
+    {
+      "line": 187,
+      "kind": "keyword_text",
+      "parts": [
+        "I can teach the spells 'magic shield', 'destroy field', 'creature illusion', 'chameleon', 'convince creature', and 'summon creature'."
+      ]
+    },
+    {
+      "line": 190,
+      "kind": "keyword_text",
+      "parts": [
+        "I greet thee, outsider."
+      ]
+    },
+    {
+      "line": 192,
+      "kind": "keyword_text",
+      "parts": [
+        "Asha Thrazi. Go, where you have to go."
+      ]
+    },
+    {
+      "line": 196,
+      "kind": "message",
+      "parts": [
+        "I greet thee, outsider."
+      ],
+      "event": "MESSAGE_GREET"
+    },
+    {
+      "line": 197,
+      "kind": "message",
+      "parts": [
+        "Asha Thrazi. Go, where you have to go."
+      ],
+      "event": "MESSAGE_FAREWELL"
+    },
+    {
+      "line": 198,
+      "kind": "message",
+      "parts": [
+        "Asha Thrazi."
+      ],
+      "event": "MESSAGE_WALKAWAY"
+    }
+  ]
+}
