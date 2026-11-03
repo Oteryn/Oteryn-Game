@@ -12,6 +12,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::rotten_blood::{CleanseMode, RottenBloodRefusal};
+use oteryn_gameplay_quests::quest::soul_war_dialogue::{self as soul_dialogue, Reply as SoulReply};
 mod payment;
 
 type Context = (u64, u64, String);
@@ -51,12 +52,15 @@ pub(super) enum Pending {
         mutation: Mutation,
         intent: NpcTalkIntent,
         payment: Option<Box<RottenBloodAccessPayment>>,
+        resume_topic: Option<(Context, EntityRef, Topic)>,
     },
 }
 
 enum Action {
     Reply(&'static str),
+    SoulReply(SoulReply),
     SoulTask,
+    SoulCleanse,
     Commit(Mutation),
     Held,
     Torkada(Option<Topic>),
@@ -92,21 +96,24 @@ fn topic_line(topic: Topic) -> &'static str {
 }
 
 fn choose(npc: &str, text: &str, topic: Option<Topic>) -> Option<(Option<Topic>, Action)> {
+    if npc == "oteryn:npc.flickering_soul" {
+        // Source text must be present before any durable action is selected.
+        soul_dialogue::reply(SoulReply::TaskOffer)?;
+        return Some(
+            match soul_dialogue::choose(text, topic == Some(Topic::SoulTask))? {
+                soul_dialogue::Choice::Reply(reply) => (topic, Action::SoulReply(reply)),
+                soul_dialogue::Choice::Task => (None, Action::SoulTask),
+                soul_dialogue::Choice::Accept => {
+                    (None, Action::Commit(Mutation::Soul(SoulWarCommand::Start)))
+                }
+                soul_dialogue::Choice::Cleanse => (topic, Action::SoulCleanse),
+            },
+        );
+    }
     if matches!(text, "no" | "bye") && topic.is_some() {
         return Some((None, Action::Reply("Very well.")));
     }
     match npc {
-        "oteryn:npc.flickering_soul" => match text {
-            "task" => Some((None, Action::SoulTask)),
-            "yes" if topic == Some(Topic::SoulTask) => {
-                Some((None, Action::Commit(Mutation::Soul(SoulWarCommand::Start))))
-            }
-            "taints" | "penalties" => Some((
-                None,
-                Action::Commit(Mutation::Soul(SoulWarCommand::Cleanse)),
-            )),
-            _ => None,
-        },
         "oteryn:npc.bloodshade_rotten" => match text {
             "quest" => Some((None, Action::Commit(Mutation::RottenAcknowledge))),
             "taints" | "cleanse" | "purify" => Some((
@@ -215,6 +222,40 @@ fn clear(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId)
     }
 }
 
+fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId) {
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state.endgame = match state.endgame.take() {
+            Some(Pending::Commit {
+                resume_topic: Some((context, npc, topic)),
+                ..
+            }) => Some(Pending::Topic {
+                context,
+                npc,
+                topic,
+            }),
+            _ => None,
+        };
+    }
+}
+
+fn source_soul_reply(intent: &NpcTalkIntent, reply: SoulReply) -> NpcTalkOutcome {
+    let Some(lines) = soul_dialogue::reply(reply) else {
+        return unknown();
+    };
+    NpcTalkOutcome {
+        unknown: false,
+        inventory_changed: false,
+        disposition: NpcIntentDisposition::Ok,
+        conversation: Some(NpcConversation {
+            open: Some((intent.npc_actor, NpcConversationState::Open)),
+            lines: lines.to_vec(),
+        }),
+        window: None,
+    }
+}
+
 fn unknown() -> NpcTalkOutcome {
     NpcTalkOutcome {
         unknown: true,
@@ -227,18 +268,20 @@ fn soul_reply(
     command: SoulWarCommand,
     result: &SoulWarCommandOutcome,
 ) -> NpcTalkOutcome {
-    let line = if result.result.is_err() {
-        "You have not yet completed the task required for this reward."
-    } else {
+    if result.result.is_err() {
+        return NpcConversations::bank_reply(
+            intent,
+            "You have not yet completed the task required for this reward.".into(),
+        );
+    }
+    source_soul_reply(
+        intent,
         match command {
-            SoulWarCommand::Start => "Thank you for accepting this burden.",
-            SoulWarCommand::Cleanse => "Your Soul War taints have been cleansed.",
-            SoulWarCommand::ReportCompletion => {
-                "You have freed my soul. You have earned the Revenant outfit."
-            }
-        }
-    };
-    NpcConversations::bank_reply(intent, line.into())
+            SoulWarCommand::Start => SoulReply::Accept,
+            SoulWarCommand::Cleanse => SoulReply::Cleansed,
+            SoulWarCommand::ReportCompletion => SoulReply::TaskComplete,
+        },
+    )
 }
 
 fn rotten_reply(intent: &NpcTalkIntent, result: &RottenBloodOutcome) -> NpcTalkOutcome {
@@ -302,6 +345,7 @@ pub(super) async fn apply(
     let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
     let action = match step.action {
         Action::Reply(line) => return NpcConversations::bank_reply(&intent, line.into()),
+        Action::SoulReply(reply) => return source_soul_reply(&intent, reply),
         Action::Held => return unknown(),
         action => action,
     };
@@ -329,7 +373,9 @@ pub(super) async fn apply(
     }
     {
         let runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
+        let Ok(states) = admission.states.spell_states.try_lock() else {
+            return rejected();
+        };
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || admission.states.npc_conversations.current_npc(
@@ -411,8 +457,24 @@ pub(super) async fn apply(
                 } else {
                     return unknown();
                 }
-                return NpcConversations::bank_reply(&intent, topic_line(Topic::SoulTask).into());
+                return source_soul_reply(&intent, SoulReply::TaskOffer);
             }
+        }
+        Action::SoulCleanse => {
+            let state = match admission
+                .root
+                .read_soul_war_state(admission.character, admission.holder, fence)
+                .await
+            {
+                Ok(state) => state,
+                Err(_) => return unknown(),
+            };
+            // Crystal lib/quests/soul_war.lua:1250 returns nil without a taint;
+            // npc/flickering_soul.lua:184-191 then replies without a mutation.
+            if state.defeated_bosses == 0 {
+                return source_soul_reply(&intent, SoulReply::Untainted);
+            }
+            Mutation::Soul(SoulWarCommand::Cleanse)
         }
         Action::Commit(Mutation::RottenAcknowledge) => {
             // Crystal bloodshade_rotten.lua:129-142. The generic Quest writer
@@ -457,7 +519,7 @@ pub(super) async fn apply(
             }
         }
         Action::Commit(mutation) => mutation,
-        Action::Reply(_) | Action::Held => return rejected(),
+        Action::Reply(_) | Action::SoulReply(_) | Action::Held => return rejected(),
     };
     let reference = CommandRef::new(command.game_session_id, id);
     let payment = if mutation == Mutation::RottenPurchase {
@@ -476,12 +538,29 @@ pub(super) async fn apply(
         if matches!(state.endgame, Some(Pending::Commit { .. })) {
             return unknown();
         }
+        // Crystal's successful yes and ordinary lore do not clear topic1.
+        // Restore the exact conversation context only after a definite receipt.
+        let resume_topic = match mutation {
+            Mutation::Soul(SoulWarCommand::Start) => {
+                Some((step.context.clone(), intent.npc_actor, Topic::SoulTask))
+            }
+            Mutation::Soul(SoulWarCommand::Cleanse) => match &state.endgame {
+                Some(Pending::Topic {
+                    context,
+                    npc,
+                    topic,
+                }) => Some((context.clone(), *npc, *topic)),
+                _ => None,
+            },
+            _ => None,
+        };
         state.endgame = Some(Pending::Commit {
             fence,
             command: reference,
             mutation,
             intent: intent.clone(),
             payment: payment.clone(),
+            resume_topic,
         });
     }
     // A cancelled durable call may still commit. Discard the cached revision
@@ -578,7 +657,7 @@ pub(super) async fn apply(
     drop(slot);
     match outcome {
         Ok(outcome) => {
-            clear(admission, command.game_session_id);
+            finish(admission, command.game_session_id);
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
@@ -611,6 +690,7 @@ pub(in crate::gameplay_transport) async fn resume(
         mutation,
         intent,
         payment,
+        ..
     } = pending
     else {
         return None;
@@ -680,7 +760,11 @@ pub(in crate::gameplay_transport) async fn resume(
     drop(slot);
     match result {
         Ok(result) => {
-            clear(admission, command.game_session_id);
+            if result.is_some() {
+                finish(admission, command.game_session_id);
+            } else {
+                clear(admission, command.game_session_id);
+            }
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
@@ -757,5 +841,24 @@ mod tests {
             ));
         }
         assert!(choose("oteryn:npc.bloodshade_rotten", "yes", None).is_none());
+    }
+    #[test]
+    fn soul_war_native_npc_recognizes_source_lore_before_task() {
+        // Crystal201189f npc/flickering_soul.lua:62 precedes :122.
+        let before_task = choose("oteryn:npc.flickering_soul", "living task", None);
+        assert!(
+            before_task.is_some(),
+            "source lore must reach the native NPC caller"
+        );
+        assert!(!matches!(before_task, Some((_, Action::SoulTask))));
+        assert!(choose("oteryn:npc.flickering_soul", "peace", None).is_some());
+        assert!(choose("oteryn:npc.flickering_soul", "shards", None).is_some());
+        assert!(matches!(
+            choose("oteryn:npc.flickering_soul", "please task", None),
+            Some((_, Action::SoulTask))
+        ));
+        // Crystal data/npclib/npc.lua:13-20 excludes word-internal matches.
+        assert!(choose("oteryn:npc.flickering_soul", "immortal", None).is_none());
+        assert!(choose("oteryn:npc.flickering_soul_fake", "peace", None).is_none());
     }
 }

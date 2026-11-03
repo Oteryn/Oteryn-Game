@@ -1,4 +1,5 @@
 use super::*;
+include!("client_tests_recovery.rs");
 // The fake servers below frame and decode with the same codecs the session crate uses; these
 // were `super::*` items before the session extraction, so only this import list changed.
 use oteryn_protocol_oteryn::world_object::{

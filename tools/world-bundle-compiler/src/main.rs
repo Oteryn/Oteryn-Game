@@ -22,221 +22,24 @@ mod pin_refresh;
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, ExitCode};
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{
-    self, BuildClass, Extent, Family, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
+    self, BuildClass, Family, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
     TerrainKind,
 };
 use oteryn_world_bundle_compiler::compile::{
     self, HoldReason, Input, NpcReport, SpawnReport, equivalence, parity, placed_palette,
 };
-use oteryn_world_bundle_compiler::project::{self, Families};
+use oteryn_world_bundle_compiler::project;
 use oteryn_world_bundle_compiler::resolve::Registry;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-/// The shards of `directory` whose file name starts with `prefix`, in name order.
-fn shards(directory: &Path, prefix: &str) -> Result<Vec<Vec<u8>>, Error> {
-    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", directory.display()));
-    let mut paths: Vec<PathBuf> = fs::read_dir(directory)
-        .map_err(io)?
-        .map(|entry| entry.map(|entry| entry.path()).map_err(io))
-        .collect::<Result<_, _>>()?;
-    paths.retain(|path| {
-        path.file_name()
-            .and_then(|name| name.to_str())
-            .is_some_and(|name| name.starts_with(prefix) && name.ends_with(".json"))
-    });
-    paths.sort();
-    paths
-        .iter()
-        .map(|path| fs::read(path).map_err(io))
-        .collect()
-}
-
-fn read(path: &Path) -> Result<Vec<u8>, Error> {
-    fs::read(path).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
-}
-
-fn json(bytes: &[u8], what: &str) -> Result<Value, Error> {
-    serde_json::from_slice(bytes).map_err(|e| Error::Format(format!("{what}: {e}")))
-}
-
-/// A family index and its shards in index order.
-type Indexed = (Value, Vec<Vec<u8>>);
-
-/// The `OTERYN_FAMILY_INDEX/v1` index of `directory` (relative to `root`) and its shards in
-/// index order; `None` without an index or for another schema (a tree directory marker).
-fn indexed(root: &Path, directory: &str) -> Result<Option<Indexed>, Error> {
-    let path = root.join(directory).join("index.json");
-    if !path.is_file() {
-        return Ok(None);
-    }
-    let index = json(&read(&path)?, directory)?;
-    if index["schema"] != "OTERYN_FAMILY_INDEX/v1" {
-        return Ok(None);
-    }
-    let shards = index["shards"]
-        .as_array()
-        .ok_or_else(|| Error::Format(format!("{directory} index has no shards")))?
-        .iter()
-        .map(|shard| match shard.as_str() {
-            Some(shard) if shard.starts_with(directory) => read(&root.join(shard)),
-            _ => Err(Error::Format(format!(
-                "{directory} shard is not one of its paths"
-            ))),
-        })
-        .collect::<Result<_, _>>()?;
-    Ok(Some((index, shards)))
-}
-
-/// The NPC, Dialogue and Service records, the travel routes, the `Npc.Placement` family with
-/// its held list (NPC-PLACE-1 §4) and the catalogue digest (§3.1).
-fn add_npc_families(root: &Path, families: &mut Families) -> Result<(), Error> {
-    let shards_of = |directory: &str| {
-        indexed(root, directory).map(|found| found.map(|(_, shards)| shards).unwrap_or_default())
-    };
-    for shard in shards_of("content/npcs/definitions/")? {
-        families.add_npcs(&shard)?;
-    }
-    for shard in shards_of("content/dialogues/definitions/")? {
-        families.add_dialogues(&shard)?;
-    }
-    let services = root.join("content/services");
-    let io = |e: std::io::Error| Error::Format(format!("content/services: {e}"));
-    let mut kinds: Vec<String> = fs::read_dir(&services)
-        .map_err(io)?
-        .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
-        .collect::<Result<_, _>>()
-        .map_err(io)?;
-    kinds.sort();
-    for kind in kinds {
-        for shard in shards_of(&format!("content/services/{kind}/"))? {
-            families.add_services(&shard)?;
-        }
-    }
-    if let Some((index, shards)) = indexed(root, "content/world/npc-placements/")? {
-        for shard in shards {
-            families.add_npc_placements(&shard)?;
-        }
-        let held = &index["held"];
-        let path = held["path"]
-            .as_str()
-            .filter(|path| path.starts_with("content/world/npc-placements/"))
-            .ok_or_else(|| Error::Format("NPC placements index has no held path".into()))?;
-        let bytes = read(&root.join(path))?;
-        if held["sha256"] != hex(&Sha256::digest(&bytes)) {
-            return Err(Error::Format(
-                "NPC held list sha256 differs from its index".into(),
-            ));
-        }
-        let before = families.npc_source_held.len();
-        families.add_npc_source_held(&bytes)?;
-        if held["count"] != (families.npc_source_held.len() - before) {
-            return Err(Error::Format(
-                "NPC held list count differs from its index".into(),
-            ));
-        }
-    }
-    families.catalogue_sha256 = Some(
-        oteryn_world_bundle_compiler::npc::catalogue_sha256(&root.join("content"))
-            .map_err(|e| Error::Format(format!("NPC catalogue: {e}")))?,
-    );
-    Ok(())
-}
-
-/// The World Project of `root`: placements index, B3 regions and the checked families.
-struct Project {
-    index: Value,
-    regions: Vec<Vec<u8>>,
-    families: Families,
-}
-
-fn project(root: &Path) -> Result<Project, Error> {
-    let index = json(
-        &read(&root.join("content/world/placements/index.json"))?,
-        "placements index",
-    )?;
-    let regions = index
-        .get("shards")
-        .and_then(Value::as_array)
-        .ok_or_else(|| Error::Format("placements index has no shards".into()))?
-        .iter()
-        .map(|path| match path.as_str() {
-            Some(path) => read(&root.join(path)),
-            None => Err(Error::Format("placements shard is not a path".into())),
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut families = Families::default();
-    for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
-        families.add_teleports(&shard)?;
-    }
-    for shard in shards(&root.join("content/houses"), "houses-")? {
-        families.add_houses(&shard)?;
-    }
-    for shard in shards(&root.join("content/creatures/definitions"), "creatures-")? {
-        families.add_creatures(&shard)?;
-    }
-    for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
-        families.add_spawns(&shard)?;
-    }
-    add_npc_families(root, &mut families)?;
-    families.subareas = compile::subareas::Source::load(root)?;
-    Ok(Project {
-        index,
-        regions,
-        families,
-    })
-}
-
-/// The Item registry, Terrain and WorldObject catalogues and the palette keys of `project`.
-fn registry(root: &Path, project: &Project) -> Result<(Registry, Vec<String>), Error> {
-    let mut registry = Registry::default();
-    for shard in shards(&root.join("content/items/definitions"), "items-")? {
-        registry.add_items(&shard)?;
-    }
-    registry.add_item_profiles(&read(
-        &root.join("content/items/definitions/spell-native-profiles.json"),
-    )?)?;
-    for (family, directory, prefix) in [
-        ("Terrain", "content/world/terrain", "terrain-"),
-        ("WorldObject", "content/world/objects", "objects-"),
-    ] {
-        for shard in shards(&root.join(directory), prefix)? {
-            registry.add_catalogue(family, &shard)?;
-        }
-    }
-    let mut palette = Vec::new();
-    for entry in project.index["palette"]
-        .as_array()
-        .ok_or_else(|| Error::Format("placements index has no palette".into()))?
-    {
-        let key = entry["key"]
-            .as_str()
-            .ok_or_else(|| Error::Format("palette entry without a key".into()))?;
-        if entry["provisional"] == Value::Bool(true) {
-            registry.add_provisional(key.to_owned());
-        }
-        palette.push(key.to_owned());
-    }
-    registry.seal()?;
-    Ok((registry, palette))
-}
-
-/// The World shard of `root`.
-fn world_extent(root: &Path) -> Result<Extent, Error> {
-    let worlds = shards(&root.join("content/world/worlds"), "worlds-")?;
-    let [world] = worlds.as_slice() else {
-        return Err(Error::Format(
-            "the World Project must hold one World shard".into(),
-        ));
-    };
-    project::world_extent(world)
-}
+use oteryn_world_bundle_compiler::source::{json, project, read, registry, world_extent};
 
 /// The spawn report as JSON: totals, the count per reason and every point left out.
 fn spawn_report(report: &SpawnReport) -> Result<Value, Error> {
@@ -300,7 +103,13 @@ fn run_parity(root: &Path) -> Result<Value, Error> {
     Ok(report)
 }
 
-fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<Value, Error> {
+fn run_compile(
+    root: &Path,
+    identity: &Path,
+    out: &Path,
+    class: &str,
+    regions: Option<&[(u16, u16)]>,
+) -> Result<Value, Error> {
     let build_class = match class {
         "production" => BuildClass::Production,
         "non-production" => BuildClass::NonProduction,
@@ -308,7 +117,15 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
     };
     let identity: Identity = serde_json::from_slice(&read(identity)?)
         .map_err(|e| Error::Format(format!("identity: {e}")))?;
-    let project = project(root)?;
+    if regions.is_some() && matches!(build_class, BuildClass::Production) {
+        return Err(Error::Format(
+            "region selection is non-production only".into(),
+        ));
+    }
+    let project = match regions {
+        Some(regions) => oteryn_world_bundle_compiler::source::project_regions(root, regions)?,
+        None => project(root)?,
+    };
     let (registry, palette) = registry(root, &project)?;
     let input = Input {
         regions: &project.regions,
@@ -695,8 +512,37 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let result = match args.as_slice() {
         [_, command, root] if command == "parity" => run_parity(Path::new(root)),
-        [_, command, root, identity, out, class] if command == "compile" => {
-            run_compile(Path::new(root), Path::new(identity), Path::new(out), class)
+        [_, command, root, identity, out, class] if command == "compile" => run_compile(
+            Path::new(root),
+            Path::new(identity),
+            Path::new(out),
+            class,
+            None,
+        ),
+        [_, command, root, identity, out, regions] if command == "compile-regions" => {
+            let parsed = regions
+                .split(';')
+                .map(|entry| {
+                    let (x, y) = entry
+                        .split_once(',')
+                        .ok_or_else(|| Error::Format("region must be x,y".into()))?;
+                    Ok((
+                        x.parse::<u16>()
+                            .map_err(|_| Error::Format("region x".into()))?,
+                        y.parse::<u16>()
+                            .map_err(|_| Error::Format("region y".into()))?,
+                    ))
+                })
+                .collect::<Result<Vec<_>, Error>>();
+            parsed.and_then(|regions| {
+                run_compile(
+                    Path::new(root),
+                    Path::new(identity),
+                    Path::new(out),
+                    "non-production",
+                    Some(&regions),
+                )
+            })
         }
         [_, command, root, slug] if command == "derive-identity" => {
             return match run_derive_identity(Path::new(root), slug) {

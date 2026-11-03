@@ -371,7 +371,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
         "content_revision": "content-s3b-1",
-        "map_revision": "map-s3b-1",
+        "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
     });
@@ -1281,7 +1281,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .await?;
             database.close().await?;
             evidence("node_boot characters=2 source=control_socket assignment=operator");
-            seam_clients(SeamClients {
+            let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
@@ -1299,8 +1299,13 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 url: &url,
                 runtime: None,
                 recovery: &recovery_key()?,
-            })
-            .await
+            };
+            if let Some(path) = std::env::var_os("NODE_BOOT_WORLD_BUNDLE") {
+                client_world::journeys(&clients, std::path::Path::new(&path)).await
+            } else {
+                seam_clients(clients).await
+            }
+
         })
 }
 
@@ -2470,7 +2475,7 @@ fn sign_recovery(
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
         "content_revision": "content-s3b-1",
-        "map_revision": "map-s3b-1",
+        "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
     });
     let signing_input = format!(
@@ -2598,6 +2603,9 @@ fn resume_frames(
 }
 
 /// The #823 `SEAM_PASS` client stages against one serving node.
+#[path = "qualification/client_phases/world.rs"]
+pub(crate) mod client_world;
+
 #[path = "qualification/client_phases/negatives.rs"]
 mod client_negatives;
 

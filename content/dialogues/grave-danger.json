@@ -1,0 +1,358 @@
+{
+  "schema": "OTERYN_DIALOGUE_AUTHORING_SHARD/v1",
+  "family": "Dialogue",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 0,
+    "count": 1
+  },
+  "source_legacy_role": "data-global/npc/jack_springer.lua",
+  "records": [
+    {
+      "declaration": {
+        "kind": "Dialogue",
+        "identity": {
+          "key": "oteryn:dialogue.npc.jack_springer",
+          "revision": "definition-r1"
+        },
+        "greet": [
+          "Welcome, |PLAYERNAME|! There is much we have to {discuss}."
+        ],
+        "keywords": [
+          {
+            "key": "final_report",
+            "triggers": [
+              "report"
+            ],
+            "reply": [
+              "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
+            ]
+          },
+          {
+            "key": "report_ready",
+            "triggers": [
+              "report"
+            ],
+            "reply": [
+              "By now the cultists of the Shiron'Fal seem to have abandoned their search. But this is sadly no good news. It seems they gathered enough lich-knights to proceed with their {ultimate} plan."
+            ]
+          },
+          {
+            "key": "report_good_luck",
+            "triggers": [
+              "report"
+            ],
+            "reply": [
+              "All I can do right now is to wish you good luck and may the gods bless you."
+            ]
+          },
+          {
+            "key": "report_missing",
+            "triggers": [
+              "report"
+            ],
+            "reply": [
+              "There are still graves left to be secured. Return to me once all twelve of them are safe."
+            ]
+          },
+          {
+            "key": "ultimate",
+            "triggers": [
+              "ultimate"
+            ],
+            "reply": [
+              "It became obvious that their goal is to raise an ancient and fallen king, to lead their lich-knights and raise even more of them. ...",
+              "With each lich-knight being able to raise and control lesser undead, this would lead to a chain-reaction. If they succeed, we might face an undead {threat} not seen since the corpse wars."
+            ]
+          },
+          {
+            "key": "threat",
+            "triggers": [
+              "threat"
+            ],
+            "reply": [
+              "You have to travel to the isle of the kings. There, hidden beneath the isle of the kings is the shamefully hidden grave of king Zelos. It is him, they are trying to raise. ...",
+              "With some luck you will arrive before the ritual's completion. But be warned. At least four risen lich-knights will be present, to raise 'their king'. ...",
+              "Hopefully the ritual will bind some of their powers but they will still be formidable foes. You will have to act quick because with each moment you take to defeat the knights ...",
+              "The ritual will progress and the king will become stronger up to a point where you might be unable to defeat him. Due to the efforts and sacrifices of the death cultists, the king will be active at some capacity and you will have to confront him. ...",
+              "Remember, the further the ritual progresses when you face him, he will become considerably more powerful. So time is of the essence. ...",
+              "All I can do right now is to wish you good luck and may the gods bless you."
+            ]
+          },
+          {
+            "key": "start",
+            "triggers": [
+              "late"
+            ],
+            "reply": [
+              "While you travel and fight the threat where it arises, we will put all our resources into researching the ultimate plans of the legion. Perhaps I can tell you more when you {report} back. ...",
+              "Don't forget that you'll need very potent holy water for your task. If you need some, just ask me for a {trade}."
+            ]
+          },
+          {
+            "key": "basic_discuss",
+            "triggers": [
+              "discuss"
+            ],
+            "reply": [
+              "I need your help in a matter of utmost {urgency}."
+            ]
+          },
+          {
+            "key": "basic_urgency",
+            "triggers": [
+              "urgency"
+            ],
+            "reply": [
+              "The situation is complicated and it's even hard to say where to {start} best, just to describe it to you."
+            ]
+          },
+          {
+            "key": "basic_start",
+            "triggers": [
+              "start"
+            ],
+            "reply": [
+              "You see, several incidents in history can be traced back to a single {source}."
+            ]
+          },
+          {
+            "key": "basic_source",
+            "triggers": [
+              "source"
+            ],
+            "reply": [
+              "Things get murkier the further you go down in history, but that's not even necessary. Even today we can discern a certain pattern in recent {events}."
+            ]
+          },
+          {
+            "key": "basic_events",
+            "triggers": [
+              "events"
+            ],
+            "reply": [
+              "Well, in Rathleton there was an individual at work, looking for some ancient artefact of power. ...",
+              "To cover its escape the creature left another creature, known as the ravager to cover his tracks. But there is {more}."
+            ]
+          },
+          {
+            "key": "basic_more",
+            "triggers": [
+              "more"
+            ],
+            "reply": [
+              "Only recently someone was trying to manipulate the elven dream courts into releasing a monstrosity of nightmares, probably planning to control or recruit this creature. ....",
+              "But those incidents were just some of {many}."
+            ]
+          },
+          {
+            "key": "basic_many",
+            "triggers": [
+              "many"
+            ],
+            "reply": [
+              "The recent rise of lycanthropy, the robbery of certain forbidden arcane texts and the vanishing of at least three dangerous individuals, targeted by the inquisition are just the tip of the {iceberg}."
+            ]
+          },
+          {
+            "key": "basic_iceberg",
+            "triggers": [
+              "iceberg"
+            ],
+            "reply": [
+              "There is a scheming going on behind the scenes. Powerful good people were corrupted. Evil-doers got backup and resources from a hidden ally. ...",
+              "Powerful malignant creatures, gathering their kind under their banner and so much more. These things are not happening by chance. There is a pattern, a guiding {hand}."
+            ]
+          },
+          {
+            "key": "basic_hand",
+            "triggers": [
+              "hand"
+            ],
+            "reply": [
+              "This outside force is moving behind the scenes since ages. Our research suggests that this force probably even {predates} the rise of humanity."
+            ]
+          },
+          {
+            "key": "basic_predates",
+            "triggers": [
+              "predates"
+            ],
+            "reply": [
+              "Well, we are sure that the puppeteer behind all these events is an organisation. So old that even its name, the Shiron'Fal, has lost its meaning, because the {language} it originates from is long dead."
+            ]
+          },
+          {
+            "key": "basic_language",
+            "triggers": [
+              "language"
+            ],
+            "reply": [
+              "It has a rather complex meaning and as far as we can tell it translates to 'army of those who are many, dedicated to the ultimate time of mayhem and despair'. ...",
+              "Other, more handy names are army of the last battlefield, army of the last days, legion of mayhem, dread legion or simply the {legion}."
+            ]
+          },
+          {
+            "key": "basic_legion",
+            "triggers": [
+              "legion"
+            ],
+            "reply": [
+              "We know little for sure. You can look into our books to see some of our sources. But most are vague and some even contradictory. ...",
+              "To summarise what we know, let me tell you this: The Shiron'Fal is an extremely old organisation. It seeks to accumulate power for some unknown but certainly sinister {goal}."
+            ]
+          },
+          {
+            "key": "basic_goal",
+            "triggers": [
+              "goal"
+            ],
+            "reply": [
+              "For this purpose, the members gather knowledge, artefacts and powerful individuals. The members are formidable at certain fields of expertise. They are cunning and powerful and act with no regard for others, with no remorse or mercy. ...",
+              "As they are doing this since ages, they must have acquired tremendous powers and knowledge. Their members often operate alone but are usually well funded with the necessary resources. ...",
+              "Whatever their endgame might be, each of their operations pose a grave danger to the whole world and have to be {stopped}."
+            ]
+          },
+          {
+            "key": "basic_stopped",
+            "triggers": [
+              "stopped"
+            ],
+            "reply": [
+              "Here is where you come into play. We could identify the most recent plot of the Shiron'Fal and already had some {clashes}."
+            ]
+          },
+          {
+            "key": "basic_clashes",
+            "triggers": [
+              "clashes"
+            ],
+            "reply": [
+              "In our efforts to hinder their plot, we achieved mixed results at best. But now things are escalating fast and we have to {hurry}."
+            ]
+          },
+          {
+            "key": "basic_hurry",
+            "triggers": [
+              "hurry"
+            ],
+            "reply": [
+              "Our resources are already stretched thin, so we need your help with the most recent {problem}."
+            ]
+          },
+          {
+            "key": "basic_problem",
+            "triggers": [
+              "problem"
+            ],
+            "reply": [
+              "The legion tries to use a new form of twisted rituals to raise the bodies of well-known {knights}."
+            ]
+          },
+          {
+            "key": "basic_knights",
+            "triggers": [
+              "knights"
+            ],
+            "reply": [
+              "The knights they aim at were tainted in life by their actions or happenstance. ...",
+              "This leaves their bodies vulnerable to their special breed of necromancy that would raise them as powerful {lich}-knights."
+            ]
+          },
+          {
+            "key": "basic_lich",
+            "triggers": [
+              "lich"
+            ],
+            "reply": [
+              "These powerful undead were a terrible threat on their own but it seems even they are just part of some larger {scheme} that we cannot make out yet."
+            ]
+          },
+          {
+            "key": "basic_scheme",
+            "triggers": [
+              "scheme"
+            ],
+            "reply": [
+              "We are still working feverishly to uncover their goals but for now more imminent {threats} are at hand."
+            ]
+          },
+          {
+            "key": "basic_threats",
+            "triggers": [
+              "threats"
+            ],
+            "reply": [
+              "Death cultists of the Shiron'Fal are trying to locate the bodies of fallen knights and raise them in blasphemous {rituals}."
+            ]
+          },
+          {
+            "key": "basic_rituals",
+            "triggers": [
+              "rituals"
+            ],
+            "reply": [
+              "The churches of the gods worked hand in hand to supply us with the means to {purge} the graves of those knights."
+            ]
+          },
+          {
+            "key": "basic_purge",
+            "triggers": [
+              "purge"
+            ],
+            "reply": [
+              "Reaching the graves will not be without danger and if you encounter the death cultists you will have to fight them. Even worse, they might have even succeeded in some cases. ...",
+              "As a newly risen lich-knight is not able to leave the site of its resurrection for some time, you might have to fight some of them. ...",
+              "Let us pray that you never come too {late} or else some of the fiends might be able to leave their crypts."
+            ]
+          },
+          {
+            "key": "basic_locations",
+            "triggers": [
+              "locations"
+            ],
+            "reply": [
+              "We have located twelve graves that have to be secured: In the old northern Edron graveyard, in the dark cathedral of the plains of havoc, in the ghostlands, on Cormaya, Somewhere in the Femor Hills, on Vengoth, ...",
+              "in the graveyard of Darashia, in the old temple north of Thais, at the entrance to the orcland, one is on the southern ice islands, in a mountain on Kilmaresh, one on an island north-east of Ankrahmun."
+            ]
+          },
+          {
+            "key": "basic_name",
+            "triggers": [
+              "name"
+            ],
+            "reply": [
+              "My name is Jack Springer."
+            ]
+          },
+          {
+            "key": "basic_job",
+            "triggers": [
+              "job"
+            ],
+            "reply": [
+              "I am an Inquisitor."
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "field_path": "oteryn:source.quest.grave_danger.dialogue",
+            "value": {
+              "type": "Text",
+              "value": "{\"greeting_lines\": [65, 67], \"keyword_matcher\": \"data/npclib/npc_system/keyword_handler.lua:58-67\", \"keyword_precedence\": \"data/npclib/npc_system/npc_handler.lua:448-451\", \"path\": \"data-global/npc/jack_springer.lua\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"sha256\": \"d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9\", \"speech\": [{\"key\": \"final_report\", \"kind\": \"default_callback\", \"line\": 82}, {\"key\": \"report_ready\", \"kind\": \"default_callback\", \"line\": 93}, {\"key\": \"report_good_luck\", \"kind\": \"default_callback\", \"line\": 96}, {\"key\": \"report_missing\", \"kind\": \"default_callback\", \"line\": 99}, {\"key\": \"ultimate\", \"kind\": \"default_callback\", \"line\": 103}, {\"key\": \"threat\", \"kind\": \"default_callback\", \"line\": 110}, {\"key\": \"start\", \"kind\": \"default_callback\", \"line\": 128}, {\"key\": \"basic_discuss\", \"kind\": \"keyword_handler\", \"line\": 155}, {\"key\": \"basic_urgency\", \"kind\": \"keyword_handler\", \"line\": 156}, {\"key\": \"basic_start\", \"kind\": \"keyword_handler\", \"line\": 157}, {\"key\": \"basic_source\", \"kind\": \"keyword_handler\", \"line\": 158}, {\"key\": \"basic_events\", \"kind\": \"keyword_handler\", \"line\": 159}, {\"key\": \"basic_more\", \"kind\": \"keyword_handler\", \"line\": 163}, {\"key\": \"basic_many\", \"kind\": \"keyword_handler\", \"line\": 167}, {\"key\": \"basic_iceberg\", \"kind\": \"keyword_handler\", \"line\": 168}, {\"key\": \"basic_hand\", \"kind\": \"keyword_handler\", \"line\": 176}, {\"key\": \"basic_predates\", \"kind\": \"keyword_handler\", \"line\": 177}, {\"key\": \"basic_language\", \"kind\": \"keyword_handler\", \"line\": 178}, {\"key\": \"basic_legion\", \"kind\": \"keyword_handler\", \"line\": 186}, {\"key\": \"basic_goal\", \"kind\": \"keyword_handler\", \"line\": 194}, {\"key\": \"basic_stopped\", \"kind\": \"keyword_handler\", \"line\": 202}, {\"key\": \"basic_clashes\", \"kind\": \"keyword_handler\", \"line\": 203}, {\"key\": \"basic_hurry\", \"kind\": \"keyword_handler\", \"line\": 204}, {\"key\": \"basic_problem\", \"kind\": \"keyword_handler\", \"line\": 205}, {\"key\": \"basic_knights\", \"kind\": \"keyword_handler\", \"line\": 206}, {\"key\": \"basic_lich\", \"kind\": \"keyword_handler\", \"line\": 210}, {\"key\": \"basic_scheme\", \"kind\": \"keyword_handler\", \"line\": 211}, {\"key\": \"basic_threats\", \"kind\": \"keyword_handler\", \"line\": 212}, {\"key\": \"basic_rituals\", \"kind\": \"keyword_handler\", \"line\": 213}, {\"key\": \"basic_purge\", \"kind\": \"keyword_handler\", \"line\": 214}, {\"key\": \"basic_locations\", \"kind\": \"keyword_handler\", \"line\": 222}, {\"key\": \"basic_name\", \"kind\": \"keyword_handler\", \"line\": 229}, {\"key\": \"basic_job\", \"kind\": \"keyword_handler\", \"line\": 230}]}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.quest.grave_danger.started_greeting",
+            "value": {
+              "type": "Text",
+              "value": "Welcome, |PLAYERNAME|! Is there anything to {report}?"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

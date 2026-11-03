@@ -13,6 +13,17 @@ pub(super) async fn hotkey_equip(
         evidence("mechanic=hotkey_equip skipped=entry_room_has_no_native_equipment_content");
         return Ok(());
     }
+    // The production starter grant installs a backpack, with no carried equipment.
+    // Never manufacture a weapon in game tables to turn this prerequisite into a pass.
+    if client
+        .inventory()
+        .is_none_or(|inventory| inventory.entries.is_empty())
+    {
+        evidence(
+            "mechanic=hotkey_equip skipped=production_starter_has_no_carried_equipment_and_no_network_seed_api",
+        );
+        return Ok(());
+    }
     let definition = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -35,9 +46,28 @@ pub(super) async fn hotkey_equip(
     )
     .await?;
     client_ui::hotkey_equip::apply_result(&mut panel, &response);
-    if panel.outcome.is_none() {
-        return Err("hotkey equip outcome was not decoded".into());
+    if panel.outcome != Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved) {
+        return Err(format!("hotkey equip did not move equipment: {:?}", panel.outcome).into());
     }
-    evidence("mechanic=hotkey_equip transport=tls result=decoded");
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(equipped) = client.inventory().and_then(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .find(|equipped| equipped.item.item_definition_ref.get() == definition)
+        }) {
+            evidence(&format!(
+                "mechanic=hotkey_equip state=equipped definition={definition} slot={:?}",
+                equipped.slot
+            ));
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("hotkey equip inventory delta missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
     Ok(())
 }

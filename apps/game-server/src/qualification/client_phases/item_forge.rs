@@ -30,8 +30,13 @@ pub(super) async fn item_forge(client: &mut oteryn_dev_client::DevClientSession)
     if panel.response.is_empty() {
         return Err("item forge history response was empty".into());
     }
+    let result: serde_json::Value = serde_json::from_slice(&panel.response)?;
+    if result.as_array().is_none_or(|history| !history.is_empty()) {
+        return Err(format!("new character forge history: {result}").into());
+    }
+    evidence("mechanic=item_forge state=history_empty entries=0");
     evidence(
-        "mechanic=item_forge transport=tls operation=query_history gap=entry_room_has_no_fusion_pair",
+        "mechanic=item_forge skipped=production_starter_has_no_fusion_pair_or_materials_and_no_network_seed_api",
     );
     Ok(())
 }

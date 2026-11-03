@@ -32,6 +32,19 @@ pub(super) async fn depot_search(
     if panel.reply.is_none() {
         return Err("depot search reply was not decoded".into());
     }
-    evidence("mechanic=depot_search transport=tls result=decoded fixture_item=37109");
+    let reply = panel.reply.ok_or("depot search missing reply")?;
+    if reply.outcome != oteryn_protocol_oteryn::depot_search::Outcome::NotFound
+        || reply.retrieved != 0
+        || !reply.results.is_empty()
+    {
+        return Err(format!("new character depot search: {reply:?}").into());
+    }
+    evidence(&format!(
+        "mechanic=depot_search state={:?} retrieved={} results={} position={:?}",
+        reply.outcome,
+        reply.retrieved,
+        reply.results.len(),
+        client.world_spatial().actor_position
+    ));
     Ok(())
 }

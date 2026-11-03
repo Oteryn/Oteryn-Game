@@ -1,0 +1,291 @@
+{
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/npc/jack_springer.lua",
+    "sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9",
+    "speech": [
+      {
+        "key": "final_report",
+        "line": 82,
+        "kind": "default_callback"
+      },
+      {
+        "key": "report_ready",
+        "line": 93,
+        "kind": "default_callback"
+      },
+      {
+        "key": "report_good_luck",
+        "line": 96,
+        "kind": "default_callback"
+      },
+      {
+        "key": "report_missing",
+        "line": 99,
+        "kind": "default_callback"
+      },
+      {
+        "key": "ultimate",
+        "line": 103,
+        "kind": "default_callback"
+      },
+      {
+        "key": "threat",
+        "line": 110,
+        "kind": "default_callback"
+      },
+      {
+        "key": "start",
+        "line": 128,
+        "kind": "default_callback"
+      },
+      {
+        "key": "basic_discuss",
+        "line": 155,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_urgency",
+        "line": 156,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_start",
+        "line": 157,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_source",
+        "line": 158,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_events",
+        "line": 159,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_more",
+        "line": 163,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_many",
+        "line": 167,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_iceberg",
+        "line": 168,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_hand",
+        "line": 176,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_predates",
+        "line": 177,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_language",
+        "line": 178,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_legion",
+        "line": 186,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_goal",
+        "line": 194,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_stopped",
+        "line": 202,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_clashes",
+        "line": 203,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_hurry",
+        "line": 204,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_problem",
+        "line": 205,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_knights",
+        "line": 206,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_lich",
+        "line": 210,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_scheme",
+        "line": 211,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_threats",
+        "line": 212,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_rituals",
+        "line": 213,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_purge",
+        "line": 214,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_locations",
+        "line": 222,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_name",
+        "line": 229,
+        "kind": "keyword_handler"
+      },
+      {
+        "key": "basic_job",
+        "line": 230,
+        "kind": "keyword_handler"
+      }
+    ],
+    "greeting_lines": [
+      65,
+      67
+    ],
+    "keyword_precedence": "data/npclib/npc_system/npc_handler.lua:448-451",
+    "keyword_matcher": "data/npclib/npc_system/keyword_handler.lua:58-67",
+    "line": 80
+  },
+  "runtime_status": "LEFT_OUT_APPEARANCE_MAPPING",
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589624980",
+  "reason": "No admitted selectable mapping for both source outfits; no completion flag without reward",
+  "source_outfits": [
+    {
+      "look_type": 1244,
+      "addon": 0,
+      "line": 85
+    },
+    {
+      "look_type": 1243,
+      "addon": 0,
+      "line": 86
+    }
+  ],
+  "achievement": {
+    "name": "Inquisition's Hand",
+    "line": 91
+  },
+  "transitions": [
+    {
+      "key": "oteryn:quest-transition/grave-danger/final-report",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "completes": false,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+          "from": {
+            "op": "EQ",
+            "value": 4
+          },
+          "from_exact": true,
+          "effect": {
+            "kind": "SET",
+            "value": 5
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+          "from": {
+            "op": "LT",
+            "value": 1
+          },
+          "from_exact": true,
+          "effect": {
+            "kind": "SET",
+            "value": 1
+          }
+        }
+      ],
+      "requested_by": {
+        "npc": "crystal:npc/jack_springer",
+        "keywords": [
+          "report"
+        ],
+        "topics": []
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/jack_springer.lua",
+        "line": 80
+      }
+    },
+    {
+      "key": "oteryn:quest-transition/grave-danger/final-report-outfit-held",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "completes": false,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+          "from": {
+            "op": "EQ",
+            "value": 4
+          },
+          "from_exact": true,
+          "effect": {
+            "kind": "SET",
+            "value": 5
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+          "from": {
+            "op": "GE",
+            "value": 1
+          },
+          "from_exact": true,
+          "effect": {
+            "kind": "ADD",
+            "value": 0
+          }
+        }
+      ],
+      "requested_by": {
+        "npc": "crystal:npc/jack_springer",
+        "keywords": [
+          "report"
+        ],
+        "topics": []
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/jack_springer.lua",
+        "line": 80
+      }
+    }
+  ]
+}

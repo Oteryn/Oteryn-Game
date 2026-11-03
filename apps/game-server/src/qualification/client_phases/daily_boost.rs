@@ -30,6 +30,16 @@ pub(super) async fn daily_boost(
     if panel.boost.is_none() {
         return Err("daily boost view was not decoded".into());
     }
+    let boost = panel.boost.clone().ok_or("daily boost not decoded")?;
+    let repeated = client_runtime::raw_feature::send(client.session_mut(), &command).await?;
+    client_ui::daily_boost::apply_result(&mut panel, &repeated);
+    if panel.boost.as_ref() != Some(&boost) {
+        return Err("daily choice changed within the same server-save epoch".into());
+    }
+    evidence(&format!(
+        "mechanic=daily_boost state=stable epoch={} creature={} boss={}",
+        boost.reset_epoch, boost.creature_key, boost.boss_key
+    ));
     use client_runtime::daily_reward::{DailyRewardCommand, DailyRewardReply};
     if client
         .selected_capabilities()

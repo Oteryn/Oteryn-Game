@@ -48,8 +48,7 @@ pub fn activated_with_loot_tables(
 }
 
 /// Explicit native reward fixture, compiled and pinned before runtime creation.
-/// The current source has no materializable reward-boss corpse. Reclassify the
-/// already admitted rat only in this test input; retain its source HP, XP, corpse,
+/// Reclassify the already admitted rat only in this test input; retain its source HP, XP, corpse,
 /// loot probabilities, quantities and all Item definitions without modification.
 pub fn activated_reward_boss_fixture(
     world: oteryn_protocol_oteryn::WorldId,
@@ -85,7 +84,19 @@ pub fn activated_reward_boss_fixture(
 #[test]
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
-    use crate::content::creature_reward::NoSettlementReason;
+    use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
+    use oteryn_gameplay_domain::domain::loot_data::{
+        GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
+    };
+    let supplied = manifest_input();
+    let loot: LootTablesSection = serde_json::from_slice(
+        &supplied
+            .loot_tables
+            .as_ref()
+            .ok_or("source loot tables")?
+            .bytes,
+    )
+    .map_err(|error| error.to_string())?;
     let world = test_source(1).unwrap().world_id;
     let (source, _) = activated_with_loot_tables(world, None);
     let source = source.active().unwrap().native_gameplay().unwrap();
@@ -96,12 +107,14 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // The pinned source has 52 reward bosses without a corpse definition and
-    // 335 whose corpse is not materializable. Keep each exact admission reason:
+    // Quests batch 2 admits corpse 39530: one reward boss is now materializable,
+    // leaving 52 without a corpse and 334 with an inadmissible corpse.
+    // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let mut missing = 0;
     let mut inadmissible = 0;
+    let mut admitted = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -112,26 +125,67 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
             return Err("source reward-boss Creature profile".into());
         };
-        let expected = if profile
+        let corpse = profile
             .details
             .as_ref()
-            .and_then(|details| details.corpse_item.as_ref())
-            .is_none()
-        {
+            .and_then(|details| details.corpse_item.as_ref());
+        let materializable_corpse = corpse.filter(|corpse| {
+            loot.items.iter().any(|facts| {
+                facts.item.family == "Item"
+                    && facts.item.key == corpse.key
+                    && facts.item.revision == corpse.revision
+                    && facts.materializable
+                    && facts.container_capacity.is_some_and(|capacity| {
+                        (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u32).contains(&capacity)
+                    })
+            })
+        });
+        let expected = if let Some(corpse) = materializable_corpse {
+            admitted.push(policy.definition_key.as_str());
+            let row = source
+                .reward_table()
+                .row(&policy.definition_key)
+                .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
+            assert_eq!(
+                row.corpse_item,
+                LootDefinitionRef::new("Item", &corpse.key, &corpse.revision)
+            );
+            assert_eq!(
+                row.xp_amount,
+                oteryn_simulation_determinism::ExactI64::new(
+                    i64::try_from(profile.experience.ok_or("source boss XP")?)
+                        .map_err(|error| error.to_string())?
+                )
+            );
+            let binding = loot
+                .creature_loot
+                .iter()
+                .find(|binding| binding.creature.key == policy.definition_key)
+                .ok_or("source reward-boss loot binding")?;
+            assert!(binding.loot.is_none(), "source boss has no authored loot");
+            assert_eq!(row.loot_table_ref, row.corpse_item);
+            assert_eq!(
+                row.loot_table.algorithm,
+                LootSelectionAlgorithm::IndependentBernoulliPpm
+            );
+            assert!(row.loot_table.entries.is_empty());
+            None
+        } else if corpse.is_none() {
             missing += 1;
-            NoSettlementReason::CorpseItemMissing
+            Some(NoSettlementReason::CorpseItemMissing)
         } else {
             inadmissible += 1;
-            NoSettlementReason::CorpseItemInadmissible
+            Some(NoSettlementReason::CorpseItemInadmissible)
         };
         assert_eq!(
             source.reward_table().row(&policy.definition_key).err(),
-            Some(expected),
+            expected,
             "{}",
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible), (52, 335));
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 334, 1));
+    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
     assert_eq!(bosses.len(), 387);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source

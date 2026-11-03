@@ -116,11 +116,14 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // CL25J adds daily boost, forge, depot search, store, hotkey equip, browse field,
     // party chat and VIP presence, including the equipment/container prerequisites 12/14.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
+    // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
+    // NPC shop phase, and 51 (staff) with 165 (hireling) for the hireling phase; staff negotiation
+    // never grants the signed-envelope authority it requires.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
-            4, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 60, 62, 63,
-            68, 72, 80, 91, 92, 117, 140, 147, 148, 151, 152, 153, 154, 168, 179, 182, 224, 230, 233, 240, 258, 259, 272, 274, 275
+            3, 4, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 40, 42, 43, 51, 60, 62, 63,
+            68, 72, 80, 81, 91, 92, 117, 140, 147, 148, 151, 152, 153, 154, 165, 168, 179, 182, 224, 230, 233, 240, 258, 259, 272, 274, 275
         ]
     );
 }

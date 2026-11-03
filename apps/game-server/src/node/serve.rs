@@ -2323,7 +2323,7 @@ fn boot_bundle_items(
 /// (`blocks_movement` false and `blocks_projectile` false); a profile that does not describe
 /// the open item leaves the door sealed, so the node refuses readiness instead of serving a
 /// doorway that opens in appearance only.
-fn boot_bundle_world(
+pub(crate) fn boot_bundle_world(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     channel: ChannelId,

@@ -151,6 +151,7 @@ pub(super) fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
 
 // Include topic files in this module to preserve test paths and private fixture access.
 include!("session_tests_admission_cast.rs");
+include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
