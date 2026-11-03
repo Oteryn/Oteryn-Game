@@ -6,5 +6,8 @@ mod state;
 pub use protocol::send;
 pub use state::{QuestRefusal, QuestState};
 #[cfg(test)]
+#[path = "tests/e2e_all.rs"]
+mod e2e_all;
+#[cfg(test)]
 #[path = "tests/reducer.rs"]
 mod tests;

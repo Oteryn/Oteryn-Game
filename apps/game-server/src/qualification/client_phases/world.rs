@@ -5,6 +5,10 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+include!("character_core.rs");
+include!("floor_journey.rs");
+include!("quest_journal.rs");
+
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
     y: 32238,
@@ -249,6 +253,8 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
+    client = character_core(client, clients, &world).await?;
+    client = floor_journey(client, clients, &world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -481,6 +487,17 @@ pub(crate) fn smoke() -> TestResult {
     assert!(
         route(&world, TOWN, |at| near_locker(&world, at)).is_some(),
         "town depot must be reachable"
+    );
+    let floor_path = route(&world, TOWN, |at| at.floor != TOWN.floor)
+        .ok_or("town floor-change route must be reachable")?;
+    let mut landing = TOWN;
+    for direction in floor_path {
+        landing = destination(&world, landing, direction).ok_or("floor route landing")?;
+    }
+    assert_ne!(landing.floor, TOWN.floor);
+    assert!(
+        route(&world, landing, |at| at == TOWN).is_some(),
+        "town floor-change route must have a return path"
     );
     let rats: Vec<_> = project
         .families
