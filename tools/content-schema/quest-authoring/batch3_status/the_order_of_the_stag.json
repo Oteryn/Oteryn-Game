@@ -1,0 +1,1473 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_order_of_the_stag",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-c/status-after-answer.json",
+    "sha256": "af185f5bc16307ef92f85e3f9d76c1a71d11c543fc2bcdb3fddc55c0537000c7"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 38,
+  "import_counts": {
+    "RĘCZNIE": 36,
+    "AUTO": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 99,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 4,
+    "death_rules_source_only": 1
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json",
+      "sha256": "59c313d88006e8ce720c358932b3932907c8b5900a9dcf30cdee9a5a91a3ae63",
+      "count": 99,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+      "sha256": "5f53a5a7cf55177743f1c78a680f1b0bdc76fd40d70dd2145efdcd47059a059e",
+      "count": 4,
+      "category": "world_callbacks_held"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_order_of_the_stag.json",
+      "sha256": "de84b8174627b5aadb26161effd7ef5c731a7172e7b374cda70d575ebc9e273d",
+      "count": 1,
+      "category": "death_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "e8b4430ba08835beb36cc83284a04a5ec5eb6df34cc5efb84fa36bceeab0bc6a",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Writ od Kesara",
+        "pattern": "P09",
+        "trigger": "Kesar: help",
+        "guard": "Lion KesarMission>=5; stage<1",
+        "effect": "monotonic stage=1 (WRIT)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:88"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Lion quest prerequisite / King Council appearance ownership is outside this batch and remains guarded. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:88",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "fdec4f612f113c6165c6e2efaf249bc7b1efefd854c0ae81aeadcc1e0fe2732e",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Katedralna dziura",
+        "pattern": "P02/P19/P16",
+        "trigger": "pick na(32402,32467,4)",
+        "guard": "stand(32402,32465,4) zawieraFrozen Starlight3249; nie zużywa",
+        "effect": "ground417->hole52654; wspólny timeout300s odnowiony użyciem (donor NOT CONFIRMED)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:66"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a6347f3f27565cc1a5288730fbff49f0eb00504b3116276a4435ca04956105b9",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zejście do krypty",
+        "pattern": "P03/P06",
+        "trigger": "Use lubStepIn dziury(32402,32467,4)",
+        "guard": "holeUntil>=os.time()",
+        "effect": "teleport(32402,32467,5); spawn Ancient Lion Warlock jeśli brak w pokoju",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:92"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:92",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a63bea771657219151cec09143fe44cd85f766bc73901cbe56e4a8bd169149b5",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Certificate",
+        "pattern": "P05",
+        "trigger": "chest(32401,32469,5)",
+        "guard": "stage==1 i addItem52586 sukces",
+        "effect": "item52586; stage=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:134"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:134",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "95f0d1f1d6dc8cafc02f5a4582c2001157a99c1721570ac89a52d24af426f259",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Wyjście z krypty",
+        "pattern": "P03",
+        "trigger": "Use wall(32402,32472,5)",
+        "guard": "brak",
+        "effect": "teleport(32402,32473,4)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:157"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_callback_contract",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Full source callback retained in held-world/the_order_of_the_stag.json; excluded from active aggregate.",
+      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:157",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "8771f2dfb275ba176b549c4b9c3cc073c6040cf2249f77f10f3b65e21f2c776d",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Reset katedry",
+        "pattern": "P15/P01",
+        "trigger": "startup",
+        "guard": "hole/wall map items",
+        "effect": "zamknij dziurę; wall1507->52656",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:170"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:170",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "80c0561fc6a8f9c28f84781cac7b8eb2b7fabe84784a6795ea60134788c87692",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zgoda na Isle of Ada",
+        "pattern": "P09/P13",
+        "trigger": "Kesar help ->yes topic10",
+        "guard": "stage==2; Lion KesarMission>=5",
+        "effect": "stage=3; certificate zostaje",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:139"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Lion quest prerequisite / King Council appearance ownership is outside this batch and remains guarded. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:139",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "0029f6e62c7e8d38fb09e71cfb56baae33853ced87abce45ac1dd783ae550277",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Statek na Ada",
+        "pattern": "P03",
+        "trigger": "Use rope(32393,32513,7)",
+        "guard": "stage>=3",
+        "effect": "teleport(33875,32249,7); pozycja w helperze NOT CONFIRMED",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_callback_contract",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Full source callback retained in held-world/the_order_of_the_stag.json; excluded from active aggregate.",
+      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Missing fields: storage.read_only and per-guard failure_message, success_message. Source checks the stage without changing it; SET(3) for boat travel or SET(11) for wall travel would rewind later stages 12/13. Shared ADD(0) lowering is explicitly prohibited. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+        ]
+      }
+    },
+    {
+      "id": "a74a46e9d6c721d7cb049fd6ef87085cebf77cedc973f53fe13f51fbf334798a",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Statek powrotny",
+        "pattern": "P03",
+        "trigger": "Use rope(33874,32250,7)",
+        "guard": "brak",
+        "effect": "teleport(32395,32511,7); helper NOT CONFIRMED",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:44"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_callback_contract",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Full source callback retained in held-world/the_order_of_the_stag.json; excluded from active aggregate.",
+      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Source success_message at isle_of_ada.lua:46 is also unsupported; it is preserved only in held data. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:44",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+        ]
+      }
+    },
+    {
+      "id": "fa38151d16d54efa5002311be1b4543294034368c1b58cc20ade4f47629af7ff",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Rozkazy Demerona",
+        "pattern": "P09/P13",
+        "trigger": "mission/tell; yes topic1->2->3",
+        "guard": "końcowe yes: stage>=3 i certificate52586>=1",
+        "effect": "stage>=4; certificate niezużyty",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:104"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:104",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "9fced987b74941aaf2b970db6151b9659666ab32a97d679b26729973585e3dd6",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Odkrycie kopalni",
+        "pattern": "P03/P18",
+        "trigger": "StepIn 238 pozycji: x33866..33877,y32186..32195,z6/7 oprócz2ramp z7",
+        "guard": "stage==4",
+        "effect": "stage=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:56"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:56",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "28fe9997a0cc3339129f39d3d721b20369317fe0797c4b36f7817ed4bb338987",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zlecenie dziobów",
+        "pattern": "P09",
+        "trigger": "Hartford business/explain ->yes",
+        "guard": "stage>=5",
+        "effect": "stage monotonic>=6",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:119"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:119",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "f8e544fa9adc9c52331b7c27845d28f4f61d5af9dc8b0a086262886ca45b08e7",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Pozyskanie dzioba i licznik",
+        "pattern": "P02/P08",
+        "trigger": "obsidian5908 na corpse52680/52679/52678",
+        "guard": "10% wynik w skinning (NOT CONFIRMED); osobny helper tylko stage6",
+        "effect": "item52632 i corpse52677; helper onBeakSkinned inkrementuje48042, lecz nigdzie niewołany",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:20"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Night Harpy beak helper is unbound in source; activating skinning with personal counter and inventory mint requires the shared tool/item owner.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113590"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:20"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "8966e8d8bf8bba36c2dcc9c26a2856d17acdbf42bc8245cbfa8bf05fb340b802",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Oddanie 20 osobistych dziobów",
+        "pattern": "P09/P13",
+        "trigger": "Hartford news ->yes",
+        "guard": "stage==6; HarpyBeaks>=20",
+        "effect": "stage=7; itemy52632 nie są odejmowane",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:138"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:138",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "9e22c6cecaf90d1567449c07940f96478253fd17bb70e6a178219a026f9c43d8",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Polecenie zbadania zwłok",
+        "pattern": "P09",
+        "trigger": "Eldoran word ->yes ->yes",
+        "guard": "stage>=7",
+        "effect": "stage=8 (monotonic)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:160"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:160",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "d90c60cf581c19a6603f6b46311cb74c2f04e8ee45e9b8bd1e282cf1ac3afafd",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zwłoki bit1",
+        "pattern": "P02/P18",
+        "trigger": "Use corpse52741(33858,32117,5)",
+        "guard": "stage==8; odpowiedni bit nieustawiony",
+        "effect": "Corpses48091 += 1; brak ponownego naliczenia",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c27c24be026d7f86ee179440fffd418d2e3ac029d96b7002dadf8a4fa50a1b3a",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zwłoki bit2",
+        "pattern": "P02/P18",
+        "trigger": "Use corpse52741(33870,32113,5)",
+        "guard": "stage==8; odpowiedni bit nieustawiony",
+        "effect": "Corpses48091 += 2; brak ponownego naliczenia",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "30efadf3bb6a7a0ae3f41267397780f3c870220a6918c763eced174272794894",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zwłoki bit4",
+        "pattern": "P02/P18",
+        "trigger": "Use corpse52741(33869,32134,5)",
+        "guard": "stage==8; odpowiedni bit nieustawiony",
+        "effect": "Corpses48091 += 4; brak ponownego naliczenia",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:85",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "d90522dba53dd71094cda32b9d4b48645308ec4f59ae242703a8e92d5f62c76a",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Meldunek po trzech zwłokach",
+        "pattern": "P09/P13",
+        "trigger": "Eldoran news ->yes",
+        "guard": "stage==8; Corpses>=7",
+        "effect": "stage=9",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:182"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:182",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "4fed024a5bba4dea015043da9a41cf9bfeb2f4cc5eb7183b573087d76db0fbf7",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zlecenie Court Warlock",
+        "pattern": "P09",
+        "trigger": "Eldoran mission",
+        "guard": "stage==9",
+        "effect": "stage=10",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:144"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:144",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "cbfeba70191f889635e9a2420c96e84fc91c35715b3bb32dd72cbaeb56f2e57e",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Oznaczona ściana",
+        "pattern": "P09/P13",
+        "trigger": "Marie-Denise wall",
+        "guard": "stage>=10",
+        "effect": "stage monotonic>=11",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:57"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "00ccd56136b574334108a0be9e7d06666446dcbda89ae53a62b31fbae889f777",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Przejście przez ścianę",
+        "pattern": "P03",
+        "trigger": "Use wall(33834,32139,4)",
+        "guard": "stage>=11",
+        "effect": "teleport(33833,32138,4)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_callback_contract",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Full source callback retained in held-world/the_order_of_the_stag.json; excluded from active aggregate.",
+      "left_out": "Missing operation: quest_callback_matches must match the actual source object above ordinal 0 for Position-only Use. Baseline accepts ordinal 0 only; changing the shared adapter is outside scope. Missing fields: storage.read_only and per-guard failure_message. Source checks the stage without changing it; SET(3) for boat travel or SET(11) for wall travel would rewind later stages 12/13. Shared ADD(0) lowering is explicitly prohibited. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+        ]
+      }
+    },
+    {
+      "id": "14112c642de15a92e53e8e39a51254486bd0e341bfdd5e317b049358995e2e62",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Dwa teleportery forcefield",
+        "pattern": "P03/P15",
+        "trigger": "startup tworzy TELEPORT dest; punkty(33833,32137,4/3)",
+        "guard": "item teleport",
+        "effect": "z4->(33836,32141,3); z3->(33834,32140,4); helper oba NOT CONFIRMED",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:153"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:153",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "421d8933ce668d03955ef22a0e275b3a05f327c6fde03d6c60e498e4a81143fc",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Przyjęcie do Court Warlock",
+        "pattern": "P06/P17",
+        "trigger": "lever(33843,32147,3);5pól x33842,y32142..32146,z3",
+        "guard": "stage>=11; occupancy; cooldown20h; fight30min (dwa czasy NOT CONFIRMED)",
+        "effect": "arena33830,32133..33847,32150,z2; zapamiętaj gracza z pierwszego pola33842,32142,3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:361"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:361"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "21d9910ab525585189233aaf361e76abffcf43f1611b328bda4e7a3a4da86be1",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Siedem faz Raubritter",
+        "pattern": "P27/P30",
+        "trigger": "start po3s; tick1s",
+        "guard": "phase1..7; przejście co45s (NOT CONFIRMED)",
+        "effect": "7 Raubritter każdą fazę; shuffle players/monsters; teren35%; target saved pierwsze pole, fallback pierwszy gracz wzone",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:239"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:239"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "5ae0298a537900f87b11c87b9ee32dca3d7671c7f614c1c92b7bc258bbcc1ae2",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Empowered Raubritter",
+        "pattern": "P16/P30",
+        "trigger": "co5s check",
+        "guard": "4tego samego typu lubwiek>=60s (NOT CONFIRMED)",
+        "effect": "zamień wEmpowered zachowując procentHP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:168"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:168"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "802ea41ceb553174379206fb1d55c43f9515987c1972810f212f7b92e2e25f1e",
+      "quest_row": 27,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Specjalny teren",
+        "pattern": "P03/P30",
+        "trigger": "StepIn dynamic terrain callback",
+        "guard": "special key zbieżącego losowania",
+        "effect": "damage floor(maxHP*10%) death; source NOT CONFIRMED",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:291"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:291"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "f10e75c67cdf720b194d78788fb4e359439d7298c2d0fb9a9d4b3c9ede86d2b1",
+      "quest_row": 28,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Falcons i kolejne miniony",
+        "pattern": "P27/P30",
+        "trigger": "phase8",
+        "guard": "po7phases",
+        "effect": "22Falcon Knight/Paladin; potem7Raubritter co22s (floor45/2)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:204"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:204"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "856973608e1a502ca20007f7ce81110e845289f507a26df6d27b378d3c57dfeb",
+      "quest_row": 29,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Spawn Court Warlock i zdrowie",
+        "pattern": "P27/P30",
+        "trigger": "tick, brak żywych minionów",
+        "guard": "phase>7; boss jeszcze niewystawiony",
+        "effect": "HP=floor(maxHP*(1-0.6*killedRaubritters/spawnedRaubritters)), min1; source opisuje health formula NOT CONFIRMED",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:215"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:215"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "b204b9f74505966bc5e202868c55b1fcf3afa3e19d881e2bb56a98b8411f4abb",
+      "quest_row": 30,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Śmierć Court Warlock",
+        "pattern": "P07/P21/P25",
+        "trigger": "CourtWarlockDeath",
+        "guard": "wszyscy wzone stage>=11; osobno damageMap",
+        "effect": "stage>=12 wszystkim wroom; banner tylko damaging players; stop i po60s usuń graczy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_kill_adapter",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Exact source state-only death rule is preserved with runtime_enabled:false. Parser, test-only qualifier and native adapter are excluded from publication under explicit R-KILL-ADAPTER B.",
+      "left_out": "Missing allowed functions: quest_batch3_c::capture and quest_batch3_c::settle, with source parser/loader and snapshot refresh. Existing Quest writer remains unchanged, but producing these ten events requires a new shared adapter; explicit B requires source-only Left out. Future adapter PR must not map permanent ProgressionContextMismatch to Retry, which can block the ordered kill queue (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134; existing witness character_progression_binding_tests.rs:160-198). Banner mutation, delayed removal and encounter cleanup additionally require the shared map/encounter owner. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out. Decyzja R-KILL-ADAPTER: Dziesięć reguł śmierci pozostaje nieaktywnymi danymi. Brakuje utrwalenia właściwego rosteru/occurrence i rozliczenia przed zwolnieniem corpse-pin, z kwalifikacją graczy według damage map. Parser quest_batch3_c i sześć hooków zostały wycofane; cztery testy Tower nie dowodzą aktywnego runtime. Przyszły adapter musi też rozwiązać trwały ProgressionContextMismatch mapowany na Retry, który może blokować uporządkowaną kolejkę (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134). Fire-Fighter grant/repair pozostaje Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1081",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3-8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12-23",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4-18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua:26-55",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323-329"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+        ]
+      }
+    },
+    {
+      "id": "996343b897d252877e21d8b4e66235f99d56e75991da2a31364a5fb6b620beea",
+      "quest_row": 31,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Sprzątanie pustej walki",
+        "pattern": "P25",
+        "trigger": "tick gdyzone:getPlayers() puste",
+        "guard": "brak uczestników",
+        "effect": "usuńmonsters; stop timera i terrain",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:239"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Seven-wave Court Warlock admission, Raubritter empowerment, terrain, target ordering and timeout cleanup require the shared encounter owner. Crystal target choice preserved in inventory; no complete fight claimed.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589113974"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:239"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "80ad65eaa5b6d1f4c1f66d2a5c597d60b0c5164f8a0aa39a2c3af2dc4d6b9841",
+      "quest_row": 32,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Sword i zakończenie",
+        "pattern": "P09/P11",
+        "trigger": "Eldoran news",
+        "guard": "stage==12; addItem52824 sukces",
+        "effect": "stage=13; achievement Bastard",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:126"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:126",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "81a964361a6246ef64b6652457e1cc05d0eea04a10e65037d4354f2bda251c48",
+      "quest_row": 33,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "King’s Council addon",
+        "pattern": "P09/P12",
+        "trigger": "Kesar help",
+        "guard": "LionKesarMission>=5; stage>=13; KingsCouncil<1",
+        "effect": "KingsCouncil48094=1; outfit1436/1437 addon2; achievement King's Council",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:117"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Lion quest prerequisite / King Council appearance ownership is outside this batch and remains guarded. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:117",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "60fbd62494b750422df791186c4d2a0113329921effb918c1a296ef2c38d4b19",
+      "quest_row": 34,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Opcjonalna venison Harlana",
+        "pattern": "P09/P10/P11",
+        "trigger": "yes,yes,no -> Harlan1; help ->yes topic3",
+        "guard": "20venison52636; Harlan1/2",
+        "effect": "zabierz20; Harlan48092=3; +10000XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:80"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:80",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "4cba77139946ca1341fcd5b0c6102fd01a7ff6da355b5d44f87afd90bf9c559d",
+      "quest_row": 35,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Opcjonalne części Demerona",
+        "pattern": "P09/P10/P11",
+        "trigger": "spares ->yes topic20",
+        "guard": "stage>=4; Demeron<2;30iron52635+20bronze52758+10silver52743",
+        "effect": "usuńmateriały; dodajcompass52759; Demeron48093=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:90"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:90",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "f6247a60540ee0a5a26ffa33f4f9aff29aeb8b844bb587f2f95a5fb396202bb2",
+      "quest_row": 36,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Zachód słońca i rajd",
+        "pattern": "P15/P27",
+        "trigger": "GlobalEvent onPeriodChange sunset",
+        "guard": "50%chance;15obszarów8x8;NOT CONFIRMED parametry",
+        "effect": "spawnOsverger(33878,32121,2);3NightHarpies/pole;refill60s;tylko otwarte niebo",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:149"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:149",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "cb0ee29c23567514d5e96fdf979cb0d1719d6ad42e73535fbca9a0c97d1050dc",
+      "quest_row": 37,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Wschód i restart świata",
+        "pattern": "P15/P25",
+        "trigger": "sunrise; startup nocą po5s",
+        "guard": "bieżąca pora świata",
+        "effect": "wschód usuwa raid/Osvergera; restartnocą odtwarza",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:156"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:156",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c154d99ca1746d5b4f261119955b2caf2a616270f64af67009d62e7798fb2fad",
+      "quest_row": 38,
+      "inventory": {
+        "quest": "the_order_of_the_stag",
+        "step": "Znaki na powierzchni Ada",
+        "pattern": "P15/P16/P30",
+        "trigger": "co15s;20%losowanie perplayer",
+        "guard": "area33760,32060..33930,32280,z0..8;otwarte niebo;!PZ;!staff",
+        "effect": "znak; po2500ms radius1 damage floor(maxHP/3) agony",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:185"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires shared world startup/time/area selector or physical item mutation and cleanup. Existing callback format has no bounded area selector for the source mine region; its fixed128 callback limit is preserved. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    }
+  ]
+}
