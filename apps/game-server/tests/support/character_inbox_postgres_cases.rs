@@ -778,6 +778,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // in Inbox; only nested coin entries change, never Inbox rows.
                 "game_item_loop_line_admit",
                 "game_item_loop_owner",
+                // HOUSE-RENT (0914): read-only EXISTS proof that a rent warning letter
+                // minted in this transaction sits in its owner's Inbox; never writes Inbox rows.
+                "game_item_mint_consistency_guard",
                 "game_item_transfer_consistency_guard",
                 // HIRELING: verifies the native lamp burn has already removed
                 // its exact Inbox location; this guard never writes Inbox rows.

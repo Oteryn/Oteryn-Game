@@ -173,6 +173,8 @@ GRANT SELECT ON game_house_rent_inbox_letters,game_house_rent_payments TO oteryn
 GRANT SELECT,UPDATE(rent_period) ON game_house_rent_config TO oteryn_game_control;
 GRANT SELECT ON game_house_rent_config,game_house_rent_state,game_house_rent_inbox_letters,game_house_rent_payments TO oteryn_game_runtime;
 GRANT SELECT ON game_house_rent_state,game_house_rent_inbox_letters,game_house_rent_payments TO oteryn_game_control;
+-- game_item_mint_consistency_guard runs as the minting role and reads this proof table.
+GRANT SELECT ON game_house_rent_letter_mints TO oteryn_game_runtime,oteryn_game_control;
 REVOKE ALL ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) TO oteryn_game_runtime;
 REVOKE ALL ON FUNCTION game_house_disposition_is_personal_move_out(UUID) FROM PUBLIC;
