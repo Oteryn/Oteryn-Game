@@ -1384,15 +1384,13 @@ fn scenario_with_creature_charmed(
             let entry = taken.entry().ok_or("event entry")?;
             let row = entry.row.as_ref().ok_or("reward row")?;
             let mut table = row.loot_table.clone();
-            let mut raised = false;
-            for loot in &mut table.entries {
-                if let Some(probability) = &mut loot.probability_ppm {
-                    let scaled = (u64::from(*probability) * u64::from(event_rates.loot) / 100)
-                        .min(1_000_000);
-                    raised |= scaled != u64::from(*probability);
-                    *probability = u32::try_from(scaled).map_err(debug)?;
-                }
-            }
+            // Crystal 201189f8 `data/libs/functions/functions.lua:68-70`: the configured loot
+            // multiplier changes the effective chance used by the real death-reward drain.
+            oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(
+                &mut table,
+                event_rates.loot,
+            );
+            let raised = table != row.loot_table;
             assert!(
                 raised,
                 "the event loot rate changes a drop chance of {creature_key}"

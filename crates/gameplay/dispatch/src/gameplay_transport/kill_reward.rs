@@ -2658,18 +2658,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
         // W05d: the scheduled event loot rate scales each drop chance (Crystal
         // `functions.lua:68-70`), capped at certainty.
-        for loot in &mut loot_table.entries {
-            if let Some(probability) = &mut loot.probability_ppm {
-                *probability = u32::try_from(
-                    oteryn_gameplay_foundation::scheduled_events::scale_gain(
-                        u64::from(*probability),
-                        event_rates.loot,
-                    )
-                    .min(1_000_000),
-                )
-                .unwrap_or(1_000_000);
-            }
-        }
+        oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(
+            &mut loot_table,
+            event_rates.loot,
+        );
         if !loot_table.entries.is_empty() {
             let Ok(active) = admission
                 .root
