@@ -161,6 +161,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             observation.offence(&mut snapshot.offence).map_err(|_| ())?;
             observation.defence(&mut snapshot.defence).map_err(|_| ())?;
+            observation.misc(&mut snapshot.misc).map_err(|_| ())?;
             snapshot
                 .misc
                 .set(Stat::Amplification, amplification_ppm(offence.boots_tier))
@@ -403,6 +404,23 @@ impl Observation<'_> {
         out.set(Stat::Armor, i64::from(self.state.equipped_armor()))?;
         out.set(Stat::Mantra, i64::from(self.mantra))?;
         out.set(Stat::DefenceSkillId, 6)?;
+        if let Some(wheel) = self.wheel {
+            // Crystal 201189f player_wheel.cpp:2779 exposes the active Wheel aggregate.
+            // `gem_value_milli` is thousandths of percent; the wire uses ppm of 100%.
+            let dodge = wheel.gem_value_milli("dodge", "").max(0) * 10;
+            out.set(Stat::Dodge, dodge)?;
+            out.set(Stat::DodgeWheel, dodge)?;
+            out.set(
+                Stat::MitigationWheel,
+                i64::from(wheel.mitigation_milli_percent) * 10,
+            )?;
+        }
+        if let Some(percent) = self.state.player_mitigation_percent(self.now_micros) {
+            let ppm = f64::from(percent) * 10_000.0;
+            if ppm.is_finite() && ppm >= 0.0 && ppm <= i64::MAX as f64 {
+                out.set(Stat::Mitigation, ppm.trunc() as i64)?;
+            }
+        }
         // Incoming defence adds the current Battle Instinct census to the live skill.
         // Attack-only proficiency adjustments must not inflate this read model.
         if let Some(skill) = self
@@ -435,6 +453,16 @@ impl Observation<'_> {
                     out.set(Stat::DefenceTotal, i64::from(value))?;
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn misc(&self, out: &mut CombatStats) -> Result<(), TabWireError> {
+        if let Some(wheel) = self.wheel {
+            // Crystal 201189f wheel_gems.cpp:325 adds supreme-gem momentum globally.
+            let momentum = wheel.gem_value_milli("momentum_chance", "").max(0) * 10;
+            out.set(Stat::Momentum, momentum)?;
+            out.set(Stat::MomentumWheel, momentum)?;
         }
         Ok(())
     }
