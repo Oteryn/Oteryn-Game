@@ -1,0 +1,725 @@
+{
+  "schema": "quest_batch_1_source_evidence",
+  "quest": "a_piece_of_cake",
+  "purpose": "Pinned source inventory and complete NPC utterances. Not an activated runtime or new world owner.",
+  "runtime_scope_decision": "https://github.com/Oteryn/Oteryn-Game/pull/2845#issuecomment-6589524728",
+  "source_pin": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "configuration": [
+    {
+      "name": "SUBSTANCE_GOAL",
+      "value": 200,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:102"
+    },
+    {
+      "name": "GOLEM_LURE_GOAL",
+      "value": 200,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:103"
+    },
+    {
+      "name": "CHECK_INTERVAL_MINUTES",
+      "value": 10,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:104"
+    },
+    {
+      "name": "RAID_INTERVAL_MINUTES",
+      "value": 60,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:105"
+    },
+    {
+      "name": "RAID_OFFSET_MINUTES",
+      "value": 4,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:106"
+    },
+    {
+      "name": "GOLEMS_PER_RAID",
+      "value": 20,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:107"
+    },
+    {
+      "name": "LAYERS",
+      "value": 4,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:108"
+    },
+    {
+      "name": "EAT_WINDOW_MINUTES",
+      "value": 30,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:110"
+    },
+    {
+      "name": "BITES_REQUIRED_PER_LAYER",
+      "value": 1116,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:111"
+    },
+    {
+      "name": "MAX_BITES_PER_PLAYER_PER_WINDOW",
+      "value": 12,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:113"
+    },
+    {
+      "name": "BITE_COOLDOWN_SECONDS",
+      "value": 90,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:114"
+    },
+    {
+      "name": "WORLD_BONUS_DAYS",
+      "value": 7,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:115"
+    },
+    {
+      "name": "REGEN_BONUS_PERCENT",
+      "value": 25,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:117"
+    },
+    {
+      "name": "EXP_BONUS_PERCENT",
+      "value": 50,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:118"
+    },
+    {
+      "name": "EVENT_START_DAY",
+      "value": 21,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:121"
+    },
+    {
+      "name": "EVENT_START_MONTH",
+      "value": 2,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:122"
+    },
+    {
+      "name": "EVENT_END_DAY",
+      "value": 26,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:123"
+    },
+    {
+      "name": "EVENT_END_MONTH",
+      "value": 2,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:124"
+    }
+  ],
+  "world_keys": [
+    {
+      "name": "Stage",
+      "key": "stage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:51"
+    },
+    {
+      "name": "SubstancesDelivered",
+      "key": "substancesDelivered",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:53"
+    },
+    {
+      "name": "GolemsLured",
+      "key": "golemsLured",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:54"
+    },
+    {
+      "name": "CurrentLayer",
+      "key": "currentLayer",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:55"
+    },
+    {
+      "name": "LayerProgress",
+      "key": "layerProgress",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:56"
+    },
+    {
+      "name": "EatingWindowActive",
+      "key": "eatingWindowActive",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:57"
+    },
+    {
+      "name": "EatingWindowEndsAt",
+      "key": "eatingWindowEndsAt",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:58"
+    },
+    {
+      "name": "EatingWindowStartedAt",
+      "key": "eatingWindowStartedAt",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:59"
+    },
+    {
+      "name": "WorldBonusUntil",
+      "key": "worldBonusUntil",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:60"
+    },
+    {
+      "name": "QuestStartedAt",
+      "key": "questStartedAt",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:61"
+    },
+    {
+      "name": "PendingBrutusBonus",
+      "key": "pendingBrutusBonus",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:62"
+    },
+    {
+      "name": "BrutusAndBonusActive",
+      "key": "brutusAndBonusActive",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:63"
+    },
+    {
+      "name": "EventEndCleanedUp",
+      "key": "eventEndCleanedUp",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:64"
+    }
+  ],
+  "player_storages": [
+    {
+      "name": "BitesThisWindow",
+      "value": 43231,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:69"
+    },
+    {
+      "name": "LastBiteAt",
+      "value": 43232,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:70"
+    },
+    {
+      "name": "BitesWindowStart",
+      "value": 43233,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:71"
+    }
+  ],
+  "items": [
+    {
+      "name": "CakeCabinetKit",
+      "ids": [
+        14756
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:501"
+    },
+    {
+      "name": "CakeBackpack",
+      "ids": [
+        20347
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:502"
+    },
+    {
+      "name": "CakeTapestry",
+      "ids": [
+        20350
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:503"
+    },
+    {
+      "name": "CupcakeBlueberry",
+      "ids": [
+        28484
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:504"
+    },
+    {
+      "name": "CupcakeStrawberry",
+      "ids": [
+        28485
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:505"
+    },
+    {
+      "name": "CupcakeLemon",
+      "ids": [
+        28486
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:506"
+    },
+    {
+      "name": "CakeEdibleIds",
+      "ids": [
+        12085,
+        12086
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:507"
+    },
+    {
+      "name": "UpperFloorCakeIds",
+      "ids": [
+        12147,
+        12148
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:509"
+    },
+    {
+      "name": "CakeBorderIds",
+      "ids": [
+        12152,
+        12153,
+        12154,
+        12155
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:511"
+    },
+    {
+      "name": "CakeBaseIds",
+      "ids": [
+        12090,
+        12091,
+        12092,
+        12093,
+        12094,
+        12095
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:513"
+    },
+    {
+      "name": "SweetAndSugarySubstance",
+      "ids": [
+        12143
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:515"
+    }
+  ],
+  "dialogues": [
+    {
+      "source_npc_name": "Benny The Baker",
+      "city": "Carlin",
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Sweet and Sugary Substances have been delivered here in %s.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:65"
+        },
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Cake Golems have been lured to the machines.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:68"
+        },
+        {
+          "kind": "reply",
+          "text": "I'm not collecting anything right now, but thanks for asking!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:71"
+        },
+        {
+          "kind": "reply",
+          "text": "Hmm, I don't quite know what to do with that yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:75"
+        },
+        {
+          "kind": "reply",
+          "text": "You don't have any Sweet and Sugary Substances on you. Go defeat some Cake Golems!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:81"
+        },
+        {
+          "kind": "reply",
+          "text": "We already have all the substances we need, thank you though!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:88"
+        },
+        {
+          "kind": "reply",
+          "text": "Wonderful, thank you! You delivered %d substance(s). (%d/%d total delivered)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:97"
+        },
+        {
+          "kind": "greet",
+          "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:104"
+        },
+        {
+          "kind": "farewell",
+          "text": "Good luck out there!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/benny_the_baker.lua:105"
+        }
+      ]
+    },
+    {
+      "source_npc_name": "Biff The Baker",
+      "city": "Thais",
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Sweet and Sugary Substances have been delivered here in %s.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:65"
+        },
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Cake Golems have been lured to the machines.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:68"
+        },
+        {
+          "kind": "reply",
+          "text": "I'm not collecting anything right now, but thanks for asking!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:71"
+        },
+        {
+          "kind": "reply",
+          "text": "Hmm, I don't quite know what to do with that yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:75"
+        },
+        {
+          "kind": "reply",
+          "text": "You don't have any Sweet and Sugary Substances on you. Go defeat some Cake Golems!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:81"
+        },
+        {
+          "kind": "reply",
+          "text": "We already have all the substances we need, thank you though!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:88"
+        },
+        {
+          "kind": "reply",
+          "text": "Wonderful, thank you! You delivered %d substance(s). (%d/%d total delivered)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:97"
+        },
+        {
+          "kind": "greet",
+          "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:104"
+        },
+        {
+          "kind": "farewell",
+          "text": "Good luck out there!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/biff_the_baker.lua:105"
+        }
+      ]
+    },
+    {
+      "source_npc_name": "Brian The Baker",
+      "city": "Edron",
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Sweet and Sugary Substances have been delivered here in %s.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:65"
+        },
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Cake Golems have been lured to the machines.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:68"
+        },
+        {
+          "kind": "reply",
+          "text": "I'm not collecting anything right now, but thanks for asking!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:71"
+        },
+        {
+          "kind": "reply",
+          "text": "Hmm, I don't quite know what to do with that yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:75"
+        },
+        {
+          "kind": "reply",
+          "text": "You don't have any Sweet and Sugary Substances on you. Go defeat some Cake Golems!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:81"
+        },
+        {
+          "kind": "reply",
+          "text": "We already have all the substances we need, thank you though!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:88"
+        },
+        {
+          "kind": "reply",
+          "text": "Wonderful, thank you! You delivered %d substance(s). (%d/%d total delivered)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:97"
+        },
+        {
+          "kind": "greet",
+          "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:104"
+        },
+        {
+          "kind": "farewell",
+          "text": "Good luck out there!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brian_the_baker.lua:105"
+        }
+      ]
+    },
+    {
+      "source_npc_name": "Balduin The Baker",
+      "city": "Darashia",
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Sweet and Sugary Substances have been delivered here in %s.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:65"
+        },
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Cake Golems have been lured to the machines.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:68"
+        },
+        {
+          "kind": "reply",
+          "text": "I'm not collecting anything right now, but thanks for asking!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:71"
+        },
+        {
+          "kind": "reply",
+          "text": "Hmm, I don't quite know what to do with that yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:75"
+        },
+        {
+          "kind": "reply",
+          "text": "You don't have any Sweet and Sugary Substances on you. Go defeat some Cake Golems!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:81"
+        },
+        {
+          "kind": "reply",
+          "text": "We already have all the substances we need, thank you though!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:88"
+        },
+        {
+          "kind": "reply",
+          "text": "Wonderful, thank you! You delivered %d substance(s). (%d/%d total delivered)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:97"
+        },
+        {
+          "kind": "greet",
+          "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:104"
+        },
+        {
+          "kind": "farewell",
+          "text": "Good luck out there!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/balduin_the_baker.lua:105"
+        }
+      ]
+    },
+    {
+      "source_npc_name": "Billy The Baker",
+      "city": "Liberty Bay",
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Sweet and Sugary Substances have been delivered here in %s.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:65"
+        },
+        {
+          "kind": "reply",
+          "text": "So far, %d of the %d Cake Golems have been lured to the machines.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:68"
+        },
+        {
+          "kind": "reply",
+          "text": "I'm not collecting anything right now, but thanks for asking!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:71"
+        },
+        {
+          "kind": "reply",
+          "text": "Hmm, I don't quite know what to do with that yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:75"
+        },
+        {
+          "kind": "reply",
+          "text": "You don't have any Sweet and Sugary Substances on you. Go defeat some Cake Golems!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:81"
+        },
+        {
+          "kind": "reply",
+          "text": "We already have all the substances we need, thank you though!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:88"
+        },
+        {
+          "kind": "reply",
+          "text": "Wonderful, thank you! You delivered %d substance(s). (%d/%d total delivered)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:97"
+        },
+        {
+          "kind": "greet",
+          "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:104"
+        },
+        {
+          "kind": "farewell",
+          "text": "Good luck out there!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/billy_the_baker.lua:105"
+        }
+      ]
+    },
+    {
+      "source_npc_name": "Brutus The Baker",
+      "city": null,
+      "utterances": [
+        {
+          "kind": "reply",
+          "text": "You've already visited all five extraction machines - well done! Say {reward} to hear about your prize.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:61"
+        },
+        {
+          "kind": "reply",
+          "text": "You're already helping! You've visited %d of the 5 extraction machines so far. Remember: step on the Cake Base between each visit!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:66"
+        },
+        {
+          "kind": "reply",
+          "text": "Yes, yes! Just step somewhere on the cake base on the isle. Then travel to one of our ingredient extractors at Thais, Carlin, Darashia, Liberty Bay and Edron. They will extract the cake mass that is stuck on you. So if you want to feed another extractor, you'll have to visit the isle again of course. If you manage to feed all five extractors before the time runs out, I will give you a special reward.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:72"
+        },
+        {
+          "kind": "reply",
+          "text": "Well, not all our experiments with Kullu's recipes went well. But even the failures are good for something. We used them to create some beautiful as well as practical pieces of furniture, storage and decoration. If you are interested - and have fed all five extractors with cake mass that is stuck on you -, I can hand you one.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:78"
+        },
+        {
+          "kind": "reply",
+          "text": "You have a choice of three rewards. If you didn't already claim your reward, you can tell me which one you want: a cake cabinet, a cake backpack or a cake tapestry. I will also give you a very sweet and tasty cupcake, if you want one. What are you interested in?",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:80"
+        },
+        {
+          "kind": "reply",
+          "text": "I am sorry, but you did not earn your reward yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:83"
+        },
+        {
+          "kind": "reply",
+          "text": "Sorry, but you already got a reward this year.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:87"
+        },
+        {
+          "kind": "reply",
+          "text": "Here it is. Handle it with care.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:101"
+        },
+        {
+          "kind": "reply",
+          "text": "I am sorry, but you did not earn your reward yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:104"
+        },
+        {
+          "kind": "reply",
+          "text": "Sorry, but you already got a cupcake this year.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:108"
+        },
+        {
+          "kind": "reply",
+          "text": "You can have a blueberry cupcake, a strawberry cupcake or a lemon cupcake. Blueberries will regenerate your mana, strawberries are able to heal your wounds and lemons can steady your hand and sharpen your eyes. So, which one do you want?",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:112"
+        },
+        {
+          "kind": "reply",
+          "text": "I am sorry, but you did not earn your reward yet.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:115"
+        },
+        {
+          "kind": "reply",
+          "text": "Sorry, but you already got a cupcake this year.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:119"
+        },
+        {
+          "kind": "reply",
+          "text": "Here it is. Enjoy your meal!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:133"
+        },
+        {
+          "kind": "greet",
+          "text": "Hello |PLAYERNAME|! Say {help} if you want to help me clean up after the big cake event.",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:139"
+        },
+        {
+          "kind": "farewell",
+          "text": "Thanks for stopping by!",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brutus_the_baker.lua:140"
+        }
+      ]
+    }
+  ],
+  "source_manifest": [
+    {
+      "path": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+      "git_blob": "b8291626b473b91916cdac2fe5727323c1367c6d",
+      "sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9",
+      "lines": 616
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/actions_cake_bite.lua",
+      "git_blob": "a662d386a90d295978c73ddff79a8d46c987d0d4",
+      "sha256": "38684908df3f22d1de2065c1c9a106175ff8e15cbd3734d33efca76c1a81fd01",
+      "lines": 68
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/globalevents_auto_schedule.lua",
+      "git_blob": "ab4fa1a2b320c17575c4f891e88d7b4f6c60c5e9",
+      "sha256": "1928e7c02b11180734590c0d4923a0b7043a9a53af953d85ab4584eaa4b693dc",
+      "lines": 45
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/globalevents_cake_eating_window.lua",
+      "git_blob": "3decbd2a335548f8e7453029329c4a1050dc2a69",
+      "sha256": "d3d24771c8c06a3e727f3d39d2fc62b8d3cfde1d16751b33a1a9458151235f33",
+      "lines": 77
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/globalevents_cake_raids.lua",
+      "git_blob": "e927d84e1eea91574a2198745da3c1474daf8353",
+      "sha256": "b76a2733f9cb7305abf1e59f821e61e593e45804034de197ea9290c5ace33ef6",
+      "lines": 29
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/globalevents_cake_server_save.lua",
+      "git_blob": "0dbd49085831bccc66b9a5e266e9c604fd878dcf",
+      "sha256": "6de4bb0709244094f8f945e8e21fa1cc493c9d96ab6e8ff71e0618a785c6337b",
+      "lines": 17
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/globalevents_stage_check.lua",
+      "git_blob": "b6ba23bf533b68f49dba9f4f35c933e82a1a8ff7",
+      "sha256": "c62f1d2261934e8a8d46a063d02326e93994012c6318ac6349677e834d679467",
+      "lines": 22
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/movements_cake_base_isle.lua",
+      "git_blob": "a2d685d708a09e5ecf6a7bd635136db31947a97c",
+      "sha256": "0a37cc6d38935745fdf52f76399a8806f18db7fd9cb20e0374a29859c3775b00",
+      "lines": 38
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/movements_extraction_spot.lua",
+      "git_blob": "df8fd6b494f08092dcc581412df7552f545be8d1",
+      "sha256": "b72da5cc9efedf3ade895e550a4c9221dacc07be9e965430cc23706bbdccfc42",
+      "lines": 101
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/talkactions_gm_cakequest.lua",
+      "git_blob": "2078ddbd9b330229a1c06e1b3506876d48def127",
+      "sha256": "95f2d9d2f878b61ebb8b3b07aa60de8b78ed40c8a518faf2adcef809b9004935",
+      "lines": 140
+    },
+    {
+      "path": "data-global/scripts/quests/a_piece_of_cake/world_bonus.lua",
+      "git_blob": "0abfe31bfc69e64c6f54d58df70dfd50a5f5141c",
+      "sha256": "3382e2cd462ea15e9fbd1d2e933bef592351a9f82869ea97e817b5f73f1b0893",
+      "lines": 61
+    },
+    {
+      "path": "data-global/npc/benny_the_baker.lua",
+      "git_blob": "f89d0fa09ec88c55111f9cfd7db1f8736998bdfa",
+      "sha256": "43781aaf77c9b076cae8841412335bb2d62c2f4f3b86a0ef78fcc8759f7e59a0",
+      "lines": 109
+    },
+    {
+      "path": "data-global/npc/biff_the_baker.lua",
+      "git_blob": "75847af452e634bd84306df6763fe121045f07f7",
+      "sha256": "a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d",
+      "lines": 109
+    },
+    {
+      "path": "data-global/npc/brian_the_baker.lua",
+      "git_blob": "a5e93b12b9e59584663d53a23c685778387a0503",
+      "sha256": "a49795eeb75ab6b3b9c7730162156546035e8e5872fb947116714ce8924c0b3a",
+      "lines": 109
+    },
+    {
+      "path": "data-global/npc/balduin_the_baker.lua",
+      "git_blob": "8d20d2ee127abf279306bdb2c97abeebb59417db",
+      "sha256": "3d372bb0e99b02bf66bb5ebe4a0c6319730f566e6935467322c40d552dedbe76",
+      "lines": 109
+    },
+    {
+      "path": "data-global/npc/billy_the_baker.lua",
+      "git_blob": "b26ee874f6d23cffb5efc6a3a2650e39076c3c7d",
+      "sha256": "f9e98b1042edd5011f95c1ca8779cdad5c30326f5047ca57e2dd764c4294ea4f",
+      "lines": 109
+    },
+    {
+      "path": "data-global/npc/brutus_the_baker.lua",
+      "git_blob": "a105a573c305f901c95af4b9c7e254c8b97ce9be",
+      "sha256": "f81918f6205263762f0604092deb5aff1f78f69c500566cdd33efdd7e1529ae1",
+      "lines": 144
+    },
+    {
+      "path": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "git_blob": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d",
+      "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+      "lines": 122
+    }
+  ]
+}
