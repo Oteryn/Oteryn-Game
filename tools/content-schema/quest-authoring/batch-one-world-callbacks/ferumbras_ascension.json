@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.ferumbras_ascension_quest",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-transition/ferumbras-ascension/tarbaz-first-note",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 54388,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_90/ferumbras_ascension/tarbaz_notes",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/ferumbras_ascension/actions_tarbaz_notes.lua:3"
+      ]
+    }
+  ]
+}
