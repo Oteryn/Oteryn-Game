@@ -296,6 +296,19 @@ fn scenario(premium: bool) -> TestResult {
         assert_eq!(values[5].2, [8, 2]);
         let receipt: (i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
         assert_eq!(receipt, (1, 2, 0, 0));
+        // Recreate the pre-0913 pending scroll shape inside a rollback-only transaction and
+        // exercise the migration backfill before restoring its CHECKs.
+        let mut legacy = harness.pool.begin().await?;
+        sqlx::raw_sql("ALTER TABLE game_character_daily_reward_lines DROP CONSTRAINT daily_reward_item_definition; ALTER TABLE game_character_daily_reward_lines DROP CONSTRAINT daily_reward_item_instance; ALTER TABLE game_character_daily_reward_lines DISABLE TRIGGER daily_reward_lines_immutable")
+            .execute(&mut *legacy).await?;
+        sqlx::query("INSERT INTO game_character_daily_reward_lines(claim_id,line,kind,quantity,status) VALUES(encode($1,'hex')::uuid,19,'TEMPLE_SCROLL',1,'PENDING')")
+            .bind(first_id.as_slice()).execute(&mut *legacy).await?;
+        sqlx::query("UPDATE game_character_daily_reward_lines SET definition='oteryn:item.tibia.i25718' WHERE kind='TEMPLE_SCROLL' AND status='PENDING' AND definition IS NULL")
+            .execute(&mut *legacy).await?;
+        let backfilled: bool = sqlx::query_scalar("SELECT definition='oteryn:item.tibia.i25718' FROM game_character_daily_reward_lines WHERE claim_id=encode($1,'hex')::uuid AND line=19")
+            .bind(first_id.as_slice()).fetch_one(&mut *legacy).await?;
+        assert!(backfilled);
+        legacy.rollback().await?;
         let proof_seen: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM daily_fixture_custody_proofs JOIN game_item_bindings USING(item_instance_id))",
         )

@@ -12,6 +12,11 @@ BEGIN
         EXECUTE format('ALTER TABLE game_character_daily_reward_lines DROP CONSTRAINT %I',c.conname);
     END LOOP;
 END $$;
+ALTER TABLE game_character_daily_reward_lines DISABLE TRIGGER daily_reward_lines_immutable;
+UPDATE game_character_daily_reward_lines
+SET definition='oteryn:item.tibia.i25718'
+WHERE kind='TEMPLE_SCROLL' AND status='PENDING' AND definition IS NULL;
+ALTER TABLE game_character_daily_reward_lines ENABLE TRIGGER daily_reward_lines_immutable;
 ALTER TABLE game_character_daily_reward_lines ADD CONSTRAINT daily_reward_item_definition CHECK(
     (kind IN('ITEM','TEMPLE_SCROLL'))=(definition IS NOT NULL));
 ALTER TABLE game_character_daily_reward_lines ADD CONSTRAINT daily_reward_item_instance CHECK(

@@ -78,9 +78,10 @@ impl DurabilityRoot {
                 || identity.world_id != *fence.runtime_scope.world_id().as_bytes() {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
-            let reserved: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_charm_expansion_purchases p JOIN game_character_roots c USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND c.account_id=encode($3,'hex')::uuid)")
+            let reserved: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(p.purchase_id) FROM game_charm_expansion_purchases p JOIN game_character_roots c USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND c.account_id=encode($3,'hex')::uuid")
                 .bind(identity.character_id.as_slice()).bind(identity.world_id.as_slice()).bind(identity.account_id.as_slice()).fetch_one(&mut *tx).await?;
-            if !reserved { return Ok(Err(StoreDurabilityError::ConflictingOperation)); }
+            let Some(purchase_id) = reserved else { return Ok(Err(StoreDurabilityError::ConflictingOperation)); };
+            let Ok(purchase_uuid): Result<&[u8; 16], _> = purchase_id.as_slice().try_into() else { return Ok(Err(StoreDurabilityError::ConflictingOperation)); };
             sqlx::query("INSERT INTO game_character_charm_expansions(character_id) VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING")
                 .bind(identity.character_id.as_slice()).execute(&mut *tx).await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint").fetch_one(&mut *tx).await?;
@@ -89,8 +90,8 @@ impl DurabilityRoot {
                 Ok(bytes) => bytes,
                 Err(_) => return Ok(Err(StoreDurabilityError::ConflictingOperation)),
             };
-            sqlx::query("INSERT INTO store_delivery_receipts(operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,recovery_generation,decided_at,receipt,item_instance_id,entitlement_key) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,NULL,'charm-expansion') ON CONFLICT (operation_id) DO NOTHING")
-                .bind(operation_id.as_slice()).bind(identity.account_id.as_slice()).bind(identity.character_id.as_slice()).bind(identity.world_id.as_slice()).bind(&receipt.fulfilment_unit_id).bind(recovery.recovery_generation.to_string()).bind(now).bind(bytes).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO store_delivery_receipts(operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,recovery_generation,decided_at,receipt,item_instance_id,entitlement_key,purchase_request_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,'COMMITTED',$6::text::numeric,$7,$8,NULL,'charm-expansion',$9::uuid) ON CONFLICT (operation_id) DO NOTHING")
+                .bind(operation_id.as_slice()).bind(identity.account_id.as_slice()).bind(identity.character_id.as_slice()).bind(identity.world_id.as_slice()).bind(&receipt.fulfilment_unit_id).bind(recovery.recovery_generation.to_string()).bind(now).bind(bytes).bind(uuid_string(purchase_uuid)).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO store_receipt_outbox(operation_id) VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING").bind(operation_id.as_slice()).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(receipt))

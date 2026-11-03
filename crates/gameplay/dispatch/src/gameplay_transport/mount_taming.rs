@@ -70,6 +70,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         visible: bool,
     ) -> Result<Option<UseDisposition>, Option<UseDisposition>> {
         let reject = Some(UseDisposition::Rejected);
+        let Some(native) = self
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay)
+        else {
+            return Ok(None);
+        };
+        let index = {
+            let runtime = self.runtime.lock().await;
+            super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+        };
+        let Some(index) = index else {
+            return Ok(None);
+        };
+        // A definition-targeted USE names its source item directly. Reject an item which
+        // has no taming rule before taking the spell permit or reading any durable fence.
+        if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            let (key, _) = index.definition_at(wanted).ok_or(reject)?;
+            if !rules().iter().any(|rule| rule.item_key == key) {
+                return Ok(None);
+            }
+        }
         let fence = command.item_fence.ok_or(reject)?;
         let command_ref = CommandRef::new(
             command.game_session_id,
@@ -88,25 +109,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(ItemUseError::Unavailable(_)) => return Err(None),
             Err(_) => return Err(reject),
         }
-        let Some(native) = self
-            .active_generation
-            .and_then(crate::content::ActiveGeneration::native_gameplay)
-        else {
-            return Ok(None);
-        };
-        let index = {
-            let runtime = self.runtime.lock().await;
-            super::item_ref_admission::pinned_index(&runtime, self.active_generation)
-        };
-        let Some(index) = index else {
-            return Ok(None);
-        };
-        if let UseTarget::ItemByDefinition(wanted) = intent.target {
-            let (key, _) = index.definition_at(wanted).ok_or(reject)?;
-            if !rules().iter().any(|r| r.item_key == key) {
-                return Ok(None);
-            }
-        };
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)

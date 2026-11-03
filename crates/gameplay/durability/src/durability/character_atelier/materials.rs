@@ -8,20 +8,6 @@ pub(super) struct MaterialPlan {
     pub(super) burned_weight: u64,
 }
 
-fn is_supported_carried_depth(depth: i32) -> bool {
-    // Crystal 201189f player.cpp:5821-5844 advances ContainerIterator into the
-    // next nested container; Oteryn's custody contract bounds that traversal at depth 8.
-    (0..=8).contains(&depth)
-}
-
-fn may_finish_from_stash(request: &AtelierRequest<'_>, resources: &AtelierResources<'_>, key: &str) -> bool {
-    // Crystal 201189f player_wheel.cpp:1514-1568 lets Workshop upgrades finish
-    // their fragment payment from supply stash after carried fragments are visited.
-    matches!(request.mutation, AtelierMutation::GradeUp { .. })
-        && resources.fragment.family == "Item"
-        && resources.fragment.production_key == key
-}
-
 pub(super) async fn plan(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
@@ -80,7 +66,7 @@ pub(super) async fn plan(
     let mut tree_items = 0_usize;
     let mut equipment_roots = 0_usize;
     for row in &rows {
-        if !is_supported_carried_depth(row.try_get::<i32, _>("depth")?)
+        if row.try_get::<i32, _>("depth")? > 8
             || !seen.insert(row.try_get::<String, _>("item_instance_id")?)
         {
             return Ok(None);
@@ -141,7 +127,10 @@ pub(super) async fn plan(
     if needed == 0 {
         return Ok(Some(result));
     }
-    if !may_finish_from_stash(request, resources, key) {
+    if !matches!(request.mutation, AtelierMutation::GradeUp { .. })
+        || resources.fragment.family != "Item"
+        || resources.fragment.production_key != key
+    {
         return Ok(None);
     }
     // Stash remains in its existing Character/World/revision balance and ledger. Reveal

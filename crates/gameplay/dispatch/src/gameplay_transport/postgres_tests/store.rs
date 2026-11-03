@@ -455,6 +455,10 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
         .await?;
         assert_eq!(charm.code, wire::StorePurchaseCode::Accepted);
         assert_eq!(count(&harness, "SELECT count(*) FROM game_character_charm_expansions").await?, 1);
+        let mut forged = harness.pool.begin().await?;
+        sqlx::query("INSERT INTO store_delivery_receipts(operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,recovery_generation,decided_at,receipt,item_instance_id,entitlement_key,purchase_request_id) SELECT game_character_uuid_v7(),account_id,character_id,world_id,fulfilment_unit_id||'-forged',result,recovery_generation,decided_at,receipt,NULL,'charm-expansion',purchase_request_id FROM store_delivery_receipts WHERE entitlement_key='charm-expansion' LIMIT 1")
+            .execute(&mut *forged).await?;
+        assert!(forged.commit().await.is_err(), "receipt without purchase proof must fail");
         let debits = ledger.lock().expect("ledger").debits.len();
         let second = purchase(
             &owner,
