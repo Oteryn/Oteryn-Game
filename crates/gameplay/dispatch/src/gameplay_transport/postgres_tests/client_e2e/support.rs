@@ -189,6 +189,9 @@ fn body(case: Case) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
+        if matches!(case, Case::Store) {
+            owner.store = Some(super::super::store::platform(admitted.world_id.as_bytes()));
+        }
         let mut offers = owner.offered_capabilities().to_vec();
         offers =
             crate::gameplay_transport::daily_boost::offered(&offers, owner.daily_boost_available());

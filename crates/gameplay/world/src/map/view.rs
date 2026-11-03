@@ -56,6 +56,14 @@ pub struct EntryFacts {
 /// The bundle and content facts of a map view, held by the owner of the bundle palette and the
 /// content generation.
 pub trait MapFacts {
+    /// Resolve a movement-created volatile item in this exact fact snapshot.
+    fn movement_item(&self, _id: u64) -> Option<(TilePos, EntryId)> {
+        None
+    }
+    /// Items created by a committed Channel-local movement callback.
+    fn movement_items(&self, _pos: TilePos) -> Vec<ComposedEntry> {
+        Vec::new()
+    }
     /// The facts of top-level base entry `ordinal` of `pos`, whose compact id is `id`.
     fn base_hidden(&self, _key: u64) -> bool {
         false
@@ -257,6 +265,7 @@ pub fn compose_into(
             });
         }
     }
+    out.extend(facts.movement_items(pos));
     Ok(ground_speed)
 }
 

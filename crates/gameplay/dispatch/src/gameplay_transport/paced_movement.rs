@@ -158,6 +158,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
                 drop(states);
                 drop(runtime);
+                if let Some(origin) = origin {
+                    self.close_departed_door(
+                        &permit,
+                        actor,
+                        session,
+                        origin.position(),
+                        snapshot.revision(),
+                    )
+                    .await;
+                }
                 if self
                     .soulpit_exit_step(actor, session, snapshot.position())
                     .await

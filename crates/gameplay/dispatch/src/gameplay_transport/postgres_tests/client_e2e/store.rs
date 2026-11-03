@@ -5,7 +5,6 @@ use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSess
 use oteryn_protocol_oteryn::store as wire;
 
 #[test]
-#[ignore = "CLIENT-E2E-1: production Platform Store client is not composed (store: None), crates/gameplay/dispatch/src/gameplay_transport/serving.rs:78; capability 154 is not offered"]
 fn client_e2e_store() -> TestResult {
     support::scenario(Case::Store)
 }
@@ -15,8 +14,8 @@ pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
-    // PlayLink::store_request -> store::command(183, payload); no fake Platform and
-    // no synthetic capability offer. Once composed, the first real page must decode.
+    // PlayLink::store_request -> store::command(183, payload). The existing Store port
+    // double supplies Platform; capability selection uses the production offer.
     let payload = wire::encode_catalogue_request(&wire::StoreCatalogueRequest {
         category: "consumables.exercise-weapons".into(),
         page_cursor: String::new(),

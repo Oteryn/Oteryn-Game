@@ -1492,7 +1492,7 @@ fn pkg8_ordinary_virtue_healing_uses_added_and_spent_charges() {
 }
 
 #[test]
-fn c11r_ascetic_uses_only_equipped_mantra_even_with_party_projection() {
+fn c11_guiding_presence_mantra_is_used_only_without_own_mantra() {
     let mut state = playable_monk(0);
     state
         .install_virtue_party_bonuses(
@@ -1503,11 +1503,13 @@ fn c11r_ascetic_uses_only_equipped_mantra_even_with_party_projection() {
             100,
         )
         .expect("party projection");
-    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 0);
+    // Canary 47dfd51f party.cpp:308-322 applies the holder's integer-half
+    // Mantra to every other party player while Guiding Presence is active.
+    assert_eq!(state.ascetic_attack_bonus_at(3, 100), 51);
     state.install_equipped_mantra(3);
     assert_eq!(state.ascetic_attack_bonus_at(3, 100), 9);
     state.install_equipped_mantra(0);
-    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_099), 0);
+    assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_099), 51);
     assert_eq!(state.ascetic_attack_bonus_at(3, 1_000_100), 0);
     assert_eq!(state.ascetic_attack_bonus_at(4, 100), 0);
 }

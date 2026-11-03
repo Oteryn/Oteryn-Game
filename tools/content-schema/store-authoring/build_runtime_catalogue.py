@@ -12,7 +12,6 @@ TibiaWiki (Exercise Weapons, Tibia Coins) agrees with every admitted price and c
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import sys
@@ -24,7 +23,6 @@ PROFILES = ROOT / "content/items/definitions/spell-native-profiles.json"
 CANARY_COMMIT = "52550d5e"
 SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
 CATEGORY = "consumables.exercise-weapons"
-REVISION = "store-catalogue-r1"
 PREY_EXPANSION = ROOT / "rulesets/economy/store/prey-list-expansion.json"
 
 
@@ -72,12 +70,7 @@ def with_expansion(catalogue: dict) -> dict:
     offers = [row for row in catalogue["offers"] if row["key"] != offer["key"]]
     offers.append(offer)
     offers.sort(key=lambda row: row["key"])
-    digest = hashlib.sha256(
-        json.dumps(offers, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()[:16]
-    # A disabled placeholder must not change existing Platform price quotes.
-    revision = f"{REVISION}-prey-{digest}" if offer["enabled"] else REVISION
-    return catalogue | {"offers": offers, "catalog_revision": revision}
+    return catalogue | {"offers": offers}
 
 
 def admitted_items() -> dict[str, tuple[str, int]]:
@@ -144,7 +137,6 @@ def build(lua: str) -> dict:
     return with_expansion(
         {
             "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-            "catalog_revision": REVISION,
             "source": {
                 "repository": "opentibiabr/canary",
                 "commit": CANARY_COMMIT,
@@ -164,7 +156,7 @@ def check() -> list[str]:
         errors.append("offer keys are not unique and sorted")
     expected = with_expansion(catalogue)
     if catalogue != expected:
-        errors.append("Prey expansion offer or catalogue revision needs regeneration")
+        errors.append("Prey expansion offer needs regeneration")
     for offer in catalogue["offers"]:
         if offer.get("unlock_key") == "prey-list-expansion":
             continue

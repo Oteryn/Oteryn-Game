@@ -14,6 +14,7 @@ pub(super) async fn move_map_item(
     command: UseCommand,
     request: LoopMove,
     permit: &SpellLanePermit,
+    door_origin: Option<TilePos>,
 ) -> LoopMoveResult {
     let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
@@ -21,6 +22,32 @@ pub(super) async fn move_map_item(
     let destination = match request.target {
         LoopTarget::MainBackpack => LoopDestination::MainBackpack,
         LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
+        LoopTarget::Ground(to) if door_origin.is_some() => {
+            let Some(from) = door_origin else {
+                return refused(LoopMoveRefusal::Rejected);
+            };
+            let Some(map) = admission.bundle_map() else {
+                return refused(LoopMoveRefusal::NotSupported);
+            };
+            let Some(active) = admission.active_generation else {
+                return refused(LoopMoveRefusal::Rejected);
+            };
+            let runtime = admission.runtime.lock().await;
+            let spatial_position = match drop_cell(
+                map.overlay.base(),
+                (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
+                to,
+            ) {
+                Ok(cell) => cell,
+                Err(result) => return result,
+            };
+            LoopDestination::Ground(LoopGround {
+                spatial_position,
+                map_revision: map_revision(map.overlay.base()),
+                content_revision: sha256_revision(active.identity().server_artifact_digest()),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            })
+        }
         _ => return refused(LoopMoveRefusal::NotSupported),
     };
     let Some(fence) = command.item_fence else {
@@ -67,6 +94,9 @@ pub(super) async fn move_map_item(
     let Some((pos, ordinal)) = view::placement_of(placement_key) else {
         return stale;
     };
+    if door_origin.is_some_and(|origin| origin != pos) {
+        return stale;
+    }
     let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
         return stale;
     };
@@ -147,7 +177,9 @@ pub(super) async fn move_map_item(
         (Ok(x), Ok(y), Ok(floor)) => TilePos { x, y, floor },
         _ => return LoopMoveResult::TooFar,
     };
-    if !pickup::within_reach(player, pos) {
+    // An automatic step-out consequence reaches from its proven departed tile,
+    // including a step whose landing teleported the player farther away.
+    if !pickup::within_reach(door_origin.unwrap_or(player), pos) {
         return LoopMoveResult::TooFar;
     }
     match admission

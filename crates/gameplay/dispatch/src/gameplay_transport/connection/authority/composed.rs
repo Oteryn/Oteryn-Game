@@ -431,12 +431,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        loop_training::offer(
-            self,
-            world_required_capabilities::offered_for_scope(
-                self.bundle_map().is_some(),
-                self.active_generation,
+        store::with_store_offer(
+            loop_training::offer(
+                self,
+                world_required_capabilities::offered_for_scope(
+                    self.bundle_map().is_some(),
+                    self.active_generation,
+                ),
             ),
+            self.store.is_some(),
         )
     }
 
