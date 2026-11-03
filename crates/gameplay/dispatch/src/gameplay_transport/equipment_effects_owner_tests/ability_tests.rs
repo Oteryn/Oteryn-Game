@@ -166,6 +166,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Crystal 201189f (tools/content-migration/drome_item_profiles.py). All have
     // speed_bonus=0. P15 Forge reuses the existing Exalted Core 37110 and adds none.
     ("W22C-DROME", 21),
+    // W2V harvest/craft: 3134, 3651..=3653, 4848, 5462..=5466, 5470,
+    // 9594/9596/9598, 10426..=10429 and 17151/17153. Each is source-qualified
+    // by harvest-item-profiles.json from Crystal 201189f871d23597b82caf88fd611454a2ddefb8
+    // data/items/items.xml and appearances.dat; all twenty have speed_bonus=0.
+    ("W2V-HARVEST-CRAFT", 20),
 ];
 
 #[test]
