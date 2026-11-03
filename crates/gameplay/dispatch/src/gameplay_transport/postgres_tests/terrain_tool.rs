@@ -31,6 +31,16 @@ fn m08_scythe_harvests_wheat_through_the_wire() -> TestResult {
 }
 
 #[test]
+fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i9596", 3653, 3651, vec![3652, 3653])
+}
+
+#[test]
+fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, vec![5470, 5465])
+}
+
+#[test]
 fn m08_multi_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, vec![5470, 5465])
 }
@@ -46,6 +56,11 @@ fn m08_multi_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
 }
 
 #[test]
+fn m08_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
+    run_case("oteryn:item.tibia.i3304", 4848, 3134)
+}
+
+#[test]
 fn m08b_pick_opens_a_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 593, 594)
 }
@@ -58,6 +73,16 @@ fn m08b_pick_opens_a_loose_stone_pile_through_the_wire_and_it_decays_back() -> T
 #[test]
 fn m08b_pick_opens_a_loose_ice_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 608, 609)
+}
+
+#[test]
+fn m08b_pick_opens_the_pits_of_inferno_hole_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3456", 7200, 7236, Vec::new())
+}
+
+#[test]
+fn m08b_pick_opens_the_spike_hole_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3456", 21341, 21342, Vec::new())
 }
 
 fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
@@ -258,8 +283,8 @@ fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
         assert_eq!(result, UseDisposition::Committed);
-        let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (i64::from(after), 1, true));
+        let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
+        assert_eq!(state, (i64::from(after), 1, decay.is_empty()));
         let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
         assert_eq!(map.facts().pinned().object_revision(key), 1);
         // A new owner recovers the committed state and original receipt without current handles.
@@ -361,7 +386,7 @@ fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
             );
         }
         let final_revision = i64::try_from(decay.len())? + 1;
-        let final_state = *decay.last().ok_or("expected decay stage")?;
+        let final_state = decay.last().copied().unwrap_or(after);
         restarted.refresh_terrain_tools().await;
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
