@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.deeper_fibula_quest",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/deeper-fibula-well",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 15005,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32172,
+        "y": 32439,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeper_fibula/action-draw_well.lua:3-9"
+      ]
+    }
+  ]
+}
