@@ -143,7 +143,9 @@ pub(super) async fn dev_client<'a>(
     if dev_client.selected_capabilities().contains(
         &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     ) {
-        let events = dev_client_door_events(&mut dev_client).await?;
+        let events = dev_client_door_events(&mut dev_client)
+            .await
+            .map_err(|error| format!("dev client initial channel list: {error}"))?;
         dev_client_expect(
             "initial channel list",
             &events,
