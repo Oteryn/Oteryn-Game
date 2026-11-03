@@ -1,6 +1,7 @@
 //! The existing item/NPC owners while the real House scope owns the player.
 //! House movement retains native House custody and the existing STEP pacing.
 use super::*;
+mod map;
 mod reply;
 mod snapshot;
 pub(super) mod step;
@@ -10,6 +11,7 @@ pub(super) struct State {
     actor: ExactActorRef,
     enabled: bool,
     items: Option<SessionItemView>,
+    world_map: Option<SessionMapView>,
     containers: Option<ContainerViewState>,
     visibility: Option<SessionVisibility>,
     appearances: SessionAppearance,
@@ -48,7 +50,14 @@ impl State {
             self.stash_rows = None;
             return Some(routing::store::route(authority, admitted, command).await);
         }
-        if !self.enabled {
+        // Ordinary item USE and container views keep their existing capability gates
+        // in a House without requiring the independent hireling mechanic.
+        if !self.enabled
+            && !(self.items.is_some()
+                && matches!(command.command_type,
+                world_object::COMMAND_TYPE_USE_INTENT
+                | oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT))
+        {
             return Some(Dispatch::Unregistered);
         }
         if command.command_type != stash::COMMAND_TYPE_STASH_INTENT {
@@ -56,8 +65,8 @@ impl State {
         }
         match command.command_type {
             world_object::COMMAND_TYPE_USE_INTENT => {
-                // The House services use carried items/Inbox definitions. Map,
-                // creature and rune targets retain their separate scope owners.
+                // The same item directory contains carried and actual House map handles.
+                // Creature, rune and map-object targets retain their separate owners.
                 let plain = decode_use_intent_target(
                     admitted.continuity.selected_capabilities.as_slice(),
                     command.payload,
@@ -284,7 +293,7 @@ impl State {
             .await
             .ok_or(ServeEnd::Disconnected)?;
         }
-        Ok(())
+        self.refresh_map(stream, authority, admitted).await
     }
 
     async fn npc<S: AsyncWrite + Unpin>(
@@ -341,7 +350,7 @@ impl State {
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
         }
-        Ok(())
+        self.refresh_map(stream, authority, admitted).await
     }
 
     async fn vitals<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(

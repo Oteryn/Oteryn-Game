@@ -17,8 +17,16 @@ impl State {
             && (enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
-                )) {
+                )
+                || selected.contains(CAPABILITY_ITEM_USE_V1)
+                || selected.contains(CAPABILITY_CONTAINER_TREE_V1)
+                || selected
+                    .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
+        {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1) {
+                view = view.with_map_view();
+            }
             if selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1) {
                 view = view.with_equip_drop();
             }
@@ -29,6 +37,9 @@ impl State {
         } else {
             None
         };
+        let mut world_map = selected
+            .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+            .then(|| SessionMapView::starting_after(admitted.continuity.world_map_revision));
         let mut payloads = Vec::new();
         let mut containers = None;
         if let Some(view) = items.as_mut() {
@@ -43,6 +54,18 @@ impl State {
             if selected.contains(CAPABILITY_CONTAINER_TREE_V1) {
                 payloads.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
                 containers = Some(ContainerViewState::default());
+            }
+            if let Some(map) = world_map.as_mut() {
+                match authority
+                    .observe_house_map(*admitted, map, view)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?
+                    .map_err(|_| ServeEnd::Disconnected)?
+                {
+                    Some(MapUpdate::Snapshot(snapshot)) => payloads.push(snapshot),
+                    _ => return Err(ServeEnd::Disconnected),
+                }
+                admitted.continuity.world_map_revision = map.revision();
             }
             admitted.continuity.item_view = view.continuity();
         }
@@ -153,6 +176,7 @@ impl State {
                 actor,
                 enabled,
                 items,
+                world_map,
                 containers,
                 visibility,
                 appearances,
