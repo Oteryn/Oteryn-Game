@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32949",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32949,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32950",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32950,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32951",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32951,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    }
+  ]
+}
