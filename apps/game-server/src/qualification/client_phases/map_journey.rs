@@ -131,6 +131,10 @@ async fn check(
     if tile(client.world_spatial().actor_position)? != *at {
         return Err("map approach did not end at predicted position".into());
     }
+    if sample.kind == "pz_border" {
+        client_spell_journey::protection_zone_probe(client, model.tiles[at].protection_zone)
+            .await?;
+    }
     if blocked {
         let before = client.world_spatial().actor_position;
         let result = client.step_retrying(*direction).await?;
@@ -191,9 +195,8 @@ async fn check(
     }
     client.take_events();
     if sample.kind == "pz_border" {
-        return Ok(Some(
-            "protocol_map_and_vitals_publish_no_protection_zone_flag",
-        ));
+        client_spell_journey::protection_zone_probe(client, model.tiles[expected].protection_zone)
+            .await?;
     }
     Ok(None)
 }

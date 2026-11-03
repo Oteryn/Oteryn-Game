@@ -60,8 +60,7 @@ use tokio_rustls::{TlsConnector, rustls};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-#[path = "qualification_spell_character.rs"]
-mod spell_character;
+use crate::qualification_spell_character as spell_character;
 
 #[path = "qualification_wild_spawn.rs"]
 mod wild_spawn;

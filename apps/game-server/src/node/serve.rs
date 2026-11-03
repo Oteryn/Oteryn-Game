@@ -9,6 +9,7 @@
 //! secrets (D6).
 
 mod channel_boot;
+mod qualification_fixture;
 mod supervision;
 mod world_reset;
 
@@ -2018,14 +2019,14 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)
 }
 
-async fn handle_control(stream: &mut UnixStream) -> Option<[u8; 16]> {
+async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
     let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
     limited.read_to_end(&mut request).await.ok()?;
     if request.len() > CONTROL_REQUEST_BYTES {
         return None;
     }
-    parse_operation_id(&request)
+    Some(request)
 }
 
 /// One request at a time, bounded size and deadline; only uid 0 is served.
@@ -2037,6 +2038,10 @@ async fn control_loop(
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
+    config: &NodeConfig,
+    progression: Option<
+        &crate::content::character_progression_content::CharacterProgressionContent,
+    >,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2057,13 +2062,27 @@ async fn control_loop(
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
             let answer = match handle_control(&mut stream).await {
-                Some(operation) => {
+                Some(request) if request.starts_with(b"qualify ") => {
+                    qualification_fixture::prepare(
+                        root,
+                        authority,
+                        proof,
+                        config,
+                        progression,
+                        &request,
+                    )
+                    .await
+                }
+                Some(request) if parse_operation_id(&request).is_some() => {
+                    let Some(operation) = parse_operation_id(&request) else {
+                        return;
+                    };
                     bootstrap_one(
                         root, authority, proof, evidence, intents, &capacity, operation,
                     )
                     .await
                 }
-                None => "rejected",
+                _ => "rejected",
             };
             event_traced(
                 &format!("event=character_bootstrap result={answer}"),

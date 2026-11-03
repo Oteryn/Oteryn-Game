@@ -37,6 +37,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let proof = owners.holder;
     let evidence = owners.evidence;
     let achievements = owners.achievements;
+    let progression = owners
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.progression());
     let runtime = owners.runtime;
     let config = &material.config;
     let raids = super::super::raid_scheduler::RaidScheduler {
@@ -70,6 +74,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         proof,
         evidence,
         &material.intents,
+        config,
+        progression,
         shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, authority, &loops_stop));

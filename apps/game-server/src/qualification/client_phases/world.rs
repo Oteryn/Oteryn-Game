@@ -9,6 +9,8 @@ include!("character_core.rs");
 include!("floor_journey.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
+#[path = "provision.rs"]
+mod provisioning;
 include!("quest_journal.rs");
 
 pub(crate) const TOWN: TilePos = TilePos {
@@ -235,6 +237,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    // Keep the high-level fixture on the other Character: the original
+    // progression/death journey must retain its ordinary starter build.
+    let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -257,7 +262,6 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     client = character_core(client, clients, &world).await?;
     client = floor_journey(client, clients, &world).await?;
-    map_journey::run(&mut client, &world, &bytes).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -297,11 +301,6 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
-    // Run both lanes before propagating their aggregate failures.
-    let combat = client_combat_journey::combat_journey(&mut client).await;
-    let spells = client_spell_journey::spell_journey(&mut client).await;
-    combat?;
-    spells?;
     client_hunt::hunt(&mut client).await?;
     travel_to_spawn(
         &mut client,
@@ -342,7 +341,63 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
 
     drop(client);
-    Ok(())
+    profile_result
+}
+
+async fn profile_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    bytes: &[u8],
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let client = connect_character(clients, 0x6e, 0).await?;
+    let mut client = provisioning::provision(client, clients, 0).await?;
+    let pz = if world
+        .base()
+        .tile(TOWN.x, TOWN.y, TOWN.floor)
+        .is_some_and(|tile| tile.protection_zone())
+    {
+        client_spell_journey::protection_zone_probe(&mut client, true).await
+    } else {
+        Err("configured town start is not a bundle PZ".into())
+    };
+    let outside: TestResult = async {
+        let path = route(world, TOWN, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("no reachable outside-PZ comparison tile")?;
+        walk(&mut client, world, &path).await?;
+        client_spell_journey::protection_zone_probe(&mut client, false).await
+    }
+    .await;
+    let pz = pz.and(outside);
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("PZ comparison has no return route")?;
+    walk(&mut client, world, &back).await?;
+    let map = map_journey::run(&mut client, world, bytes).await;
+    let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
+        Ok(()) => client_combat_journey::combat_journey(&mut client).await,
+        Err(error) => Err(error),
+    };
+    let spells = client_spell_journey::spell_journey(&mut client, pz).await;
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("profile journey has no return route")?;
+    walk(&mut client, world, &back).await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("profile journey logout refused".into());
+    }
+    map?;
+    combat?;
+    spells
 }
 
 async fn connect_world(
