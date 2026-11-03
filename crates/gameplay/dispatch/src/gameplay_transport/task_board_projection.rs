@@ -68,6 +68,7 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
     let board = data.weekly.as_ref().filter(|board| !board.finished);
     let weekly = if let Some(board) = board {
         let (points, seals) = board.rewards().ok()?;
+        let (_, _, multiplier) = board.completion_summary().ok()?;
         let experience = rules::weekly_experience(view.level, board.difficulty).ok()?;
         let mut kills = board
             .kills
@@ -87,10 +88,7 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
             started: true,
             difficulty: board.difficulty,
             expanded: data.expansion,
-            multiplier: u8::try_from(rules::completion_multiplier(
-                board.completed_kills() + board.completed_deliveries(),
-            ))
-            .ok()?,
+            multiplier: u8::try_from(multiplier).ok()?,
             kill_experience: experience,
             delivery_experience: experience,
             pending_points: u64::from(points),
