@@ -2,7 +2,7 @@
 use super::*;
 fn rates() -> TrainingRates {
     TrainingRates::from_json(include_bytes!(
-        "../../../../rulesets/training/provisional-v1.json"
+        "../../../../rulesets/training/crystal-201189f-v1.json"
     ))
     .unwrap()
 }
@@ -119,7 +119,7 @@ fn loop_training_entry178_worked_examples() {
 #[test]
 fn loop_training_configuration_refuses_unknown_fields_and_zero_divisors() {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../../../rulesets/training/provisional-v1.json"
+        "../../../../rulesets/training/crystal-201189f-v1.json"
     ))
     .unwrap();
     value["offline_divisors"][3] = serde_json::json!(0);
@@ -131,7 +131,8 @@ fn loop_training_configuration_refuses_unknown_fields_and_zero_divisors() {
 
 #[test]
 fn loop_training_configuration_byte_boundary() {
-    let mut bytes = include_bytes!("../../../../rulesets/training/provisional-v1.json").to_vec();
+    let mut bytes =
+        include_bytes!("../../../../rulesets/training/crystal-201189f-v1.json").to_vec();
     bytes.resize(32768, b' ');
     assert!(TrainingRates::from_json(&bytes).is_ok());
     bytes.push(b' ');
@@ -185,7 +186,7 @@ fn offline_hourly_rates_apply_global_coefficients_to_retained_vocations() {
 }
 
 #[test]
-fn crystal_and_canary_training_item_populations_are_complete() {
+fn crystal_training_item_ids_families_and_charges_are_complete() {
     let rates = rates();
     let ids = |keys: Vec<&String>| {
         keys.into_iter()
@@ -209,4 +210,31 @@ fn crystal_and_canary_training_item_populations_are_complete() {
         ]
         .into()
     );
+}
+
+#[test]
+fn crystal_exercise_weapon_types_and_charge_tiers_match_donor() {
+    // Crystal 201189f data/scripts/actions/items/exercise_training_weapons.lua:3-40 and
+    // data/items/items.xml:53481-53552,65926-65996.
+    let rates = rates();
+    let families = [3usize, 4, 2, 5, 0, 0];
+    for (ids, charges) in [
+        ([28552u32, 28553, 28554, 28555, 28556, 28557], 500u32),
+        ([35279, 35280, 35281, 35282, 35283, 35284], 1800),
+        ([35285, 35286, 35287, 35288, 35289, 35290], 14400),
+    ] {
+        for (index, id) in ids.into_iter().enumerate() {
+            let weapon = rates
+                .weapons
+                .get(&format!("oteryn:item.tibia.i{id}"))
+                .unwrap();
+            assert_eq!((weapon.family, weapon.charges), (families[index], charges));
+            let expected_gain = if weapon.family == 0 { 600 } else { 7 };
+            assert_eq!(rates.exercise_gain(weapon.family, 100), Ok(expected_gain));
+            assert_eq!(
+                rates.exercise_gain(weapon.family, 110),
+                Ok(if weapon.family == 0 { 660 } else { 7 })
+            );
+        }
+    }
 }

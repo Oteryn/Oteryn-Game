@@ -305,14 +305,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(TrainingResult::REFUSED);
             };
             let definition = entry.item.definition.clone();
-            let Some(family) = context
-                .rates
-                .weapons
-                .get(&definition.production_key)
-                .copied()
-            else {
+            let Some(weapon_profile) = context.rates.weapons.get(&definition.production_key) else {
                 return Some(TrainingResult::REFUSED);
             };
+            let family = weapon_profile.family;
             let Some(key) = self
                 .training_target(
                     actor,
@@ -343,6 +339,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let crate::content::ReferenceItemField::Known(charges) = charges.count else {
                 return Some(TrainingResult::REFUSED);
             };
+            // Crystal 201189f data/items/items.xml:53481-53552,65926-65996. The
+            // pinned native item and donor exercise profile must agree before use.
+            if charges != weapon_profile.charges {
+                return Some(TrainingResult::REFUSED);
+            }
             let definition = TimedDefinitionFacts {
                 definition,
                 full: TimedValues::new(Some(charges), None).ok()?,
