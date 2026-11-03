@@ -1,0 +1,516 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.hero_of_rathleton_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/hero_rathleton/access_door",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hero_rathleton/access_teleport1",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hero_rathleton/access_teleport2",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hero_rathleton/access_teleport3",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:195"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/greet-access",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hero_rathleton/access_door",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/madman",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "say",
+      "keywords": [
+        "madman"
+      ],
+      "guards": [],
+      "reply": [
+        "He is an old enemy of the city and I've battled him often in the past. ...",
+        "Now he has returned for vengeance, he reclaimed an old abandoned underground {laboratory} and he has acquired new powerful {allies}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:74"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/allies",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "say",
+      "keywords": [
+        "allies"
+      ],
+      "guards": [],
+      "reply": [
+        "His allies are an enigma even to me. It seems they belong to some unknown race that lives deep under the earth. ...",
+        "They seem to have supplied him with resources and workforce and a powerful {guardian} to prevent anyone from entering the passages to his lair."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:80"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/guardian",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "say",
+      "keywords": [
+        "guardian"
+      ],
+      "guards": [],
+      "reply": [
+        "It's a fearsome subterranean beast like nothing I've ever encountered. It is dangerous and almost unbeatable because its main body is hidden beneath the ground ...",
+        "And it has an endless supply of tentacles. But not all is lost, as I have devised a {plan} to battle the beast."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:86"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/enraged",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "say",
+      "keywords": [
+        "enraged"
+      ],
+      "guards": [],
+      "reply": [
+        "While it's buried, it only uses his tentacles to attack. If one is destroyed it will simply use another set of tentacles and its supply seems endless. ...",
+        "If you manage though to kill all the tentacles it is using within a few heartbeats, it will become confused by its momentary helplessness and will probably attack with its main body. ...",
+        "That is when you have a chance to destroy it. Pass through its chamber and look for another of my tubes to contact me. Please hurry! End of communication."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:92"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/way",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "say",
+      "keywords": [
+        "way"
+      ],
+      "guards": [],
+      "reply": [
+        "You will have to leave the plant through the eastern door on the lowest level. I have arranged for it to be 'accidentally' open. ...",
+        "As in the past, our enemy still uses a series of machines to open the way to the next section of his lair. You have to turn them all on to proceed. ...",
+        "They will only work for a certain amount of time though, so you will have to hurry or some of the machines will turn inactive again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:99"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/greet-access",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hero_rathleton/access_teleport1",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/madman",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "say",
+      "keywords": [
+        "madman"
+      ],
+      "guards": [],
+      "reply": [
+        "He is an old enemy of the city and I've battled him often in the past. ...",
+        "Now he has returned for vengeance, he reclaimed an old abandoned underground {laboratory} and he has acquired new powerful {allies}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:74"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/allies",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "say",
+      "keywords": [
+        "allies"
+      ],
+      "guards": [],
+      "reply": [
+        "His allies are an enigma even to me. It seems they belong to some unknown race that lives deep under the earth. ...",
+        "They seem to have supplied him with resources and workforce and a powerful {guardian} to prevent anyone from entering the passages to his lair."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:80"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/guardian",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "say",
+      "keywords": [
+        "guardian"
+      ],
+      "guards": [],
+      "reply": [
+        "It's a fearsome subterranean beast like nothing I've ever encountered. It is dangerous and almost unbeatable because its main body is hidden beneath the ground ...",
+        "And it has an endless supply of tentacles. But not all is lost, as I have devised a {plan} to battle the beast."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:86"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/enraged",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "say",
+      "keywords": [
+        "enraged"
+      ],
+      "guards": [],
+      "reply": [
+        "While it's buried, it only uses his tentacles to attack. If one is destroyed it will simply use another set of tentacles and its supply seems endless. ...",
+        "If you manage though to kill all the tentacles it is using within a few heartbeats, it will become confused by its momentary helplessness and will probably attack with its main body. ...",
+        "That is when you have a chance to destroy it. Pass through its chamber and look for another of my tubes to contact me. Please hurry! End of communication."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:92"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_1/way",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_1",
+      "trigger": "say",
+      "keywords": [
+        "way"
+      ],
+      "guards": [],
+      "reply": [
+        "You will have to leave the plant through the eastern door on the lowest level. I have arranged for it to be 'accidentally' open. ...",
+        "As in the past, our enemy still uses a series of machines to open the way to the next section of his lair. You have to turn them all on to proceed. ...",
+        "They will only work for a certain amount of time though, so you will have to hurry or some of the machines will turn inactive again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:99"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/greet-access",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hero_rathleton/access_teleport2",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/madman",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "say",
+      "keywords": [
+        "madman"
+      ],
+      "guards": [],
+      "reply": [
+        "He is an old enemy of the city and I've battled him often in the past. ...",
+        "Now he has returned for vengeance, he reclaimed an old abandoned underground {laboratory} and he has acquired new powerful {allies}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:74"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/allies",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "say",
+      "keywords": [
+        "allies"
+      ],
+      "guards": [],
+      "reply": [
+        "His allies are an enigma even to me. It seems they belong to some unknown race that lives deep under the earth. ...",
+        "They seem to have supplied him with resources and workforce and a powerful {guardian} to prevent anyone from entering the passages to his lair."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:80"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/guardian",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "say",
+      "keywords": [
+        "guardian"
+      ],
+      "guards": [],
+      "reply": [
+        "It's a fearsome subterranean beast like nothing I've ever encountered. It is dangerous and almost unbeatable because its main body is hidden beneath the ground ...",
+        "And it has an endless supply of tentacles. But not all is lost, as I have devised a {plan} to battle the beast."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:86"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/enraged",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "say",
+      "keywords": [
+        "enraged"
+      ],
+      "guards": [],
+      "reply": [
+        "While it's buried, it only uses his tentacles to attack. If one is destroyed it will simply use another set of tentacles and its supply seems endless. ...",
+        "If you manage though to kill all the tentacles it is using within a few heartbeats, it will become confused by its momentary helplessness and will probably attack with its main body. ...",
+        "That is when you have a chance to destroy it. Pass through its chamber and look for another of my tubes to contact me. Please hurry! End of communication."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:92"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_2/way",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_2",
+      "trigger": "say",
+      "keywords": [
+        "way"
+      ],
+      "guards": [],
+      "reply": [
+        "You will have to leave the plant through the eastern door on the lowest level. I have arranged for it to be 'accidentally' open. ...",
+        "As in the past, our enemy still uses a series of machines to open the way to the next section of his lair. You have to turn them all on to proceed. ...",
+        "They will only work for a certain amount of time though, so you will have to hurry or some of the machines will turn inactive again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:99"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/greet-access",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hero_rathleton/access_teleport3",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/madman",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "say",
+      "keywords": [
+        "madman"
+      ],
+      "guards": [],
+      "reply": [
+        "He is an old enemy of the city and I've battled him often in the past. ...",
+        "Now he has returned for vengeance, he reclaimed an old abandoned underground {laboratory} and he has acquired new powerful {allies}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:74"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/allies",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "say",
+      "keywords": [
+        "allies"
+      ],
+      "guards": [],
+      "reply": [
+        "His allies are an enigma even to me. It seems they belong to some unknown race that lives deep under the earth. ...",
+        "They seem to have supplied him with resources and workforce and a powerful {guardian} to prevent anyone from entering the passages to his lair."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:80"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/guardian",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "say",
+      "keywords": [
+        "guardian"
+      ],
+      "guards": [],
+      "reply": [
+        "It's a fearsome subterranean beast like nothing I've ever encountered. It is dangerous and almost unbeatable because its main body is hidden beneath the ground ...",
+        "And it has an endless supply of tentacles. But not all is lost, as I have devised a {plan} to battle the beast."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:86"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/enraged",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "say",
+      "keywords": [
+        "enraged"
+      ],
+      "guards": [],
+      "reply": [
+        "While it's buried, it only uses his tentacles to attack. If one is destroyed it will simply use another set of tentacles and its supply seems endless. ...",
+        "If you manage though to kill all the tentacles it is using within a few heartbeats, it will become confused by its momentary helplessness and will probably attack with its main body. ...",
+        "That is when you have a chance to destroy it. Pass through its chamber and look for another of my tubes to contact me. Please hurry! End of communication."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:92"
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe_3/way",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe_3",
+      "trigger": "say",
+      "keywords": [
+        "way"
+      ],
+      "guards": [],
+      "reply": [
+        "You will have to leave the plant through the eastern door on the lowest level. I have arranged for it to be 'accidentally' open. ...",
+        "As in the past, our enemy still uses a series of machines to open the way to the next section of his lair. You have to turn them all on to proceed. ...",
+        "They will only work for a certain amount of time though, so you will have to hurry or some of the machines will turn inactive again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:99"
+      ],
+      "continue_matching": true
+    }
+  ]
+}
