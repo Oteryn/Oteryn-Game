@@ -38,6 +38,18 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:45"
   },
   {
+    "item_key": "oteryn:item.tibia.i12305",
+    "target_item_key": "oteryn:item.tibia.i12305",
+    "creature_key": "",
+    "mount_key": "oteryn:content.mount.tin_lizzard",
+    "grant_key": "oteryn:taming.tin_lizzard",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You have tamed the tin lizzard.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:16"
+  },
+  {
     "item_key": "oteryn:item.tibia.i12306",
     "creature_key": "oteryn:creature.midnight_panther",
     "mount_key": "oteryn:content.mount.midnight_panther",
@@ -305,6 +317,18 @@
     "success_text": "You have tamed the white deer.",
     "achievement_key": "oteryn:achievement/friend_of_elves",
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:14"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12801",
+    "target_item_key": "oteryn:item.tibia.i12801",
+    "creature_key": "",
+    "mount_key": "oteryn:content.mount.uniwheel",
+    "grant_key": "oteryn:taming.uniwheel",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You have assembled the uniwheel.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:31"
   },
   {
     "item_key": "oteryn:item.tibia.i12802",
@@ -666,6 +690,18 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:38"
   },
   {
+    "item_key": "oteryn:item.tibia.i21897",
+    "target_item_key": "oteryn:item.tibia.i21897",
+    "creature_key": "",
+    "mount_key": "oteryn:content.mount.glooth_glider",
+    "grant_key": "oteryn:taming.glooth_glider",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You have assembled the Glooth Glider.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:71"
+  },
+  {
     "item_key": "oteryn:item.tibia.i24960",
     "creature_key": "oteryn:creature.stone_rhino",
     "mount_key": "oteryn:content.mount.stone_rhino",
@@ -804,6 +840,18 @@
     "success_text": "You have tamed the white lion.",
     "achievement_key": "oteryn:achievement/well_roared_lion",
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:50"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i37397",
+    "target_item_key": "oteryn:item.tibia.i37397",
+    "creature_key": "",
+    "mount_key": "oteryn:content.mount.wind_up_loco",
+    "grant_key": "oteryn:taming.wind_up_loco",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You have assembled the wind-up loco.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:48"
   },
   {
     "item_key": "oteryn:item.tibia.i39548",

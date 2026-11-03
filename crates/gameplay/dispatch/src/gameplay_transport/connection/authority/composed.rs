@@ -732,9 +732,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::world_object::UseIntent,
         source: Option<item_view::ItemKey>,
+        item_target: Option<item_view::ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.tame_mount_impl(actor, command, intent, source, visible)
+        self.tame_mount_impl(actor, command, intent, source, item_target, visible)
             .await
     }
 

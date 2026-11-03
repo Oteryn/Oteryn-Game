@@ -60,7 +60,7 @@ pub(super) async fn run(
     music: bool,
 ) -> TestResult {
     let rules = crate::content::native_gameplay::mount_taming::rules();
-    assert_eq!(rules.len(), 47, "every qualified pair remains covered");
+    assert_eq!(rules.len(), 51, "every qualified pair remains covered");
     let mut retained = admitted(owner, actor, session)?;
     owner
         .states
@@ -75,6 +75,7 @@ pub(super) async fn run(
     let mut attempts = 0_i64;
     for rule in rules
         .iter()
+        .filter(|r| r.target_item_key.is_none())
         .filter(|r| (r.item_key == "oteryn:item.tibia.i16244") == music)
     {
         if let Some(key) = &rule.required_equipment {

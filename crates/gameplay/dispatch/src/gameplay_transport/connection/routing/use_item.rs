@@ -87,10 +87,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
     }
     if let Ok(intent) = &decoded
-        && intent.use_with.is_some()
+        && (intent.use_with.is_some() || intent.use_with_map_item.is_some())
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)),
+            _ => None,
+        };
+        let item_target = match intent.use_with_map_item {
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(handle)) => {
+                item_view.as_ref().and_then(|v| v.resolve(handle))
+            }
             _ => None,
         };
         if let Some(outcome) = tokio::time::timeout(
@@ -104,6 +110,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 },
                 intent.clone(),
                 source,
+                item_target,
                 intent
                     .use_with
                     .is_some_and(|target| visibility.as_ref().is_some_and(|v| v.shows(target))),
