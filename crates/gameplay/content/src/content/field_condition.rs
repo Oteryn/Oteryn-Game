@@ -22,15 +22,18 @@ pub enum FieldElement {
     Poison,
     Drown,
     Physical,
+    Agony,
 }
 impl FieldElement {
-    pub const fn condition_element(self) -> DotElement {
+    pub const fn condition_element(self) -> Option<DotElement> {
         match self {
-            Self::Fire => DotElement::Fire,
-            Self::Energy => DotElement::Energy,
-            Self::Poison => DotElement::Poison,
-            Self::Drown => DotElement::Drown,
-            Self::Physical => DotElement::Bleeding,
+            Self::Fire => Some(DotElement::Fire),
+            Self::Energy => Some(DotElement::Energy),
+            Self::Poison => Some(DotElement::Poison),
+            Self::Drown => Some(DotElement::Drown),
+            Self::Physical => Some(DotElement::Bleeding),
+            // Agony has no elemental standing-field identity.
+            Self::Agony => None,
         }
     }
 }
@@ -144,6 +147,18 @@ impl QualifiedFieldCondition {
                 if entries.is_empty() || self.total_damage()? == 0 {
                     return Ok(None);
                 }
+                if *element == FieldElement::Agony {
+                    let first = entries.first().ok_or(FieldError::Bounds)?;
+                    let repetitions = entries.iter().try_fold(0u32, |sum, entry| {
+                        sum.checked_add(entry.repetitions).ok_or(FieldError::Bounds)
+                    })?;
+                    return Ok(Some(ConditionValues::AgonyRamp {
+                        start: first.amount,
+                        repetitions,
+                        interval_ms: first.interval_ms,
+                        delayed: false,
+                    }));
+                }
                 if entries.len() > MAX_DOT_SEQUENCE_STEPS {
                     return Err(FieldError::Bounds);
                 }
@@ -156,7 +171,7 @@ impl QualifiedFieldCondition {
                     };
                 }
                 Ok(Some(ConditionValues::DamageSequence {
-                    element: element.condition_element(),
+                    element: element.condition_element().ok_or(FieldError::Unsupported)?,
                     steps,
                     len: u8::try_from(entries.len()).map_err(|_| FieldError::Bounds)?,
                     delayed: false,
@@ -195,7 +210,7 @@ impl QualifiedFieldCondition {
         self.validate()?;
         match &self.condition {
             FieldConditionKind::None => Ok(None),
-            FieldConditionKind::Damage { element, .. } => Ok(Some(element.condition_element())),
+            FieldConditionKind::Damage { element, .. } => Ok(element.condition_element()),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
         }
     }

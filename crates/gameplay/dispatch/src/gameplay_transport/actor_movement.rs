@@ -1177,7 +1177,7 @@ mod creature_field_step_tests {
                     values,
                 )
                 .unwrap(),
-            element: recipe.element().unwrap().unwrap(),
+            element: recipe.element().unwrap(),
             content: runtime.content_pin().server_artifact_digest(),
         }
     }

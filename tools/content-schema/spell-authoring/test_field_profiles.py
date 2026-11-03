@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import unittest
+import tempfile
 import xml.etree.ElementTree as ET
 from build_field_profiles import build,recipe
 
@@ -23,10 +24,26 @@ class FieldProfiles(unittest.TestCase):
         self.assertEqual(self.field(2120),{'kind':'damage','element':'fire','entries':[]})
         self.assertEqual(self.field(2128),{'kind':'none'})
         self.assertEqual(self.field(2130),{'kind':'none'})
-        self.assertTrue(any(x['condition']['kind']=='unsupported' for x in self.profiles if x['source']['server']=='crystal'))
+        self.assertEqual(self.field(43297,'crystal'), {
+            'kind':'damage', 'element':'agony',
+            'entries':[{'amount':amount,'interval_ms':5000,'repetitions':1}
+                       for amount in range(260,0,-1)],
+        })
     def test_xml_damage_keeps_attribute_order_and_source_interval_floor(self):
         field=ET.fromstring('<attribute key="field" value="fire"><attribute key="damage" value="3"/><attribute key="ticks" value="5000"/><attribute key="count" value="2"/><attribute key="damage" value="7"/></attribute>')
         self.assertEqual(recipe(field)['entries'],[{'amount':3,'interval_ms':1000,'repetitions':1},{'amount':7,'interval_ms':5000,'repetitions':2}])
+    def test_extracted_sources_reject_changed_input_bytes(self):
+        from build_field_profiles import INPUT_DIGESTS
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for server, paths in INPUT_DIGESTS.items():
+                for path in paths:
+                    target = root / server / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(b"changed source")
+            with self.assertRaisesRegex(ValueError, "field source digest mismatch"):
+                build(root)
+
     def test_checked_in_catalog_is_reproduced_from_all_exact_pinned_blobs(self):
         expected=json.loads((Path(__file__).parent/'samples/native-field-profiles.json').read_text())
         self.assertEqual(self.profiles,expected['profiles'])

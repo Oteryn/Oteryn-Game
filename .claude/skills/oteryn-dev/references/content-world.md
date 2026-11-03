@@ -15,6 +15,9 @@ content digests are derived from committed inputs.
   (`tools/merge-driver/regen.sh` is the same command; prefer the python form,
   which the repository's `.claude/settings.json` allows.) Add `--no-stage` to
   leave the index untouched, `--skip-checks` to regenerate only.
+  With `OTERYN_SPELL_SOURCE_ROOT` pointing to `canary/` and `crystal/` Git sources
+  or extracted snapshots verified against the pinned input digests, this command also regenerates the field source catalogue
+  before materializing the native Item provider.
 - The Item tree materializer reapplies the accepted Summer corpse/loot overlay before
   hashing its output. After materializing an Item admission change, regenerate the native loot facts
   with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`

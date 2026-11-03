@@ -6,6 +6,8 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
+    ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
     // 99902524e052f37574194466c2949c576e4ab269 (content/craft/runtime-item-profiles.json):
     // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;

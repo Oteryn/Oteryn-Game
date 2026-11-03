@@ -11,6 +11,7 @@ pub(in crate::gameplay_transport) async fn restore_house(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     saved: &LastPositionRecord,
+    fresh: bool,
 ) -> Option<()> {
     let actor = admitted.runtime_actor?;
     let fence = admitted.item_fence?;
@@ -62,6 +63,15 @@ pub(in crate::gameplay_transport) async fn restore_house(
         .read_hunting_stamina(owner.character, character)
         .await
         .ok()?;
+    let saved_conditions = if fresh {
+        owner
+            .root
+            .read_character_conditions(owner.character, character)
+            .await
+            .ok()?
+    } else {
+        None
+    };
     let gourmet = owner
         .root
         .read_gourmet_conditions(owner.character, character)
@@ -93,6 +103,12 @@ pub(in crate::gameplay_transport) async fn restore_house(
     }
     let mut states = owner.states.spell_states.lock().await;
     let now = owner.owner_now();
+    let restored_conditions = crate::gameplay_transport::condition_persistence::prepare(
+        saved_conditions.as_ref(),
+        fence.character_lease_generation,
+        runtime.content_pin().server_artifact_digest(),
+        now.get(),
+    )?;
     let mut prepared = crate::spell::cast::PlayerSpellState::new(facts, monk.0, monk.1)?;
     prepared.make_playable(now).ok()?;
     if let Some(vitals) = saved.vitals {
@@ -110,8 +126,13 @@ pub(in crate::gameplay_transport) async fn restore_house(
     {
         prepared.enable_owned_training(&build, formula).ok()?;
     }
-    crate::spell::actor_conditions::restore_gourmet_food(&mut prepared, gourmet, now.get() / 1000)
-        .ok()?;
+    crate::gameplay_transport::condition_persistence::restore(
+        &mut prepared,
+        restored_conditions.as_ref(),
+        gourmet,
+        now.get(),
+        saved.rest,
+    )?;
     if states.install_house_admitted(&runtime, actor, session, fence, prepared)? {
         remember(&mut states, actor, session, gourmet, now.get());
         states.load_house_stamina(&runtime, actor, session, fence, stamina, now.get())?;

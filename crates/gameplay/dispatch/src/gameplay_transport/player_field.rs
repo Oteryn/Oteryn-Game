@@ -18,7 +18,7 @@ pub(super) struct PlayerFieldContact {
     pub(super) origin: DurableFieldOrigin,
     pub(super) item: [u8; 16],
     pub(super) definition: ConditionDefinition,
-    pub(super) element: oteryn_gameplay_domain::domain::condition::DotElement,
+    pub(super) element: Option<oteryn_gameplay_domain::domain::condition::DotElement>,
     pub(super) attributed: bool,
 }
 

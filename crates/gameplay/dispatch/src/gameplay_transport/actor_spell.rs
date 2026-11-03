@@ -2185,7 +2185,7 @@ impl ChannelSpellStates {
                 } => {
                     // PAR-M10: environment drown has no source actor; it is dealt like a
                     // creature hit.
-                    if !crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
+                    if !tick.provenance.is_unattributed() && !crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
                         &tick.provenance,
                     ) && (tick.provenance.source_kind != ConditionSourceKind::Creature
                         || !tick
@@ -2237,12 +2237,13 @@ impl ChannelSpellStates {
                 // absorbs agony. NIGHT-W1 #1 permits agony in protection zones too.
                 TickKind::Agony { amount, refused } => {
                     if !refused {
-                        if tick.provenance.source_kind != ConditionSourceKind::Creature
-                            || !tick
-                                .provenance
-                                .source
-                                .as_deref()
-                                .is_some_and(|s| s.starts_with("creature:"))
+                        if !tick.provenance.is_unattributed()
+                            && (tick.provenance.source_kind != ConditionSourceKind::Creature
+                                || !tick
+                                    .provenance
+                                    .source
+                                    .as_deref()
+                                    .is_some_and(|s| s.starts_with("creature:")))
                         {
                             return None;
                         }
@@ -2414,7 +2415,7 @@ pub(in crate::gameplay_transport) struct CreatureFieldContact {
     pub(in crate::gameplay_transport) definition:
         oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
     pub(in crate::gameplay_transport) element:
-        oteryn_gameplay_domain::domain::condition::DotElement,
+        Option<oteryn_gameplay_domain::domain::condition::DotElement>,
     pub(in crate::gameplay_transport) content: [u8; 32],
 }
 impl ChannelSpellStates {

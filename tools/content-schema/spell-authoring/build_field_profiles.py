@@ -15,6 +15,9 @@ CONDITION="src/creatures/combat/condition.cpp"
 XML="data/items/items.xml"
 CREATURE="src/creatures/creature.hpp"
 
+# Immutable input digests also admit extracted source snapshots without a Git index.
+INPUT_DIGESTS = {'canary': {'data/items/items.xml': 'bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85', 'src/items/functions/item/item_parse.cpp': '1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c', 'src/creatures/combat/condition.cpp': '3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f', 'src/creatures/creature.hpp': 'fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841'}, 'crystal': {'data/items/items.xml': 'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb', 'src/items/functions/item/item_parse.cpp': '08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7', 'src/creatures/combat/condition.cpp': 'f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4', 'src/creatures/creature.hpp': 'df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6'}}
+
 def f32(value):
     return struct.unpack("f",struct.pack("f",value))[0]
 
@@ -26,7 +29,10 @@ def ramp(amount,start):
     for current in range(start,0,-1):
         med=(start+1-current)*amount//start
         if not med:
-            raise ValueError("source ramp division by zero")
+            # The donor's do/while emits once before comparing infinities.
+            total+=current
+            out.append(current)
+            continue
         while True:
             total+=current
             out.append(current)
@@ -40,7 +46,7 @@ def ramp(amount,start):
 
 def recipe(field):
     element=field.get("value","").lower()
-    if element not in {"fire","energy","poison","drown","physical"}:
+    if element not in {"fire","energy","poison","drown","physical","agony"}:
         return {"kind":"unsupported","source_element":element}
     ticks=0
     count=1
@@ -71,8 +77,8 @@ def recipe(field):
             start=0
     return {"kind":"damage","element":element,"entries":entries}
 
-def git(repo,path):
-    return subprocess.check_output(["git","-C",str(repo),"show",f"HEAD:{path}"])
+def git(repo,path,pin):
+    return subprocess.check_output(["git","-C",str(repo),"show",f"{pin}:{path}"])
 
 def source_root():
     return Path(os.environ.get("OTERYN_SPELL_SOURCE_ROOT", Path(__file__).resolve().parents[3] / "_sources"))
@@ -82,10 +88,16 @@ def build(root=None):
     profiles=[]
     for server,pin in PINS.items():
         repo=root/server
-        actual=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()
-        if actual!=pin:
-            raise ValueError(f"{server} is not pinned")
-        blobs={path:git(repo,path) for path in (XML,PARSER,CONDITION,CREATURE)}
+        paths = (XML, PARSER, CONDITION, CREATURE)
+        if all((repo / path).is_file() for path in paths):
+            blobs = {path: (repo / path).read_bytes() for path in paths}
+        else:
+            actual=subprocess.check_output(["git","-C",str(repo),"rev-parse",f"{pin}^{{commit}}"],text=True).strip()
+            if actual!=pin:
+                raise ValueError(f"{server} is not pinned")
+            blobs={path:git(repo,path,pin) for path in paths}
+        if any(hashlib.sha256(raw).hexdigest() != INPUT_DIGESTS[server][path] for path, raw in blobs.items()):
+            raise ValueError(f"{server} field source digest mismatch")
         records={}
         for item in ET.fromstring(blobs[XML]):
             fields=[node for node in item if node.get("key","").lower()=="field"]
