@@ -4,6 +4,18 @@ use super::*;
 impl FreshAdmissionStore {
     /// Revalidate a prepared terminal release against current claims at the deciding transaction.
     pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
+        // Boxed: the bed-aware writer's state machine is large, and reconnect/loss
+        // release chains nest it under other large futures (stack overflow otherwise).
+        Box::pin(self.release_with_bed(transition, None))
+            .await
+            .map(|(at, _)| at)
+    }
+
+    pub(in crate::durability) async fn release_with_bed(
+        &self,
+        transition: &TerminalReleaseClaimTransitionV1,
+        bed: Option<super::super::bed_sleep::BedSleepPlan>,
+    ) -> Result<(i64, Option<super::super::bed_sleep::BedSleepOutcome>)> {
         let encoded = encode_lifecycle(transition.evidence())?;
         let transition = transition.clone();
         let store = self.clone();
@@ -14,8 +26,14 @@ impl FreshAdmissionStore {
             let mut tx = super::super::admission_journal::begin_pass_transaction(holder, deadline).await?;
             super::super::db::lock_admission_relations(&mut tx).await?;
             if let Some(prior) = lifecycle_replay(&mut tx, evidence, &encoded).await? {
+                // Another terminal cause can share this claim transition. Only
+                // the bed's own immutable receipt proves that sleep committed.
+                let outcome = match bed {
+                    Some(bed) => Some(bed.apply(&mut tx).await?),
+                    None => None,
+                };
                 super::super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-                return Ok(prior);
+                return Ok((prior, outcome));
             }
             let session_id = evidence.operation.current_session().current_game_session_id();
             let current = store.current_session_locked(&mut tx, session_id).await?;
@@ -37,6 +55,13 @@ impl FreshAdmissionStore {
             let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
             let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
             let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            let slept = if let Some(bed) = bed {
+                let outcome = bed.apply(&mut tx).await?;
+                if outcome != super::super::bed_sleep::BedSleepOutcome::Slept {
+                    return Ok((decided_at, Some(outcome)));
+                }
+                Some(outcome)
+            } else { None };
             if let Some(training) = &store.training_logout { training.prepare(&mut tx).await?; }
             if let Some(final_position) = store.final_position {
                 write_final_position(&mut tx, &current, &final_position, store.final_house.as_ref()).await?;
@@ -56,7 +81,7 @@ impl FreshAdmissionStore {
             sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1,$2,$3)")
                 .bind(lifecycle_key(evidence)).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
             super::super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-            Ok(decided_at)
+            Ok((decided_at, slept))
         })).await
     }
 
@@ -66,6 +91,25 @@ impl FreshAdmissionStore {
         now: i64,
         account_id: &str,
     ) -> Result<ExpiredLossReleaseV1> {
+        let Some(transition) =
+            Box::pin(self.prepare_current_claims_release(current, now, account_id)).await?
+        else {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        };
+        match Box::pin(self.release(&transition)).await {
+            Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
+            Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
+                Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
+                None => Err(error),
+            },
+        }
+    }
+    pub(in crate::durability) async fn prepare_current_claims_release(
+        &self,
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+        account_id: &str,
+    ) -> Result<Option<TerminalReleaseClaimTransitionV1>> {
         let keys = [
             AdmissionAuthorityGuardKeyV1::Account {
                 account_id: account_id.into(),
@@ -130,16 +174,11 @@ impl FreshAdmissionStore {
             Ok(transition) => transition,
             // Ownership no longer names this session: not this release's to make.
             Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
-                return Ok(ExpiredLossReleaseV1::NotApplicable);
+                return Ok(None);
             }
             Err(_) => return Err(DurabilityError::Unavailable),
         };
-        match self.release(&transition).await {
-            Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-            Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
-                Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-                None => Err(error),
-            },
-        }
+        Ok(Some(transition))
     }
+
 }
