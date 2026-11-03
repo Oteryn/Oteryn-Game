@@ -9,6 +9,10 @@ pub(super) async fn kills_before_and_at_expiry(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     premium: bool,
 ) -> TestResult {
+    // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527.
+    let stacked: bool = sqlx::query_scalar("WITH daily AS (SELECT min(effect_started_at) AS starts FROM game_character_daily_reward_lines WHERE kind='XP_BOOST') SELECT EXISTS(SELECT 1 FROM game_character_store_xp_boosts s,daily WHERE s.expires_at<=daily.starts)")
+        .fetch_one(&h.pool).await?;
+    assert!(stacked, "daily duration begins after the Store duration");
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (generation, pin) =
         super::super::death_ml_loss_composed::production_generation_with_source(

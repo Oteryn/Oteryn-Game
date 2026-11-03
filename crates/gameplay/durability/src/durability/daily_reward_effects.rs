@@ -26,14 +26,25 @@ pub(super) async fn grant(
         if quantity == 0 {
             continue;
         }
-        if kind != "TEMPLE_SCROLL" {
+        let item = if kind == "TEMPLE_SCROLL" {
+            // Crystal 201189f: data-global/scripts/actions/other/temple_scroll.lua:18
+            // binds the temple teleport scroll to item 25718.
+            let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+                .fetch_one(&mut **tx)
+                .await?;
+            sqlx::query("INSERT INTO public.game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i25718','definition-r1',$3,1,encode($4,'hex')::uuid)")
+                .bind(&item).bind(world.as_bytes().as_slice()).bind(i64::from(quantity)).bind(claim).execute(&mut **tx).await?;
+            sqlx::query("SELECT * FROM public.game_character_inbox_deliver($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD',$4)")
+                .bind(&item).bind(character).bind(world.as_bytes().as_slice()).bind(&item).fetch_one(&mut **tx).await?;
+            sqlx::query("INSERT INTO public.game_item_bindings(item_instance_id,world_id,character_id,cause) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')")
+                .bind(&item).bind(world.as_bytes().as_slice()).bind(character).execute(&mut **tx).await?;
+            Some(item)
+        } else {
             grant_balance(tx, fence, request, kind, quantity).await?;
-        }
-        // i25718 exists as reference content but is not materializable. Retain the
-        // entitlement pending admission instead of fabricating a native item.
-        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,CASE WHEN $5='DELIVERED' THEN encode($1,'hex')::uuid ELSE NULL END)")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity))
-            .bind(if kind == "TEMPLE_SCROLL" { "PENDING" } else { "DELIVERED" })
+            None
+        };
+        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item)
             .execute(&mut **tx).await?;
         line += 1;
     }
@@ -60,9 +71,10 @@ pub(super) async fn grant(
     }
     if reward.xp_boost_percent > 0 {
         let minutes = i32::from(reward.xp_boost_minutes);
-        // Persist a wall-clock interval, not a session timer. Offline time counts.
-        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM instant")
-            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).execute(&mut **tx).await?;
+        // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527
+        // appends the daily duration to the Store timer instead of replacing it.
+        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at), endpoint AS (SELECT greatest(instant.at,coalesce((SELECT max(expires_at) FROM public.game_character_store_xp_boosts WHERE character_id=encode($5,'hex')::uuid AND world_id=encode($6,'hex')::uuid),instant.at),coalesce((SELECT max(effect_expires_at) FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($5,'hex')::uuid AND c.world_id=encode($6,'hex')::uuid AND l.kind='XP_BOOST'),instant.at)) AS at FROM instant) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM endpoint")
+            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).bind(character).bind(world.as_bytes().as_slice()).execute(&mut **tx).await?;
     }
     Ok(())
 }

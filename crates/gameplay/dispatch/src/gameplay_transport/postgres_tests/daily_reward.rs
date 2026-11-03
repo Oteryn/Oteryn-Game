@@ -259,6 +259,10 @@ fn scenario(premium: bool) -> TestResult {
                 .contains(wire::CAPABILITY_DAILY_REWARD_V2)
         );
         epoch(&harness, 1).await?;
+        // A real Store delivery owns this row; seed its durable effect before the
+        // real daily dispatch so the claim must append rather than replace it.
+        sqlx::query("INSERT INTO game_character_store_xp_boosts(operation_id,character_id,world_id,starts_at,expires_at,percent) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,encode($2,'hex')::uuid,game_daily_effect_now(),game_daily_effect_now()+interval '5 minutes',50)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&harness.pool).await?;
         let potion = Vec::<u8>::new();
         let shrine = oteryn_protocol_oteryn::world_object::encode_use_intent(
             &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
@@ -389,11 +393,15 @@ fn scenario(premium: bool) -> TestResult {
             ] {
                 if amount > 0 {
                     expected.push((i16::from(day), kind.to_string(), i32::from(amount),
-                        if kind == "TEMPLE_SCROLL" { "PENDING" } else { "DELIVERED" }.to_string(), None));
+                        "DELIVERED".to_string(), None));
                 }
             }
         }
         assert_eq!(lines, expected);
+        let scrolls: Vec<(String, i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_instances i JOIN game_item_character_inbox_locations l USING(item_instance_id,world_id) WHERE i.definition_production_key='oteryn:item.tibia.i25718'")
+            .fetch_all(&harness.pool).await?;
+        assert!(!scrolls.is_empty(), "daily temple scroll reaches the production Inbox owner");
+        assert!(scrolls.iter().all(|row| row == &("oteryn:item.tibia.i25718".to_string(), 1)));
         let balance: (i16,i64) = sqlx::query_as("SELECT balance,(SELECT count(*) FROM game_account_prey_wildcard_entries) FROM game_account_prey_wildcards").fetch_one(&harness.pool).await?;
         assert_eq!(balance, (if premium { 19 } else { 10 }, 10));
         let tokens: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT balance FROM game_character_cosmetic_tokens),(SELECT balance FROM game_character_bounty_reroll_tokens),(SELECT count(*) FROM game_character_bounty_reroll_token_entries)").fetch_one(&harness.pool).await?;
