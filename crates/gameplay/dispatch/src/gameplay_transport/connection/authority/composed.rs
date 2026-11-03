@@ -330,7 +330,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        npc_command::resume_npc_talk(self, actor, command).await
+        let mut outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        Some(outcome)
     }
 
     async fn npc_talk(
@@ -339,7 +347,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        self.vocation_talk(actor, command, intent).await
+        let mut outcome = self.vocation_talk(actor, command, intent).await;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        outcome
     }
 
     fn server_save_countdown(

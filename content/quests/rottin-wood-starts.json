@@ -1,0 +1,114 @@
+{
+  "schema": "OTERYN_QUEST_STATE_LOWERING/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "family": "Quest",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "authoring_sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/rottin_wood.lua",
+      "line": 176,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    }
+  ],
+  "counts": {
+    "transitions": 1,
+    "tracks": 3
+  },
+  "quests": [
+    {
+      "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "source_quest": "Crystal201189f pinned source",
+      "completion": "NOT_COMPLETED_BY_START_ADAPTER",
+      "tracks": [
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission02",
+          "max": 2,
+          "min": 0,
+          "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+          "source_key": "crystalserver:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/mission02"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+          "max": 6,
+          "min": 0,
+          "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+          "source_key": "crystalserver:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/questline"
+        },
+        {
+          "bounds_basis": "explicit_crystal_kv_reset_only",
+          "initial": 0,
+          "min": 0,
+          "max": 0,
+          "key": "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount",
+          "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+          "source_key": "crystalserver:kv/rottinwood-wallcount"
+        }
+      ],
+      "transitions": [
+        {
+          "key": "oteryn:quest-transition/classic/rottin-wood/start-disrepair",
+          "quest": "oteryn:quest.rottin_wood_and_the_married_men_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/questline",
+              "from": {
+                "op": "EQ",
+                "value": 2
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 3
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/mission02",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 0
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/rottin_wood",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/rottin_wood.lua",
+            "line": 176,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        }
+      ]
+    }
+  ]
+}

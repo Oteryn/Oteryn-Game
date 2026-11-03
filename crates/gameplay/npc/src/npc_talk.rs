@@ -155,6 +155,17 @@ impl NpcTalkBook {
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
                 )
+            } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
+                .filter(|_| reference.key != "oteryn:npc.spectulus")
+            {
+                // Only the closed source NPCs with native quest callers open here.
+                // Their conditional topics and writes remain with dispatch.
+                (
+                    greeting.greet.text.clone(),
+                    greeting.farewell.text.clone(),
+                    None,
+                    Vec::new(),
+                )
             } else if let Some(greeting) = endgame_greeting(&reference.key) {
                 // W11: only these four source NPCs have native stateful Quest
                 // consumers. This admits their greeting, not their Lua/script
@@ -797,5 +808,35 @@ mod grizzly_dialogue_tests {
                 .as_deref()
                 .is_some_and(|text| text.contains("tasks"))
         );
+    }
+    #[test]
+    fn liquid_black_source_npcs_open_without_granting_access() -> Result<(), String> {
+        let at = |x| ChatPosition { x, y: 1, floor: 0 };
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let key = "oteryn:npc.scrutinon";
+        let entry = book.get(key).ok_or(key)?;
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position: at(101),
+            entry,
+        }];
+        let mut engaged = None;
+        let greeting = talk(at(100), "hi", &npcs, &mut engaged).ok_or("greeting")?;
+        assert!(greeting.text.contains("watching your fate"));
+        assert_eq!(engaged, Some(1));
+        assert!(talk(at(100), "yes", &npcs, &mut engaged).is_none());
+        // Spectulus's greeting reads Sea of Light, outside batch2; coordinator
+        // https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017 §6.
+        assert!(book.get("oteryn:npc.spectulus").is_none());
+        Ok(())
     }
 }
