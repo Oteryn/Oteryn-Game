@@ -130,9 +130,7 @@ impl State {
                 };
                 if item.hit_points > rule.amount {
                     item.hit_points -= rule.amount;
-                } else if super::furniture_catalog::destroyed_to(1, command.destruction_roll)
-                    .is_some()
-                {
+                } else if command.destruction_roll == 1 {
                     *item = Item {
                         definition: rule.output.into(),
                         amount: 1,

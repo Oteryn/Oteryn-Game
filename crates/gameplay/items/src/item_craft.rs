@@ -257,7 +257,7 @@ fn cooking_row(
     })
 }
 
-pub(crate) fn output_definition(
+pub fn output_definition(
     native: &NativeGameplayState,
     reference: &ProjectV2DefinitionRef,
 ) -> Option<TypedDefinitionRef> {
@@ -267,11 +267,17 @@ pub(crate) fn output_definition(
         .parse()
         .ok()?;
     let Some(policy) = native.item_policy_for_source_id(id) else {
-        return Some(TypedDefinitionRef {
-            family: "Item".into(),
-            production_key: reference.key.clone(),
-            revision_ref: reference.revision.clone(),
-        });
+        // The loot owner is the other pinned source of materializable Item admission. Merely
+        // appearing in the key index is not permission to mint the definition.
+        let admitted = native.reward_table().admitted_source_item(id)?;
+        return (admitted.family == "Item"
+            && admitted.production_key == reference.key
+            && admitted.revision_ref == reference.revision)
+            .then(|| TypedDefinitionRef {
+                family: admitted.family.clone(),
+                production_key: admitted.production_key.clone(),
+                revision_ref: admitted.revision_ref.clone(),
+            });
     };
     let record = policy.record();
     let target = ReferenceItemTarget::new(&reference.key, &reference.revision).ok()?;

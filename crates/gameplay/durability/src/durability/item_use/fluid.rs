@@ -43,6 +43,14 @@ pub struct ItemFluidSplash {
     pub lifetime_millis: u64,
 }
 
+/// A non-expired splash projected into the map-object view.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveItemFluidSplash {
+    pub placement: Vec<u8>,
+    pub fluid_subtype: u8,
+    pub splash_item_id: u32,
+}
+
 impl ItemFluidChange {
     fn valid(&self) -> bool {
         check_uuid_v7(&self.item_instance_id).is_ok()
@@ -79,6 +87,40 @@ impl ItemFluidRequest {
 }
 
 impl DurabilityRoot {
+    /// Map-view refresh: expire old splash rows and return the active objects for this Channel.
+    pub async fn refresh_item_fluid_splashes(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        channel: [u8; 16],
+    ) -> Result<Vec<ActiveItemFluidSplash>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    sqlx::query("DELETE FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at<=clock_timestamp()")
+                        .bind(world.as_slice()).bind(channel.as_slice()).execute(&mut **tx).await?;
+                    let rows = sqlx::query("SELECT placement,fluid_subtype,splash_item_id FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at>clock_timestamp() ORDER BY placement,transaction_id LIMIT 256")
+                        .bind(world.as_slice()).bind(channel.as_slice()).fetch_all(&mut **tx).await?;
+                    let mut active = Vec::with_capacity(rows.len());
+                    for row in rows {
+                        active.push(ActiveItemFluidSplash {
+                            placement: row.try_get("placement")?,
+                            fluid_subtype: u8::try_from(row.try_get::<i16, _>("fluid_subtype")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            splash_item_id: u32::try_from(row.try_get::<i32, _>("splash_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                        });
+                    }
+                    tx.commit(deadline).await?;
+                    Ok(Ok(active))
+                })
+            })
+            .await?
+    }
+
     /// Commit one fluid command on containers in the holder's backpack tree. Each container must
     /// be live, of the planned definition, a single item, and hold its `fluid_before`; anything
     /// else is `StaleState` with nothing written.

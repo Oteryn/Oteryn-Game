@@ -417,7 +417,7 @@ impl Observation<'_> {
         }
         if let Some(percent) = self.state.player_mitigation_percent(self.now_micros) {
             let ppm = f64::from(percent) * 10_000.0;
-            if ppm.is_finite() && ppm >= 0.0 && ppm <= i64::MAX as f64 {
+            if ppm.is_finite() && (0.0..=i64::MAX as f64).contains(&ppm) {
                 out.set(Stat::Mitigation, ppm.trunc() as i64)?;
             }
         }

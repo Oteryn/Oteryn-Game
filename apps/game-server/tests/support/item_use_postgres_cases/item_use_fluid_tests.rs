@@ -161,6 +161,42 @@ fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() 
             "SELECT fluid_subtype,splash_item_id, expires_at BETWEEN clock_timestamp()+interval '9 seconds' AND clock_timestamp()+interval '10 seconds' FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid")
             .bind(id(174).as_slice()).fetch_one(&used.harness.pool).await?;
         assert_eq!(row, (i16::from(MANA), 2886, true));
+        let seal = used.harness.recovery.seal_current().map_err(debug)?;
+        let authority = used
+            .harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let fence = item_fence().map_err(debug)?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Err("expected Channel scope".into());
+        };
+        let active = used
+            .harness
+            .root
+            .refresh_item_fluid_splashes(&authority, *world_id.as_bytes(), *channel_id.as_bytes())
+            .await
+            .map_err(debug)?;
+        assert!(active.iter().any(|row| row.placement == b"test-ground"));
+        sqlx::query("UPDATE game_item_fluid_splashes SET expires_at=clock_timestamp()-interval '1 second' WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(id(174).as_slice()).execute(&used.harness.pool).await?;
+        assert!(
+            used.harness
+                .root
+                .refresh_item_fluid_splashes(
+                    &authority,
+                    *world_id.as_bytes(),
+                    *channel_id.as_bytes(),
+                )
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
         used.cleanup().await
     })
 }

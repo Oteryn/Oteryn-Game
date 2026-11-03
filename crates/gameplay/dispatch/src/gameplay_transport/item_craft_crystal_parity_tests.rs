@@ -162,7 +162,9 @@ fn i11_carried_ingredients_make_chocolate_garlic_trays_and_sugar_oat() {
     assert_eq!(carried_outputs(state, 6276, 6574), out(&[(8018, 1)]));
     assert_eq!(carried_outputs(state, 8195, 8197), out(&[(8196, 1)]));
     assert_eq!(carried_outputs(state, 8196, 3464), out(&[(8198, 1)]));
-    assert_eq!(carried_outputs(state, 5466, 3605), out(&[(12802, 1)]));
+    // The donor result exists, but the pinned Item definition marks sugar oat 12802
+    // non-materializable, so the server must not mint it through the fallback path.
+    assert_eq!(carried_outputs(state, 5466, 3605), None);
 }
 
 #[test]
@@ -215,4 +217,30 @@ fn i11_crystal_divergences_are_pinned() {
             assert_eq!(outputs(state, used, oven), None, "oven else {used} {oven}");
         }
     }
+}
+
+#[test]
+fn i11_output_without_materializable_admission_is_not_minted() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    let unadmitted = crate::content::ProjectV2DefinitionRef {
+        family: crate::content::ProjectV2Family::Item,
+        key: "oteryn:item.tibia.i12802".into(),
+        revision: "definition-r1".into(),
+    };
+    assert!(oteryn_gameplay_items::item_craft::output_definition(state, &unadmitted).is_none());
+}
+
+#[test]
+fn i11_carried_ingredient_path_keeps_death_and_spell_idle_guards() {
+    let source = include_str!("item_craft.rs");
+    let guard = source.find("states.is_dead(actor)").expect("death guard");
+    let ingredient = source
+        .find("if let Some(ItemKey::Instance(ingredient))")
+        .expect("carried ingredient branch");
+    assert!(guard < ingredient);
+    assert!(source[guard..ingredient].contains("states.spell_idle"));
 }

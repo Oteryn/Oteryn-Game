@@ -279,6 +279,7 @@ pub(super) async fn execute(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content::native_gameplay::test_support::activated_with_loot_tables;
     #[test]
     fn house_wrap_drafts_only_the_reference_pair() {
         let mut request = wire::Request {
@@ -312,5 +313,25 @@ mod tests {
         let forged=TypedDefinitionRef {family:"Item".into(),production_key:"oteryn:item.tibia.i3657".into(),
             revision_ref:"definition-r1".into()};
         assert!(draft(request,"oteryn:item.tibia.i23398",Some(&forged)).is_none());
+    }
+
+    #[test]
+    fn every_construction_result_is_in_the_pinned_item_index() {
+        let world = crate::foundation::WorldId::decode(&[
+            1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1,
+        ]);
+        assert!(world.is_ok(), "world");
+        let Ok(world) = world else { return };
+        let controller = activated_with_loot_tables(world, None).0;
+        let index = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .and_then(|native| native.item_index());
+        assert!(index.is_some(), "pinned item index");
+        let Some(index) = index else { return };
+        for (_, result) in furniture_catalog::CONSTRUCTION_KITS {
+            let key = format!("oteryn:item.tibia.i{result}");
+            assert_eq!(index.revision(&key), Some("definition-r1"), "{key}");
+        }
     }
 }

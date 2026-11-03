@@ -39,7 +39,7 @@ use crate::durability::item_use::fluid::{
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
 use crate::interaction_chest_use::entry_chest;
 use crate::spell::Vocation;
 use crate::spell::actor_conditions::eat_food;
@@ -730,6 +730,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .ok()?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Some(UseOutcome::rejected());
+        };
+        let splashes = self
+            .root
+            .refresh_item_fluid_splashes(
+                self.character,
+                *world_id.as_bytes(),
+                *channel_id.as_bytes(),
+            )
+            .await
+            .ok()?;
         let backpack = inventory.backpack.as_ref()?;
         let entry = backpack
             .entries
@@ -741,7 +757,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let (target_item, placement) = {
+        let placement = target.placement.clone();
+        let base_target_item = {
             let mut runtime = self.runtime.lock().await;
             let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
             let facts = at.map.facts.pinned();
@@ -753,23 +770,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let resolved =
                 super::world_map::resolve_map_target(&map, &target, |_| None::<()>).ok()?;
+            if !fluid_map_target_in_range(
+                at.at.x,
+                at.at.y,
+                at.at.floor,
+                i32::from(resolved.pos.x),
+                i32::from(resolved.pos.y),
+                i16::from(resolved.pos.floor),
+            ) {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::TooFar,
+                    ..UseOutcome::rejected()
+                });
+            }
             let tile =
                 crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
-            let entry = tile.entries.iter().find(|e| {
-                e.source.key() == crate::map::view::MapEntryKey::Base(resolved.placement_key)
-            })?;
-            let MapDefinition::Item(reference) = entry.facts.definition else {
-                return None;
-            };
-            let index = native.item_index()?;
-            let definition = super::item_look::typed_definition(index, reference)?;
-            let id = definition
-                .production_key
-                .strip_prefix("oteryn:item.tibia.i")?
-                .parse::<u32>()
-                .ok()?;
-            (id, target.placement.clone())
+            tile.entries
+                .iter()
+                .find(|entry| {
+                    entry.source.key()
+                        == crate::map::view::MapEntryKey::Base(resolved.placement_key)
+                })
+                .and_then(|entry| match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        let index = native.item_index()?;
+                        let definition = super::item_look::typed_definition(index, reference)?;
+                        definition
+                            .production_key
+                            .strip_prefix("oteryn:item.tibia.i")?
+                            .parse::<u32>()
+                            .ok()
+                    }
+                    _ => None,
+                })
         };
+        let target_item = splashes
+            .iter()
+            .find(|splash| splash.placement == placement)
+            .map(|splash| splash.splash_item_id)
+            .or(base_target_item)?;
         let before = inventory.fluids.get(&source).copied().unwrap_or(0);
         let (after, splash) = if before == 0 {
             (fluid_source_subtype(target_item)?, None)
@@ -967,6 +1006,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         Ok(disposition)
+    }
+}
+
+fn fluid_map_target_in_range(ax: i32, ay: i32, af: i16, tx: i32, ty: i32, tf: i16) -> bool {
+    af == tf && ax.abs_diff(tx) <= 1 && ay.abs_diff(ty) <= 1
+}
+
+#[cfg(test)]
+mod fluid_map_tests {
+    use super::*;
+
+    #[test]
+    fn fluid_map_use_refuses_distant_and_other_floor_targets() {
+        assert!(fluid_map_target_in_range(10, 10, 7, 10, 10, 7));
+        assert!(!fluid_map_target_in_range(10, 10, 7, 12, 10, 7));
+        assert!(!fluid_map_target_in_range(10, 10, 7, 10, 10, 8));
     }
 }
 

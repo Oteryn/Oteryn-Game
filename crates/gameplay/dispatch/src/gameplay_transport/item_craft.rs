@@ -128,6 +128,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
+        {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
+            {
+                return disposition(UseDisposition::Rejected);
+            }
+        }
         // Crystal 201189f8 data-global/scripts/actions/other/baking.lua:8-37,49-51 uses a
         // second carried ingredient for dough, chocolate/garlic dough, trays and sugar oat.
         // Resolve its exact current definition here; the durable owner locks and consumes it.
@@ -163,12 +171,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             } else {
                 let mut runtime = self.runtime.lock().await;
-                let states = self.states.spell_states.lock().await;
-                if states.is_dead(actor)
-                    || !states.spell_idle(&runtime, actor, command.game_session_id)
-                {
-                    return disposition(UseDisposition::Rejected);
-                }
                 let index = pinned_index(&runtime, self.active_generation)?;
                 let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
                 let facts = at.map.facts.pinned();

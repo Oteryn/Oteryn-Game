@@ -217,9 +217,9 @@ async fn write<C: ItemLoopContent>(
                     if ingredient_id == request.source {
                         return Ok(UseDisposition::Rejected);
                     }
-                    let ingredient = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref,quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+                    let ingredient = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
                         .bind(ingredient_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-                    ingredient.and_then(|row| carried_cooking_conversion_with_sub_type(native, &definition, &TypedDefinitionRef { family: row.try_get("definition_family").ok()?, production_key: row.try_get("definition_production_key").ok()?, revision_ref: row.try_get("definition_revision_ref").ok()? }, row.try_get::<i64,_>("quantity").ok().and_then(|v| u32::try_from(v).ok()).filter(|v| matches!(v, 1 | 9))))
+                    ingredient.and_then(|row| carried_cooking_conversion_with_sub_type(native, &definition, &TypedDefinitionRef { family: row.try_get("definition_family").ok()?, production_key: row.try_get("definition_production_key").ok()?, revision_ref: row.try_get("definition_revision_ref").ok()? }, ingredient_fluid_subtype(row.try_get::<Option<i16>,_>("fluid_subtype").ok()?)))
                 } else { cooking_conversion(native, &definition, station) }
             },
             (None, _) => reward_bag_conversion(
@@ -416,4 +416,20 @@ async fn write<C: ItemLoopContent>(
         .await?;
     }
     Ok(UseDisposition::Committed)
+}
+
+fn ingredient_fluid_subtype(stored: Option<i16>) -> Option<u32> {
+    stored.and_then(|value| u32::try_from(value).ok())
+}
+
+#[cfg(test)]
+mod fluid_ingredient_tests {
+    use super::*;
+
+    #[test]
+    fn cooking_fluid_subtype_comes_from_fluid_state() {
+        assert_eq!(ingredient_fluid_subtype(Some(9)), Some(9));
+        assert_eq!(ingredient_fluid_subtype(None), None);
+        assert_eq!(ingredient_fluid_subtype(Some(-1)), None);
+    }
 }

@@ -1,6 +1,6 @@
 //! Crystal furniture catalogue (commit 201189f871d23597b82caf88fd611454a2ddefb8).
-//! Generated from `data/items/items.xml` and
-//! `data-crystal/scripts/actions/other/construction_kits.lua`; do not hand-edit rows.
+//! Transcribed from `data/items/items.xml` and
+//! `data-crystal/scripts/actions/other/construction_kits.lua`.
 
 #[rustfmt::skip]
 pub const WRAP_TRANSFORMS: &[(u32, u32, u32)] = &[
@@ -1614,11 +1614,6 @@ pub fn construction_kit_to(source: u32) -> Option<u32> {
         .map(|index| CONSTRUCTION_KITS[index].1)
 }
 
-/// Crystal `data-crystal/scripts/lib/register_actions.lua:193-230`: one success in seven.
-pub fn destroyed_to(destroy_id: u32, roll_one_to_seven: u8) -> Option<u32> {
-    (destroy_id != 0 && roll_one_to_seven == 1).then_some(destroy_id)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1631,11 +1626,5 @@ mod tests {
         assert_eq!(wrapped_to(6355), Some(6371));
         assert_eq!(wrapped_to(24433), Some(23398));
         assert_eq!(construction_kit_to(6371), Some(6355));
-    }
-    #[test]
-    fn weapon_destruction_uses_donor_chance_and_result() {
-        assert_eq!(destroyed_to(4996, 1), Some(4996));
-        assert_eq!(destroyed_to(4996, 2), None);
-        assert_eq!(destroyed_to(0, 1), None);
     }
 }
