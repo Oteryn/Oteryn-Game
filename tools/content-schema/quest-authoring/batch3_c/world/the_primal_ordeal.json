@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-travel-33558-32754-14",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33558,
+          "y": 32754,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33714,
+        "y": 32799,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:6-6"
+      ]
+    }
+  ]
+}
