@@ -211,7 +211,9 @@ fn plan_personal_death_with_slots(
                 .iter()
                 .find(|(c, _)| *c == character)
                 .map_or(0, |(_, b)| *b);
-            let rolls = crate::gameplay_transport::boss_encounter::slot_bonus_rolls(bonus, death);
+            let rolls = crate::gameplay_transport::boss_encounter::slot_bonus_rolls(
+                bonus, death, &character,
+            );
             let loot = plan_boss_loot_with_bonus(
                 death,
                 character,
