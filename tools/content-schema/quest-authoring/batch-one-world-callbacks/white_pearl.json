@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.white_pearl",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/white-pearl-exit",
+      "quest": "oteryn:quest.white_pearl",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5631,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33147,
+        "y": 32864,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/white_pearl/movements_white_pearl.lua:8-11,35-45"
+      ]
+    }
+  ]
+}
