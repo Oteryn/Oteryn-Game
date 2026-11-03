@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.chayenne_realm",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-transition/chayenne-realm/exit",
+      "quest": "oteryn:quest.chayenne_realm",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 55024,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33117,
+        "y": 32604,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:19"
+      ]
+    }
+  ]
+}
