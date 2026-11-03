@@ -1,0 +1,54 @@
+{
+  "evidence_class": "EXECUTED_ENVIRONMENT_DIAGNOSTIC",
+  "ci_source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:.github/workflows/quest-authoring-schema.yml",
+  "diagnostic": {
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "archive": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+    "archive_sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+    "sources": [
+      {
+        "source": "canary",
+        "expected_count": 6024,
+        "actual_count": 6023,
+        "manifested_count": 6024,
+        "new_selected": [],
+        "no_longer_selected": [
+          "data-otservbr-global/npc/....lua"
+        ]
+      },
+      {
+        "source": "crystalserver",
+        "expected_count": 8726,
+        "actual_count": 8724,
+        "manifested_count": 8726,
+        "new_selected": [],
+        "no_longer_selected": [
+          "data-crystal/npc/....lua",
+          "data-global/npc/....lua"
+        ]
+      },
+      {
+        "source": "crystal-summer",
+        "expected_count": 8803,
+        "actual_count": 8801,
+        "manifested_count": 8803,
+        "new_selected": [],
+        "no_longer_selected": [
+          "data-crystal/npc/....lua",
+          "data-global/npc/....lua"
+        ]
+      }
+    ]
+  },
+  "repair": {
+    "python": "3.12.16",
+    "isolation": "Dedicated task venv using existing installed Python; no global interpreter or repository script changes.",
+    "requirements": {
+      "jsonschema": "4.26.0",
+      "referencing": "0.37.0",
+      "zstandard": "0.25.0"
+    },
+    "source_counts": "6024+8726+8803=23553, same unchanged pinned archives",
+    "validation": "See canonical-python and quest-authoring in validation.json; final unchanged head results in PR."
+  }
+}

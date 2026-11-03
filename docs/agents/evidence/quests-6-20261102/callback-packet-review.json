@@ -1,0 +1,636 @@
+{
+  "classification": "Independent read-only static source/data review; not Rust execution",
+  "packet_sha256": "4a0c26ac909b8b2e7796905e4080944b937d97c54b0df5d298fdc9559b39e959",
+  "baseline_sha256": "c2aff5c382be1fb88b41c42e971955f0b63eff478104aebc5e9e444888d5a764",
+  "new_count": 78,
+  "baseline_count": 20,
+  "embedded_total": 98,
+  "with_fixed_rotten_blood": 99,
+  "per_file": {
+    "grimvale.json": 9,
+    "the_pits_of_inferno_quest.json": 30,
+    "the_rookie_guard.json": 13,
+    "adventures_of_galthen.json": 2,
+    "shadows_of_yalahar_quest.json": 2,
+    "the_inquisition_quest.json": 19,
+    "waterfall.json": 3
+  },
+  "allowed_fields_from_actual_rust": [
+    "experience",
+    "failure_message",
+    "item_on_target",
+    "key",
+    "lever",
+    "minimum_level",
+    "monk_reward",
+    "offerings",
+    "passages",
+    "quest",
+    "return_on_failure",
+    "reversible",
+    "selector",
+    "sources",
+    "storage",
+    "teleport",
+    "trigger"
+  ],
+  "canonical_quest_keys": {
+    "oteryn:quest.adventures_of_galthen_quest": "content/quests/missions/quest-state.json:1 $.quests[3].quest",
+    "oteryn:quest.grimvale_quest": "content/quests/missions/quest-state.json:1 $.quests[30].quest",
+    "oteryn:quest.shadows_of_yalahar_quest": "content/quests/missions/quest-state.json:1 $.quests[56].quest",
+    "oteryn:quest.the_inquisition_quest": "content/quests/missions/quest-state.json:1 $.quests[72].quest",
+    "oteryn:quest.the_pits_of_inferno_quest": "content/quests/definitions/quests-00000-00099.json:1 $.records[89].definition.identity.key",
+    "oteryn:quest.the_rookie_guard_quest": "content/quests/missions/quest-state.json:1 $.quests[80].quest",
+    "oteryn:quest.waterfall_quest": "content/quests/definitions/quests-00000-00099.json:1 $.records[99].definition.identity.key"
+  },
+  "existing_track_owner_checks": "All packet references to old lowered tracks retain their exact owner",
+  "excluded_druid_candidate": {
+    "callback": "oteryn:quest-callback/druid-ceiron-water-sample",
+    "status": "REMOVED_FROM_ACTIVE_PACKET; Item admission remains Left out",
+    "previous_packet_sha256": "7f2107f39a344f184cc564851c03cc16e652a540955b24b634b6d60e74469720",
+    "canonical_owner": "oteryn:quest.outfit_and_addon_quests",
+    "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/ceirons_waterskin",
+    "owner_evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1 $.quests[46].tracks[15]",
+    "native_inventory_capture": "root_analysis/native-items.json",
+    "native_inventory_capture_sha256": "bcbf36451d6c4e7c2be6033a80e398f73dfbed1b971f03e0ea6c3d7ef9b83bd5",
+    "requested_item_ids": [
+      5938,
+      5939
+    ],
+    "matched_native_records": 0,
+    "generator_failure_reported_by_root": "QUEST_CALLBACK_ITEM_NOT_ADMITTED; canonical 5938/5939 materializable=false, stack_class=Unknown, EXACT source binding",
+    "failure_evidence_limit": "Root ran the PC generator. This worker independently checks packet exclusion and native capture absence, not the PC execution or freshly regenerated canonical Item records.",
+    "generator_guard": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-migration/quest_callback_profiles.py:120-128,179-182"
+  },
+  "new_source_backed_tracks": [
+    {
+      "callback": "oteryn:quest-callback/shadows-inkwell",
+      "track": "oteryn:quest-progress/crystalserver/quest/u8_5/shadows_of_yalahar/mission09_books_success",
+      "minimum": 8,
+      "maximum": 9223372036854775807,
+      "set": -1
+    }
+  ],
+  "new_track_evidence": {
+    "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1563",
+    "storage_id": 42557,
+    "symbol": "Mission09BooksSuccess",
+    "callback_is_guarded": "BooksSuccess >=8 and Mission09==1; writer/folio mechanism is not imported by this packet"
+  },
+  "map_head": "9d2437e2c109ec6abb413ea0104906a85948dd16",
+  "map_regions": 1208,
+  "tagged_tiles": 312,
+  "map_classifications": {
+    "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED": 11,
+    "UNBOUND_UID_AID": 67
+  },
+  "map_records": [
+    {
+      "callback": "oteryn:quest-callback/grimvale-curse-exit-6",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-curse-exit-7",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-curse-exit-8",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-curse-exit-9",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-curse-exit-10",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-ancient-exit-5",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-ancient-exit-6",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-ancient-exit-7",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/grimvale-ancient-exit-8",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28810",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28811",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28812",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28813",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28814",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28815",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28816",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28817",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28818",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28819",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28820",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28821",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28822",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28823",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28824",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28825",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28826",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28827",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28828",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28829",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28830",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28831",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28832",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28833",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-maze-28834",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-bazir-16772",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-bazir-16773",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-bazir-16774",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-bazir-50082",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/poi-bazir-50083",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-wolf-found",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-wolf-sprint-exit",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-mine-enter",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-mine-exit",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-wasp-lair",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-fortress-water-found",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40058",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40059",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40060",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40061",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40062",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-energy-barrier-40063",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/rookie-poisoned-water",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "trigger": "use",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/galthen-iksupan-exit-1",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/galthen-iksupan-exit-2",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "classification": "POSITION_TILE_OBSERVED_NOT_RUNTIME_TESTED",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/shadows-inkwell",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "trigger": "use",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/shadows-strange-energy",
+      "quest": "oteryn:quest.shadows_of_yalahar_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2152",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2154",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2155",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2156",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2158",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2160",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2161",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2163",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2165",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2166",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2167",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2169",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2171",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2172",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2173",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2175",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2177",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2179",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/inquisition-portal-2180",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/waterfall-jump",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/waterfall-cave-entrance",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    },
+    {
+      "callback": "oteryn:quest-callback/waterfall-cave-exit",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "classification": "UNBOUND_UID_AID",
+      "matching_tags": []
+    }
+  ],
+  "errors": []
+}

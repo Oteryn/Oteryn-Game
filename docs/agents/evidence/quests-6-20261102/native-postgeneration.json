@@ -1,0 +1,133 @@
+{
+  "classification": "POST_TREE_GENERATION_ACTUAL_NATIVE_PROVIDER",
+  "source": "content/items/definitions/spell-native-profiles.json",
+  "sha256": "2d9dc9eebcbe98c23bcc33f1a645cb1b7b39ef374c9a2328cfd731c848362892",
+  "requested_keys": [
+    "oteryn:item.tibia.i12784",
+    "oteryn:item.tibia.i5938",
+    "oteryn:item.tibia.i5939"
+  ],
+  "records": [
+    {
+      "admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "NonStackable"
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12784",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "12784",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12784",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null,
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i12784",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 180
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": "It's very toxic. Do not ever drink green liquids."
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "flask of wasp poison"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "UNKNOWN"
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      }
+    }
+  ]
+}

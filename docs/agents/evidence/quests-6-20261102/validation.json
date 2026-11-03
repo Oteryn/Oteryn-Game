@@ -1,0 +1,981 @@
+{
+  "evidence_class": "EXECUTED_LOCAL_VERIFICATION",
+  "scope": "Authorized isolated owner-PC checkout; PG env only for quests6_ filter; exact published-head recheck is recorded in PR body.",
+  "gates": [
+    {
+      "name": "raid_catalogue",
+      "command": [
+        "python3",
+        "tools/content-migration/raid_catalogue.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:11.426918+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.58,
+      "log_sha256": "ca475bc9534755dfe7f2c6dfb5ae90ac5f003dfa24decc669a36d08233b7e055",
+      "results": []
+    },
+    {
+      "name": "craft_authoring",
+      "command": [
+        "python3",
+        "tools/content-schema/craft-authoring/craft_authoring.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:12.008252+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.48,
+      "log_sha256": "fda92731c87655506652b9278990d1cf370813ac059ad73c5ea829b30771b98c",
+      "results": [
+        "PASS item_conversion records=129 check=False"
+      ]
+    },
+    {
+      "name": "imbuement_content",
+      "command": [
+        "python3",
+        "tools/content-schema/imbuement-authoring/imbuement_content.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:12.494811+00:00",
+      "exit": 0,
+      "elapsed_seconds": 3.18,
+      "log_sha256": "2df93350d5f388b9f36c5e52dc542b65eec36d4710e4783cd02f15b382b5c013",
+      "results": [
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked"
+      ]
+    },
+    {
+      "name": "charm_authoring",
+      "command": [
+        "python3",
+        "tools/content-schema/charm-authoring/charm_authoring.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:15.681865+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.14,
+      "log_sha256": "af509b437ffe50345880d8cc294424d7d12a5211dbb912b00ae3006e9e779514",
+      "results": []
+    },
+    {
+      "name": "proficiency_authoring",
+      "command": [
+        "python3",
+        "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:15.828610+00:00",
+      "exit": 0,
+      "elapsed_seconds": 2.96,
+      "log_sha256": "6ce8b99cd8bb4350df9ca629c0c9534a7a0540b1b9906de60d4bd78a22b066b5",
+      "results": []
+    },
+    {
+      "name": "reward_claim_authoring",
+      "command": [
+        "python3",
+        "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:18.791964+00:00",
+      "exit": 0,
+      "elapsed_seconds": 1.38,
+      "log_sha256": "292b8462309af9dff94a9436c0bd392dcab9d64bdbf0eb136dd3041ef174429c",
+      "results": []
+    },
+    {
+      "name": "starter_kit_authoring",
+      "command": [
+        "python3",
+        "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+        "content"
+      ],
+      "started_utc": "2026-11-02T22:34:20.176738+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.32,
+      "log_sha256": "09f534c162443c70c9a86e2b3ec6dff7a102488f251b991c384382ec32f8b939",
+      "results": []
+    },
+    {
+      "name": "regeneration-checks",
+      "command": [
+        "python3",
+        "tools/content-migration/regenerate_content.py",
+        "--check"
+      ],
+      "started_utc": "2026-11-02T22:34:20.500179+00:00",
+      "exit": 0,
+      "elapsed_seconds": 898.63,
+      "log_sha256": "f7b0e4a0ea6398f42020c19c9e555603d5c1a4441416732b5331d11baba9aad9",
+      "results": [
+        "Ran 10 tests in 0.071s",
+        "OK",
+        "PASS",
+        "PASS registered spell import files=40 activation=false",
+        "Ran 9 tests in 29.549s",
+        "OK",
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+        "PASS item_conversion records=129 check=True",
+        "PASS items=34111 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 item_authoring=700 taxonomy=12252 relations=1093 provenance_facts=1022 creature_records=28758 creature_profiles=27508 creature_bindings=1863 npc_records=1282 npc_bindings=2747 service_records=389 dialogue_records=836 encounter_records=108 charm_records=25 proficiency_records=443 proficiency_bindings=665 reward_claim_records=336 starter_kit_records=1",
+        "Ran 12 tests in 92.378s",
+        "OK",
+        "Ran 5 tests in 0.009s",
+        "OK",
+        "Ran 28 tests in 0.205s",
+        "OK",
+        "Ran 3 tests in 3.247s",
+        "OK",
+        "Ran 13 tests in 36.700s",
+        "OK",
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+        "PASS item_conversion records=129 check=True",
+        "Ran 11 tests in 37.355s",
+        "OK",
+        "Ran 6 tests in 1.974s",
+        "OK",
+        "PASS items=34111 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 item_authoring=700 taxonomy=12252 relations=1093 provenance_facts=1022 creature_records=28758 creature_profiles=27508 creature_bindings=1863 npc_records=1282 npc_bindings=2747 service_records=389 dialogue_records=836 encounter_records=108 charm_records=25 proficiency_records=443 proficiency_bindings=665 reward_claim_records=336 starter_kit_records=1",
+        "PASS managed_files=243 item_shards=69",
+        "PASS materialized=97/97 world_markers=10 world_successor_files=1257",
+        "PASS item_conversion records=129 check=True",
+        "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+        "Ran 3 tests in 0.107s",
+        "OK",
+        "Ran 3 tests in 0.633s",
+        "OK",
+        "Ran 4 tests in 0.004s",
+        "OK",
+        "PASS 599 checks",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 68.40s"
+      ]
+    },
+    {
+      "name": "pin-refresh",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "started_utc": "2026-11-02T22:49:19.190103+00:00",
+      "exit": 0,
+      "elapsed_seconds": 72.07,
+      "log_sha256": "dfa05804237085cbe2488bcf399858fdf3990e77cf00369bbf8c52e953be55c9",
+      "results": [
+        "     Running `<target>/release/oteryn-world-bundle-compiler pin-refresh .`"
+      ]
+    },
+    {
+      "name": "registry-fragments",
+      "command": [
+        "python3",
+        "tools/contracts/registry_fragments.py"
+      ],
+      "started_utc": "2026-11-02T22:50:31.249393+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.07,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": []
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_utc": "2026-11-02T22:50:31.328760+00:00",
+      "exit": 0,
+      "elapsed_seconds": 15.05,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": []
+    },
+    {
+      "name": "clippy-quests",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--all-targets",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-11-02T22:50:46.391823+00:00",
+      "exit": 0,
+      "elapsed_seconds": 6.92,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": []
+    },
+    {
+      "name": "clippy-dispatch",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-11-02T22:50:53.307182+00:00",
+      "exit": 0,
+      "elapsed_seconds": 276.96,
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "results": []
+    },
+    {
+      "name": "test-quests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--quiet"
+      ],
+      "started_utc": "2026-11-02T22:55:30.239913+00:00",
+      "exit": 0,
+      "elapsed_seconds": 7.29,
+      "log_sha256": "b39a6ef99d047294447801888cb2493e8bd52e756af575f7e4e36e251f449e8e",
+      "results": [
+        "test result: ok. 125 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.70s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "name": "test-dispatch",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--quiet"
+      ],
+      "started_utc": "2026-11-02T22:55:37.538445+00:00",
+      "exit": 101,
+      "elapsed_seconds": 1152,
+      "log_sha256": "fa423226f73321aadb88bceba870961b19b56c086e5805df1071445e48c0aa50",
+      "results": [
+        "test result: FAILED. 2235 passed; 1 failed; 19 ignored; 0 measured; 0 filtered out; finished in 679.13s"
+      ],
+      "failure_tail": "dering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 2255 tests\ni......i...........iiiii.i............................................................. 87/2255\n................i...................................................................... 174/2255\n....................................................................................... 261/2255\n....................................................................................... 348/2255\n....................................................................................... 435/2255\n....................................................................................... 522/2255\n.........................................test gameplay_transport::activity_runtime::lineage_tests::activity_lineage_listener_completion_retains_only_unknown_and_cancelled_work has been running for over 60 seconds\ntest gameplay_transport::activity_runtime::lineage_tests::activity_lineage_lost_barrier_and_offline_return_keep_exact_pending_obligations has been running for over 60 seconds\ntest gameplay_transport::activity_runtime::lineage_tests::activity_lineage_many_delivered_hops_keep_only_the_original_socket_root has been running for over 60 seconds\ntest gameplay_transport::activity_runtime::lineage_tests::activity_lineage_old_socket_cleanup_never_follows_a_recovered_controller has been running for over 60 seconds\ntest gameplay_transport::activity_runtime::lineage_tests::activity_lineage_source_stream_can_finish_its_result_after_directory_release has been running for over 60 seconds\n..test gameplay_transport::activity_runtime::switch_tests::committed_destination_is_visible_before_barrier_without_resurrecting_old_control has been running for over 60 seconds\n............................................ 609/2255\n........................................... 652/2255\ngameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes --- FAILED\ntest gameplay_transport::attack::tests::attack_chase_budget_tests::resumed_drains_keep_planned_occupancy_in_both_caller_orders_before_and_after_commit has been running for over 60 seconds\n.....test gameplay_transport::attack::tests::the_chase_search_drain_gives_the_same_routes_in_any_check_order has been running for over 60 seconds\n.test gameplay_transport::attack::weapon_tests::a_held_melee_weapon_swings_with_its_attack_and_anything_else_with_fists has been running for over 60 seconds\ntest gameplay_transport::connection::tests::item_transform_dispatch_tests::item_transform_ground_rotation_real_dispatch_cycle_stale_reach_and_bindings has been running for over 60 seconds\n.test gameplay_transport::container_view::browse_projection::tests::browse_projection_shows_full_stack_and_excludes_unique_without_hiding_other_bindings has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_dwarven_ring_suppresses_drunk_only_in_ring_slot has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_inactive_skill_rings_take_worn_skill_only_in_ring_slot has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_inactive_time_ring_takes_worn_speed_only_in_ring_slot has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_potions_in_ammo_and_hands_preserve_contributing_speed has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_preserves_unknown_speed_and_rejects_ability_errors has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_rejects_mismatch_unknown_policy_and_invalid_slots has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_reward_boots_grant_speed_only_in_feet has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_staff_native_profile_matches_current_monk_facts has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_uses_primary_slot_and_extra_never_suppresses has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::armor_tests::dmg3_equipment_earth_death_absorbs_compose_with_installed_protection_before_clamp has been running for over 60 seconds\n.......test gameplay_transport::equipment_move::equipment_effects_owner::tests::armor_tests::unknown_or_negative_armor_adds_nothing has been running for over 60 seconds\n......................................................test gameplay_transport::equipment_move::equipment_effects_owner::tests::armor_tests::worn_armor_sums_own_slot_body_items_and_never_the_hands has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::armor_tests::worn_physical_protection_counts_untimed_own_slot_items_without_field_protection has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::defence_tests::the_shield_defends_over_the_weapon_and_bare_hands_with_the_fist has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::defence_tests::unknown_weapon_facts_defend_with_nothing_and_another_digest_refuses has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::dmg3_installed_offence_tiers_add_before_clamp_and_expired_rows_do_not_contribute has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::dmg3_installed_protection_tiers_expiry_custody_and_catalogue has been running for over 60 seconds\n........test gameplay_transport::equipment_move::equipment_effects_owner::tests::offence_tests::worn_eqmod2_reads_cleave_reflection_and_paired_perfect_shot_attributes has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::offence_tests::worn_offence_clamps_to_the_skill_range has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::offence_tests::worn_offence_refuses_a_tier_without_a_current_forge_profile has been running for over 60 seconds\n....test gameplay_transport::equipment_move::equipment_effects_owner::tests::offence_tests::worn_offence_sums_own_slot_items_in_hundredths_of_a_percent has been running for over 60 seconds\ntest gameplay_transport::equipment_move::equipment_effects_owner::tests::wheel_ascetic_mantra_uses_positive_items_in_the_six_source_slots has been running for over 60 seconds\n....... 740/2255\n........test gameplay_transport::imbuement::tests::imbuement_allowance_of_activated_native_content_follows_generated_slots has been running for over 60 seconds\n....test gameplay_transport::inspection::tests::inspection_instance_details_include_weight_tier_and_live_imbuement has been running for over 60 seconds\ntest gameplay_transport::item_craft::crystal_parity_tests::i11_cookie_tray_bakes_twelve_cookies_and_an_empty_tray has been running for over 60 seconds\ntest gameplay_transport::item_craft::crystal_parity_tests::i11_crystal_divergences_are_pinned has been running for over 60 seconds\ntest gameplay_transport::item_craft::crystal_parity_tests::i11_crystal_station_baking_and_milling_match has been running for over 60 seconds\ntest gameplay_transport::item_look::tests::a_definition_ref_names_its_typed_definition_back has been running for over 60 seconds\ntest gameplay_transport::item_look::tests::observed_target_requires_live_handle_exact_binding_and_current_pin has been running for over 60 seconds\n................................................test gameplay_transport::item_look::tests::reading_map_base_is_readable_without_materialization_or_a_handle has been running for over 60 seconds\ntest gameplay_transport::item_look::tests::reading_map_empty_and_utf8_text has been running for over 60 seconds\ntest gameplay_transport::item_look::tests::reading_map_five_and_visible_other_floor_are_too_far has been running for over 60 seconds\ntest gameplay_transport::item_look::tests::reading_map_forged_stale_hidden_and_not_visible_are_refused has been running for over 60 seconds\n.test gameplay_transport::item_look::tests::reading_map_non_distance_item_keeps_existing_look has been running for over 60 seconds\n..............test gameplay_transport::item_look::tests::reading_map_placement_outside_the_published_stack_cut_is_not_visible has been running for over 60 seconds\n............ 827/2255\n....................................................................................... 914/2255\n....................................................................................... 1001/2255\n....................................................................................... 1088/2255\n........i...i.......................................................................... 1175/2255\n....................................................................................... 1262/2255\n....................................................................................... 1349/2255\n....................................................................................... 1436/2255\n....................................................................................... 1523/2255\n.............................................................................ii........ 1610/2255\n...................test gameplay_transport::item_ref_admission::tests::capability_4_is_offered_only_by_a_generation_with_a_non_empty_item_key_set has been running for over 60 seconds\ntest gameplay_transport::item_ref_admission::tests::corpse_take_facts_are_the_generation_item_profiles has been running for over 60 seconds\n.test gameplay_transport::item_use::crystal_parity_tests::i03_crystal_spellbook_has_vocation_filtered_spell_list has been running for over 60 seconds\n.test gameplay_transport::item_use::crystal_parity_tests::i14_admitted_consumables_match_crystal has been running for over 60 seconds\n...test gameplay_transport::item_use::crystal_parity_tests::i14_global_consumables_are_admitted has been running for over 60 seconds\ntest gameplay_transport::item_use::crystal_parity_tests::i14_matching_restore_potions_and_foods_are_admitted has been running for over 60 seconds\ntest gameplay_transport::item_use::crystal_parity_tests::i14_unresolved_crystal_consumables_remain_unadmitted has been running for over 60 seconds\ntest gameplay_transport::monk_save::postgres_tests::drome_cube_profiles::drome_cube_native_generation_profiles_cover_the_source_and_every_reward has been running for over 60 seconds\ntest gameplay_transport::monk_save::postgres_tests::equipment_mods::eqmod2_content_forge_tiers_and_modifiers_are_projected has been running for over 60 seconds\ntest gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_all_profiles_use_the_existing_caster has been running for over 60 seconds\ntest gameplay_transport::monk_save::postgres_tests::gem_enchanting::gemx_native_output_closure_includes_stacks_elements_and_charges has been running for over 60 seconds\n............................................................... 1697/2255\n....................................................................................... 1784/2255\n................................test gameplay_transport::monk_save::postgres_tests::soul_war_parity::w11_crystal_soul_war_rotten_blood_boss_parity has been running for over 60 seconds\n....................................................... 1871/2255\n......test gameplay_transport::monk_save::postgres_tests::summer_population::summer_population_all_six_execute_exact_pinned_loot_plans_and_replay has been running for over 60 seconds\n..................test gameplay_transport::monk_save::postgres_tests::summer_population::summer_population_all_six_radiant_rewards_admit_native_corpses has been running for over 60 seconds\n..test gameplay_transport::monk_save::postgres_tests::summer_population::summer_population_boss_values_use_the_selected_pinned_fallback has been running for over 60 seconds\n............................................................. 1958/2255\n......................................................test gameplay_transport::monk_save::postgres_tests::summer_population::w16_crystal_summer_boss_parity has been running for over 60 seconds\n................................. 2045/2255\ni......................ii....................................................i..ii..... 2132/2255\n..............................................................test gameplay_transport::reward_bag_use::tests::active_content_mints_every_reward_bag_output has been running for over 60 seconds\ntest gameplay_transport::reward_bag_use::tests::primal_bag_is_playable_and_mints_every_pinned_reward has been running for over 60 seconds\n...............test gameplay_transport::soulpit::runtime::tests::failed_spawn_ack_reuses_physical_attempts_and_terminal_return_retries_without_new_event has been running for over 60 seconds\n.......... 2219/2255\n.....................test gameplay_transport::soulpit::runtime::tests::lethal_boss_reward_precedes_both_timeout_drivers_and_replayed_return_never_rewards_a_live_despawn has been running for over 60 seconds\ntest gameplay_transport::soulpit::runtime::tests::precise_spawn_and_source_global_clearance_have_independent_deadlines has been running for over 60 seconds\n..test gameplay_transport::soulpit::runtime::tests::recovery_rejects_a_foreign_instance_kernel_before_any_progress_or_return has been running for over 60 seconds\ntest gameplay_transport::soulpit::runtime::tests::spawn_ack_retry_preserves_a_lethal_actor_until_durable_death_can_be_recorded has been running for over 60 seconds\n.test gameplay_transport::timed_item_content::crystal_parity_tests::i05_crystal_charged_amulet_matches has been running for over 60 seconds\ntest gameplay_transport::timed_item_content::crystal_parity_tests::i05_crystal_timed_equipment_budgets_match has been running for over 60 seconds\n..test gameplay_transport::timed_item_content::crystal_parity_tests::i05_time_ring_is_admitted_and_remaining_rings_are_pinned has been running for over 60 seconds\ntest gameplay_transport::timed_item_content::crystal_parity_tests::i05_trader_custody_keeps_unhosted_ring_equipment_closed has been running for over 60 seconds\n..........\nfailures:\n\n---- gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes stdout ----\n\nthread 'gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes' (2576628) panicked at crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs:174:5:\nassertion `left == right` failed\n  left: 3518\n right: 3517\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes\n\ntest result: FAILED. 2235 passed; 1 failed; 19 ignored; 0 measured; 0 filtered out; finished in 679.13s\n\nerror: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`\n"
+    },
+    {
+      "name": "profile-count-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "started_utc": "2026-11-02T23:15:05.739263+00:00",
+      "exit": 0,
+      "elapsed_seconds": 175.7,
+      "log_sha256": "8908f2cb725e0ec7ecb21fd9f20290ebb312398d8f942d5c03de729b55e35d45",
+      "results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2254 filtered out; finished in 46.56s"
+      ]
+    },
+    {
+      "name": "clippy-dispatch-after-profile-pin",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-11-02T23:18:01.427435+00:00",
+      "exit": 0,
+      "elapsed_seconds": 45.69,
+      "log_sha256": "a9ed126e9a18b79e4a8203101728a841c53d4147cd4256d3e0223c8518ea068e",
+      "results": []
+    },
+    {
+      "name": "postgres-quests6-config-red",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "quests6_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "started_utc": "2026-11-02T23:18:47.122998+00:00",
+      "exit": 101,
+      "elapsed_seconds": 0.94,
+      "completed_postgres_cases": [],
+      "missing_postgres_cases": [
+        "QUESTS6_BEHEMOTH_ARMOR",
+        "QUESTS6_BEHEMOTH_BAG",
+        "QUESTS6_BEHEMOTH_HALBERD",
+        "QUESTS6_BEHEMOTH_SHIELD",
+        "QUESTS6_DESERT_COINS",
+        "QUESTS6_STATELESS_PORTALS",
+        "QUESTS6_WATERFALL_BAG"
+      ],
+      "classification": "TEST_ENVIRONMENT_CONFIGURATION_REFUSED_BEFORE_DB_ACCESS",
+      "repair": "Own isolated PG18.6 container: canonical oteryn_test_admin role and postgresql URL scheme; safety guard unchanged.",
+      "log_sha256": "05cb631d002ed0caad38b44435fe5a30995061e282112c6c9bcbaeb37606214f",
+      "results": [
+        "FAILED",
+        "FAILED",
+        "FAILED",
+        "FAILED",
+        "test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 2251 filtered out; finished in 0.06s"
+      ],
+      "failure_tail": "warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32\n    |\n208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n    |                                ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {\n208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {\n    |\n\nwarning: missing documentation for a function\n   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1\n    |\n502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)\nwarning: `tokio` (lib) generated 2 warnings (2 duplicates)\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\nwarning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)\nwarning: `sqlx-core` (lib) generated 1 warning (1 duplicate)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.71s\n     Running unittests src/lib.rs (<target>/debug/deps/oteryn_gameplay_dispatch-d2a393111255d251)\n\nrunning 4 tests\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner ... Error: \"unsafe PostgreSQL test admin URL\"\nFAILED\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_desert_fixed_coin_reward_preserves_quantity_and_once_claim ... Error: \"unsafe PostgreSQL test admin URL\"\nFAILED\ntest gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_waterfall_source_bag_is_atomic_and_replayable ... Error: \"unsafe PostgreSQL test admin URL\"\nFAILED\ntest gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::quests6::quests6_stateless_portals_run_through_literal_step_ingress ... Error: \"unsafe PostgreSQL test admin URL\"\nFAILED\n\nfailures:\n\nfailures:\n    gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_behemoth_all_four_source_rewards_use_the_existing_claim_owner\n    gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_desert_fixed_coin_reward_preserves_quantity_and_once_claim\n    gameplay_transport::monk_save::postgres_tests::quest_container_chests::quests6_waterfall_source_bag_is_atomic_and_replayable\n    gameplay_transport::monk_save::postgres_tests::quest_world_callbacks::quests6::quests6_stateless_portals_run_through_literal_step_ingress\n\ntest result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 2251 filtered out; finished in 0.06s\n\nerror: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`\n"
+    },
+    {
+      "name": "postgres-quests6",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-features",
+        "--lib",
+        "quests6_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "started_utc": "2026-11-02T23:21:24.772758+00:00",
+      "exit": 0,
+      "elapsed_seconds": 443.03,
+      "completed_postgres_cases": [
+        "QUESTS6_BEHEMOTH_ARMOR",
+        "QUESTS6_BEHEMOTH_BAG",
+        "QUESTS6_BEHEMOTH_HALBERD",
+        "QUESTS6_BEHEMOTH_SHIELD",
+        "QUESTS6_DESERT_COINS",
+        "QUESTS6_STATELESS_PORTALS",
+        "QUESTS6_WATERFALL_BAG"
+      ],
+      "missing_postgres_cases": [],
+      "log_sha256": "586500031a57ada7c04faf7baa9f0753f358213fe4726c168adce091b6e5533d",
+      "results": [
+        "QUESTS6_BEHEMOTH_BAG POSTGRES_CASE_COMPLETED",
+        "QUESTS6_BEHEMOTH_HALBERD POSTGRES_CASE_COMPLETED",
+        "QUESTS6_BEHEMOTH_SHIELD POSTGRES_CASE_COMPLETED",
+        "QUESTS6_BEHEMOTH_ARMOR POSTGRES_CASE_COMPLETED",
+        "QUESTS6_DESERT_COINS POSTGRES_CASE_COMPLETED",
+        "QUESTS6_WATERFALL_BAG POSTGRES_CASE_COMPLETED",
+        "QUESTS6_STATELESS_PORTALS POSTGRES_CASE_COMPLETED",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2251 filtered out; finished in 441.71s"
+      ]
+    },
+    {
+      "name": "content-integration",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "started_utc": "2026-11-02T23:28:47.765058+00:00",
+      "exit": 0,
+      "elapsed_seconds": 43.22,
+      "log_sha256": "504c35320a70a66ada131b19d75b5bd11a7db214ac63b658d33b8daef92a8b19",
+      "results": [
+        "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.83s"
+      ]
+    },
+    {
+      "name": "quest-authoring-proof-pin-red",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py"
+      ],
+      "started_utc": "2026-11-02T23:29:30.975756+00:00",
+      "exit": 1,
+      "elapsed_seconds": 63.35,
+      "classification": "EXISTING_REVIEWED_PROOF_PIN_STALE_AFTER_AUTHORIZED_CALLBACK_ADDITIONS",
+      "log_sha256": "afcb86eb2c5e647cef56396735d5e21de055fb6ecef5817eef1a2fdc8f7a4435",
+      "results": [
+        "Ran 7 tests in 3.122s",
+        "OK",
+        "Ran 13 tests in 15.874s",
+        "OK",
+        "Ran 6 tests in 5.881s",
+        "OK"
+      ],
+      "failure_tail": "Quest check: verify_quest_schema.py\n{\n  \"cases\": 269,\n  \"passed\": 269,\n  \"failed\": []\n}\nQuest check: soul_war_reconstruction.py --check\nSoul War reconstruction: 18 mechanics, 6 videos, runtime=false\nQuest check: ../encounter-authoring/soul_war_crystal_reconstruction.py --check\nSoul War Crystal encounter cores are current\nQuest check: ../encounter-authoring/test_soul_war_crystal_reconstruction.py\n.......\n----------------------------------------------------------------------\nRan 7 tests in 3.122s\n\nOK\nQuest check: ../reward-claim-authoring/test_reward_claim_variant_authoring.py\n.............\n----------------------------------------------------------------------\nRan 13 tests in 15.874s\n\nOK\nQuest check: ../reward-claim-authoring/test_variant_stack_serialization.py\n......\n----------------------------------------------------------------------\nRan 6 tests in 5.881s\n\nOK\nQuest check: ../reward-claim-authoring/reward_claim_authoring.py content --check\nreward claim content check: ok\nQuest check: ../reward-claim-authoring/reward_claim_variant_migration.py --check\nRewardClaim variants: 105; eligible plain missing=0; native lowering waits for implementation\nQuest check: validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json --progress samples/questlog/progress.json --interactions samples/interactions/interactions.json --interactions-manifest samples/interactions/manifest.json\n{\n  \"valid\": true,\n  \"errors\": [],\n  \"error_count\": 0\n}\nQuest check: refresh_quest_source_checks.py --check\n{\n  \"valid\": true,\n  \"updated\": []\n}\nQuest check: quest_catalogue_authoring.py --check\n{\"authored_records\": 284, \"coverage_states\": {\"conflict\": 97, \"directly_authored\": 192, \"represented_by_family\": 23, \"unrepresented\": 61}, \"duplicate_title_checks\": 0, \"quest_log_conflicts\": 31, \"source_titles\": 373}\nQuest check: quest_completion_matrix.py --check\n{\"canonical_definitions\": 352, \"canonical_definitions_not_in_wiki_title_inventory\": 2, \"canonical_readiness\": {\"definition_ready\": 42, \"waiting_data\": 242, \"waiting_native_bindings\": 68}, \"donor_mode\": {\"DONOR_IMPLEMENTATION_AVAILABLE\": 332, \"DONOR_PARTIAL_PLUS_REFERENCE\": 12, \"REFERENCE_AUTHORED_REQUIRED\": 29}, \"implementation_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}, \"mapping_state\": {\"SINGLE\": 373}, \"playable_assessment\": \"NOT_PERFORMED_BY_THIS_MATRIX\", \"playable_verified\": 0, \"reward_claim_owner_state\": {\"REWARD_CLAIM_DATA_PENDING\": 16, \"REWARD_CLAIM_IMPLEMENTATION_PENDING\": 40, \"REWARD_CLAIM_USE_PENDING\": 49}, \"reward_claim_placements\": 127, \"reward_claim_ready_refs\": 124, \"source_fidelity_state\": {\"SOURCE_HOLDS_CLEAR\": 152, \"SOURCE_HOLDS_PRESENT\": 221}, \"typed_progress_state\": {\"CHOSEN_SOURCE_TYPED_PROGRESS_ONLY\": 146, \"CHOSEN_TYPED_PROGRESS_ONLY\": 68, \"LOWERED\": 7, \"NO_CANDIDATE\": 42, \"SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY\": 110}, \"unique_canonical_definitions_representing_wiki_titles\": 350, \"wiki_titles\": 373, \"wiki_titles_mapped\": 373, \"work_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}}\nQuest check: collect_claim_candidates.py --check\n{\"classification_counts\": {\"AMBIGUOUS_OR_PARTIAL_SAME_QUEST_CLAIM_MATCH\": 2, \"NO_SAME_QUEST_REWARD_CLAIM_MATCH\": 143, \"ONE_SAME_QUEST_READY_CLAIM_COVERS_ALL_EXACT_TARGETS\": 2, \"TARGET_IDENTITY_INCOMPLETE\": 130}, \"collect_stages\": 277, \"exact_same_quest_ready_claim_candidates\": 2, \"native_dispatch_bindings\": 0, \"runtime_admitted\": false}\nQuest check: use_trigger_candidates.py --check\n{\"classification_counts\": {\"NO_SAME_QUEST_LITERAL_ID_USE_TRIGGER_MATCH\": 42, \"ONE_SAME_QUEST_LITERAL_ID_USE_TRIGGER_COVERS_ALL_TARGETS\": 4, \"TARGET_IDENTITY_INCOMPLETE\": 412}, \"exact_same_quest_literal_id_trigger_candidates\": 4, \"native_dispatch_bindings\": 0, \"runtime_admitted\": false, \"use_stages\": 458}\nQuest check: source_text_authoring.py --check\n{\"valid\": true, \"scope\": \"source_reference_prose_only; no native or runtime admission\", \"summary\": {\"wanted\": 1617, \"known\": 1617, \"unknown\": 0}}\nQuest check: build_wiki_source_schema.py --check\nQuest check: wiki_source_inventory.py --check\nPinned SOURCE inventory passed; current source bindings do not change snapshot selection\nQuest check: wiki_source_supplements.py --check\nOffline authored SOURCE reconstruction passed; raw bodies and spans NOT rechecked\nQuest check: wiki_all_source_inventory.py --check\n{\"titles\": 373, \"preserved_detailed_titles\": 105, \"new_structured_titles\": 268, \"preserved_source_revisions\": 249, \"new_structured_source_revisions\": 729, \"new_prerequisite_expressions\": 1559, \"new_unparsed_requirement_holds\": 158, \"new_mission_heading_references\": 2539, \"new_reward_entity_references\": 1880, \"new_requirement_entity_references\": 1542, \"new_location_entity_references\": 1223, \"new_titles_with_rewards\": 266, \"new_titles_with_requirements\": 213, \"new_titles_with_locations\": 265, \"new_titles_with_mission_headings\": 252, \"new_full_body_captures\": 0}\nQuest check: wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check\nQuest check: wiki_requirement_interpretations.py --check\n{\"historical_unparsed_holds\": 205, \"full_syntax_interpretations\": 18, \"partial_syntax_interpretations\": 29, \"unparsed\": 158, \"effective_unparsed_or_partial\": 187}\nQuest check: source_facts_authoring.py --specifications samples/wiki-source-all373/source-specs-373.json --samples samples/unbound-source-facts --check\n{\"titles\": 69, \"raw_body_rechecked\": false, \"runtime_promotion\": false}\nQuest check: authored_quest_authoring.py --check\nAuthored recipes: 68 complete chosen DATA recipes; Native admission held\nQuest check: quest_completion_authoring.py --check\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_completion_authoring.py\", line 164, in <module>\n    main()\n    ~~~~^^\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_completion_authoring.py\", line 154, in main\n    expected = tree.expected_files(root)\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_tree_authoring.py\", line 295, in expected_files\n    records = attach(root, records)\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_completion_authoring.py\", line 138, in attach\n    completed = completion_records(root, source_records)\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_completion_authoring.py\", line 59, in completion_records\n    expected, source_change = effective_digests(root, baseline, source)\n                              ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<checkout>/tools/content-schema/quest-authoring/source_fix_guard.py\", line 215, in effective_digests\n    receipt, approval = verified_receipt(root)\n                        ~~~~~~~~~~~~~~~~^^^^^^\n  File \"<checkout>/tools/content-schema/quest-authoring/source_fix_guard.py\", line 84, in verified_receipt\n    verify_file(root, descriptor)\n    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"<checkout>/tools/content-schema/quest-authoring/source_fix_guard.py\", line 50, in verify_file\n    raise ValueError('input/proof/compiler SHA mismatch: ' + str(relative))\nValueError: input/proof/compiler SHA mismatch: content/quests/world-callbacks.json\n"
+    },
+    {
+      "name": "proof-pin-amend",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/amend_monk_source_receipt.py"
+      ],
+      "started_utc": "2026-11-02T23:34:15.743390+00:00",
+      "exit": 0,
+      "elapsed_seconds": 1.25,
+      "log_sha256": "6df9cc7259a55d0539149d6d212fdd6d6b2bb5a487469b07544bd3fac3816c63",
+      "results": []
+    },
+    {
+      "name": "proof-pin-check",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/amend_monk_source_receipt.py",
+        "--check"
+      ],
+      "started_utc": "2026-11-02T23:34:17.000836+00:00",
+      "exit": 0,
+      "elapsed_seconds": 1.18,
+      "log_sha256": "6df9cc7259a55d0539149d6d212fdd6d6b2bb5a487469b07544bd3fac3816c63",
+      "results": []
+    },
+    {
+      "name": "quest-tree-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+        "content",
+        "--source-packet",
+        "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"
+      ],
+      "started_utc": "2026-11-02T23:34:18.197304+00:00",
+      "exit": 0,
+      "elapsed_seconds": 33.71,
+      "log_sha256": "1e9b98d389873aab162e7ff9e28dbe59c2813848eb2d09b3156010f8eed375f1",
+      "results": []
+    },
+    {
+      "name": "quest_rollout_authoring-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_rollout_authoring.py"
+      ],
+      "started_utc": "2026-11-02T23:35:32.577751+00:00",
+      "exit": 0,
+      "elapsed_seconds": 1.41,
+      "log_sha256": "bfa3a00732a9b1f1b4683d123e668eb5e245ef3eeb5d2e9e828ad8299b0270c6",
+      "results": []
+    },
+    {
+      "name": "quest_binding_authoring-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+      ],
+      "started_utc": "2026-11-02T23:35:33.993454+00:00",
+      "exit": 0,
+      "elapsed_seconds": 15.73,
+      "log_sha256": "5f4f6077933466b2c2cb28bb5ce7c5e2c1281c706289f3a08b3694d0aa5b2dc1",
+      "results": [
+        "PASS 310 identities, stage connectivity, source input hashes, honest proof semantics",
+        "PASS 6628 exact JSON pointers and identity candidate referents"
+      ]
+    },
+    {
+      "name": "quest_v2_export-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_v2_export.py"
+      ],
+      "started_utc": "2026-11-02T23:35:49.727525+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.45,
+      "log_sha256": "086e41d3ba61709e45cec1494c71d0a2e4e6f94658330a93896160d372a5e731",
+      "results": []
+    },
+    {
+      "name": "quest_state_lowering-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_state_lowering.py"
+      ],
+      "started_utc": "2026-11-02T23:35:50.175857+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.41,
+      "log_sha256": "bc2026fe3d887bd10859588baf5aaaf260abb228e44ff104afeb0fac2f8dbfe9",
+      "results": []
+    },
+    {
+      "name": "quest_completion_import-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_completion_import.py"
+      ],
+      "started_utc": "2026-11-02T23:35:50.588860+00:00",
+      "exit": 0,
+      "elapsed_seconds": 2.33,
+      "log_sha256": "66b2bf0b1b859158c0fa2b107bea48b1962b9a7c2646fd95916152b61cf90e30",
+      "results": []
+    },
+    {
+      "name": "quest_reward_only_binding_candidates-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py"
+      ],
+      "started_utc": "2026-11-02T23:35:52.920716+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.38,
+      "log_sha256": "c0d80fc287128024148efdb7a39ef20204d0570fda4f7ae3d97488a2bef11980",
+      "results": []
+    },
+    {
+      "name": "pin-refresh-after-proof",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "started_utc": "2026-11-02T23:35:53.300028+00:00",
+      "exit": 0,
+      "elapsed_seconds": 29.01,
+      "log_sha256": "a90cfda4f89ce37898c7a22029af526d961a5ca16a48160957075374c1ed7595",
+      "results": [
+        "     Running `<target>/release/oteryn-world-bundle-compiler pin-refresh .`"
+      ]
+    },
+    {
+      "name": "quest-authoring-derived-pin-red",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-02T23:36:22.305734+00:00",
+      "exit": 1,
+      "elapsed_seconds": 38.65,
+      "classification": "DERIVED_CROSSWALK_INPUT_PIN_REQUIRES_EXISTING_CANDIDATE_WRITERS",
+      "log_sha256": "ef8d95c262aa441c01fef161be0b7369d7f8b4ce2bec856a71fcf17b8c467b64",
+      "results": [
+        "Ran 7 tests in 2.269s",
+        "OK",
+        "Ran 13 tests in 11.440s",
+        "OK",
+        "Ran 6 tests in 5.924s",
+        "OK"
+      ],
+      "failure_tail": "Quest check: verify_quest_schema.py\n{\n  \"cases\": 269,\n  \"passed\": 269,\n  \"failed\": []\n}\nQuest check: soul_war_reconstruction.py --check\nSoul War reconstruction: 18 mechanics, 6 videos, runtime=false\nQuest check: ../encounter-authoring/soul_war_crystal_reconstruction.py --check\nSoul War Crystal encounter cores are current\nQuest check: ../encounter-authoring/test_soul_war_crystal_reconstruction.py\n.......\n----------------------------------------------------------------------\nRan 7 tests in 2.269s\n\nOK\nQuest check: ../reward-claim-authoring/test_reward_claim_variant_authoring.py\n.............\n----------------------------------------------------------------------\nRan 13 tests in 11.440s\n\nOK\nQuest check: ../reward-claim-authoring/test_variant_stack_serialization.py\n......\n----------------------------------------------------------------------\nRan 6 tests in 5.924s\n\nOK\nQuest check: ../reward-claim-authoring/reward_claim_authoring.py content --check\nreward claim content check: ok\nQuest check: ../reward-claim-authoring/reward_claim_variant_migration.py --check\nRewardClaim variants: 105; eligible plain missing=0; native lowering waits for implementation\nQuest check: validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json --progress samples/questlog/progress.json --interactions samples/interactions/interactions.json --interactions-manifest samples/interactions/manifest.json\n{\n  \"valid\": true,\n  \"errors\": [],\n  \"error_count\": 0\n}\nQuest check: refresh_quest_source_checks.py --check\n{\n  \"valid\": true,\n  \"updated\": []\n}\nQuest check: quest_catalogue_authoring.py --check\n{\"authored_records\": 284, \"coverage_states\": {\"conflict\": 97, \"directly_authored\": 192, \"represented_by_family\": 23, \"unrepresented\": 61}, \"duplicate_title_checks\": 0, \"quest_log_conflicts\": 31, \"source_titles\": 373}\nQuest check: quest_completion_matrix.py --check\n{\"canonical_definitions\": 352, \"canonical_definitions_not_in_wiki_title_inventory\": 2, \"canonical_readiness\": {\"definition_ready\": 42, \"waiting_data\": 242, \"waiting_native_bindings\": 68}, \"donor_mode\": {\"DONOR_IMPLEMENTATION_AVAILABLE\": 332, \"DONOR_PARTIAL_PLUS_REFERENCE\": 12, \"REFERENCE_AUTHORED_REQUIRED\": 29}, \"implementation_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}, \"mapping_state\": {\"SINGLE\": 373}, \"playable_assessment\": \"NOT_PERFORMED_BY_THIS_MATRIX\", \"playable_verified\": 0, \"reward_claim_owner_state\": {\"REWARD_CLAIM_DATA_PENDING\": 16, \"REWARD_CLAIM_IMPLEMENTATION_PENDING\": 40, \"REWARD_CLAIM_USE_PENDING\": 49}, \"reward_claim_placements\": 127, \"reward_claim_ready_refs\": 124, \"source_fidelity_state\": {\"SOURCE_HOLDS_CLEAR\": 152, \"SOURCE_HOLDS_PRESENT\": 221}, \"typed_progress_state\": {\"CHOSEN_SOURCE_TYPED_PROGRESS_ONLY\": 146, \"CHOSEN_TYPED_PROGRESS_ONLY\": 68, \"LOWERED\": 7, \"NO_CANDIDATE\": 42, \"SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY\": 110}, \"unique_canonical_definitions_representing_wiki_titles\": 350, \"wiki_titles\": 373, \"wiki_titles_mapped\": 373, \"work_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}}\nQuest check: collect_claim_candidates.py --check\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-schema/quest-authoring/collect_claim_candidates.py\", line 364, in <module>\n    main()\n    ~~~~^^\n  File \"<checkout>/tools/content-schema/quest-authoring/collect_claim_candidates.py\", line 356, in main\n    raise ValueError(\"Collect claim candidate packet drift: \" + OUTPUT)\nValueError: Collect claim candidate packet drift: tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json\n"
+    },
+    {
+      "name": "collect_claim_candidates-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/collect_claim_candidates.py"
+      ],
+      "started_utc": "2026-11-02T23:37:36.197891+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.48,
+      "log_sha256": "6140c35daf201151981cec08f3cfa7df98d0413b281d6c1618638b433bb0ecaf",
+      "results": []
+    },
+    {
+      "name": "use_trigger_candidates-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/use_trigger_candidates.py"
+      ],
+      "started_utc": "2026-11-02T23:37:36.684275+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.4,
+      "log_sha256": "5855676cfba403847382cff02745f6a5564bc5e0752373b81242d2e9b2b3a4e2",
+      "results": []
+    },
+    {
+      "name": "quest-authoring-python314-red",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-02T23:37:37.092079+00:00",
+      "exit": 1,
+      "elapsed_seconds": 95.01,
+      "classification": "PYTHON314_PATHLIB_SUFFIX_INCOMPATIBLE_WITH_CANONICAL_PYTHON312_DONOR_CAPTURE",
+      "log_sha256": "24269018840f44a19d220ea0a75c96bf605d75818818f26ac8e6aac410172506",
+      "results": [
+        "Ran 7 tests in 2.792s",
+        "OK",
+        "Ran 13 tests in 10.150s",
+        "OK",
+        "Ran 6 tests in 4.937s",
+        "OK",
+        "PASS 310 identities, stage connectivity, source input hashes, honest proof semantics",
+        "PASS 6628 exact JSON pointers and identity candidate referents"
+      ],
+      "failure_tail": "Quest check: verify_quest_schema.py\n{\n  \"cases\": 269,\n  \"passed\": 269,\n  \"failed\": []\n}\nQuest check: soul_war_reconstruction.py --check\nSoul War reconstruction: 18 mechanics, 6 videos, runtime=false\nQuest check: ../encounter-authoring/soul_war_crystal_reconstruction.py --check\nSoul War Crystal encounter cores are current\nQuest check: ../encounter-authoring/test_soul_war_crystal_reconstruction.py\n.......\n----------------------------------------------------------------------\nRan 7 tests in 2.792s\n\nOK\nQuest check: ../reward-claim-authoring/test_reward_claim_variant_authoring.py\n.............\n----------------------------------------------------------------------\nRan 13 tests in 10.150s\n\nOK\nQuest check: ../reward-claim-authoring/test_variant_stack_serialization.py\n......\n----------------------------------------------------------------------\nRan 6 tests in 4.937s\n\nOK\nQuest check: ../reward-claim-authoring/reward_claim_authoring.py content --check\nreward claim content check: ok\nQuest check: ../reward-claim-authoring/reward_claim_variant_migration.py --check\nRewardClaim variants: 105; eligible plain missing=0; native lowering waits for implementation\nQuest check: validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json --progress samples/questlog/progress.json --interactions samples/interactions/interactions.json --interactions-manifest samples/interactions/manifest.json\n{\n  \"valid\": true,\n  \"errors\": [],\n  \"error_count\": 0\n}\nQuest check: refresh_quest_source_checks.py --check\n{\n  \"valid\": true,\n  \"updated\": []\n}\nQuest check: quest_catalogue_authoring.py --check\n{\"authored_records\": 284, \"coverage_states\": {\"conflict\": 97, \"directly_authored\": 192, \"represented_by_family\": 23, \"unrepresented\": 61}, \"duplicate_title_checks\": 0, \"quest_log_conflicts\": 31, \"source_titles\": 373}\nQuest check: quest_completion_matrix.py --check\n{\"canonical_definitions\": 352, \"canonical_definitions_not_in_wiki_title_inventory\": 2, \"canonical_readiness\": {\"definition_ready\": 42, \"waiting_data\": 242, \"waiting_native_bindings\": 68}, \"donor_mode\": {\"DONOR_IMPLEMENTATION_AVAILABLE\": 332, \"DONOR_PARTIAL_PLUS_REFERENCE\": 12, \"REFERENCE_AUTHORED_REQUIRED\": 29}, \"implementation_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}, \"mapping_state\": {\"SINGLE\": 373}, \"playable_assessment\": \"NOT_PERFORMED_BY_THIS_MATRIX\", \"playable_verified\": 0, \"reward_claim_owner_state\": {\"REWARD_CLAIM_DATA_PENDING\": 16, \"REWARD_CLAIM_IMPLEMENTATION_PENDING\": 40, \"REWARD_CLAIM_USE_PENDING\": 49}, \"reward_claim_placements\": 127, \"reward_claim_ready_refs\": 124, \"source_fidelity_state\": {\"SOURCE_HOLDS_CLEAR\": 152, \"SOURCE_HOLDS_PRESENT\": 221}, \"typed_progress_state\": {\"CHOSEN_SOURCE_TYPED_PROGRESS_ONLY\": 146, \"CHOSEN_TYPED_PROGRESS_ONLY\": 68, \"LOWERED\": 7, \"NO_CANDIDATE\": 42, \"SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY\": 110}, \"unique_canonical_definitions_representing_wiki_titles\": 350, \"wiki_titles\": 373, \"wiki_titles_mapped\": 373, \"work_state\": {\"NATIVE_BINDINGS_PENDING\": 331, \"REWARD_CLAIM_USE_PENDING\": 42}}\nQuest check: collect_claim_candidates.py --check\n{\"classification_counts\": {\"AMBIGUOUS_OR_PARTIAL_SAME_QUEST_CLAIM_MATCH\": 2, \"NO_SAME_QUEST_REWARD_CLAIM_MATCH\": 143, \"ONE_SAME_QUEST_READY_CLAIM_COVERS_ALL_EXACT_TARGETS\": 2, \"TARGET_IDENTITY_INCOMPLETE\": 130}, \"collect_stages\": 277, \"exact_same_quest_ready_claim_candidates\": 2, \"native_dispatch_bindings\": 0, \"runtime_admitted\": false}\nQuest check: use_trigger_candidates.py --check\n{\"classification_counts\": {\"NO_SAME_QUEST_LITERAL_ID_USE_TRIGGER_MATCH\": 42, \"ONE_SAME_QUEST_LITERAL_ID_USE_TRIGGER_COVERS_ALL_TARGETS\": 4, \"TARGET_IDENTITY_INCOMPLETE\": 412}, \"exact_same_quest_literal_id_trigger_candidates\": 4, \"native_dispatch_bindings\": 0, \"runtime_admitted\": false, \"use_stages\": 458}\nQuest check: source_text_authoring.py --check\n{\"valid\": true, \"scope\": \"source_reference_prose_only; no native or runtime admission\", \"summary\": {\"wanted\": 1617, \"known\": 1617, \"unknown\": 0}}\nQuest check: build_wiki_source_schema.py --check\nQuest check: wiki_source_inventory.py --check\nPinned SOURCE inventory passed; current source bindings do not change snapshot selection\nQuest check: wiki_source_supplements.py --check\nOffline authored SOURCE reconstruction passed; raw bodies and spans NOT rechecked\nQuest check: wiki_all_source_inventory.py --check\n{\"titles\": 373, \"preserved_detailed_titles\": 105, \"new_structured_titles\": 268, \"preserved_source_revisions\": 249, \"new_structured_source_revisions\": 729, \"new_prerequisite_expressions\": 1559, \"new_unparsed_requirement_holds\": 158, \"new_mission_heading_references\": 2539, \"new_reward_entity_references\": 1880, \"new_requirement_entity_references\": 1542, \"new_location_entity_references\": 1223, \"new_titles_with_rewards\": 266, \"new_titles_with_requirements\": 213, \"new_titles_with_locations\": 265, \"new_titles_with_mission_headings\": 252, \"new_full_body_captures\": 0}\nQuest check: wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check\nQuest check: wiki_requirement_interpretations.py --check\n{\"historical_unparsed_holds\": 205, \"full_syntax_interpretations\": 18, \"partial_syntax_interpretations\": 29, \"unparsed\": 158, \"effective_unparsed_or_partial\": 187}\nQuest check: source_facts_authoring.py --specifications samples/wiki-source-all373/source-specs-373.json --samples samples/unbound-source-facts --check\n{\"titles\": 69, \"raw_body_rechecked\": false, \"runtime_promotion\": false}\nQuest check: authored_quest_authoring.py --check\nAuthored recipes: 68 complete chosen DATA recipes; Native admission held\nQuest check: quest_completion_authoring.py --check\n242 chosen recipes complete; original SOURCE witnesses and Native non-admission preserved\nQuest check: quest_rollout_authoring.py --check\n{\"bindings\": {\"authored\": 68, \"direct\": 278, \"family\": 27}, \"flags\": {\"authored\": 68, \"imported\": 305, \"needs_runtime\": 373, \"partial\": 373}, \"runtime_enabled\": 0, \"smoke_verified\": 0, \"titles\": 373}\nQuest check: quest_binding_authoring.py --check\n{'requirements_unknown_quests': 26, 'requirements_explicit_chosen': 26, 'reward_only': 105, 'reward_only_definition_ready': 42, 'reward_only_chosen_recipes': 63, 'reward_hold_occurrences': 25, 'reward_hold_quests': 22, 'kind_log_conflicts': 3, 'all_chosen_reward_intents': 669, 'exact_unique_item_matches': 292, 'unique_item_matches_materializable': 224, 'no_new_downloads': True}\n{'valid': True, 'quest_count': 352, 'qualified_witness_occurrences': 3374, 'resolved_source_holds': 0, 'new_finite_binding_candidates': 292, 'new_downloads': 0, 'source_classification': 'Original SOURCE unknown/charge/fluid/carrier/classification holds preserved', 'new_work': 'Deterministic per-quest reward and constraint supplement with exact canonical Item identities where unique names match; no claim of new source discovery or runtime admission'}\n{\n  \"quests\": 352,\n  \"quests_with_source_npc_occurrences\": 80,\n  \"source_npc_occurrences\": 4379,\n  \"exact_source_file_identity_occurrences\": 4327,\n  \"recipe_npc_target_mentions\": 503,\n  \"exact_authored_name_matches\": 378,\n  \"authored68\": 68,\n  \"runtime_bindings_created\": 0,\n  \"downloaded_sources\": 0,\n  \"source_occurrences_existing_keyword_reply\": 0,\n  \"authored68_npc_identity_candidates\": 74,\n  \"authored68_talk_targets_without_exact_npc\": 32,\n  \"donor_identity_candidates_same_revision\": 0\n}\n{\n  \"recipes\": 310,\n  \"stage_count\": 2013,\n  \"entity_anchored_stages\": 865,\n  \"all_nonterminal_stage_entity_anchored\": 45,\n  \"generic_objective_quests\": 0,\n  \"reward_count\": 666,\n  \"reward_entity_anchored\": 480,\n  \"stage_identity_candidates\": 549,\n  \"runtime_admitted\": 0,\n  \"source_fidelity_resolved\": 0\n}\nindex bytes 6628991\ndeduplicated index bytes 5650680 citations 1741\nPASS 310 identities, stage connectivity, source input hashes, honest proof semantics\nPASS 6628 exact JSON pointers and identity candidate referents\n{\"chosen_recipe_evidence_rows\": 310, \"closed_original_source_holds\": 0, \"definitions_indexed\": 352, \"definitions_with_substantive_joins\": 342, \"donor_crosswalks\": 284, \"recipe_identity_candidates\": 549, \"recipe_stages\": 2013, \"reward_identity_candidates\": 292, \"runtime_readiness\": \"NOT_ASSESSED\"}\nQuest check: quest_v2_export.py --check\n{'declarations': 351, 'chosen_profiles': 309, 'source_catalogue_only': 42, 'scalar_projections': {'required_level': 309, 'premium': 309, 'repeatable': 309}, 'output_bytes': 1364510}\nQuest check: quest_state_lowering.py --check\nQuestState lowering: 96 quests, 1328 tracks, 3263 transitions; check=True\nQuest check: source_lowered_binding_plan.py --check\n{\"completion_transitions\": 4, \"consumer_lanes\": {\"NPC_QUEST_1\": 106, \"QUEST_TRIGGER_1\": 15}, \"native_bindings\": 0, \"quests\": 6, \"requested_by_transitions\": 106, \"source_owners\": {\"action\": 14, \"movement\": 1, \"npc\": 106}, \"transitions\": 121}\nQuest check: quest_completion_import.py --check\nCompletion import: 310 quests; 3217 tracks; 5150 transitions; 382 unsupported; 0 chosen-source holds; activation=false\nQuest check: quest_native_binding_preflight.py --check\n{\"binding_plan_quests\": 304, \"canonical_quests\": 352, \"consumer_seam_statuses\": {\"AUTHORED_GRAPH_INTENT_ONLY\": 68, \"CHOSEN_SOURCE_GRAPH_INTENT_ONLY\": 236, \"EXISTING_DECLARED_ENCOUNTER_OUTCOME\": 25}, \"event_kinds\": {\"collect\": 277, \"complete\": 304, \"explore\": 247, \"kill\": 271, \"talk\": 330, \"use\": 458}, \"lanes\": {\"CHOSEN_STAGE_CONSUMERS\": 304, \"REWARD_ONLY_NO_TYPED_PROGRESS_CANDIDATE\": 42, \"SOURCE_LOWERED_TRANSITION_CONSUMERS\": 6, \"SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN\": 0}, \"native_dispatch_bindings\": 0, \"native_reward_delivery_bindings\": 0, \"plan_stages\": 1887, \"playability_claim\": \"NOT_ASSESSED_BY_THIS_REPORT\", \"playable_verified\": 0, \"reward_hold_codes\": {\"AREA_IDENTITY_IS_NOT_ACCESS_CAPABILITY_GATE\": 62, \"BASE_OUTFIT_OR_ADDON_DELIVERY_REQUIRES_EXPLICIT_NATIVE_POLICY\": 128, \"CANONICAL_ITEM_NOT_MATERIALIZABLE\": 138, \"NATIVE_REWARD_DELIVERY_CONSUMER_BINDING_PENDING\": 655, \"REWARD_EXACT_IDENTITY_UNRESOLVED\": 155}, \"reward_intents\": 657, \"source_lowered_consumer_lanes\": {\"NPC_QUEST_1\": 106, \"QUEST_TRIGGER_1\": 15}, \"source_lowered_plan_quests\": 6, \"source_lowered_transitions\": 121, \"source_lowered_unbound_transitions\": 121, \"stage_hold_codes\": {\"AREA_LABEL_OR_POSITION_IS_NOT_QUEST_TRIGGER_BOUNDARY\": 247, \"CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING\": 271, \"DIALOGUE_LANE_OWNS_TALK_BINDING\": 330, \"INVENTORY_COUNT_CONSUMER_AND_PER_TARGET_QUANTITY_BINDING_PENDING\": 277, \"ITEM_NPC_IDENTITY_IS_NOT_USE_ACTION_OR_PLACEMENT_BINDING\": 458, \"NATIVE_AREA_ENTRY_CONSUMER_BINDING_PENDING\": 247, \"NATIVE_COMPLETION_REDUCER_BINDING_PENDING\": 304, \"NATIVE_USE_CONSUMER_BINDING_PENDING\": 458, \"ONE_OR_MORE_EXACT_TARGET_IDENTITIES_UNRESOLVED\": 1183}, \"target_association_statuses\": {\"AMBIGUOUS_CANONICAL_NAME\": 108, \"CANONICAL_EXACT_NAME_NOT_FOUND\": 1569, \"EXACT_CANONICAL_IDENTITY_ASSOCIATION\": 750}, \"target_associations\": 2427, \"typed_candidate_quests\": 310, \"unbound_dispatch_stages\": 1887, \"wiki_titles\": 373}\nQuest check: quest_reward_only_binding_candidates.py --check\n{\"claims\": 59, \"classes\": {\"MULTI_KV\": 10, \"MULTI_STORAGE\": 1, \"SINGLE_KV\": 24, \"SINGLE_STORAGE\": 7}, \"native_claim_bindings\": 0, \"native_completion_transitions\": 0, \"quests\": 42}\nQuest check: quest_donor_source_authoring.py --check\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_donor_source_authoring.py\", line 220, in <module>\n    main()\n    ~~~~^^\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_donor_source_authoring.py\", line 205, in main\n    report = assemble(args.root.resolve(), scratch)\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_donor_source_authoring.py\", line 106, in assemble\n    corpus_report = verify_archive(inputs / declaration['path'], declaration['sha256'])\n  File \"<checkout>/tools/content-schema/quest-authoring/donor_sources/validate_archive.py\", line 26, in verify_archive\n    report=validate(manifest,base)\n  File \"<checkout>/tools/content-schema/quest-authoring/donor_sources/validate_corpus.py\", line 32, in validate\n    if len(selected)!=s['git_tree_selected_files']:raise ValueError('selected tree count differs')\n                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: selected tree count differs\n"
+    },
+    {
+      "name": "canonical-python",
+      "command": [
+        "python3",
+        "-c",
+        "import sys,pathlib;from importlib.metadata import version;assert sys.version_info[:2]==(3,12);assert pathlib.PurePosixPath('....lua').suffix=='.lua';print(sys.version);print({n:version(n) for n in ('jsonschema','referencing','zstandard')})"
+      ],
+      "started_utc": "2026-11-02T23:44:38.813602+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.06,
+      "log_sha256": "625463419383ef3e08203becca81566dbb7391e9190320f4de2c80cf3319b65f",
+      "results": []
+    },
+    {
+      "name": "quest-authoring-donor-pins-red",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-02T23:44:38.876518+00:00",
+      "exit": 1,
+      "elapsed_seconds": 444.74,
+      "classification": "DONOR_AUDIT_LEAF_INPUT_PINS_REQUIRE_STANDARD_REPLAY_AFTER_QUEST_TREE_REFRESH",
+      "log_sha256": "964bdcae608ab956dd5dcd3bb2f45a94e14b362e117e11b366b24728c005018f",
+      "results": [
+        "Ran 7 tests in 2.572s",
+        "OK",
+        "Ran 13 tests in 13.419s",
+        "OK",
+        "Ran 6 tests in 7.269s",
+        "OK",
+        "PASS 310 identities, stage connectivity, source input hashes, honest proof semantics",
+        "PASS 6628 exact JSON pointers and identity candidate referents"
+      ],
+      "failure_tail": "3, \"registrations\": 167, \"semantically_complete_records\": 0, \"typed_source_records\": 83}\n{\"callbacks\": 89, \"components\": 75, \"fully_semantically_bound\": 0, \"helper_functions\": 43, \"lexical_caller_witnesses\": 8, \"materialized_source_ir\": 75, \"ordered_control_nodes\": 510, \"source_api_operations\": 573, \"unresolved_dispatch_calls\": 988}\n{\"ast_nodes\": 18368, \"calls\": 1788, \"components\": 90, \"control_flow_nodes\": 724, \"functions\": 171}\n{\"components\": 248, \"quests\": 352, \"quests_with_accepted_components\": 1, \"quests_with_candidates\": 32, \"verdicts\": {\"ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS\": 2, \"DIRECTORY_CANDIDATE_ONLY\": 201, \"UNLINKED_SOURCE_COMPONENT\": 45}}\n{\"source_files\": 12, \"guarded_branches\": 166, \"ordered_source_events\": 1055, \"helper_calls\": 4, \"quests_with_existing_exact_source_links\": 4, \"scope_filenames\": [\"alesar.lua\", \"alesar_functions.lua\", \"captain_haba.lua\", \"captain_haba_open_sea.lua\", \"tereban.lua\", \"tereban_functions.lua\"]}\n{\"counts\": {\"guards_supplemented\": 636, \"full_source_guards\": 511, \"bound_truthiness_leaves\": 673, \"source_value_comparisons\": 22, \"opaque_leaves_remaining\": 162, \"partial_source_guards\": 125}, \"quest_count\": 75}\n{\"schema\": \"OTERYN_BOUND_SOURCE_GUARD_QUALIFICATION/v1\", \"state\": \"PASS\", \"records_verified\": 636, \"counts\": {\"bound_truthiness_leaves\": 673, \"full_source_guards\": 511, \"guards_supplemented\": 636, \"opaque_leaves_remaining\": 162, \"partial_source_guards\": 125, \"source_value_comparisons\": 22}, \"quest_count\": 75, \"packet_sha256\": \"a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9\", \"canonical_gap_replacements\": 0, \"native_admission\": false}\n{\"original_partial_guards\": 125, \"complete_execution_unproven_specs\": 125, \"partial_specs\": 0, \"native_admission\": false, \"canonical_gap_replacements\": 0}\n{\"selected_source_files\": 67, \"write_records\": 16, \"source_tracks\": 3, \"canonical_mission_joins\": 18, \"quest_keys\": [\"oteryn:quest.shadows_of_yalahar_quest\", \"oteryn:quest.the_isle_of_evil_quest\", \"oteryn:quest.threatened_dreams_quest\"]}\n{\"records\": 1, \"source_tracks\": 1, \"canonical_mission_joins\": 1, \"source_files\": 2}\n{\"association_scopes\": {\"MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES\": 1, \"NO_PROVEN_QUEST_OWNER\": 82, \"QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE\": 88, \"SHARED_FACTORY_INSTANCE_WITHOUT_PROVEN_QUEST_OWNER\": 45, \"WORLD_EVENT_WITHOUT_PROVEN_QUEST_OWNER\": 32}, \"components\": 248, \"joined_components\": 89, \"joined_components_before\": 37, \"joined_quests\": 14, \"missing_source_bytes\": 0, \"new_joined_components\": 52, \"proofs_by_basis\": {\"AST_BOSS_FACTORY_DESCRIPTOR_THROUGH_CONTROLLER_TO_REGISTERED_QUEST_EVENT_REFERENCE\": 56, \"PINNED_LITERAL_MONSTER_CREATION_TO_REGISTERED_EVENT_REFERENCE\": 20, \"PINNED_QUEST_GRAPH_REGISTER_EVENT_TO_UNIQUE_PACK_REGISTRAR\": 17, \"PINNED_STORAGE_SYMBOL_CORRELATION_TO_CANONICAL_PROGRESS_TRACK\": 15, \"REGISTERED_MONSTER_COREFERENCES_CANONICAL_QUEST_EVENT_AND_COMPONENT_EVENT\": 42}, \"shared_dependency_records\": 82}\n{\"quest_keys\": [\"oteryn:quest.a_father_s_burden_quest\", \"oteryn:quest.adventurers_guild\", \"oteryn:quest.an_uneasy_alliance_quest\", \"oteryn:quest.barbarian_arena_quest\", \"oteryn:quest.bigfoot_s_burden_quest\", \"oteryn:quest.blood_brothers_quest\", \"oteryn:quest.bloody_tusks_quest\", \"oteryn:quest.brotherhood_outfits_quest\", \"oteryn:quest.children_of_the_revolution_quest\", \"oteryn:quest.citizen_outfits_quest_on_rook\", \"oteryn:quest.cults_of_tibia_quest\", \"oteryn:quest.dangerous_depths_quest\", \"oteryn:quest.dawnport_quest\", \"oteryn:quest.demon_oak\", \"oteryn:quest.druid_outfits_quest_on_rook\", \"oteryn:quest.elementalist_outfits_quest\", \"oteryn:quest.factions\", \"oteryn:quest.festive_outfits_quest\", \"oteryn:quest.forgotten_knowledge_quest\", \"oteryn:quest.friends_and_traders\", \"oteryn:quest.glooth_engineer_outfits_quest\", \"oteryn:quest.golden_outfits_quest\", \"oteryn:quest.grave_danger_quest\", \"oteryn:quest.hero_of_rathleton_quest\", \"oteryn:quest.hot_cuisine_quest\", \"oteryn:quest.in_service_of_yalahar_quest\", \"oteryn:quest.killing_in_the_name_of_quest\", \"oteryn:quest.kilmaresh_quest\", \"oteryn:quest.liquid_black_quest\", \"oteryn:quest.marlin_trophy_quest\", \"oteryn:quest.newhaven_quest\", \"oteryn:quest.nightmare_outfits_quest\", \"oteryn:quest.no_rest_for_the_wicked_quest\", \"oteryn:quest.nobleman_outfits_quest\", \"oteryn:quest.obsidian_knife_quest\", \"oteryn:quest.oramond_quest\", \"oteryn:quest.oriental_outfits_quest\", \"oteryn:quest.outfit_and_addon_quests\", \"oteryn:quest.roshamuul_quest\", \"oteryn:quest.rottin_wood_and_the_married_men_quest\", \"oteryn:quest.royal_costume_outfits_quest\", \"oteryn:quest.sam_s_old_backpack_quest\", \"oteryn:quest.sea_of_light_quest\", \"oteryn:quest.secret_service_quest\", \"oteryn:quest.spike_task\", \"oteryn:quest.spirithunters_quest\", \"oteryn:quest.steal_from_thieves_quest\", \"oteryn:quest.targuna_quest\", \"oteryn:quest.the_ancient_tombs_quest\", \"oteryn:quest.the_ape_city_quest\", \"oteryn:quest.the_beginning_quest\", \"oteryn:quest.the_djinn_war_efreet_faction\", \"oteryn:quest.the_djinn_war_marid_faction\", \"oteryn:quest.the_dream_courts_quest\", \"oteryn:quest.the_explorer_society_quest\", \"oteryn:quest.the_first_dragon_quest\", \"oteryn:quest.the_gravedigger_of_drefia_quest\", \"oteryn:quest.the_hidden_city_of_beregar_quest\", \"oteryn:quest.the_ice_islands_quest\", \"oteryn:quest.the_inquisition_quest\", \"oteryn:quest.the_isle_of_evil_quest\", \"oteryn:quest.the_new_frontier_quest\", \"oteryn:quest.the_order_of_the_lion_quest\", \"oteryn:quest.the_paradox_tower_quest\", \"oteryn:quest.the_postman_missions_quest\", \"oteryn:quest.the_queen_of_the_banshees_quest\", \"oteryn:quest.the_rookie_guard_quest\", \"oteryn:quest.the_secret_library_quest\", \"oteryn:quest.the_shattered_isles_quest\", \"oteryn:quest.the_thieves_guild_quest\", \"oteryn:quest.the_travelling_trader_quest\", \"oteryn:quest.the_ultimate_challenges\", \"oteryn:quest.the_way_of_the_monk_quest\", \"oteryn:quest.the_white_raven_monastery_quest\", \"oteryn:quest.threatened_dreams_quest\", \"oteryn:quest.tibia_tales\", \"oteryn:quest.tower_defence_quest\", \"oteryn:quest.unnatural_selection_quest\", \"oteryn:quest.what_a_foolish_quest\", \"oteryn:quest.wrath_of_the_emperor_quest\"], \"source_files\": 633, \"npc_progress_occurrences\": 4379, \"exact_ast_write_joins\": 4379, \"unresolved_ast_write_joins\": 0, \"unique_ast_writes\": 4359, \"distinct_enclosing_function_contexts\": 752, \"helper_context_links\": 4, \"function_scoped_alias_joins\": 89, \"legacy_helper_write_joins\": 33, \"exact_storage_alias_joins\": 224, \"per_quest\": [{\"quest_key\": \"oteryn:quest.a_father_s_burden_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.adventurers_guild\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.an_uneasy_alliance_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.barbarian_arena_quest\", \"npc_progress_occurrences\": 3, \"exact_ast_write_joins\": 3}, {\"quest_key\": \"oteryn:quest.bigfoot_s_burden_quest\", \"npc_progress_occurrences\": 182, \"exact_ast_write_joins\": 182}, {\"quest_key\": \"oteryn:quest.blood_brothers_quest\", \"npc_progress_occurrences\": 50, \"exact_ast_write_joins\": 50}, {\"quest_key\": \"oteryn:quest.bloody_tusks_quest\", \"npc_progress_occurrences\": 12, \"exact_ast_write_joins\": 12}, {\"quest_key\": \"oteryn:quest.brotherhood_outfits_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.children_of_the_revolution_quest\", \"npc_progress_occurrences\": 54, \"exact_ast_write_joins\": 54}, {\"quest_key\": \"oteryn:quest.citizen_outfits_quest_on_rook\", \"npc_progress_occurrences\": 22, \"exact_ast_write_joins\": 22}, {\"quest_key\": \"oteryn:quest.cults_of_tibia_quest\", \"npc_progress_occurrences\": 79, \"exact_ast_write_joins\": 79}, {\"quest_key\": \"oteryn:quest.dangerous_depths_quest\", \"npc_progress_occurrences\": 120, \"exact_ast_write_joins\": 120}, {\"quest_key\": \"oteryn:quest.dawnport_quest\", \"npc_progress_occurrences\": 40, \"exact_ast_write_joins\": 40}, {\"quest_key\": \"oteryn:quest.demon_oak\", \"npc_progress_occurrences\": 11, \"exact_ast_write_joins\": 11}, {\"quest_key\": \"oteryn:quest.druid_outfits_quest_on_rook\", \"npc_progress_occurrences\": 4, \"exact_ast_write_joins\": 4}, {\"quest_key\": \"oteryn:quest.elementalist_outfits_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.factions\", \"npc_progress_occurrences\": 12, \"exact_ast_write_joins\": 12}, {\"quest_key\": \"oteryn:quest.festive_outfits_quest\", \"npc_progress_occurrences\": 8, \"exact_ast_write_joins\": 8}, {\"quest_key\": \"oteryn:quest.forgotten_knowledge_quest\", \"npc_progress_occurrences\": 28, \"exact_ast_write_joins\": 28}, {\"quest_key\": \"oteryn:quest.friends_and_traders\", \"npc_progress_occurrences\": 52, \"exact_ast_write_joins\": 52}, {\"quest_key\": \"oteryn:quest.glooth_engineer_outfits_quest\", \"npc_progress_occurrences\": 4, \"exact_ast_write_joins\": 4}, {\"quest_key\": \"oteryn:quest.golden_outfits_quest\", \"npc_progress_occurrences\": 18, \"exact_ast_write_joins\": 18}, {\"quest_key\": \"oteryn:quest.grave_danger_quest\", \"npc_progress_occurrences\": 41, \"exact_ast_write_joins\": 41}, {\"quest_key\": \"oteryn:quest.hero_of_rathleton_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.hot_cuisine_quest\", \"npc_progress_occurrences\": 98, \"exact_ast_write_joins\": 98}, {\"quest_key\": \"oteryn:quest.in_service_of_yalahar_quest\", \"npc_progress_occurrences\": 322, \"exact_ast_write_joins\": 322}, {\"quest_key\": \"oteryn:quest.killing_in_the_name_of_quest\", \"npc_progress_occurrences\": 258, \"exact_ast_write_joins\": 258}, {\"quest_key\": \"oteryn:quest.kilmaresh_quest\", \"npc_progress_occurrences\": 30, \"exact_ast_write_joins\": 30}, {\"quest_key\": \"oteryn:quest.liquid_black_quest\", \"npc_progress_occurrences\": 4, \"exact_ast_write_joins\": 4}, {\"quest_key\": \"oteryn:quest.marlin_trophy_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.newhaven_quest\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.nightmare_outfits_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.no_rest_for_the_wicked_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.nobleman_outfits_quest\", \"npc_progress_occurrences\": 16, \"exact_ast_write_joins\": 16}, {\"quest_key\": \"oteryn:quest.obsidian_knife_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.oramond_quest\", \"npc_progress_occurrences\": 50, \"exact_ast_write_joins\": 50}, {\"quest_key\": \"oteryn:quest.oriental_outfits_quest\", \"npc_progress_occurrences\": 4, \"exact_ast_write_joins\": 4}, {\"quest_key\": \"oteryn:quest.outfit_and_addon_quests\", \"npc_progress_occurrences\": 304, \"exact_ast_write_joins\": 304}, {\"quest_key\": \"oteryn:quest.roshamuul_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.rottin_wood_and_the_married_men_quest\", \"npc_progress_occurrences\": 35, \"exact_ast_write_joins\": 35}, {\"quest_key\": \"oteryn:quest.royal_costume_outfits_quest\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.sam_s_old_backpack_quest\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.sea_of_light_quest\", \"npc_progress_occurrences\": 34, \"exact_ast_write_joins\": 34}, {\"quest_key\": \"oteryn:quest.secret_service_quest\", \"npc_progress_occurrences\": 182, \"exact_ast_write_joins\": 182}, {\"quest_key\": \"oteryn:quest.spike_task\", \"npc_progress_occurrences\": 64, \"exact_ast_write_joins\": 64}, {\"quest_key\": \"oteryn:quest.spirithunters_quest\", \"npc_progress_occurrences\": 12, \"exact_ast_write_joins\": 12}, {\"quest_key\": \"oteryn:quest.steal_from_thieves_quest\", \"npc_progress_occurrences\": 4, \"exact_ast_write_joins\": 4}, {\"quest_key\": \"oteryn:quest.targuna_quest\", \"npc_progress_occurrences\": 18, \"exact_ast_write_joins\": 18}, {\"quest_key\": \"oteryn:quest.the_ancient_tombs_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.the_ape_city_quest\", \"npc_progress_occurrences\": 52, \"exact_ast_write_joins\": 52}, {\"quest_key\": \"oteryn:quest.the_beginning_quest\", \"npc_progress_occurrences\": 94, \"exact_ast_write_joins\": 94}, {\"quest_key\": \"oteryn:quest.the_djinn_war_efreet_faction\", \"npc_progress_occurrences\": 30, \"exact_ast_write_joins\": 30}, {\"quest_key\": \"oteryn:quest.the_djinn_war_marid_faction\", \"npc_progress_occurrences\": 24, \"exact_ast_write_joins\": 24}, {\"quest_key\": \"oteryn:quest.the_dream_courts_quest\", \"npc_progress_occurrences\": 57, \"exact_ast_write_joins\": 57}, {\"quest_key\": \"oteryn:quest.the_explorer_society_quest\", \"npc_progress_occurrences\": 356, \"exact_ast_write_joins\": 356}, {\"quest_key\": \"oteryn:quest.the_first_dragon_quest\", \"npc_progress_occurrences\": 14, \"exact_ast_write_joins\": 14}, {\"quest_key\": \"oteryn:quest.the_gravedigger_of_drefia_quest\", \"npc_progress_occurrences\": 2, \"exact_ast_write_joins\": 2}, {\"quest_key\": \"oteryn:quest.the_hidden_city_of_beregar_quest\", \"npc_progress_occurrences\": 50, \"exact_ast_write_joins\": 50}, {\"quest_key\": \"oteryn:quest.the_ice_islands_quest\", \"npc_progress_occurrences\": 185, \"exact_ast_write_joins\": 185}, {\"quest_key\": \"oteryn:quest.the_inquisition_quest\", \"npc_progress_occurrences\": 108, \"exact_ast_write_joins\": 108}, {\"quest_key\": \"oteryn:quest.the_isle_of_evil_quest\", \"npc_progress_occurrences\": 37, \"exact_ast_write_joins\": 37}, {\"quest_key\": \"oteryn:quest.the_new_frontier_quest\", \"npc_progress_occurrences\": 68, \"exact_ast_write_joins\": 68}, {\"quest_key\": \"oteryn:quest.the_order_of_the_lion_quest\", \"npc_progress_occurrences\": 44, \"exact_ast_write_joins\": 44}, {\"quest_key\": \"oteryn:quest.the_paradox_tower_quest\", \"npc_progress_occurrences\": 18, \"exact_ast_write_joins\": 18}, {\"quest_key\": \"oteryn:quest.the_postman_missions_quest\", \"npc_progress_occurrences\": 118, \"exact_ast_write_joins\": 118}, {\"quest_key\": \"oteryn:quest.the_queen_of_the_banshees_quest\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.the_rookie_guard_quest\", \"npc_progress_occurrences\": 130, \"exact_ast_write_joins\": 130}, {\"quest_key\": \"oteryn:quest.the_secret_library_quest\", \"npc_progress_occurrences\": 16, \"exact_ast_write_joins\": 16}, {\"quest_key\": \"oteryn:quest.the_shattered_isles_quest\", \"npc_progress_occurrences\": 123, \"exact_ast_write_joins\": 123}, {\"quest_key\": \"oteryn:quest.the_thieves_guild_quest\", \"npc_progress_occurrences\": 72, \"exact_ast_write_joins\": 72}, {\"quest_key\": \"oteryn:quest.the_travelling_trader_quest\", \"npc_progress_occurrences\": 62, \"exact_ast_write_joins\": 62}, {\"quest_key\": \"oteryn:quest.the_ultimate_challenges\", \"npc_progress_occurrences\": 3, \"exact_ast_write_joins\": 3}, {\"quest_key\": \"oteryn:quest.the_way_of_the_monk_quest\", \"npc_progress_occurrences\": 6, \"exact_ast_write_joins\": 6}, {\"quest_key\": \"oteryn:quest.the_white_raven_monastery_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.threatened_dreams_quest\", \"npc_progress_occurrences\": 40, \"exact_ast_write_joins\": 40}, {\"quest_key\": \"oteryn:quest.tibia_tales\", \"npc_progress_occurrences\": 170, \"exact_ast_write_joins\": 170}, {\"quest_key\": \"oteryn:quest.tower_defence_quest\", \"npc_progress_occurrences\": 10, \"exact_ast_write_joins\": 10}, {\"quest_key\": \"oteryn:quest.unnatural_selection_quest\", \"npc_progress_occurrences\": 54, \"exact_ast_write_joins\": 54}, {\"quest_key\": \"oteryn:quest.what_a_foolish_quest\", \"npc_progress_occurrences\": 45, \"exact_ast_write_joins\": 45}, {\"quest_key\": \"oteryn:quest.wrath_of_the_emperor_quest\", \"npc_progress_occurrences\": 114, \"exact_ast_write_joins\": 114}]}\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_donor_source_authoring.py\", line 220, in <module>\n    main()\n  File \"<checkout>/tools/content-schema/quest-authoring/quest_donor_source_authoring.py\", line 211, in main\n    raise ValueError('stale donor Source capture: ' + name)\nValueError: stale donor Source capture: npc.json.gz\n"
+    },
+    {
+      "name": "donor-source-refresh",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_donor_source_authoring.py"
+      ],
+      "started_utc": "2026-11-02T23:58:28.843666+00:00",
+      "exit": 0,
+      "elapsed_seconds": 410.72,
+      "log_sha256": "e193d4292c5fe75ef14f3d8a270de72a2982557ac6adfd60c57285bae2711928",
+      "results": []
+    },
+    {
+      "name": "donor-leaf-review",
+      "command": [
+        "python3",
+        "/mnt/c/Temp/oteryn-quests6-export-donor-leaves.py"
+      ],
+      "started_utc": "2026-11-03T00:05:19.538791+00:00",
+      "exit": 0,
+      "elapsed_seconds": 7.12,
+      "log_sha256": "d22c6c8a6f60a7ae19aece9e94b7dbc7fae97f604cb8eed59cd807dd7e4dfe30",
+      "results": []
+    },
+    {
+      "name": "quest-authoring-checks",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--part",
+        "checks",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-03T00:05:26.656448+00:00",
+      "exit": 0,
+      "elapsed_seconds": 171.63,
+      "log_sha256": "57d2c2a85cbe18abc5e6c9833fbb75b7dfc69cd1d94568733af0c711d4a112df",
+      "results": [
+        "Ran 7 tests in 3.325s",
+        "OK",
+        "Ran 13 tests in 12.944s",
+        "OK",
+        "Ran 6 tests in 8.348s",
+        "OK",
+        "PASS 310 identities, stage connectivity, source input hashes, honest proof semantics",
+        "PASS 6628 exact JSON pointers and identity candidate referents"
+      ]
+    },
+    {
+      "name": "quest-authoring-grizzly-pin-red",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--part",
+        "unit-tests",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-03T00:08:18.287215+00:00",
+      "exit": 1,
+      "elapsed_seconds": 188.11,
+      "classification": "GRIZZLY_ROOM_INPUT_NATIVE_PROFILE_PIN_REQUIRES_STANDARD_WRITER",
+      "log_sha256": "eb36d2f89f32aa01fdc7ec7b208fd0d59fd88463ec4a4bbbcadb6643d6f6c242",
+      "results": [
+        "     0.1s rc=0 test_progress_enrichment: Ran 18 tests in 0.005s, OK",
+        "     0.0s rc=0 test_progress_reference_shape: Ran 4 tests in 0.001s, OK",
+        "     0.1s rc=0 test_progress_source_occurrences: Ran 2 tests in 0.003s, OK",
+        "     0.0s rc=0 test_quest_binding_crosswalk: Ran 5 tests in 0.003s, OK",
+        "     0.3s rc=0 test_quest_binding_index: Ran 6 tests in 0.186s, OK",
+        "     0.1s rc=0 test_quest_catalogue_authoring: Ran 18 tests in 0.002s, OK",
+        "FAILED (failures=1)",
+        "     0.3s rc=0 test_quest_claim_qualification: Ran 7 tests in 0.219s, OK",
+        "   104.5s rc=0 test_quest_donor_attachment: Ran 11 tests in 104.370s, OK",
+        "     0.7s rc=0 test_quest_completeness: Ran 13 tests in 0.543s, OK",
+        "     9.4s rc=0 test_quest_chosen_journal: Ran 6 tests in 9.360s, OK",
+        "     0.5s rc=0 test_quest_completion_matrix: Ran 6 tests in 0.419s, OK",
+        "     3.3s rc=0 test_quest_components: Ran 47 tests in 3.082s, OK (skipped=2)",
+        "    12.5s rc=0 test_quest_completion_authoring: Ran 9 tests in 12.098s, OK",
+        "     0.1s rc=0 test_quest_explore_area_candidates: Ran 8 tests in 0.088s, OK",
+        "     0.1s rc=0 test_quest_identity: Ran 5 tests in 0.001s, OK",
+        "     0.4s rc=0 test_quest_native_binding_preflight: Ran 6 tests in 0.302s, OK",
+        "     0.4s rc=0 test_quest_recipe_followup: Ran 5 tests in 0.323s, OK",
+        "    14.0s rc=0 test_quest_completion_import: Ran 6 tests in 13.918s, OK",
+        "     0.9s rc=0 test_quest_recipe_refinements: Ran 8 tests in 0.832s, OK",
+        "     1.0s rc=0 test_quest_requirement_followup: Ran 7 tests in 0.955s, OK",
+        "     1.8s rc=0 test_quest_requirement_interpretations: Ran 11 tests in 1.722s, OK",
+        "     1.6s rc=0 test_quest_reward_followup: Ran 9 tests in 1.548s, OK",
+        "     0.2s rc=0 test_quest_rollout_authoring: Ran 10 tests in 0.023s, OK",
+        "     1.2s rc=0 test_quest_reward_only_binding_candidates: Ran 6 tests in 1.167s, OK",
+        "     0.2s rc=0 test_quest_talk_npc_candidates: Ran 8 tests in 0.181s, OK",
+        "     0.2s rc=0 test_quest_terminal_stage_refinements: Ran 7 tests in 0.165s, OK",
+        "     0.2s rc=0 test_quest_v2_export: Ran 15 tests in 0.101s, OK",
+        "     0.1s rc=0 test_questlog_primary_selection: Ran 8 tests in 0.006s, OK",
+        "     0.2s rc=0 test_reward_aliases: Ran 8 tests in 0.123s, OK",
+        "     0.4s rc=0 test_reward_lookup: Ran 14 tests in 0.245s, OK",
+        "     0.2s rc=0 test_scoped_interaction_storage: Ran 7 tests in 0.108s, OK",
+        "     2.1s rc=0 test_quest_state_lowering: Ran 12 tests in 2.022s, OK",
+        "     0.0s rc=0 test_scoped_storage_aliases: Ran 10 tests in 0.004s, OK (skipped=1)",
+        "     0.1s rc=0 test_soul_war_reconstruction: Ran 7 tests in 0.033s, OK",
+        "     0.2s rc=0 test_shared_actor_tables: Ran 12 tests in 0.089s, OK",
+        "     0.1s rc=0 test_source_comment_write_guard: Ran 6 tests in 0.007s, OK",
+        "     0.1s rc=0 test_source_curations: Ran 10 tests in 0.003s, OK",
+        "     5.5s rc=0 test_source_facts: Ran 8 tests in 5.416s, OK",
+        "     0.1s rc=0 test_source_kilmaresh_owner_guard: Ran 7 tests in 0.019s, OK",
+        "     0.1s rc=0 test_source_lowered_binding_plan: Ran 5 tests in 0.088s, OK",
+        "     0.4s rc=0 test_source_monk_native_guard: Ran 2 tests in 0.367s, OK",
+        "     0.2s rc=0 test_source_npc_exchange: Ran 6 tests in 0.119s, OK",
+        "     0.1s rc=0 test_source_npc_exchange_guard: Ran 3 tests in 0.008s, OK",
+        "     0.2s rc=0 test_source_occurrences: Ran 7 tests in 0.031s, OK",
+        "     0.3s rc=0 test_source_owner_guard: Ran 7 tests in 0.212s, OK",
+        "     0.4s rc=0 test_source_reference_tracks: Ran 19 tests in 0.306s, OK",
+        "     0.5s rc=0 test_source_texts: Ran 11 tests in 0.347s, OK",
+        "     0.2s rc=0 test_tile_copy_proof: Ran 8 tests in 0.059s, OK",
+        "     0.2s rc=0 test_tile_item_remove: Ran 11 tests in 0.052s, OK",
+        "     0.1s rc=0 test_uid_range: Ran 6 tests in 0.043s, OK",
+        "     0.4s rc=0 test_use_trigger_candidates: Ran 4 tests in 0.310s, OK",
+        "     0.4s rc=0 test_white_pearl_curation: Ran 6 tests in 0.197s, OK",
+        "    17.6s rc=0 test_quest_enrichment_authoring: Ran 9 tests in 17.497s, OK",
+        "     0.2s rc=0 test_wiki_requirement_interpretations: Ran 11 tests in 0.138s, OK",
+        "     0.3s rc=0 test_wiki_source_inventory: Ran 13 tests in 0.260s, OK",
+        "    14.0s rc=0 test_source_fix_guard: Ran 12 tests in 13.713s, OK",
+        "     8.9s rc=0 test_wiki_source_supplements: Ran 14 tests in 8.880s, OK",
+        "    13.1s rc=0 test_wiki_all_source_inventory: Ran 12 tests in 12.813s, OK",
+        "   187.6s rc=0 test_quest_tree_authoring: Ran 25 tests in 187.470s, OK"
+      ],
+      "failure_tail": "Quest check: unit tests, 89 modules on 4 workers\n    92.2s rc=0 test_quest_donor_refinements: Ran 181 tests in 89.349s, OK (skipped=5)\n     0.9s rc=0 test_authored_quest_authoring: Ran 11 tests in 0.740s, OK\n     0.1s rc=0 test_chosen_source_binding_plan: Ran 5 tests in 0.045s, OK\n     1.4s rc=0 test_chosen_source_progress: Ran 4 tests in 1.343s, OK\n     1.3s rc=0 test_collect_claim_candidates: Ran 6 tests in 1.267s, OK\n     0.5s rc=0 test_converter_enrichment: Ran 42 tests in 0.382s, OK\n     0.1s rc=0 test_curated_interaction_links: Ran 11 tests in 0.002s, OK\n     0.2s rc=0 test_donor_missing_record_nil: Ran 4 tests in 0.079s, OK\n     0.2s rc=0 test_donor_semantic_conditions: Ran 15 tests in 0.096s, OK\n     0.8s rc=0 test_donor_semantic_rewards: Ran 8 tests in 0.715s, OK\n     0.1s rc=0 test_donor_source_archive: Ran 4 tests in 0.005s, OK\n     0.1s rc=0 test_donor_source_ast: Ran 6 tests in 0.009s, OK\n     0.1s rc=0 test_donor_source_corpus: Ran 12 tests in 0.020s, OK\n     0.1s rc=0 test_donor_source_dependencies: Ran 10 tests in 0.001s, OK\n     0.2s rc=0 test_donor_source_dialogue: Ran 9 tests in 0.153s, OK\n     0.2s rc=0 test_donor_source_inventory: Ran 4 tests in 0.129s, OK\n     0.7s rc=0 test_donor_source_maps: Ran 23 tests in 0.628s, OK\n     0.1s rc=0 test_donor_source_rewards: Ran 9 tests in 0.077s, OK\n     0.1s rc=0 test_explicit_track_storage: Ran 4 tests in 0.001s, OK\n   100.9s rc=0 test_bundle_authoring: Ran 20 tests in 100.789s, OK\n     0.4s rc=0 test_grizzly_source: Ran 7 tests in 0.332s, OK\n     0.2s rc=0 test_guarded_target_predicates: Ran 6 tests in 0.086s, OK\n     0.1s rc=0 test_legacy_procedural_writers: Ran 23 tests in 0.015s, OK\n     0.2s rc=0 test_local_relocation_helper: Ran 10 tests in 0.060s, OK\n     0.0s rc=0 test_lua_writer_comment_filter: Ran 2 tests in 0.002s, OK\n     0.1s rc=0 test_monk_native_lowering: Ran 2 tests in 0.003s, OK\n     0.1s rc=0 test_multiline_conditions: Ran 11 tests in 0.040s, OK\n     0.1s rc=0 test_npc_progress_retention: Ran 8 tests in 0.002s, OK\n     0.1s rc=0 test_progress_enrichment: Ran 18 tests in 0.005s, OK\n     0.0s rc=0 test_progress_reference_shape: Ran 4 tests in 0.001s, OK\n     0.1s rc=0 test_progress_source_occurrences: Ran 2 tests in 0.003s, OK\n     0.0s rc=0 test_quest_binding_crosswalk: Ran 5 tests in 0.003s, OK\n     0.3s rc=0 test_quest_binding_index: Ran 6 tests in 0.186s, OK\n     0.1s rc=0 test_quest_catalogue_authoring: Ran 18 tests in 0.002s, OK\n     4.2s rc=1 test_grizzly_rooms: Ran 1 test in 4.133s, FAILED (failures=1)\nF\n======================================================================\nFAIL: test_generated_rooms_match_map_and_preserve_both_source_positions (test_grizzly_rooms.GrizzlyRoomTests.test_generated_rooms_match_map_and_preserve_both_source_positions)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<checkout>/tools/content-schema/quest-authoring/test_grizzly_rooms.py\", line 10, in test_generated_rooms_match_map_and_preserve_both_source_positions\n    self.assertEqual(actual, json.loads(grizzly_rooms.OUTPUT.read_text()))\nAssertionError: {'sch[8767 chars]n': '2d9dc9eebcbe98c23bcc33f1a645cb1b7b39ef374[9622 chars]cf'}} != {'sch[8767 chars]n': 'b86c2f867a4fc18392e4a89eaa93844ecd6033542[9622 chars]cf'}}\nDiff is 23707 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 1 test in 4.133s\n\nFAILED (failures=1)\n\n     0.3s rc=0 test_quest_claim_qualification: Ran 7 tests in 0.219s, OK\n   104.5s rc=0 test_quest_donor_attachment: Ran 11 tests in 104.370s, OK\n     0.7s rc=0 test_quest_completeness: Ran 13 tests in 0.543s, OK\n     9.4s rc=0 test_quest_chosen_journal: Ran 6 tests in 9.360s, OK\n     0.5s rc=0 test_quest_completion_matrix: Ran 6 tests in 0.419s, OK\n     3.3s rc=0 test_quest_components: Ran 47 tests in 3.082s, OK (skipped=2)\n    12.5s rc=0 test_quest_completion_authoring: Ran 9 tests in 12.098s, OK\n     0.1s rc=0 test_quest_explore_area_candidates: Ran 8 tests in 0.088s, OK\n     0.1s rc=0 test_quest_identity: Ran 5 tests in 0.001s, OK\n     0.4s rc=0 test_quest_native_binding_preflight: Ran 6 tests in 0.302s, OK\n     0.4s rc=0 test_quest_recipe_followup: Ran 5 tests in 0.323s, OK\n    14.0s rc=0 test_quest_completion_import: Ran 6 tests in 13.918s, OK\n     0.9s rc=0 test_quest_recipe_refinements: Ran 8 tests in 0.832s, OK\n     1.0s rc=0 test_quest_requirement_followup: Ran 7 tests in 0.955s, OK\n     1.8s rc=0 test_quest_requirement_interpretations: Ran 11 tests in 1.722s, OK\n     1.6s rc=0 test_quest_reward_followup: Ran 9 tests in 1.548s, OK\n     0.2s rc=0 test_quest_rollout_authoring: Ran 10 tests in 0.023s, OK\n     1.2s rc=0 test_quest_reward_only_binding_candidates: Ran 6 tests in 1.167s, OK\n     0.2s rc=0 test_quest_talk_npc_candidates: Ran 8 tests in 0.181s, OK\n     0.2s rc=0 test_quest_terminal_stage_refinements: Ran 7 tests in 0.165s, OK\n     0.2s rc=0 test_quest_v2_export: Ran 15 tests in 0.101s, OK\n     0.1s rc=0 test_questlog_primary_selection: Ran 8 tests in 0.006s, OK\n     0.2s rc=0 test_reward_aliases: Ran 8 tests in 0.123s, OK\n     0.4s rc=0 test_reward_lookup: Ran 14 tests in 0.245s, OK\n     0.2s rc=0 test_scoped_interaction_storage: Ran 7 tests in 0.108s, OK\n     2.1s rc=0 test_quest_state_lowering: Ran 12 tests in 2.022s, OK\n     0.0s rc=0 test_scoped_storage_aliases: Ran 10 tests in 0.004s, OK (skipped=1)\n     0.1s rc=0 test_soul_war_reconstruction: Ran 7 tests in 0.033s, OK\n     0.2s rc=0 test_shared_actor_tables: Ran 12 tests in 0.089s, OK\n     0.1s rc=0 test_source_comment_write_guard: Ran 6 tests in 0.007s, OK\n     0.1s rc=0 test_source_curations: Ran 10 tests in 0.003s, OK\n     5.5s rc=0 test_source_facts: Ran 8 tests in 5.416s, OK\n     0.1s rc=0 test_source_kilmaresh_owner_guard: Ran 7 tests in 0.019s, OK\n     0.1s rc=0 test_source_lowered_binding_plan: Ran 5 tests in 0.088s, OK\n     0.4s rc=0 test_source_monk_native_guard: Ran 2 tests in 0.367s, OK\n     0.2s rc=0 test_source_npc_exchange: Ran 6 tests in 0.119s, OK\n     0.1s rc=0 test_source_npc_exchange_guard: Ran 3 tests in 0.008s, OK\n     0.2s rc=0 test_source_occurrences: Ran 7 tests in 0.031s, OK\n     0.3s rc=0 test_source_owner_guard: Ran 7 tests in 0.212s, OK\n     0.4s rc=0 test_source_reference_tracks: Ran 19 tests in 0.306s, OK\n     0.5s rc=0 test_source_texts: Ran 11 tests in 0.347s, OK\n     0.2s rc=0 test_tile_copy_proof: Ran 8 tests in 0.059s, OK\n     0.2s rc=0 test_tile_item_remove: Ran 11 tests in 0.052s, OK\n     0.1s rc=0 test_uid_range: Ran 6 tests in 0.043s, OK\n     0.4s rc=0 test_use_trigger_candidates: Ran 4 tests in 0.310s, OK\n     0.1s rc=0 test_variant_quest_holds: Ran 1 test in 0.000s, OK\n     0.4s rc=0 test_white_pearl_curation: Ran 6 tests in 0.197s, OK\n    17.6s rc=0 test_quest_enrichment_authoring: Ran 9 tests in 17.497s, OK\n     0.2s rc=0 test_wiki_requirement_interpretations: Ran 11 tests in 0.138s, OK\n     0.3s rc=0 test_wiki_source_inventory: Ran 13 tests in 0.260s, OK\n    14.0s rc=0 test_source_fix_guard: Ran 12 tests in 13.713s, OK\n     8.9s rc=0 test_wiki_source_supplements: Ran 14 tests in 8.880s, OK\n    13.1s rc=0 test_wiki_all_source_inventory: Ran 12 tests in 12.813s, OK\n   187.6s rc=0 test_quest_tree_authoring: Ran 25 tests in 187.470s, OK\nQuest unit tests failed: test_grizzly_rooms\n"
+    },
+    {
+      "name": "grizzly-source-refresh",
+      "command": [
+        "python3",
+        "/mnt/c/Temp/oteryn-quests6-refresh-grizzly.py"
+      ],
+      "started_utc": "2026-11-03T00:12:48.261501+00:00",
+      "exit": 0,
+      "elapsed_seconds": 7.14,
+      "log_sha256": "25ff65ecba058cc6a7d1ff78f75b43cbf92ddfa06a7c9b1724e624e337c3eba7",
+      "results": []
+    },
+    {
+      "name": "grizzly-source-check",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/grizzly_rooms.py",
+        "--check"
+      ],
+      "started_utc": "2026-11-03T00:12:55.400123+00:00",
+      "exit": 0,
+      "elapsed_seconds": 3.1,
+      "log_sha256": "00eda3c558cf91328bf24fbcded456aa680e84dba57433d28649311b4b38fd48",
+      "results": []
+    },
+    {
+      "name": "grizzly-source-regression",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_grizzly_rooms.py"
+      ],
+      "started_utc": "2026-11-03T00:12:58.497998+00:00",
+      "exit": 0,
+      "elapsed_seconds": 4.09,
+      "log_sha256": "33a4759a513d51852e6e49a5013b32a92ea98cd2736bef98fa462a0149d6bfb0",
+      "results": [
+        "OK"
+      ]
+    },
+    {
+      "name": "quest-authoring-unit-tests",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/run_checks.py",
+        "--part",
+        "unit-tests",
+        "--jobs",
+        "4"
+      ],
+      "started_utc": "2026-11-03T00:13:02.593872+00:00",
+      "exit": 0,
+      "elapsed_seconds": 169.93,
+      "log_sha256": "be0883d290d30f31757133f3bc1b3b3f7e07f6123d1ff69bdf2df9453003fa5f",
+      "results": [
+        "     0.1s rc=0 test_multiline_conditions: Ran 11 tests in 0.039s, OK",
+        "     0.0s rc=0 test_progress_reference_shape: Ran 4 tests in 0.001s, OK",
+        "     0.1s rc=0 test_progress_enrichment: Ran 18 tests in 0.004s, OK",
+        "     0.0s rc=0 test_quest_binding_crosswalk: Ran 5 tests in 0.006s, OK",
+        "     0.1s rc=0 test_progress_source_occurrences: Ran 2 tests in 0.003s, OK",
+        "     0.1s rc=0 test_quest_catalogue_authoring: Ran 18 tests in 0.002s, OK",
+        "     0.3s rc=0 test_quest_binding_index: Ran 6 tests in 0.184s, OK",
+        "     0.2s rc=0 test_quest_claim_qualification: Ran 7 tests in 0.151s, OK",
+        "     0.5s rc=0 test_quest_completeness: Ran 13 tests in 0.361s, OK",
+        "    93.8s rc=0 test_quest_donor_attachment: Ran 11 tests in 93.624s, OK",
+        "     9.6s rc=0 test_quest_chosen_journal: Ran 6 tests in 9.562s, OK",
+        "     0.6s rc=0 test_quest_completion_matrix: Ran 6 tests in 0.518s, OK",
+        "     3.3s rc=0 test_quest_components: Ran 47 tests in 3.104s, OK (skipped=2)",
+        "    13.0s rc=0 test_quest_completion_authoring: Ran 9 tests in 12.727s, OK",
+        "     0.1s rc=0 test_quest_explore_area_candidates: Ran 8 tests in 0.067s, OK",
+        "     0.1s rc=0 test_quest_identity: Ran 5 tests in 0.001s, OK",
+        "     0.3s rc=0 test_quest_native_binding_preflight: Ran 6 tests in 0.280s, OK",
+        "     0.3s rc=0 test_quest_recipe_followup: Ran 5 tests in 0.271s, OK",
+        "     0.7s rc=0 test_quest_recipe_refinements: Ran 8 tests in 0.654s, OK",
+        "     0.8s rc=0 test_quest_requirement_followup: Ran 7 tests in 0.730s, OK",
+        "     1.2s rc=0 test_quest_requirement_interpretations: Ran 11 tests in 1.170s, OK",
+        "     1.3s rc=0 test_quest_reward_followup: Ran 9 tests in 1.288s, OK",
+        "    14.0s rc=0 test_quest_completion_import: Ran 6 tests in 13.906s, OK",
+        "     0.1s rc=0 test_quest_rollout_authoring: Ran 10 tests in 0.014s, OK",
+        "     0.6s rc=0 test_quest_reward_only_binding_candidates: Ran 6 tests in 0.606s, OK",
+        "     0.2s rc=0 test_quest_talk_npc_candidates: Ran 8 tests in 0.144s, OK",
+        "     0.2s rc=0 test_quest_terminal_stage_refinements: Ran 7 tests in 0.132s, OK",
+        "     0.1s rc=0 test_quest_v2_export: Ran 15 tests in 0.077s, OK",
+        "     0.1s rc=0 test_questlog_primary_selection: Ran 8 tests in 0.005s, OK",
+        "     0.2s rc=0 test_reward_aliases: Ran 8 tests in 0.113s, OK",
+        "     0.3s rc=0 test_reward_lookup: Ran 14 tests in 0.159s, OK",
+        "     0.2s rc=0 test_scoped_interaction_storage: Ran 7 tests in 0.080s, OK",
+        "     1.5s rc=0 test_quest_state_lowering: Ran 12 tests in 1.487s, OK",
+        "     0.0s rc=0 test_scoped_storage_aliases: Ran 10 tests in 0.002s, OK (skipped=1)",
+        "     0.1s rc=0 test_soul_war_reconstruction: Ran 7 tests in 0.026s, OK",
+        "     0.2s rc=0 test_shared_actor_tables: Ran 12 tests in 0.080s, OK",
+        "     0.1s rc=0 test_source_comment_write_guard: Ran 6 tests in 0.005s, OK",
+        "     0.1s rc=0 test_source_curations: Ran 10 tests in 0.003s, OK",
+        "     5.3s rc=0 test_source_facts: Ran 8 tests in 5.262s, OK",
+        "     0.1s rc=0 test_source_kilmaresh_owner_guard: Ran 7 tests in 0.021s, OK",
+        "     0.2s rc=0 test_source_lowered_binding_plan: Ran 5 tests in 0.148s, OK",
+        "     0.5s rc=0 test_source_monk_native_guard: Ran 2 tests in 0.421s, OK",
+        "     0.3s rc=0 test_source_npc_exchange: Ran 6 tests in 0.133s, OK",
+        "     0.1s rc=0 test_source_npc_exchange_guard: Ran 3 tests in 0.009s, OK",
+        "     0.2s rc=0 test_source_occurrences: Ran 7 tests in 0.033s, OK",
+        "     0.2s rc=0 test_source_owner_guard: Ran 7 tests in 0.189s, OK",
+        "     0.4s rc=0 test_source_reference_tracks: Ran 19 tests in 0.278s, OK",
+        "     0.7s rc=0 test_source_texts: Ran 11 tests in 0.588s, OK",
+        "     0.2s rc=0 test_tile_copy_proof: Ran 8 tests in 0.068s, OK",
+        "     0.2s rc=0 test_tile_item_remove: Ran 11 tests in 0.069s, OK",
+        "     0.2s rc=0 test_uid_range: Ran 6 tests in 0.055s, OK",
+        "    16.2s rc=0 test_quest_enrichment_authoring: Ran 9 tests in 16.143s, OK",
+        "     0.5s rc=0 test_use_trigger_candidates: Ran 4 tests in 0.427s, OK",
+        "     0.6s rc=0 test_white_pearl_curation: Ran 6 tests in 0.279s, OK",
+        "     0.2s rc=0 test_wiki_requirement_interpretations: Ran 11 tests in 0.149s, OK",
+        "     0.4s rc=0 test_wiki_source_inventory: Ran 13 tests in 0.375s, OK",
+        "    15.0s rc=0 test_source_fix_guard: Ran 12 tests in 14.805s, OK",
+        "    10.2s rc=0 test_wiki_source_supplements: Ran 14 tests in 10.122s, OK",
+        "    14.9s rc=0 test_wiki_all_source_inventory: Ran 12 tests in 14.668s, OK",
+        "   169.5s rc=0 test_quest_tree_authoring: Ran 25 tests in 169.355s, OK"
+      ]
+    },
+    {
+      "name": "pin-check",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/quests6-pin-check"
+      ],
+      "started_utc": "2026-11-03T00:15:52.519267+00:00",
+      "exit": 0,
+      "elapsed_seconds": 26.61,
+      "log_sha256": "8edde637f302578140d05ed4d184c00f1288eee829901c572efb6656b5437579",
+      "results": [
+        "     Running `<target>/release/oteryn-world-bundle-compiler pin-check . /tmp/quests6-pin-check`"
+      ]
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_utc": "2026-11-03T00:16:19.128118+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.37,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": []
+    }
+  ]
+}

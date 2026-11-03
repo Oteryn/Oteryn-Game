@@ -8,7 +8,7 @@ Pierwsza inwentaryzacja: **31 elementów; AUTO 5, RĘCZNIE 26**. To historyczna 
 
 ## Dostarczony zakres
 
-- Ustalono 31 elementów oraz istniejący callback czterech skulls. Istniejący wykonawca i jego źródłowy test PG pozostają do walidacji; nie dodano drugiej tożsamości ani handlera.
+- Ustalono 31 elementów oraz istniejący callback czterech skulls. Zachowano istniejącego wykonawcę i źródłowy test PG; ta partia nie deklaruje wyniku PG Paradox. Zakres wykonanych kontroli opisuje S8; nie dodano drugiej tożsamości ani handlera.
 
 ## Dane callbacków
 

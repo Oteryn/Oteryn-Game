@@ -1,0 +1,21 @@
+{
+  "scope": "Checksums of the published evidence captures, not a runtime content contract.",
+  "files": {
+    "callback-packet-review.json": "7d8ee0622e68927645ad325c475e740050cb97e82b4597f11d024e38c02f2bf7",
+    "coordination-answers.json": "2d3bc890d423e27aa90c12a823882719ca090db068978c3149bfe790b9e2a8ad",
+    "item-admission-failure.json": "a72b3455159c03dab71ddff6e1377a0275e1c6f1cedf33dcf5db90fc22c817d6",
+    "map-scan.json": "956639fd8e72b029207e43c29a6427c0209e7fb9b0a79e733f2ffd9552ca57e9",
+    "native-item-snapshot.json": "a05f9fa0d66c5d8f70008fc7a6a94b0db24cdc729086d0386c2d756d443bdfbf",
+    "native-postgeneration.json": "b0ca877923f7b38b3cb8902312690981e565fd3e7f77204c4d53668428bf47ec",
+    "presentation-left-out.json": "7300a0f2128127c17f906ac7a24e1c55419e2ea3bca280b8bb76cd339e0f6152",
+    "profile-count-test-history.json": "7d4eec377f923e850e0e9dbf84cf73909c4f373ed7e68bd4aa4f547d92249cac",
+    "python-runtime-history.json": "c721f70d3ec2611cd09b63e735884c6b61f2735b690b3fdaf0af893bceaac1c6",
+    "quest-status.json": "dca8efa6c53b58c9ef2c8b5a850e910bc8c7ec9e36c2847d26a2f17440f3014d",
+    "question-links.json": "03863adcf2366f6587d9cdce6099e4dcaeeeb68d8cc7fb8ef6c1fb7a2d60f48a",
+    "regeneration-history.json": "865ade2ae1e1ec944b462ee15d044a1699953e573d830bdfdffb96948830df9e",
+    "sandomo-record-capture.json": "36b066c3914abde05f1c05337f3319cb70c8dbe3b068711eaf46405ad120338b",
+    "source-proof-refresh.json": "3b3eec9fe9f59e32ae0b5edbb5c0047808a466d825898c09f4da94d4c9e43e8b",
+    "source-test-history.json": "33b2496f700c255089b7918e439283aa981e719489bb77eea9298c39fa4fcb31",
+    "validation.json": "e6db368e407e05c9bb7d70d9fb91dad2c32f8c3f73dcb179f1cf882e458c2cf5"
+  }
+}

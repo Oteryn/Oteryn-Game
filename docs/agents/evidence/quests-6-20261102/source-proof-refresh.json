@@ -1,0 +1,1183 @@
+{
+  "preview": [
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "changed": false,
+      "before_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+      "after_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+      "json_changes": []
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+      "changed": true,
+      "before_sha256": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+      "after_sha256": "e256426db25180775bf891a2114f68335e7e97b8134ae5186615dd0b9c57d3ff",
+      "json_changes": [
+        {
+          "field": "/proof_inputs/1/sha256",
+          "before": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+          "after": "be1df930a7659a83da9d53416bb0c128279c6c87303135fe23b143920232391d"
+        }
+      ]
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+      "changed": true,
+      "before_sha256": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+      "after_sha256": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064",
+      "json_changes": [
+        {
+          "field": "/approval/sha256",
+          "before": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+          "after": "e256426db25180775bf891a2114f68335e7e97b8134ae5186615dd0b9c57d3ff"
+        },
+        {
+          "field": "/proof_inputs/1/sha256",
+          "before": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+          "after": "be1df930a7659a83da9d53416bb0c128279c6c87303135fe23b143920232391d"
+        }
+      ]
+    }
+  ],
+  "executed_semantic_review": {
+    "evidence_class": "EXACT_JSON_SEMANTIC_COMPARISON",
+    "base": "bfc3e2e89feae918921c29c441b5de0f3c19f83e",
+    "scope": "Existing bounded authoring tools only; every changed JSON leaf is a SHA, including recursively parsed canonical JSON provenance strings; every key, length and non-hash value remains identical. No SOURCE rule, hold, admission, approved pair or graph change.",
+    "approved_core_pairs": 30,
+    "approved_graphs": 36,
+    "files": [
+      {
+        "path": "content/quests/definitions/index.json",
+        "bytes": 27252,
+        "before_sha256": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+        "after_sha256": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070",
+        "sha_leaf_changes": 3,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/authoring_sources/12/sha256",
+            "before": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+            "after": "be1df930a7659a83da9d53416bb0c128279c6c87303135fe23b143920232391d"
+          },
+          {
+            "field": "/authoring_sources/138/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/authoring_sources/139/sha256",
+            "before": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+            "after": "e256426db25180775bf891a2114f68335e7e97b8134ae5186615dd0b9c57d3ff"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/definitions/quests-00000-00099.json",
+        "bytes": 458350,
+        "before_sha256": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+        "after_sha256": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3",
+        "sha_leaf_changes": 3,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/21/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/23/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/89/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "bytes": 6130627,
+        "before_sha256": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+        "after_sha256": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b",
+        "sha_leaf_changes": 16,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/6/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/9/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/15/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/18/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/26/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/27/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/35/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/45/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "bytes": 6350087,
+        "before_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+        "after_sha256": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8",
+        "sha_leaf_changes": 9,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/0/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/1/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/7/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/10/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/24/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/25/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/44/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          },
+          {
+            "field": "/records/47/definition/oteryn_recipe/source_change_provenance/sha256",
+            "before": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+            "after": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/grizzly-boss-rooms.json",
+        "bytes": 23272,
+        "before_sha256": "587014055ff465eb949ddd523872f30d04595627dade2fa9a131608202dedfcf",
+        "after_sha256": "a544dce14f4257696c2dabb77bb63dd86453fbe65a0018a31b5774a2a319781f",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/inputs_sha256/content/items/definitions/spell-native-profiles.json",
+            "before": "b86c2f867a4fc18392e4a89eaa93844ecd60335426a384a843ab5bf3cd15ae8e",
+            "after": "2d9dc9eebcbe98c23bcc33f1a645cb1b7b39ef374c9a2328cfd731c848362892"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/missions/completion-candidate.json",
+        "bytes": 4881,
+        "before_sha256": "10c14b715c27e8aa5148518c9a9501152929f534fe58d4b9f5bbff709ef248c6",
+        "after_sha256": "ffa7950fca8ae4440fa626fe9e3ab486a2ada56fec52191731cf2110665e91fd",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_provenance/12/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/input_provenance/13/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/input_provenance/14/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/sha256",
+            "before": "7d26b89fa686ad910e82ce8820fb200b7a2e525730d382e30a7439c8b596b4c5",
+            "after": "46fbf9d674cb391857a2e31a6b708179ddf3aab0e9b84a072e52f6d8d7969a2a"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/missions/quest-state-completion-candidate.json",
+        "bytes": 5625096,
+        "before_sha256": "7d26b89fa686ad910e82ce8820fb200b7a2e525730d382e30a7439c8b596b4c5",
+        "after_sha256": "46fbf9d674cb391857a2e31a6b708179ddf3aab0e9b84a072e52f6d8d7969a2a",
+        "sha_leaf_changes": 2061,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/authoring_sources/18/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/authoring_sources/19/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_sources/20/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/quests/0/completion/canonical_ref/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/quests/0/transitions/0/source/canonical_ref/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/quests/0/transitions/1/source/canonical_ref/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/quests/0/transitions/2/source/canonical_ref/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/quests/0/transitions/3/source/canonical_ref/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "content/quests/missions/quest-state.json",
+        "bytes": 2056072,
+        "before_sha256": "28fa8180a79e284655300c93e95c09945b11a57852bca440b4109c3a73dedd1f",
+        "after_sha256": "bf363b037961277defd0cba9830f9160c34e53b6dc294c03241f10762c84fb8d",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/authoring_sources/0/sha256",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/authoring_sources/1/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/authoring_sources/2/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_sources/3/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
+        "bytes": 376547,
+        "before_sha256": "eba9da2f94ba2ee72de88fc3675861fddbd857bf6875133c5ab3b7e8f079fd01",
+        "after_sha256": "ac041321d79edb07be3e1c9059ab22195fcab6ac05a438547105917dff9eb5ad",
+        "sha_leaf_changes": 307,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/outputs/0/sha256",
+            "before": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+            "after": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596"
+          },
+          {
+            "field": "/outputs/1/sha256",
+            "before": "896805d1edfdf341a9976fe1c128b49d867eeeddc5a4d01db1a19613d9531c98",
+            "after": "9bcb4fa51d7d9139b153fb3660745265ff02aaa39ccad0b974be3115e7ce1bed"
+          },
+          {
+            "field": "/outputs/2/sha256",
+            "before": "d5ec0e02db7c35d4e088b442f00c78ab052b1ba37012450f3321079f1fce4ba2",
+            "after": "3beb21000bf91aa3426d1a8ebc30e917bd18f1507138c97dbf680475e11ff480"
+          },
+          {
+            "field": "/outputs/4/sha256",
+            "before": "e6d834675f9bf35a5713807b825759fc2cbce8223fee86924562101fd4cc8d7d",
+            "after": "16a8d151ac0821c3c6f81cc294eb3de1798a4dc8881ce7ba1dbc639e3cc51f86"
+          },
+          {
+            "field": "/outputs/5/sha256",
+            "before": "66af43e6de84ff8f22af1c8c0fbf8150a55743c78b05d2ff4f386085955251fd",
+            "after": "ab51a65a3e958bfca4e39917b6f829a3720c05166304e5ea93173688207926da"
+          },
+          {
+            "field": "/outputs/6/sha256",
+            "before": "ce3c2d8207a5ba456cbda3ba469373905516dbde1b21610194d7015f96568003",
+            "after": "9db6032190c7af956f1b551d6d77d408e08d8453230b566d603bb53c679c45cd"
+          },
+          {
+            "field": "/outputs/8/sha256",
+            "before": "752e06e0e914af2152ae6a48a3b228319df7ae62f0c3418470271472b4daf0b6",
+            "after": "4699c3f3ca058a2246cd74facfb337fce1b2a31dfc8525fdf90cd43b5be6126b"
+          },
+          {
+            "field": "/records/0/definition/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
+        "bytes": 8111289,
+        "before_sha256": "ce3c2d8207a5ba456cbda3ba469373905516dbde1b21610194d7015f96568003",
+        "after_sha256": "9db6032190c7af956f1b551d6d77d408e08d8453230b566d603bb53c679c45cd",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_sha256/content/quests/definitions/index.json",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00000-00099.json",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00100-00199.json",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00200-00299.json",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/recipes/supplementary-index.json",
+        "bytes": 3949787,
+        "before_sha256": "752e06e0e914af2152ae6a48a3b228319df7ae62f0c3418470271472b4daf0b6",
+        "after_sha256": "4699c3f3ca058a2246cd74facfb337fce1b2a31dfc8525fdf90cd43b5be6126b",
+        "sha_leaf_changes": 3,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/inputs/6/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/inputs/7/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/inputs/8/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json",
+        "bytes": 510861,
+        "before_sha256": "66af43e6de84ff8f22af1c8c0fbf8150a55743c78b05d2ff4f386085955251fd",
+        "after_sha256": "ab51a65a3e958bfca4e39917b6f829a3720c05166304e5ea93173688207926da",
+        "sha_leaf_changes": 548,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/0/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/2/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/3/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/4/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/5/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/6/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/7/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+        "bytes": 887139,
+        "before_sha256": "896805d1edfdf341a9976fe1c128b49d867eeeddc5a4d01db1a19613d9531c98",
+        "after_sha256": "9bcb4fa51d7d9139b153fb3660745265ff02aaa39ccad0b974be3115e7ce1bed",
+        "sha_leaf_changes": 1148,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/0/source_constraints/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/0/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/chosen_constraints/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/chosen_reward_bindings/0/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/chosen_reward_bindings/1/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/chosen_reward_bindings/2/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/2/chosen_constraints/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/requirement-choices.json",
+        "bytes": 23062,
+        "before_sha256": "e6d834675f9bf35a5713807b825759fc2cbce8223fee86924562101fd4cc8d7d",
+        "after_sha256": "16a8d151ac0821c3c6f81cc294eb3de1798a4dc8881ce7ba1dbc639e3cc51f86",
+        "sha_leaf_changes": 26,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/0/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/2/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/records/3/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/records/4/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/records/5/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/records/6/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/records/7/witness/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json",
+        "bytes": 295738,
+        "before_sha256": "d5ec0e02db7c35d4e088b442f00c78ab052b1ba37012450f3321079f1fce4ba2",
+        "after_sha256": "3beb21000bf91aa3426d1a8ebc30e917bd18f1507138c97dbf680475e11ff480",
+        "sha_leaf_changes": 105,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/records/0/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/1/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/2/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/3/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/4/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/5/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/6/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/records/7/definition_witness/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json",
+        "bytes": 6827559,
+        "before_sha256": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+        "after_sha256": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_sha256/content/quests/definitions/index.json",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00000-00099.json",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00100-00199.json",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00200-00299.json",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+        "bytes": 31772,
+        "before_sha256": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+        "after_sha256": "e256426db25180775bf891a2114f68335e7e97b8134ae5186615dd0b9c57d3ff",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/proof_inputs/1/sha256",
+            "before": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+            "after": "be1df930a7659a83da9d53416bb0c128279c6c87303135fe23b143920232391d"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+        "bytes": 12283664,
+        "before_sha256": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "after_sha256": "8adaac2c364acdce873e46b6b07d3515c57691543f9d53aeefdca559894ce064",
+        "sha_leaf_changes": 2,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/approval/sha256",
+            "before": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+            "after": "e256426db25180775bf891a2114f68335e7e97b8134ae5186615dd0b9c57d3ff"
+          },
+          {
+            "field": "/proof_inputs/1/sha256",
+            "before": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+            "after": "be1df930a7659a83da9d53416bb0c128279c6c87303135fe23b143920232391d"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/crosswalk.json",
+        "bytes": 509466,
+        "before_sha256": "2e02f103086afe540f9c13c11244d18a588f72c9f11052f13c2738c578461972",
+        "after_sha256": "1dd0566c354b0fcf97a8cd1236c722769137723398ee5292c716960dbc87b16f",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00000-00099.json",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00100-00199.json",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/input_sha256/content/quests/definitions/quests-00200-00299.json",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/input_sha256/tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json",
+            "before": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+            "after": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/dialogue.json.gz",
+        "bytes": 894724,
+        "before_sha256": "de76c350a16be2210fedc209a2c36bc16cd1c40fb153bdddb3e57594d45856f1",
+        "after_sha256": "06474c77fc1d8e573dbe6f4b320aedffb0b9537bdba0d03377e5136f3476e1d0",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/quest_inputs/0/sha256",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/quest_inputs/1/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/quest_inputs/2/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/quest_inputs/3/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/summary.json",
+        "bytes": 2907,
+        "before_sha256": "86388c0042232d2085e881e46d1255d7daac377f7971e54c16453d8fe43ae9c7",
+        "after_sha256": "10c9d4ece6b8ddea6fcd2acbe33585322451922ddf1fe1637aeaeb4333dff0f6",
+        "sha_leaf_changes": 2,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/outputs/7/sha256",
+            "before": "2e02f103086afe540f9c13c11244d18a588f72c9f11052f13c2738c578461972",
+            "after": "1dd0566c354b0fcf97a8cd1236c722769137723398ee5292c716960dbc87b16f"
+          },
+          {
+            "field": "/outputs/8/sha256",
+            "before": "de76c350a16be2210fedc209a2c36bc16cd1c40fb153bdddb3e57594d45856f1",
+            "after": "06474c77fc1d8e573dbe6f4b320aedffb0b9537bdba0d03377e5136f3476e1d0"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/coverage.json",
+        "bytes": 31885,
+        "before_sha256": "0a16ac54b3b099df5a8400d9566a8269967e6d8bdc1d56e498569d6b3ab08c26",
+        "after_sha256": "f24b5dc0b04672811a92b218ab0cd7c9a94fe600ed6429ab4a46917b901eaf97",
+        "sha_leaf_changes": 6,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/outputs/0/sha256",
+            "before": "40e0ab9a3b217cf769489ef8ec80f9e42509b77c84afc3ebbdcb48cd595106cc",
+            "after": "7258d9a48ec38a8852f33f5308586c1e0e3c7b84ab563f042160979b5e4f2c7b"
+          },
+          {
+            "field": "/outputs/1/sha256",
+            "before": "c4a85959fbfa4a74473c9718d2274dbb65ddf50c078bd3bf91c46158bc1aeacb",
+            "after": "0d77fe0ce0456ed02fd5b2256d57b772481f37588070cdd5ebc0fe0bfffa9d5e"
+          },
+          {
+            "field": "/outputs/3/sha256",
+            "before": "354a9b9e57a93abec9bca64a5e8d452a9b11242cf74b9a790a7ba1b696811ada",
+            "after": "05cc70b99b3d70f56a47eb17bdeb7a75612cfe0f8e12515e0694c922bb2e8611"
+          },
+          {
+            "field": "/outputs/19/sha256",
+            "before": "2e02f103086afe540f9c13c11244d18a588f72c9f11052f13c2738c578461972",
+            "after": "1dd0566c354b0fcf97a8cd1236c722769137723398ee5292c716960dbc87b16f"
+          },
+          {
+            "field": "/outputs/20/sha256",
+            "before": "de76c350a16be2210fedc209a2c36bc16cd1c40fb153bdddb3e57594d45856f1",
+            "after": "06474c77fc1d8e573dbe6f4b320aedffb0b9537bdba0d03377e5136f3476e1d0"
+          },
+          {
+            "field": "/outputs/21/sha256",
+            "before": "86388c0042232d2085e881e46d1255d7daac377f7971e54c16453d8fe43ae9c7",
+            "after": "10c9d4ece6b8ddea6fcd2acbe33585322451922ddf1fe1637aeaeb4333dff0f6"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-dependencies.json",
+        "bytes": 601035,
+        "before_sha256": "354a9b9e57a93abec9bca64a5e8d452a9b11242cf74b9a790a7ba1b696811ada",
+        "after_sha256": "05cc70b99b3d70f56a47eb17bdeb7a75612cfe0f8e12515e0694c922bb2e8611",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_provenance/npc_capture_sha256",
+            "before": "40e0ab9a3b217cf769489ef8ec80f9e42509b77c84afc3ebbdcb48cd595106cc",
+            "after": "7258d9a48ec38a8852f33f5308586c1e0e3c7b84ab563f042160979b5e4f2c7b"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json",
+        "bytes": 1115,
+        "before_sha256": "c4a85959fbfa4a74473c9718d2274dbb65ddf50c078bd3bf91c46158bc1aeacb",
+        "after_sha256": "0d77fe0ce0456ed02fd5b2256d57b772481f37588070cdd5ebc0fe0bfffa9d5e",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/capture_artifact/sha256",
+            "before": "40e0ab9a3b217cf769489ef8ec80f9e42509b77c84afc3ebbdcb48cd595106cc",
+            "after": "7258d9a48ec38a8852f33f5308586c1e0e3c7b84ab563f042160979b5e4f2c7b"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/npc.json.gz",
+        "bytes": 8474874,
+        "before_sha256": "40e0ab9a3b217cf769489ef8ec80f9e42509b77c84afc3ebbdcb48cd595106cc",
+        "after_sha256": "7258d9a48ec38a8852f33f5308586c1e0e3c7b84ab563f042160979b5e4f2c7b",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/quest_inputs/0/sha256",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/quest_inputs/1/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/quest_inputs/2/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/quest_inputs/3/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json",
+        "bytes": 2080203,
+        "before_sha256": "b74e4ea2ca26b5ae72c974005af3c9db659fab50beefe1ecfc6fb784f98f1718",
+        "after_sha256": "b565afb0458adb570743fdf6f52e99e22451fdea9bd56843e460c15aa44fa6bf",
+        "sha_leaf_changes": 4,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/input_provenance/3/sha256",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/input_provenance/4/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/input_provenance/5/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/input_provenance/6/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json",
+        "bytes": 237861,
+        "before_sha256": "748ab186e632281b2d8ca39de7da6288b57066a0640df8a1b0276fc01f4e4c8b",
+        "after_sha256": "9e08991c78d8579156c087047313c928485606dd165fd1da9802f9f6773c0ba5",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/inputs/1/sha256",
+            "before": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+            "after": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json",
+        "bytes": 41653,
+        "before_sha256": "13041511251896571751f4d6978dd0d8dbad6674613c83d8ea2f4c6d11b66317",
+        "after_sha256": "5d8779b647acadbc36d24ab96e75a770af837844065a92fe518108371f19c6e8",
+        "sha_leaf_changes": 6,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/inputs/0/sha256",
+            "before": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+            "after": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+          },
+          {
+            "field": "/inputs/1/sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/inputs/2/sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/inputs/3/sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/inputs/5/sha256",
+            "before": "7d26b89fa686ad910e82ce8820fb200b7a2e525730d382e30a7439c8b596b4c5",
+            "after": "46fbf9d674cb391857a2e31a6b708179ddf3aab0e9b84a072e52f6d8d7969a2a"
+          },
+          {
+            "field": "/inputs/6/sha256",
+            "before": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+            "after": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json",
+        "bytes": 362915,
+        "before_sha256": "e7e1b34e29926f78f9f6cbef954b37debf22a44ede25adfc996fe997380ffc4b",
+        "after_sha256": "4513d006936629a1994e9959730cb87e14aa79b2b52652b12150bfba6169ed9f",
+        "sha_leaf_changes": 1,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/inputs/1/sha256",
+            "before": "c88abe49d7dfdf76d6d14b3ebfaa714ce955f51cd62782b044ac633bcf894d53",
+            "after": "dbf6a196be118c779055874ef28fb3e70ddefa2f0e254f6a4d7694503a59f596"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/v2-export/declarations.json",
+        "bytes": 1364510,
+        "before_sha256": "67bf3153bbf91edfd3bf7dfa64cde719369c6daae014f25f4cefc15c54715423",
+        "after_sha256": "c1f5a1f11b8c2b82453a5eef796473993ff8bbe512bd30e0090a0dee22c66466",
+        "sha_leaf_changes": 612,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/authoring_profiles/0/data/profile/fields/6/value/value/decoded_json/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/authoring_profiles/1/data/profile/fields/6/value/value/decoded_json/packet_sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_profiles/2/data/profile/fields/5/value/value/decoded_json/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          },
+          {
+            "field": "/authoring_profiles/3/data/profile/fields/5/value/value/decoded_json/definition_sha256",
+            "before": "aa6113a1ad47bd89ec066130ad05b76d09dc05088ea6e7bd9ade93796810fde6",
+            "after": "df99cfda400498d0ebea6eb600e08482d4d7db868cc8f41f7801eb64d5d2a778"
+          },
+          {
+            "field": "/authoring_profiles/3/data/profile/fields/5/value/value/decoded_json/packet_sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_profiles/4/data/profile/fields/5/value/value/decoded_json/packet_sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_profiles/5/data/profile/fields/6/value/value/decoded_json/packet_sha256",
+            "before": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+            "after": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+          },
+          {
+            "field": "/authoring_profiles/6/data/profile/fields/5/value/value/decoded_json/packet_sha256",
+            "before": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+            "after": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+          }
+        ]
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/samples/v2-export/report.json",
+        "bytes": 292794,
+        "before_sha256": "b6a27712353dedc1a10da57a9f64082084767f30c6d01c01dc4891cbeb0b00fa",
+        "after_sha256": "e6be497756c18b8f8e0a56e411aec13b5883f7c5619d5ee5494c634a5931a6e7",
+        "sha_leaf_changes": 332,
+        "non_hash_changes": [],
+        "examples": [
+          {
+            "field": "/field_omissions/0/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/1/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/2/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/3/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/4/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/5/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/6/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          },
+          {
+            "field": "/field_omissions/7/canonical_ref/packet_sha256",
+            "before": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+            "after": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+          }
+        ]
+      }
+    ]
+  },
+  "donor_capture_diagnostic": {
+    "python": "3.12.16 (main, Oct 26 2026, 14:08:45) [Clang 23.1.3 ]",
+    "zlib": "1.3.2",
+    "compression": [
+      {
+        "path": "npc.json.gz",
+        "bytes": 8474867,
+        "canonical_recompression_identical": true,
+        "header": "1f8b0800000000000203",
+        "recompressed_header": "1f8b0800000000000203"
+      },
+      {
+        "path": "components248/boss.json.gz",
+        "bytes": 1261587,
+        "canonical_recompression_identical": true,
+        "header": "1f8b0800000000000203",
+        "recompressed_header": "1f8b0800000000000203"
+      },
+      {
+        "path": "components248/events.json.gz",
+        "bytes": 1035459,
+        "canonical_recompression_identical": true,
+        "header": "1f8b0800000000000203",
+        "recompressed_header": "1f8b0800000000000203"
+      },
+      {
+        "path": "components248/other.json.gz",
+        "bytes": 1033160,
+        "canonical_recompression_identical": true,
+        "header": "1f8b0800000000000203",
+        "recompressed_header": "1f8b0800000000000203"
+      },
+      {
+        "path": "refinements/dialogue.json.gz",
+        "bytes": 17990993,
+        "canonical_recompression_identical": true,
+        "header": "1f8b0800000000000203",
+        "recompressed_header": "1f8b0800000000000203"
+      }
+    ],
+    "quest_inputs": [
+      {
+        "path": "content/quests/definitions/index.json",
+        "capture_sha256": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+        "base_sha256": "53d624814f9e066115dea4d113ad6341b888353cf75e11a616c7b7857c0488d3",
+        "current_sha256": "b14881c291209b3f09c4dfd6cec9a524a996caf59cf3bb9c64e2b4708e2b5070"
+      },
+      {
+        "path": "content/quests/definitions/quests-00000-00099.json",
+        "capture_sha256": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+        "base_sha256": "916c6646cbab66b965a2c7fe8e7d6e00708167b26b71491ef4695d12233c3b27",
+        "current_sha256": "058bfea0e6f43983325aed8263fd36d847b79764f80ddb76d9aaece879ff37d3"
+      },
+      {
+        "path": "content/quests/definitions/quests-00100-00199.json",
+        "capture_sha256": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+        "base_sha256": "1ac954dcfa4195e1383b71d267519558245ccfc31d180864dbe8571df03f0921",
+        "current_sha256": "191b6edff377573ebdb651b571b776227bbf7d1481868a3ba27bbbdbd33b6b0b"
+      },
+      {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "capture_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+        "base_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+        "current_sha256": "d52777e5471005631eb6a75063e060047019810800b3228aec5a8119cf6602d8"
+      },
+      {
+        "path": "content/quests/definitions/quests-00300-00351.json",
+        "capture_sha256": "2cb47e5cd136f063fe7ff7607dc795ffff6597896d10c0a725cd17d2fe750781",
+        "base_sha256": "2cb47e5cd136f063fe7ff7607dc795ffff6597896d10c0a725cd17d2fe750781",
+        "current_sha256": "2cb47e5cd136f063fe7ff7607dc795ffff6597896d10c0a725cd17d2fe750781"
+      }
+    ]
+  },
+  "grizzly_room_refresh": {
+    "evidence_class": "EXACT_JSON_SEMANTIC_COMPARISON",
+    "base": "bfc3e2e89feae918921c29c441b5de0f3c19f83e",
+    "review": {
+      "path": "content/quests/grizzly-boss-rooms.json",
+      "bytes": 23272,
+      "before_sha256": "587014055ff465eb949ddd523872f30d04595627dade2fa9a131608202dedfcf",
+      "after_sha256": "a544dce14f4257696c2dabb77bb63dd86453fbe65a0018a31b5774a2a319781f",
+      "sha_leaf_changes": 1,
+      "non_hash_changes": [],
+      "examples": [
+        {
+          "field": "/inputs_sha256/content/items/definitions/spell-native-profiles.json",
+          "before": "b86c2f867a4fc18392e4a89eaa93844ecd60335426a384a843ab5bf3cd15ae8e",
+          "after": "2d9dc9eebcbe98c23bcc33f1a645cb1b7b39ef374c9a2328cfd731c848362892"
+        }
+      ]
+    },
+    "manifest": {
+      "content/quests/grizzly-boss-rooms.json": {
+        "bytes": 23272,
+        "sha256": "a544dce14f4257696c2dabb77bb63dd86453fbe65a0018a31b5774a2a319781f",
+        "blob_sha": "96c2c79a2e2bf9de289c923fe756e84645798c22",
+        "mode": "100644"
+      }
+    },
+    "rooms": 30,
+    "qualified": 27,
+    "unqualified": [
+      2,
+      6,
+      16
+    ]
+  }
+}

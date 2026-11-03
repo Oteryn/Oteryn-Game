@@ -1,0 +1,558 @@
+{
+  "classification": "Evidence snapshot only; not a content schema, adapter, grant, or capability activation",
+  "oteryn_base": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+  "crystal_donor": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280",
+  "answer_application": "Points 5 and 7: no shared-owner/protocol expansion in this quest batch; FX remain Left out",
+  "registry_provenance": [
+    {
+      "files": [
+        {
+          "path": "src/utils/utils_definitions.hpp",
+          "sha256": "b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac"
+        },
+        {
+          "path": "src/creatures/creatures_definitions.hpp",
+          "sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622"
+        },
+        {
+          "path": "src/lua/functions/core/game/lua_enums.cpp",
+          "sha256": "d1bda8dd89dab75f41dfa68d33c6221868382e10e3efdce046f84e56789b6aa1"
+        }
+      ],
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "files": [
+        {
+          "path": "src/utils/utils_definitions.hpp",
+          "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+        },
+        {
+          "path": "src/creatures/creatures_definitions.hpp",
+          "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+        },
+        {
+          "path": "src/lua/functions/core/game/lua_enums.cpp",
+          "sha256": "206ebbb26959a8bd64e88fca6eacac3cc22e500250ffc45ae698a26f8d4bf8d7"
+        }
+      ],
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  ],
+  "input_captures": [
+    {
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp",
+      "sha256_of_capture": "8049c146d591d619af4e31fbb1563daa6eaf12f24f33bd2d68d5348408f59af5"
+    },
+    {
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp",
+      "sha256_of_capture": "c93cb4bacc81a5d3824b95df8d07d0b73331ad661e268e1fba8abac5785f810e"
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json",
+      "sha256_of_capture": "153ebd97a3299a1ca192bbb7d62a468fcafb636d3e1c928b051dab47391c9b94"
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json",
+      "sha256_of_capture": "9838c46fede7c386d9af2b5387a924b8a2b7f203b02322d7ebc47bfff2cf5bd4"
+    }
+  ],
+  "records": [
+    {
+      "symbol": "CONST_ME_POFF",
+      "effect_id": 3,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:58",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:521",
+      "canonical_client_bindings": [
+        {
+          "client_id": 3,
+          "key": "appearance:effect/poff",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_POFF",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:73",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        },
+        {
+          "client_id": 3,
+          "key": "canary.appearance:effect/poff",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_POFF",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:696",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "appearance:effect/poff",
+          "kind": "effect",
+          "source_enum": "CONST_ME_POFF",
+          "value": 3,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:61",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        },
+        {
+          "alias": "canary.appearance:effect/poff",
+          "kind": "effect",
+          "source_enum": "CONST_ME_POFF",
+          "value": 3,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:271",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_chalk.lua:13",
+          "quest": "roshamuul_quest",
+          "scope": "owned quest directory",
+          "expression": "return fromPosition:sendMagicEffect(CONST_ME_POFF)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/assassin_outfit/movements_erayo_house.lua:11",
+          "quest": "assassin_outfit",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_POFF)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_EXPLOSIONAREA",
+      "effect_id": 5,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:60",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:523",
+      "canonical_client_bindings": [
+        {
+          "client_id": 5,
+          "key": "canary.appearance:effect/explosionarea",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_EXPLOSIONAREA",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:332",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "canary.appearance:effect/explosionarea",
+          "kind": "effect",
+          "source_enum": "CONST_ME_EXPLOSIONAREA",
+          "value": 5,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:157",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:62",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_EXPLOSIONAREA)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_EXPLOSIONHIT",
+      "effect_id": 6,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:61",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:524",
+      "canonical_client_bindings": [
+        {
+          "client_id": 6,
+          "key": "canary.appearance:effect/explosionhit",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_EXPLOSIONHIT",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:339",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chester_kahs.lua:171",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_EXPLOSIONHIT)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_FIREAREA",
+      "effect_id": 7,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:62",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:525",
+      "canonical_client_bindings": [
+        {
+          "client_id": 7,
+          "key": "canary.appearance:effect/firearea",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_FIREAREA",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:353",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "canary.appearance:effect/firearea",
+          "kind": "effect",
+          "source_enum": "CONST_ME_FIREAREA",
+          "value": 7,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:163",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:60",
+          "quest": "the_inquisition_quest",
+          "scope": "owned Eclipse branch only, lines 58-63",
+          "expression": "toPosition:sendMagicEffect(CONST_ME_FIREAREA)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_TELEPORT",
+      "effect_id": 11,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:66",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:529",
+      "canonical_client_bindings": [
+        {
+          "client_id": 11,
+          "key": "canary.appearance:effect/teleport",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_TELEPORT",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:899",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:400",
+          "quest": "killing_in_the_name_of",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:405",
+          "quest": "killing_in_the_name_of",
+          "scope": "owned quest directory",
+          "expression": "bosses[a].playerPosition:sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua:11",
+          "quest": "roshamuul_quest",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua:41",
+          "quest": "roshamuul_quest",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:38",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "position:sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:39",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "destination:sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:46",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "position:sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:47",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "fromPosition:sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:199",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:205",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:211",
+          "quest": "the_inquisition_quest",
+          "scope": "owned quest directory",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_MAGIC_BLUE",
+      "effect_id": 13,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:68",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:531",
+      "canonical_client_bindings": [
+        {
+          "client_id": 13,
+          "key": "appearance:effect/magic_blue",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_MAGIC_BLUE",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:66",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        },
+        {
+          "client_id": 13,
+          "key": "canary.appearance:effect/magic_blue",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_MAGIC_BLUE",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:584",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "appearance:effect/magic_blue",
+          "kind": "effect",
+          "source_enum": "CONST_ME_MAGIC_BLUE",
+          "value": 13,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:55",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        },
+        {
+          "alias": "canary.appearance:effect/magic_blue",
+          "kind": "effect",
+          "source_enum": "CONST_ME_MAGIC_BLUE",
+          "value": 13,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:241",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:165",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chester_kahs.lua:95",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "npc:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:298",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:304",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:313",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/erayo.lua:112",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_MAGIC_RED",
+      "effect_id": 14,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:69",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:532",
+      "canonical_client_bindings": [
+        {
+          "client_id": 14,
+          "key": "canary.appearance:effect/magic_red",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_MAGIC_RED",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:598",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "canary.appearance:effect/magic_red",
+          "kind": "effect",
+          "source_enum": "CONST_ME_MAGIC_RED",
+          "value": 14,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:253",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chester_kahs.lua:172",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "npc:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_MAGIC_GREEN",
+      "effect_id": 15,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:70",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:533",
+      "canonical_client_bindings": [
+        {
+          "client_id": 15,
+          "key": "canary.appearance:effect/magic_green",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_MAGIC_GREEN",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:591",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "canary.appearance:effect/magic_green",
+          "kind": "effect",
+          "source_enum": "CONST_ME_MAGIC_GREEN",
+          "value": 15,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:247",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:149",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vescu.lua:155",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_HOLYAREA",
+      "effect_id": 50,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:105",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:568",
+      "canonical_client_bindings": [
+        {
+          "client_id": 50,
+          "key": "canary.appearance:effect/holyarea",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_HOLYAREA",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:521",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [
+        {
+          "alias": "canary.appearance:effect/holyarea",
+          "kind": "effect",
+          "source_enum": "CONST_ME_HOLYAREA",
+          "value": 50,
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/spell-cues.json:211",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "observed_quest_or_npc_file_calls": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:263",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tim_the_guard.lua:84",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grof_the_guard.lua:71",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kulag_the_guard.lua:70",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/miles_the_guard.lua:76",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/walter_the_guard.lua:81",
+          "quest": null,
+          "scope": "NPC file; branch ownership must be qualified separately",
+          "expression": "player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)"
+        }
+      ],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    },
+    {
+      "symbol": "CONST_ME_WATERSPLASH",
+      "effect_id": 54,
+      "crystal_definition": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:109",
+      "crystal_lua_registration": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/core/game/lua_enums.cpp:572",
+      "canonical_client_bindings": [
+        {
+          "client_id": 54,
+          "key": "canary.appearance:effect/watersplash",
+          "kind": "effect",
+          "source": "opentibiabr/canary",
+          "source_member": "CONST_ME_WATERSPLASH",
+          "evidence": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/presentations/bindings/client-ids.json:934",
+          "registry_source_revision": "99902524e052f37574194466c2949c576e4ab269"
+        }
+      ],
+      "existing_spell_outbox_cues": [],
+      "observed_quest_or_npc_file_calls": [],
+      "runtime_status": "REFERENCE_ONLY; no gameplay producer or capability activation supplied by this artifact"
+    }
+  ],
+  "scope_limit": "Ten observed/requested constants only, not every possible effect. WATERSPLASH is included for the other worker's Waterfall callback. NPC occurrences do not claim every source branch is owned by this batch."
+}

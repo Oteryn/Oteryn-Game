@@ -1,0 +1,92 @@
+[
+  {
+    "item": "oteryn:item.tibia.i12784",
+    "callbacks": [
+      "oteryn:quest-callback/rookie-poisoned-water"
+    ],
+    "materializable": true,
+    "stack_class": "NonStackable",
+    "binding_count": 1,
+    "binding_disposition": [
+      "EXACT"
+    ],
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 180
+        }
+      }
+    },
+    "path": "content/items/definitions/items-02500-02999.json"
+  },
+  {
+    "item": "oteryn:item.tibia.i5938",
+    "callbacks": [
+      "oteryn:quest-callback/druid-ceiron-water-sample"
+    ],
+    "materializable": false,
+    "stack_class": "Unknown",
+    "binding_count": 1,
+    "binding_disposition": [
+      "EXACT"
+    ],
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 700
+        }
+      }
+    },
+    "path": "content/items/definitions/items-29500-29999.json"
+  },
+  {
+    "item": "oteryn:item.tibia.i5939",
+    "callbacks": [
+      "oteryn:quest-callback/druid-ceiron-water-sample"
+    ],
+    "materializable": false,
+    "stack_class": "Unknown",
+    "binding_count": 1,
+    "binding_disposition": [
+      "EXACT"
+    ],
+    "physical": {
+      "state": "KNOWN",
+      "value": {
+        "movable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "pickupable": {
+          "state": "KNOWN",
+          "value": true
+        },
+        "weight": {
+          "state": "KNOWN",
+          "value": 700
+        }
+      }
+    },
+    "path": "content/items/definitions/items-29500-29999.json"
+  }
+]

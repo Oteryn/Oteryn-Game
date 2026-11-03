@@ -1,0 +1,492 @@
+{
+  "25_years_of _tibia_quest": {
+    "done": [
+      "Przypięta inwentaryzacja dwóch lwów, obu obszarów maszyny, BossLever i nagrody Lord Retro. Wycofano 18 kandydatów Use po wykryciu wyboru ordinal0 podłogi zamiast mechanizmu; regresja chroni ich nieobecność."
+    ],
+    "left_out": [
+      "Maszyna: brak kwalifikowanego powiązania rzeczywistego celu Use; pola istnieją, ale sam position-only selector uruchamiałby tylko podłogę. Nie dodano wymyślonego ograniczenia itemid.",
+      "Lwy: odczyt posiadania 34008 bez konsumpcji wymaga dopuszczonego kontraktu; nie zastąpiono go zużyciem ani sztucznym postępem.",
+      "Lord Retro: grupowy BossLever, pokój, rozliczenie uczestników i outfit1460/1461 wymagają kwalifikowanych wspólnych właścicieli i kosmetyków. ANSWER5/7; globalne cztery fazy nie są implementowane. FX i tekst sukcesu pozostają odłożone."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_lion_statue.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:18",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/lever_lord_retro.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua:3"
+    ]
+  },
+  "adventures_of_galthen": {
+    "done": [
+      "Dwie definicje StepIn dla wyjść Iksupan z potwierdzonymi fizycznymi polami. Wynik wykonania przez dispatch jest osobno rozliczony w raporcie.",
+      "Zachowano źródłowe selektory i cele; nie oznaczono całego questa jako ukończonego."
+    ],
+    "left_out": [
+      "Trzy callbacki Use oparte wyłącznie na pozycji (dwoje schodów i wyjście Mitmah) usunięto z aktywnego JSON: ordinal0 wskazuje podłogę, nie źródłowy mechanizm.",
+      "Bramki poziomu150/250 i skrót dostępu wymagają odłożonego kontraktu. Nie zastąpiono odczytu sztucznym zapisem stanu.",
+      "Pokoje bossów Ahau/Megasylvan/Mitmah, satchel z30-dniowym cooldownem i teleportem, Idol40578 oraz stroje1597/1598 wymagają kwalifikowanych wykonawców atomowych zmian i powiązań. ANSWER5/7."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_exit.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_teleports.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_mitmah_vanguard_exit.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_galthens_tree.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_idol_of_tukh.lua:2",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589444781",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589445145",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280"
+    ]
+  },
+  "assassin_outfit": {
+    "done": [
+      "Ustalono rzeczywiste grafy Vescu/Erayo/Atrad, ich material requests i warunki wejścia; data/writers nie są przedstawiane jako aktywna rozmowa lub przyznany outfit.",
+      "Skorygowano kwalifikację storage: Atrad=30036 jest zdefiniowany i odrębny od AssassinSecondAddon40763; donor pisze oba. Nie utworzono aliasu ani nowego ID.",
+      "Potwierdzono zakres płci nagród: Vescu baza156/152, Erayo addon1 obu, Atrad addon2 wyłącznie bieżącej płci. Nie dodano runtime adaptera/grantu Assassin."
+    ],
+    "left_out": [
+      "Brak dopuszczonego produkcyjnego authoringu/mappings i opaque grant keys152/156/addons1/2 z kompatybilnym provenance. Outfits jest READY_UNPOPULATED; synthetic-authoring to fixture. Istniejący quest-grants owner dopuszcza Revenant/DecayingDefender, nie Assassin. Brak nowej gałęzi ownera w tej partii; finalny track nie może zastąpić nagrody (§5/§7; Q6-ASSASSIN-COSMETICS rozstrzygnięte A przez ANSWER6589908362).",
+      "Brak kwalifikowanych native placementów i pełnego dialog owner path Vescu, Erayo, Atrad. Zachowujemy Vescu greeting DRUNK, Atrad greeting FIRE i ich tematy potwierdzenia. Nie zastępujemy kondycji sztucznym storage ani nie osłabiamy warunków (§5/§7).",
+      "Erayo wymaga istniejącego bazowego outfitu bieżącej płci i Shipwrecked==2. Ten cudzy prerequisite pozostaje strzeżony; nie importujemy sąsiedniego questa ani nie pomijamy go (§6).",
+      "Dom Erayo wymaga dokładnego getItemById(3086,deepSearch) albo CONDITION_INVISIBLE, nie ogólnego getItemCount lub samego slotu ring. Helper C++ schodzi do kontenerów tylko dla prawdziwego depthSearch; brak global assignment proof nie jest uprawnieniem do zmiany semantyki. Exit/refusal position jest źródłowa32519,32914,7, bez dopisanego nowego bindingu (§3/§7).",
+      "Material exchanges Vescu/Erayo i Atrad5804+5930 wymagają wszystkich item semantics i atomowej konsumpcji/grantu. Nie przyznajemy obu płci u Atrad, nie wymyślamy nagród i nie oznaczamy końca przez sam storage. Item/placement/grant holds pozostają (§4/§5/§7/§8).",
+      "Źródłowe FX MAGIC_GREEN/MAGIC_BLUE/POFF pozostają reference only; brak produkcyjnego publishera przy cap23 offers=false (§5/§7; Q6-FX-PRESENTATION)."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:78–99",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vescu.lua:150–158",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/erayo.lua:55–63",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/erayo.lua:102–116",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/atrad.lua:53–103",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/assassin_outfit/movements_erayo_house.lua:3–19",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/creatures/player/player_functions.cpp:2331–2359",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/lua_functions_loader.hpp:118–120",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/game/game.cpp:2814–2859",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/cosmetics/outfits/index.json:1",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11–16",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/cosmetics-authoring/README.md:3–20",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/cosmetics-authoring/README.md:53–68"
+    ]
+  },
+  "behemoth": {
+    "done": [
+      "ISTNIEJĄCY RUNTIME: callback behemoth obsługuje UID30009, nieodwracalne przełączenie2772→2773 i usunięcie5barier1791; bez tworzenia drugiej tożsamości questa.",
+      "Dodano test źródłowych nagród: cztery rzeczywiste przypadki wire USE→RewardClaimMint, dokładne nagrody, once/replay/cold replay. To test istniejących reguł, nie nowy kontrakt. Wynik wykonania dokumentuje główny raport."
+    ],
+    "left_out": [
+      "Fizyczna skrzynia2472 istnieje w mapie z kwalifikacji HEAD9d2437e2c109ec6abb413ea0104906a85948dd16. Pełny skan surowej mapy nie znalazł wymaganego UID. Binder wymaga dokładnego UID na top-level entry. Compiled startup overlay/binding NIEZNANE: nie zakończono dowodu jego braku ani obecności. Nie uznawać fixture source_world za produkcyjny WorldBundle. ANSWER7: Left out do kwalifikowanego istniejącego przypięcia; bez rozszerzania WorldBundle/RewardClaimMint placement.",
+      "Cztery claimy UID6052,6053,6054,6075 mają dane; bag ma pełne native_contents. Nie oznaczono questa jako playable bez produkcyjnego binding. Testfixture wstawia UID jawnie."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/behemoth/action-lever.lua:16",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:970",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:977",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:984",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1150",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/system/quest_reward_common.lua:270",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/content/src/content/world_reward_claims.rs:894",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:369",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:208"
+    ],
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753"
+  },
+  "desert_dungeon_quest": {
+    "done": [
+      "Dodano test źródłowej nagrody: istniejący claim desert1,3035×100; wire USE i durable once/replay bez nowej reguły. Wynik wykonania dokumentuje główny raport.",
+      "KWALIFIKACJA NATIVE:50181,3264,3084 są materializable=true,NonStackable,CharacterInventory+Ground w finalnym providerze. Legacy definitions materializable=false nie stanowią runtimehold. Kwalifikację dokumentuje wspólny materiał dowodowy.",
+      "Mapa: pięć pozycji startu, pięć ołtarzy i pięć celów obecne; nie implementowano atrapowego group adaptera."
+    ],
+    "left_out": [
+      "Grupowe przyjęcie pięciu profesji i jednoczesne zużycie pięciu ofiar/przeniesienie grupy wymaga rozszerzenia wspólnych właścicieli. ANSWER5 zabrania tej zmiany w tej partii. Nie dodać fikcyjnego storage/completion ani osobnych jednostkowych teleportów udających atomic group.",
+      "Fizyczna skrzynia2472 istnieje w mapie z kwalifikacji HEAD9d2437e2c109ec6abb413ea0104906a85948dd16. Pełny skan surowej mapy nie znalazł wymaganego UID. Binder wymaga dokładnego UID na top-level entry. Compiled startup overlay/binding NIEZNANE: nie zakończono dowodu jego braku ani obecności. Nie uznawać fixture source_world za produkcyjny WorldBundle. ANSWER7: Left out do kwalifikowanego istniejącego przypięcia; bez rozszerzania WorldBundle/RewardClaimMint placement.",
+      "Desert2 UID6158 nadal ma data_hold ITEM_SEMANTICS_MISSING dla3084, waiting_data i brak native_contents w recordzie RewardClaim. Native3084 jest już admitted; to rozbieżność warstw, nie brak native itemu. ANSWER8: zachować hold; nie przepisać go ręcznie ani nie rozszerzać admission. Raw250 oznacza pełnecharges jednego amuletu, nie250amuletów.",
+      "Hagor/Adrenius w Crystal są stubami FocusModule bez questowego dialogu. Rozszerzenie tylko z Global pozostaje poza zakresem bez ANSWER.",
+      "Donor wymaga pięciu profesji włącznie z Monk; nie zmieniono na Wiki4–5. Pozostałe rozbieżności nagród pozostają w D."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:23",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:30",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:40",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1806",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1813",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hagor.lua:26",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/adrenius.lua:21",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/interactions/reward_claims/reward-claim-variants-00000-00099.json:1",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/spells.manifest.json:1",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/native-gameplay/build_source_item_profiles.py:132",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/mod.rs:287",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/entities/src/carrier/runtime_actor_source_step.rs:20",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/content/src/content/world_reward_claims.rs:894"
+    ],
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753"
+  },
+  "druid_outfits_quest": {
+    "done": [
+      "Potwierdzono istniejącego właściciela CeironsWaterskin: outfit_and_addon_quests. Regeneracja odrzuciła kandydata z powodu niedopuszczonych i5938/i5939; usunięto nowy rekord z aktywnego katalogu bez zmiany holdów ani tożsamości toru.",
+      "Przejrzano trzy pełne źródła NPC, gałęzie wspólnych skrzyń i botanist oraz kwalifikację przedmiotów. Nie dodano nowego adaptera runtime."
+    ],
+    "left_out": [
+      "Ceiron water sample UID40096/appearance5662 wymaga itemów i5938→i5939. Rzeczywisty generator odrzuca oba: materializable=false, stack_class=Unknown w content/items/definitions/items-29500-29999.json:1; istnieje pojedynczy binding EXACT, ale brakuje native admission. QUEST_CALLBACK_ITEM_NOT_ADMITTED w tools/content-migration/quest_callback_profiles.py:179–182. Zgodnie z ANSWER8 nie rozszerzono admission ani nie podmieniono przedmiotu.",
+      "Brak fizycznego UID40096/appearance5662 w przeskanowanym world base.",
+      "Brakuje kwalifikowanego rozmieszczenia Ceiron/Ustan/A Majestic Warwolf i atomowych wymian składników/addonów. Griffinclaw i wspólna gałąź botanist pozostają odłożone.",
+      "D20 ma źródłowo uzasadniony globalny OutfitQuest.DefaultStart50960. Nie wprowadzono aktywnej poprawki bez pełnego adaptera, lokalnego zastępczego ID ani drugiego toru. Tożsamość Rook Druid jest poza zakresem."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/druid_outfits_quest/actions_ceirons_waterskin.lua:4",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/druid_outfits_quest/globalevents_druid_outfits_blooming_griffinclaw.lua:10",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ceiron.lua:145",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:213",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ustan.lua:75",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_majestic_warwolf.lua:66",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_botanist.lua:19",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2075",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/quests/missions/quest-state.json:1",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589445484",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589451334",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-migration/quest_callback_profiles.py:179–182"
+    ]
+  },
+  "grimvale": {
+    "done": [
+      "Dodano dane: dziewięć bezwarunkowych wyjść aren w istniejącym shape, selektory pozycyjne, bez sztucznego storage. Źródłowy przegląd potwierdził literalne pozycje i cele.",
+      "ODCZYT ZALEŻNOŚCI: pełne pięć form Feroxy, lib/grimvale, summon, Maeryn, Niral, Cornell, mining/enchants; osobne delty01/02. Potwierdzono exact-case mismatch feroxaDeath/FeroxaDeath."
+    ],
+    "left_out": [
+      "Wejścia do aren, per-player cooldowny, spawn/occupancy, wieloetapowa Feroxa, world schedule/map swap i ich lifecycle nie mają dopuszczonego pełnego adaptera w tej partii. ANSWER5: bez rozszerzeń wspólnych właścicieli Instance/WorldBundle/QuestState.",
+      "FX TELEPORT wyjść pozostają osobnym ownerPR zgodnie ANSWER5; dziewięć przeniesień nie oznacza całego questa DONE.",
+      "Cztery AncientFeud shortcuts: wadliwa sygnatura donora i read-only storage guard; bez nowej gramatyki/read-only rule pozostają Left out.",
+      "NPC mission/exchange/helmet i inne unikalne kroki nie są wykonawcą runtime tylko dlatego, że istnieją definicje. Brak kanonicznych runtime NPC placements / adapterów jest Left out według ANSWER5/7.",
+      "Feroxa case bug jest dowiedziony i dopuszczony do naprawy po ANSWER, lecz nie napisano i nie podłączono fazowego adaptera tylko dla samej korekty nazwy. Nie deklarować poprawki jako wykonanej.",
+      "Wydobycie liquid silver, pułapki, czasowe marks, horn i enchants wymagają właściwych item/condition/craft owners; nie dodano deklaracyjnego pseudo-runtime. Źródłowe cooldowny/efekty zachowane w raporcie."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_grimvale.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_portal_minis_ancient_feud.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/actions_ancient_feud_entrances.lua:10",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua:28",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_curse_spreads/feroxa3.lua:56",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_curse_spreads/feroxa4.lua:56",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/creature/creatureevent.cpp:57",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/creature/creatureevent.hpp:110",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/grimvale.lua:25",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/feroxa_summon.lua:28",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:670",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maeryn.lua:1"
+    ],
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753"
+  },
+  "hunter_outfits_quest": {
+    "done": [
+      "Zakwalifikowano reguły źródłowe, wspólną skrzynię z crossbow i dwa pełne pliki NPC. Nie dodano nowych aktywnych callbacków."
+    ],
+    "left_out": [
+      "Dokładna bramka piano wymaga odczytu czterech niezależnych flag bez zapisu. Q6-C01 odłożyło ten kontrakt; nie dodano zastępczego Set1 ani połączonej flagi.",
+      "Brakuje kwalifikowanego rozmieszczenia Elane/Legola, atomowych wymian music sheets/składników/gloves, reguł grantów strojów/addonów oraz powiązań skrzyni i wymaganych przedmiotów.",
+      "Zachowano istniejące tożsamości questa i torów; brakująca kwalifikacja nie została zastąpiona innym NPC, drugim handlerem itemu ani wymyśloną nagrodą."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua:5",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elane.lua:135",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elane.lua:194",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/legola.lua:103",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2083",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280"
+    ]
+  },
+  "killing_in_the_name_of": {
+    "done": [
+      "Potwierdzono istniejący rzeczywisty native entry Grizzly: aktualna rozmowa z dokładnym NPC oraz podłączony kill route. Zachowano jedną tożsamość i obecne kwalifikowane reguły; ta partia nie dodaje drugiego przebiegu ani nagród.",
+      "Rozdzielono źródłową konfigurację 42 tasków Grizzly/30 pokoi native od 9 zadań innych NPC i 3 records tasks.Extra. Inwentaryzacja221 wierszy jest source evidence, nie221 działających kroków ani dowód pełnej zgodności Grizzly.",
+      "W tej partii nie dodano nowego adaptera poza istniejącą ścieżką Grizzly; dostarczono kwalifikację real caller/source boundaries."
+    ],
+    "left_out": [
+      "Budrik, Lugri, Gabel, Malor, Raymond i Daniel: brak nowo dopuszczonych placementów oraz pełnego native podłączenia ich odmiennych dialogów, warunków, liczników i nagród. Shared Grizzly action protocol nie nadaje im automatycznie obsługi; wymagane konkretne NPC identity/placement/native rule, nie zmiana nazw lub fikcyjny direct command (§5/§7).",
+      "Budrik zachowuje ToOutfoxAFoxQuest.Questline==2 i własne ograniczenia poziomu. Nie importujemy cudzej zależności ani nie usuwamy jej guardu (§6). Daniel ma rzeczywiste progi i kolejność gałęzi NPC, których nie zastępuje samo lib.level/premium.",
+      "Hide, Esmeralda i Tromphonyte pozostają przy wcześniejszym holdzie kwalifikacji mapy/boss entry; bez arbitralnych pozycji, spawnu lub pominięcia warunków (§7). Nie osłabiono przyjętych wcześniejszych reguł Grizzly (§9).",
+      "Trzy tasks.Extra (Mountain Troll, Muglex Clan Footman, Minotaur Bruisers) mają konfigurację, ale standardowy startup tego questa ich nie rejestruje. Nie oznaczono ich jako aktywnych misji; brak wykazanego entry/writera pozostaje jawny (§3/§7).",
+      "Źródłowe FX portali, NPC i sukcesu/odmowy nie mają podłączonej produkcyjnej publikacji callbacków. Istniejąca cap23 ma wszystkie offers=false; brak nowego outbox/egress w tej partii (§5/§7, Q6-FX-PRESENTATION / ANSWER6589908362)."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:28–71",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:931–970",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:1018–1027",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/creaturescripts_monster_kill.lua:1–111",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:383–405",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75–116",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:76–156",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:174–223",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly.rs:63–121",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs:74–145"
+    ]
+  },
+  "roshamuul_quest": {
+    "done": [
+      "Ustalono source profile19 kroków: bone/chalk/gravel/mixture/mortar/trough, kill credit, cave routes, resonance i rzeczywisty graf Sandomo. Nie dodano nowego działającego adaptera runtime tych mechanizmów.",
+      "Po ANSWER wybrano literalny Crystal dla Q6-D21/D22/D23: chalk data>10 po inkrementacji; losowanie jaskini przy każdym wejściu; donorowe3 fale Silencer i Sight3..8 bez dopisanej wypłaty Global.",
+      "Sandomo zakwalifikowano jako SET Gold_Record=earned, nie ADD do starego salda; earned=100*max(0,mortar)+max(0,frazzlemaws)+max(0,silencers), następnie zerowanie3 liczników. To decyzja source semantics, nie deklaracja zaimportowanego NPC."
+    ],
+    "left_out": [
+      "Przepisy chalk/gravel/mixture/water/mortar oraz trough, bone-pile losowanie i transform/decay: nadal wymagają dopuszczonych konkretnych item/fluids/target identities, mapbindings i istniejącej atomowej ścieżki transformacji. Nie zastąpiono brakujących obiektów ani itemów fikcyjnymi identyfikatorami (§5/§7/§8).",
+      "Frazzlemaw/Silencer kill credit: trzeba zachować rzeczywiste onDeathForParty i powiązać legacy ROSHAMUUL_KILLED_* z istniejącymi named storage na podstawie dowodu z donora. Podobieństwo nazw nie stanowi aliasu. Brak końcowej kwalifikacji writera/registracji (§3/§7).",
+      "Resonance chamber: plateau guard, brak potworów, wspólny global34380, losowanie, fale60/120/180/240s, cleanup1800000ms i reset muszą pozostać jednym zgodnym mechanizmem. Nie rozszerzamy world/instance/timer ownerów ani nie rozbijamy startu na niezależne zapisy (§5).",
+      "Sandomo: brak dopuszczonej kompletnej ścieżki rozmowy/placementu, atomowego zapisu salda i wymiany cluster item20062. Topic4/5 przechwytuje trade; wymiana wymaga całkowitego n>=1 i salda>=100n, daje item20062*n i odejmuje100n. Literalne SET pozostaje; Q6-SANDOMO-RECORD A został rozstrzygnięty przez ANSWER6589908362 (§3/§4/§5/§7/§8).",
+      "Cave entry/exit nie dostały nowego zakwalifikowanego źródłowego bindingu; brak arbitralnych pozycji. Upper Roshamuul, Morax/Dream Butterfly nie mają ustalonego kompletu source steps w tej części, więc nie dodano gałęzi wyłącznie z Global (§1/§7).",
+      "FX pozostają Left out: cap23 offers=false i brak produkcyjnego callback publishera (§5/§7). Rozstrzygnięte pytania source differences: Q6-D21 https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589451710; Q6-D22 https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589452134; Q6-D23 https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589452594."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_bone.lua:9",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_chalk.lua:10–18",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_gravel.lua:4",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_mixture.lua:8",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_mortar.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_trough.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/creaturescripts_lower_roshamuul.lua:1–7",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua:3–41",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/roshamuul_quest/actions_resonance_chamber.lua:49–97",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandomo.lua:53–59",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandomo.lua:97–165"
+    ]
+  },
+  "secret_service": {
+    "done": [
+      "Ustalono source profile113 wierszy obejmujący3 frakcje, NPC, kroki use/step/death oraz współdzielone chest/rotten-tree/crowbar. Dane i storage writers jawnie odróżniono od native obsługi dialogu.",
+      "Przygotowano niewykonywalny kandydat/test authoring ring349: targetAID12563, TBIMission05==1→2,consume1. Nie opublikowano produkcyjnego JSON, ponieważ rzeczywisty emitted native item artifact nie zawiera i349.",
+      "Nie dodano nowego działającego adaptera Secret Service ani nie oznaczono zadań frakcji jako ukończonych."
+    ],
+    "left_out": [
+      "Ring349 nie ma profilu w emitted content/items/definitions/spell-native-profiles.json (pełny lookup root HEAD9d2437e2c109ec6abb413ea0104906a85948dd16 po production_binding.target.key). Legacy items-21000-21499.json: materializable=false, stack_class Unknown. Bez nowego kwalifikowanego profilu nie importujemy użycia ani nie zastępujemy itemu (§8).",
+      "Trzy wykluczające się ścieżki TBI/CGB/AVIN, rozmowy i placementy Chester Kahs/Emma/Uncle oraz questowe gałęzie Gamel/Karl/Freezhild wymagają pełnego native owner/identity/placement. Nie wolno traktować writerów z katalogu dialogues jako aktywnej rozmowy ani znieść frakcyjnej wyłączności (§5/§7).",
+      "Współdzielone10 chestów6243–6252, RottenTree9277 i gałąź crowbar3304/AID12566 pozostają w obrębie swoich gałęzi źródłowych, bez drugiego handlera. Potrzebne pełne claim/selector/item semantics i placement; brak kwalifikacji nie jest ukończoną nagrodą (§5/§6/§7/§8).",
+      "Rust bugs350/UID22005 z utworzeniem1069 na4 polach, tool parcels897/898/899, leverAID12574 z19 monster spawns, Amazon disguise397 na20000ms, Amazon/Pirate passages wymagają rzeczywistych obiektów/monsters i istniejących ownerów transform/outfit/encounter. Nie tworzymy pseudo-runtime, nowych wspólnych kontraktów ani zgadywanych wyglądów (§5/§7/§8).",
+      "Black Knight death credit musi zachować onDeathForDamagingPlayers oraz źródłowe frakcyjne stany; nie zamieniamy go na most-damage-only lub ogólne Grizzly kills (§5/§7).",
+      "Source FX/komunikaty i wszelkie nagrody bez rzeczywistego dopuszczenia pozostają Left out. Cap23 nie jest oferowana; brak nowej produkcyjnej ścieżki prezentacji (§5/§7)."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/actions_ring.lua:2–15",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/actions_rust_bugs.lua:2",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/actions_tools.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/actions_lever.lua:25",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/actions_amazon_disguise_kit.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/secret_service/creaturescripts_black_knight_kill.lua:3–13",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/items/definitions/items-21000-21499.json:1",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/npc-placements/placements-00000-00032.json:1"
+    ]
+  },
+  "shadows_of_yalahar_quest": {
+    "done": [
+      "Dodano dwa callbacki: inkwell i strange energy. Oba wymagają brakujących powiązań z mapą.",
+      "Źródłowy licznik książek42557 dodaje istniejący mechanizm extend pod właścicielem Shadows, z dokładnym warunkiem >=8 i resetem do−1. Ten tor nie istniał w bazowym katalogu.",
+      "Przejrzano siedem pełnych plików NPC; ich mutujące gałęzie pozostają poza runtime do kwalifikacji atomowego wykonawcy."
+    ],
+    "left_out": [
+      "Brak fizycznych AID4954/25031 i writera zwiększającego licznik książek. Same callbacki nie zamykają grywalnych kroków.",
+      "Brakuje kwalifikowanych rozmieszczeń siedmiu NPC i pełnych atomowych wymian. Teleskop, folio RNG/timery, biblioteka napraw, disassembler oraz odczytowa bramka Fenrock pozostają odłożone.",
+      "Intencja poprawki D15 dla czerwonych filarów jest źródłowo uzasadniona, lecz pełny adapter teleskopu i jego poprawka nie są aktywne. Donorowe1s, osiem sukcesów folio,120s przygotowania głowy i pięć ticków obrażeń pozostają zgodne z decyzją Crystal."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:59",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission11.lua:24",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1563",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:98",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:465",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/shadows_of_yalahar_quest/golem_disassembler.lua:1",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589449455",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589449825",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589450226",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589450612",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589450966",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280"
+    ]
+  },
+  "the_ape_city": {
+    "done": [
+      "Pełne 42 wiersze inwentaryzacji obejmują dziewięć misji Hairycles, chesty, dźwignie, casks, amphory i Snake Destroyer. Zachowano literalną regułę narzędzia4835 zgodnie z D03 i ANSWER2."
+    ],
+    "left_out": [
+      "Brak kwalifikowanego placementu i atomowego wykonawcy wymian Hairycles; nie dodano innego NPC ani częściowych konsumpcji.",
+      "UID/AID powiązania obiektów i skrzyń pozostają nieobecne w przeskanowanym world base. Claim descriptor nie oznacza dostępnej skrzyni.",
+      "Wspólny stan czterech amphor/okna300s, sześciu dźwigni/resetów, casks i czasowego cap wymagają dopuszczonych właścicieli world/timer/item. Read-only warunki, narzędzie4835, wybór uczestników oraz nagrody nie są zastąpione zapisami zastępczymi. ANSWER5/7/8."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:48",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/tools/crowbar.lua:4",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1"
+    ]
+  },
+  "the_dream_courts": {
+    "done": [
+      "Uzupełniono inwentaryzację źródeł o zależności NPC, fazy bossów, spawn i startup AID. Raport zawiera oba suplementy szczegółowe; ten quest nie otrzymał nowego adaptera runtime.",
+      "Nie importuje się read-only guardów przez set=stała, aby nie cofać progresu. Nie dodano sztucznego storage, nowych fieldów ani drugiej tożsamości questa."
+    ],
+    "left_out": [
+      "Przejścia Dream Courts z odczytowymi guardami, kierunkiem, FX lub tekstem sukcesu wymagają pól odłożonych przez Q6-C01/ANSWER6589908362. Pozostałe kandydaty nie mają zakwalifikowanych fizycznych AID/UID. Nie dodano sztucznego Set zamiast odczytu; brak tych bindingów pozostaje Left out zgodnie z ANSWER7.",
+      "Brak kwalifikowanych AID23100/23103/23101 i pełnych runtime NPC placements. Same142obecne tiles nie dowodzą binding. ANSWER7: brak tagów/obiektów/binding pozostaje Left out.",
+      "Boss entry, Faceless Bane phase fight, Nightmare curse, DreamScar timers/spawns, sekwencje i złożone nagrody wymagają własnych podłączonych adapterów; ANSWER5 ogranicza rozszerzenia wspólnych właścicieli. Nie wdrożono samych reducerów.",
+      "Undefined Rosebush vs RoseBush, DreamScarAccess, konflikt dwóch Nightmare StepIn oraz zależność custom quest doors od startup AID pozostają dokładnie opisane w raporcie/QUESTION; brak cichej naprawy reguły.",
+      "Andrew/Undal/Vanys/Myzzi i pozostałe NPC: odczytane dialogi nie są działającym adapterem. Global-only dodatki pozostają poza zakresem bez ANSWER."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/movements_courts_entrance.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/movements_access_teleports.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_quest_doors.lua:97",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/actions_quest_doors.lua:150",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:846",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/andrew_lyze.lua:121",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/andrew_lyze.lua:151",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/undal.lua:64",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vanys.lua:64",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_dream_courts/creaturescripts_faceless_bane.lua:1",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+    ],
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753"
+  },
+  "the_inquisition_quest": {
+    "done": [
+      "Dostarczono i zreviewowano19 prostych źródłowych teleport callbacks: dokładne UID i destination, wyłącznie rekordy bez storage/bossStorage/alwaysSetStorage. Zachowano standardowy istniejący schemat, bez success_message/facing/effect ani nowego kontraktu.",
+      "Status19 rekordów to CALLBACK DATA / COMPILED BINDING NIEZNANY: wszystkie target tiles są w actual map snapshot, ale pełny skan1208 regionów i312 tagged tiles nie zawiera żadnego ich source UID. To nie19 działających portali i nie kompletny quest.",
+      "Ustalono dokładny graf Henricus/5 guards/Storkus/Uzon, guardy i różne credit rules, a także nierównoważność brother lever względem generic passage. Te grafy pozostają kwalifikacją źródła, nie importem runtime."
+    ],
+    "left_out": [
+      "19 source UID nie odnaleziono w przeskanowanym world base; compiled binding pozostaje NIEZNANY (§7). Nie zastąpiono UID samym destination/position, arbitralnym AID ani appearance. Po uzyskaniu istniejących bindingów nadal potrzeba rzeczywistego dispatch proof.",
+      "Pięć guard-shortcuts2153/2159/2164/2170/2176 wymaga dokładnego read-only EnterTeleport>=threshold; opcjonalny Storage.set/nowy common contract nie jest w tej partii dopuszczony. Nie zastępujemy tego sztucznym SET. UID2150 wymaga warunkowej inicjalizacji bez regresji. Trzy reward-room reminders wymagają nowego success_message; pozostają reference/hold (§5).",
+      "Eclipse source133 nie ma emitted native item profile; legacy items-03000-03499.json materializable=false/stack_class Unknown. CelAID2000 wymaga kwalifikacji rzeczywistego obiektu oraz zachowania pierwszeństwa antler22008; donor nie ma QL4 guarda i bezwarunkowo SET Mission02=2/Questline=5. Nie tworzymy ID ani zastępczego itemu (§6/§7/§8).",
+      "Boss gates/global counters200–205, wspólny brothers203, reset timers i kill handlers pozostają bez rozszerzania world ownera. Brother levers13/9/13/9 ścian pomijają brakujące ściany i nie mają generic occupancy odmowy; nie zwiększamy limitu8 ani nie rozbijamy atomowego przejścia (§5).",
+      "Pełny NPC chain, Vampiredust collection, holy-water Haunted Ruin/Shadow Nexus, Ungreez door/credit, rewards i błogosławieństwa nie są zaimportowane. Uzon pozostaje przy read-only QL4or5/travel semantics; pięć guardów przy Mission01!=-1 i własnym stanie; Henricus blessing przyQL25. PoI prerequisite pozostaje strzeżony i nie jest duplikowany (§5/§6/§7).",
+      "Nagrody wyglądu288/289/addons nie mają dopuszczonych produkcyjnych mappings/grant rules. Nie piszemy finalnego tracku zamiast nadania nagrody i nie rozszerzamy istniejącego quest-grants ownera (§5/§7; zależność pozostaje odłożona przez ANSWER6589908362).",
+      "Źródłowe success/failure speech i FX nie zostały podłączone. Cap23 wszystkie offers=false; candidate publisher nie emituje stabilnego envelope. Te składniki są jawnie Left out, również przy19 data callbacks (§5/§7; Q6-FX-PRESENTATION)."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_teleport_main.lua:1–221",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/movements_reward_room_text.lua:9–17",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_brother_lever.lua:2–91",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:1–34",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2–15",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:49–81",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/henricus.lua:55–315",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tim_the_guard.lua:57–85",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grof_the_guard.lua:57–72",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kulag_the_guard.lua:57–72",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/miles_the_guard.lua:57–77",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/walter_the_guard.lua:57–82",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:60–141",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzon.lua:61–73",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:81–139",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/protocol-oteryn/capabilities/0023-presentation-v1.json:1–21",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/spell_presentation_publisher.rs:1–20"
+    ]
+  },
+  "the_paradox_tower": {
+    "done": [
+      "Ustalono 31 elementów oraz istniejący callback czterech skulls. Zachowano istniejącego wykonawcę i źródłowy test PG; ta partia nie deklaruje wyniku PG Paradox. Zakres wykonanych kontroli opisuje S8; nie dodano drugiej tożsamości ani handlera."
+    ],
+    "left_out": [
+      "UID25011..25037 nie odnaleziono w przeskanowanym world base; produkcyjne powiązania tych UID i skrzyń pozostają NIEZNANE. Dwóch grup UID i pozycji carvings/exit nie sparowano arbitralnie: donor sprawdza przynależność do obu zbiorów.",
+      "NPC Oldrak/Zoltan/Padreia/Lubo/Hugo/Prisoner/Riddler, pytania, Mathemagics, routing nagród i zmienne sceny wymagają konkretnych placementów i dopuszczonego właściciela. Nie wybierano poprawnych odpowiedzi ani dialogów z pamięci.",
+      "Puzzle owoców/szachów/ghoula, schody, pułapka drzewa i timery wymagają wspólnych world/action contracts, których ANSWER5 nie pozwala rozszerzyć. Pierwotny symbol FirstParadoxAcess pozostaje jawnie rozróżniony od kanonicznego tracku; brak arbitralnego aliasu."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_strange_carvings_in _the_southeast.lua:9",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/move_let_the _quest.lua:10",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:1"
+    ]
+  },
+  "the_pits_of_inferno_quest": {
+    "done": [
+      "30 callbacków w istniejącym schemacie: 25 pól labiryntu i pięć przejść Bazira, z dokładnymi AID i celami Crystal. Dane są załadowane; wymaganych AID nie odnaleziono w przeskanowanym world base, a compiled binding pozostaje NIEZNANY."
+    ],
+    "left_out": [
+      "AID28810..28834,16772,16773,16774,50082,50083 nie odnaleziono w przeskanowanym world base; compiled binding i pozostałe selektory fizycznego świata wymagają kwalifikacji; 30 definicji nie oznacza 30 dostępnych przejść.",
+      "Ognie pięciu profesji, Holy Tible bez konsumpcji, trony, Pumin i globalne bramy, 15-elementowa sekwencja levers, 13-godzinny scheduler bossów oraz nagrody wymagają danych/placementów i dopuszczonych ownerów. Limitu8 nie zwiększono; nie dzielono atomowego przejścia.",
+      "NPC Dead Bureaucrats i zależne wymiany pozostają odłożone. Skala obrażeń/czasy zachowują Crystal zgodnie z D04 i ANSWER2; FX nie ma aktywnego producenta."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_tile_teleport.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_bazir_tile.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_fire_tile.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/actions_stone_lever.lua:1"
+    ]
+  },
+  "the_rookie_guard": {
+    "done": [
+      "Dodano13 callbacków w istniejącym formacie. Ich UID/AID nie występują w przeskanowanym world base; to dane wymagające powiązań, a nie13 grywalnych kroków.",
+      "Przejrzano pięć pełnych plików NPC; w czterech (Vascalir/Lily/Hyacinth/Tom) wyodrębniono125 węzłów, w tym36 mutujących. Paulie był przejrzany osobno. Materiał roboczy nie jest publikowany ani ładowany jako dialog runtime.",
+      "Test rzeczywistego loadera/evaluatora sprawdza przejście7→8 i odmowę na etapach6/8. Osobno weryfikuje deklarację zużycia jednego i12784 i nagrody50XP; nie wykonuje transakcji ekwipunku ani przyznania XP."
+    ],
+    "left_out": [
+      "Brak fizycznych powiązań UID/AID wszystkich13 callbacków w przeskanowanym world base.",
+      "Wymiany NPC obejmujące item/XP/state, premia bankowa Pauliego, nagrody z wieloma przedmiotami i reset13 torów wymagają rozszerzeń wspólnych właścicieli zakazanych przez ANSWER5. Nie rozbito atomowego startu ani resetu.",
+      "Kwalifikacja natywnych przedmiotów dla całego grafu nagród pozostaje niepełna. i12784 po regeneracji ma rzeczywisty profil materializable=true, NonStackable, CharacterInventory+Ground; to nie kwalifikuje pozostałych nagród ani mapbindingu tego kroku.",
+      "Samouczki, party credit dla szczurów, timery, disguise, pokój bossa, chest bits i13 znaczników mapy pozostają bez podłączonego wykonawcy."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:307",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua:386",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:212",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vascalir.lua:915",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lily.lua:121",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hyacinth.lua:78",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tom.lua:117",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/paulie.lua:161",
+      "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6589532280"
+    ]
+  },
+  "the_thieves_guild_quest": {
+    "done": [
+      "39 wierszy źródłowych obejmuje osiem misji Doriana, powiązane NPC, narzędzia, disguise, Nomad credit i nagrody. Zachowano jedną istniejącą ścieżkę fish-napping-key; nie dołożono drugiego handlera."
+    ],
+    "left_out": [
+      "Crystal key target ma AID41714, istniejący callback Oteryn51394. Żaden identyfikator nie występuje w pełnym eksporcie tagów; bez kwalifikacji runtime nie uznano ich za aliasy i nie otwarto nowego celu.",
+      "Dorian i pozostali NPC nie mają kwalifikowanych placementów i atomowego wykonawcy hand-in/reward. Nomad party/most-damage credit, disguise7865, warunek PZ-lock vines, note7873 i cleanup nie są zastępowane prostym teleporterem.",
+      "Skrzynie i reward choice wymagają właściwych UID oraz writerów misji; sama istniejąca definicja nagrody nie zapewnia osiągalności. ANSWER5/7/8."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_door.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2622"
+    ]
+  },
+  "the_travelling_trader": {
+    "done": [
+      "15 źródłowych elementów: siedem dni Rashida i dostawcy. Rozróżniono standardowego Rashida od Rashid of Island. Decyzja ANSWER10 ustala UTC dla os.date."
+    ],
+    "left_out": [
+      "Brak kwalifikowanych placementów standardowego Rashida i dostawców oraz atomowych wymian przedmiotów/złota/postępu. Nie połączono niezależnego custom NPC ze standardowym questem.",
+      "Istniejące outlaw-camp-door i delivery descriptor nie dowodzą pełnego donora: door nie wykonuje source teleportu, a UID3020 wymaga dokładnego atomowego wydania145. Brak odpowiednich fizycznych UID/AID powiązań w world base.",
+      "Czasowy cheese, fragile vase i transport/konsumpcja wymagają dopuszczonej semantyki itemów i ownera. Nie zmieniono holdów ani nie użyto zastępczych nagród. ANSWER5/7/8."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rashid.lua:1",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:3",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:20",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:283"
+    ]
+  },
+  "waterfall": {
+    "done": [
+      "Dodano dane: trzy teleporty Waterfall w istniejącym world_callbacks shape, bez nowej gramatyki/fieldów. Dane są częścią istniejącego katalogu callbacków.",
+      "Dodano test źródłowej nagrody: istniejący RewardClaim z korzeniem5926 i dziećmi6096×1,3097×1; realny wire USE, once/replay/cold replay."
+    ],
+    "left_out": [
+      "Trzy pozycje callbacków istnieją, lecz brak AID50022 w surowym skanie. Bez istniejącego kwalifikowanego compiled binding callback zachowuje odmowę; zgodnie ANSWER7 nie dopisywać runtimebinding ani nowych tagów poza zakresem.",
+      "WATERSPLASH oraz source-facing south/east wymagają niedopuszczonego rozszerzenia wspólnego wykonawcy/presentation. Samodzielna gałąź splash-only nie jest importowana jako no-op. Pozostają Left out zgodnie ANSWER5.",
+      "Fizyczna skrzynia2472 istnieje w mapie z kwalifikacji HEAD9d2437e2c109ec6abb413ea0104906a85948dd16. Pełny skan surowej mapy nie znalazł wymaganego UID. Binder wymaga dokładnego UID na top-level entry. Compiled startup overlay/binding NIEZNANE: nie zakończono dowodu jego braku ani obecności. Nie uznawać fixture source_world za produkcyjny WorldBundle. ANSWER7: Left out do kwalifikowanego istniejącego przypięcia; bez rozszerzania WorldBundle/RewardClaimMint placement.",
+      "UID6258: dane i wykonawca claimu istnieją; produkcyjnego przypięcia nie dowiedziono."
+    ],
+    "sources": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:20",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:23",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:27",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2591",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/content/src/content/world_reward_claims.rs:894",
+      "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:208"
+    ],
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2847#issuecomment-6590303753"
+  }
+}
