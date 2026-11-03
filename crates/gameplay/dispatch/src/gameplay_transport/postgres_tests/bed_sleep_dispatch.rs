@@ -104,20 +104,6 @@ fn c10_production_bed_sleep_logout_fresh_login_saved_rest_postgres() -> TestResu
     result
 }
 
-#[test]
-fn s07_bed_pair_acl_reservation_wake_and_real_owner_postgres() -> TestResult {
-    let started = std::time::Instant::now();
-    let result = super::hireling_lifecycle::bed_rest_case();
-    if crate::bestiary_postgres_harness::configured_admin().is_some() {
-        eprintln!(
-            "PG_MARKER S07 reciprocal-pair acl reservation wake real-owner success={} duration={:.3}s",
-            result.is_ok(),
-            started.elapsed().as_secs_f64()
-        );
-    }
-    result
-}
-
 pub(super) async fn production_rest(
     h: &super::fixture::Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,

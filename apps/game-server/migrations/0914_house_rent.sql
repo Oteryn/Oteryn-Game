@@ -21,10 +21,33 @@ CREATE TABLE game_house_rent_inbox_letters (
  owner_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
  warning SMALLINT NOT NULL CHECK(warning BETWEEN 1 AND 7),
  rent_gold BIGINT NOT NULL CHECK(rent_gold BETWEEN 0 AND 999999999999),
+ rent_due_at TIMESTAMPTZ NOT NULL,
  delivered_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
- UNIQUE(world_id,house_key,warning),
+ UNIQUE(world_id,house_key,warning,rent_due_at),
  FOREIGN KEY(world_id,house_key) REFERENCES game_house_properties(world_id,house_key)
 );
+INSERT INTO game_character_inbox_cause_kinds VALUES('HOUSE_RENT_WARNING');
+CREATE TABLE game_house_rent_letter_mints (
+ letter_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(letter_id)),
+ transaction_id UUID NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(transaction_id)),
+ world_id UUID NOT NULL,
+ owner_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id()
+);
+CREATE FUNCTION game_house_rent_letter_mint_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ RAISE EXCEPTION 'house rent letter mint is immutable' USING ERRCODE='23514';
+END $$;
+CREATE TRIGGER game_house_rent_letter_mint_guard BEFORE UPDATE OR DELETE ON game_house_rent_letter_mints
+ FOR EACH ROW EXECUTE FUNCTION game_house_rent_letter_mint_guard();
+REVOKE ALL ON FUNCTION game_house_rent_letter_mint_guard() FROM PUBLIC;
+-- Extend the central deferred ItemInstance proof with this closed, transaction-local mint.
+DO $$ DECLARE body TEXT; BEGIN
+ body:=pg_get_functiondef('game_item_mint_consistency_guard()'::regprocedure);
+ body:=regexp_replace(body,'BEGIN',E'BEGIN\n    IF EXISTS (SELECT 1 FROM game_house_rent_letter_mints m JOIN game_item_character_inbox_locations l ON l.item_instance_id=m.letter_id WHERE m.letter_id=NEW.item_instance_id AND m.transaction_id=NEW.minted_transaction_id AND m.world_id=NEW.world_id AND l.character_id=m.owner_character_id AND m.created_xact_id=pg_current_xact_id()) THEN RETURN NEW; END IF;');
+ EXECUTE body;
+END $$;
+
 CREATE TABLE game_house_rent_payments (
  payment_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(payment_id)),
  world_id UUID NOT NULL,
@@ -57,7 +80,7 @@ END $$;
 
 CREATE FUNCTION game_house_rent_tick(w UUID,n UUID,nr NUMERIC,secret BYTEA) RETURNS BOOLEAN
 LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE p game_house_properties; s game_house_rent_state; b game_account_bank_balances; entry UUID; payment UUID; now_ms BIGINT; period INTERVAL;
+DECLARE p game_house_properties; s game_house_rent_state; b game_account_bank_balances; entry UUID; payment UUID; letter UUID; letter_tx UUID; due_cycle TIMESTAMPTZ; now_ms BIGINT; period INTERVAL;
 BEGIN
  IF game_node_prove_current_incarnation(n,nr,secret) IS DISTINCT FROM TRUE OR NOT EXISTS(
   SELECT 1 FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1 AND state=1
@@ -68,13 +91,14 @@ BEGIN
   WHEN 'monthly' THEN interval '30 days' WHEN 'yearly' THEN interval '365 days' END INTO period FROM game_house_rent_config;
  IF period IS NULL THEN RETURN FALSE; END IF;
  INSERT INTO game_house_rent_state(world_id,house_key,next_rent_at)
-  SELECT world_id,house_key,statement_timestamp()+period FROM game_house_properties
+  SELECT world_id,house_key,greatest(paid_until,statement_timestamp()) FROM game_house_properties
    WHERE world_id=w AND owner_character_id IS NOT NULL ON CONFLICT DO NOTHING;
  SELECT hp.* INTO p FROM game_house_properties hp JOIN game_house_rent_state rs USING(world_id,house_key)
-  WHERE hp.world_id=w AND hp.owner_character_id IS NOT NULL AND rs.next_rent_at<=statement_timestamp()
+  WHERE hp.world_id=w AND hp.owner_character_id IS NOT NULL AND hp.paid_until<=statement_timestamp() AND rs.next_rent_at<=statement_timestamp()
   ORDER BY rs.next_rent_at,hp.house_key LIMIT 1 FOR UPDATE OF hp,rs SKIP LOCKED;
  IF NOT FOUND THEN RETURN FALSE; END IF;
  SELECT * INTO s FROM game_house_rent_state WHERE world_id=w AND house_key=p.house_key FOR UPDATE;
+ due_cycle:=s.next_rent_at;
  SELECT * INTO b FROM game_account_bank_balances WHERE account_id=p.owner_account_id AND world_id=w FOR UPDATE;
  IF p.rent_gold=0 OR (FOUND AND b.balance>=p.rent_gold) THEN
   IF p.rent_gold>0 THEN
@@ -85,17 +109,28 @@ BEGIN
     VALUES(entry,payment,'HOUSE_RENT',p.owner_account_id,w,NULL,p.rent_gold,b.balance,b.balance-p.rent_gold,b.last_entry_id,p.owner_character_id);
    UPDATE game_account_bank_balances SET balance=b.balance-p.rent_gold,last_entry_id=entry WHERE account_id=p.owner_account_id AND world_id=w;
   END IF;
-  UPDATE game_house_rent_state SET warnings=0,next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key;
+  UPDATE game_house_properties SET paid_until=greatest(paid_until,statement_timestamp())+period WHERE world_id=w AND house_key=p.house_key;
+  UPDATE game_house_rent_state SET warnings=0,next_rent_at=(SELECT paid_until FROM game_house_properties WHERE world_id=w AND house_key=p.house_key) WHERE world_id=w AND house_key=p.house_key;
   RETURN TRUE;
  END IF;
- UPDATE game_house_rent_state SET warnings=warnings+1,next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key RETURNING * INTO s;
- INSERT INTO game_house_rent_inbox_letters(letter_id,world_id,house_key,owner_character_id,warning,rent_gold)
-  VALUES(game_character_uuid_v7(),w,p.house_key,p.owner_character_id,s.warnings,p.rent_gold);
+ IF s.warnings<7 THEN
+  UPDATE game_house_rent_state SET warnings=warnings+1,next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key RETURNING * INTO s;
+  letter:=game_character_uuid_v7();letter_tx:=game_character_uuid_v7();
+  INSERT INTO game_house_rent_inbox_letters(letter_id,world_id,house_key,owner_character_id,warning,rent_gold,rent_due_at)
+   VALUES(letter,w,p.house_key,p.owner_character_id,s.warnings,p.rent_gold,due_cycle);
+  INSERT INTO game_house_rent_letter_mints VALUES(letter,letter_tx,w,p.owner_character_id);
+  INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+   VALUES(letter,w,'Item','oteryn:item.tibia.i3506','house-rent-warning',1,1,letter_tx);
+  PERFORM game_character_inbox_deliver(letter,p.owner_character_id,w,'HOUSE_RENT_WARNING',letter::text);
+ ELSE
+  UPDATE game_house_rent_state SET next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key;
+ END IF;
  IF s.warnings=7 THEN
   now_ms:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
   INSERT INTO game_house_dispositions(world_id,house_key,owner_character_id,ownership_revision,state,noticed_at,due_at,cause)
    SELECT w,p.house_key,o.owner_character_id,o.ownership_revision,1,now_ms,now_ms,'EVICTION' FROM game_house_ownership o
-    WHERE o.world_id=w AND o.house_key=p.house_key;
+    WHERE o.world_id=w AND o.house_key=p.house_key
+   ON CONFLICT DO NOTHING;
   UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE world_id=w AND runtime_scope_kind=2
    AND runtime_scope_house_key=p.house_key AND session_state IN(1,2);
  END IF;
@@ -123,7 +158,7 @@ DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_house_disposition_is_personal_move_out(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 
-REVOKE ALL ON game_house_rent_config,game_house_rent_state,game_house_rent_inbox_letters,game_house_rent_payments FROM PUBLIC;
+REVOKE ALL ON game_house_rent_config,game_house_rent_state,game_house_rent_inbox_letters,game_house_rent_letter_mints,game_house_rent_payments FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON game_house_rent_state TO oteryn_game_runtime;
 GRANT SELECT ON game_house_rent_inbox_letters,game_house_rent_payments TO oteryn_game_runtime;
 GRANT SELECT,UPDATE(rent_period) ON game_house_rent_config TO oteryn_game_control;

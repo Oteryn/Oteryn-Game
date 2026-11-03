@@ -33,11 +33,20 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
 
+        // paid_until is the donor's collection gate: a prepaid house is not charged early.
+        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()+interval '1 day' WHERE house_key=$1")
+            .bind(HOUSE).execute(&h.pool).await?;
+        assert!(!h.root.advance_house_rent(&authority, &h.node, crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
+        assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,0);
+        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day' WHERE house_key=$1")
+            .bind(HOUSE).execute(&h.pool).await?;
+
         // No balance: one durable Inbox letter, exactly as payHouses warns its owner.
         assert!(h.root.advance_house_rent(&authority, &h.node, crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
         let warning: i16 = sqlx::query_scalar("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(warning, 1);
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_rent_inbox_letters WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,1);
+        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_rent_inbox_letters r JOIN game_item_character_inbox_locations i ON i.item_instance_id=r.letter_id AND i.world_id=r.world_id AND i.character_id=r.owner_character_id WHERE r.house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,1,"the warning letter is a real owner Inbox item");
 
         // Install a valid preceding rent ledger/balance, then prove collection debits it.
         let mut tx=h.pool.begin().await?;tx.execute("SET LOCAL session_replication_role=replica").await?;
@@ -58,13 +67,36 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES($1::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,$5::uuid,1)").bind(&item).bind(&world).bind(HOUSE).bind(&character).bind(&placement).execute(&mut *tx).await?;
         tx.commit().await?;
         for expected in 1..=7_i16 {
+            sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
             sqlx::query("UPDATE game_house_rent_state SET next_rent_at=statement_timestamp()-interval '1 day' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
             assert!(h.root.advance_house_rent(&authority,&h.node,crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
             assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,expected);
         }
+        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_rent_inbox_letters WHERE house_key=$1 AND warning=1").bind(HOUSE).fetch_one(&h.pool).await?,2,"warning ordinals may repeat in distinct rent cycles");
+        let letters_at_seven=sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_rent_inbox_letters WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?;
+        sqlx::query("UPDATE game_house_rent_state SET next_rent_at=statement_timestamp()-interval '2 days' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
+        assert!(h.root.advance_house_rent(&authority,&h.node,crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
+        assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,7,"the terminal warning never violates the 0..7 check");
+        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_rent_inbox_letters WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,letters_at_seven);
         let cause:String=sqlx::query_scalar("SELECT cause FROM game_house_dispositions WHERE house_key=$1 AND state=1").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(cause,"EVICTION");
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_acl_entries WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,0);
+
+        // A live disposition collision for this terminal house is local: the next house still advances.
+        let other="oteryn:content.house.rent_test_z";
+        let mut tx=h.pool.begin().await?;tx.execute("SET LOCAL session_replication_role=replica").await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,ownership_generation,revision,acl_revision,acquisition_receipt_ref,paid_until) VALUES(encode($1,'hex')::uuid,$2,'private_house',3,100,decode(repeat('02',32),'hex'),encode($3,'hex')::uuid,$4::uuid,1,1,1,game_character_uuid_v7(),statement_timestamp()-interval '1 day')")
+            .bind(&world).bind(other).bind(&character).bind(&account).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
+            .bind(&world).bind(other).bind(&character).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_rent_state VALUES(encode($1,'hex')::uuid,$2,0,statement_timestamp()-interval '1 day')")
+            .bind(&world).bind(other).execute(&mut *tx).await?;
+        tx.commit().await?;
+        sqlx::query("UPDATE game_house_rent_state SET next_rent_at=statement_timestamp()-interval '2 days' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
+        assert!(h.root.advance_house_rent(&authority,&h.node,crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?,"the colliding disposition is skipped per house");
+        assert!(h.root.advance_house_rent(&authority,&h.node,crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?,"the world pass continues with the next due house");
+        assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(other).fetch_one(&h.pool).await?,1);
+
         let operation:String=sqlx::query_scalar("SELECT operation_id::text FROM game_house_dispositions WHERE house_key=$1 AND cause='EVICTION'").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(sqlx::query_scalar::<_,i32>("SELECT game_house_disposition_advance($1::uuid,2000,100,0)").bind(&operation).fetch_one(&h.pool).await?,-1);
         assert_eq!(sqlx::query_scalar::<_,i32>("SELECT game_house_disposition_advance($1::uuid,2000,100,1)").bind(&operation).fetch_one(&h.pool).await?,1);
