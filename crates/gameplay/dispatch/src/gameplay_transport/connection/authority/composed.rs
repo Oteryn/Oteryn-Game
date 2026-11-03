@@ -837,6 +837,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.pour_fluid(actor, command, source, target).await
     }
 
+    async fn use_fluid_on_map(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_fluid_map(actor, command, source, target).await
+    }
+
     async fn use_item_by_definition(
         &self,
         actor: ExactActorRef,
