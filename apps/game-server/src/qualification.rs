@@ -2613,6 +2613,8 @@ mod client_negatives;
 mod client_admission;
 #[path = "qualification/client_phases/browse_field.rs"]
 mod client_browse_field;
+#[path = "qualification/client_phases/combat_journey.rs"]
+mod client_combat_journey;
 #[path = "qualification/client_phases/daily_boost.rs"]
 mod client_daily_boost;
 #[path = "qualification/client_phases/death.rs"]
@@ -2654,6 +2656,8 @@ mod client_party;
 mod client_player_trade;
 #[path = "qualification/client_phases/prey.rs"]
 mod client_prey;
+#[path = "qualification/client_phases/spell_journey.rs"]
+mod client_spell_journey;
 #[path = "qualification/client_phases/stash.rs"]
 mod client_stash;
 #[path = "qualification/client_phases/task_board.rs"]

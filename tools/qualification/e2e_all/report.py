@@ -52,6 +52,66 @@ def map_results(text):
         raise ValueError("MAP_SUMMARY does not match MAP_CHECK counts")
     return checks, declared
 
+COMBAT_CHECK = re.compile(r"^COMBAT_CHECK ([A-Z]\d\d[a-z]?) ([a-z0-9-]+) (PASS|FAIL|SKIPPED) (\S.*)$")
+COMBAT_SUMMARY = re.compile(r"^COMBAT_SUMMARY row=([A-Z]\d\d[a-z]?) pass=(\d+) fail=(\d+) skipped=(\d+)$")
+# A summary cannot qualify a row by omitting the difficult assertions.
+COMBAT_CASES = {
+    "C01": {
+        "offensive-stand", "offensive-chase", "balanced-stand", "balanced-chase",
+        "defensive-stand", "defensive-chase", "armor-defence", "kill-xp",
+        "corpse-loot", "relog-xp-loot", "monster-target-follow-disengage",
+    },
+    "C02": {"bow-ammo", "wand-mana-element", "rod-mana-element"},
+    "C04": {"words-mana", "spell-cooldown", "group-cooldown", "pz-aggression"},
+    "C07": {"attack-rune", "field-step-expiry"},
+    "C09": {"food-regeneration"},
+    "C16a": {"wall-block-expiry"},
+    "C17a": {"haste-speed"},
+    "C17b": {"invisible-targeting"},
+    "C18a": {"directional-hit"},
+}
+
+
+def combat_results(text):
+    checks, totals = {}, {}
+    for line in text.splitlines():
+        if not (line.startswith("COMBAT_CHECK") or line.startswith("COMBAT_SUMMARY")):
+            continue
+        check, total = COMBAT_CHECK.fullmatch(line), COMBAT_SUMMARY.fullmatch(line)
+        if check:
+            row, case, status, reason = check.groups()
+            if row not in COMBAT_CASES or case not in COMBAT_CASES[row]:
+                raise ValueError(f"unknown combat check: {row}.{case}")
+            if row in totals or case in checks.get(row, {}):
+                raise ValueError(f"duplicate or late combat check: {row}.{case}")
+            if status == "SKIPPED" and not re.fullmatch(r"content:[A-Za-z0-9:_./-]+", reason):
+                raise ValueError(f"missing exact combat content id: {row}.{case}")
+            checks.setdefault(row, {})[case] = (status, reason)
+        elif total:
+            row, passed, failed, skipped = total.groups()
+            if row in totals or row not in checks:
+                raise ValueError(f"duplicate or orphan combat summary: {row}")
+            expected = tuple(sum(status == wanted for status, _ in checks[row].values())
+                             for wanted in ("PASS", "FAIL", "SKIPPED"))
+            if expected != (int(passed), int(failed), int(skipped)):
+                raise ValueError(f"combat summary count mismatch: {row}")
+            totals[row] = expected
+        else:
+            raise ValueError("malformed combat evidence")
+    if checks.keys() != totals.keys():
+        raise ValueError("missing combat summary")
+    found = {}
+    for row, cases in checks.items():
+        missing = COMBAT_CASES[row] - cases.keys()
+        gaps = [f"{case}:{status}:{reason}" for case, (status, reason) in sorted(cases.items())
+                if status != "PASS"]
+        if missing:
+            gaps.append("missing-checks:" + ",".join(sorted(missing)))
+        status = ("FAIL" if missing or totals[row][1] else
+                  "SKIPPED" if totals[row][2] else "PASS")
+        found[f"{row}.full"] = (status, 0.0, "; ".join(gaps) or "combat checks complete")
+    return found
+
 
 def matrix_rows(text):
     rows = []
@@ -92,6 +152,10 @@ def results(text):
         if status == "MISSING-SERVER" and not re.fullmatch(r"source:[A-Za-z0-9_./-]+:\d+", evidence):
             raise ValueError(f"missing file:line source evidence: {scenario}")
         found[scenario] = (status, seconds, evidence)
+    for scenario, result in combat_results(text).items():
+        if scenario in found:
+            raise ValueError(f"duplicate scenario result: {scenario}")
+        found[scenario] = result
     return found
 
 

@@ -297,6 +297,11 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
+    // Run both lanes before propagating their aggregate failures.
+    let combat = client_combat_journey::combat_journey(&mut client).await;
+    let spells = client_spell_journey::spell_journey(&mut client).await;
+    combat?;
+    spells?;
     client_hunt::hunt(&mut client).await?;
     travel_to_spawn(
         &mut client,

@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 import re
 
-from report import map_results, matrix_rows, results, summary
+from report import combat_results, map_results, matrix_rows, results, summary
 
 
 class ReportTests(unittest.TestCase):
@@ -89,6 +89,54 @@ class ReportTests(unittest.TestCase):
             results(line + " trailing garbage")
         with self.assertRaises(ValueError):
             summary([("I01", "Items")], results(line))
+
+    def test_combat_checks_require_matching_summary_and_complete_case_set(self):
+        log = (
+            "COMBAT_CHECK C17a haste-speed PASS speed_increased\n"
+            "COMBAT_SUMMARY row=C17a pass=1 fail=0 skipped=0\n"
+        )
+        self.assertEqual(combat_results(log)["C17a.full"][0], "PASS")
+        self.assertEqual(results(log)["C17a.full"][0], "PASS")
+        self.assertFalse(summary([("C17a", "Haste")], results(log), 1, 0)[1])
+        incomplete = log.replace("C17a", "C01").replace("haste-speed", "offensive-stand")
+        self.assertEqual(results(incomplete)["C01.full"][0], "FAIL")
+
+    def test_complete_multi_check_combat_row_qualifies_only_without_failures(self):
+        cases = ["words-mana", "spell-cooldown", "group-cooldown", "pz-aggression"]
+        log = "\n".join(f"COMBAT_CHECK C04 {case} PASS observed" for case in cases)
+        log += "\nCOMBAT_SUMMARY row=C04 pass=4 fail=0 skipped=0"
+        self.assertTrue(summary([("C04", "Spells")], results(log))[1])
+        failed = log.replace("pz-aggression PASS observed", "pz-aggression FAIL mana_spent")
+        failed = failed.replace("pass=4 fail=0", "pass=3 fail=1")
+        output, complete = summary([("C04", "Spells")], results(failed))
+        self.assertFalse(complete)
+        self.assertIn("pz-aggression:FAIL:mana_spent", output)
+
+    def test_combat_failures_and_content_skips_never_qualify(self):
+        for status, counts, reason in [
+            ("FAIL", "pass=0 fail=1 skipped=0", "speed_unchanged"),
+            ("SKIPPED", "pass=0 fail=0 skipped=1", "content:canary:spell/haste"),
+        ]:
+            log = f"COMBAT_CHECK C17a haste-speed {status} {reason}\nCOMBAT_SUMMARY row=C17a {counts}"
+            self.assertEqual(results(log)["C17a.full"][0], status)
+            self.assertFalse(summary([("C17a", "Haste")], results(log))[1])
+
+    def test_combat_evidence_rejects_truncation_duplicates_and_bad_counts(self):
+        check = "COMBAT_CHECK C17a haste-speed PASS speed_increased"
+        total = "COMBAT_SUMMARY row=C17a pass=1 fail=0 skipped=0"
+        for log in [
+            check, total, check + "\n" + check + "\n" + total,
+            check + "\n" + total + "\n" + total,
+            check + "\n" + total.replace("pass=1", "pass=2"),
+            total + "\n" + check,
+            check.replace("PASS speed_increased", "SKIPPED no_equipment") + "\n" + total,
+            check.replace("C17a", "C99") + "\n" + total.replace("C17a", "C99"),
+            check + " trailing\nCOMBAT_SUMMARY row=C17a pass=-1 fail=0 skipped=0",
+        ]:
+            with self.subTest(log=log), self.assertRaises(ValueError):
+                results(log)
+        with self.assertRaises(ValueError):
+            results(check + "\n" + total + "\nSEAM_EVIDENCE e2e_all scenario=C17a.full status=PASS seconds=0")
 
     def test_empty_duplicate_or_unplanned_matrix_fails(self):
         valid = "| M01 | Movement | owner | `M01.full`: do everything |"
