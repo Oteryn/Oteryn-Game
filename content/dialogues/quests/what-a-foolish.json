@@ -1,0 +1,2387 @@
+{
+  "schema": "OTERYN_FOOLISH_DIALOGUE_V1",
+  "replies": {
+    "stage-1-1": {
+      "lines": [
+        "Do you have a fitting flower for me?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:63-75"
+    },
+    "stage-1-2": {
+      "lines": [
+        "You don't have a fitting flower! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:63-75"
+    },
+    "stage-1-3": {
+      "lines": [
+        "Indeed. This flower will do the trick, so to say. Just ask me about another mission whenever you're ready."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:63-75"
+    },
+    "stage-2-1": {
+      "lines": [
+        "The next task will be a bit more difficult. I pride myself on being the major manufacturer of stink bombs in whole Tibia. Stop chuckling you fool aspirant ...",
+        "The worst part is getting the perfect stench. Whenever a slime dies, it leaves a noxious gas cloud ...",
+        "If you are able to collect its scent in the first few seconds after the slime's death, we have the ideal substance to create dozens of stink bombs ...",
+        "Take this special vial and fill it with the perfect stench. Then return here and we will talk about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:76-90"
+    },
+    "stage-3-1": {
+      "lines": [
+        "Do you have acquired the exquisite stench we need?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:91-103"
+    },
+    "stage-3-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:91-103"
+    },
+    "stage-3-3": {
+      "lines": [
+        "Ugh. You got some efficient stuff there. I have to admit you have a talent for such distasteful matters. Perhaps you feel ready for another mission. Just ask me about it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:91-103"
+    },
+    "stage-4-1": {
+      "lines": [
+        "I think you're ready for a small promotion. Provided that you finish another mission, that is ...",
+        "As you might know, nothing helps you to break the ice so easily when you meet new people as a pie thrown in the face ...",
+        "Of course, this habit leads to a dramatic shortage of pies now and then. And that's what we need you for. Mirabell in Edron creates the most creamy and sticky pies in the world ...",
+        "Get me a dozen of them, this means 12, you fool. Then report to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:104-117"
+    },
+    "stage-5-1": {
+      "lines": [
+        "So do you bring me a box full of pies?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:118-135"
+    },
+    "stage-5-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:118-135"
+    },
+    "stage-5-3": {
+      "lines": [
+        "Excellent. Poor Harsky, poor Stutch. They will mourn the day they dared to yawn during a performance of the magnificent Bozo ...",
+        "However, I grant you the title of 'Fool in Training' for your efforts. Just don't let it go to your head and don't use this highly spiritual title to show off ...",
+        "If you are interested in another mission, talk to me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:118-135"
+    },
+    "stage-6-1": {
+      "lines": [
+        "Ah, the fool in training wants to see some action? Fine with me. I think you are ready for a big prank. But first I need 18 vials filled with wine ...",
+        "Get them and report here about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:136-147"
+    },
+    "stage-7-1": {
+      "lines": [
+        "Do you have 18 vials of wine?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+    },
+    "stage-7-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+    },
+    "stage-7-3": {
+      "lines": [
+        "So lets see. I put them into this crate which looks just like the ones in which old Xodet gets his mana potions [1]ed ...",
+        "Here take this crate and bring it to Xodet's shop. In front of the shop, you should see the latest [1]y. Just use this crate on the other one to exchange them ...",
+        "Bring me the interchanged crate and talk to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:148-165"
+    },
+    "stage-8-1": {
+      "lines": [
+        "Do you bring me Xodet's exchanged crate?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:166-178"
+    },
+    "stage-8-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:166-178"
+    },
+    "stage-8-3": {
+      "lines": [
+        "I see. I guess we can expect a few drunken mages soon! Am I mistaken or are you up for some more challenging missions? Just ask me about if you feel foolish enough."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:166-178"
+    },
+    "stage-9-1": {
+      "lines": [
+        "I have a fine prank in mind but without proper preparation, you'd end up hacked in pieces by the dwarfs. By chance I found out about an artefact that might save the day ...",
+        "There is a mysterious tower, known as Triangle Tower, north of Jakundaf Desert. In this tower, you will find a magic watch that we need for our dangerous fun ...",
+        "Well, I'll have the fun and you'll have the danger but you can view it from a positive side - view it from my side for instance. Now get that watch and report about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:179-192"
+    },
+    "stage-10-1": {
+      "lines": [
+        "Did you get the watch?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:193-211"
+    },
+    "stage-10-2": {
+      "lines": [
+        "No you have not! Why do only fools apply to the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:193-211"
+    },
+    "stage-10-3": {
+      "lines": [
+        "Oh boy, you will have so much fun with that watch if they don't catch and kill you. I envy you so much ... Bozo: So listen my little fool, this watch has the power to advance you in time. It will come in handy when you are stealing the beard of the dwarven emperor ...",
+        "Oh, come on, don't faint like some baby. It's perfectly safe with that watch ... well, almost. You sneak into the emperor's bedroom when it's empty. Use the watch directly beside the bed's pillow ...",
+        "This should advance you in time. You will appear next to the sleeping emperor. His guards will be outside so they shouldn't bother you. Use a sharp kitchen knife to cut off his beard ...",
+        "Then quickly use the watch again to advance in time once more. You should appear at a time when everybody has left the room...",
+        "Sneak out and come here to report about your mission. As the watch will only work those 2 times, make sure that you've got the beard when returning here."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:193-211"
+    },
+    "stage-11-1": {
+      "lines": [
+        "Did you get the beard?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:212-228"
+    },
+    "stage-11-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:212-228"
+    },
+    "stage-11-3": {
+      "lines": [
+        "You got the beard and survived. I think for the first time in my whole life I'm impressed, no wait, it was just a stone in my shoe ...",
+        "Still, as a small recognition of your accomplishments I'm willing to tell you how to get your own jester outfit. If you are interested in more fun and adventures, ask me for more missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:212-228"
+    },
+    "stage-12-1": {
+      "lines": [
+        "I can't think of anything right now. Maybe you should try to get your jester outfit."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:229-233"
+    },
+    "stage-13-1": {
+      "lines": [
+        "You know, nothing has brought more fun and joy to humanity than the whoopee cushion. Its creation is a delicate matter though. Bring me 4 pieces of minotaur leather first and then lets talk about this mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:234-242"
+    },
+    "stage-14-1": {
+      "lines": [
+        "Do you have the four minotaur leathers?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:243-255"
+    },
+    "stage-14-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:243-255"
+    },
+    "stage-14-3": {
+      "lines": [
+        "Good, this was the first part. Now it gets difficult. To sew it together, we need a very fine yarn, as fine as the silk of a giant spider. Bring me some giant spider silk and talk to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:243-255"
+    },
+    "stage-15-1": {
+      "lines": [
+        "Do you have the spider silk with you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:256-269"
+    },
+    "stage-15-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:256-269"
+    },
+    "stage-15-3": {
+      "lines": [
+        "Let's see, a stitch here, a stitch there. Hey Presto! A whoopee cushion! Are you ready for the fun part? Then talk to me about your next mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:256-269"
+    },
+    "stage-16-1": {
+      "lines": [
+        "Now that we have this whoopee cushion it would be a waste not to use it, don't you agree ...",
+        "Don't speak! I already know what you have in your impish mind my friend and I agree fully. You will bring this cushion to Carlin and place it right on Queen Eloise's throne! Then return here and talk to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:270-282"
+    },
+    "stage-17-1": {
+      "lines": [
+        "Have you placed the whoopee cushion on the throne in Carlin?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:283-295"
+    },
+    "stage-17-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:283-295"
+    },
+    "stage-17-3": {
+      "lines": [
+        "This will cause quite a commotion in Carlin. I think we should play some pranks in many more places to spread humour all over the world. Talk to me about your next mission to learn more about it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:283-295"
+    },
+    "stage-18-1": {
+      "lines": [
+        "The time has come to play a prank on some arrogant Venorean. I found out that Carina, the jeweller, is terribly afraid of mice ...",
+        "Your task is quite easy. Steal the toy mouse of Queen Eloise's cat and show it to Carina in Venore to scare her to death. Then report about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:296-308"
+    },
+    "stage-19-1": {
+      "lines": [
+        "Have you been to Venore and scared Carina as I asked you to?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:309-321"
+    },
+    "stage-19-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:309-321"
+    },
+    "stage-19-3": {
+      "lines": [
+        "Excellent. The Venoreans have been safe from my pranks far too long. If you are ready for another mission, talk to me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:309-321"
+    },
+    "stage-20-1": {
+      "lines": [
+        "These Venoreans think they are safe from us. They couldn't be more wrong. Let them feel the wrath of the fools! Get a spoon and collect some sulphur from an inactive lava hole ...",
+        "Be very careful when you get the easily inflammable substance. Then let's talk about the next part of your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:322-333"
+    },
+    "stage-21-1": {
+      "lines": [
+        "Have you collected the sulphur?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:334-346"
+    },
+    "stage-21-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:334-346"
+    },
+    "stage-21-3": {
+      "lines": [
+        "So much for part one of my foolish master plan. Now travel to Tiquanda and use a kitchen knife to cut some leaves of the jungle dweller bush for me. Bring them with you when you report about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:334-346"
+    },
+    "stage-22-1": {
+      "lines": [
+        "Do you have the leaves with you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:347-359"
+    },
+    "stage-22-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:347-359"
+    },
+    "stage-22-3": {
+      "lines": [
+        "So far so good. I will prepare some nasty surprise for your next mission. Talk to me about it whenever you feel ready."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:347-359"
+    },
+    "stage-23-1": {
+      "lines": [
+        "Now look at this, someone has made exploding cigars out of the sulphur and the leaves! Coincidentally I have a great idea how wecould use them ...",
+        "Take this cigar and give it to Theodore Loveless, the Venorean representative in Liberty Bay. After you [1]ed our little'present', report here about the outcome of your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:360-372"
+    },
+    "stage-24-1": {
+      "lines": [
+        "Have you delivered the exploding cigar to Theodore Loveless?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:373-387"
+    },
+    "stage-24-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:373-387"
+    },
+    "stage-24-3": {
+      "lines": [
+        "You're hell of a guy, I bet you enjoyed it. As you represent everything a fool stands for, I give you this fool's sceptre to spiceup your jester outfit. If you are interested, there are even more missions for a fool like yourself. Just ask about them."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:373-387"
+    },
+    "stage-25-1": {
+      "lines": [
+        "Well, I think as a true fool you have to think big. So our next little prank will be on a grand scale. Of course, this will need some preparation ...",
+        "Firstly, take this vial and use it on a dead stalker immediately after his death to collect his warm blood. Report about your mission when you are done."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:388-400"
+    },
+    "stage-26-1": {
+      "lines": [
+        "Have you gotten the blood that we need?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:401-417"
+    },
+    "stage-26-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:401-417"
+    },
+    "stage-26-3": {
+      "lines": [
+        "Congratulations! Now let's talk about the complicated part. We need the ink of a quara constrictor. Use this vial on a fresh corpse to get the ink ...",
+        "Stop making these grimaces! I know it's a foolish task, but after all that's also the fun about it. Get the ink and report to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:401-417"
+    },
+    "stage-27-1": {
+      "lines": [
+        "Have you acquired the constrictor's ink?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:418-430"
+    },
+    "stage-27-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:418-430"
+    },
+    "stage-27-3": {
+      "lines": [
+        "Excellent. As a true fool you have of course no clue what these ingredients are good for, but I will enlighten you. Just ask about your next mission and I'll tell you everything you need to know."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:418-430"
+    },
+    "stage-28-1": {
+      "lines": [
+        "Blood of a stalker and ink of a quara are the main ingredients of the prop for our next prank. Mix it together to obtain some nice vanishing ink ...",
+        "It looks exactly like normal ink, however, exposed to air it will vanish within minutes. I'm sure you understand how useful this ink can be ...",
+        "Now, listen to my plan. Go to Sam and order 2000 steel shields. He will never agree to it if you do not sign a contract ...",
+        "Use the vanishing ink to sign the contract and then hand the paper back to him. This will keep this humourless doter busy for a while. Talk to me about your mission when you are done."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:431-445"
+    },
+    "stage-29-1": {
+      "lines": [
+        "So have you fooled the old Sam yet?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:446-458"
+    },
+    "stage-29-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:446-458"
+    },
+    "stage-29-3": {
+      "lines": [
+        "What a splendid prank! If you are ready for more, ask me about the next mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:446-458"
+    },
+    "stage-30-1": {
+      "lines": [
+        "This time I have no real mission for you, rather a small errand. I bet you had expected some dangerous and exhausting quest but since I like you so much, I make it veeeeery easy for you ...",
+        "Here are some cookies. Beware though, those are exploding confetti cookies. You will have to [1] them to 10 special persons, then return to me and report about your mission. Seems easy, doesn't it? Are you going to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:459-479"
+    },
+    "stage-30-3": {
+      "lines": [
+        "Great! That's the word of a true fool! Maybe you want to write the names down. Here we go: [1] a cookie to: ...",
+        "The pompous hero Avar Tar in Edron, Simon the greedy beggar on Fibula, the pirate Ariella on the Shattered Isles, the dubious Lorbas next to the ruins of the Dark Cathedral, King Markwin in the underground city Mintwalin ...",
+        "The shaman Hjaern on the ice island Nibelor, the witch Wyda in the Green Claw Swamp, the ape Hairycles in the jungle city Banuta ...",
+        "The orc king in the orc fortress Uldrek's Rock and the last one to EITHER Yaman, the green djinn, OR, Nah'Bob, the blue djinn ...",
+        "A piece of cake isn't it? Did you take notes? If you need the list again, just ask me for it. Otherwise leave now and report about the mission whenever you're done."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:459-479"
+    },
+    "stage-31-1": {
+      "lines": [
+        "Are you done with your little delivery mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:480-491"
+    },
+    "stage-31-3": {
+      "lines": [
+        "Indeed, you're done. By the way, you look a little bit tired and dirty. However, if you still have some power left, ask me about the next mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:480-491"
+    },
+    "stage-32-1": {
+      "lines": [
+        "I'm sure you're wondering how many tiring missions old Bozo has still in store for you! Don't worry! You're almost done, only one final mission left ...",
+        "Well, that is after you got the needed material. First of all, bring me 5 pieces of white cloth. Then we talk more about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:492-503"
+    },
+    "stage-33-1": {
+      "lines": [
+        "Have you been able to get hold of 5 pieces of white cloth?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:504-521"
+    },
+    "stage-33-2": {
+      "lines": [
+        "No, you haven't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:504-521"
+    },
+    "stage-33-3": {
+      "lines": [
+        "Well done. Anyway, I reeeally hate to tell you but ... as white as it's now we have no use for it. Don't worry though. There is a way to give it an old and worn look ...",
+        "The unforgiving desert sun combined with the noxious fumes of the Plague Spike in Darama will do the trick ...",
+        "Travel to Darama, climb the Plague Spike and look for a nice spot to let mother nature do the work. Perhaps something like an altar would be useful. Once you're done, return here and learn about the next step of your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:504-521"
+    },
+    "stage-34-1": {
+      "lines": [
+        "Do you have a piece of old and worn cloth?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:522-539"
+    },
+    "stage-34-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:522-539"
+    },
+    "stage-34-3": {
+      "lines": [
+        "Fine, fine. Now let's do the last step of our foolish plan. Smart as I am, I used a pair of scissors to create some old and worn bands from the cloth you have brought me. DON'T touch it yet ...",
+        "Travel to Darashia and visit caliph Kazzan. Use the bands made of the worn cloth to disguise yourself as a mummy ...",
+        "Finally, talk to the caliph to give him the scare of his lifetime. Afterwards come back here and tell me about the fun you had with this mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:522-539"
+    },
+    "stage-35-1": {
+      "lines": [
+        "Well, my diligent pupil, have you scared the caliph yet?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:540-555"
+    },
+    "stage-35-2": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:540-555"
+    },
+    "stage-35-3": {
+      "lines": [
+        "By Kurik, I knew you have it in you. You are a fool after my fancy. Take this jester hat, you deserve it. It will go nicely with your jester costume."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:540-555"
+    },
+    "stage-36-1": {
+      "lines": [
+        "You are a fully trained fool now who has developed to an accomplished jester. Your final mission is to bring fun and joy to the whole world."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:556-561"
+    },
+    "outfit--1-1": {
+      "lines": [
+        "First we will need one piece of red cloth. Do you have it with you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit--1-2": {
+      "lines": [
+        "Ok, now we need one piece of blue cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-1-1": {
+      "lines": [
+        "Now we need one piece of blue cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-1-2": {
+      "lines": [
+        "Ok, now we need one piece of green cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-2-1": {
+      "lines": [
+        "Now we need one piece of green cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-2-2": {
+      "lines": [
+        "At last we need one piece of yellow cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-3-1": {
+      "lines": [
+        "Now we need one piece of yellow cloth. Do you have one with you by chance?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "outfit-3-2": {
+      "lines": [
+        "That's it. Here is your jester outfit. It's admittedly a bit basic but maybe you'll earn some nice accessories soon. At least you are more fittingly dressed for your next missions now."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:563-601"
+    },
+    "join": {
+      "lines": [
+        "Do you wish to become a jester and join the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:630-630"
+    },
+    "join-again": {
+      "lines": [
+        "Wow, your stupidity would be pride and joy for every fool. You've already applied as a member. Let's rather talk about your current mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:626-626"
+    },
+    "join-confirm": {
+      "lines": [
+        "So you want to make a total fool of yourself? Fine with me, but note that becoming a real fool means more than being just an ordinary fool ...",
+        "You will have to master a whole series of challenging, lengthy and, above all, totally foolish quests ...",
+        "Are you sure you want to waste a part of your limited lifetime on a quest that makes a fool of yourself and which might award you with the prestigious title of a grand fool in a far away future?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:672-674"
+    },
+    "joined": {
+      "lines": [
+        "What a foolish decision! You are indeed a worthy candidate! But let's talk about business ...",
+        "Being a jester is not just about telling jokes. A good jester heavily relies on requisites ...",
+        "Getting some requisites will be your first job. First of all we need a good supply of water squirt flowers ...",
+        "I'm making them on my own in my spare time but I need the right material. South of Thais, next to the Whiteflower Temple, you will find the ideal flowers ...",
+        "Take a kitchen knife, cut the thickest and healthiest flower and bring it here. Then talk to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:681-685"
+    },
+    "outfit-failure": {
+      "lines": [
+        "No, you don't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:761-761"
+    },
+    "cookie-failure": {
+      "lines": [
+        "No, you aren't! Why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:716-716"
+    },
+    "pie-failure": {
+      "lines": [
+        "Eeeek! What have you done?? These pies are crawling with bugs! Those must be the infamous parcel bugs! Get some new pies at once you wannabe fool, and this time without any bugs!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:724-724"
+    },
+    "decline-join": {
+      "lines": [
+        "Too bad, I'm convinced you have it in you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:781-781"
+    },
+    "lost-beard": {
+      "lines": [
+        "You shaved the emperor, but lost the beard? What kind of fool are you? Well, at least he will have a nice surprise when he wakes up ...",
+        "Still, as a small recognition of your accomplishments I'm willing to tell you how to get your own jester outfit. If you are interested in more fun and adventures, ask me for more missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:787-788"
+    },
+    "decline-cookies": {
+      "lines": [
+        "You won't be successful in the fool's world with such an attitude."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:791-791"
+    },
+    "lost-disguise": {
+      "lines": [
+        "You wasted the disguise?? Why do only fools apply for the fools guild? Here... try again, but be wittier this time."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:795-795"
+    },
+    "decline": {
+      "lines": [
+        "Oh boy, why do only fools apply for the fools guild?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:797-797"
+    },
+    "outfit-already": {
+      "lines": [
+        "I'm sure it suits you well."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:667-667"
+    },
+    "source-only:ariella:70": {
+      "lines": [
+        "So you brought a cookie to a pirate?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:70-70"
+    },
+    "source-only:ariella:75": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:75-75"
+    },
+    "source-only:ariella:80": {
+      "lines": [
+        "How sweet of you ... Uhh ... OH NO ... Bozo did it again. Tell this prankster I'll pay him back."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:80-80"
+    },
+    "source-only:ariella:89": {
+      "lines": [
+        "I really wanted a cookie."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:89-89"
+    },
+    "source-only:ariella:95": {
+      "lines": [
+        "You mean my hat? Well, I might have another one just like that, but I won't simply give it away, even if you earned our trust. You'd have to fulfil a {task} first."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:95-95"
+    },
+    "source-only:ariella:98": {
+      "lines": [
+        "Are you up to the task which I'm going to give you and willing to prove you're worthy of wearing such a hat?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:98-98"
+    },
+    "source-only:ariella:101": {
+      "lines": [
+        "Alright, listen closely. There are four pirate leaders who have been troubling us for a long time now. ...",
+        "They often lead raids on Liberty Bay and wreck havoc in the settlement - and afterwards, the blame is put on us. ...",
+        "Their names are 'Lethal Lissy', 'Ron the Ripper', 'Brutus Bloodbeard' and 'Deadeye Devious'. ...",
+        "If you can find and kill them all, be sure to retrieve an item from them as proof that you killed them. ...",
+        "Bring me the shirt of Lissy, the sabre of Ron, the hat of Brutus and the eye patch of Deadeye and you will be rewarded. ...",
+        "Have you understood everything I told you and are willing to handle this task?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:101-108"
+    },
+    "source-only:ariella:111": {
+      "lines": [
+        "Good! Come back to me once you have all four items and ask me about that {task}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:111-111"
+    },
+    "source-only:ariella:115": {
+      "lines": [
+        "Maybe another time."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:115-115"
+    },
+    "source-only:ariella:118": {
+      "lines": [
+        "Your task is to bring me the shirt of the Lethal Lissy, the sabre of Ron the Ripper, the hat of Brutus Bloodbeard and the eye patch of Deadeye Devious. Did you succeed?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:118-118"
+    },
+    "source-only:ariella:123": {
+      "lines": [
+        "INCREDIBLE! You have found all four of them! |PLAYERNAME|, you have my respect. You more than deserve this hat. There you go."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:123-123"
+    },
+    "source-only:ariella:131": {
+      "lines": [
+        "You don't have all four of them yet."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:131-131"
+    },
+    "source-only:ariella:135": {
+      "lines": [
+        "Let me know when you succeed on your task."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:135-135"
+    },
+    "source-only:ariella:142": {
+      "lines": [
+        "You know, we have plenty of rum here but we lack some basic food. Especially food that easily becomes mouldy is a problem. Bring me 100 breads and you will help me a lot."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:142-142"
+    },
+    "source-only:ariella:145": {
+      "lines": [
+        "Are you here to bring me the 100 pieces of bread that I requested?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:145-145"
+    },
+    "source-only:ariella:148": {
+      "lines": [
+        "The sailors always tell tales about the famous beer of Carlin. You must know, alcohol is forbidden in that city. ...",
+        "The beer is served in a secret whisper bar anyway. Bring me a sample of the whisper beer, NOT the usual beer but whisper beer. I hope you are listening."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:148-151"
+    },
+    "source-only:ariella:154": {
+      "lines": [
+        "Did you get a sample of the whisper beer from Carlin?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:154-154"
+    },
+    "source-only:ariella:160": {
+      "lines": [
+        "What a joy. At least for a few days adequate supply is ensured."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:160-160"
+    },
+    "source-only:ariella:164": {
+      "lines": [
+        "You don't have enough bread."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:164-164"
+    },
+    "source-only:ariella:169": {
+      "lines": [
+        "Thank you very much. I will test this beauty in privacy."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:169-169"
+    },
+    "source-only:ariella:173": {
+      "lines": [
+        "Whatever you got there is not whisper beer."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:173-173"
+    },
+    "source-only:ariella:179": {
+      "lines": [
+        "Hurry up then! I can't wait to taste it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:179-179"
+    },
+    "source-only:ariella:187": {
+      "lines": [
+        "Hi there."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:187-187"
+    },
+    "source-only:avar_tar:58": {
+      "lines": [
+        "I'm tired of all these young unskilled wannabe heroes. Every Tibian can show his skills or actions by wearing a special outfit. To prove oneself worthy of the demon outfit, this is how it goes: ...",
+        "The base outfit will be granted for completing the annihilator quest, which isn't much of a challenge nowadays, in my opinion. Anyway ...",
+        "The shield however will only be granted to those adventurers who have finished the demon helmet quest. ...",
+        "Well, the helmet is for those who really are tenacious and have hunted down all 6666 demons and finished the demon oak as well. ...",
+        "Are you interested?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:58-64"
+    },
+    "source-only:avar_tar:68": {
+      "lines": [
+        "Do you really think you could bribe a hero like me with a meagre cookie?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:68-68"
+    },
+    "source-only:avar_tar:74": {
+      "lines": [
+        "So you want to have the demon outfit, hah! Let's have a look first if you really deserve it. Tell me: {base}, {shield} or {helmet}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:74-74"
+    },
+    "source-only:avar_tar:78": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:78-78"
+    },
+    "source-only:avar_tar:89": {
+      "lines": [
+        "Well, you won't! Though it looks tasty ...What the ... WHAT DO YOU THINK YOU ARE? THIS IS THE ULTIMATE INSULT! GET LOST!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:89-89"
+    },
+    "source-only:avar_tar:95": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:95-95"
+    },
+    "source-only:avar_tar:105": {
+      "lines": [
+        "Receive the base outfit, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:105-105"
+    },
+    "source-only:avar_tar:107": {
+      "lines": [
+        "You need to complete annihilator quest first, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:107-107"
+    },
+    "source-only:avar_tar:116": {
+      "lines": [
+        "Receive the shield, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:116-116"
+    },
+    "source-only:avar_tar:118": {
+      "lines": [
+        "The shield will only be granted to those adventurers who have finished the demon helmet quest, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:118-118"
+    },
+    "source-only:avar_tar:127": {
+      "lines": [
+        "Receive the helmet, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:127-127"
+    },
+    "source-only:avar_tar:129": {
+      "lines": [
+        "The helmet is for those who have hunted down all 6666 demons and finished the demon oak as well, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:129-129"
+    },
+    "source-only:avar_tar:137": {
+      "lines": [
+        "Greetings, traveller |PLAYERNAME|!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:137-137"
+    },
+    "source-only:avar_tar:138": {
+      "lines": [
+        "See you later, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avar_tar.lua:138-138"
+    },
+    "source-only:bozo:608": {
+      "lines": [
+        "Hi there, how's it hanging, |PLAYERNAME|! What brings you {here}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:608-608"
+    },
+    "source-only:bozo:610": {
+      "lines": [
+        "Hello, hello, hello, little lady |PLAYERNAME|! What brings you {here}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:610-610"
+    },
+    "source-only:bozo:921": {
+      "lines": [
+        "Remember: A joke a day keeps the ghouls away!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:921-921"
+    },
+    "source-only:bozo:922": {
+      "lines": [
+        "Hey! Fools have feelings too."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bozo.lua:922-922"
+    },
+    "source-only:carina:63": {
+      "lines": [
+        "Oh, so you want to buy that rare and precious necklace for 5000 gold?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:63-63"
+    },
+    "source-only:carina:67": {
+      "lines": [
+        "Wha ... What??? Are you saying you've seen a mouse here??"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:67-67"
+    },
+    "source-only:carina:74": {
+      "lines": [
+        "Here it is. A friend of mine will be quite sad about that sale but business is business."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:74-74"
+    },
+    "source-only:carina:79": {
+      "lines": [
+        "There is no mouse here! Stop talking foolish things about serious issues!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:79-79"
+    },
+    "source-only:carina:85": {
+      "lines": [
+        "IIIEEEEEK!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:85-85"
+    },
+    "source-only:carina:90": {
+      "lines": [
+        "Thank goodness!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:90-90"
+    },
+    "source-only:carina:97": {
+      "lines": [
+        "Welcome, |PLAYERNAME|. I am looking forward to trade with you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carina.lua:97-97"
+    },
+    "source-only:hairycles:56": {
+      "lines": [
+        "Oh! Hello! Hello! Did not notice!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:56-56"
+    },
+    "source-only:hairycles:58": {
+      "lines": [
+        "Be greeted, friend of the ape people. If you want to {trade}, just ask for my offers. If you are injured, ask for healing."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:58-58"
+    },
+    "source-only:hairycles:83": {
+      "lines": [
+        "These are dire times for our people. Problems plenty are in this times. But me people not grant trust easy. Are you willing to prove you friend of ape people?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:83-83"
+    },
+    "source-only:hairycles:87": {
+      "lines": [
+        "Oh, you brought me whisper moss? Good hairless ape you are! Can me take it?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:87-87"
+    },
+    "source-only:hairycles:90": {
+      "lines": [
+        "Please hurry. Bring me whisper moss from dworc lair. Make sure it is from dworc lair! Take it yourself only! If you need to hear background of all again, ask Hairycles for {background}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:90-90"
+    },
+    "source-only:hairycles:93": {
+      "lines": [
+        "Whisper moss strong is, but me need liquid that humans have to make it work ...",
+        "Our raiders brought it from human settlement, it's called cough syrup. Go ask healer there for it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:93-96"
+    },
+    "source-only:hairycles:99": {
+      "lines": [
+        "You brought me that cough syrup from human healer me asked for?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:99-99"
+    },
+    "source-only:hairycles:102": {
+      "lines": [
+        "Little ape should be healthy soon. Me so happy is. Thank you again! But me suspect we in more trouble than we thought. Will you help us again?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:102-102"
+    },
+    "source-only:hairycles:105": {
+      "lines": [
+        "You got scroll from lizard village in south east?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:105-105"
+    },
+    "source-only:hairycles:108": {
+      "lines": [
+        "Ah yes that scroll. Sadly me not could read it yet. But the holy banana me insight gave! In dreams Hairycles saw where to find solution. ...",
+        "Me saw a stone with lizard signs and other signs at once. If you read signs and tell Hairycles, me will know how to read signs. ...",
+        "You go east to big desert. In desert there city. East of city under sand hidden tomb is. You will have to dig until you find it, so take shovel. ...",
+        "Go down in tomb until come to big level and then go down another. There you find a stone with signs between two huge red stones. ...",
+        "Read it and return to me. Are you up to that challenge?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:108-114"
+    },
+    "source-only:hairycles:118": {
+      "lines": [
+        "Ah yes, you read the signs in tomb? Good! May me look into your mind to see what you saw?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:118-118"
+    },
+    "source-only:hairycles:121": {
+      "lines": [
+        "You still don't know signs on stone, go and look for it in tomb east in desert."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:121-121"
+    },
+    "source-only:hairycles:124": {
+      "lines": [
+        "So much there is to do for Hairycles to prepare charm that will protect all ape people. ...",
+        "You can help more. To create charm of life me need mighty token of life! Best is egg of a regenerating beast as a hydra is. ...",
+        "Bring me egg of hydra please. You may find it in lair of Hydra at little lake south east of our lovely city Banuta! You think you can do?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:124-128"
+    },
+    "source-only:hairycles:131": {
+      "lines": [
+        "You bring Hairycles egg of hydra?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:131-131"
+    },
+    "source-only:hairycles:134": {
+      "lines": [
+        "Last ingredient for charm of life is thing to lure magic. Only thing me know like that is mushroom called witches' cap. Me was told it be found in isle called Fibula, where humans live. ...",
+        "Hidden under Fibula is a secret dungeon. There you will find witches' cap. Are you willing to go there for good ape people?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:134-137"
+    },
+    "source-only:hairycles:140": {
+      "lines": [
+        "You brought Hairycles witches' cap from Fibula?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:140-140"
+    },
+    "source-only:hairycles:143": {
+      "lines": [
+        "Mighty life charm is protecting us now! But my people are still in danger. Danger from within. ...",
+        "Some of my people try to mimic lizards to become strong. Like lizards did before, this cult drinks strange fluid that lizards left when fled. ...",
+        "Under the city still the underground temple of lizards is. There you find casks with red fluid. Take crowbar and destroy three of them to stop this madness. Are you willing to do that?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:143-147"
+    },
+    "source-only:hairycles:151": {
+      "lines": [
+        "You do please Hairycles again, friend. Me hope madness will not spread further now. Perhaps you are ready for other mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:151-151"
+    },
+    "source-only:hairycles:154": {
+      "lines": [
+        "Please destroy three casks in the complex beneath Banuta, so my people will come to senses again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:154-154"
+    },
+    "source-only:hairycles:157": {
+      "lines": [
+        "Now that the false cult was stopped, we need to strengthen the spirit of my people. We need a symbol of our faith that ape people can see and touch. ...",
+        "Since you have proven a friend of the ape people I will grant you permission to enter the forbidden land. ...",
+        "To enter the forbidden land in the north-east of the jungle, look for a cave in the mountains east of it. There you will find the blind prophet. ...",
+        "Tell him Hairycles you sent and he will grant you entrance. ...",
+        "Forbidden land is home of Bong. Holy giant ape big as mountain. Don't annoy him in any way but look for a hair of holy ape. ...",
+        "You might find at places he has been, should be easy to see them since Bong is big. ...",
+        "Return a hair of the holy ape to me. Will you do this for Hairycles?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:157-165"
+    },
+    "source-only:hairycles:169": {
+      "lines": [
+        "You brought hair of holy ape?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:169-169"
+    },
+    "source-only:hairycles:172": {
+      "lines": [
+        "Get a hair of holy ape from forbidden land in east. Speak with blind prophet in cave."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:172-172"
+    },
+    "source-only:hairycles:175": {
+      "lines": [
+        "You have proven yourself a friend, me will grant you permission to enter the deepest catacombs under Banuta which we have sealed in the past. ...",
+        "Me still can sense the evil presence there. We did not dare to go deeper and fight creatures of evil there. ...",
+        "You may go there, fight the evil and find the monument of the serpent god and destroy it with hammer me give to you. ...",
+        "Only then my people will be safe. Please tell Hairycles, will you go there?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:175-180"
+    },
+    "source-only:hairycles:184": {
+      "lines": [
+        "Finally my people are safe! You have done incredible good for ape people and one day even me brethren will recognise that. ...",
+        "I wish I could speak for all when me call you true friend but my people need time to get accustomed to change. ...",
+        "Let us hope one day whole Banuta will greet you as a friend. Perhaps you want to check me offers for special friends... or shamanic powers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:184-188"
+    },
+    "source-only:hairycles:192": {
+      "lines": [
+        "Me know its much me asked for but go into the deepest catacombs under Banuta and destroy the monument of the serpent god."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:192-192"
+    },
+    "source-only:hairycles:195": {
+      "lines": [
+        "No more missions await you right now, friend. Perhaps you want to check me offers for special friends... or shamanic powers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:195-195"
+    },
+    "source-only:hairycles:199": {
+      "lines": [
+        "So listen, little ape was struck by plague. Hairycles not does know what plague it is. That is strange. Hairycles should know. But Hairycles learnt lots and lots ...",
+        "Me sure to make cure so strong to drive away all plague. But to create great cure me need powerful components ...",
+        "Me need whisper moss. Whisper moss growing south of human settlement is. Problem is, evil little dworcs harvest all whisper moss immediately ...",
+        "Me know they hoard some in their underground lair. My people raided dworcs often before humans came. So we know the moss is hidden in east of upper level of dworc lair ...",
+        "You go there and take good moss from evil dworcs. Talk with me about mission when having moss."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:199-205"
+    },
+    "source-only:hairycles:209": {
+      "lines": [
+        "Oh you bring cookie for old Hairycles?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:209-209"
+    },
+    "source-only:hairycles:215": {
+      "lines": [
+        "Me truly proud of you, friend. You learn many about plants, charms and ape people. Me want grant you shamanic power now. You ready?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:215-215"
+    },
+    "source-only:hairycles:218": {
+      "lines": [
+        "You already are shaman and doctor. Me proud of you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:218-218"
+    },
+    "source-only:hairycles:221": {
+      "lines": [
+        "You not have finished journey for wisdom yet, young human."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:221-221"
+    },
+    "source-only:hairycles:235": {
+      "lines": [
+        "You look for food and rest."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:235-235"
+    },
+    "source-only:hairycles:242": {
+      "lines": [
+        "To become friend of ape people a long and difficult way is. We do not trust easy but help is needed. Will you listen to story of Hairycles?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-242"
+    },
+    "source-only:hairycles:245": {
+      "lines": [
+        "Hairycles sad is now. But perhaps you will change mind one day."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:245-245"
+    },
+    "source-only:hairycles:261": {
+      "lines": [
+        "Hairycles thought better of you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:261-261"
+    },
+    "source-only:hairycles:270": {
+      "lines": [
+        "Stupid, you no have the moss me need. Go get it. It's somewhere in dworc lair. If you lost it, they might restocked it meanwhile. If you need to hear background of all again, ask Hairycles for {background}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:270-270"
+    },
+    "source-only:hairycles:275": {
+      "lines": [
+        "Ah yes! That's it. Thank you for bringing mighty whisper moss to Hairycles. It will help but still much is to be done. Just ask for other mission if you ready."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:275-275"
+    },
+    "source-only:hairycles:278": {
+      "lines": [
+        "Strange being you are! Our people need help!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:278-278"
+    },
+    "source-only:hairycles:284": {
+      "lines": [
+        "No no, not right syrup you have. Go get other, get right health syrup."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:284-284"
+    },
+    "source-only:hairycles:288": {
+      "lines": [
+        "You so good! Brought syrup to me! Thank you, will prepare cure now. Just ask for {mission} if you want help again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:288-288"
+    },
+    "source-only:hairycles:291": {
+      "lines": [
+        "Please hurry, urgent it is!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:291-291"
+    },
+    "source-only:hairycles:296": {
+      "lines": [
+        "So listen, please. Plague was not ordinary plague. That's why Hairycles could not heal at first. It is new curse of evil lizard people ...",
+        "I think curse on little one was only a try. We have to be prepared for big strike ...",
+        "Me need papers of lizard magician! For sure you find it in his hut in their dwelling. It's south east of jungle. Go look there please! Are you willing to go?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:296-300"
+    },
+    "source-only:hairycles:303": {
+      "lines": [
+        "Me sad. Me expected better from you!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:303-303"
+    },
+    "source-only:hairycles:311": {
+      "lines": [
+        "Good thing that is! Report about your mission when have scroll."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:311-311"
+    },
+    "source-only:hairycles:325": {
+      "lines": [
+        "That's bad news. If you lost it, only way to get other is to kill holy serpents. But you can't go there so you must ask adventurers who can."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:325-325"
+    },
+    "source-only:hairycles:327": {
+      "lines": [
+        "No! That not scroll me looking for. Silly hairless ape you are. Go to village of lizards and get it there on your own!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:327-327"
+    },
+    "source-only:hairycles:332": {
+      "lines": [
+        "You brought scroll with lizard text? Good! I will see what text tells me! Come back when ready for other mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:332-332"
+    },
+    "source-only:hairycles:340": {
+      "lines": [
+        "Good thing that is! Report about mission when you have read those signs."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:340-340"
+    },
+    "source-only:hairycles:351": {
+      "lines": [
+        "Oh, so clear is all now! Easy it will be to read the signs now! Soon we will know what to do! Thank you again! Ask for mission if you feel ready."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:351-351"
+    },
+    "source-only:hairycles:355": {
+      "lines": [
+        "Me need to see it in your mind, other there is no way to proceed."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:355-355"
+    },
+    "source-only:hairycles:360": {
+      "lines": [
+        "You brave hairless ape! Get me hydra egg. If you lose egg, you probably have to fight many, many hydras to get another."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:360-360"
+    },
+    "source-only:hairycles:372": {
+      "lines": [
+        "You not have egg of hydra. Please get one!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:372-372"
+    },
+    "source-only:hairycles:376": {
+      "lines": [
+        "Ah, the egg! Mighty warrior you be! Thank you. Hairycles will put it at safe place immediately."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:376-376"
+    },
+    "source-only:hairycles:379": {
+      "lines": [
+        "Please hurry. Hairycles not knows when evil lizards strike again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:379-379"
+    },
+    "source-only:hairycles:384": {
+      "lines": [
+        "Long journey it will take, good luck to you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:384-384"
+    },
+    "source-only:hairycles:397": {
+      "lines": [
+        "Not right mushroom you have. Find me a witches' cap on Fibula!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:397-397"
+    },
+    "source-only:hairycles:401": {
+      "lines": [
+        "Incredible, you brought a witches' cap! Now me can prepare mighty charm of life. Yet still other {missions} will await you, friend."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:401-401"
+    },
+    "source-only:hairycles:405": {
+      "lines": [
+        "Please try to find me a witches' cap on Fibula."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:405-405"
+    },
+    "source-only:hairycles:413": {
+      "lines": [
+        "Hairycles sure you will make it. Good luck, friend."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:413-413"
+    },
+    "source-only:hairycles:417": {
+      "lines": [
+        "Me sad. Please reconsider."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:417-417"
+    },
+    "source-only:hairycles:422": {
+      "lines": [
+        "Hairycles proud of you. Go and find holy hair. Good luck, friend."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:422-422"
+    },
+    "source-only:hairycles:431": {
+      "lines": [
+        "You no have hair. You lost it? Go and look again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:431-431"
+    },
+    "source-only:hairycles:436": {
+      "lines": [
+        "Incredible! You got a hair of holy Bong! This will raise the spirit of my people. You are truly a friend. But one last mission awaits you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:436-436"
+    },
+    "source-only:hairycles:444": {
+      "lines": [
+        "Hairycles sure you will make it. Just use hammer on all that looks like snake or lizard. Tell Hairycles if you succeed with mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:444-444"
+    },
+    "source-only:hairycles:453": {
+      "lines": [
+        "Friend of the ape people! Take my gift and become me apprentice! Here is shaman clothing for you!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:453-453"
+    },
+    "source-only:hairycles:459": {
+      "lines": [
+        "Come back if change mind."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:459-459"
+    },
+    "source-only:hairycles:465": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:465-465"
+    },
+    "source-only:hairycles:475": {
+      "lines": [
+        "Thank you, you are ... YOU SON OF LIZARD!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:475-475"
+    },
+    "source-only:hairycles:480": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:480-480"
+    },
+    "source-only:hjaern:64": {
+      "lines": [
+        "We could indeed need some help. These are very cold times. The ice is growing and becoming thicker everywhere ...",
+        "The problem is that the chakoyas may use the ice for a passage to the west and attack Svargrond ...",
+        "We need you to get a pick and to destroy the ice at certain places to the east. You will quickly recognise those spots by their unstable look ...",
+        "Use the pickaxe on at least three of these places and the chakoyas probably won't be able to pass the ice. Once you are done, return here and report about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:64-69"
+    },
+    "source-only:hjaern:74": {
+      "lines": [
+        "The spirits are at peace now. The threat of the chakoyas is averted for now. I thank you for your help. Perhaps you should ask Silfind if you can help her in some matters. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:74-74"
+    },
+    "source-only:hjaern:79": {
+      "lines": [
+        "There is indeed an important mission. For a long time, the spirits have been worried and have called us for help. It seems that some of our dead have not reached the happy hunting grounds of after life ...",
+        "Everything we were able to find out leads to a place where none of our people is allowed to go. Just like we would never allow a stranger to go to that place ...",
+        "But you, you are different. You are not one of our people, yet you have proven worthy to be one us. You are special, the child of two worlds ...",
+        "We will grant you permission to travel to that isle of Helheim. Our legends say that this is the entrance to the dark world. The dark world is the place where the evil and lost souls roam in eternal torment ...",
+        "There you find for sure the cause for the unrest of the spirits. Find someone in Svargrond who can give you a passage to Helheim and seek for the cause. Are you willing to do that?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:79-85"
+    },
+    "source-only:hjaern:88": {
+      "lines": [
+        "There is no need to report about your mission. To be honest, Ive sent a divination spirit with you as well as a couple of destruction spirits that were unleashed when you approached the altar ...",
+        "Forgive me my secrecy but you are not familiar with the spirits and you might have get frightened. The spirits are at work now, destroying the magic with that those evil creatures have polluted Helheim ...",
+        "I cant thank you enough for what you have done for the spirits of my people. Still I have to ask: Would you do us another favour?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:88-92"
+    },
+    "source-only:hjaern:95": {
+      "lines": [
+        "These are alarming news and we have to act immediately. Take this spirit charm of cold. Travel to the mines and find four special obelisks to mark them with the charm ...",
+        "I can feel their resonance in the spirits world but we cant reach them with our magic yet. They have to get into contact with us in a spiritual way first ...",
+        "This will help us to concentrate all our frost magic on this place. I am sure this will prevent to melt any significant number of demons from the ice ...",
+        "Report about your mission when you are done. Then we can begin with the great ritual of summoning the children of Chyll ...",
+        "I will also inform Lurik about the events. Now go, fast!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:95-101"
+    },
+    "source-only:hjaern:117": {
+      "lines": [
+        "Yes, I can feel it! The spirits are in touch with the obelisks. We will begin to channel a spell of ice on the caves. That will prevent the melting of the ice there ...",
+        "If you would like to help us, you can turn in frostheart shards from now on. We use them to fuel our spell with the power of ice. ...",
+        "Oh, and before I forget it - since you have done a lot to help us and spent such a long time in this everlasting winter, I have a special present for you. ...",
+        "Take this outfit to keep your warm during your travels in this frozen realm!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:117-122"
+    },
+    "source-only:hjaern:126": {
+      "lines": [
+        "I have now no mission for you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:126-126"
+    },
+    "source-only:hjaern:131": {
+      "lines": [
+        "Do you bring frostheart shards for our spell?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:131-131"
+    },
+    "source-only:hjaern:134": {
+      "lines": [
+        "Do you bring frostheart shards for our spell? "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:134-134"
+    },
+    "source-only:hjaern:137": {
+      "lines": [
+        "Do you want to sell all your shards for 2000 gold coins per each? "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:137-137"
+    },
+    "source-only:hjaern:142": {
+      "lines": [
+        "Take this. It might suit your Nordic outfit fine. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:142-142"
+    },
+    "source-only:hjaern:153": {
+      "lines": [
+        "Take this. It might suit your Nordic outfit fine. From now on we only can give you 2000 gold pieces for each shard. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:153-153"
+    },
+    "source-only:hjaern:160": {
+      "lines": [
+        "You encountered the restless ghost of my apprentice Tylaf in the old mines? We must find out what has happened to him. I enable you to talk to his spirit ...",
+        "Talk to him and then report to me about your mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:160-163"
+    },
+    "source-only:hjaern:170": {
+      "lines": [
+        "You want to sacrifice a cookie to the spirits?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:170-170"
+    },
+    "source-only:hjaern:175": {
+      "lines": [
+        "This is good news. As I explained, travel to Helheim, seek the reason for the unrest there and then report to me about your mission. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:175-175"
+    },
+    "source-only:hjaern:180": {
+      "lines": [
+        "Thank you my friend. The local representative of the explorers society has asked for our help ...",
+        "You know their ways better than my people do and are probably best suited to represent us in this matter.",
+        "Search for Lurik and talk to him about aprobable mission he might have for you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:180-184"
+    },
+    "source-only:hjaern:190": {
+      "lines": [
+        "Excellent, you collected 5 of them. If you have collected 5 or more, talk to me about your {reward}. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:190-190"
+    },
+    "source-only:hjaern:196": {
+      "lines": [
+        "Excellent, you collected 10 of them. If you have collected 15 or more, talk to me about your {reward}. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:196-196"
+    },
+    "source-only:hjaern:210": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:210-210"
+    },
+    "source-only:hjaern:221": {
+      "lines": [
+        "In the name of the spirits I accept this offer ... UHNGH ... The spirits are not amused!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:221-221"
+    },
+    "source-only:hjaern:227": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:227-227"
+    },
+    "source-only:hjaern:234": {
+      "lines": [
+        "Be greeted, |PLAYERNAME|. The {spiritual} world looks upon you and your deeds."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:234-234"
+    },
+    "source-only:kazzan:65": {
+      "lines": [
+        "WAAAAAHHH!!!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:65-65"
+    },
+    "source-only:kazzan:70": {
+      "lines": [
+        "Feel welcome in the lands of the children of the enlightened Daraman, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:70-70"
+    },
+    "source-only:kazzan:86": {
+      "lines": [
+        "Do you know the location of the djinn fortresses in the mountains south of here?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:86-86"
+    },
+    "source-only:kazzan:90": {
+      "lines": [
+        "Alright. The problem is that I want to know at least one of them on my side. You never know. I don't mind if it's the evil Efreet or the Marid. ...",
+        "Your mission will be to visit one kind of the djinns and bring them a peace-offering. Are you interested in that mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:90-93"
+    },
+    "source-only:kazzan:96": {
+      "lines": [
+        "Very good. I hope you are able to convince one of the fractions to stand on our side. If you haven't done yet, you should first go and look for old Melchior in Ankrahmun. ...",
+        "He knows many things about the djinn race and he may have some hints for you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:96-99"
+    },
+    "source-only:kazzan:106": {
+      "lines": [
+        "Well, I don't blame you for that. I am sure you did your best. Now we can just hope that peace remains. Here, take this small gratification for your effort to help and Daraman may bless you!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kazzan.lua:106-106"
+    },
+    "source-only:lorbas:63": {
+      "lines": [
+        "You want me to eat this cookie?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lorbas.lua:63-63"
+    },
+    "source-only:lorbas:69": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lorbas.lua:69-69"
+    },
+    "source-only:lorbas:80": {
+      "lines": [
+        "Well, you don't mind if I play around with this antidote rune a bit ... UHHH, YOU LOU ... uhm that was so ... funny, haha ... ha. Mhm, you better leave now."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lorbas.lua:80-80"
+    },
+    "source-only:lorbas:86": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lorbas.lua:86-86"
+    },
+    "source-only:lorbas:93": {
+      "lines": [
+        "Be greeted, dear traveller."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lorbas.lua:93-93"
+    },
+    "source-only:markwin:59": {
+      "lines": [
+        "Intruder! Guards, take him down!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:59-59"
+    },
+    "source-only:markwin:69": {
+      "lines": [
+        "No! The hornless have reached my city! BODYGUARDS TO ME!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:69-69"
+    },
+    "source-only:markwin:72": {
+      "lines": [
+        "Well ... you defeated my guards! Now everything is over! I guess I will have to answer your questions now."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:72-72"
+    },
+    "source-only:markwin:75": {
+      "lines": [
+        "Oh its you again. What du you want, hornless messenger?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:75-75"
+    },
+    "source-only:markwin:91": {
+      "lines": [
+        "A letter from my Moohmy?? Do you have a letter from my Moohmy to me?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:91-91"
+    },
+    "source-only:markwin:97": {
+      "lines": [
+        "You bring me ... a cookie???"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:97-97"
+    },
+    "source-only:markwin:102": {
+      "lines": [
+        "Uhm, well thank you, hornless being."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:102-102"
+    },
+    "source-only:markwin:108": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:108-108"
+    },
+    "source-only:markwin:119": {
+      "lines": [
+        "I understand this as a peace-offering, human ... UNGH ... THIS IS AN OUTRAGE! THIS MEANS WAR!!!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:119-119"
+    },
+    "source-only:markwin:124": {
+      "lines": [
+        "Hm ... good bye."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/markwin.lua:124-124"
+    },
+    "source-only:mirabell:69": {
+      "lines": [
+        "Oh you've heard about my excellent pies, didn't you? I am flattered. Unfortunately I'm completely out of flour. I need 2 portions of flour for one pie. Just tell me when you have enough flour for your pies."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:69-69"
+    },
+    "source-only:mirabell:73": {
+      "lines": [
+        "For 12 pies this is 240 gold. Do you want to buy them?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:73-73"
+    },
+    "source-only:mirabell:76": {
+      "lines": [
+        "Do you bring me the flour needed for your pies?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:76-76"
+    },
+    "source-only:mirabell:81": {
+      "lines": [
+        "I think you are confusing the dust in your pockets with flour. You certainly do not have enough flour for 12 pies."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:81-81"
+    },
+    "source-only:mirabell:87": {
+      "lines": [
+        "Excellent. Now I can start baking the pies. As you helped me, I will make you a good price for them."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:87-87"
+    },
+    "source-only:mirabell:91": {
+      "lines": [
+        "You don't have enough money, don't try to fool me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:91-91"
+    },
+    "source-only:mirabell:99": {
+      "lines": [
+        "Here they are. Wait! Two things you should know: Firstly, they won't last long in the sun so you better get them to their destination as quickly as possible ...",
+        "Secondly, since my pies are that delicious it is forbidden to leave the town with them. We can't afford to attract more tourists to Edron."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:99-102"
+    },
+    "source-only:mirabell:107": {
+      "lines": [
+        "Without flour I can't do anything, sorry."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:107-107"
+    },
+    "source-only:mirabell:109": {
+      "lines": [
+        "What are you? Some kind of fool?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:109-109"
+    },
+    "source-only:mirabell:120": {
+      "lines": [
+        "Welcome to the Horn of Plenty, |PLAYERNAME|. Sit down, have a {drink} or some {food}!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:120-120"
+    },
+    "source-only:mirabell:121": {
+      "lines": [
+        "Come back soon, traveller."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:121-121"
+    },
+    "source-only:mirabell:123": {
+      "lines": [
+        "Of course, take a look at my tasty offers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mirabell.lua:123-123"
+    },
+    "source-only:nah_bob:61": {
+      "lines": [
+        "Whoa! A human! This is no place for you, |PLAYERNAME|. Go and play somewhere else."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:61-61"
+    },
+    "source-only:nah_bob:67": {
+      "lines": [
+        "Hahahaha! ...",
+        "|PLAYERNAME|, that almost sounded like the word of greeting. Humans - cute they are!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:67-70"
+    },
+    "source-only:nah_bob:76": {
+      "lines": [
+        "<Sighs> Another {customer}! I've only just sat down! What is it, |PLAYERNAME|?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:76-76"
+    },
+    "source-only:nah_bob:92": {
+      "lines": [
+        "You brought cookies! How nice of you! Can I have one?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:92-92"
+    },
+    "source-only:nah_bob:98": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:98-98"
+    },
+    "source-only:nah_bob:109": {
+      "lines": [
+        "You see, good deeds like this will ... YOU ... YOU SPAWN OF EVIL! I WILL MAKE SURE THE MASTER LEARNS ABOUT THIS!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:109-109"
+    },
+    "source-only:nah_bob:115": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:115-115"
+    },
+    "source-only:nah_bob:127": {
+      "lines": [
+        "I'm sorry, human. But you need Gabel's permission to trade with me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:127-127"
+    },
+    "source-only:nah_bob:137": {
+      "lines": [
+        "Bye now, Neutrala |PLAYERNAME|. Visit old Bob again one day!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:137-137"
+    },
+    "source-only:nah_bob:138": {
+      "lines": [
+        "Bye then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:138-138"
+    },
+    "source-only:nah_bob:139": {
+      "lines": [
+        "At your service, just browse through my wares."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nah_bob.lua:139-139"
+    },
+    "source-only:sam:73": {
+      "lines": [
+        "Oh, Gregor sent you? I see. It will be my pleasure to adorn your helmet. Please give me some time to finish it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:73-73"
+    },
+    "source-only:sam:82": {
+      "lines": [
+        "Just in time, |PLAYERNAME|. Your helmet is finished, I hope you like it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:82-82"
+    },
+    "source-only:sam:84": {
+      "lines": [
+        "Please have some patience, |PLAYERNAME|. Forging is hard work!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:84-84"
+    },
+    "source-only:sam:87": {
+      "lines": [
+        "I think it's one of my masterpieces."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:87-87"
+    },
+    "source-only:sam:89": {
+      "lines": [
+        "Sorry, but without the permission of Gregor I cannot help you with this matter."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:89-89"
+    },
+    "source-only:sam:93": {
+      "lines": [
+        "What? Are you telling me you found my old adventurer's backpack that I lost years ago??"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:93-93"
+    },
+    "source-only:sam:98": {
+      "lines": [
+        "My offers are weapons, armors, helmets, legs, and shields. If you'd like to see my offers, ask me for a {trade}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:98-98"
+    },
+    "source-only:sam:102": {
+      "lines": [
+        "What? You want to buy 2000 steel shields??"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:102-102"
+    },
+    "source-only:sam:106": {
+      "lines": [
+        "Have you signed the contract?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:106-106"
+    },
+    "source-only:sam:112": {
+      "lines": [
+        "Thank you very much! This brings back good old memories! Please, as a reward, travel to Kazordoon and ask my old friend Kroox to provide you a special dwarven armor. ...",
+        "I will mail him about you immediately. Just tell him, his old buddy Sam is sending you."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:112-115"
+    },
+    "source-only:sam:119": {
+      "lines": [
+        "You don't have it..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:119-119"
+    },
+    "source-only:sam:123": {
+      "lines": [
+        "I can't believe it. Finally I will be rich! I could move to Edron and enjoy my retirement! But ... wait a minute! I will not start working without a contract! Are you willing to sign one?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:123-123"
+    },
+    "source-only:sam:127": {
+      "lines": [
+        "Fine! Here is the contract. Please sign it. Talk to me about it again when you're done."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:127-127"
+    },
+    "source-only:sam:132": {
+      "lines": [
+        "You don't have a signed contract."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:132-132"
+    },
+    "source-only:sam:138": {
+      "lines": [
+        "Excellent! I will start working right away! Now that I am going to be rich, I will take the opportunity to tell some people what I REALLY think about them!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:138-138"
+    },
+    "source-only:sam:143": {
+      "lines": [
+        "Then no."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:143-143"
+    },
+    "source-only:sam:145": {
+      "lines": [
+        "This deal sounded too good to be true anyway."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:145-145"
+    },
+    "source-only:sam:154": {
+      "lines": [
+        "Welcome to my shop, adventurer |PLAYERNAME|! I {trade} with weapons and armor."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:154-154"
+    },
+    "source-only:sam:155": {
+      "lines": [
+        "Good bye and come again, |PLAYERNAME|."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:155-155"
+    },
+    "source-only:sam:156": {
+      "lines": [
+        "Good bye and come again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sam.lua:156-156"
+    },
+    "source-only:simon_the_beggar:87": {
+      "lines": [
+        "Haha, that beard is - well, not fake, but there's a trick behind it. I noticed people tend to be more generous towards a poor gramps. Want to know my trick?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:87-87"
+    },
+    "source-only:simon_the_beggar:92": {
+      "lines": [
+        "Have you brought me the 100 pieces of ape fur and 20000 gold pieces?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:92-92"
+    },
+    "source-only:simon_the_beggar:97": {
+      "lines": [
+        "Hmm, I'm not done yet with your potion. But here, let me sprinkle a few drops of my own potion on your face... there you go. Now you just have to wait."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:97-97"
+    },
+    "source-only:simon_the_beggar:103": {
+      "lines": [
+        "Aha! I can see it! Now that you've waited patiently without shaving, your beard is perfect! All thanks to my, err, potion. Yes. Goodbye!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:103-103"
+    },
+    "source-only:simon_the_beggar:110": {
+      "lines": [
+        "Hmm, it seems you need to wait a bit longer for the potion to take full effect. Please be patient."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:110-110"
+    },
+    "source-only:simon_the_beggar:131": {
+      "lines": [
+        "Oh, I'm sorry... I almost forgot! Okay, okay... here is your promised dress. I'm sure it will look so much better on you than on me- I mean, my, err, sister."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:131-131"
+    },
+    "source-only:simon_the_beggar:138": {
+      "lines": [
+        "I can mix a secret potion which will increase your facial hair growth enormously. I call it 'Instabeard'. However, it requires certain ingredients. ...",
+        "For the small fee of 20000 gold pieces I will help you mix this potion. Just bring me 100 pieces of ape fur, which are necessary to create this potion. ...",
+        "Do we have a deal?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:138-142"
+    },
+    "source-only:simon_the_beggar:145": {
+      "lines": [
+        "I can mix a secret potion which increases facial hair growth enormously. I call it 'Instabeard'. However, I fear it works only for men. ...",
+        "Even if it worked on girls, I'd rather not be responsible for you ruining your pretty face. I have an idea though. If you help me brew one of these potions, I will sell something nice to you. ...",
+        "I still have a pretty gypsy dress and a pearl necklace somewhere, which you could wear instead of this ragged skirt. For the small fee of 20000 gold pieces, it'd be yours. ...",
+        "You only have to bring me 100 pieces of ape fur, so I can brew the potion. Do we have a deal?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:145-150"
+    },
+    "source-only:simon_the_beggar:154": {
+      "lines": [
+        "Great! Come back to me once you have the 100 pieces of ape fur and I'll do my part of the deal."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:154-154"
+    },
+    "source-only:simon_the_beggar:162": {
+      "lines": [
+        "Ahh! Very good. I will start mixing the potion immediately. Come back later. Bye bye."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:162-162"
+    },
+    "source-only:simon_the_beggar:168": {
+      "lines": [
+        "You do not have all the required items."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:168-168"
+    },
+    "source-only:simon_the_beggar:174": {
+      "lines": [
+        "It seems you already have this addon, don't you try to mock me son!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:174-174"
+    },
+    "source-only:simon_the_beggar:183": {
+      "lines": [
+        "No, no. Our deal is finished, no complaining now, I don't have time all day. And no, you can't have my staff."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:183-183"
+    },
+    "source-only:simon_the_beggar:187": {
+      "lines": [
+        "I said, no! Or well - I have a suggestion to make. Will you listen?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:187-187"
+    },
+    "source-only:simon_the_beggar:192": {
+      "lines": [
+        "When I was wandering around in Tibia, I lost my favourite staff somewhere in the northern ruins in Edron. ...",
+        "Uh, don't ask me what I was doing there... sort of a pilgrimage. Well anyway, if you could bring that staff back to me, I promise I'll give you my current one. ...",
+        "What do you say?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:192-196"
+    },
+    "source-only:simon_the_beggar:199": {
+      "lines": [
+        "Good! Come back to me once you have retrieved my staff. Good luck."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:199-199"
+    },
+    "source-only:simon_the_beggar:207": {
+      "lines": [
+        "Did you bring my favourite staff??"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:207-207"
+    },
+    "source-only:simon_the_beggar:214": {
+      "lines": [
+        "Yes!! That's it! I'm so glad! Here, you can have my other one. Thanks!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:214-214"
+    },
+    "source-only:simon_the_beggar:220": {
+      "lines": [
+        "You do not have the staff."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:220-220"
+    },
+    "source-only:simon_the_beggar:226": {
+      "lines": [
+        "Sorry, but you need to have a premium account!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:226-226"
+    },
+    "source-only:simon_the_beggar:234": {
+      "lines": [
+        "Have you brought a cookie for the poor?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:234-234"
+    },
+    "source-only:simon_the_beggar:238": {
+      "lines": [
+        "I need gold. Can you spare 100 gold pieces for me?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:238-238"
+    },
+    "source-only:simon_the_beggar:243": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:243-243"
+    },
+    "source-only:simon_the_beggar:253": {
+      "lines": [
+        "Well, it's the least you can do for those who live in dire poverty.",
+        "A single cookie is a bit less than I'd expected, but better than ... WHA ... WHAT??",
+        "MY BEARD! MY PRECIOUS BEARD! IT WILL TAKE AGES TO CLEAR IT OF THIS CONFETTI!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:253-257"
+    },
+    "source-only:simon_the_beggar:262": {
+      "lines": [
+        "You haven't got enough money for me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:262-262"
+    },
+    "source-only:simon_the_beggar:266": {
+      "lines": [
+        "Thank you very much. Can you spare 500 more gold pieces for me? I will give you a nice hint."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:266-266"
+    },
+    "source-only:simon_the_beggar:270": {
+      "lines": [
+        "Sorry, that's not enough."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:270-270"
+    },
+    "source-only:simon_the_beggar:274": {
+      "lines": [
+        "That's great! I have stolen something from Dermot.",
+        "You can buy it for 200 gold. Do you want to buy it?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:274-277"
+    },
+    "source-only:simon_the_beggar:281": {
+      "lines": [
+        "Pah! I said 200 gold. You don't have that much."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:281-281"
+    },
+    "source-only:simon_the_beggar:289": {
+      "lines": [
+        "Now you own the hot key."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:289-289"
+    },
+    "source-only:simon_the_beggar:295": {
+      "lines": [
+        "Ok. No problem"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:295-308"
+    },
+    "source-only:simon_the_beggar:315": {
+      "lines": [
+        "Hello |PLAYERNAME|. I am a poor man. Please help me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:315-315"
+    },
+    "source-only:simon_the_beggar:316": {
+      "lines": [
+        "Have a nice day."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/simon_the_beggar.lua:316-316"
+    },
+    "source-only:the_orc_king:58": {
+      "lines": [
+        "Arrrrgh! A dirty paleskin! To me my children! Kill them my guards!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:58-58"
+    },
+    "source-only:the_orc_king:61": {
+      "lines": [
+        "Harrrrk! You think you are strong now? You shall never escape my wrath! I am immortal!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:61-61"
+    },
+    "source-only:the_orc_king:79": {
+      "lines": [
+        "I can sense your evil intentions to imprison a djinn! You are longing for the lamp, which I still possess. ...",
+        "Who do you want to trap in this cursed lamp?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:79-82"
+    },
+    "source-only:the_orc_king:85": {
+      "lines": [
+        "For eons he was trapped in an enchanted lamp by some ancient race. Now he's free to roam the world again. Although he cheated me I appreciate what he and his brethren will do to this world, now it's the time of the Djinn again!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:85-85"
+    },
+    "source-only:the_orc_king:90": {
+      "lines": [
+        "You bring me a stinking cookie???"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:90-90"
+    },
+    "source-only:the_orc_king:105": {
+      "lines": [
+        "I was waiting for this day! Take the lamp and let Malor feel my wrath!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:105-105"
+    },
+    "source-only:the_orc_king:107": {
+      "lines": [
+        "I don't know your enemy, paleskin! Begone!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:107-107"
+    },
+    "source-only:the_orc_king:113": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:113-113"
+    },
+    "source-only:the_orc_king:124": {
+      "lines": [
+        "Well, I hope it stinks a lot. I like stinking cookies best ... BY MY THOUSAND SONS! YOU ARE SO DEAD HUMAN! DEAD!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:124-124"
+    },
+    "source-only:the_orc_king:128": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:128-128"
+    },
+    "source-only:theodore_loveless:62": {
+      "lines": [
+        "Oh my. Have you gotten an exquisite cigar for me, my young friend?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/theodore_loveless.lua:62-62"
+    },
+    "source-only:theodore_loveless:73": {
+      "lines": [
+        "Ah what a fine blend. I really ...",
+        "OUCH! What have you done you fool? How dare you???"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/theodore_loveless.lua:73-76"
+    },
+    "source-only:theodore_loveless:79": {
+      "lines": [
+        "Oh, then there must be a misunderstanding."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/theodore_loveless.lua:79-79"
+    },
+    "source-only:wyda:66": {
+      "lines": [
+        "You brought me a cookie?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:66-66"
+    },
+    "source-only:wyda:70": {
+      "lines": [
+        "A quest? Well, if you're so keen on doing me a favour... Why don't you try to find a {blood herb}?",
+        "To be honest, I'm drowning in blood herbs by now."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:70-73"
+    },
+    "source-only:wyda:77": {
+      "lines": [
+        "Arrr... here we go again.... do you have a #$*§# blood herb for me?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:77-77"
+    },
+    "source-only:wyda:80": {
+      "lines": [
+        "The blood herb is very rare. This plant would be very useful for me, but I don't know any accessible places to find it.",
+        "To be honest, I'm drowning in blood herbs by now. But if it helps you, well yes.. I guess I could use another blood herb..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:80-83"
+    },
+    "source-only:wyda:89": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:89-89"
+    },
+    "source-only:wyda:101": {
+      "lines": [
+        "Well, it's a welcome change from all that gingerbread ... AHHH HOW DARE YOU??? FEEL MY WRATH!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:101-101"
+    },
+    "source-only:wyda:111": {
+      "lines": [
+        "Thank you -SOOO- much! No, I really mean it! Really! Here, let me give you a reward..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:111-111"
+    },
+    "source-only:wyda:115": {
+      "lines": [
+        "Thank you -SOOO- much! No, I really mean it! Really! Ah, you know what, you can have this old thing..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:115-115"
+    },
+    "source-only:wyda:119": {
+      "lines": [
+        "No, you don't have any..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:119-119"
+    },
+    "source-only:wyda:125": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:125-125"
+    },
+    "source-only:wyda:132": {
+      "lines": [
+        "What? A mundane talking to me? Amusing."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:132-132"
+    },
+    "source-only:yaman:61": {
+      "lines": [
+        "Shove off, little one! Humans are not welcome here, |PLAYERNAME|!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:61-61"
+    },
+    "source-only:yaman:67": {
+      "lines": [
+        "Hahahaha! ...",
+        "|PLAYERNAME|, that almost sounded like the word of greeting. Humans - cute they are!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:67-70"
+    },
+    "source-only:yaman:76": {
+      "lines": [
+        "Be greeted, human |PLAYERNAME|. How can a humble djinn be of service?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:76-76"
+    },
+    "source-only:yaman:91": {
+      "lines": [
+        "Do you want to trade Boots of haste for Enchanted Chicken Wing?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:91-91"
+    },
+    "source-only:yaman:94": {
+      "lines": [
+        "Do you want to trade 4 Warrior Helmet for Warrior Sweat?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:94-94"
+    },
+    "source-only:yaman:97": {
+      "lines": [
+        "Do you want to trade 2 Royal Helmet for Fighting Spirit"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:97-97"
+    },
+    "source-only:yaman:100": {
+      "lines": [
+        "Do you want to trade 3 Fire Sword for Magic Sulphur"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:100-100"
+    },
+    "source-only:yaman:103": {
+      "lines": [
+        "I trade Enchanted Chicken Wing for Boots of Haste, Warrior Sweat for 4 Warrior Helmets, Fighting Spirit for 2 Royal Helmet Magic Sulphur for 3 Fire Swords"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:103-103"
+    },
+    "source-only:yaman:107": {
+      "lines": [
+        "You brought cookies! How nice of you! Can I have one?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:107-107"
+    },
+    "source-only:yaman:121": {
+      "lines": [
+        "Here you are."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:121-121"
+    },
+    "source-only:yaman:123": {
+      "lines": [
+        "Sorry but you don't have the item."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:123-123"
+    },
+    "source-only:yaman:127": {
+      "lines": [
+        "You have no cookie that I'd like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:127-127"
+    },
+    "source-only:yaman:138": {
+      "lines": [
+        "You see, good deeds like this will ... YOU ... YOU SPAWN OF EVIL! I WILL MAKE SURE THE MASTER LEARNS ABOUT THIS!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:138-138"
+    },
+    "source-only:yaman:144": {
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:144-144"
+    },
+    "source-only:yaman:147": {
+      "lines": [
+        "I see."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:147-147"
+    },
+    "source-only:yaman:159": {
+      "lines": [
+        "I'm sorry, but you don't have Malor's permission to trade with me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:159-159"
+    },
+    "source-only:yaman:167": {
+      "lines": [
+        "Farewell, human."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:167-167"
+    },
+    "source-only:yaman:169": {
+      "lines": [
+        "At your service, just browse through my wares."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yaman.lua:169-169"
+    }
+  }
+}
