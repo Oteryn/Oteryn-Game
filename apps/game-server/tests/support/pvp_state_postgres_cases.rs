@@ -81,6 +81,38 @@ fn world_pass_roles_can_lock_the_reset_pointer_and_expire_unjustified_points() -
             .await?;
             tx.rollback().await?;
         }
+        // The World expiry runs on the node's runtime login and deletes through bounded
+        // row-locking sub-selects (`pvp_expiry.rs`); the same statement shapes must be legal
+        // for that role. Privileges are checked when the statement is planned, so empty tables
+        // still prove the grant; the 0081 receipt guard keeps refusing any real UPDATE.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "DELETE FROM game_character_unjustified_points WHERE (character_id, death_occurrence_id) IN \
+               (SELECT p.character_id, p.death_occurrence_id FROM game_character_unjustified_points p \
+                  JOIN game_character_roots r ON r.character_id = p.character_id \
+                 WHERE r.world_id = encode($1,'hex')::uuid \
+                   AND p.committed_at < clock_timestamp() - interval '45 days' \
+                 ORDER BY p.committed_at, p.character_id LIMIT 64 FOR UPDATE OF p)",
+        )
+        .bind(id(WORLD).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "DELETE FROM game_character_revenge_marks WHERE (victim_character_id, killer_character_id, \
+                death_occurrence_id) IN \
+               (SELECT m.victim_character_id, m.killer_character_id, m.death_occurrence_id \
+                  FROM game_character_revenge_marks m \
+                  JOIN game_character_roots r ON r.character_id = m.victim_character_id \
+                 WHERE r.world_id = encode($1,'hex')::uuid AND m.expires_at <= clock_timestamp() \
+                 ORDER BY m.expires_at, m.victim_character_id LIMIT 64 FOR UPDATE OF m)",
+        )
+        .bind(id(WORLD).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        tx.rollback().await?;
         eprintln!(
             "PG_PASS world_pass_roles_can_lock_the_reset_pointer_and_expire_unjustified_points: {:?}",
             started.elapsed()
