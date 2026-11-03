@@ -1,0 +1,323 @@
+{
+  "schema": 1,
+  "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sleeping_dragon.lua:67-198",
+  "source_blob_sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a",
+  "npc": "oteryn:npc.a_sleeping_dragon",
+  "entry_keyword": "SOLOSARASATIQUARIUM",
+  "entry_messages": [
+    "Dragon dreams are golden. ...",
+    "A broad darkness surrounds you as if a heavy curtain is closing before your eyes. After what seems like minutes of floating through emptiness, you get the feeling as if a hole opens in the dark before you. ...",
+    "The hole grows larger, you cannot close your eyes. An unimaginable black. Deeper and darker than any nothingness you could possibly imagine drags you into it. ...",
+    "You feel as if you cannot breathe anymore. The very second you let loose of your consciousness, you sense all heaviness around you lifted. ...",
+    "You dive into an ocean of emerald light. Feeling like born anew the colour around you is almost overwhelming. Countless objects of all shapes and sizes are dashing past you. Racing against each other, millions are clashing in the distance. ..",
+    "The loudness of the gargantuan spectacle around you bursts your hearing, yet you absorb all the sounds around you. ...",
+    "As several large obstacles move aside directly in front of you, an intense bright centre leaps into your view. Though you cannot perceive how fast you are, your pace seems too slow. ...",
+    "Ever decelerating, you ultimately approach a middle in this chaos of tones of green. ...",
+    "As you come closer to it, yellowish shades of orange embrace you, softer shapes emerge and you almost forget the mayhem before. In warm comfort you see what lies in the heart of it all. ...",
+    "A majestic dragon in his sleep is surrounded by what seems the warmth and energy of a thousand suns. The tranquillity of its sight makes you smile gently. ...",
+    "You feel a perfect mixture of joy, compassion and sudden peacefulness. Bright xanthous impressions of topaz, orange and white welcome you at the final halt of your journey. ...",
+    "Dragon dreams are golden. ...",
+    "You find yourself inside the dragon's dream. You can {look} around or {go} into a specific direction. You can also {take} or {use} an object. Enter {help} to display this information at any time."
+  ],
+  "help_messages": [
+    "You find yourself inside the dragon's dream. You can {look} around or {go} into a specific direction. You can also {take} or {use} an object. Enter {help} to display this information at any time."
+  ],
+  "steps": [
+    {
+      "topic": 1,
+      "keyword": "west",
+      "next_topic": 2,
+      "messages": [
+        "Advancing to the west, you recognise an increase of onyx on the ground."
+      ],
+      "source_line": 86
+    },
+    {
+      "topic": 2,
+      "keyword": "take attachment",
+      "next_topic": 3,
+      "messages": [
+        "You carefully lift the onyx attachment from its socket. It is lighter than you expected."
+      ],
+      "source_line": 89
+    },
+    {
+      "topic": 3,
+      "keyword": "east",
+      "next_topic": 4,
+      "messages": [
+        "You return to the plateau in the east."
+      ],
+      "source_line": 92
+    },
+    {
+      "topic": 4,
+      "keyword": "south",
+      "next_topic": 5,
+      "messages": [
+        "You wander to the south, passing large obelisks of emerald to your left and sprawling trees of topaz to your right. "
+      ],
+      "source_line": 95
+    },
+    {
+      "topic": 5,
+      "keyword": "take stand",
+      "next_topic": 6,
+      "messages": [
+        "As you rip the solid stand out of its socket and take it with you, the large gate opens with a deafening rumble. "
+      ],
+      "source_line": 98
+    },
+    {
+      "topic": 6,
+      "keyword": "east",
+      "next_topic": 7,
+      "messages": [
+        "You gasp at the size of the large open gate as you walk through to head further to the east."
+      ],
+      "source_line": 101
+    },
+    {
+      "topic": 7,
+      "keyword": "take model",
+      "next_topic": 8,
+      "messages": [
+        "You reach for a small solitary arrangement of combined small houses and put it in your pocket."
+      ],
+      "source_line": 104
+    },
+    {
+      "topic": 8,
+      "keyword": "take emeralds",
+      "next_topic": 9,
+      "messages": [
+        "You take an emerald from the pile. "
+      ],
+      "source_line": 107
+    },
+    {
+      "topic": 9,
+      "keyword": "west",
+      "next_topic": 10,
+      "messages": [
+        "You return through the semi-translucent gate to the west. "
+      ],
+      "source_line": 110
+    },
+    {
+      "topic": 10,
+      "keyword": "north",
+      "next_topic": 11,
+      "messages": [
+        "You head back north to the plateau. "
+      ],
+      "source_line": 113
+    },
+    {
+      "topic": 11,
+      "keyword": "east",
+      "next_topic": 12,
+      "messages": [
+        "You travel east across several large emerald bluffs and edges. All sorts of gems are scattered alongside your path. "
+      ],
+      "source_line": 116
+    },
+    {
+      "topic": 12,
+      "keyword": "take rubies",
+      "next_topic": 13,
+      "messages": [
+        "You take a rather large ruby out of a pile before you. "
+      ],
+      "source_line": 119
+    },
+    {
+      "topic": 13,
+      "keyword": "north",
+      "next_topic": 14,
+      "messages": [
+        "You head north passing countless stones in the crimson sea of stones beneath your feet."
+      ],
+      "source_line": 122
+    },
+    {
+      "topic": 14,
+      "keyword": "use attachment",
+      "next_topic": 15,
+      "messages": [
+        "Avoiding the bright light, you carefully put the attachment on top of the strange socket. ..."
+      ],
+      "source_line": 125
+    },
+    {
+      "topic": 15,
+      "keyword": "take mirror",
+      "next_topic": 16,
+      "messages": [
+        "As your eyes adjust to the sudden reduction of brightness, you see the giant wings of the gate before you move to the side. You can also make out something shiny on the ground.",
+        "You pick the mirror from the ground."
+      ],
+      "source_line": 128
+    },
+    {
+      "topic": 16,
+      "keyword": "north",
+      "next_topic": 17,
+      "messages": [
+        "Your path to the north is open. You pass the gigantic gate wings to your left and right as you advance. After about an hour of travel you hear a slight rustling in the distance. You head further into that direction. ..."
+      ],
+      "source_line": 134
+    },
+    {
+      "topic": 17,
+      "keyword": "use model",
+      "next_topic": 18,
+      "messages": [
+        "You lunge out and throw the model far into the water. As nothing happens, you turn your back to the ocean. ...",
+        "The very moment you walk down the dune to head back south, rays of light burst over your head in a shock wave that makes you tumble down the rest of the hill. ..."
+      ],
+      "source_line": 137
+    },
+    {
+      "topic": 18,
+      "keyword": "south",
+      "next_topic": 19,
+      "messages": [
+        "You travel all the way back down the dune and through the gate to the south. "
+      ],
+      "source_line": 143
+    },
+    {
+      "topic": 19,
+      "keyword": "south",
+      "next_topic": 20,
+      "messages": [
+        "You return to the crimson sea of rubies in the south. "
+      ],
+      "source_line": 146
+    },
+    {
+      "topic": 20,
+      "keyword": "west",
+      "next_topic": 21,
+      "messages": [
+        "You travel back to the plateau in the west. "
+      ],
+      "source_line": 149
+    },
+    {
+      "topic": 21,
+      "keyword": "west",
+      "next_topic": 22,
+      "messages": [
+        "Advancing to the west, you recognise an increase of onyx on the ground. "
+      ],
+      "source_line": 152
+    },
+    {
+      "topic": 22,
+      "keyword": "north",
+      "next_topic": 23,
+      "messages": [
+        "You continue travelling the barren sea of gemstones to the north. "
+      ],
+      "source_line": 155
+    },
+    {
+      "topic": 23,
+      "keyword": "west",
+      "next_topic": 24,
+      "messages": [
+        "You leave the massive open gate behind you and go to the west. "
+      ],
+      "source_line": 158
+    },
+    {
+      "topic": 24,
+      "keyword": "take sapphire",
+      "next_topic": 25,
+      "messages": [
+        "You carefully remove the sapphire from Bastesh's grasp."
+      ],
+      "source_line": 161
+    },
+    {
+      "topic": 25,
+      "keyword": "east",
+      "next_topic": 26,
+      "messages": [
+        "You head back to the east and to the plateau."
+      ],
+      "source_line": 164
+    },
+    {
+      "topic": 26,
+      "keyword": "south",
+      "next_topic": 27,
+      "messages": [
+        "You head back south to the site with the onyx lookout."
+      ],
+      "source_line": 167
+    },
+    {
+      "topic": 27,
+      "keyword": "east",
+      "next_topic": 28,
+      "messages": [
+        "You return to the plateau in the east."
+      ],
+      "source_line": 170
+    },
+    {
+      "topic": 28,
+      "keyword": "use stand",
+      "next_topic": 29,
+      "messages": [
+        "You put the stand into a small recess you find near the middle of the plateau."
+      ],
+      "source_line": 173
+    },
+    {
+      "topic": 29,
+      "keyword": "use ruby",
+      "next_topic": 30,
+      "messages": [
+        "As the ruby slips into the notch, the strong red of the stone intensifies a thousandfold. You fear to hurt your eyes and turn away immediately. The ray seems to be directed to the centre of the plateau with astounding precision."
+      ],
+      "source_line": 176
+    },
+    {
+      "topic": 30,
+      "keyword": "use sapphire",
+      "next_topic": 31,
+      "messages": [
+        "As the sapphire slips into the notch, the deep blue of the stone intensifies a thousandfold. You fear to hurt your eyes and turn away immediately. The ray seems to be directed to the centre of the plateau with astounding precision."
+      ],
+      "source_line": 179
+    },
+    {
+      "topic": 31,
+      "keyword": "use emerald",
+      "next_topic": 32,
+      "messages": [
+        "As the emerald slips into the notch, the vibrant green of the stone intensifies a thousandfold. You fear to hurt your eyes and turn away immediately. The ray seems to be directed to the centre of the plateau with astounding precision."
+      ],
+      "source_line": 182
+    },
+    {
+      "topic": 32,
+      "keyword": "use mirror",
+      "next_topic": 0,
+      "messages": [
+        "With your eyes covered and avoiding direct sight of the rays, you put the mirror into the stand. ...",
+        "Instinctively you run to a larger emerald bluff near the raise to find cover. Mere seconds after you claimed the sturdy shelter, a deep dark humming starts to swirl through the air. ...",
+        "Seconds pass as the hum gets louder. The noise is maddening, drowning all other sounds around you. As you cover your ears in pain, the humming explodes into a deafening growl. ...",
+        "You raise your head above the edge of the emerald to catch a glimpse of what's happening. ...",
+        "The hand seems to have grown into a fist. In the distance you can now see a blurry scheme of a creature too large for your eyes to get a sharper view of its head. ...",
+        "Blending the rays, the mirror directs pure white light directly towards the part where you assume the face of the creature. ...",
+        "The growl transforms into a scream, everything around you seems to compress. As you press yourself tightly against the bluff, everything falls silent and in a split second, the dark being dissolves into bursts of blackness. You wake."
+      ],
+      "source_line": 185
+    }
+  ]
+}
