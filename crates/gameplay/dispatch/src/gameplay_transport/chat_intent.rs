@@ -487,30 +487,50 @@ impl ChatRuntime {
         if near {
             return false;
         }
-        let line = self
-            .npc_talk()
-            .and_then(|book| {
-                runtime
-                    .npc_key(npc)
-                    .or_else(|| {
-                        house.as_ref().and_then(|(observer, _)| {
-                            runtime.house_hireling_key(*observer, session, npc)
-                        })
+        let talk_entry = self.npc_talk().and_then(|book| {
+            runtime
+                .npc_key(npc)
+                .or_else(|| {
+                    house.as_ref().and_then(|(observer, _)| {
+                        runtime.house_hireling_key(*observer, session, npc)
                     })
-                    .and_then(|key| book.get(key))
-            })
-            .map(|entry| entry.farewell().to_owned());
+                })
+                .and_then(|key| book.get(key))
+        });
         let Ok(mut sessions) = self.sessions.lock() else {
             return false;
         };
         match sessions.get_mut(&session) {
             Some(entry) if entry.engaged == Some(npc) => {
                 entry.engaged = None;
-                entry.walked_away.extend(line);
+                entry
+                    .walked_away
+                    .extend(talk_entry.map(|npc| npc.walkaway_for(&entry.name)));
                 true
             }
             _ => false,
         }
+    }
+
+    /// Render a qualified source template from this admitted session's existing name.
+    /// No lookup, new identity, recursive formatting or authority is introduced.
+    pub(super) fn npc_source_reply(
+        &self,
+        session: GameSessionId,
+        npc: &super::npc_talk::NpcTalkEntry,
+        text: &str,
+    ) -> Option<String> {
+        let sessions = self.sessions.lock().ok()?;
+        Some(npc.render_source_text(text, &sessions.get(&session)?.name))
+    }
+
+    pub(super) fn npc_source_walkaway(
+        &self,
+        session: GameSessionId,
+        npc: &super::npc_talk::NpcTalkEntry,
+    ) -> Option<String> {
+        let sessions = self.sessions.lock().ok()?;
+        Some(npc.walkaway_for(&sessions.get(&session)?.name))
     }
 
     /// A walk-away line of an earlier conversation, pending as a close would leave it.
@@ -873,18 +893,22 @@ fn npc_answer(
         }
         return;
     }
+    let Some((actor, generation, position, entry)) =
+        spots.iter().find(|(actor, ..)| *actor == reply.id)
+    else {
+        return;
+    };
+    let Some(player_name) = sessions.get(&session).map(|speaking| speaking.name.clone()) else {
+        return;
+    };
+    let rendered = entry.render_source_text(&reply.text, &player_name);
     if prior != Some(reply.id)
         && let Some(speaking) = sessions.get_mut(&session)
         && speaking.engaged == Some(reply.id)
     {
         speaking.joined = joins.fetch_add(1, Ordering::Relaxed) + 1;
     }
-    let Some((actor, generation, position, entry)) =
-        spots.iter().find(|(actor, ..)| *actor == reply.id)
-    else {
-        return;
-    };
-    let Ok(line) = ChatText::parse(&reply.text) else {
+    let Ok(line) = ChatText::parse(&rendered) else {
         return;
     };
     let npc_speaker = ChatSpeaker {

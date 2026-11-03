@@ -40,6 +40,9 @@ pub struct NpcTalkEntry {
     greetings: Vec<String>,
     greeting_reply: String,
     farewell_reply: String,
+    /// Exact source templates are expanded only for the qualified batch cohort.
+    source_name_templates: bool,
+    source_walkaway: Option<String>,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
@@ -63,6 +66,25 @@ impl NpcTalkEntry {
         &self.farewell_reply
     }
 
+    /// One literal substitution; a token inside the player's name is never parsed again.
+    #[must_use]
+    pub fn render_source_text(&self, text: &str, player_name: &str) -> String {
+        if self.source_name_templates {
+            text.replace("|PLAYERNAME|", player_name)
+        } else {
+            text.to_owned()
+        }
+    }
+
+    /// The source's distinct WALKAWAY line where it has been qualified.
+    #[must_use]
+    pub fn walkaway_for(&self, player_name: &str) -> String {
+        self.render_source_text(
+            self.source_walkaway.as_deref().unwrap_or(self.farewell()),
+            player_name,
+        )
+    }
+
     #[doc(hidden)]
     pub fn new(name: &str, topic: Option<&str>) -> Self {
         Self {
@@ -73,6 +95,8 @@ impl NpcTalkEntry {
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
+            source_name_templates: false,
+            source_walkaway: None,
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
@@ -254,6 +278,8 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
+                    source_name_templates: false,
+                    source_walkaway: None,
                     topic_reply,
                     dialogue_keywords,
                     offers: npc

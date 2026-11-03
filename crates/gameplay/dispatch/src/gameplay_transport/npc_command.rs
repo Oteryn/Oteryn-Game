@@ -543,7 +543,9 @@ impl NpcConversations {
                 // The walk-away closes the conversation here, so the farewell is sent now: the
                 // follow tick sees nothing left to close (NPC-0 section 4.1).
                 conversation: end(chat, session, intent).map(|mut closed| {
-                    closed.lines.push(entry.farewell().to_owned());
+                    closed
+                        .lines
+                        .extend(chat.npc_source_walkaway(session, entry));
                     closed
                 }),
             };
@@ -575,6 +577,9 @@ impl NpcConversations {
                 Disposition::NoConversation
             });
         };
+        let Some(rendered) = chat.npc_source_reply(session, entry, &reply.text) else {
+            return NpcTalkOutcome::only(Disposition::Rejected);
+        };
         let open = engaged.then_some((intent.npc_actor, NpcConversationState::Open));
         NpcTalkOutcome {
             unknown: false,
@@ -582,7 +587,7 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                lines: vec![reply.text],
+                lines: vec![rendered],
             }),
             window: None,
         }
