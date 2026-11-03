@@ -12,6 +12,45 @@ RESULT = re.compile(
     r"(?: evidence=(\S+))?$"
 )
 ROW = re.compile(r"^\| ([A-Z]\d\d[a-z]?) \| ([^|]+) \|")
+MAP_CHECK = re.compile(
+    r"^(?:SEAM_EVIDENCE )?MAP_CHECK ([a-z][a-z0-9_]*) "
+    r"(\d+,\d+,\d+) (PASS|FAIL|SKIPPED) (\S.*)$"
+)
+MAP_SUMMARY = re.compile(
+    r"^(?:SEAM_EVIDENCE )?MAP_SUMMARY kind=([a-z][a-z0-9_]*) "
+    r"pass=(\d+) fail=(\d+) skipped=(\d+)$"
+)
+
+
+def map_results(text):
+    checks, totals, declared = [], {}, {}
+    seen = set()
+    for line in text.splitlines():
+        if not re.match(r"^(?:SEAM_EVIDENCE )?MAP_(?:CHECK|SUMMARY)\b", line):
+            continue
+        check, aggregate = MAP_CHECK.fullmatch(line), MAP_SUMMARY.fullmatch(line)
+        if check:
+            kind, position, status, reason = check.groups()
+            coordinates = tuple(map(int, position.split(",")))
+            if coordinates[0] > 65535 or coordinates[1] > 65535 or coordinates[2] > 15:
+                raise ValueError("map position outside bundle coordinate bounds")
+            key = kind, coordinates
+            if key in seen or kind in declared:
+                raise ValueError("duplicate or late MAP_CHECK")
+            seen.add(key)
+            counts = totals.setdefault(kind, [0, 0, 0])
+            counts[("PASS", "FAIL", "SKIPPED").index(status)] += 1
+            checks.append((kind, position, status, reason))
+        elif aggregate:
+            kind, *counts = aggregate.groups()
+            if kind in declared:
+                raise ValueError("duplicate MAP_SUMMARY")
+            declared[kind] = list(map(int, counts))
+        else:
+            raise ValueError("malformed map result")
+    if totals != declared:
+        raise ValueError("MAP_SUMMARY does not match MAP_CHECK counts")
+    return checks, declared
 
 
 def matrix_rows(text):
@@ -56,7 +95,7 @@ def results(text):
     return found
 
 
-def summary(rows, found, node_status=0, client_status=0):
+def summary(rows, found, node_status=0, client_status=0, map_evidence=None):
     known = {key for key, _ in rows}
     if any(scenario.split(".")[0] not in known for scenario in found):
         raise ValueError("result is not a mechanic in the matrix")
@@ -74,6 +113,13 @@ def summary(rows, found, node_status=0, client_status=0):
             complete &= status == "PASS"
     for name, status in [("node_boot", node_status), ("client_tests", client_status)]:
         output.append(f"{name} | {'PASS' if status == 0 else 'FAIL'} | - | exit={status}")
+    if map_evidence is not None:
+        checks, totals = map_evidence
+        for kind, position, status, reason in checks:
+            output.append(f"map {kind} {position} | {status} | - | {reason}")
+            complete &= status == "PASS"
+        for kind, (passed, failed, skipped) in sorted(totals.items()):
+            output.append(f"map summary {kind} | pass={passed} fail={failed} skipped={skipped}")
     return "\n".join(output), complete and node_status == 0 and client_status == 0
 
 
@@ -85,9 +131,10 @@ def main():
     parser.add_argument("--client-status", required=True, type=int)
     args = parser.parse_args()
     try:
+        log = args.log.read_text()
         output, complete = summary(
-            matrix_rows(args.matrix.read_text()), results(args.log.read_text()),
-            args.node_status, args.client_status,
+            matrix_rows(args.matrix.read_text()), results(log),
+            args.node_status, args.client_status, map_results(log),
         )
     except (OSError, ValueError) as error:
         parser.exit(1, f"E2E-ALL FAIL: {error}\n")

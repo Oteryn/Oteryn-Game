@@ -7,6 +7,8 @@ use std::path::Path;
 
 include!("character_core.rs");
 include!("floor_journey.rs");
+#[path = "map_journey.rs"]
+mod map_journey;
 include!("quest_journal.rs");
 
 pub(crate) const TOWN: TilePos = TilePos {
@@ -224,7 +226,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes,
+        bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
@@ -255,6 +257,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     client = character_core(client, clients, &world).await?;
     client = floor_journey(client, clients, &world).await?;
+    map_journey::run(&mut client, &world, &bytes).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
