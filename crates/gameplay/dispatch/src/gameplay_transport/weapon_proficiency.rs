@@ -804,12 +804,12 @@ mod tests {
             (110, 100)
         );
         assert_eq!(damage(Some(row(0)), 100), 102);
+        assert_eq!(damage(Some(row(5)), 100), 106);
         assert_ne!(selected, (110, 100));
-        // A row of another revision, or an unpublished rank, has no known value: fail closed.
+        // A row of another revision has no known value: fail closed.
         let mut retired = row(10);
         retired.shaping_revision = "shaping-r0".to_owned();
         assert!(catalogue.live_track(&stored(Some(retired))).is_none());
-        assert!(catalogue.live_track(&stored(Some(row(5)))).is_none());
         // A modified level without its selection is stored and inactive.
         let mut unselected = stored(Some(row(10)));
         unselected.state = DurableProficiencyState::new(

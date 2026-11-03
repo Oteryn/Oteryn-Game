@@ -1,7 +1,7 @@
 //! Production [`ProficiencyShapingSource`] over the committed Global shaping values
 //! (PROFICIENCY-1C). A definition's shaping key resolves to its vocation's 64-perk pool. Only the
-//! evidenced cells are exposed: rank 0 and rank 10 values, the slot, reshape and clear costs and
-//! the orb count. Rank 1-9 values are unpublished, so `RANK_UP` answers `NOT_ADMITTED` (1C §3).
+//! donor-evidenced cells are exposed: rank 0 through rank 10 values, the slot, reshape and clear
+//! costs and the orb count.
 
 use super::ProductionProficiencyCatalogue;
 use crate::durability::character_proficiency_modification::ProficiencyShapingSource;
@@ -10,8 +10,8 @@ use oteryn_gameplay_content::content::{
     import_committed_proficiency_shaping, proficiency_perk_identity,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    PROFICIENCY_MODIFICATION_RANK_MAX, PROFICIENCY_MODIFICATION_RANKS, ProficiencyModifiedPerk,
-    ProficiencyShapingEntry, ProficiencyShapingRevision,
+    PROFICIENCY_MODIFICATION_RANKS, ProficiencyModifiedPerk, ProficiencyShapingEntry,
+    ProficiencyShapingRevision,
 };
 use std::sync::{Arc, OnceLock};
 
@@ -39,9 +39,8 @@ impl ProductionProficiencyShaping {
     }
 }
 
-/// PROF-EFFECT-0 value of a stored modification row: its pool entry's identity, unit and rank 0
-/// or rank 10 value. The row must name `definition_key`'s shaping key and the committed
-/// revision; any other row, and an unpublished rank 1-9, has no known value.
+/// PROF-EFFECT-0 value of a stored modification row. The row must name `definition_key`'s shaping
+/// key and the committed revision; any other row has no known value.
 pub(super) fn modified_value(
     row: &ProficiencyModifiedPerk,
     definition_key: &str,
@@ -57,11 +56,7 @@ pub(super) fn modified_value(
         .pools
         .get(shaping.definition_vocations.get(definition_key)?)?
         .get(usize::from(row.entry_index))?;
-    let value = match row.rank {
-        0 => entry.rank0,
-        PROFICIENCY_MODIFICATION_RANK_MAX => entry.rank10,
-        _ => return None,
-    };
+    let value = *entry.rank_values.get(usize::from(row.rank))?;
     Some((entry.identity.as_str(), entry.unit, value))
 }
 
@@ -75,8 +70,7 @@ impl ProficiencyShapingSource for ProductionProficiencyShaping {
             .pools
             .get(self.shaping.definition_vocations.get(&definition)?)?;
         let mut rank_values = [false; PROFICIENCY_MODIFICATION_RANKS];
-        rank_values[0] = true;
-        rank_values[usize::from(PROFICIENCY_MODIFICATION_RANK_MAX)] = true;
+        rank_values.fill(true);
         let [first, second] = self.shaping.modify_dust;
         let revision = ProficiencyShapingRevision {
             shaping_key: shaping_key.to_owned(),
@@ -91,7 +85,7 @@ impl ProficiencyShapingSource for ProductionProficiencyShaping {
                     .collect(),
             ),
             modify_cost: [Some(first), Some(second)],
-            rank_step_cost: [None; PROFICIENCY_MODIFICATION_RANK_MAX as usize],
+            rank_step_cost: self.shaping.rank_step_dust.map(Some),
             reshape_offer_cost: Some(self.shaping.reshape_offer_dust),
             clear_cost: Some(self.shaping.clear_dust),
             orb_count: Some(self.shaping.orb_count),
@@ -151,7 +145,7 @@ mod tests {
             ),
             (Some(250), Some(0), Some(1))
         );
-        // MODIFY lands on the evidenced rank 0; ranks 1-9 are unpublished, so RANK_UP is not.
+        // MODIFY lands on rank 0 and every donor-evidenced rank step is admitted.
         assert!(
             revision
                 .admitted(
@@ -161,7 +155,21 @@ mod tests {
                 )
                 .is_some()
         );
-        assert!(revision.rank_step_cost.iter().all(Option::is_none));
+        assert_eq!(
+            revision.rank_step_cost,
+            [
+                Some(125),
+                Some(200),
+                Some(275),
+                Some(350),
+                Some(425),
+                Some(500),
+                Some(575),
+                Some(650),
+                Some(725),
+                Some(800),
+            ]
+        );
         assert!(
             revision
                 .admitted(ProficiencyModificationCommandKind::Clear, 1, None)
