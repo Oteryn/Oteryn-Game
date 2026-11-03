@@ -234,6 +234,33 @@ pub struct Admission<'a> {
     pub deadline: Duration,
 }
 
+/// Retained client continuity after closing a transport. This grants no server authority.
+#[derive(Debug, Clone)]
+pub struct RecoveryState {
+    game_session_id: GameSessionId,
+    connection_generation: u64,
+    next_command_id: u64,
+    last_server_sequence: u64,
+    selected_capabilities: Vec<u32>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Recovery<'a> {
+    pub reconnect_material: &'a [u8],
+    pub schema_revision: u32,
+    pub client_build_id: &'a str,
+    pub deadline: Duration,
+    pub appearance_items: Option<AppearanceItemDictionary<'a>>,
+}
+
+struct JoinAcceptance {
+    game_session_id: GameSessionId,
+    connection_generation: u64,
+    next_command_id: u64,
+    selected_capabilities: Vec<u32>,
+    recovery_sequence: Option<u64>,
+}
+
 /// `oteryn-protocol-oteryn`'s own domain codecs (state domains 1 `WORLD_SPATIAL` and 2
 /// `WORLD_OBJECT_OVERLAY`).
 #[derive(Debug, Clone)]
@@ -985,12 +1012,136 @@ impl<S: SessionStream> Session<S> {
         {
             return Err(SessionError::CapabilityNotRequested(capability));
         }
+        Self::read_join(
+            stream,
+            admission.deadline,
+            admission.appearance_items,
+            JoinAcceptance {
+                game_session_id: accepted_fields.game_session_id,
+                connection_generation: session_generation,
+                next_command_id: accepted_fields.next_command_id,
+                selected_capabilities: accepted_fields.selected_capabilities,
+                recovery_sequence: None,
+            },
+        )
+        .await
+    }
+
+    /// Close between completed commands, retaining the continuity the server must prove on recovery.
+    pub fn disconnect(self) -> RecoveryState {
+        RecoveryState {
+            game_session_id: self.join_snapshot.game_session_id,
+            connection_generation: self.connection_generation,
+            next_command_id: self.next_command_id,
+            last_server_sequence: self.last_server_sequence,
+            selected_capabilities: self.selected_capabilities,
+        }
+    }
+
+    /// Write a real step and close without reading its outcome. Recovery's next-command
+    /// lower bound remains this unacknowledged id; the server snapshot decides whether it ran.
+    pub async fn disconnect_after_step(
+        mut self,
+        direction: StepDirection,
+    ) -> Result<RecoveryState, SessionError> {
+        self.ensure_usable()?;
+        self.next_command_id
+            .checked_add(1)
+            .ok_or(SessionError::CommandIdExhausted)?;
+        let frame = encode_client_command(
+            self.connection_generation,
+            &ClientCommandValue {
+                command_id: self.next_command_id,
+                command_type: world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                payload: &world_spatial::encode_step_intent(direction),
+            },
+        )?;
+        bounded(
+            self.deadline,
+            "pending step write",
+            write_frame(&mut self.stream, &frame),
+        )
+        .await?;
+        Ok(self.disconnect())
+    }
+
+    /// Recover the same logical session over a new transport using an existing server credential.
+    pub async fn resume(
+        mut stream: S,
+        previous: RecoveryState,
+        recovery: Recovery<'_>,
+    ) -> Result<Self, SessionError> {
+        use oteryn_protocol_oteryn::recovery::{
+            ClientResumeValue, decode_server_resume_accepted, encode_client_resume,
+        };
+        let request = encode_client_resume(&ClientResumeValue {
+            game_session_id: previous.game_session_id,
+            reconnect_material: recovery.reconnect_material,
+            last_applied_server_sequence: previous.last_server_sequence,
+            schema_revision: recovery.schema_revision,
+            client_build_id: recovery.client_build_id,
+            supported_capabilities: &previous.selected_capabilities,
+        })?;
+        bounded(
+            recovery.deadline,
+            "ClientResume",
+            write_frame(&mut stream, &request),
+        )
+        .await?;
+        let frame = bounded(
+            recovery.deadline,
+            "ServerResumeAccepted",
+            read_frame(&mut stream),
+        )
+        .await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        envelope.validate(Direction::ServerToClient, false)?;
+        if envelope.message_type() != MessageType::ServerResumeAccepted {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::ServerResumeAccepted,
+                actual: envelope.message_type(),
+            });
+        }
+        let accepted = decode_server_resume_accepted(envelope.payload())?;
+        check_resume_selection(
+            &previous.selected_capabilities,
+            &accepted.selected_capabilities,
+        )?;
+        if accepted.game_session_id != previous.game_session_id
+            || accepted.connection_generation <= previous.connection_generation
+            || accepted.current_server_sequence < previous.last_server_sequence
+            || accepted.next_command_id < previous.next_command_id
+            || accepted.schema_revision != recovery.schema_revision
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
+        Self::read_join(
+            stream,
+            recovery.deadline,
+            recovery.appearance_items,
+            JoinAcceptance {
+                game_session_id: accepted.game_session_id,
+                connection_generation: accepted.connection_generation,
+                next_command_id: accepted.next_command_id,
+                selected_capabilities: accepted.selected_capabilities,
+                recovery_sequence: Some(accepted.current_server_sequence),
+            },
+        )
+        .await
+    }
+
+    async fn read_join(
+        mut stream: S,
+        deadline: Duration,
+        appearance_items: Option<AppearanceItemDictionary<'_>>,
+        accepted_fields: JoinAcceptance,
+    ) -> Result<Self, SessionError> {
+        let session_generation = accepted_fields.connection_generation;
         let selected_capabilities = accepted_fields.selected_capabilities.clone();
 
         // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
         // them, is checked against it before being trusted.
-        let begin_frame =
-            bounded(admission.deadline, "SnapshotBegin", read_frame(&mut stream)).await?;
+        let begin_frame = bounded(deadline, "SnapshotBegin", read_frame(&mut stream)).await?;
         let begin_envelope = decode_wire_envelope(&begin_frame)?;
         // Post-admission server traffic: direction, phase, sequencing (unsequenced — FND-02 §14
         // snapshot transfer-control frames carry no `server_sequence`) and a nonzero envelope
@@ -1009,6 +1160,12 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let begin = decode_snapshot_begin(begin_envelope.payload())?;
+        if accepted_fields
+            .recovery_sequence
+            .is_some_and(|sequence| sequence != begin.target_server_sequence)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope.into());
+        }
 
         // Exactly `begin.chunk_count` `SnapshotChunk` frames, strictly in order: a short transfer
         // (the server stops early) surfaces here as `UnexpectedMessage` (the next frame is
@@ -1023,8 +1180,7 @@ impl<S: SessionStream> Session<S> {
         let mut assembled_body: Vec<u8> = Vec::new();
         let mut assembled_bytes: u64 = 0;
         for expected_index in 0..begin.chunk_count {
-            let chunk_frame =
-                bounded(admission.deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
+            let chunk_frame = bounded(deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
             let chunk_envelope = decode_wire_envelope(&chunk_frame)?;
             // Post-admission server traffic, same as `SnapshotBegin` above.
             chunk_envelope.validate(Direction::ServerToClient, true)?;
@@ -1076,7 +1232,7 @@ impl<S: SessionStream> Session<S> {
         // assembled length matched.
         let commit_snapshot_id = read_snapshot_marker(
             &mut stream,
-            admission.deadline,
+            deadline,
             "SnapshotCommit",
             MessageType::SnapshotCommit,
             session_generation,
@@ -1270,7 +1426,7 @@ impl<S: SessionStream> Session<S> {
                 .as_ref()
                 .ok_or(SessionError::MissingDomain(1))?
                 .content_generation,
-            admission.appearance_items,
+            appearance_items,
         )?;
         appearance_state::validate_entities(appearance.as_ref(), entities.as_ref())?;
         if attack_selected && combat_state.is_none() {
@@ -1312,7 +1468,7 @@ impl<S: SessionStream> Session<S> {
         };
         Ok(Self {
             stream,
-            deadline: admission.deadline,
+            deadline,
             last_received: tokio::time::Instant::now(),
             connection_generation: session_generation,
             first_command_id: accepted_fields.next_command_id,

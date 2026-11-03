@@ -189,8 +189,13 @@ pub(super) async fn dev_client<'a>(
     client_item_forge::item_forge(&mut dev_client).await?;
     client_store::store(&mut dev_client).await?;
     client_hunt::hunt(&mut dev_client).await?;
-    client_death::death(&mut dev_client).await?;
-    client_disconnect_resume::disconnect_resume(&mut dev_client).await?;
+    client_death::death(&mut dev_client, clients).await?;
+    let before = dev_client.world_spatial().actor_position;
+    let after = before
+        .x
+        .checked_sub(1)
+        .map(|x| ActorPosition { x, ..before });
+    dev_client = client_disconnect_resume::recover(dev_client, clients, after).await?;
 
     // Dropped here, closing the TLS stream the same silent way the join-only stage did.
     drop(dev_client);
@@ -198,7 +203,7 @@ pub(super) async fn dev_client<'a>(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         if let Some((1, epoch, grace)) = session_loss_row(url, dev_client_session).await? {
-            if epoch != "1" || !(58..=62).contains(&grace) {
+            if epoch != "2" || !(58..=62).contains(&grace) {
                 return Err(format!("dev_client loss epoch={epoch} grace={grace}").into());
             }
             break;

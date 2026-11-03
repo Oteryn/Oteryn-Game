@@ -37,8 +37,15 @@ case "$NODE_BOOT_SPELLS" in
   0|1) ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_spell_mode'; exit 2 ;;
 esac
+# Keep every fixture-only transport/door assertion intact in its own disposable pass.
+NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
+case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
+  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+fi
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 NODE_GAMEPLAY_ENV=()
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
   NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"
   NODE_BOOT_SPELL_MANIFEST="$(realpath -e -- "$NODE_BOOT_SPELL_MANIFEST" 2>/dev/null)" || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
@@ -189,7 +196,7 @@ sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 SERVICE_UID="$(id -u "$SERVICE_USER")"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
 sudo install -d -o root -g root -m 0700 "$BASE/ops"
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Stage only declared, hash-bound inputs; never publish unrelated siblings.
   python3 - "$NODE_BOOT_SPELL_MANIFEST" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
 import hashlib
@@ -239,6 +246,26 @@ PY_STAGE
   sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
   sudo chmod -R a+rX "$BASE/gameplay"
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1)"
+fi
+MAP_REVISION=map-s3b-1
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # Real Thais/town outskirts and the default-start region for ordinary home respawns.
+  cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,127' > "$WORK/world-compile.json"
+  PIN="$WORK/world.json"
+  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
+import json, sys
+pin = json.load(open(sys.argv[1]))
+pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
+pin["digest"] = json.load(open(sys.argv[2]))["digest"]
+pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
+with open(sys.argv[3], "w") as output:
+    json.dump(pin, output, sort_keys=True)
+PY_REGION_PIN
+  WORLD_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
+  sudo install -d -o root -g root -m 0755 "$BASE/world"
+  sudo install -o root -g root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
+  sudo install -o root -g root -m 0644 "$PIN" "$BASE/world/world.json"
+  MAP_REVISION="$WORLD_DIGEST"
 fi
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
@@ -319,7 +346,7 @@ route_revision = "route-s3b-1"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-s3b-1"
 content_revision = "content-s3b-1"
-map_revision = "map-s3b-1"
+map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-s3b-1"
 required_gameplay_capabilities = $NODE_REQUIRED_CAPABILITIES
 offer_revision = "offer-s3b-1"
@@ -336,6 +363,22 @@ installed_at = $DESCRIPTOR_INSTALLED_AT
 authorization_file = "$BASE/state/$1"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"
 TOML
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    python3 - "$PIN" "$BASE/world/world.otbundle" >> "$WORK/node.toml" <<'PY_WORLD'
+import json, sys
+pin = json.load(open(sys.argv[1]))
+print(f'''[world_bundle]
+path = "{sys.argv[2]}"
+digest = "{pin['digest']}"
+project_format_version = "{pin['project_format_version']}"
+world_schema_version = "{pin['world_schema_version']}"
+content_revision = "{pin['content_revision']}"
+production = false
+start_x = 32369
+start_y = 32238
+start_floor = -7''')
+PY_WORLD
+  fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
@@ -426,6 +469,7 @@ configuration_negatives() { # exit before binding, no secret in output
 }
 
 node_assigned_ready() { # §4.2–§4.4
+  local boot_started=$SECONDS
   start_node
   remember NODE_PID "$NODE_PID"
   await_log awaiting_assignment 120
@@ -454,6 +498,7 @@ SQL
   await_log "event=readiness .*ready=true" 60
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
+  evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
 }
 
@@ -500,6 +545,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
     qualification=node_boot_spells_against_running_node
     test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
+  fi
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
   fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
