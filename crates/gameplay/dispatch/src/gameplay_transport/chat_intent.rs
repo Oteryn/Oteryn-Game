@@ -9,6 +9,8 @@
 //! (`super::chat_relay`), which hands every line it receives to [`ChatRuntime::deliver`]. Without
 //! a configured, listening relay they answer `CHAT_UNAVAILABLE`. Nothing here is durable.
 
+mod item_actions;
+
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicU64, Ordering};

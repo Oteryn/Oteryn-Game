@@ -1,5 +1,8 @@
 //! Mutators of the real PlayerSpellState condition/vitals successor. The owning
 //! Channel transaction qualifies actors and commits its final revision once.
+mod item_actions;
+pub use item_actions::{stage_item_costume, stage_item_health_loss};
+
 use super::cast::PlayerSpellState;
 use super::combat_batch::OwnerCombatChange;
 use super::executable_catalog::EffectProfile;

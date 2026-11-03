@@ -112,6 +112,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
             .is_ok()
     }
+    async fn observe_house_map(
+        &self,
+        admitted: AdmittedSession,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        self.observe_house_item_map(admitted, view, items).await
+    }
+
     async fn house_scope_ack(
         &self,
         admitted: AdmittedSession,
@@ -471,7 +480,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn observe_character_equipment(
         &self,
-        _actor: ExactActorRef,
+        actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<
         Vec<(
@@ -479,7 +488,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             item_view::ViewItem,
         )>,
     > {
-        equipment_move::observe_character_equipment(self, game_session_id).await
+        // Named-House custody retains the Channel carrier's ExactActorRef.
+        // Select the reader from the actual resident, not that carrier namespace.
+        let in_house = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, game_session_id)
+            .is_ok();
+        if in_house {
+            equipment_move::observe_house_character_equipment(self, actor, game_session_id).await
+        } else {
+            equipment_move::observe_character_equipment(self, game_session_id).await
+        }
     }
 
     async fn committed_equipment_move(
@@ -802,6 +823,41 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .pending_hireling_lamps
                 .iter()
                 .any(|pending| pending.actor == actor && pending.session == session)
+            || states.pending_item_effects.iter().any(|pending| {
+                pending.actor == actor && pending.request.command.game_session_id() == session
+            })
+    }
+
+    async fn use_event_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if matches!(
+            command.item_fence.map(|fence| fence.runtime_scope),
+            Some(crate::foundation::RuntimeScopeRefV1::Instance { .. })
+        ) {
+            return self
+                .use_house_event_item(actor, command, &intent, source)
+                .await;
+        }
+        if let Some(outcome) = self
+            .use_reward_bag_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_cosmetic_item_impl(actor, command, intent.clone(), source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_event_item_impl(actor, command, intent, source, visible_target)
+            .await
     }
 
     async fn use_consume_transform(
@@ -919,6 +975,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .recover_trade_continuity(admitted)
             .is_some()
             || admitted.continuity.next_command_id == 1
+    }
+
+    async fn use_event_world_object(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_map_harvest_object(actor, command, &target).await
     }
 
     async fn use_object(
