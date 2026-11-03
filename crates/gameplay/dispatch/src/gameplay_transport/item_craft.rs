@@ -183,6 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || facts.house_tile(pos)
                     || entry.facts.count != 1
                     || entry.facts.sub_type != 0,
+                pos,
             );
             (
                 super::item_look::typed_definition(index, reference)?,
@@ -210,6 +211,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|b| &b.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
             let water_key = &request.station.as_ref()?.production_key;
+            let target_id = item_id(water_key)?;
+            let target_pos = map_target.3;
+            let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
+                target_id,
+                target_pos.x,
+                target_pos.y,
+                target_pos.floor,
+            );
             let rod = entries
                 .clone()
                 .find(|entry| {
@@ -218,6 +227,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &entry.item.definition.production_key,
                             water_key,
                         )
+                        || (entry.item.item_instance_id == source
+                            && mechanical_sewer
+                            && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
                 })?
                 .item
                 .item_instance_id;
@@ -225,6 +237,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .clone()
                 .find(|entry| {
                     entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
+                })
+                .map(|entry| entry.item.item_instance_id);
+            let nail = entries
+                .clone()
+                .find(|entry| {
+                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
                 })
                 .map(|entry| entry.item.item_instance_id);
             let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
@@ -272,11 +290,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
             self.save_trained_levels(due).await;
-            if !oteryn_gameplay_items::fishing::catches(skill, roll) || worm.is_none() {
+            let consumable = if mechanical_sewer { nail } else { worm };
+            if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
                 return disposition(UseDisposition::NothingToUse);
             }
             request.tool = Some(rod);
-            request.source = worm?;
+            request.source = consumable?;
         }
         let inventory = self
             .root
@@ -308,7 +327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &request.intent,
                 )?,
             )?;
-            let (MapEntryKey::Base(key), revision, invalid) = map_target else {
+            let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
                 return None;
             };
             if invalid {

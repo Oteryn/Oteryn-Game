@@ -6,7 +6,10 @@ use std::{
     ptr::{null, null_mut},
     time::Duration,
 };
-use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+use windows_sys::Win32::{
+    Foundation::*,
+    UI::{Controls::BST_CHECKED, WindowsAndMessaging::*},
+};
 fn w(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }

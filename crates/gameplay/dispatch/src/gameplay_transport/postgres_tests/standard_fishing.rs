@@ -14,11 +14,13 @@ fn m09_standard_fishing_wire_consumes_bait_and_replays_without_duplicate_fish() 
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "fishing e2e panic")??;
+    eprintln!("M09_PG_CASE_EXECUTED standard_fishing elapsed_ms={}", started.elapsed().as_millis());
     Ok(())
 }
 
@@ -242,6 +244,8 @@ fn m09_gathering_wire_mutates_corpse_and_grants_inventory_once() -> TestResult {
 #[test]
 fn m09_gathering_wire_failed_skinning_marks_corpse() -> TestResult { run_gathering(5908,5969,Some(4012),None,true) }
 #[test]
+fn m09_gathering_wire_marble_tier_removes_rock_and_grants_figurine() -> TestResult { run_gathering(5908,10426,None,Some(10428),true) }
+#[test]
 fn m09_gathering_wire_dusting_grants_demon_dust() -> TestResult { run_gathering(5942,5995,Some(4098),Some(5906),true) }
 #[test]
 fn m09_gathering_wire_ice_sculpture_stays_on_map() -> TestResult { run_gathering(5908,7441,Some(7442),None,true) }
@@ -265,9 +269,11 @@ fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResu
 
 fn run_gathering(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
     std::thread::Builder::new().stack_size(256 << 20)
         .spawn(move || gathering_scenario(tool,target,after,yield_item,committed).map_err(|e| e.to_string()))?
         .join().map_err(|_| "gathering e2e panic")??;
+    eprintln!("M09_PG_CASE_EXECUTED tool={tool} target={target} yield={yield_item:?} elapsed_ms={}", started.elapsed().as_millis());
     Ok(())
 }
 
