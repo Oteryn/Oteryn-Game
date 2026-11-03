@@ -58,7 +58,11 @@ fi
 # ADMIT-CAP-1: the entry-room seam stages run against a Channel that requires LOGOUT_V1 (21)
 # and prove the owner's capability refusals; the spell scenarios declare no required set.
 NODE_REQUIRED_CAPABILITIES='[21]'
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # The real bundle offers map interaction, map view and spatial fields, whose
+  # mandatory floor must be declared as well as the existing logout requirement.
+  NODE_REQUIRED_CAPABILITIES='[11,18,21,30]'
+elif [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_REQUIRED_CAPABILITIES='[]'
 fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
