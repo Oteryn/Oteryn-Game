@@ -347,7 +347,7 @@ impl ChannelRuntimeV1 {
             ConditionSourceKind::SelfUse => source.actor == target,
             // Spatial field provenance needs its owning continuation; this actor-source API
             // cannot manufacture it from a caller-selected actor.
-            ConditionSourceKind::Field => false,
+            ConditionSourceKind::Field | ConditionSourceKind::Restored => false,
         };
         if valid {
             Ok(())

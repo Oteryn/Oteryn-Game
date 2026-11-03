@@ -166,10 +166,7 @@ impl StepIngressRead<'_, '_> {
                         {
                             return Err(MovementError::NotQualified);
                         }
-                        let element = recipe
-                            .element()
-                            .map_err(|_| MovementError::NotQualified)?
-                            .ok_or(MovementError::NotQualified)?;
+                        let element = recipe.element().map_err(|_| MovementError::NotQualified)?;
                         let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
                             &format!(
                                 "native.field.{}",
@@ -266,7 +263,7 @@ impl StepIngressRead<'_, '_> {
                             attributed:source_attaches_player_owner,
                             definition:oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
                                 &format!("native.field.{}",record.production_binding.external_id),1,values.ok_or(MovementError::NotQualified)?).ok_or(MovementError::NotQualified)?,
-                            element:recipe.element().map_err(|_|MovementError::NotQualified)?.ok_or(MovementError::NotQualified)?,
+                            element:recipe.element().map_err(|_|MovementError::NotQualified)?,
                         });
                         continue;
                     }

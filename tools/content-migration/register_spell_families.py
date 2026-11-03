@@ -160,6 +160,47 @@ def encoded(value: object, *, registry: bool = False) -> bytes:
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, **options) + "\n").encode()
 
 
+def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
+    """Crystal items.xml:75219-75231 and appearances.dat object 43297.
+
+    The source appearance has clip/unmove/light(3,181), no collision or take
+    flags. Keep that immovable Ground-only admission and the 248-second decay.
+    The shared source importer supplies the same defaults as every other field.
+    """
+    import sys
+    import xml.etree.ElementTree as ET
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import build_source_item_profiles as source
+    field_path = root / "tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+    field = next(row for row in json.loads(field_path.read_bytes())["profiles"]
+                 if row["source"]["server"] == "crystal" and row["source"]["server_item_id"] == 43297)
+    if field["source"]["revision"] != "ff7ede593c69d4c658b382c97443e8155926924a":
+        raise ValueError("AGONY_FIELD_SOURCE_PIN")
+    node = ET.fromstring('<item id="43297" article="a" name="agony field">'
+        '<attribute key="type" value="magicfield"/><attribute key="decayTo" value="0"/>'
+        '<attribute key="duration" value="248"/><attribute key="field" value="agony">'
+        '<attribute key="ticks" value="5000"/><attribute key="start" value="260"/>'
+        '<attribute key="damage" value="100"/></attribute>'
+        '<attribute key="script" value="moveevent"><attribute key="eventType" value="stepin"/></attribute></item>')
+    physical = {"movable": False, "pickupable": False, "block_solid": False,
+                "block_projectile": False, "has_height": False}
+    appearance = {"flags": {"flags.clip": True, "flags.unmove": True,
+                            "flags.light": True, "light.brightness": 3, "light.color": 181}}
+    bindings = source.binding_index(source.BINDINGS.read_bytes())
+    row = source.profile(43297, node, appearance, physical, bindings, field)
+    row = source.bind_profiles({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": [row]},
+                               bindings, {43297})["records"][0]
+    path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    document = json.loads(generated[path])
+    existing = [r for r in document["records"] if r["production_definition"]["production_key"] == "oteryn:item.tibia.i43297"]
+    if existing and existing != [row]:
+        raise ValueError("AGONY_FIELD_PROFILE_CONFLICT")
+    if not existing:
+        document["records"].append(row)
+    document["records"].sort(key=provider_order)
+    generated[path] = spell_import.canonical_bytes(document)
+
+
 def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     """Carry the pinned consumption fact without inventing or widening item semantics."""
     raw = (root / CONSUMPTION_FACTS).read_bytes()
@@ -272,6 +313,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     generated = compose(root, baseline, generated)
     admit_overlay_profiles(root, generated)
     admit_consumable_profiles(root, generated)
+    admit_agony_field(root, generated)
     admit_current_staff_profile(root, generated)
     import tutorial_movement_profiles
     tutorial_movement_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)

@@ -80,6 +80,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(character_id) => character_id,
                 Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
+        let saved_conditions = match self
+            .root
+            .read_character_conditions(self.character, character_id)
+            .await
+        {
+            Ok(saved) => saved,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         let gourmet = match self
             .root
             .read_gourmet_conditions(self.character, character_id)
@@ -304,6 +312,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !first_entry_authority_is_current(&expected, current, character.as_ref()) {
             return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
         }
+        let Some(prepared_conditions) = super::super::condition_persistence::prepare(
+            saved_conditions.as_ref(),
+            current.current_character_lease().generation(),
+            runtime.content_pin().server_artifact_digest(),
+            self.owner_now().get(),
+        ) else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // A2 (D295 item 4): bind the admitted session's lease to its slot in this owner step,
         // from the read that just proved it current. No damage write is admitted before.
         if runtime
@@ -334,6 +350,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
             .then(|| last_position::admitted_vitals(placement, self.world_id))
             .flatten();
+        let admitted_rest = (outcome == FirstEntryOutcome::Positioned)
+            .then(|| bed_regen::admitted_rest(placement, self.world_id))
+            .flatten();
         let gourmet_created = !self
             .states
             .spell_states
@@ -355,9 +374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
-                (outcome == FirstEntryOutcome::Positioned)
-                    .then(|| bed_regen::admitted_rest(placement, self.world_id))
-                    .flatten(),
+                admitted_rest,
             )
             .is_none()
         {
@@ -368,12 +385,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(state) = states.get_mut(&runtime, actor, game_session_id) else {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             };
-            if crate::spell::actor_conditions::restore_gourmet_food(
+            if super::super::condition_persistence::restore(
                 state,
+                prepared_conditions.as_ref(),
                 gourmet,
-                self.owner_now().get() / 1000,
+                self.owner_now().get(),
+                admitted_rest,
             )
-            .is_err()
+            .is_none()
             {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
