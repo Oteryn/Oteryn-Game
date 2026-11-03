@@ -145,6 +145,7 @@ pub use oteryn_protocol_oteryn::{
         CharmUnlockStageIntent, CharmView,
     },
 };
+pub use oteryn_protocol_oteryn::{npc_service, staff};
 use std::collections::{BTreeMap, VecDeque};
 use std::error::Error as StdError;
 use std::fmt;
@@ -2285,23 +2286,34 @@ impl<S: SessionStream> Session<S> {
         delta_type: u32,
         applied_revision: u64,
     ) -> Result<RawDelta, SessionError> {
-        let (server_sequence, payload) = self
-            .read_sequenced("StateDelta", MessageType::StateDelta)
-            .await?;
-        let delta = decode_state_delta(&payload)?;
-        if delta.domain_id != domain_id {
-            return Err(SessionError::UnexpectedDomain {
-                expected: domain_id,
-                actual: delta.domain_id,
+        loop {
+            let (server_sequence, payload) = self
+                .read_sequenced("StateDelta", MessageType::StateDelta)
+                .await?;
+            let delta = decode_state_delta(&payload)?;
+            if delta.domain_id != domain_id {
+                if !matches!(
+                    domain_id,
+                    npc_service::STATE_DOMAIN_NPC_CONVERSATION
+                        | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                ) {
+                    return Err(SessionError::UnexpectedDomain {
+                        expected: domain_id,
+                        actual: delta.domain_id,
+                    });
+                }
+                let event = self.apply_state_delta(server_sequence, &payload)?;
+                self.queue_event(event)?;
+                continue;
+            }
+            check_delta(&delta, delta_type, applied_revision)?;
+            return Ok(RawDelta {
+                server_sequence,
+                base_revision: delta.base_revision,
+                new_revision: delta.new_revision,
+                payload: delta.payload.to_vec(),
             });
         }
-        check_delta(&delta, delta_type, applied_revision)?;
-        Ok(RawDelta {
-            server_sequence,
-            base_revision: delta.base_revision,
-            new_revision: delta.new_revision,
-            payload: delta.payload.to_vec(),
-        })
     }
 
     /// Reads the next post-admission frame that is not a `LivenessProbe` (each probe is answered

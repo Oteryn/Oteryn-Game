@@ -251,12 +251,28 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let buddy: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut connection)
+    .await?;
+    client_vip::add(&mut client, &buddy).await?;
+    client_player_trade::pair(&mut client, clients).await?;
+    client_prey::prey(&mut client).await?;
+    client_task_board::task_board(&mut client).await?;
+    client_imbue::imbue(&mut client).await?;
+    client_hireling::hireling(&mut client).await?;
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
     let path = route(&world, TOWN, |at| near_locker(&world, at))
         .ok_or("town has no reachable authored depot locker")?;
     walk(&mut client, &world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
+    client_stash::stash(&mut client).await?;
+    client_market::market(&mut client).await?;
+    shop_journey(&mut client, &world, &metadata.npcs, clients).await?;
     client_hotkey_equip::hotkey_equip(&mut client).await?;
     client_item_forge::item_forge(&mut client).await?;
     client_store::store(&mut client).await?;
@@ -319,12 +335,20 @@ async fn connect_world(
     clients: &SeamClients<'_>,
     tag: u8,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let generation = platform_generation(clients.descriptor, &clients.accounts[1]).await?;
+    connect_character(clients, tag, 1).await
+}
+
+pub(super) async fn connect_character(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let grant = Grant {
         signing: clients.signing,
         key_id: clients.key_id,
-        account_id: &clients.accounts[1],
-        character_id: clients.characters[1],
+        account_id: &clients.accounts[index],
+        character_id: clients.characters[index],
         world_id: clients.world,
         channel_id: clients.channel,
         security_generation: generation,
@@ -339,7 +363,7 @@ async fn connect_world(
             server_name: "localhost",
             root_certificate: clients.certificate,
             schema_revision: 1,
-            character_id: crate::foundation::CharacterId::decode(&clients.characters[1])?,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
             admission_material: token.as_bytes(),
             client_build_id: "oteryn-dev-client/world-qualification",
             deadline: Duration::from_secs(20),
@@ -481,4 +505,51 @@ pub(crate) fn smoke() -> TestResult {
         started.elapsed().as_millis()
     ));
     Ok(())
+}
+
+async fn shop_journey(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    clients: &SeamClients<'_>,
+) -> TestResult<()> {
+    let Some(npc) = npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.sam") else {
+        evidence(
+            "mechanic=npc_shop skipped=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
+        );
+        return Ok(());
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    let Some(path) = route(world, from, |at| {
+        npc.placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    }) else {
+        evidence(
+            "mechanic=npc_shop skipped=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
+        );
+        return Ok(());
+    };
+    walk(client, world, &path).await?;
+    let target = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && npc.placements.iter().any(|placement| {
+                        entity.position.x == i32::from(placement.x)
+                            && entity.position.y == i32::from(placement.y)
+                            && entity.position.floor == -i16::from(placement.floor)
+                    })
+            })
+        })
+        .copied();
+    let Some(target) = target else {
+        evidence(
+            "mechanic=npc_shop skipped=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105",
+        );
+        return Ok(());
+    };
+    client_npc_shop::transact(client, target.entity, clients).await
 }

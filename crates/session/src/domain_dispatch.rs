@@ -23,6 +23,46 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            npc_service::STATE_DOMAIN_NPC_CONVERSATION
+            | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
+                if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                let revision = self
+                    .gated_revisions
+                    .iter()
+                    .find(|(id, _)| *id == domain_id)
+                    .map_or(0, |(_, revision)| *revision);
+                check_delta(&delta, 1, revision)?;
+                let event = if domain_id == npc_service::STATE_DOMAIN_NPC_CONVERSATION {
+                    let value = npc_service::decode_npc_conversation(delta.payload)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    SessionEvent::NpcConversation(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        value,
+                    ))
+                } else {
+                    let value = npc_service::decode_npc_trade_window(delta.payload)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    SessionEvent::NpcTradeWindow(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        value,
+                    ))
+                };
+                match self
+                    .gated_revisions
+                    .iter_mut()
+                    .find(|(id, _)| *id == domain_id)
+                {
+                    Some((_, revision)) => *revision = new_revision,
+                    None => self.gated_revisions.push((domain_id, new_revision)),
+                }
+                Ok(event)
+            }
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
             oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {

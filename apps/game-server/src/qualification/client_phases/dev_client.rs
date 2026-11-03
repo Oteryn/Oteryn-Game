@@ -189,15 +189,6 @@ pub(super) async fn dev_client<'a>(
     client_item_forge::item_forge(&mut dev_client).await?;
     client_store::store(&mut dev_client).await?;
     client_hunt::hunt(&mut dev_client).await?;
-    client_death::death(&mut dev_client).await?;
-    client_disconnect_resume::disconnect_resume(&mut dev_client).await?;
-    client_browse_field::browse_field(&mut dev_client).await?;
-    client_daily_boost::daily_boost(&mut dev_client).await?;
-    client_depot_search::depot_search(&mut dev_client).await?;
-    client_hotkey_equip::hotkey_equip(&mut dev_client).await?;
-    client_item_forge::item_forge(&mut dev_client).await?;
-    client_store::store(&mut dev_client).await?;
-    client_hunt::hunt(&mut dev_client).await?;
     client_death::death(&mut dev_client, clients).await?;
     let before = dev_client.world_spatial().actor_position;
     let after = before
