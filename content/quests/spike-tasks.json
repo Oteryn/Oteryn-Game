@@ -1,0 +1,230 @@
+[
+  {
+    "tier": "upper",
+    "task": "pacifier",
+    "npc": "gnomilly",
+    "start_keyword": "pacifiers",
+    "report_keyword": "pacifiers",
+    "min_level": 25,
+    "max_level": 49,
+    "threshold": 7,
+    "experience": 1000,
+    "cooldown_seconds": 72000,
+    "grant_item": 19204,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:147-173",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:88-100"
+    ]
+  },
+  {
+    "tier": "upper",
+    "task": "mound",
+    "npc": "gnomilly",
+    "start_keyword": "release",
+    "report_keyword": "release",
+    "min_level": 25,
+    "max_level": 49,
+    "threshold": 1,
+    "experience": 1000,
+    "cooldown_seconds": 72000,
+    "grant_item": 19203,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:179-205",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:101-112"
+    ]
+  },
+  {
+    "tier": "upper",
+    "task": "track",
+    "npc": "gnomilly",
+    "start_keyword": "track",
+    "report_keyword": "tracking",
+    "min_level": 25,
+    "max_level": 49,
+    "threshold": 3,
+    "experience": 1000,
+    "cooldown_seconds": 72000,
+    "grant_item": 19205,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:211-244",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:113-124"
+    ]
+  },
+  {
+    "tier": "upper",
+    "task": "kill",
+    "npc": "gnomilly",
+    "start_keyword": "kill",
+    "report_keyword": "killing",
+    "min_level": 25,
+    "max_level": 49,
+    "threshold": 7,
+    "experience": 1000,
+    "cooldown_seconds": 72000,
+    "grant_item": null,
+    "grant_count": 0,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:248-274",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:125-136"
+    ]
+  },
+  {
+    "tier": "middle",
+    "task": "charge",
+    "npc": "gnombold",
+    "start_keyword": "charges",
+    "report_keyword": "charges",
+    "min_level": 50,
+    "max_level": 79,
+    "threshold": 3,
+    "experience": 2000,
+    "cooldown_seconds": 72000,
+    "grant_item": 19207,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:145-176",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:89-100"
+    ]
+  },
+  {
+    "tier": "middle",
+    "task": "mushroom",
+    "npc": "gnombold",
+    "start_keyword": "fertilise",
+    "report_keyword": "fertilisation",
+    "min_level": 50,
+    "max_level": 79,
+    "threshold": 4,
+    "experience": 2000,
+    "cooldown_seconds": 72000,
+    "grant_item": 19214,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:181-208",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:101-112"
+    ]
+  },
+  {
+    "tier": "middle",
+    "task": "nest",
+    "npc": "gnombold",
+    "start_keyword": "nests",
+    "report_keyword": "nests",
+    "min_level": 50,
+    "max_level": 79,
+    "threshold": 5,
+    "experience": 2000,
+    "cooldown_seconds": 72000,
+    "grant_item": null,
+    "grant_count": 0,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:213-239",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:113-124"
+    ]
+  },
+  {
+    "tier": "middle",
+    "task": "kill",
+    "npc": "gnombold",
+    "start_keyword": "kill",
+    "report_keyword": "killing",
+    "min_level": 50,
+    "max_level": 79,
+    "threshold": 7,
+    "experience": 2000,
+    "cooldown_seconds": 72000,
+    "grant_item": null,
+    "grant_count": 0,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:244-269",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:125-136"
+    ]
+  },
+  {
+    "tier": "lower",
+    "task": "parcel",
+    "npc": "gnomargery",
+    "start_keyword": "deliver",
+    "report_keyword": "delivery",
+    "min_level": 80,
+    "max_level": null,
+    "threshold": 4,
+    "experience": 3500,
+    "cooldown_seconds": 72000,
+    "grant_item": 19219,
+    "grant_count": 4,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:150-177",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:91-103"
+    ]
+  },
+  {
+    "tier": "lower",
+    "task": "undercover",
+    "npc": "gnomargery",
+    "start_keyword": "undercover",
+    "report_keyword": "undercover",
+    "min_level": 80,
+    "max_level": null,
+    "threshold": 3,
+    "experience": 3500,
+    "cooldown_seconds": 72000,
+    "grant_item": null,
+    "grant_count": 0,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:182-207",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:104-115"
+    ]
+  },
+  {
+    "tier": "lower",
+    "task": "lava",
+    "npc": "gnomargery",
+    "start_keyword": "temperature",
+    "report_keyword": "temperature",
+    "min_level": 80,
+    "max_level": null,
+    "threshold": 1,
+    "experience": 3500,
+    "cooldown_seconds": 72000,
+    "grant_item": 19206,
+    "grant_count": 1,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:213-240",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:116-127"
+    ]
+  },
+  {
+    "tier": "lower",
+    "task": "kill",
+    "npc": "gnomargery",
+    "start_keyword": "kill",
+    "report_keyword": "kill",
+    "min_level": 80,
+    "max_level": null,
+    "threshold": 7,
+    "experience": 3500,
+    "cooldown_seconds": 72000,
+    "grant_item": null,
+    "grant_count": 0,
+    "storage_prefix": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill",
+    "source": [
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:245-271",
+      "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:128-139"
+    ]
+  }
+]

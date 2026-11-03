@@ -1,0 +1,1480 @@
+{
+  "schema": "OTERYN_SPIKE_DIALOGUE_V1",
+  "replies": {
+    "gnomilly:56": {
+      "kind": "static",
+      "lines": [
+        "I'm the officer responsible for this area. I give out missions, accept mission reports and oversee our defences."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:56-56"
+    },
+    "gnomilly:60": {
+      "kind": "static",
+      "lines": [
+        "We are the only protectors of the world against the enemies below. With small stature comes great responsibilities, as they say."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:60-60"
+    },
+    "gnomilly:64": {
+      "kind": "static",
+      "lines": [
+        "On these levels we found evidence of some monumental battle that has taken place here centuries ago. We also found some grave sites, but oddly enough no clues of any form of settlement. ...",
+        "Some evidence we have found suggests that at least one of the battles here was fought for many, many years. People came here, lived here, fought here and died here. ...",
+        "The battles continued until someone or something literally ploughed through the battlefields, turning everything upside down. All this killing and death soaked the area with negative energy. ...",
+        "Necromantic forces are running wild all over the place and we are hard-pressed to drive all these undead, spirits and ghosts, away from the Spike. ...",
+        "Unless we can secure that area somehow, the Spike operation is threatened to become crippled by the constant attacks of the undead. ...",
+        "The whole growing downwards could come to a halt, leaving us exposed to even more attacks, counter attacks, and giving the enemy time to prepare their defences. There's a lot to do for aspiring adventurers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:64-71"
+    },
+    "gnomilly:76": {
+      "kind": "static",
+      "lines": [
+        "Sorry, but no! Your expertise could be put to better use elsewhere. Here awaits you no challenge. You are desperately needed in the deeper levels of the Spike. Report there immediately. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:76-76"
+    },
+    "gnomilly:78": {
+      "kind": "static",
+      "lines": [
+        "I can offer you several missions: to recharge our ghost {pacifiers}, to {release} the spiritual anger, to {track} an evil presence and to {kill} some demon skeletons."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:78-78"
+    },
+    "gnomilly:85": {
+      "kind": "static",
+      "lines": [
+        "What mission do you want to report about: recharging the ghost {pacifiers}, the {release} of the spiritual anger, about {tracking} an evil presence and the {killing} of demon skeletons?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:85-85"
+    },
+    "gnomilly:91": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:91-91"
+    },
+    "gnomilly:93": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:93-93"
+    },
+    "gnomilly:99": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Take the resonance charger and use it on seven of the pacifiers in the cave."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:99-99"
+    },
+    "gnomilly:103": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:103-103"
+    },
+    "gnomilly:105": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:105-105"
+    },
+    "gnomilly:111": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Take the spirit shovel use it on four graves in the cave system."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:111-111"
+    },
+    "gnomilly:115": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:115-115"
+    },
+    "gnomilly:117": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:117-117"
+    },
+    "gnomilly:123": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Take the tracking device in the caves and locate the residual spirit energy."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:123-123"
+    },
+    "gnomilly:127": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:127-127"
+    },
+    "gnomilly:129": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:129-129"
+    },
+    "gnomilly:135": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Just go out to the caves and kill at least seven demon skeletons."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:135-135"
+    },
+    "gnomilly:138": {
+      "kind": "static",
+      "lines": [
+        "That's not a valid mission name."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:138-138"
+    },
+    "gnomilly:149": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:149-149"
+    },
+    "gnomilly:153": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:153-153"
+    },
+    "gnomilly:157": {
+      "kind": "static",
+      "lines": [
+        "We need you to recharge our ghost pacifiers. They are placed at several strategic points in the caves around us and should be easy to find. Your mission would be to charge seven of them.",
+        "If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:157-157"
+    },
+    "gnomilly:160": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:160-160"
+    },
+    "gnomilly:168": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Take this resonance charger and use it on seven of the pacifiers in the cave. If you lose the charger, you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:168-168"
+    },
+    "gnomilly:171": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:171-171"
+    },
+    "gnomilly:181": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:181-181"
+    },
+    "gnomilly:185": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:185-185"
+    },
+    "gnomilly:189": {
+      "kind": "static",
+      "lines": [
+        "Your task would be to use a spirit shovel to release some spirit's anger from graves that can be found all around here. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:189-189"
+    },
+    "gnomilly:192": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:192-192"
+    },
+    "gnomilly:200": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Take this spirit shovel and use it on four graves in the cave system. If you lose the shovel you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:200-200"
+    },
+    "gnomilly:203": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:203-203"
+    },
+    "gnomilly:213": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:213-213"
+    },
+    "gnomilly:217": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:217-217"
+    },
+    "gnomilly:221": {
+      "kind": "static",
+      "lines": [
+        "You'd be given the highly important task to track down an enormously malevolent spiritual presence in the cave system. Use your tracking device to find out how close you are to the presence.",
+        "Use that information to find the residual energy and use the tracker there. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:221-225"
+    },
+    "gnomilly:228": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:228-228"
+    },
+    "gnomilly:237": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Use this tracking device in the caves and locate the residual spirit energy. If you lose the tracking device, you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:237-237"
+    },
+    "gnomilly:240": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:240-240"
+    },
+    "gnomilly:250": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:250-250"
+    },
+    "gnomilly:254": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:254-254"
+    },
+    "gnomilly:258": {
+      "kind": "static",
+      "lines": [
+        "We need someone to reduce the steadily growing number of demon skeletons in the caves. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:258-258"
+    },
+    "gnomilly:261": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:261-261"
+    },
+    "gnomilly:268": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Just go out and kill them. You should find more of them than you like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:268-268"
+    },
+    "gnomilly:271": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:271-271"
+    },
+    "gnomilly:278": {
+      "kind": "static",
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:278-278"
+    },
+    "gnombold:56": {
+      "kind": "static",
+      "lines": [
+        "I'm the officer responsible for this area. I give out missions, accept mission reports and oversee our defences."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:56-56"
+    },
+    "gnombold:60": {
+      "kind": "static",
+      "lines": [
+        "Gnomes have lived autonomous for so long that it still feels odd to work with strangers for many of us."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:60-60"
+    },
+    "gnombold:64": {
+      "kind": "static",
+      "lines": [
+        "The levels around us are... well, they are strange. We are still not entirely sure how they were created. It seems obvious that they are artificial, but they seem not to be burrowed or the like. ... ",
+        "We found strange stone formations that were not found on other layers around the Spike, but there is no clue at all if they are as natural as they look. It seems someone used some geomantic force to move the earth. ...",
+        "For what reason this has been done we can't tell as we found no clues of colonisation. ...",
+        "There are theories that the caves are some kind of burrow of some extinct creature or even creatures that are still around us, but exist as some form of invisible energy; but those theories are far-fetched and not supported by any discoveries. ...",
+        "Be that as it may, whatever those caves were meant for, these days they are crawling with creatures of different kinds and all are hostile towards us. The competition for food is great down here, and everything is seen as prey by the cave dwellers. ...",
+        "Some would like to feast on the crystal of the Spike, others would prefer a diet of gnomes. What they have in common is that they are a threat. If we can't keep them under control their constant attacks and raids on the Spike will wear us down. ...",
+        "That's where adventurers fit in to save the day. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:64-72"
+    },
+    "gnombold:77": {
+      "kind": "static",
+      "lines": [
+        "Sorry, but no! Your expertise could be put to better use elsewhere. Here awaits you no challenge. You are desperately needed in the deeper levels of the Spike. Report there immediately. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:77-77"
+    },
+    "gnombold:79": {
+      "kind": "static",
+      "lines": [
+        " I can offer you several missions: to gather geomantic {charges}, to {fertilise} the mushroom caves, to destroy monster {nests} and to {kill} some crystal crushers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:79-79"
+    },
+    "gnombold:86": {
+      "kind": "static",
+      "lines": [
+        "What mission do you want to report about: gathering the geomantic {charges}, the {fertilisation} of the mushroom caves, about destroying monster {nests} and the {killing} of crystal crushers?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:86-86"
+    },
+    "gnombold:92": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:92-92"
+    },
+    "gnombold:94": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:94-94"
+    },
+    "gnombold:100": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Charge this magnet at three monoliths in the cave system. With three charges, the magnet will disintegrate and charge you with its gathered energies. Step on the magnetic extractor here to deliver the charge to us, then report to me."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:100-100"
+    },
+    "gnombold:104": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:104-104"
+    },
+    "gnombold:106": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:106-106"
+    },
+    "gnombold:112": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Use the fertiliser on four gardener mushroom in the caves."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:112-112"
+    },
+    "gnombold:116": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:116-116"
+    },
+    "gnombold:118": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:118-118"
+    },
+    "gnombold:124": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Step into the transformer and destroy eight monster nests."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:124-124"
+    },
+    "gnombold:128": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:128-128"
+    },
+    "gnombold:130": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:130-130"
+    },
+    "gnombold:136": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Just go out to the caves and kill at least seven crystalcrushers."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:136-136"
+    },
+    "gnombold:139": {
+      "kind": "static",
+      "lines": [
+        "That's not a valid mission name."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:139-139"
+    },
+    "gnombold:147": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:147-147"
+    },
+    "gnombold:151": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:151-151"
+    },
+    "gnombold:155": {
+      "kind": "static",
+      "lines": [
+        "Our mission for you is to use a magnet on three different monoliths in the cave system here. After the magnet evaporates on the last charge, enter the magnetic extractor here to deliver your charge.",
+        "If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:155-155"
+    },
+    "gnombold:158": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:158-158"
+    },
+    "gnombold:166": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Charge this magnet at three monoliths in the cave system. With three charges, the magnet will disintegrate and charge you with its gathered energies. Step on the magnetic extractor here to deliver the charge to us, then report to me.",
+        "If you lose the magnet you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:166-170"
+    },
+    "gnombold:173": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:173-173"
+    },
+    "gnombold:183": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:183-183"
+    },
+    "gnombold:187": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:187-187"
+    },
+    "gnombold:191": {
+      "kind": "static",
+      "lines": [
+        "Your mission would be to seek out gardener mushrooms in the caves and use some fertiliser on them. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:191-191"
+    },
+    "gnombold:194": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:194-194"
+    },
+    "gnombold:202": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! And here is your fertiliser - use it on four gardener mushroom in the caves. If you lose the fertiliser you'll have to bring your own. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:202-202"
+    },
+    "gnombold:205": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:205-205"
+    },
+    "gnombold:215": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:215-215"
+    },
+    "gnombold:219": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:219-219"
+    },
+    "gnombold:223": {
+      "kind": "static",
+      "lines": [
+        "Our mission for you is to step into the gnomish transformer and then destroy eight monster nests in the caves. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:223-223"
+    },
+    "gnombold:226": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:226-226"
+    },
+    "gnombold:233": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Don't forget to step into the transformer before you go out and destroy five monster nests. If your transformation runs out, return to the transformer to get another illusion."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:233-233"
+    },
+    "gnombold:236": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:236-236"
+    },
+    "gnombold:246": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:246-246"
+    },
+    "gnombold:250": {
+      "kind": "level_range",
+      "lines": [
+        "Sorry, you are not on the required range of levels [{minimum}-{maximum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:250-250"
+    },
+    "gnombold:254": {
+      "kind": "static",
+      "lines": [
+        "This mission will require you to kill some crystal crushers for us. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:254-254"
+    },
+    "gnombold:257": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:257-257"
+    },
+    "gnombold:264": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! You should have no trouble to find enough crystal crushers. Killing seven of them should be enough."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:264-264"
+    },
+    "gnombold:267": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:267-267"
+    },
+    "gnombold:274": {
+      "kind": "static",
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua:274-274"
+    },
+    "a_lost_thrower:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_thrower.lua:56-56"
+    },
+    "a_lost_thrower:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_thrower.lua:65-65"
+    },
+    "a_lost_thrower:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_thrower.lua:72-72"
+    },
+    "a_dragon_lord:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_dragon_lord.lua:56-56"
+    },
+    "a_dragon_lord:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_dragon_lord.lua:65-65"
+    },
+    "a_dragon_lord:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_dragon_lord.lua:72-72"
+    },
+    "gnomargery:56": {
+      "kind": "static",
+      "lines": [
+        "I'm the officer responsible for this area. I give out missions, accept mission reports and oversee our defences."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:56-56"
+    },
+    "gnomargery:60": {
+      "kind": "static",
+      "lines": [
+        "It's good to be a gnome for sure!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:60-60"
+    },
+    "gnomargery:64": {
+      "kind": "static",
+      "lines": [
+        "On the levels outside, we encountered the first serious resistance of our true enemy. As evidenced by the unnatural heat in an area with little volcanic activity, there is 'something' strange going on here. ...",
+        "Even the lava pools we have found here are not actually lava, but rock that was molten pretty much recently without any reasonable connection to some natural heat source. And for all we can tell, the heat is growing, slowly but steadily. ...",
+        "This is the first time ever that we can witness our enemy at work. Here we can learn a lot about its operations. ...",
+        "How they work, and possibly how to stop them. But therefore expeditions into the depths are necessary. The areas around us are highly dangerous, and a lethal threat to us and the Spike as a whole. ... ",
+        "Our first object is to divert the forces of the enemy and weaken them as good as we can while gathering as much information as possible about them and their movements. Only highly skilled adventurers stand a chance to help us down here. ..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:64-70"
+    },
+    "gnomargery:74": {
+      "kind": "static",
+      "lines": [
+        "Now that's gnomish ingenuity given shape! Who but a gnome would come up with such a plan to defeat our enemies. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:74-74"
+    },
+    "gnomargery:79": {
+      "kind": "static",
+      "lines": [
+        "Sorry, but no! Your expertise could be put to better use elsewhere. You are desperately needed in the upper levels of the Spike. Report there immediately. "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:79-79"
+    },
+    "gnomargery:81": {
+      "kind": "static",
+      "lines": [
+        "I can offer you several missions: to {deliver} parcels to our boys and girls in the battlefield, to get reports from our {undercover} gnomes, to do some {temperature} measuring and to {kill} some drillworms."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:81-81"
+    },
+    "gnomargery:88": {
+      "kind": "static",
+      "lines": [
+        " What mission do you want to report about: the {delivery} of parcels, the {undercover} reports, the {temperature} measuring or {kill} of drillworms?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:88-88"
+    },
+    "gnomargery:94": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:94-94"
+    },
+    "gnomargery:96": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:96-96"
+    },
+    "gnomargery:102": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Deliver the four parcels to some of our far away outposts in the caverns."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:102-102"
+    },
+    "gnomargery:106": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:106-106"
+    },
+    "gnomargery:108": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:108-108"
+    },
+    "gnomargery:114": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Get three reports from our undercover agents posing as monsters in the caves around us."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:114-114"
+    },
+    "gnomargery:118": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:118-118"
+    },
+    "gnomargery:120": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:120-120"
+    },
+    "gnomargery:126": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Use the gnomish temperature measurement device to locate the hottest spot at the lava pools in the cave."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:126-126"
+    },
+    "gnomargery:130": {
+      "kind": "static",
+      "lines": [
+        "You have not started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:130-130"
+    },
+    "gnomargery:132": {
+      "kind": "static",
+      "lines": [
+        "You have done well. Here, take your reward."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:132-132"
+    },
+    "gnomargery:138": {
+      "kind": "static",
+      "lines": [
+        "Gnowful! Just go out to the caves and kill at least seven drillworms."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:138-138"
+    },
+    "gnomargery:141": {
+      "kind": "static",
+      "lines": [
+        "That's not a valid mission name."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:141-141"
+    },
+    "gnomargery:152": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:152-152"
+    },
+    "gnomargery:156": {
+      "kind": "minimum_level",
+      "lines": [
+        "Sorry, you are not on the required minimum level [{minimum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:156-156"
+    },
+    "gnomargery:160": {
+      "kind": "static",
+      "lines": [
+        "We need someone to bring four parcels to some of our far away outposts in the caverns. If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:160-160"
+    },
+    "gnomargery:163": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:163-163"
+    },
+    "gnomargery:171": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Here are the parcels. Regrettably, the labels got lost during transport; but I guess those lonely gnomes won't mind as long as they get ANY parcel at all.",
+        "If you lose the parcels, you'll have to get new ones. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:171-171"
+    },
+    "gnomargery:174": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:174-174"
+    },
+    "gnomargery:184": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:184-184"
+    },
+    "gnomargery:188": {
+      "kind": "minimum_level",
+      "lines": [
+        "Sorry, you are not on the required minimum level [{minimum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:188-188"
+    },
+    "gnomargery:192": {
+      "kind": "static",
+      "lines": [
+        "Someone is needed to get three reports from our undercover agents posing as monsters in the caves around us. If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:192-192"
+    },
+    "gnomargery:195": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:195-195"
+    },
+    "gnomargery:202": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Get three reports from our agents. You can find them anywhere in the caves around us. Just keep looking for monsters that behave strangely and give you a wink."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:202-202"
+    },
+    "gnomargery:205": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:205-205"
+    },
+    "gnomargery:215": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:215-215"
+    },
+    "gnomargery:219": {
+      "kind": "minimum_level",
+      "lines": [
+        "Sorry, you are not on the required minimum level [{minimum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:219-219"
+    },
+    "gnomargery:223": {
+      "kind": "static",
+      "lines": [
+        "Your task would be to use a gnomish temperature measurement device - short GTMD - to locate the hottest spot at the lava pools in the caves. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:223-223"
+    },
+    "gnomargery:226": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:226-226"
+    },
+    "gnomargery:234": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! Find the hottest spot of the lava pools in the caves. If you lose the GTMD before you find the hot spot, you'll have to get yourself a new one. Gnomux sells all the equipment that is required for our missions."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:234-234"
+    },
+    "gnomargery:237": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:237-237"
+    },
+    "gnomargery:247": {
+      "kind": "wait_time",
+      "lines": [
+        "Sorry, you have to wait {remaining} before this task gets available again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:247-247"
+    },
+    "gnomargery:251": {
+      "kind": "minimum_level",
+      "lines": [
+        "Sorry, you are not on the required minimum level [{minimum}]."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:251-251"
+    },
+    "gnomargery:255": {
+      "kind": "static",
+      "lines": [
+        "This mission will require you to kill some drillworms for us. If you are interested, I can give you some more {information} about it. Are you willing to accept this mission?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:255-255"
+    },
+    "gnomargery:258": {
+      "kind": "static",
+      "lines": [
+        "You have already started that mission."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:258-258"
+    },
+    "gnomargery:265": {
+      "kind": "static",
+      "lines": [
+        "Gnometastic! You should have no trouble finding enough drillworms."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:265-265"
+    },
+    "gnomargery:268": {
+      "kind": "static",
+      "lines": [
+        "Ok then."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:268-268"
+    },
+    "gnomargery:275": {
+      "kind": "static",
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:275-275"
+    },
+    "a_wyrm:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_wyrm.lua:56-56"
+    },
+    "a_wyrm:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_wyrm.lua:65-65"
+    },
+    "a_wyrm:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_wyrm.lua:72-72"
+    },
+    "a_vulcongra:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_vulcongra.lua:56-56"
+    },
+    "a_vulcongra:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_vulcongra.lua:65-65"
+    },
+    "a_vulcongra:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_vulcongra.lua:72-72"
+    },
+    "a_lost_basher:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_basher.lua:56-56"
+    },
+    "a_lost_basher:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_basher.lua:65-65"
+    },
+    "a_lost_basher:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_basher.lua:72-72"
+    },
+    "gnome_trooper:79": {
+      "kind": "static",
+      "lines": [
+        "Do you have something to deliver?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:79-79"
+    },
+    "gnome_trooper:95": {
+      "kind": "static",
+      "lines": [
+        "But you don't have it..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:95-95"
+    },
+    "a_drillworm:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_drillworm.lua:56-56"
+    },
+    "a_drillworm:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_drillworm.lua:65-65"
+    },
+    "a_drillworm:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_drillworm.lua:72-72"
+    },
+    "a_behemoth:57": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_behemoth.lua:57-57"
+    },
+    "a_behemoth:66": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_behemoth.lua:66-66"
+    },
+    "a_behemoth:73": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_behemoth.lua:73-73"
+    },
+    "a_nightmare_scion:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_nightmare_scion.lua:56-56"
+    },
+    "a_nightmare_scion:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_nightmare_scion.lua:65-65"
+    },
+    "a_nightmare_scion:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_nightmare_scion.lua:72-72"
+    },
+    "a_lost_husher:56": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_husher.lua:56-56"
+    },
+    "a_lost_husher:65": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_husher.lua:65-65"
+    },
+    "a_lost_husher:72": {
+      "kind": "static",
+      "lines": [
+        "Pssst! Keep it down! <gives you an elaborate report on monster activity>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_lost_husher.lua:72-72"
+    },
+    "gnome_trooper:parcel-0": {
+      "kind": "static",
+      "lines": [
+        "It's a pipe! What can be more relaxing for a gnome than to smoke his pipe after a day of duty at the front. At least it's a chance to do something really dangerous after all!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:53-58"
+    },
+    "gnome_trooper:parcel-1": {
+      "kind": "static",
+      "lines": [
+        "Ah, a letter from home! Oh - I had no idea she felt that way! This is most interesting!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:53-58"
+    },
+    "gnome_trooper:parcel-2": {
+      "kind": "static",
+      "lines": [
+        "It's a model of the gnomebase Alpha! For self-assembly! With toothpicks...! Yeeaah...! I guess."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:53-58"
+    },
+    "gnome_trooper:parcel-3": {
+      "kind": "static",
+      "lines": [
+        "A medal of honour! At last they saw my true worth!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:53-58"
+    }
+  },
+  "officers": [
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "tier": "upper",
+      "info": [
+        {
+          "keyword": "job",
+          "reply": "gnomilly:56"
+        },
+        {
+          "keyword": "gnome",
+          "reply": "gnomilly:60"
+        },
+        {
+          "keyword": "area",
+          "reply": "gnomilly:64"
+        }
+      ],
+      "mission_refusal": "gnomilly:76",
+      "mission_offer": "gnomilly:78",
+      "report_prompt": "gnomilly:85",
+      "invalid_report": "gnomilly:138",
+      "greeting": "gnomilly:278",
+      "tasks": [
+        {
+          "task": "pacifier",
+          "topic": "pacifiers",
+          "cooldown": "gnomilly:149",
+          "level": "gnomilly:153",
+          "offer": "gnomilly:157",
+          "started": "gnomilly:160",
+          "accept": "gnomilly:168",
+          "decline": "gnomilly:171",
+          "report_absent": "gnomilly:91",
+          "report_success": "gnomilly:93",
+          "report_incomplete": "gnomilly:99"
+        },
+        {
+          "task": "mound",
+          "topic": "release",
+          "cooldown": "gnomilly:181",
+          "level": "gnomilly:185",
+          "offer": "gnomilly:189",
+          "started": "gnomilly:192",
+          "accept": "gnomilly:200",
+          "decline": "gnomilly:203",
+          "report_absent": "gnomilly:103",
+          "report_success": "gnomilly:105",
+          "report_incomplete": "gnomilly:111"
+        },
+        {
+          "task": "track",
+          "topic": "track",
+          "cooldown": "gnomilly:213",
+          "level": "gnomilly:217",
+          "offer": "gnomilly:221",
+          "started": "gnomilly:228",
+          "accept": "gnomilly:237",
+          "decline": "gnomilly:240",
+          "report_absent": "gnomilly:115",
+          "report_success": "gnomilly:117",
+          "report_incomplete": "gnomilly:123"
+        },
+        {
+          "task": "kill",
+          "topic": "kill",
+          "cooldown": "gnomilly:250",
+          "level": "gnomilly:254",
+          "offer": "gnomilly:258",
+          "started": "gnomilly:261",
+          "accept": "gnomilly:268",
+          "decline": "gnomilly:271",
+          "report_absent": "gnomilly:127",
+          "report_success": "gnomilly:129",
+          "report_incomplete": "gnomilly:135"
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
+      "tier": "middle",
+      "info": [
+        {
+          "keyword": "job",
+          "reply": "gnombold:56"
+        },
+        {
+          "keyword": "gnome",
+          "reply": "gnombold:60"
+        },
+        {
+          "keyword": "area",
+          "reply": "gnombold:64"
+        }
+      ],
+      "mission_refusal": "gnombold:77",
+      "mission_offer": "gnombold:79",
+      "report_prompt": "gnombold:86",
+      "invalid_report": "gnombold:139",
+      "greeting": "gnombold:274",
+      "tasks": [
+        {
+          "task": "charge",
+          "topic": "charges",
+          "cooldown": "gnombold:147",
+          "level": "gnombold:151",
+          "offer": "gnombold:155",
+          "started": "gnombold:158",
+          "accept": "gnombold:166",
+          "decline": "gnombold:173",
+          "report_absent": "gnombold:92",
+          "report_success": "gnombold:94",
+          "report_incomplete": "gnombold:100"
+        },
+        {
+          "task": "mushroom",
+          "topic": "fertilise",
+          "cooldown": "gnombold:183",
+          "level": "gnombold:187",
+          "offer": "gnombold:191",
+          "started": "gnombold:194",
+          "accept": "gnombold:202",
+          "decline": "gnombold:205",
+          "report_absent": "gnombold:104",
+          "report_success": "gnombold:106",
+          "report_incomplete": "gnombold:112"
+        },
+        {
+          "task": "nest",
+          "topic": "nests",
+          "cooldown": "gnombold:215",
+          "level": "gnombold:219",
+          "offer": "gnombold:223",
+          "started": "gnombold:226",
+          "accept": "gnombold:233",
+          "decline": "gnombold:236",
+          "report_absent": "gnombold:116",
+          "report_success": "gnombold:118",
+          "report_incomplete": "gnombold:124"
+        },
+        {
+          "task": "kill",
+          "topic": "kill",
+          "cooldown": "gnombold:246",
+          "level": "gnombold:250",
+          "offer": "gnombold:254",
+          "started": "gnombold:257",
+          "accept": "gnombold:264",
+          "decline": "gnombold:267",
+          "report_absent": "gnombold:128",
+          "report_success": "gnombold:130",
+          "report_incomplete": "gnombold:136"
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "tier": "lower",
+      "info": [
+        {
+          "keyword": "job",
+          "reply": "gnomargery:56"
+        },
+        {
+          "keyword": "gnome",
+          "reply": "gnomargery:60"
+        },
+        {
+          "keyword": "area",
+          "reply": "gnomargery:64"
+        },
+        {
+          "keyword": "spike",
+          "reply": "gnomargery:74"
+        }
+      ],
+      "mission_refusal": "gnomargery:79",
+      "mission_offer": "gnomargery:81",
+      "report_prompt": "gnomargery:88",
+      "invalid_report": "gnomargery:141",
+      "greeting": "gnomargery:275",
+      "tasks": [
+        {
+          "task": "parcel",
+          "topic": "delivery",
+          "cooldown": "gnomargery:152",
+          "level": "gnomargery:156",
+          "offer": "gnomargery:160",
+          "started": "gnomargery:163",
+          "accept": "gnomargery:171",
+          "decline": "gnomargery:174",
+          "report_absent": "gnomargery:94",
+          "report_success": "gnomargery:96",
+          "report_incomplete": "gnomargery:102"
+        },
+        {
+          "task": "undercover",
+          "topic": "undercover",
+          "cooldown": "gnomargery:184",
+          "level": "gnomargery:188",
+          "offer": "gnomargery:192",
+          "started": "gnomargery:195",
+          "accept": "gnomargery:202",
+          "decline": "gnomargery:205",
+          "report_absent": "gnomargery:106",
+          "report_success": "gnomargery:108",
+          "report_incomplete": "gnomargery:114"
+        },
+        {
+          "task": "lava",
+          "topic": "temperature",
+          "cooldown": "gnomargery:215",
+          "level": "gnomargery:219",
+          "offer": "gnomargery:223",
+          "started": "gnomargery:226",
+          "accept": "gnomargery:234",
+          "decline": "gnomargery:237",
+          "report_absent": "gnomargery:118",
+          "report_success": "gnomargery:120",
+          "report_incomplete": "gnomargery:126"
+        },
+        {
+          "task": "kill",
+          "topic": "kill",
+          "cooldown": "gnomargery:247",
+          "level": "gnomargery:251",
+          "offer": "gnomargery:255",
+          "started": "gnomargery:258",
+          "accept": "gnomargery:265",
+          "decline": "gnomargery:268",
+          "report_absent": "gnomargery:130",
+          "report_success": "gnomargery:132",
+          "report_incomplete": "gnomargery:138"
+        }
+      ]
+    }
+  ],
+  "contacts": [
+    {
+      "npc": "oteryn:npc.a_behemoth",
+      "reply": "a_behemoth:57"
+    },
+    {
+      "npc": "oteryn:npc.a_dragon_lord",
+      "reply": "a_dragon_lord:56"
+    },
+    {
+      "npc": "oteryn:npc.a_drillworm",
+      "reply": "a_drillworm:56"
+    },
+    {
+      "npc": "oteryn:npc.a_lost_basher",
+      "reply": "a_lost_basher:56"
+    },
+    {
+      "npc": "oteryn:npc.a_lost_husher",
+      "reply": "a_lost_husher:56"
+    },
+    {
+      "npc": "oteryn:npc.a_lost_thrower",
+      "reply": "a_lost_thrower:56"
+    },
+    {
+      "npc": "oteryn:npc.a_nightmare_scion",
+      "reply": "a_nightmare_scion:56"
+    },
+    {
+      "npc": "oteryn:npc.a_vulcongra",
+      "reply": "a_vulcongra:56"
+    },
+    {
+      "npc": "oteryn:npc.a_wyrm",
+      "reply": "a_wyrm:56"
+    }
+  ],
+  "parcel_replies": [
+    {
+      "state": 0,
+      "reply": "gnome_trooper:parcel-0"
+    },
+    {
+      "state": 1,
+      "reply": "gnome_trooper:parcel-1"
+    },
+    {
+      "state": 2,
+      "reply": "gnome_trooper:parcel-2"
+    },
+    {
+      "state": 3,
+      "reply": "gnome_trooper:parcel-3"
+    }
+  ]
+}
