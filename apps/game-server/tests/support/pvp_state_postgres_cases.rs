@@ -54,6 +54,41 @@ fn kinds(logout_block: bool, pz_block: bool, white_skull: bool) -> PvpDeadlineKi
     }
 }
 
+/// The shipped node may use either database login. Its world-owned daily boost and PvP expiry
+/// passes must therefore be able to take the locks and perform the cleanup they own.
+#[test]
+fn world_pass_roles_can_lock_the_reset_pointer_and_expire_unjustified_points() -> TestResult {
+    run("world_pass_role_privileges", async |h| {
+        let started = std::time::Instant::now();
+        for role in ["oteryn_game_runtime", "oteryn_game_control"] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("SET LOCAL ROLE {role}")))
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "SELECT reset_epoch FROM game_world_reset_active \
+                 WHERE world_id=encode($1,'hex')::uuid FOR UPDATE",
+            )
+            .bind(id(WORLD).as_slice())
+            .fetch_optional(&mut *tx)
+            .await?;
+            sqlx::query(
+                "DELETE FROM game_character_unjustified_points \
+                 WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(FOREIGN).as_slice())
+            .execute(&mut *tx)
+            .await?;
+            tx.rollback().await?;
+        }
+        eprintln!(
+            "PG_PASS world_pass_roles_can_lock_the_reset_pointer_and_expire_unjustified_points: {:?}",
+            started.elapsed()
+        );
+        Ok(())
+    })
+}
+
 /// `deadline - now` in ms of one column, `None` when unset.
 async fn remaining(h: &Harness, seed: u8, column: &str) -> TestResult<Option<i64>> {
     let sql = format!(
