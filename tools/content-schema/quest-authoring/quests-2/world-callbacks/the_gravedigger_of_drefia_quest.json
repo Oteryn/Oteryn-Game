@@ -1,0 +1,464 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/gravedigger-ashes",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4638,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission28",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission29",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19129",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_ashes.lua:1-16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-dormitory-exit",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33018,
+        "y": 32437,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_dormitory_teleport.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-hallowed",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4634,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission19",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission20",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19089",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_hallowed.lua:1-16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4641",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4641,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32a",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4642",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4642,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32a",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32b",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4643",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4643,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32b",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission33",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-sacrifice-teleport-4541",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4541,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33017,
+        "y": 32419,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-sacrifice-teleport-4542",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4542,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33018,
+        "y": 32425,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission75",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-scroll-note",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4662,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission53",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission54",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission55",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_scroll.lua:1-13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-statue",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32998,
+          "y": 32416,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 4636,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission24",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission25",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_statue.lua:1-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-switch",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4650,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission40",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua:1-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-tears",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4632,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission14",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission15",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19084",
+        "count": 3,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_tears.lua:1-16"
+      ]
+    }
+  ]
+}
