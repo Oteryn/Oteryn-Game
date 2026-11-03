@@ -301,6 +301,9 @@ fn extend_callbacks(
 }
 
 #[cfg(test)]
+mod batch4_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

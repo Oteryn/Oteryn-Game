@@ -111,3 +111,125 @@ impl NativeRule {
             .collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::quest::QuestComparison;
+
+    fn values(rule: NativeRule, values: [i64; 3]) -> BTreeMap<String, i64> {
+        rule.tracks()
+            .into_iter()
+            .zip(values)
+            .map(|(track, value)| (track.to_owned(), value))
+            .collect()
+    }
+
+    fn effects(rule: NativeRule) -> Vec<QuestEffect> {
+        rule.tracks()
+            .into_iter()
+            .map(|track| QuestEffect {
+                track: track.to_owned(),
+                from: QuestComparison::Between(0, i64::MAX),
+                effect: QuestEffectKind::Native(rule),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn native_adapter_applies_complete_source_snapshots() {
+        let cults = NativeRule::CultsSymbol { symbol: 12 };
+        let before = values(cults, [3, 0, 0]);
+        assert_eq!(cults.evaluate(&before), Ok(values(cults, [3, 4096, 1])));
+        assert_eq!(before, values(cults, [3, 0, 0]));
+
+        let dance = NativeRule::UnnaturalDance { tile: 2 };
+        assert_eq!(
+            dance.evaluate(&values(dance, [16, 0, 15])),
+            Ok(values(dance, [17, 3, 7]))
+        );
+    }
+
+    #[test]
+    fn native_adapter_refuses_partial_extra_and_foreign_snapshots() {
+        let rule = NativeRule::CultsSymbol { symbol: 0 };
+        let mut partial = values(rule, [3, 0, 0]);
+        partial.remove(cults_of_tibia::TEMP);
+        assert_eq!(rule.evaluate(&partial), Err(QuestRefusal::NotSupported));
+
+        let mut extra = values(rule, [3, 0, 0]);
+        extra.insert("oteryn:quest-progress/unrelated".into(), 0);
+        assert_eq!(rule.evaluate(&extra), Err(QuestRefusal::NotSupported));
+
+        let foreign = values(NativeRule::UnnaturalDance { tile: 5 }, [1, 2, 6]);
+        assert_eq!(rule.evaluate(&foreign), Err(QuestRefusal::NotSupported));
+    }
+
+    #[test]
+    fn native_effects_require_exact_quest_keys_and_one_rule() {
+        let rule = NativeRule::CultsSymbol { symbol: 0 };
+        let expected = effects(rule);
+        assert!(rule.valid_effects(cults_of_tibia::QUEST, &expected));
+        assert!(!rule.valid_effects(unnatural_selection::QUEST, &expected));
+        assert!(!rule.valid_effects(cults_of_tibia::QUEST, &expected[..2]));
+
+        let mut duplicate = expected.clone();
+        duplicate[2].track = duplicate[0].track.clone();
+        assert!(!rule.valid_effects(cults_of_tibia::QUEST, &duplicate));
+
+        let mut mixed = expected.clone();
+        mixed[1].effect = QuestEffectKind::Native(NativeRule::CultsSymbol { symbol: 1 });
+        assert!(!rule.valid_effects(cults_of_tibia::QUEST, &mixed));
+
+        let mut scalar = expected;
+        scalar[2].effect = QuestEffectKind::Add(0);
+        assert!(!rule.valid_effects(cults_of_tibia::QUEST, &scalar));
+    }
+
+    #[test]
+    fn native_invalid_identifiers_cannot_pass_the_adapter() {
+        for rule in [
+            NativeRule::CultsSymbol { symbol: 13 },
+            NativeRule::CultsSymbol { symbol: u8::MAX },
+            NativeRule::UnnaturalDance { tile: 0 },
+            NativeRule::UnnaturalDance { tile: 10 },
+        ] {
+            assert!(!rule.valid_effects(rule.quest(), &effects(rule)));
+            assert_eq!(
+                rule.evaluate(&values(rule, [0, 0, 0])),
+                Err(QuestRefusal::NotSupported)
+            );
+        }
+    }
+
+    #[test]
+    fn native_definition_encoding_keeps_rule_and_identifier_separate() {
+        let mut encoded = vec![99];
+        NativeRule::CultsSymbol { symbol: 0 }.encode(&mut encoded);
+        NativeRule::CultsSymbol { symbol: 12 }.encode(&mut encoded);
+        NativeRule::UnnaturalDance { tile: 1 }.encode(&mut encoded);
+        NativeRule::UnnaturalDance { tile: 9 }.encode(&mut encoded);
+        assert_eq!(encoded, [99, 1, 0, 1, 12, 2, 1, 2, 9]);
+    }
+
+    #[test]
+    fn native_json_rejects_unknown_kinds_and_fields() -> Result<(), serde_json::Error> {
+        assert_eq!(
+            serde_json::from_str::<NativeRule>(r#"{"kind":"cults_symbol","symbol":12}"#)?,
+            NativeRule::CultsSymbol { symbol: 12 }
+        );
+        assert_eq!(
+            serde_json::from_str::<NativeRule>(r#"{"kind":"unnatural_dance","tile":9}"#)?,
+            NativeRule::UnnaturalDance { tile: 9 }
+        );
+        for text in [
+            r#"{"kind":"arbitrary_script","symbol":0}"#,
+            r#"{"kind":"cults_symbol","symbol":0,"tile":1}"#,
+            r#"{"kind":"unnatural_dance","tile":1,"extra":true}"#,
+            r#"{"kind":"cults_symbol","symbol":256}"#,
+        ] {
+            assert!(serde_json::from_str::<NativeRule>(text).is_err());
+        }
+        Ok(())
+    }
+}
