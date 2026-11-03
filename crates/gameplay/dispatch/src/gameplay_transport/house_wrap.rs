@@ -1,5 +1,6 @@
 //! HOUSE-ITEM-WIRE-1: explicit wrap command, House custody and durable conversion.
 use super::house_furnishing::{self as rules, Action, Authority, Command, Item, Rule, State};
+use super::furniture_catalog;
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use crate::content::ReferenceItemField;
 use crate::durability::house_scope_handoff::HouseId;
@@ -71,7 +72,7 @@ fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefiniti
     if let Some(target)=target {
         request.expected_revision.checked_add(1)?;
         let id=target.production_key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
-        if target.family!="Item" || target.revision_ref!="definition-r1" || !wrapped_trade_item(id) {return None}
+        if target.family != "Item" || target.revision_ref != "definition-r1" || (!wrapped_trade_item(id) && furniture_catalog::wrapped_to(id) != Some(DECORATION_KIT_ITEM_ID)) { return None; }
         let kit=format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}");
         return match request.action {
             wire::Action::Unwrap if definition==kit => Some(target.production_key.clone()),
@@ -80,10 +81,14 @@ fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefiniti
         };
     }
     request.expected_revision.checked_add(1)?;
-    let action = match request.action {
-        wire::Action::Wrap => Action::Wrap,
-        wire::Action::Unwrap => Action::Unwrap,
+    let source_id = definition.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
+    let (action, output_id) = match request.action {
+        wire::Action::Wrap => (Action::Wrap, furniture_catalog::wrapped_to(source_id)?),
+        // Crystal construction_kits.lua:1-58 places a kit only on a House tile;
+        // House admission and ACL fencing are enforced by execute before this draft.
+        wire::Action::Unwrap => (Action::PlaceKit, furniture_catalog::construction_kit_to(source_id)?),
     };
+    let output = format!("oteryn:item.tibia.i{output_id}");
     let mut state = State {
         revision: request.expected_revision,
         ..State::default()
@@ -108,21 +113,14 @@ fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefiniti
         action,
         source: 1,
         target: None,
+        destruction_roll: 1,
     };
-    let conversion = [
-        Rule {
-            action: Action::Wrap,
-            source: FURNITURE,
-            output: KIT,
-            amount: 0,
-        },
-        Rule {
-            action: Action::Unwrap,
-            source: KIT,
-            output: FURNITURE,
-            amount: 0,
-        },
-    ];
+    let conversion = [Rule {
+        action,
+        source: definition,
+        output: &output,
+        amount: 0,
+    }];
     if rules::dispatch(
         &mut state,
         Some(Authority {

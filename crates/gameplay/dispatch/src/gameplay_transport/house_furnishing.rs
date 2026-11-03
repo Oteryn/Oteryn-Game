@@ -7,6 +7,8 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     Wrap,
+    // Purchased decoration-kit metadata unwraps before this generic transition.
+    #[cfg_attr(not(test), allow(dead_code))]
     Unwrap,
     // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
     #[cfg_attr(not(test), allow(dead_code))]
@@ -26,10 +28,10 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Rule {
+pub struct Rule<'a> {
     pub action: Action,
-    pub source: &'static str,
-    pub output: &'static str,
+    pub source: &'a str,
+    pub output: &'a str,
     pub amount: u32,
 }
 
@@ -66,6 +68,8 @@ pub struct Command {
     pub action: Action,
     pub source: u64,
     pub target: Option<u64>,
+    /// Pre-sampled uniform roll in 1..=7 from the production command owner.
+    pub destruction_roll: u8,
 }
 
 impl State {
@@ -73,7 +77,7 @@ impl State {
         &mut self,
         authority: Authority,
         command: &Command,
-        rules: &[Rule],
+        rules: &[Rule<'_>],
     ) -> UseDisposition {
         if (self.revision, authority.generation, authority.acl_revision)
             != (command.revision, command.generation, command.acl_revision)
@@ -126,7 +130,9 @@ impl State {
                 };
                 if item.hit_points > rule.amount {
                     item.hit_points -= rule.amount;
-                } else {
+                } else if super::furniture_catalog::destroyed_to(1, command.destruction_roll)
+                    .is_some()
+                {
                     *item = Item {
                         definition: rule.output.into(),
                         amount: 1,
@@ -192,7 +198,7 @@ pub fn dispatch(
     state: &mut State,
     authority: Option<Authority>,
     command: &Command,
-    rules: &[Rule],
+    rules: &[Rule<'_>],
 ) -> UseDisposition {
     authority.map_or(UseDisposition::NothingToUse, |current| {
         state.apply(current, command, rules)
@@ -202,7 +208,7 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn rules() -> Vec<Rule> {
+    fn rules() -> Vec<Rule<'static>> {
         vec![
             Rule {
                 action: Action::Wrap,
@@ -263,6 +269,7 @@ mod tests {
             action,
             source,
             target,
+            destruction_roll: 1,
         }
     }
     #[test]
