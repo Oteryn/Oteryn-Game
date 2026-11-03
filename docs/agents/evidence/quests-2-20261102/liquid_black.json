@@ -1,0 +1,2104 @@
+{
+  "schema": "OTERYN_QUESTS_2_REVIEW_SNAPSHOT/v1",
+  "classification": "DERIVED",
+  "quest": "liquid_black",
+  "lane": "soul",
+  "batch": "quests-2-20261102",
+  "scope": "Frozen source rows and author dispositions preserved verbatim as JSON values. IMPLEMENTED means the named code/data subset only; all limitations and validation claims remain in the source disposition.",
+  "input_documents": [
+    {
+      "path": "soul_war.json",
+      "sha256": "0c6acf2bb068dc903dc39e509f75f47269977b34d09bad6cdd9b36738bd8a034"
+    },
+    {
+      "path": "grave_danger.json",
+      "sha256": "fa7668c737eaca2a8a86c3ebf9ec47a103e9ed0be12ebc5e10bd79b6a1e87107"
+    },
+    {
+      "path": "primal_ordeal_quest.json",
+      "sha256": "c6c0650f23414ca4f671355061ba9606d4a329f4c0537d3f57d74c7a28237e91"
+    },
+    {
+      "path": "liquid_black.json",
+      "sha256": "ad9aa6c4ebc3742c58098a5cc442de75e382e4ac075886f82ef273286652fa1c"
+    },
+    {
+      "path": "completion-ledger.json",
+      "sha256": "075a78d5c368877e7156092d6cefe041c3ae255e7ef9eb63775dfce89da1bdae"
+    }
+  ],
+  "source_context": {},
+  "source_rows_sha256": "219c23248e7f189eaf5d507783f3c4b5eedfe09847f2f1c0e427c39bdbebd7b8",
+  "source_dispositions_sha256": "c875945f7fa78e91bfcb44802ca4fd193c416d1d71eb7c12b4789557a36fe002",
+  "summary": {
+    "inventory_rows": 21,
+    "new_pattern_rows_without_assigned_id": 0,
+    "import_kinds": {
+      "AUTO": 2,
+      "RĘCZNIE": 19
+    },
+    "normalized_status": {
+      "EXISTING": 1,
+      "IMPLEMENTED": 3,
+      "LEFT_OUT": 17
+    },
+    "source_status": {
+      "DATA_IMPLEMENTED_MAP_QUALIFICATION_HELD": 1,
+      "EXISTING_CALLBACK_PRESERVED_MAP_QUALIFICATION_HELD": 1,
+      "LEFT_OUT": 17,
+      "NATIVE_DIALOGUE_IMPLEMENTED": 2
+    },
+    "complete_playable_quest_claimed": false
+  },
+  "rows": [
+    {
+      "ordinal": 1,
+      "element": "Scrutinon: opis Quirefang",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Scrutinon: opis Quirefang",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "NPC quirefang",
+        "condition": "rozmowa",
+        "effect": "topic=1; cztery pełne wypowiedzi o wyspie",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 56
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Scrutinon: opis Quirefang",
+        "patterns": [
+          "P09"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "NATIVE_DIALOGUE_IMPLEMENTED",
+        "reason": "Scrutinon exact name/quirefang/visitor order, full replies and atomic Questline1+Visitor1 through existing fenced writer.",
+        "question_or_answer": [],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 56
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NATIVE_DIALOGUE_IMPLEMENTED",
+        "left_out": false,
+        "reason": "Scrutinon exact name/quirefang/visitor order, full replies and atomic Questline1+Visitor1 through existing fenced writer.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/scrutinon.lua",
+          "start_line": 56,
+          "end_line": 56,
+          "blob_sha256": "4d71672acedab63fca203feb8156aeeae7faabe2dcff7430cac12c34b0893f8e",
+          "blob_line_count": 108,
+          "excerpt_sha256": "5c368d2e9ffc5a5795744932bb4576ee46be5fa1a1679e05538c72b41907aa04",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/scrutinon.lua#L56-L56"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "element": "Scrutinon: rozpoczęcie Visitor",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Scrutinon: rozpoczęcie Visitor",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "NPC visitor",
+        "condition": "Questline<1",
+        "effect": "Questline=1; Visitor=1; topic=0; dwie wypowiedzi",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 64
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 69
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Scrutinon: rozpoczęcie Visitor",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "NATIVE_DIALOGUE_IMPLEMENTED",
+        "reason": "Scrutinon exact name/quirefang/visitor order, full replies and atomic Questline1+Visitor1 through existing fenced writer.",
+        "question_or_answer": [],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 64
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 69
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NATIVE_DIALOGUE_IMPLEMENTED",
+        "left_out": false,
+        "reason": "Scrutinon exact name/quirefang/visitor order, full replies and atomic Questline1+Visitor1 through existing fenced writer.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/scrutinon.lua",
+          "start_line": 64,
+          "end_line": 64,
+          "blob_sha256": "4d71672acedab63fca203feb8156aeeae7faabe2dcff7430cac12c34b0893f8e",
+          "blob_line_count": 108,
+          "excerpt_sha256": "c142064bd99ac65d0dbbb519a94bc7b0dd303a4a1853e95fd44030cca8971ec3",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/scrutinon.lua#L64-L64"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/scrutinon.lua",
+          "start_line": 69,
+          "end_line": 69,
+          "blob_sha256": "4d71672acedab63fca203feb8156aeeae7faabe2dcff7430cac12c34b0893f8e",
+          "blob_line_count": 108,
+          "excerpt_sha256": "4ec3ba806483cd72c5a5b562762779c3b50a49c58df224619aba17423c8f8834",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/scrutinon.lua#L69-L69"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "element": "Notatki o współrzędnych",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Notatki o współrzędnych",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "trigger": "Use uid57743",
+        "condition": "Visitor=1",
+        "effect": "daj item14176; Visitor=2",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_notescoordinates.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Notatki o współrzędnych",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "UID57743 mint14176×1 + Visitor1→2 requires the forbidden new0832 exchange owner. All proposal/test/profile files archived outside repo; no active NOTES transition.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589902675"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_notescoordinates.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "UID57743 mint14176×1 + Visitor1→2 requires the forbidden new0832 exchange owner. All proposal/test/profile files archived outside repo; no active NOTES transition.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589902675"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_notescoordinates.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "7b50649d708dccb550c272ea86d89b8dee054eb800597894771a0896c52bb2c9",
+          "blob_line_count": 16,
+          "excerpt_sha256": "81fa317e54aef2dfe28519e7b84981b5126677f8a7ce0067a3b121ec9de378dc",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_notescoordinates.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "element": "Fotel Spectulusa",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Fotel Spectulusa",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "Use uid57744",
+        "condition": "Visitor=2",
+        "effect": "teleport33269,31832,1; Visitor=3",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_chairteleport.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "AUTO"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Fotel Spectulusa",
+        "patterns": [
+          "P03"
+        ],
+        "import_kind": "AUTO",
+        "status": "DATA_IMPLEMENTED_MAP_QUALIFICATION_HELD",
+        "reason": "Exact source callback authored using the existing executor; absent source tile or target refuses. This is not an end-to-end playable-world assertion.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_chairteleport.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "CALLBACK_DATA",
+        "source_status": "DATA_IMPLEMENTED_MAP_QUALIFICATION_HELD",
+        "left_out": false,
+        "reason": "Exact source callback authored using the existing executor; absent source tile or target refuses. This is not an end-to-end playable-world assertion.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_chairteleport.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "b399178b3c27d80589d89db4e56216eaef303111ae6e43a251a8acde26ff50cd",
+          "blob_line_count": 18,
+          "excerpt_sha256": "7557f502a7cf71ce3a4b53761cdd110fc830ee096199ccf9fab06dcb2ab5249b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_chairteleport.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "element": "Spectulus: pytanie",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Spectulus: pytanie",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "NPC machine",
+        "condition": "Visitor=3",
+        "effect": "topic=21; pełna wypowiedź donora; kod nie przyznaje wzmiankowanego złota",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 379
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Spectulus: pytanie",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 379
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "start_line": 379,
+          "end_line": 379,
+          "blob_sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+          "blob_line_count": 502,
+          "excerpt_sha256": "e855ea4cba00ba08ae7cc892289d0ca95ce48cb6e9936ae3e0b545a71fc8b2f1",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/spectulus.lua#L379-L379"
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "element": "Spectulus: silniki",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Spectulus: silniki",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "NPC yes",
+        "condition": "Visitor=3 AND topic=21",
+        "effect": "topic=22; pełna wypowiedź donora; kod nie przyznaje wzmiankowanego złota",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 387
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Spectulus: silniki",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 387
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "start_line": 387,
+          "end_line": 387,
+          "blob_sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+          "blob_line_count": 502,
+          "excerpt_sha256": "8057067f1d3e60a809f48ee3fd66c4fb62a0144e82fe93af6dbd968d2500d255",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/spectulus.lua#L387-L387"
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "element": "Spectulus: sondy",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Spectulus: sondy",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "NPC yes",
+        "condition": "Visitor=3 AND topic=22",
+        "effect": "topic=23; pełna wypowiedź donora; kod nie przyznaje wzmiankowanego złota",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 399
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Spectulus: sondy",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 399
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "start_line": 399,
+          "end_line": 399,
+          "blob_sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+          "blob_line_count": 502,
+          "excerpt_sha256": "6719fc21f166f2f16155e5b565c26123a63b7d7648afd1319f0e6a3ae424fd86",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/spectulus.lua#L399-L399"
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "element": "Spectulus: dostęp",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Spectulus: dostęp",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "NPC yes",
+        "condition": "Visitor=3 AND topic=23",
+        "effect": "topic=24; Visitor=4; pełna wypowiedź donora; kod nie przyznaje wzmiankowanego złota",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 409
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Spectulus: dostęp",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 409
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "line": 160,
+          "detail": "Dane Dialogue istnieją; ogólny NPC consumer nie wykonuje tych skryptowych gałęzi i wieloczęściowych odpowiedzi."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Full4Liquid branches retained in source data and closed policy, but runtime NPC admission held because greeting depends on foreign SeaOfLight.Questline<10/≥10. No unconditional substituted greeting.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "start_line": 409,
+          "end_line": 409,
+          "blob_sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+          "blob_line_count": 502,
+          "excerpt_sha256": "2f03b488a62577219acc06c1ce21c65848347baa708b30b52dda1b1e559993b0",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/spectulus.lua#L409-L409"
+        }
+      ]
+    },
+    {
+      "ordinal": 9,
+      "element": "Drabina po dostępie",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Drabina po dostępie",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "StepIn aid57745",
+        "condition": "Visitor>=4",
+        "effect": "przepuszcza i watersplash; przy odmowie teleport fromPosition",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_ladder.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Drabina po dostępie",
+        "patterns": [
+          "P03"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Read-only Visitor≥4 guard and source fallback/effect require a qualified native access gate; current closed callback SET cannot preserve both Visitor4 and5. Shared contract is unchanged and maps are not qualified.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_ladder.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Read-only Visitor≥4 guard and source fallback/effect require a qualified native access gate; current closed callback SET cannot preserve both Visitor4 and5. Shared contract is unchanged and maps are not qualified.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/movements_ladder.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "35bad63e6df50cc37d0ae78551fb48142350350dab75f7930e46e985b4c9933c",
+          "blob_line_count": 19,
+          "excerpt_sha256": "09699739b8be659f68e9796b23fa5ed4c27f5ef45942cd4cdfe81d903cd64e7e",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/movements_ladder.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "element": "Szybki dostęp",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Szybki dostęp",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "StepIn aid57747",
+        "condition": "Visitor>=4",
+        "effect": "teleport33446,31288,14; odmowa fromPosition; Visitor bez zmiany",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_quick_access.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Szybki dostęp",
+        "patterns": [
+          "P03"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Read-only Visitor≥4 guard and source fallback/effect require a qualified native access gate; current closed callback SET cannot preserve both Visitor4 and5. Shared contract is unchanged and maps are not qualified.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_quick_access.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Read-only Visitor≥4 guard and source fallback/effect require a qualified native access gate; current closed callback SET cannot preserve both Visitor4 and5. Shared contract is unchanged and maps are not qualified.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/movements_quick_access.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "cb290f2060b015dd497cb8ef21c6cad9c4fc23fb7a710f240f4b6846b13a3923",
+          "blob_line_count": 22,
+          "excerpt_sha256": "a98115eb78477becbbd1a26b38690b9c2b3ff9195f999705700060a6ffded8ec",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/movements_quick_access.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 11,
+      "element": "Skrót",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Skrót",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "StepIn aid57746",
+        "condition": "Visitor>=4",
+        "effect": "Visitor=5; teleport33478,31314,7; odmowa fromPosition",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_shortcut.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "TAK",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "content/quests/world-callbacks.json",
+          "line": 1,
+          "detail": "liquid-black-shortcut aid57746, Visitor4..5→5 i donorowy teleport; dispatch test quest_world_callbacks/scenario.rs276."
+        },
+        "import_kind": "AUTO"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Skrót",
+        "patterns": [
+          "P03"
+        ],
+        "import_kind": "AUTO",
+        "status": "EXISTING_CALLBACK_PRESERVED_MAP_QUALIFICATION_HELD",
+        "reason": "Existing liquid-black-shortcut callback and scenario test retained unchanged. Its physical world admission is not newly qualified by this batch.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/movements_shortcut.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "TAK",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "content/quests/world-callbacks.json",
+          "line": 1,
+          "detail": "liquid-black-shortcut aid57746, Visitor4..5→5 i donorowy teleport; dispatch test quest_world_callbacks/scenario.rs276."
+        }
+      },
+      "normalized": {
+        "status": "EXISTING",
+        "delivery_kind": "CALLBACK_DATA",
+        "source_status": "EXISTING_CALLBACK_PRESERVED_MAP_QUALIFICATION_HELD",
+        "left_out": false,
+        "reason": "Existing liquid-black-shortcut callback and scenario test retained unchanged. Its physical world admission is not newly qualified by this batch.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/movements_shortcut.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "4642bd2376f7a9a81c162e89866d19a132a9c03c60c7c55b779804ea22da69ab",
+          "blob_line_count": 23,
+          "excerpt_sha256": "237c176dd83136924538b36102ba53f4b0aa4651d5b478058d9c8c53427e485d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/movements_shortcut.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 12,
+      "element": "Seashell key: niepowodzenie",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Seashell key: niepowodzenie",
+        "patterns": [
+          "P02"
+        ],
+        "trigger": "Use item14009 on14066",
+        "condition": "random(0,100)<85",
+        "effect": "usuwa jeden klucz; brak nagrody; prawdopodobieństwo85/101",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 3
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Seashell key: niepowodzenie",
+        "patterns": [
+          "P02"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 3
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "1968e12b0d6c5fa45864eaa7346e9d5e367d5137941601d076937310bc3a85ad",
+          "blob_line_count": 31,
+          "excerpt_sha256": "e7c3ffd7b00f4779ce7c0524691af161c30f25a83e9697e0ddb10ec30df90bf5",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_seashell_key.lua#L3-L3"
+        }
+      ]
+    },
+    {
+      "ordinal": 13,
+      "element": "Seashell key: nagroda 14173",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14173",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "trigger": "Use item14009 on14066",
+        "condition": "pierwszy roll>=85; r=random(0,1000); r<333",
+        "effect": "daj item14173; zużyj jeden klucz",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 19
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14173",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 19
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+          "start_line": 19,
+          "end_line": 19,
+          "blob_sha256": "1968e12b0d6c5fa45864eaa7346e9d5e367d5137941601d076937310bc3a85ad",
+          "blob_line_count": 31,
+          "excerpt_sha256": "9f226710cf61b623d70d5e1607fdbfb471ca105336402726fe54a5d65bc3fc2b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_seashell_key.lua#L19-L19"
+        }
+      ]
+    },
+    {
+      "ordinal": 14,
+      "element": "Seashell key: nagroda 14174",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14174",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "trigger": "Use item14009 on14066",
+        "condition": "pierwszy roll>=85; r=random(0,1000); r>=667",
+        "effect": "daj item14174; zużyj jeden klucz",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 21
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14174",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 21
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+          "start_line": 21,
+          "end_line": 21,
+          "blob_sha256": "1968e12b0d6c5fa45864eaa7346e9d5e367d5137941601d076937310bc3a85ad",
+          "blob_line_count": 31,
+          "excerpt_sha256": "c0a0475bef68109f832a35935a871e2d2292e10d7ef76517bf6abb26d63ab8a1",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_seashell_key.lua#L21-L21"
+        }
+      ]
+    },
+    {
+      "ordinal": 15,
+      "element": "Seashell key: nagroda 14175",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14175",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "trigger": "Use item14009 on14066",
+        "condition": "pierwszy roll>=85; r=random(0,1000); 333<=r<667",
+        "effect": "daj item14175; zużyj jeden klucz",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 23
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Seashell key: nagroda 14175",
+        "patterns": [
+          "P02",
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+            "line": 23
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Typed item-on-target14009→14066 with random choice and indivisible consume/grant requires the held exchange/reward owner. Literal0..100 and0..1000 source RNG retained in inventory; no substitute reward.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/actions_seashell_key.lua",
+          "start_line": 23,
+          "end_line": 23,
+          "blob_sha256": "1968e12b0d6c5fa45864eaa7346e9d5e367d5137941601d076937310bc3a85ad",
+          "blob_line_count": 31,
+          "excerpt_sha256": "ee555910feb2cd2518628d7a3dd42c65bd647e6a51a34b64d9543e3421a95887",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/actions_seashell_key.lua#L23-L23"
+        }
+      ]
+    },
+    {
+      "ordinal": 16,
+      "element": "Zabicie Jaul",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Zabicie Jaul",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "trigger": "DeeplingBosses onDeath",
+        "condition": "każdy bieżący Player z damageMap; bez last-hit i bez czasu PZ",
+        "effect": "storage50075=1; DeeplingStatus50078=max(stary,2)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 2
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Zabicie Jaul",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 2
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 2,
+          "end_line": 2,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "1939b1e0b016a053d635563592f4bf7a54bd46e9c9c313280a0a0d093baf12e1",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L2-L2"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 13,
+          "end_line": 13,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "7112ee45aec36f0dfb2b4979652d8cfc4efae9c17f7ebb34bcd1cefc94b553a9",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L13-L13"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1075,
+          "end_line": 1075,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "9d549db8762c3b2c0e56977216cda385ca5350e0383672eec1dcae08983dd355",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1075-L1075"
+        }
+      ]
+    },
+    {
+      "ordinal": 17,
+      "element": "Zabicie Tanjis",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Zabicie Tanjis",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "trigger": "DeeplingBosses onDeath",
+        "condition": "każdy bieżący Player z damageMap; bez last-hit i bez czasu PZ",
+        "effect": "storage50076=1; DeeplingStatus50078=max(stary,3)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 3
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Zabicie Tanjis",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 3
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 3,
+          "end_line": 3,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "f1f926fb635cc164bebfa80ad9460b15b1e69e603e2760497625969a50c45079",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L3-L3"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 13,
+          "end_line": 13,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "7112ee45aec36f0dfb2b4979652d8cfc4efae9c17f7ebb34bcd1cefc94b553a9",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L13-L13"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1075,
+          "end_line": 1075,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "9d549db8762c3b2c0e56977216cda385ca5350e0383672eec1dcae08983dd355",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1075-L1075"
+        }
+      ]
+    },
+    {
+      "ordinal": 18,
+      "element": "Zabicie Obujos",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Zabicie Obujos",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "trigger": "DeeplingBosses onDeath",
+        "condition": "każdy bieżący Player z damageMap; bez last-hit i bez czasu PZ",
+        "effect": "storage50077=1; DeeplingStatus50078=max(stary,4)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 4
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Zabicie Obujos",
+        "patterns": [
+          "P07",
+          "P21"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 4
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+            "line": 13
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data/libs/functions/functions.lua",
+            "line": 1075
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Damaging-player recipient proof (not last-hit/party substitute), status2/3/4 and boss reward flag require source boss/world binding. No invented kill authority.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 4,
+          "end_line": 4,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "6155128edc4d2d2d6f749fe87c46b5ca24616b709ea3bef9219f3884e6e48ab0",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L4-L4"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+          "start_line": 13,
+          "end_line": 13,
+          "blob_sha256": "c2e96b512739c5aa4b9c463cfe3bc09627ccc478dece11848cc551196bdeb519",
+          "blob_line_count": 21,
+          "excerpt_sha256": "7112ee45aec36f0dfb2b4979652d8cfc4efae9c17f7ebb34bcd1cefc94b553a9",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua#L13-L13"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1075,
+          "end_line": 1075,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "9d549db8762c3b2c0e56977216cda385ca5350e0383672eec1dcae08983dd355",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1075-L1075"
+        }
+      ]
+    },
+    {
+      "ordinal": 19,
+      "element": "Skrzynia Deepling Jaul",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Jaul",
+        "patterns": [
+          "P05"
+        ],
+        "trigger": "Use uid9302",
+        "condition": "JaulKilled=1",
+        "effect": "daj 3035x50,14224,14042; 1/10 dodatkowo los13990/14021; KillStorage=0 (powtarzalne po następnym zabiciu)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 2
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Jaul",
+        "patterns": [
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 2
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 2,
+          "end_line": 2,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "8b710a17741581853fcd727f665f95a378f675c1ac51aef797c83375ef13d4d3",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L2-L2"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 38,
+          "end_line": 38,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "6dbd06438f9ed970bee25764322c5964a24eaca3046bf716822e8adc980f77a4",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L38-L38"
+        }
+      ]
+    },
+    {
+      "ordinal": 20,
+      "element": "Skrzynia Deepling Tanjis",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Tanjis",
+        "patterns": [
+          "P05"
+        ],
+        "trigger": "Use uid9303",
+        "condition": "TanjisKilled=1",
+        "effect": "daj 14223,3035x20,13990,14042; 1/10 dodatkowo los14022/3027; KillStorage=0 (powtarzalne po następnym zabiciu)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 12
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Tanjis",
+        "patterns": [
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 12
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 12,
+          "end_line": 12,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "87d17679b5910293a532ace595a9a616184b4e425472f0257b42411af4066784",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L12-L12"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 38,
+          "end_line": 38,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "6dbd06438f9ed970bee25764322c5964a24eaca3046bf716822e8adc980f77a4",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L38-L38"
+        }
+      ]
+    },
+    {
+      "ordinal": 21,
+      "element": "Skrzynia Deepling Obujos",
+      "source_row": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Obujos",
+        "patterns": [
+          "P05"
+        ],
+        "trigger": "Use uid9304",
+        "condition": "ObujosKilled=1",
+        "effect": "daj 14222,14043,3035x30,13987; 1/10 dodatkowo los14023/281; KillStorage=0 (powtarzalne po następnym zabiciu)",
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 23
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "oteryn": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        },
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "liquid_black",
+        "element": "Skrzynia Deepling Obujos",
+        "patterns": [
+          "P05"
+        ],
+        "import_kind": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "donor": [
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 23
+          },
+          {
+            "repository": "zimbadev/crystalserver",
+            "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+            "line": 38
+          }
+        ],
+        "existing_before": {
+          "status": "CZĘŚCIOWO",
+          "repository": "Oteryn/Oteryn-Game",
+          "commit": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 22,
+          "detail": "Istnieją Use/StepIn; konkretny warunek/efekt wymaga powiązania i kwalifikacji mapy; nie jest to dowód pełnej grywalności."
+        }
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "UID9302/9303/9304 random optional reward plus guaranteed items and flag1→0 require atomic source claim and admitted placement; shared RewardClaim placement and exchange owner held.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521066",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 23,
+          "end_line": 23,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "6c447612fa4782dc42429b33a35abff1e907e94f7cb4196f773d19b172a5c748",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L23-L23"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua",
+          "start_line": 38,
+          "end_line": 38,
+          "blob_sha256": "e747a1fc3d05598d88186621e1252023570b5a3064b193cdda61c02b5ee04d83",
+          "blob_line_count": 67,
+          "excerpt_sha256": "6dbd06438f9ed970bee25764322c5964a24eaca3046bf716822e8adc980f77a4",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua#L38-L38"
+        }
+      ]
+    }
+  ]
+}

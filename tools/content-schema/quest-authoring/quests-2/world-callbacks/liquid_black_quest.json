@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/liquid-black-spectulus-chair",
+      "quest": "oteryn:quest.liquid_black_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57744,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33269,
+        "y": 31832,
+        "floor": -1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/actions_chairteleport.lua:1-18"
+      ]
+    }
+  ]
+}
