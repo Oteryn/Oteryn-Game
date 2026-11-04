@@ -3,6 +3,8 @@ pub mod combat_input;
 pub mod cyclopedia;
 pub mod input;
 pub mod map;
+#[path = "features/local-native-login/mod.rs"]
+pub mod native_login;
 pub mod play;
 pub mod reentry;
 pub mod scene;

@@ -2681,6 +2681,7 @@ dependencies = [
 name = "oteryn-synthetic-client-harness"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client",
  "oteryn-client-domain",
  "oteryn-client-simulation",
  "oteryn-dev-client",

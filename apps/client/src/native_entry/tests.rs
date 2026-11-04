@@ -246,3 +246,58 @@ fn configuration_is_read_only_when_the_platform_is_set() -> TestResult {
     assert!(!format!("{config:?}").contains("OTERYN_OAUTH_CLIENT_ID"));
     Ok(())
 }
+
+#[test]
+fn login_form_drives_existing_browser_gateway_and_admission() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let run = || -> TestResult {
+                use crate::native_login::{LoginForm, LoginSettings};
+                let stack = Stack::start_with_frames(Vec::new(), test_support::admitted_frames())?;
+                let config = stack.config();
+                let mut form = LoginForm::new(LoginSettings::from_values([
+                    config.platform_url.clone(),
+                    config.gateway_url.clone(),
+                    config.oauth_client_id.clone(),
+                    config.world_ref.clone(),
+                    config.character_id.clone(),
+                    config.dev_root.to_string_lossy().into_owned(),
+                ]));
+                let mut submitted = form.submit()?;
+                // The fixture browser follows the real loopback OAuth callback, without launching a desktop browser.
+                submitted.open_browser = config.open_browser;
+                submitted.retry_unit = config.retry_unit;
+                let mut entry = crate::reentry::Reentry::new(crate::ClientBootstrap::new()?);
+                assert!(entry.configure(submitted.clone()));
+                assert!(entry.request());
+                assert!(!entry.configure(submitted));
+                assert!(!entry.request());
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                loop {
+                    if let Some(result) = entry.poll() {
+                        form.finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+                        assert!(result.is_ok());
+                        break;
+                    }
+                    if std::time::Instant::now() >= deadline {
+                        return Err("form admission timed out".into());
+                    }
+                    std::thread::yield_now();
+                }
+                assert_eq!(form.message(), "Connected.");
+                assert_eq!(
+                    test_support::count(&stack.requests(), "POST /v1/game-auth/tickets"),
+                    1
+                );
+                assert_eq!(stack.admissions.load(Ordering::SeqCst), 1);
+                entry.shutdown();
+                stack.finish();
+                Ok(())
+            };
+            run().map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "login form scenario thread failed")?
+        .map_err(Into::into)
+}

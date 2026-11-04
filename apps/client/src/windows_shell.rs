@@ -1,9 +1,11 @@
 mod input;
+#[path = "features/local-native-login/shell.rs"]
+mod native_login_shell;
 
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
+use oteryn_client::native_login::{LoginWindow, error_text};
 use oteryn_client::play::{PlayEnd, PlayLink, PlayView};
-use oteryn_client::pre_native_status;
 use oteryn_client::reentry::Reentry;
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
@@ -26,6 +28,7 @@ pub enum ShellError {
     EventLoopRun,
     WindowCreation,
     InputInitialization,
+    LoginInitialization,
     RendererInitialization,
     RendererResume,
     RendererSuspend,
@@ -40,6 +43,7 @@ impl Display for ShellError {
             Self::EventLoopCreation => "client event loop creation failed",
             Self::EventLoopRun => "client event loop failed",
             Self::WindowCreation => "client window creation failed",
+            Self::LoginInitialization => "native login window creation failed",
             Self::InputInitialization => "client input initialization failed",
             Self::RendererInitialization => "client renderer initialization failed",
             Self::RendererResume => "client renderer resume failed",
@@ -64,6 +68,7 @@ struct Application {
     offline_own: TileCoord,
     offline_facing: StepDir,
     entry: Option<Reentry>,
+    login: Option<LoginWindow>,
     play: Option<Play>,
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
@@ -82,10 +87,12 @@ struct Play {
 
 impl Application {
     fn new(smoke: bool, client: Option<ClientBootstrap>) -> Result<Self, ShellError> {
-        let mut entry = client.map(Reentry::new);
-        if !smoke && let Some(entry) = &mut entry {
-            entry.request();
-        }
+        let entry = client.map(Reentry::new);
+        let login = if smoke {
+            None
+        } else {
+            Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
+        };
         Ok(Self {
             smoke,
             window: None,
@@ -95,6 +102,7 @@ impl Application {
             offline_own: TileCoord::new(START.0, START.1),
             offline_facing: StepDir::South,
             entry,
+            login,
             play: None,
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
@@ -122,7 +130,7 @@ impl Application {
     /// A session end returns to the pre-admission state: the offline scene, with the public
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
-        self.leave_play(&GameplayEntryError::Rejected(class).to_string());
+        self.leave_play(error_text(GameplayEntryError::Rejected(class)));
     }
 
     /// A committed logout ends play like a session end, without an error: the character is
@@ -136,6 +144,9 @@ impl Application {
         if let Some(entry) = &mut self.entry {
             entry.leave_play();
         }
+        if let Some(login) = &self.login {
+            login.show(message.to_owned());
+        }
         println!("Oteryn: {message}");
         if let Some(window) = &self.window {
             window.set_title(&format!("Oteryn — {message} — Enter: log in again"));
@@ -146,42 +157,8 @@ impl Application {
     }
 
     fn request_entry(&mut self) {
-        if let Some(entry) = &mut self.entry
-            && entry.request()
-            && let Some(window) = &self.window
-        {
-            window.set_title("Oteryn — signing in…");
-        }
-    }
-
-    fn poll_entry(&mut self) {
-        let Some(result) = self.entry.as_mut().and_then(Reentry::poll) else {
-            return;
-        };
-        match result {
-            Ok((mut view, link)) => {
-                let center = view.map_center();
-                let (world, reason) = World::from_env(center);
-                if let Some(reason) = reason {
-                    println!("Oteryn: drawing without map sprites: {reason}");
-                }
-                let shown = world.map(Arc::new).and_then(|world| {
-                    view.set_world(Arc::clone(&world))?;
-                    self.world = Some(world);
-                    Ok(())
-                });
-                if shown.is_err() {
-                    self.return_to_login(PublicClass::SessionUnavailable);
-                    return;
-                }
-                self.scene = None;
-                self.play = Some(Play {
-                    view,
-                    link,
-                    status: String::new(),
-                });
-            }
-            Err(error) => self.leave_play(&error.to_string()),
+        if let Some(login) = &self.login {
+            login.show("Review connection settings, then choose Save and sign in.".into());
         }
     }
 
@@ -217,10 +194,8 @@ impl ApplicationHandler for Application {
             return;
         }
         let attributes = WindowAttributes::default()
-            .with_title(format!(
-                "Oteryn — {} — Enter: log in again",
-                pre_native_status()
-            ))
+            .with_title("Oteryn — Enter: connection and sign-in")
+            .with_active(self.smoke)
             .with_inner_size(LogicalSize::new(960.0, 540.0));
         let Ok(window) = event_loop.create_window(attributes) else {
             self.fail(event_loop, ShellError::WindowCreation);
