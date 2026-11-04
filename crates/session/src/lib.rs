@@ -39,6 +39,7 @@ pub use oteryn_protocol_oteryn::market;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
 pub use oteryn_protocol_oteryn::quest_log;
+pub use oteryn_protocol_oteryn::world_event;
 pub use oteryn_protocol_oteryn::{
     animus_mastery, browse_field, daily_boost, daily_reward, depot_search, item_forge, item_view,
     store,

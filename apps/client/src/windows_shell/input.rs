@@ -21,6 +21,7 @@ impl Application {
                 || play.link.chat_party_room_input(events)
                 || play.link.cyclopedia_character_input(events)
                 || play.link.cyclopedia_tracker_input(events)
+                || play.link.world_event_input(events)
                 || play.link.daily_boost_input(events)
                 || play.link.depot_search_input(events)
                 || play.link.hireling_input(events)

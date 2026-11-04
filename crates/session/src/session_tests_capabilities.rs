@@ -73,6 +73,7 @@ fn derived_gated_routes_match_previous_table() {
         (40, &[40, 41], &[]),
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),
+        (53, &[64], &[]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80], &[28]),
@@ -847,4 +848,38 @@ fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Resul
             Ok::<(), BoxError>(())
         })?
     })?.join().map_err(|_| "NPC session thread panicked")?
+}
+
+#[test]
+fn world_event_query_uses_selected_session_and_empty_payload() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&53));
+                assert!(gated_routes().any(|(id, commands, _)| id == 53 && commands.contains(&64)));
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[53], &[53], &[]).await?;
+                    let frame = read_frame(&mut server).await?;
+                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                    assert_eq!(command.command_type, 64);
+                    assert!(command.payload.is_empty());
+                    let payload = world_event::encode_world_event_state(&world_event::WorldEventState {
+                        reset_epoch: 9,
+                        active: true,
+                        announcement: "Fair".into(),
+                    }).map_err(|_| "world-event encode failed")?;
+                    write_frame(&mut server, &encode_command_result(1, 41, 7, CommandStatus::Accepted, &payload)?).await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[53])?).await?;
+                let result = session.gated_command(53, 64, &[]).await?;
+                assert_eq!(world_event::decode_world_event_state(&result.payload).map_err(|_| "world-event decode failed")?.announcement, "Fair");
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "world-event session test thread panicked")?
 }

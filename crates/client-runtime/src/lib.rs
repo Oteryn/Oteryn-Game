@@ -2,6 +2,8 @@
 
 pub mod connection;
 pub mod hotkey_equip;
+#[path = "features/0053-world-event/protocol.rs"]
+pub mod world_event;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};

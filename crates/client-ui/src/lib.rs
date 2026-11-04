@@ -27,6 +27,9 @@ pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
 
+#[path = "features/0053-world-event/mod.rs"]
+pub mod world_event;
+
 /// Completed species and bounded Animus mastery pages.
 #[path = "features/0168-animus-mastery/mod.rs"]
 pub mod animus_mastery;

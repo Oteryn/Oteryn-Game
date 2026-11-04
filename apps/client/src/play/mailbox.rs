@@ -72,6 +72,8 @@ pub(super) struct Mailbox {
     pub(super) cyclopedia_character:
         oteryn_client_ui::cyclopedia_character::CyclopediaCharacterPanel,
     pub(super) cyclopedia_tracker: oteryn_client_ui::cyclopedia_tracker::CyclopediaTrackerPanel,
+    pub(super) world_event: oteryn_client_ui::world_event::WorldEventPanel,
+    pub(super) world_event_shutdown: bool,
     pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
@@ -293,6 +295,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.world_event_shutdown = true;
         mailbox.quest_shutdown = true;
         mailbox.wheel_shutdown = true;
         mailbox.prey_shutdown = true;

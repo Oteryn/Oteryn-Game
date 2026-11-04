@@ -298,9 +298,7 @@ fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpa
     }
 }
 
-/// The session task, run on the client runtime: sends requested steps and, while none is
-/// pending, keeps servicing liveness so an idle session is not dropped. It ends with the first
-/// session error (reported with its public class) or when the shell drops its link.
+/// Services commands and idle liveness until a public session error or shell-link shutdown.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
@@ -334,6 +332,7 @@ pub async fn run_session<T: Stepper>(
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
+    outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
@@ -347,6 +346,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        53 => outbox.world_event_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         195 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),
