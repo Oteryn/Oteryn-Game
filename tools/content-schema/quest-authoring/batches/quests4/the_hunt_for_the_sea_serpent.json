@@ -1,0 +1,1446 @@
+{
+  "schema": 1,
+  "quest_directory": "the_hunt_for_the_sea_serpent",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-up",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31045,
+        "floor": -2
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-down",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31044,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "the_hunt_for_the_sea_serpent",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "captain_haba",
+        "source_blob_sha256": "8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909",
+        "source_lua": "local internalNpcName = \"Captain Haba\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 98,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Is this a mutiny or what? Move, move!!\" },\n\t{ text = \"In the rigging ya lazy fools!\" },\n\t{ text = \"I wanna see you movin' ya lazy fools!!\" },\n\t{ text = \"Full sails!! There's a sea serpent to catch!!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal FishForASerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent\nlocal TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want? Askin' for a {passage}?\")\n\telse\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want?\")\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif table.contains({ \"mission\", \"hunt\", \"passage\" }, message:lower()) then\n\t\tif MsgContains(message, \"passage\") then\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\t\tnpcHandler:say(\"Hold your horses! First we need to get more {bait} fo' the sea serpent. Bring me the fish I requested and we can set sails immediately.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 0 then\n\t\t\tnpcHandler:say(\"Ya wanna join the hunt fo' the {sea serpent}? Be warned ya may pay with ya life! Are ya in to it?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\tnpcHandler:say(\"You got any {baits} for me?\", npc, creature)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"A'right, wanna put out to sea?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"A'right, we are here to resupply our stock of baits to catch the sea serpent. Your first task is to bring me 5 fish they are easy to catch. When you got them ask me for the {bait} again.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Let's go fo' a {hunt} and bring the beast down!\", npc, creature) --test\n\t\t\tplayer:teleportTo(Position(31942, 31047, 6))\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) < 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine, 1)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"bait\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 1 then\n\t\t\tif player:removeItem(3578, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 northern pike.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 2)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 2 then\n\t\t\tif player:removeItem(3580, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 green perch.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 3)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 3 then\n\t\t\tif player:removeItem(7159, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 rainbow trout.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 4)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 4 then\n\t\t\tif player:removeItem(7158, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, that should be enough fish to make the bait. Tell me when ya're ready fo' the {hunt}.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 5)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"The bait is ready, tell me if ya're ready to start the hunt.\", npc, creature)\n\t\tend\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Haba, Captain Haba for ya little worm.\" })\nkeywordHandler:addKeyword({ \"pirate\" }, StdModule.say, { npcHandler = npcHandler, text = \"I ain't no pirate. Don't let yourself mislead by my pirate hat. I got it from a friend of mine.\" })\nkeywordHandler:addKeyword({ \"friend\" }, StdModule.say, { npcHandler = npcHandler, text = \"Most o' my friends are dead the others don't like me anymore......well, seems there aren't many left.\" })\nkeywordHandler:addKeyword({ \"yeti\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addAliasKeyword({ \"chakoya\" })\nkeywordHandler:addKeyword({ \"barbarian\" }, StdModule.say, { npcHandler = npcHandler, text = \"Who are ya calling a barbarian?!? Watch your tongue here on board or you end up as fish fodder!\" })\nkeywordHandler:addKeyword({ \"port hope\" }, StdModule.say, { npcHandler = npcHandler, text = \"Dis is no passenger ship it's a WARship. I'm on hunting business.\" })\nkeywordHandler:addAliasKeyword({ \"liberty bay\" })\nkeywordHandler:addAliasKeyword({ \"edron\" })\nkeywordHandler:addAliasKeyword({ \"ab'dendriel\" })\nkeywordHandler:addAliasKeyword({ \"darashia\" })\nkeywordHandler:addAliasKeyword({ \"ankrahmun\" })\nkeywordHandler:addAliasKeyword({ \"issavi\" })\nkeywordHandler:addAliasKeyword({ \"kazordoon\" })\nkeywordHandler:addAliasKeyword({ \"krailos\" })\nkeywordHandler:addAliasKeyword({ \"rathleton\" })\nkeywordHandler:addAliasKeyword({ \"roshamuul\" })\nkeywordHandler:addAliasKeyword({ \"farmine\" })\nkeywordHandler:addKeyword({ \"ferumbras\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never heard of him. He is no captain that's for sure, otherwise I'd know him. I was on the sea for the last 20 years hunting this, this monster.\" })\nkeywordHandler:addKeyword({ \"monster\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yee, I've been chasing that monster for over 20 years now. I promise I'll bring it down!\" })\nkeywordHandler:addAliasKeyword({ \"beast\" })\nkeywordHandler:addAliasKeyword({ \"sea serpent\" })\nkeywordHandler:addKeyword({ \"rum\" }, StdModule.say, { npcHandler = npcHandler, text = \"It lets me forget the long years, the lost years. The years I was chasing after THAT monster, the sea serpent.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ye, I command 'is ship!\" })\nkeywordHandler:addKeyword({ \"ship\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our last ship has been destroyed by the most evil creature of the ocean: the sea serpent. To continue our hunt, I've bought this ship here.\" })\nkeywordHandler:addKeyword({ \"bonelord\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never seen one.\" })\nkeywordHandler:addKeyword({ \"banor\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm faithful - I'll catch that monster one day. Yes I will, as sure as my name is Captain Haba!!\" })\nkeywordHandler:addAliasKeyword({ \"uman\" })\nkeywordHandler:addAliasKeyword({ \"zathroth\" })\nkeywordHandler:addKeyword({ \"queen\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no queen. At least I didn't see her yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no king. At least I didn't see him yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"body\" }, StdModule.say, { npcHandler = npcHandler, text = \"Arms, legs, head, whatever. I got injuries on almost every part of my body!\" })\nkeywordHandler:addKeyword({ \"buy\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is no shop boy, this is a warship!\" })\nkeywordHandler:addAliasKeyword({ \"shop\" })\nkeywordHandler:addAliasKeyword({ \"sell\" })\nkeywordHandler:addKeyword({ \"camp\" }, StdModule.say, { npcHandler = npcHandler, text = \"We aren't even near that location! Wanna swim? Harharhar!\" })\nkeywordHandler:addAliasKeyword({ \"grimlund\" })\nkeywordHandler:addAliasKeyword({ \"nibelor\" })\nkeywordHandler:addAliasKeyword({ \"tyrusng\" })\nkeywordHandler:addAliasKeyword({ \"okolnir\" })\nkeywordHandler:addKeyword({ \"druid\" }, StdModule.say, { npcHandler = npcHandler, text = \"I know Marvik in Thais. He once helped me with a furuncle I had on my ...ahh, doesn't matter. He's a nice gran'pa, though!\" })\nkeywordHandler:addKeyword({ \"enemies\" }, StdModule.say, { npcHandler = npcHandler, text = \"My worst enemy is a huge sea serpent. I dunno when I started to follow it's trail. I'll kill it and if it's the last thing I'll do, I'll kill it!\" })\nkeywordHandler:addAliasKeyword({ \"victory\" })\nkeywordHandler:addKeyword({ \"leader\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is a ship and the captain is some kind o' leader, isn't he? <mumbles>..stupid..landlubber.\" })\nkeywordHandler:addKeyword({ \"raiders\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addKeyword({ \"shaman\" }, StdModule.say, { npcHandler = npcHandler, text = \"Seems that they are some sort o' druids fo' the Norseman.\" })\nkeywordHandler:addKeyword({ \"story\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm full of stories mate! Name a body part and I tell you the story what happened to it!\" })\n\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\n\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "source_lua_scope": "Complete original context for auditing only; scoped sections below are the quest-specific authoring input. Foreign branches remain excluded.",
+        "review_rows": [
+          {
+            "row_index": 136,
+            "step": "Fish for a Serpent: start"
+          },
+          {
+            "row_index": 137,
+            "step": "Fish for a Serpent: dostawa 1"
+          },
+          {
+            "row_index": 138,
+            "step": "Fish for a Serpent: dostawa 2"
+          },
+          {
+            "row_index": 139,
+            "step": "Fish for a Serpent: dostawa 3"
+          },
+          {
+            "row_index": 140,
+            "step": "Fish for a Serpent: dostawa 4"
+          },
+          {
+            "row_index": 141,
+            "step": "Wyjście na morze"
+          }
+        ],
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:25-34",
+            "line_start": 25,
+            "line_end": 34,
+            "source_sha256": "6bc8138677d4f36e517cf454159f60944911c7838d5b65d79fa2735e639d6d68",
+            "guarded_source_lua": "\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Is this a mutiny or what? Move, move!!\" },\n\t{ text = \"In the rigging ya lazy fools!\" },\n\t{ text = \"I wanna see you movin' ya lazy fools!!\" },\n\t{ text = \"Full sails!! There's a sea serpent to catch!!\" },\n}\n\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 29,
+                "lua_literal": "\"Is this a mutiny or what? Move, move!!\"",
+                "decoded_text": "Is this a mutiny or what? Move, move!!",
+                "text_sha256": "831214eeab74e36e43390c0e42ddadbd788d8f7800f4440726c369232f86ac5a"
+              },
+              {
+                "line": 30,
+                "lua_literal": "\"In the rigging ya lazy fools!\"",
+                "decoded_text": "In the rigging ya lazy fools!",
+                "text_sha256": "7ee4bdaaf42da89b4693c777d6b5b53fba1da1cf5a76adcd7b418e4bb513d818"
+              },
+              {
+                "line": 31,
+                "lua_literal": "\"I wanna see you movin' ya lazy fools!!\"",
+                "decoded_text": "I wanna see you movin' ya lazy fools!!",
+                "text_sha256": "a1f019b79754b0d2f7931a3d490d1d2567c31503a85d3073bba6526b065f3ea4"
+              },
+              {
+                "line": 32,
+                "lua_literal": "\"Full sails!! There's a sea serpent to catch!!\"",
+                "decoded_text": "Full sails!! There's a sea serpent to catch!!",
+                "text_sha256": "61e355323434d16d4c65ce5a3ac73b4400679cfcda83e456400729daf74719d2"
+              }
+            ]
+          },
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:62-199",
+            "line_start": 62,
+            "line_end": 199,
+            "source_sha256": "4de6ea208cc3fad5fdbb542879e2145883a8d06ec10566a4fe5c208bb328f388",
+            "guarded_source_lua": "local FishForASerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent\nlocal TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want? Askin' for a {passage}?\")\n\telse\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want?\")\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif table.contains({ \"mission\", \"hunt\", \"passage\" }, message:lower()) then\n\t\tif MsgContains(message, \"passage\") then\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\t\tnpcHandler:say(\"Hold your horses! First we need to get more {bait} fo' the sea serpent. Bring me the fish I requested and we can set sails immediately.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 0 then\n\t\t\tnpcHandler:say(\"Ya wanna join the hunt fo' the {sea serpent}? Be warned ya may pay with ya life! Are ya in to it?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\tnpcHandler:say(\"You got any {baits} for me?\", npc, creature)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"A'right, wanna put out to sea?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"A'right, we are here to resupply our stock of baits to catch the sea serpent. Your first task is to bring me 5 fish they are easy to catch. When you got them ask me for the {bait} again.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Let's go fo' a {hunt} and bring the beast down!\", npc, creature) --test\n\t\t\tplayer:teleportTo(Position(31942, 31047, 6))\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) < 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine, 1)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"bait\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 1 then\n\t\t\tif player:removeItem(3578, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 northern pike.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 2)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 2 then\n\t\t\tif player:removeItem(3580, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 green perch.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 3)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 3 then\n\t\t\tif player:removeItem(7159, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 rainbow trout.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 4)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 4 then\n\t\t\tif player:removeItem(7158, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, that should be enough fish to make the bait. Tell me when ya're ready fo' the {hunt}.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 5)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"The bait is ready, tell me if ya're ready to start the hunt.\", npc, creature)\n\t\tend\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Haba, Captain Haba for ya little worm.\" })\nkeywordHandler:addKeyword({ \"pirate\" }, StdModule.say, { npcHandler = npcHandler, text = \"I ain't no pirate. Don't let yourself mislead by my pirate hat. I got it from a friend of mine.\" })\nkeywordHandler:addKeyword({ \"friend\" }, StdModule.say, { npcHandler = npcHandler, text = \"Most o' my friends are dead the others don't like me anymore......well, seems there aren't many left.\" })\nkeywordHandler:addKeyword({ \"yeti\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addAliasKeyword({ \"chakoya\" })\nkeywordHandler:addKeyword({ \"barbarian\" }, StdModule.say, { npcHandler = npcHandler, text = \"Who are ya calling a barbarian?!? Watch your tongue here on board or you end up as fish fodder!\" })\nkeywordHandler:addKeyword({ \"port hope\" }, StdModule.say, { npcHandler = npcHandler, text = \"Dis is no passenger ship it's a WARship. I'm on hunting business.\" })\nkeywordHandler:addAliasKeyword({ \"liberty bay\" })\nkeywordHandler:addAliasKeyword({ \"edron\" })\nkeywordHandler:addAliasKeyword({ \"ab'dendriel\" })\nkeywordHandler:addAliasKeyword({ \"darashia\" })\nkeywordHandler:addAliasKeyword({ \"ankrahmun\" })\nkeywordHandler:addAliasKeyword({ \"issavi\" })\nkeywordHandler:addAliasKeyword({ \"kazordoon\" })\nkeywordHandler:addAliasKeyword({ \"krailos\" })\nkeywordHandler:addAliasKeyword({ \"rathleton\" })\nkeywordHandler:addAliasKeyword({ \"roshamuul\" })\nkeywordHandler:addAliasKeyword({ \"farmine\" })\nkeywordHandler:addKeyword({ \"ferumbras\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never heard of him. He is no captain that's for sure, otherwise I'd know him. I was on the sea for the last 20 years hunting this, this monster.\" })\nkeywordHandler:addKeyword({ \"monster\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yee, I've been chasing that monster for over 20 years now. I promise I'll bring it down!\" })\nkeywordHandler:addAliasKeyword({ \"beast\" })\nkeywordHandler:addAliasKeyword({ \"sea serpent\" })\nkeywordHandler:addKeyword({ \"rum\" }, StdModule.say, { npcHandler = npcHandler, text = \"It lets me forget the long years, the lost years. The years I was chasing after THAT monster, the sea serpent.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ye, I command 'is ship!\" })\nkeywordHandler:addKeyword({ \"ship\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our last ship has been destroyed by the most evil creature of the ocean: the sea serpent. To continue our hunt, I've bought this ship here.\" })\nkeywordHandler:addKeyword({ \"bonelord\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never seen one.\" })\nkeywordHandler:addKeyword({ \"banor\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm faithful - I'll catch that monster one day. Yes I will, as sure as my name is Captain Haba!!\" })\nkeywordHandler:addAliasKeyword({ \"uman\" })\nkeywordHandler:addAliasKeyword({ \"zathroth\" })\nkeywordHandler:addKeyword({ \"queen\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no queen. At least I didn't see her yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no king. At least I didn't see him yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"body\" }, StdModule.say, { npcHandler = npcHandler, text = \"Arms, legs, head, whatever. I got injuries on almost every part of my body!\" })\nkeywordHandler:addKeyword({ \"buy\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is no shop boy, this is a warship!\" })\nkeywordHandler:addAliasKeyword({ \"shop\" })\nkeywordHandler:addAliasKeyword({ \"sell\" })\nkeywordHandler:addKeyword({ \"camp\" }, StdModule.say, { npcHandler = npcHandler, text = \"We aren't even near that location! Wanna swim? Harharhar!\" })\nkeywordHandler:addAliasKeyword({ \"grimlund\" })\nkeywordHandler:addAliasKeyword({ \"nibelor\" })\nkeywordHandler:addAliasKeyword({ \"tyrusng\" })\nkeywordHandler:addAliasKeyword({ \"okolnir\" })\nkeywordHandler:addKeyword({ \"druid\" }, StdModule.say, { npcHandler = npcHandler, text = \"I know Marvik in Thais. He once helped me with a furuncle I had on my ...ahh, doesn't matter. He's a nice gran'pa, though!\" })\nkeywordHandler:addKeyword({ \"enemies\" }, StdModule.say, { npcHandler = npcHandler, text = \"My worst enemy is a huge sea serpent. I dunno when I started to follow it's trail. I'll kill it and if it's the last thing I'll do, I'll kill it!\" })\nkeywordHandler:addAliasKeyword({ \"victory\" })\nkeywordHandler:addKeyword({ \"leader\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is a ship and the captain is some kind o' leader, isn't he? <mumbles>..stupid..landlubber.\" })\nkeywordHandler:addKeyword({ \"raiders\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addKeyword({ \"shaman\" }, StdModule.say, { npcHandler = npcHandler, text = \"Seems that they are some sort o' druids fo' the Norseman.\" })\nkeywordHandler:addKeyword({ \"story\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm full of stories mate! Name a body part and I tell you the story what happened to it!\" })\n\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\n\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 68,
+                "lua_literal": "\"Harrr, landlubber wha'd ya want? Askin' for a {passage}?\"",
+                "decoded_text": "Harrr, landlubber wha'd ya want? Askin' for a {passage}?",
+                "text_sha256": "f57065e4797fc230d4cca5eec4c6832d7b41aa30246e7c5b91fe2ff71068b180"
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"Harrr, landlubber wha'd ya want?\"",
+                "decoded_text": "Harrr, landlubber wha'd ya want?",
+                "text_sha256": "b03fdf2b71019a0e45694d98e89300eabb086bae1292e281cb70984fe5105c35"
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"mission\"",
+                "decoded_text": "mission",
+                "text_sha256": "ceb00a91525da64fb171b103ae30ef3b817fa3bc78ecde99b884eedbe9131003"
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"hunt\"",
+                "decoded_text": "hunt",
+                "text_sha256": "18c3bc28bde14691d7ce2a9657d9e93d205c224fc084b733e5190ee9fd2a80bc"
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"passage\"",
+                "decoded_text": "passage",
+                "text_sha256": "0886b051075687c18a9ae5075383feb8400fbe4328c6e4bd45b77b30f1e73b54"
+              },
+              {
+                "line": 84,
+                "lua_literal": "\"passage\"",
+                "decoded_text": "passage",
+                "text_sha256": "0886b051075687c18a9ae5075383feb8400fbe4328c6e4bd45b77b30f1e73b54"
+              },
+              {
+                "line": 86,
+                "lua_literal": "\"Hold your horses! First we need to get more {bait} fo' the sea serpent. Bring me the fish I requested and we can set sails immediately.\"",
+                "decoded_text": "Hold your horses! First we need to get more {bait} fo' the sea serpent. Bring me the fish I requested and we can set sails immediately.",
+                "text_sha256": "43c841ae9c2afc27b6f432833f34082dc0938c75737d08b5c3320501b2001f27"
+              },
+              {
+                "line": 91,
+                "lua_literal": "\"Ya wanna join the hunt fo' the {sea serpent}? Be warned ya may pay with ya life! Are ya in to it?\"",
+                "decoded_text": "Ya wanna join the hunt fo' the {sea serpent}? Be warned ya may pay with ya life! Are ya in to it?",
+                "text_sha256": "442c9e04c2945a92e6a18b9ae1190cba94faf0150c889148709ee5cb2f2a2f1c"
+              },
+              {
+                "line": 94,
+                "lua_literal": "\"You got any {baits} for me?\"",
+                "decoded_text": "You got any {baits} for me?",
+                "text_sha256": "96a7ce3a976c4809ffd7bc1877a58126a1771e5dcd1b0ffdc853ee0d5782e042"
+              },
+              {
+                "line": 96,
+                "lua_literal": "\"A'right, wanna put out to sea?\"",
+                "decoded_text": "A'right, wanna put out to sea?",
+                "text_sha256": "3e9dcb287169837298dab0e76fcd08641bfa2f6663118845de601d4eea97bb72"
+              },
+              {
+                "line": 99,
+                "lua_literal": "\"yes\"",
+                "decoded_text": "yes",
+                "text_sha256": "8a798890fe93817163b10b5f7bd2ca4d25d84c52739a645a889c173eee7d9d3d"
+              },
+              {
+                "line": 101,
+                "lua_literal": "\"A'right, we are here to resupply our stock of baits to catch the sea serpent. Your first task is to bring me 5 fish they are easy to catch. When you got them ask me for the {bait} again.\"",
+                "decoded_text": "A'right, we are here to resupply our stock of baits to catch the sea serpent. Your first task is to bring me 5 fish they are easy to catch. When you got them ask me for the {bait} again.",
+                "text_sha256": "7066336691d48d2d03089640d81d4921ecfe770197f176ec0216c3f1e83bb074"
+              },
+              {
+                "line": 106,
+                "lua_literal": "\"Let's go fo' a {hunt} and bring the beast down!\"",
+                "decoded_text": "Let's go fo' a {hunt} and bring the beast down!",
+                "text_sha256": "a9620109c4a74d9c59fbb165d65bcba9153580807f2b3587fec2de62fec575af"
+              },
+              {
+                "line": 114,
+                "lua_literal": "\"bait\"",
+                "decoded_text": "bait",
+                "text_sha256": "0fb532081657b0142eaa25b103229c0ed5d5d0b43477f911797d2e50929b1ff7"
+              },
+              {
+                "line": 117,
+                "lua_literal": "\"Excellent, now bring me 5 northern pike.\"",
+                "decoded_text": "Excellent, now bring me 5 northern pike.",
+                "text_sha256": "9128ee902105e708b418b0231c820e6da02250cad57520a6254c47b052503bb8"
+              },
+              {
+                "line": 122,
+                "lua_literal": "\"Excellent, now bring me 5 green perch.\"",
+                "decoded_text": "Excellent, now bring me 5 green perch.",
+                "text_sha256": "5526a29df8822facca6a204c6965433787074f8cc7e591df25812343416033fc"
+              },
+              {
+                "line": 127,
+                "lua_literal": "\"Excellent, now bring me 5 rainbow trout.\"",
+                "decoded_text": "Excellent, now bring me 5 rainbow trout.",
+                "text_sha256": "3a2443677c8497a3cb5d209217e7a3150181f732a4f3ef5d36ea6ef7c7434d49"
+              },
+              {
+                "line": 132,
+                "lua_literal": "\"Excellent, that should be enough fish to make the bait. Tell me when ya're ready fo' the {hunt}.\"",
+                "decoded_text": "Excellent, that should be enough fish to make the bait. Tell me when ya're ready fo' the {hunt}.",
+                "text_sha256": "f779b487b7afd646f95509768aaaadf383e92eb07dae660c1c289c848371e5bd"
+              },
+              {
+                "line": 136,
+                "lua_literal": "\"The bait is ready, tell me if ya're ready to start the hunt.\"",
+                "decoded_text": "The bait is ready, tell me if ya're ready to start the hunt.",
+                "text_sha256": "e34e81dd37de6c5d726497bca2998f0ae58731893e7f29c1e6220dd38d3a6d82"
+              },
+              {
+                "line": 142,
+                "lua_literal": "\"name\"",
+                "decoded_text": "name",
+                "text_sha256": "82a3537ff0dbce7eec35d69edc3a189ee6f17d82f353a553f9aa96cb0be3ce89"
+              },
+              {
+                "line": 142,
+                "lua_literal": "\"My name is Haba, Captain Haba for ya little worm.\"",
+                "decoded_text": "My name is Haba, Captain Haba for ya little worm.",
+                "text_sha256": "32cfecaeeaa68e6c31d7c47d4effb6331cc1b6a26e371c8013489f08cb784c39"
+              },
+              {
+                "line": 143,
+                "lua_literal": "\"pirate\"",
+                "decoded_text": "pirate",
+                "text_sha256": "03bdd14ef87c5b28bc15ed0bebd48fa76451f7cce7e50a0131d2d0f151af55f3"
+              },
+              {
+                "line": 143,
+                "lua_literal": "\"I ain't no pirate. Don't let yourself mislead by my pirate hat. I got it from a friend of mine.\"",
+                "decoded_text": "I ain't no pirate. Don't let yourself mislead by my pirate hat. I got it from a friend of mine.",
+                "text_sha256": "9feb8eee97582891e4257aeb17b55c365a8ebb7350938cd47c6034e4806b11df"
+              },
+              {
+                "line": 144,
+                "lua_literal": "\"friend\"",
+                "decoded_text": "friend",
+                "text_sha256": "cde48537ca2c28084ff560826d0e6388b7c57a51497a6cb56f397289e52ff41b"
+              },
+              {
+                "line": 144,
+                "lua_literal": "\"Most o' my friends are dead the others don't like me anymore......well, seems there aren't many left.\"",
+                "decoded_text": "Most o' my friends are dead the others don't like me anymore......well, seems there aren't many left.",
+                "text_sha256": "b8a0f1ded5ff12288f3a5ecca51e540f3e81b67b83e1fc96e3fea0c9487fb389"
+              },
+              {
+                "line": 145,
+                "lua_literal": "\"yeti\"",
+                "decoded_text": "yeti",
+                "text_sha256": "f092670242a37d435ec3dbeeae5829ddd336a47a1c5db916c39c3cca27efa026"
+              },
+              {
+                "line": 145,
+                "lua_literal": "\"What fo' godsake shall that be??\"",
+                "decoded_text": "What fo' godsake shall that be??",
+                "text_sha256": "c33869c626390f26ab2533c7b4975b61a97c0c7171b49b9bb1f5a02b394ffd52"
+              },
+              {
+                "line": 146,
+                "lua_literal": "\"chakoya\"",
+                "decoded_text": "chakoya",
+                "text_sha256": "6a3844201ca06363f6b84314d409e90fde2c1cfec7b4d6a5703c5b4a2e0e72df"
+              },
+              {
+                "line": 147,
+                "lua_literal": "\"barbarian\"",
+                "decoded_text": "barbarian",
+                "text_sha256": "cf8108731757e7da3594eedfecbc67010cd8c06b31c3186fbc568fc9e74d06d6"
+              },
+              {
+                "line": 147,
+                "lua_literal": "\"Who are ya calling a barbarian?!? Watch your tongue here on board or you end up as fish fodder!\"",
+                "decoded_text": "Who are ya calling a barbarian?!? Watch your tongue here on board or you end up as fish fodder!",
+                "text_sha256": "5c974ac6ae5b0f0058540399199a09d3bd9390c92cf294b80d1a119e202a69cb"
+              },
+              {
+                "line": 148,
+                "lua_literal": "\"port hope\"",
+                "decoded_text": "port hope",
+                "text_sha256": "6448adcb005c36f8019ebb500e0c6601f7ab0fc0e1e0d3085a2a2765324fab9a"
+              },
+              {
+                "line": 148,
+                "lua_literal": "\"Dis is no passenger ship it's a WARship. I'm on hunting business.\"",
+                "decoded_text": "Dis is no passenger ship it's a WARship. I'm on hunting business.",
+                "text_sha256": "331b5175c919af7e9ff94d8d23fae4ca365da043d03f94f05408c8fb5b5670bf"
+              },
+              {
+                "line": 149,
+                "lua_literal": "\"liberty bay\"",
+                "decoded_text": "liberty bay",
+                "text_sha256": "6481d272079e1bc791df92596c02ef50bb80799a47e9890e029e2412335da4b8"
+              },
+              {
+                "line": 150,
+                "lua_literal": "\"edron\"",
+                "decoded_text": "edron",
+                "text_sha256": "4257a1003940a9cd67bb19bc51cd485ffdf1ca4a6d0adfdba372c0d48c505a14"
+              },
+              {
+                "line": 151,
+                "lua_literal": "\"ab'dendriel\"",
+                "decoded_text": "ab'dendriel",
+                "text_sha256": "e0e081ce81171e8e3871f760b325ae940f81585b7889c238ae55ba18d276384a"
+              },
+              {
+                "line": 152,
+                "lua_literal": "\"darashia\"",
+                "decoded_text": "darashia",
+                "text_sha256": "853c4dcdf8473d293d3d24e2d879217c802caa4156a254d3bf36c3e1735f5c09"
+              },
+              {
+                "line": 153,
+                "lua_literal": "\"ankrahmun\"",
+                "decoded_text": "ankrahmun",
+                "text_sha256": "5b27fe9d3ad422bf3223e4d246271f35fced691c6a3a03441139abbd1f147515"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"issavi\"",
+                "decoded_text": "issavi",
+                "text_sha256": "cd9768969011a4b0ff624d56ea14e5e03707ef96bd673be2879a10872321f9a0"
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"kazordoon\"",
+                "decoded_text": "kazordoon",
+                "text_sha256": "b1d8acdb19f3270df4ea8c213bbc9b024811c7421b15717779f16ea1d7435b16"
+              },
+              {
+                "line": 156,
+                "lua_literal": "\"krailos\"",
+                "decoded_text": "krailos",
+                "text_sha256": "9aec82eb9983f25ce485ea3bc18d59bcbbd11aab7e56f5e14884d5592932ca12"
+              },
+              {
+                "line": 157,
+                "lua_literal": "\"rathleton\"",
+                "decoded_text": "rathleton",
+                "text_sha256": "46ebd777f9492d915cfe02639f6a8acb0dc50a90ff26ccd5f008ab2f670794da"
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"roshamuul\"",
+                "decoded_text": "roshamuul",
+                "text_sha256": "9ef33bcfc338187c215914d2a01b24672094a4d697d26a061d81a64bdbb33ba8"
+              },
+              {
+                "line": 159,
+                "lua_literal": "\"farmine\"",
+                "decoded_text": "farmine",
+                "text_sha256": "5269d0e235788e4d91a29b37bbf422646a03a323e4daa7a6eb5d2473f04479b1"
+              },
+              {
+                "line": 160,
+                "lua_literal": "\"ferumbras\"",
+                "decoded_text": "ferumbras",
+                "text_sha256": "48915e6df408d9540fdadc3430f99b3852efc60884fa785e07e197c570a9cd0b"
+              },
+              {
+                "line": 160,
+                "lua_literal": "\"Never heard of him. He is no captain that's for sure, otherwise I'd know him. I was on the sea for the last 20 years hunting this, this monster.\"",
+                "decoded_text": "Never heard of him. He is no captain that's for sure, otherwise I'd know him. I was on the sea for the last 20 years hunting this, this monster.",
+                "text_sha256": "794ee1ee8317d0ee82240d965c8b20a08b5e872cf25da02a6bb92aba72412960"
+              },
+              {
+                "line": 161,
+                "lua_literal": "\"monster\"",
+                "decoded_text": "monster",
+                "text_sha256": "beaafa510bcc774b1be0c7f3fbb033017cd97f2c73455ec2d7747c2e993759b5"
+              },
+              {
+                "line": 161,
+                "lua_literal": "\"Yee, I've been chasing that monster for over 20 years now. I promise I'll bring it down!\"",
+                "decoded_text": "Yee, I've been chasing that monster for over 20 years now. I promise I'll bring it down!",
+                "text_sha256": "44ba00689d37203c461b48d738aa433e0813dd3ccd4947e7ea7ac05f0adfe699"
+              },
+              {
+                "line": 162,
+                "lua_literal": "\"beast\"",
+                "decoded_text": "beast",
+                "text_sha256": "1bf417bd87162d5d77a5ce3259e81bdee9f8a0ef56bc0f12eadcd5805a94b708"
+              },
+              {
+                "line": 163,
+                "lua_literal": "\"sea serpent\"",
+                "decoded_text": "sea serpent",
+                "text_sha256": "fbc25425387d962b311cbe693d3134f34154b341a73b0069076aa1e83110093b"
+              },
+              {
+                "line": 164,
+                "lua_literal": "\"rum\"",
+                "decoded_text": "rum",
+                "text_sha256": "57f64f1b45572420f70df63573f4b115970951a20723cd4e8371d88e13dbcea2"
+              },
+              {
+                "line": 164,
+                "lua_literal": "\"It lets me forget the long years, the lost years. The years I was chasing after THAT monster, the sea serpent.\"",
+                "decoded_text": "It lets me forget the long years, the lost years. The years I was chasing after THAT monster, the sea serpent.",
+                "text_sha256": "14c4a15a1d4eff17913ea6a44d7886fff7cdbcfe55b368eccc068e6bc42b6551"
+              },
+              {
+                "line": 165,
+                "lua_literal": "\"job\"",
+                "decoded_text": "job",
+                "text_sha256": "5e8c9902207afaeb7120430c585a445f21e92932081d64bc99f80e4925bcb002"
+              },
+              {
+                "line": 165,
+                "lua_literal": "\"Ye, I command 'is ship!\"",
+                "decoded_text": "Ye, I command 'is ship!",
+                "text_sha256": "622378c911328166bcd247a2c2d607941b8bd9b047200129363b393fec9f1cf5"
+              },
+              {
+                "line": 166,
+                "lua_literal": "\"ship\"",
+                "decoded_text": "ship",
+                "text_sha256": "e5d5b971139eefeb36d6edb9938fa246740c90da2003626487eb2d5d9646aec6"
+              },
+              {
+                "line": 166,
+                "lua_literal": "\"Our last ship has been destroyed by the most evil creature of the ocean: the sea serpent. To continue our hunt, I've bought this ship here.\"",
+                "decoded_text": "Our last ship has been destroyed by the most evil creature of the ocean: the sea serpent. To continue our hunt, I've bought this ship here.",
+                "text_sha256": "ca24e226cd110940a754fb1082beda67b1eefad71f8b946163502fd9156b4e81"
+              },
+              {
+                "line": 167,
+                "lua_literal": "\"bonelord\"",
+                "decoded_text": "bonelord",
+                "text_sha256": "c7d36b44c022696202dc255fdcb2b12fa5b1993e263b7325ccc24fd9790663b7"
+              },
+              {
+                "line": 167,
+                "lua_literal": "\"Never seen one.\"",
+                "decoded_text": "Never seen one.",
+                "text_sha256": "e2b2d4f9930a7a632be4ca1d7e0bcea77601a2a1b595383f87e4e528d93a97de"
+              },
+              {
+                "line": 168,
+                "lua_literal": "\"banor\"",
+                "decoded_text": "banor",
+                "text_sha256": "831cb76b95b9fdd21522e84d18a9c0a1b9b9629ec3f6802108a854c6996d1aac"
+              },
+              {
+                "line": 168,
+                "lua_literal": "\"I'm faithful - I'll catch that monster one day. Yes I will, as sure as my name is Captain Haba!!\"",
+                "decoded_text": "I'm faithful - I'll catch that monster one day. Yes I will, as sure as my name is Captain Haba!!",
+                "text_sha256": "ef00c71cf94ff704e29b8da386eaa2226a1b76b37da15a8b45866a040f5cc12c"
+              },
+              {
+                "line": 169,
+                "lua_literal": "\"uman\"",
+                "decoded_text": "uman",
+                "text_sha256": "8bc36030874d0187e61d4b13457ca35c93659cd0b3f303fd1b4a058dc7cf9ecf"
+              },
+              {
+                "line": 170,
+                "lua_literal": "\"zathroth\"",
+                "decoded_text": "zathroth",
+                "text_sha256": "99e7666302182d089e1a4d2328b47b42b0eced7c4a23e8c1f012d10d9153dce2"
+              },
+              {
+                "line": 171,
+                "lua_literal": "\"queen\"",
+                "decoded_text": "queen",
+                "text_sha256": "a9c3c1f7674502331a5ad3e54592d3eb2fc39cf78bb908004777ff4ac89119e4"
+              },
+              {
+                "line": 171,
+                "lua_literal": "\"On the high seas there is no queen. At least I didn't see her yet. Hararar!\"",
+                "decoded_text": "On the high seas there is no queen. At least I didn't see her yet. Hararar!",
+                "text_sha256": "c06eb3ffc6cab95ae234d8b3b9ac149ba4a09601bd0e46adc3b28f799b9d685d"
+              },
+              {
+                "line": 172,
+                "lua_literal": "\"king\"",
+                "decoded_text": "king",
+                "text_sha256": "e81dfe69841ad2f7b5790b63e998f0febaf3b29acd732881975130761b98e2c7"
+              },
+              {
+                "line": 172,
+                "lua_literal": "\"On the high seas there is no king. At least I didn't see him yet. Hararar!\"",
+                "decoded_text": "On the high seas there is no king. At least I didn't see him yet. Hararar!",
+                "text_sha256": "e91c269ea69d9cba1641292e66d6eada9375b22c51ed4d7f043881c0e928f666"
+              },
+              {
+                "line": 173,
+                "lua_literal": "\"body\"",
+                "decoded_text": "body",
+                "text_sha256": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5"
+              },
+              {
+                "line": 173,
+                "lua_literal": "\"Arms, legs, head, whatever. I got injuries on almost every part of my body!\"",
+                "decoded_text": "Arms, legs, head, whatever. I got injuries on almost every part of my body!",
+                "text_sha256": "fe305d14acbf3e052fa6eea244dae04facf65c9a34c4429dfba81f4fbedb2758"
+              },
+              {
+                "line": 174,
+                "lua_literal": "\"buy\"",
+                "decoded_text": "buy",
+                "text_sha256": "e8197b20f8e71e429645f83cc6f07d9d43ee7a30ef5dc6c02dd16692a7bc9aac"
+              },
+              {
+                "line": 174,
+                "lua_literal": "\"This is no shop boy, this is a warship!\"",
+                "decoded_text": "This is no shop boy, this is a warship!",
+                "text_sha256": "53172aeca985af25829c759491ed6d12db18db004910312ce29b3e741eca7867"
+              },
+              {
+                "line": 175,
+                "lua_literal": "\"shop\"",
+                "decoded_text": "shop",
+                "text_sha256": "8d9001d32c6a703d95921a77115050f33dd823d3f1730bd35215dcbecad6dc20"
+              },
+              {
+                "line": 176,
+                "lua_literal": "\"sell\"",
+                "decoded_text": "sell",
+                "text_sha256": "c0f21d451463ec3e3254bf2d631b70a46e870f72eca69b2a869625407c22a8b0"
+              },
+              {
+                "line": 177,
+                "lua_literal": "\"camp\"",
+                "decoded_text": "camp",
+                "text_sha256": "ccefcd91405c728f09cfdfd196e7f74c79a7b3eb193bdaec780c4e61274b0ee4"
+              },
+              {
+                "line": 177,
+                "lua_literal": "\"We aren't even near that location! Wanna swim? Harharhar!\"",
+                "decoded_text": "We aren't even near that location! Wanna swim? Harharhar!",
+                "text_sha256": "4681345d30ac563996f2e13d253ad6fdbad727527861b3d913dc68de9751d3f6"
+              },
+              {
+                "line": 178,
+                "lua_literal": "\"grimlund\"",
+                "decoded_text": "grimlund",
+                "text_sha256": "a9051672571076321e24b63c9d01a76f03be43df58a2bc44e023be4e7bf0b189"
+              },
+              {
+                "line": 179,
+                "lua_literal": "\"nibelor\"",
+                "decoded_text": "nibelor",
+                "text_sha256": "2aebc768aa2687e2e5aa04ccf81d269c8c1d414ac4d15cfdb3c2506ca1573b5b"
+              },
+              {
+                "line": 180,
+                "lua_literal": "\"tyrusng\"",
+                "decoded_text": "tyrusng",
+                "text_sha256": "7dcc146f16dc95a4034d9d186feef2d72877e23e3b0a04bd68f950addb1e1d29"
+              },
+              {
+                "line": 181,
+                "lua_literal": "\"okolnir\"",
+                "decoded_text": "okolnir",
+                "text_sha256": "c4fe08cb9d341b8de0cb15137b24ddbe536c50513f8ce79a4f99d4f2420ec708"
+              },
+              {
+                "line": 182,
+                "lua_literal": "\"druid\"",
+                "decoded_text": "druid",
+                "text_sha256": "7ff2b4df6b7f9bf6253c3ea43f2e57705f63ea2fa9ef6aef758761a344f02958"
+              },
+              {
+                "line": 182,
+                "lua_literal": "\"I know Marvik in Thais. He once helped me with a furuncle I had on my ...ahh, doesn't matter. He's a nice gran'pa, though!\"",
+                "decoded_text": "I know Marvik in Thais. He once helped me with a furuncle I had on my ...ahh, doesn't matter. He's a nice gran'pa, though!",
+                "text_sha256": "006c67ce03a3527fba17d7754f8caf546c5ae479426ab078252e63590aabfeda"
+              },
+              {
+                "line": 183,
+                "lua_literal": "\"enemies\"",
+                "decoded_text": "enemies",
+                "text_sha256": "d01100137ac009000d1150bef68cc34c3b49e314b4c24cdfa2ae8d492b154214"
+              },
+              {
+                "line": 183,
+                "lua_literal": "\"My worst enemy is a huge sea serpent. I dunno when I started to follow it's trail. I'll kill it and if it's the last thing I'll do, I'll kill it!\"",
+                "decoded_text": "My worst enemy is a huge sea serpent. I dunno when I started to follow it's trail. I'll kill it and if it's the last thing I'll do, I'll kill it!",
+                "text_sha256": "1f0654025f2ae5a13602e9970b2f4e4c12225531f259f5d9c63f2f38d0c11911"
+              },
+              {
+                "line": 184,
+                "lua_literal": "\"victory\"",
+                "decoded_text": "victory",
+                "text_sha256": "21665ca201d4070f6fcc99b84aa1e55ae49e7b47069a24ed524da86413381b23"
+              },
+              {
+                "line": 185,
+                "lua_literal": "\"leader\"",
+                "decoded_text": "leader",
+                "text_sha256": "4d5b660943625c0af95e935e7bb6fcbb803a79eaff63cd5c0a62d6627cc06733"
+              },
+              {
+                "line": 185,
+                "lua_literal": "\"This is a ship and the captain is some kind o' leader, isn't he? <mumbles>..stupid..landlubber.\"",
+                "decoded_text": "This is a ship and the captain is some kind o' leader, isn't he? <mumbles>..stupid..landlubber.",
+                "text_sha256": "e3b43afd223a7283f0510a9a18dca27dfc0b91a8eb188106e0a945193b2e510b"
+              },
+              {
+                "line": 186,
+                "lua_literal": "\"raiders\"",
+                "decoded_text": "raiders",
+                "text_sha256": "0b04bad57d3b2c6f3736b7cb584f403ecf625cc31c0ad21e19e05a537304e969"
+              },
+              {
+                "line": 186,
+                "lua_literal": "\"What fo' godsake shall that be??\"",
+                "decoded_text": "What fo' godsake shall that be??",
+                "text_sha256": "c33869c626390f26ab2533c7b4975b61a97c0c7171b49b9bb1f5a02b394ffd52"
+              },
+              {
+                "line": 187,
+                "lua_literal": "\"shaman\"",
+                "decoded_text": "shaman",
+                "text_sha256": "e656f6cd1caedec309d0616246cfdcbc2c7cccfdd858440e0b47335d94001aab"
+              },
+              {
+                "line": 187,
+                "lua_literal": "\"Seems that they are some sort o' druids fo' the Norseman.\"",
+                "decoded_text": "Seems that they are some sort o' druids fo' the Norseman.",
+                "text_sha256": "32621f654ae963c6ed3df3fbe1ae0a47ba44344daedfe543ee68453a649e1111"
+              },
+              {
+                "line": 188,
+                "lua_literal": "\"story\"",
+                "decoded_text": "story",
+                "text_sha256": "c478361e6869af25970682a2c53967adbc8a46e9429efdc64b96351cfd52e13f"
+              },
+              {
+                "line": 188,
+                "lua_literal": "\"I'm full of stories mate! Name a body part and I tell you the story what happened to it!\"",
+                "decoded_text": "I'm full of stories mate! Name a body part and I tell you the story what happened to it!",
+                "text_sha256": "eebeef0b55f999e26dc77c2c733a75314772f0dfdd7814b8327bc3a41c6fc3b0"
+              },
+              {
+                "line": 190,
+                "lua_literal": "\"Bye.\"",
+                "decoded_text": "Bye.",
+                "text_sha256": "d34d6c96699842747ef3031a69bbfb7c92cdabf8e91170b1864d692582347498"
+              },
+              {
+                "line": 191,
+                "lua_literal": "\"Bye.\"",
+                "decoded_text": "Bye.",
+                "text_sha256": "d34d6c96699842747ef3031a69bbfb7c92cdabf8e91170b1864d692582347498"
+              }
+            ]
+          }
+        ],
+        "runtime_admission": false,
+        "dependency_only": false,
+        "scope_note": "Preserve literal source guards, topics, effect order and complete dialogue.",
+        "admission_reason": "Source-backed authoring input only; callbacks remain guarded source and are not converted into ungated keywords. Native NPC placement and the real conversation owner still need admission.",
+        "full_source_lua": "local internalNpcName = \"Captain Haba\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 98,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Is this a mutiny or what? Move, move!!\" },\n\t{ text = \"In the rigging ya lazy fools!\" },\n\t{ text = \"I wanna see you movin' ya lazy fools!!\" },\n\t{ text = \"Full sails!! There's a sea serpent to catch!!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal FishForASerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent\nlocal TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want? Askin' for a {passage}?\")\n\telse\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Harrr, landlubber wha'd ya want?\")\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif table.contains({ \"mission\", \"hunt\", \"passage\" }, message:lower()) then\n\t\tif MsgContains(message, \"passage\") then\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\t\tnpcHandler:say(\"Hold your horses! First we need to get more {bait} fo' the sea serpent. Bring me the fish I requested and we can set sails immediately.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 0 then\n\t\t\tnpcHandler:say(\"Ya wanna join the hunt fo' the {sea serpent}? Be warned ya may pay with ya life! Are ya in to it?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) < 5 then\n\t\t\tnpcHandler:say(\"You got any {baits} for me?\", npc, creature)\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"A'right, wanna put out to sea?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"A'right, we are here to resupply our stock of baits to catch the sea serpent. Your first task is to bring me 5 fish they are easy to catch. When you got them ask me for the {bait} again.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Let's go fo' a {hunt} and bring the beast down!\", npc, creature) --test\n\t\t\tplayer:teleportTo(Position(31942, 31047, 6))\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) < 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine, 1)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"bait\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 1 then\n\t\t\tif player:removeItem(3578, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 northern pike.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 2)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 2 then\n\t\t\tif player:removeItem(3580, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 green perch.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 3)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 3 then\n\t\t\tif player:removeItem(7159, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, now bring me 5 rainbow trout.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 4)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) == 4 then\n\t\t\tif player:removeItem(7158, 5) then\n\t\t\t\tnpcHandler:say(\"Excellent, that should be enough fish to make the bait. Tell me when ya're ready fo' the {hunt}.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent, 5)\n\t\t\tend\n\t\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.FishForASerpent) >= 5 then\n\t\t\tnpcHandler:say(\"The bait is ready, tell me if ya're ready to start the hunt.\", npc, creature)\n\t\tend\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Haba, Captain Haba for ya little worm.\" })\nkeywordHandler:addKeyword({ \"pirate\" }, StdModule.say, { npcHandler = npcHandler, text = \"I ain't no pirate. Don't let yourself mislead by my pirate hat. I got it from a friend of mine.\" })\nkeywordHandler:addKeyword({ \"friend\" }, StdModule.say, { npcHandler = npcHandler, text = \"Most o' my friends are dead the others don't like me anymore......well, seems there aren't many left.\" })\nkeywordHandler:addKeyword({ \"yeti\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addAliasKeyword({ \"chakoya\" })\nkeywordHandler:addKeyword({ \"barbarian\" }, StdModule.say, { npcHandler = npcHandler, text = \"Who are ya calling a barbarian?!? Watch your tongue here on board or you end up as fish fodder!\" })\nkeywordHandler:addKeyword({ \"port hope\" }, StdModule.say, { npcHandler = npcHandler, text = \"Dis is no passenger ship it's a WARship. I'm on hunting business.\" })\nkeywordHandler:addAliasKeyword({ \"liberty bay\" })\nkeywordHandler:addAliasKeyword({ \"edron\" })\nkeywordHandler:addAliasKeyword({ \"ab'dendriel\" })\nkeywordHandler:addAliasKeyword({ \"darashia\" })\nkeywordHandler:addAliasKeyword({ \"ankrahmun\" })\nkeywordHandler:addAliasKeyword({ \"issavi\" })\nkeywordHandler:addAliasKeyword({ \"kazordoon\" })\nkeywordHandler:addAliasKeyword({ \"krailos\" })\nkeywordHandler:addAliasKeyword({ \"rathleton\" })\nkeywordHandler:addAliasKeyword({ \"roshamuul\" })\nkeywordHandler:addAliasKeyword({ \"farmine\" })\nkeywordHandler:addKeyword({ \"ferumbras\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never heard of him. He is no captain that's for sure, otherwise I'd know him. I was on the sea for the last 20 years hunting this, this monster.\" })\nkeywordHandler:addKeyword({ \"monster\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yee, I've been chasing that monster for over 20 years now. I promise I'll bring it down!\" })\nkeywordHandler:addAliasKeyword({ \"beast\" })\nkeywordHandler:addAliasKeyword({ \"sea serpent\" })\nkeywordHandler:addKeyword({ \"rum\" }, StdModule.say, { npcHandler = npcHandler, text = \"It lets me forget the long years, the lost years. The years I was chasing after THAT monster, the sea serpent.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ye, I command 'is ship!\" })\nkeywordHandler:addKeyword({ \"ship\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our last ship has been destroyed by the most evil creature of the ocean: the sea serpent. To continue our hunt, I've bought this ship here.\" })\nkeywordHandler:addKeyword({ \"bonelord\" }, StdModule.say, { npcHandler = npcHandler, text = \"Never seen one.\" })\nkeywordHandler:addKeyword({ \"banor\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm faithful - I'll catch that monster one day. Yes I will, as sure as my name is Captain Haba!!\" })\nkeywordHandler:addAliasKeyword({ \"uman\" })\nkeywordHandler:addAliasKeyword({ \"zathroth\" })\nkeywordHandler:addKeyword({ \"queen\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no queen. At least I didn't see her yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"On the high seas there is no king. At least I didn't see him yet. Hararar!\" })\nkeywordHandler:addKeyword({ \"body\" }, StdModule.say, { npcHandler = npcHandler, text = \"Arms, legs, head, whatever. I got injuries on almost every part of my body!\" })\nkeywordHandler:addKeyword({ \"buy\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is no shop boy, this is a warship!\" })\nkeywordHandler:addAliasKeyword({ \"shop\" })\nkeywordHandler:addAliasKeyword({ \"sell\" })\nkeywordHandler:addKeyword({ \"camp\" }, StdModule.say, { npcHandler = npcHandler, text = \"We aren't even near that location! Wanna swim? Harharhar!\" })\nkeywordHandler:addAliasKeyword({ \"grimlund\" })\nkeywordHandler:addAliasKeyword({ \"nibelor\" })\nkeywordHandler:addAliasKeyword({ \"tyrusng\" })\nkeywordHandler:addAliasKeyword({ \"okolnir\" })\nkeywordHandler:addKeyword({ \"druid\" }, StdModule.say, { npcHandler = npcHandler, text = \"I know Marvik in Thais. He once helped me with a furuncle I had on my ...ahh, doesn't matter. He's a nice gran'pa, though!\" })\nkeywordHandler:addKeyword({ \"enemies\" }, StdModule.say, { npcHandler = npcHandler, text = \"My worst enemy is a huge sea serpent. I dunno when I started to follow it's trail. I'll kill it and if it's the last thing I'll do, I'll kill it!\" })\nkeywordHandler:addAliasKeyword({ \"victory\" })\nkeywordHandler:addKeyword({ \"leader\" }, StdModule.say, { npcHandler = npcHandler, text = \"This is a ship and the captain is some kind o' leader, isn't he? <mumbles>..stupid..landlubber.\" })\nkeywordHandler:addKeyword({ \"raiders\" }, StdModule.say, { npcHandler = npcHandler, text = \"What fo' godsake shall that be??\" })\nkeywordHandler:addKeyword({ \"shaman\" }, StdModule.say, { npcHandler = npcHandler, text = \"Seems that they are some sort o' druids fo' the Norseman.\" })\nkeywordHandler:addKeyword({ \"story\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm full of stories mate! Name a body part and I tell you the story what happened to it!\" })\n\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\n\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:1-202"
+      },
+      {
+        "npc_source_name": "captain_haba_open_sea",
+        "source_blob_sha256": "a06808aeeb1253c574b3faf276de014c1837ac7c018357402ce24bceb7e15d92",
+        "source_lua": "local internalNpcName = \"Captain Haba\"\nlocal npcType = Game.createNpcType(\"Captain Haba (Open Sea)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 98,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Wha'd ya want? Ask me 'bout the {instructions} if you don't know what to do! If you wanna head back to {Svargrond}, let me know.\")\n\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"You found the spot |PLAYERNAME|!! Grab yourself a helmet of the deep and go explore the {caves} down there.\")\n\tend\n\treturn true\nend\nlocal randomMessages = {\n\tstraight = {\n\t\t\"STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!\",\n\t\t\"STRAIGHT AHED!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! STRAIGHT AHEAD!!\",\n\t\t\"GO GO GO, SEA SERPENT STRAIGHT AHEAD!!\",\n\t\t\"SET FULL SAILS! SEA SERPENT RIGHT IN FRONT OF US!!\",\n\t},\n\tstarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! SEA SERPENT ON THE STARBOARD SIEDE!!\",\n\t\t\"COME ON YOU LAZY FOOLS!! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"GO GO GO, SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"CHANGE COURSE TO STARBOARD!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t},\n\tlarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT AHEAD!! LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT ON SIGHT!! TO THE LARBOARD SIDE, FAST!\",\n\t\t\"LARBOARD!! THY DOES THIS TAKE SO LONG?!? LET'S GET IT ON!\",\n\t\t\"LET'S GO YOU LAZY FOOLS. WE GOT A SEA SERPENT TO CATCH! TO LARBOARD SIDE, GO, GO, GO!\",\n\t},\n}\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal randomMessagesResult\n\tif MsgContains(message, \"instructions\") then\n\t\tnpcHandler:say({\n\t\t\t\"A'right, first of all you need a bait which isn't for free, though. I sell them for 50 gold each. Use the bait on the crane over there when you see something in the telescope. ...\",\n\t\t\t\"Then go up to the lookout and check the telescope for a sight of the sea serpent. ...\",\n\t\t\t\"If you see it in front of ya, get down at once. And what d'ya gonna say to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"straight\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, no no!! The correct command would be STRAIGHT. Remember that! Next, what you gonna say when you see something to left?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"larboard\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, ya got it all wrong!! The correct command would be LARBOARD side. Don't forget that, 'kay? Last one, what you gonna say to me when ya see somethin' to the right?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 3)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"starboard\" then\n\t\tnpcHandler:say({\n\t\t\t\"Ya gotta learn a lot! The correct command would be STARBOARD side. ...\",\n\t\t\t\"After you told me about the direction, put a bait on the crane again and go up to the lookout! That would be all sailor, let's go hunt down the sea serpent!!\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message:lower(), \"straight\") then\n\t\trandomMessagesResult = randomMessages.straight[math.random(#randomMessages.straight)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"starboard\") then\n\t\trandomMessagesResult = randomMessages.starboard[math.random(#randomMessages.starboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 2 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"larboard\") then\n\t\trandomMessagesResult = randomMessages.larboard[math.random(#randomMessages.larboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"speed\") then\n\t\tnpcHandler:say(\"IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!\", npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 4 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\", \"passage\", \"trip\" }, message:lower()) then\n\t\tif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\" }, message:lower()) then\n\t\t\tnpcHandler:say(\"Already got enough, huh? I kind o' expected that, landlubber! Let's head for Svargrond! Ready?\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Y' already wanna give up?? I should've known. I bring ya back to Svargrond, 'kay?\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 4)\n\telseif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_WALKAWAY, \"See ya, landlubber!\")\n\t\tplayer:teleportTo(Position(32342, 31123, 6))\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"caves\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'd go by myself and tear that beast's heart out if I were younger. I hope ya can do that for me. Now go and good luck to ya!\" })\nkeywordHandler:addKeyword({ \"wares\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ya're a coward, aren't ya? Prove that I'm wrong and get your lazy bones up to the lookout!!\" })\nkeywordHandler:addAliasKeyword({ \"go\" })\nkeywordHandler:addKeyword({ \"bait\" }, StdModule.say, { npcHandler = npcHandler, text = \"Just ask me for a trade if you need a bait.\" })\nkeywordHandler:addKeyword({ \"test\" }, StdModule.say, { npcHandler = npcHandler, text = \"I can give ya a challenge to test if ya have the guts to be a real sailor. Go up to the lookout and remain there for 24 hours during a storm! Harharhar!\" })\n\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Here ya go! Use it on the crane when you see the monster. Then refill it every time you use the telescope.\")\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bait\", clientId = 939, buy = 50 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "source_lua_scope": "Complete original context for auditing only; scoped sections below are the quest-specific authoring input. Foreign branches remain excluded.",
+        "review_rows": [
+          {
+            "row_index": 149,
+            "step": "Captain Haba: komenda straight"
+          },
+          {
+            "row_index": 150,
+            "step": "Captain Haba: komenda starboard"
+          },
+          {
+            "row_index": 151,
+            "step": "Captain Haba: komenda larboard"
+          },
+          {
+            "row_index": 152,
+            "step": "Captain Haba: komenda speed"
+          },
+          {
+            "row_index": 153,
+            "step": "Captain Haba: instructions topics"
+          },
+          {
+            "row_index": 158,
+            "step": "Powrót do Svargrond"
+          },
+          {
+            "row_index": 159,
+            "step": "Zakup przynęty"
+          }
+        ],
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:53-198",
+            "line_start": 53,
+            "line_end": 198,
+            "source_sha256": "5ebe5d1c00ecd3298ef31c31abfc2e9156eab741bdf4809c910e98129c1200a5",
+            "guarded_source_lua": "local TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Wha'd ya want? Ask me 'bout the {instructions} if you don't know what to do! If you wanna head back to {Svargrond}, let me know.\")\n\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"You found the spot |PLAYERNAME|!! Grab yourself a helmet of the deep and go explore the {caves} down there.\")\n\tend\n\treturn true\nend\nlocal randomMessages = {\n\tstraight = {\n\t\t\"STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!\",\n\t\t\"STRAIGHT AHED!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! STRAIGHT AHEAD!!\",\n\t\t\"GO GO GO, SEA SERPENT STRAIGHT AHEAD!!\",\n\t\t\"SET FULL SAILS! SEA SERPENT RIGHT IN FRONT OF US!!\",\n\t},\n\tstarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! SEA SERPENT ON THE STARBOARD SIEDE!!\",\n\t\t\"COME ON YOU LAZY FOOLS!! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"GO GO GO, SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"CHANGE COURSE TO STARBOARD!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t},\n\tlarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT AHEAD!! LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT ON SIGHT!! TO THE LARBOARD SIDE, FAST!\",\n\t\t\"LARBOARD!! THY DOES THIS TAKE SO LONG?!? LET'S GET IT ON!\",\n\t\t\"LET'S GO YOU LAZY FOOLS. WE GOT A SEA SERPENT TO CATCH! TO LARBOARD SIDE, GO, GO, GO!\",\n\t},\n}\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal randomMessagesResult\n\tif MsgContains(message, \"instructions\") then\n\t\tnpcHandler:say({\n\t\t\t\"A'right, first of all you need a bait which isn't for free, though. I sell them for 50 gold each. Use the bait on the crane over there when you see something in the telescope. ...\",\n\t\t\t\"Then go up to the lookout and check the telescope for a sight of the sea serpent. ...\",\n\t\t\t\"If you see it in front of ya, get down at once. And what d'ya gonna say to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"straight\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, no no!! The correct command would be STRAIGHT. Remember that! Next, what you gonna say when you see something to left?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"larboard\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, ya got it all wrong!! The correct command would be LARBOARD side. Don't forget that, 'kay? Last one, what you gonna say to me when ya see somethin' to the right?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 3)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"starboard\" then\n\t\tnpcHandler:say({\n\t\t\t\"Ya gotta learn a lot! The correct command would be STARBOARD side. ...\",\n\t\t\t\"After you told me about the direction, put a bait on the crane again and go up to the lookout! That would be all sailor, let's go hunt down the sea serpent!!\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message:lower(), \"straight\") then\n\t\trandomMessagesResult = randomMessages.straight[math.random(#randomMessages.straight)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"starboard\") then\n\t\trandomMessagesResult = randomMessages.starboard[math.random(#randomMessages.starboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 2 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"larboard\") then\n\t\trandomMessagesResult = randomMessages.larboard[math.random(#randomMessages.larboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"speed\") then\n\t\tnpcHandler:say(\"IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!\", npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 4 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\", \"passage\", \"trip\" }, message:lower()) then\n\t\tif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\" }, message:lower()) then\n\t\t\tnpcHandler:say(\"Already got enough, huh? I kind o' expected that, landlubber! Let's head for Svargrond! Ready?\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Y' already wanna give up?? I should've known. I bring ya back to Svargrond, 'kay?\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 4)\n\telseif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_WALKAWAY, \"See ya, landlubber!\")\n\t\tplayer:teleportTo(Position(32342, 31123, 6))\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"caves\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'd go by myself and tear that beast's heart out if I were younger. I hope ya can do that for me. Now go and good luck to ya!\" })\nkeywordHandler:addKeyword({ \"wares\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ya're a coward, aren't ya? Prove that I'm wrong and get your lazy bones up to the lookout!!\" })\nkeywordHandler:addAliasKeyword({ \"go\" })\nkeywordHandler:addKeyword({ \"bait\" }, StdModule.say, { npcHandler = npcHandler, text = \"Just ask me for a trade if you need a bait.\" })\nkeywordHandler:addKeyword({ \"test\" }, StdModule.say, { npcHandler = npcHandler, text = \"I can give ya a challenge to test if ya have the guts to be a real sailor. Go up to the lookout and remain there for 24 hours during a storm! Harharhar!\" })\n\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Here ya go! Use it on the crane when you see the monster. Then refill it every time you use the telescope.\")\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bait\", clientId = 939, buy = 50 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 58,
+                "lua_literal": "\"Wha'd ya want? Ask me 'bout the {instructions} if you don't know what to do! If you wanna head back to {Svargrond}, let me know.\"",
+                "decoded_text": "Wha'd ya want? Ask me 'bout the {instructions} if you don't know what to do! If you wanna head back to {Svargrond}, let me know.",
+                "text_sha256": "19a7df54b28a3216c1f36353be287859b2c73b59efbe4e6bc6b3e3cbdcb267bc"
+              },
+              {
+                "line": 60,
+                "lua_literal": "\"You found the spot |PLAYERNAME|!! Grab yourself a helmet of the deep and go explore the {caves} down there.\"",
+                "decoded_text": "You found the spot |PLAYERNAME|!! Grab yourself a helmet of the deep and go explore the {caves} down there.",
+                "text_sha256": "a0f61f7cc40ea272b995a14a4f159c979229318b637ee73c3ccd3fe43eef11a9"
+              },
+              {
+                "line": 66,
+                "lua_literal": "\"STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!\"",
+                "decoded_text": "STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!",
+                "text_sha256": "4b9495abe8394c8172f2aef313b0f05c0fbcee3c4825d156be9b7d8e8f933ec5"
+              },
+              {
+                "line": 67,
+                "lua_literal": "\"STRAIGHT AHED!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\"",
+                "decoded_text": "STRAIGHT AHED!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!",
+                "text_sha256": "92fe1f18e2eb78de14f6fc09331eee583d58f99e95710d4fdc51f211b4cd25b9"
+              },
+              {
+                "line": 68,
+                "lua_literal": "\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! STRAIGHT AHEAD!!\"",
+                "decoded_text": "LOOKOUT REPORTS SEA SERPENT ON SIGHT!! STRAIGHT AHEAD!!",
+                "text_sha256": "7c8361082270138ad80b18f218e45a823a27ccca5e5213c65ca708bf41a8a013"
+              },
+              {
+                "line": 69,
+                "lua_literal": "\"GO GO GO, SEA SERPENT STRAIGHT AHEAD!!\"",
+                "decoded_text": "GO GO GO, SEA SERPENT STRAIGHT AHEAD!!",
+                "text_sha256": "e9d5c1390262c87930ab459332b3383fd1ab8f17491cfd2864b7f32c35436288"
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"SET FULL SAILS! SEA SERPENT RIGHT IN FRONT OF US!!\"",
+                "decoded_text": "SET FULL SAILS! SEA SERPENT RIGHT IN FRONT OF US!!",
+                "text_sha256": "0c3236db91ec39eca10d6ecba3bf1aef999fc376536e30d40785be83501bfb4e"
+              },
+              {
+                "line": 73,
+                "lua_literal": "\"SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!\"",
+                "decoded_text": "SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!",
+                "text_sha256": "0f436b4d571c9793528040975e42f02a2b1d62e6b3dc775bd5c4456e6cb63f2a"
+              },
+              {
+                "line": 74,
+                "lua_literal": "\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! SEA SERPENT ON THE STARBOARD SIEDE!!\"",
+                "decoded_text": "LOOKOUT REPORTS SEA SERPENT ON SIGHT!! SEA SERPENT ON THE STARBOARD SIEDE!!",
+                "text_sha256": "5f89eb4e73e52b343237bbf0f9f546492ca5aadaf83f8098111f40828798d1ca"
+              },
+              {
+                "line": 75,
+                "lua_literal": "\"COME ON YOU LAZY FOOLS!! SEA SERPENT ON THE STARBOARD SIDE!!\"",
+                "decoded_text": "COME ON YOU LAZY FOOLS!! SEA SERPENT ON THE STARBOARD SIDE!!",
+                "text_sha256": "d099316e46d25fd0771d715a1952bcbf2fac31e809a38cacc00ab9f8ed69e906"
+              },
+              {
+                "line": 76,
+                "lua_literal": "\"GO GO GO, SEA SERPENT ON THE STARBOARD SIDE!!\"",
+                "decoded_text": "GO GO GO, SEA SERPENT ON THE STARBOARD SIDE!!",
+                "text_sha256": "c9a0e5553027e506d31c1a1c5b50ae782795ac3e178a4dff1bfe10f0a6ce8b5f"
+              },
+              {
+                "line": 77,
+                "lua_literal": "\"CHANGE COURSE TO STARBOARD!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\"",
+                "decoded_text": "CHANGE COURSE TO STARBOARD!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!",
+                "text_sha256": "d9447448c194638ff5b82910732fffe278d251d81a68399234783de4495c46be"
+              },
+              {
+                "line": 80,
+                "lua_literal": "\"SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!\"",
+                "decoded_text": "SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!",
+                "text_sha256": "7f206e6849da11ab1332fcfa9d642baa43bf34850cf3c05b4ad6facb534dd4d7"
+              },
+              {
+                "line": 81,
+                "lua_literal": "\"SEA SERPENT AHEAD!! LARBOARD SIDE!!\"",
+                "decoded_text": "SEA SERPENT AHEAD!! LARBOARD SIDE!!",
+                "text_sha256": "eb8495fbd7ecc1ed4605c0a5a352d375f28af8edf37c602d1ef8f1042bce14e4"
+              },
+              {
+                "line": 82,
+                "lua_literal": "\"SEA SERPENT ON SIGHT!! TO THE LARBOARD SIDE, FAST!\"",
+                "decoded_text": "SEA SERPENT ON SIGHT!! TO THE LARBOARD SIDE, FAST!",
+                "text_sha256": "6e908e0e6c3ad5bc7fabdf2a1b5ba3d863b46463701c10187ba28922efd71828"
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"LARBOARD!! THY DOES THIS TAKE SO LONG?!? LET'S GET IT ON!\"",
+                "decoded_text": "LARBOARD!! THY DOES THIS TAKE SO LONG?!? LET'S GET IT ON!",
+                "text_sha256": "16ad81c8564e4230480d0007ea195b9016d16ea0f6114e8aa654e8dba6322527"
+              },
+              {
+                "line": 84,
+                "lua_literal": "\"LET'S GO YOU LAZY FOOLS. WE GOT A SEA SERPENT TO CATCH! TO LARBOARD SIDE, GO, GO, GO!\"",
+                "decoded_text": "LET'S GO YOU LAZY FOOLS. WE GOT A SEA SERPENT TO CATCH! TO LARBOARD SIDE, GO, GO, GO!",
+                "text_sha256": "38f3634a60e6ca655cd92b084a421d2b2d584821a8e1803d26e37f4e36b500e4"
+              },
+              {
+                "line": 96,
+                "lua_literal": "\"instructions\"",
+                "decoded_text": "instructions",
+                "text_sha256": "238fa28a94976c7da14563bc873c2729bd5cd325389085bb4c6dd0de28923590"
+              },
+              {
+                "line": 98,
+                "lua_literal": "\"A'right, first of all you need a bait which isn't for free, though. I sell them for 50 gold each. Use the bait on the crane over there when you see something in the telescope. ...\"",
+                "decoded_text": "A'right, first of all you need a bait which isn't for free, though. I sell them for 50 gold each. Use the bait on the crane over there when you see something in the telescope. ...",
+                "text_sha256": "35fe2f6e5076f3a51220ca61d4960756a812f7b385c203b36f6142b4475e70dd"
+              },
+              {
+                "line": 99,
+                "lua_literal": "\"Then go up to the lookout and check the telescope for a sight of the sea serpent. ...\"",
+                "decoded_text": "Then go up to the lookout and check the telescope for a sight of the sea serpent. ...",
+                "text_sha256": "ecba323c60e90dc82234a63dc3df934be085decf6837eeeeb3d69344bd562028"
+              },
+              {
+                "line": 100,
+                "lua_literal": "\"If you see it in front of ya, get down at once. And what d'ya gonna say to me?\"",
+                "decoded_text": "If you see it in front of ya, get down at once. And what d'ya gonna say to me?",
+                "text_sha256": "eba847fad5e0704206401d634e93decfa1ec23907e9ee31035ee1e06823f00b2"
+              },
+              {
+                "line": 103,
+                "lua_literal": "\"straight\"",
+                "decoded_text": "straight",
+                "text_sha256": "2a424875a8475a99175f543fa6fc65964e53e87efc161f7b1f9e370efe6ddd16"
+              },
+              {
+                "line": 104,
+                "lua_literal": "\"Harharhar, landlubber, no no!! The correct command would be STRAIGHT. Remember that! Next, what you gonna say when you see something to left?\"",
+                "decoded_text": "Harharhar, landlubber, no no!! The correct command would be STRAIGHT. Remember that! Next, what you gonna say when you see something to left?",
+                "text_sha256": "7281d1bd47c404563c70e563edd105731a859b98951cfe1c156839953e6f6802"
+              },
+              {
+                "line": 106,
+                "lua_literal": "\"larboard\"",
+                "decoded_text": "larboard",
+                "text_sha256": "d72dbf4f33c5cb63aecc18b0e2a2337d0c7d73de75908d11f3c0d4469c8ef3b7"
+              },
+              {
+                "line": 107,
+                "lua_literal": "\"Harharhar, landlubber, ya got it all wrong!! The correct command would be LARBOARD side. Don't forget that, 'kay? Last one, what you gonna say to me when ya see somethin' to the right?\"",
+                "decoded_text": "Harharhar, landlubber, ya got it all wrong!! The correct command would be LARBOARD side. Don't forget that, 'kay? Last one, what you gonna say to me when ya see somethin' to the right?",
+                "text_sha256": "54ea803c097f52756d0ec433f40b8af1189745d11fc4fc22741ab06a1794ac19"
+              },
+              {
+                "line": 109,
+                "lua_literal": "\"starboard\"",
+                "decoded_text": "starboard",
+                "text_sha256": "001dd523aef9118ea2901a6aa54338f3b57575c8d4cec5936b7cf53c2c0f7670"
+              },
+              {
+                "line": 111,
+                "lua_literal": "\"Ya gotta learn a lot! The correct command would be STARBOARD side. ...\"",
+                "decoded_text": "Ya gotta learn a lot! The correct command would be STARBOARD side. ...",
+                "text_sha256": "f1670e39cc6b52e7cd36ed6d5cc70c7b6e178f448b71efaa81c7fb54e86b52c3"
+              },
+              {
+                "line": 112,
+                "lua_literal": "\"After you told me about the direction, put a bait on the crane again and go up to the lookout! That would be all sailor, let's go hunt down the sea serpent!!\"",
+                "decoded_text": "After you told me about the direction, put a bait on the crane again and go up to the lookout! That would be all sailor, let's go hunt down the sea serpent!!",
+                "text_sha256": "1046441c4df2ea097d32138ff620f6d7813fdac7f88e884e1059e6963051224f"
+              },
+              {
+                "line": 115,
+                "lua_literal": "\"straight\"",
+                "decoded_text": "straight",
+                "text_sha256": "2a424875a8475a99175f543fa6fc65964e53e87efc161f7b1f9e370efe6ddd16"
+              },
+              {
+                "line": 125,
+                "lua_literal": "\"starboard\"",
+                "decoded_text": "starboard",
+                "text_sha256": "001dd523aef9118ea2901a6aa54338f3b57575c8d4cec5936b7cf53c2c0f7670"
+              },
+              {
+                "line": 135,
+                "lua_literal": "\"larboard\"",
+                "decoded_text": "larboard",
+                "text_sha256": "d72dbf4f33c5cb63aecc18b0e2a2337d0c7d73de75908d11f3c0d4469c8ef3b7"
+              },
+              {
+                "line": 145,
+                "lua_literal": "\"speed\"",
+                "decoded_text": "speed",
+                "text_sha256": "bbccb9c002d5ed5994789fd8d38a8af3825f7691e10c44cac9b07dc54b15c2ee"
+              },
+              {
+                "line": 146,
+                "lua_literal": "\"IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!\"",
+                "decoded_text": "IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!",
+                "text_sha256": "d7c2ef3122a2dfffaa6885d5c6cb6eca6899b7d4582299e7e6d2cd6ea6c00de9"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"god\"",
+                "decoded_text": "god",
+                "text_sha256": "5723360ef11043a879520412e9ad897e0ebcb99cc820ec363bfecc9d751a1a99"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"svargrond\"",
+                "decoded_text": "svargrond",
+                "text_sha256": "864a16aafb7880c0f8cdeb1852227119c70ff9680835e761ab0cec351d2761e8"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"back\"",
+                "decoded_text": "back",
+                "text_sha256": "3c482346f375027677fa8a0d6830a32714d4f13f9e94c2d9e215e0ac205ad4e5"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"hunt\"",
+                "decoded_text": "hunt",
+                "text_sha256": "18c3bc28bde14691d7ce2a9657d9e93d205c224fc084b733e5190ee9fd2a80bc"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"passage\"",
+                "decoded_text": "passage",
+                "text_sha256": "0886b051075687c18a9ae5075383feb8400fbe4328c6e4bd45b77b30f1e73b54"
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"trip\"",
+                "decoded_text": "trip",
+                "text_sha256": "34a389d790fc2bdd8458e5f1cde6933c97d11eeda65cf328b64460f0d68f04b5"
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"god\"",
+                "decoded_text": "god",
+                "text_sha256": "5723360ef11043a879520412e9ad897e0ebcb99cc820ec363bfecc9d751a1a99"
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"svargrond\"",
+                "decoded_text": "svargrond",
+                "text_sha256": "864a16aafb7880c0f8cdeb1852227119c70ff9680835e761ab0cec351d2761e8"
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"back\"",
+                "decoded_text": "back",
+                "text_sha256": "3c482346f375027677fa8a0d6830a32714d4f13f9e94c2d9e215e0ac205ad4e5"
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"hunt\"",
+                "decoded_text": "hunt",
+                "text_sha256": "18c3bc28bde14691d7ce2a9657d9e93d205c224fc084b733e5190ee9fd2a80bc"
+              },
+              {
+                "line": 156,
+                "lua_literal": "\"Already got enough, huh? I kind o' expected that, landlubber! Let's head for Svargrond! Ready?\"",
+                "decoded_text": "Already got enough, huh? I kind o' expected that, landlubber! Let's head for Svargrond! Ready?",
+                "text_sha256": "343b344a3ab581b33621971c59d6a7b7dd3231da85e2422d5798b9712dd10cba"
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"Y' already wanna give up?? I should've known. I bring ya back to Svargrond, 'kay?\"",
+                "decoded_text": "Y' already wanna give up?? I should've known. I bring ya back to Svargrond, 'kay?",
+                "text_sha256": "f8a826b8b9f8a230de0a5f2891a541be9faac88149f87b49394bb3e250ed28e5"
+              },
+              {
+                "line": 161,
+                "lua_literal": "\"yes\"",
+                "decoded_text": "yes",
+                "text_sha256": "8a798890fe93817163b10b5f7bd2ca4d25d84c52739a645a889c173eee7d9d3d"
+              },
+              {
+                "line": 162,
+                "lua_literal": "\"See ya, landlubber!\"",
+                "decoded_text": "See ya, landlubber!",
+                "text_sha256": "ceb6d3f92098256387c9957a2a2017d4335fae9a8b80a281a9ed01c9786de01e"
+              },
+              {
+                "line": 170,
+                "lua_literal": "\"caves\"",
+                "decoded_text": "caves",
+                "text_sha256": "0bc715d25d3620e83feaf11e0f103d598866075f34271fa5eaedbe54421dbaf3"
+              },
+              {
+                "line": 170,
+                "lua_literal": "\"I'd go by myself and tear that beast's heart out if I were younger. I hope ya can do that for me. Now go and good luck to ya!\"",
+                "decoded_text": "I'd go by myself and tear that beast's heart out if I were younger. I hope ya can do that for me. Now go and good luck to ya!",
+                "text_sha256": "e1c453ed336bd5d624a2799f36fea6a66abf33e54f7fac781cdd0a25b2a5c4f3"
+              },
+              {
+                "line": 171,
+                "lua_literal": "\"wares\"",
+                "decoded_text": "wares",
+                "text_sha256": "637f8041e2924025d67e751ef4906424dba55424082d56a0b7aecfa9b34ade85"
+              },
+              {
+                "line": 171,
+                "lua_literal": "\"Ya're a coward, aren't ya? Prove that I'm wrong and get your lazy bones up to the lookout!!\"",
+                "decoded_text": "Ya're a coward, aren't ya? Prove that I'm wrong and get your lazy bones up to the lookout!!",
+                "text_sha256": "3018aa04535805f077bbc3c9586c17863db2970b3793d030963ada2a75d6e1eb"
+              },
+              {
+                "line": 172,
+                "lua_literal": "\"go\"",
+                "decoded_text": "go",
+                "text_sha256": "4cd0e21a9a0795a14ec9aa5f0e7d1abff0492565770e43eafdf1e3e8afed1f33"
+              },
+              {
+                "line": 173,
+                "lua_literal": "\"bait\"",
+                "decoded_text": "bait",
+                "text_sha256": "0fb532081657b0142eaa25b103229c0ed5d5d0b43477f911797d2e50929b1ff7"
+              },
+              {
+                "line": 173,
+                "lua_literal": "\"Just ask me for a trade if you need a bait.\"",
+                "decoded_text": "Just ask me for a trade if you need a bait.",
+                "text_sha256": "b2d0d24174edd376371587d2752cdc86e39380a91a0307f30ae0f9f15ee0ff11"
+              },
+              {
+                "line": 174,
+                "lua_literal": "\"test\"",
+                "decoded_text": "test",
+                "text_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+              },
+              {
+                "line": 174,
+                "lua_literal": "\"I can give ya a challenge to test if ya have the guts to be a real sailor. Go up to the lookout and remain there for 24 hours during a storm! Harharhar!\"",
+                "decoded_text": "I can give ya a challenge to test if ya have the guts to be a real sailor. Go up to the lookout and remain there for 24 hours during a storm! Harharhar!",
+                "text_sha256": "950c6f70d758136491c28c759201cc8760bb5c8966e2ce72becc3bd1d21c082f"
+              },
+              {
+                "line": 176,
+                "lua_literal": "\"Here ya go! Use it on the crane when you see the monster. Then refill it every time you use the telescope.\"",
+                "decoded_text": "Here ya go! Use it on the crane when you see the monster. Then refill it every time you use the telescope.",
+                "text_sha256": "a7280b5021a7eb13d097099f59396b29cd10b1e6e4d8dfd0ea235d58f423aee1"
+              },
+              {
+                "line": 182,
+                "lua_literal": "\"bait\"",
+                "decoded_text": "bait",
+                "text_sha256": "0fb532081657b0142eaa25b103229c0ed5d5d0b43477f911797d2e50929b1ff7"
+              },
+              {
+                "line": 190,
+                "lua_literal": "\"Sold %ix %s for %i gold.\"",
+                "decoded_text": "Sold %ix %s for %i gold.",
+                "text_sha256": "285db637e308ecb5b6dba3889ed5c8b23b4ec4b512892e4033164618f658ec8f"
+              },
+              {
+                "line": 196,
+                "lua_literal": "\"passage\"",
+                "decoded_text": "passage",
+                "text_sha256": "0886b051075687c18a9ae5075383feb8400fbe4328c6e4bd45b77b30f1e73b54"
+              },
+              {
+                "line": 196,
+                "lua_literal": "\"bye\"",
+                "decoded_text": "bye",
+                "text_sha256": "b49f425a7e1f9cff3856329ada223f2f9d368f15a00cf48df16ca95986137fe8"
+              }
+            ]
+          }
+        ],
+        "runtime_admission": false,
+        "dependency_only": false,
+        "scope_note": "Preserve literal source guards, topics, effect order and complete dialogue.",
+        "admission_reason": "Source-backed authoring input only; callbacks remain guarded source and are not converted into ungated keywords. Native NPC placement and the real conversation owner still need admission.",
+        "full_source_lua": "local internalNpcName = \"Captain Haba\"\nlocal npcType = Game.createNpcType(\"Captain Haba (Open Sea)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 98,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal TheHuntForTheSeaSerpent = Storage.Quest.U8_2.TheHuntForTheSeaSerpent\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\n\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Wha'd ya want? Ask me 'bout the {instructions} if you don't know what to do! If you wanna head back to {Svargrond}, let me know.\")\n\telseif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.QuestLine) == 2 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"You found the spot |PLAYERNAME|!! Grab yourself a helmet of the deep and go explore the {caves} down there.\")\n\tend\n\treturn true\nend\nlocal randomMessages = {\n\tstraight = {\n\t\t\"STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!\",\n\t\t\"STRAIGHT AHED!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! STRAIGHT AHEAD!!\",\n\t\t\"GO GO GO, SEA SERPENT STRAIGHT AHEAD!!\",\n\t\t\"SET FULL SAILS! SEA SERPENT RIGHT IN FRONT OF US!!\",\n\t},\n\tstarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"LOOKOUT REPORTS SEA SERPENT ON SIGHT!! SEA SERPENT ON THE STARBOARD SIEDE!!\",\n\t\t\"COME ON YOU LAZY FOOLS!! SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"GO GO GO, SEA SERPENT ON THE STARBOARD SIDE!!\",\n\t\t\"CHANGE COURSE TO STARBOARD!! WHY DOES THIS TAKE SO LONG?!? HURRY UP!\",\n\t},\n\tlarboard = {\n\t\t\"SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT AHEAD!! LARBOARD SIDE!!\",\n\t\t\"SEA SERPENT ON SIGHT!! TO THE LARBOARD SIDE, FAST!\",\n\t\t\"LARBOARD!! THY DOES THIS TAKE SO LONG?!? LET'S GET IT ON!\",\n\t\t\"LET'S GO YOU LAZY FOOLS. WE GOT A SEA SERPENT TO CATCH! TO LARBOARD SIDE, GO, GO, GO!\",\n\t},\n}\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal randomMessagesResult\n\tif MsgContains(message, \"instructions\") then\n\t\tnpcHandler:say({\n\t\t\t\"A'right, first of all you need a bait which isn't for free, though. I sell them for 50 gold each. Use the bait on the crane over there when you see something in the telescope. ...\",\n\t\t\t\"Then go up to the lookout and check the telescope for a sight of the sea serpent. ...\",\n\t\t\t\"If you see it in front of ya, get down at once. And what d'ya gonna say to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"straight\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, no no!! The correct command would be STRAIGHT. Remember that! Next, what you gonna say when you see something to left?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"larboard\" then\n\t\tnpcHandler:say(\"Harharhar, landlubber, ya got it all wrong!! The correct command would be LARBOARD side. Don't forget that, 'kay? Last one, what you gonna say to me when ya see somethin' to the right?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 3)\n\telseif npcHandler:getTopic(playerId) == 1 and message:lower() ~= \"starboard\" then\n\t\tnpcHandler:say({\n\t\t\t\"Ya gotta learn a lot! The correct command would be STARBOARD side. ...\",\n\t\t\t\"After you told me about the direction, put a bait on the crane again and go up to the lookout! That would be all sailor, let's go hunt down the sea serpent!!\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message:lower(), \"straight\") then\n\t\trandomMessagesResult = randomMessages.straight[math.random(#randomMessages.straight)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"starboard\") then\n\t\trandomMessagesResult = randomMessages.starboard[math.random(#randomMessages.starboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 2 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"larboard\") then\n\t\trandomMessagesResult = randomMessages.larboard[math.random(#randomMessages.larboard)]\n\t\tnpcHandler:say(randomMessagesResult, npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif MsgContains(message:lower(), \"speed\") then\n\t\tnpcHandler:say(\"IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!\", npc, creature)\n\t\tif player:getStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction) == 4 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\telse\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.SuccessSwitch, 0)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.TheHuntForTheSeaSerpent.Direction, 0)\n\t\tend\n\telseif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\", \"passage\", \"trip\" }, message:lower()) then\n\t\tif table.contains({ \"god\", \"svargrond\", \"back\", \"hunt\" }, message:lower()) then\n\t\t\tnpcHandler:say(\"Already got enough, huh? I kind o' expected that, landlubber! Let's head for Svargrond! Ready?\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Y' already wanna give up?? I should've known. I bring ya back to Svargrond, 'kay?\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 4)\n\telseif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_WALKAWAY, \"See ya, landlubber!\")\n\t\tplayer:teleportTo(Position(32342, 31123, 6))\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n--Basic\nkeywordHandler:addKeyword({ \"caves\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'd go by myself and tear that beast's heart out if I were younger. I hope ya can do that for me. Now go and good luck to ya!\" })\nkeywordHandler:addKeyword({ \"wares\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ya're a coward, aren't ya? Prove that I'm wrong and get your lazy bones up to the lookout!!\" })\nkeywordHandler:addAliasKeyword({ \"go\" })\nkeywordHandler:addKeyword({ \"bait\" }, StdModule.say, { npcHandler = npcHandler, text = \"Just ask me for a trade if you need a bait.\" })\nkeywordHandler:addKeyword({ \"test\" }, StdModule.say, { npcHandler = npcHandler, text = \"I can give ya a challenge to test if ya have the guts to be a real sailor. Go up to the lookout and remain there for 24 hours during a storm! Harharhar!\" })\n\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Here ya go! Use it on the crane when you see the monster. Then refill it every time you use the telescope.\")\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bait\", clientId = 939, buy = 50 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:1-198"
+      }
+    ],
+    "policy": "Crystal201189 exact source. No keyword flattening, invented dialogue, new engine or inferred runtime admission. Scope follows the five assigned quest directories; grouped Tibia Tales expansion awaits QUESTION."
+  },
+  "step_inventory": [
+    {
+      "element": "Fish for a Serpent: start",
+      "patterns": "P09",
+      "trigger": "Captain Haba: mission/hunt → yes",
+      "condition": "FishForASerpent<0; topic1",
+      "effect": "TibiaTales.DefaultStart=1; FishForASerpent=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:83"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fish for a Serpent: dostawa 1",
+      "patterns": "P10",
+      "trigger": "Captain Haba: bait",
+      "condition": "FishForASerpent=1; removeItem(3578,5)",
+      "effect": "zabiera3578×5; FishForASerpent=2",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:115"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fish for a Serpent: dostawa 2",
+      "patterns": "P10",
+      "trigger": "Captain Haba: bait",
+      "condition": "FishForASerpent=2; removeItem(3580,5)",
+      "effect": "zabiera3580×5; FishForASerpent=3",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:120"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fish for a Serpent: dostawa 3",
+      "patterns": "P10",
+      "trigger": "Captain Haba: bait",
+      "condition": "FishForASerpent=3; removeItem(7159,5)",
+      "effect": "zabiera7159×5; FishForASerpent=4",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:125"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fish for a Serpent: dostawa 4",
+      "patterns": "P10",
+      "trigger": "Captain Haba: bait",
+      "condition": "FishForASerpent=4; removeItem(7158,5)",
+      "effect": "zabiera7158×5; FishForASerpent=5",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:130"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Wyjście na morze",
+      "patterns": "P03/P09",
+      "trigger": "Captain Haba: hunt/passage/mission → yes",
+      "condition": "FishForASerpent>=5; topic2",
+      "effect": "teleport31942,31047,6; jeśli QuestLine<0: QuestLine=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:95"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bait na dźwigu",
+      "patterns": "P02",
+      "trigger": "item939 na target3496",
+      "condition": "QuestLine=1; Bait!=1",
+      "effect": "zużywa item939×1; Bait=1; WATERSPLASH",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: brak przynęty",
+      "patterns": "P30",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait<1",
+      "effect": "tylko komunikat; losuje randBait1..2 i appearance1..(SuccessSwitch=1?10:9) przed odmową",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:38"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: utrata tropu",
+      "patterns": "P30",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait>=1; Direction>0",
+      "effect": "SuccessSwitch=0; Direction=0; Bait bez zmiany",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:48"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: brak widoku",
+      "patterns": "P30",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance<=4",
+      "effect": "tylko komunikat; nie zużywa przynęty",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:52"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: cień/kierunek",
+      "patterns": "P30",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance5..8",
+      "effect": "losuje phase1..4, Direction1..3; przy baitroll2 ustawia Bait=0; SuccessSwitch bez zmiany",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:55"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: zwiększ prędkość",
+      "patterns": "P30",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance=9",
+      "effect": "Direction=4; przy baitroll2 ustawia Bait=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:65"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Teleskop: odnalezienie miejsca",
+      "patterns": "P30/P13",
+      "trigger": "use item938",
+      "condition": "QuestLine=1; Bait>=1; Direction<=0; SuccessSwitch=1; appearance=10",
+      "effect": "QuestLine=2; Access=1; WATERCREATURE@31933,31037,7",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:71"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Captain Haba: komenda straight",
+      "patterns": "P09",
+      "trigger": "Captain Haba (open sea): straight",
+      "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+      "effect": "SuccessSwitch=1 iff poprzedni Direction=1, inaczej0; Direction=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Captain Haba: komenda starboard",
+      "patterns": "P09",
+      "trigger": "Captain Haba (open sea): starboard",
+      "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+      "effect": "SuccessSwitch=1 iff poprzedni Direction=2, inaczej0; Direction=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:125"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Captain Haba: komenda larboard",
+      "patterns": "P09",
+      "trigger": "Captain Haba (open sea): larboard",
+      "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+      "effect": "SuccessSwitch=1 iff poprzedni Direction=3, inaczej0; Direction=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:135"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Captain Haba: komenda speed",
+      "patterns": "P09",
+      "trigger": "Captain Haba (open sea): speed",
+      "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+      "effect": "SuccessSwitch=1 iff poprzedni Direction=4, inaczej0; Direction=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:145"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Captain Haba: instructions topics",
+      "patterns": "P09",
+      "trigger": "Captain Haba (open sea): instructions i odpowiedzi",
+      "condition": "donor sprawdza topic==1 w trzech kolejnych gałęziach; !=straight, !=larboard, !=starboard",
+      "effect": "tylko dialog/topic; literalne topic2/3 nie mają odpowiadających następnych warunków; pytanie o naprawę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:96"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Lookout: przejście 31943,31046,7",
+      "patterns": "P03",
+      "trigger": "stepin@31943,31046,7",
+      "condition": "gracz",
+      "effect": "teleport31943,31045,2",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Lookout: przejście 31943,31046,2",
+      "patterns": "P03",
+      "trigger": "stepin@31943,31046,2",
+      "condition": "gracz",
+      "effect": "teleport31943,31044,7",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Nurkowanie: przejście 31938,31041,6",
+      "patterns": "P03",
+      "trigger": "stepin@31938,31041,6",
+      "condition": "QuestLine=2; equipped HEAD item5460/11585/13995",
+      "effect": "teleport31938,31041,8; odmowa fromPosition",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nurkowanie: przejście 31939,31050,6",
+      "patterns": "P03",
+      "trigger": "stepin@31939,31050,6",
+      "condition": "QuestLine=2; equipped HEAD item5460/11585/13995",
+      "effect": "teleport31912,31187,9; odmowa fromPosition",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Powrót do Svargrond",
+      "patterns": "P03",
+      "trigger": "Captain Haba (open sea): god/svargrond/back/hunt/passage/trip → yes",
+      "condition": "topic4",
+      "effect": "teleport32342,31123,6",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:154"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Zakup przynęty",
+      "patterns": "P10/P11",
+      "trigger": "Captain Haba (open sea): trade",
+      "condition": "cena50 gp/szt.; typ939 wg tabeli shop",
+      "effect": "kupno przynęty używanej na dźwigu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:181"
+      ],
+      "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Prezentacja: Lookout: przejście 31943,31046,7",
+      "patterns": "P03",
+      "trigger": "stepin@31943,31046,7",
+      "condition": "gracz",
+      "effect": "TELEPORT na docelowej pozycji gracza",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:3"
+      ],
+      "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Prezentacja: Lookout: przejście 31943,31046,2",
+      "patterns": "P03",
+      "trigger": "stepin@31943,31046,2",
+      "condition": "gracz",
+      "effect": "TELEPORT na docelowej pozycji gracza",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:4"
+      ],
+      "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

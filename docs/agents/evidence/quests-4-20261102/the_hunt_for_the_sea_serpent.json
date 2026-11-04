@@ -1,0 +1,1796 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "the_hunt_for_the_sea_serpent",
+    "frozen_stage1": {
+      "total": 26,
+      "auto": 2,
+      "manual": 24
+    },
+    "authored_callback_definitions": 2,
+    "runtime_catalogue_callback_definitions": 2,
+    "runtime_exclusions": [],
+    "npc_source_files": 2,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "2 callbacki lookout; zachowane pełne źródła Haby.",
+    "left_out_summary": "Down/dive mają brak Ground470; HEAD admission odmawia. Istniejące stany Sea Serpent należą do Tibia Tales; NPC/RNG/custody nie rozszerzono."
+  },
+  "steps": [
+    {
+      "cluster": "explorer",
+      "cluster_row": 136,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Fish for a Serpent: start",
+        "pattern": "P09",
+        "trigger": "Captain Haba: mission/hunt → yes",
+        "condition": "FishForASerpent<0; topic1",
+        "effect": "TibiaTales.DefaultStart=1; FishForASerpent=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 135,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: mission/hunt → yes”: warunki FishForASerpent<0; topic1; wynik TibiaTales.DefaultStart=1; FishForASerpent=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "FishForASerpent<0 kontra istniejące initial/min0: nie zmieniać na<=0 ani migrować zapisanych zer. DefaultStart i FishForASerpent mają tego samego istniejącego ownera TibiaTales."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "canonical-unset-tracks"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:83"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 137,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Fish for a Serpent: dostawa 1",
+        "pattern": "P10",
+        "trigger": "Captain Haba: bait",
+        "condition": "FishForASerpent=1; removeItem(3578,5)",
+        "effect": "zabiera3578×5; FishForASerpent=2",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 136,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: bait”: warunki FishForASerpent=1; removeItem(3578,5); wynik zabiera3578×5; FishForASerpent=2. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:115"
+        ],
+        "item_facts": {
+          "3578": {
+            "key": "oteryn:item.tibia.i3578",
+            "definition": {
+              "path": "content/items/definitions/items-21000-21499.json",
+              "line": 1,
+              "record": 425,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3578",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 697,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3578",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "UNKNOWN"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {}
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 138,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Fish for a Serpent: dostawa 2",
+        "pattern": "P10",
+        "trigger": "Captain Haba: bait",
+        "condition": "FishForASerpent=2; removeItem(3580,5)",
+        "effect": "zabiera3580×5; FishForASerpent=3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 137,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: bait”: warunki FishForASerpent=2; removeItem(3580,5); wynik zabiera3580×5; FishForASerpent=3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:120"
+        ],
+        "item_facts": {
+          "3580": {
+            "key": "oteryn:item.tibia.i3580",
+            "definition": {
+              "path": "content/items/definitions/items-21000-21499.json",
+              "line": 1,
+              "record": 428,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3580",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 698,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3580",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 139,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Fish for a Serpent: dostawa 3",
+        "pattern": "P10",
+        "trigger": "Captain Haba: bait",
+        "condition": "FishForASerpent=3; removeItem(7159,5)",
+        "effect": "zabiera7159×5; FishForASerpent=4",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 138,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: bait”: warunki FishForASerpent=3; removeItem(7159,5); wynik zabiera7159×5; FishForASerpent=4. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:125"
+        ],
+        "item_facts": {
+          "7159": {
+            "key": "oteryn:item.tibia.i7159",
+            "definition": {
+              "path": "content/items/definitions/items-31000-31499.json",
+              "line": 1,
+              "record": 30,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i7159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1016,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i7159",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 140,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Fish for a Serpent: dostawa 4",
+        "pattern": "P10",
+        "trigger": "Captain Haba: bait",
+        "condition": "FishForASerpent=4; removeItem(7158,5)",
+        "effect": "zabiera7158×5; FishForASerpent=5",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 139,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: bait”: warunki FishForASerpent=4; removeItem(7158,5); wynik zabiera7158×5; FishForASerpent=5. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:130"
+        ],
+        "item_facts": {
+          "7158": {
+            "key": "oteryn:item.tibia.i7158",
+            "definition": {
+              "path": "content/items/definitions/items-31000-31499.json",
+              "line": 1,
+              "record": 29,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i7158",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1015,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i7158",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 141,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Wyjście na morze",
+        "pattern": "P03/P09",
+        "trigger": "Captain Haba: hunt/passage/mission → yes",
+        "condition": "FishForASerpent>=5; topic2",
+        "effect": "teleport31942,31047,6; jeśli QuestLine<0: QuestLine=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 140,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba: hunt/passage/mission → yes”: warunki FishForASerpent>=5; topic2; wynik teleport31942,31047,6; jeśli QuestLine<0: QuestLine=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba.lua:95"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 142,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Bait na dźwigu",
+        "pattern": "P02",
+        "trigger": "item939 na target3496",
+        "condition": "QuestLine=1; Bait!=1",
+        "effect": "zużywa item939×1; Bait=1; WATERSPLASH",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 141,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item939 na target3496”: warunki QuestLine=1; Bait!=1; wynik zużywa item939×1; Bait=1; WATERSPLASH. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 939: brak native profile. Nie zmieniono materializable ani istniejących holds."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:4"
+        ],
+        "item_facts": {
+          "939": {
+            "key": "oteryn:item.tibia.i939",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 457,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i939",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "3496": {
+            "key": "oteryn:item.tibia.i3496",
+            "definition": {
+              "path": "content/items/definitions/items-21000-21499.json",
+              "line": 1,
+              "record": 161,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3496",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "939: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 143,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: brak przynęty",
+        "pattern": "P30",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait<1",
+        "effect": "tylko komunikat; losuje randBait1..2 i appearance1..(SuccessSwitch=1?10:9) przed odmową",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 142,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait<1; wynik tylko komunikat; losuje randBait1..2 i appearance1..(SuccessSwitch=1?10:9) przed odmową. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:38"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 144,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: utrata tropu",
+        "pattern": "P30",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait>=1; Direction>0",
+        "effect": "SuccessSwitch=0; Direction=0; Bait bez zmiany",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 143,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait>=1; Direction>0; wynik SuccessSwitch=0; Direction=0; Bait bez zmiany. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:48"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 145,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: brak widoku",
+        "pattern": "P30",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance<=4",
+        "effect": "tylko komunikat; nie zużywa przynęty",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 144,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait>=1; Direction<=0; appearance<=4; wynik tylko komunikat; nie zużywa przynęty. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:52"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 146,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: cień/kierunek",
+        "pattern": "P30",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance5..8",
+        "effect": "losuje phase1..4, Direction1..3; przy baitroll2 ustawia Bait=0; SuccessSwitch bez zmiany",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 145,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait>=1; Direction<=0; appearance5..8; wynik losuje phase1..4, Direction1..3; przy baitroll2 ustawia Bait=0; SuccessSwitch bez zmiany. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:55"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 147,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: zwiększ prędkość",
+        "pattern": "P30",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait>=1; Direction<=0; appearance=9",
+        "effect": "Direction=4; przy baitroll2 ustawia Bait=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 146,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait>=1; Direction<=0; appearance=9; wynik Direction=4; przy baitroll2 ustawia Bait=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:65"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 148,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Teleskop: odnalezienie miejsca",
+        "pattern": "P30/P13",
+        "trigger": "use item938",
+        "condition": "QuestLine=1; Bait>=1; Direction<=0; SuccessSwitch=1; appearance=10",
+        "effect": "QuestLine=2; Access=1; WATERCREATURE@31933,31037,7",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 147,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item938”: warunki QuestLine=1; Bait>=1; Direction<=0; SuccessSwitch=1; appearance=10; wynik QuestLine=2; Access=1; WATERCREATURE@31933,31037,7. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak source-bound Use item938 handlera z utrwalonym wynikiem losowania randBait1..2, appearance1..9/10 i phase1..4 oraz atomowymi state effects; RNG jest częścią reguły nawet przed niektórymi odmowami. Nie dodano pasywnego helpera ani nowego shared callback kind."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:71"
+        ],
+        "item_facts": {
+          "938": {
+            "key": "oteryn:item.tibia.i938",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 446,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i938",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 149,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Captain Haba: komenda straight",
+        "pattern": "P09",
+        "trigger": "Captain Haba (open sea): straight",
+        "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+        "effect": "SuccessSwitch=1 iff poprzedni Direction=1, inaczej0; Direction=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 148,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): straight”: warunki gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction; wynik SuccessSwitch=1 iff poprzedni Direction=1, inaczej0; Direction=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak kontekstowego Haba(open sea) command7 handlera zachowującego wcześniejszą gałąź instructions i topic priority; source powtarza topic==1 trzy razy. Nie zastąpiono tego keyword flattening. Command branches muszą ustawiać SuccessSwitch iff Direction zgadza się oraz Direction=0 atomowo."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 150,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Captain Haba: komenda starboard",
+        "pattern": "P09",
+        "trigger": "Captain Haba (open sea): starboard",
+        "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+        "effect": "SuccessSwitch=1 iff poprzedni Direction=2, inaczej0; Direction=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 149,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): starboard”: warunki gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction; wynik SuccessSwitch=1 iff poprzedni Direction=2, inaczej0; Direction=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak kontekstowego Haba(open sea) command7 handlera zachowującego wcześniejszą gałąź instructions i topic priority; source powtarza topic==1 trzy razy. Nie zastąpiono tego keyword flattening. Command branches muszą ustawiać SuccessSwitch iff Direction zgadza się oraz Direction=0 atomowo."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:125"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 151,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Captain Haba: komenda larboard",
+        "pattern": "P09",
+        "trigger": "Captain Haba (open sea): larboard",
+        "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+        "effect": "SuccessSwitch=1 iff poprzedni Direction=3, inaczej0; Direction=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 150,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): larboard”: warunki gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction; wynik SuccessSwitch=1 iff poprzedni Direction=3, inaczej0; Direction=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak kontekstowego Haba(open sea) command7 handlera zachowującego wcześniejszą gałąź instructions i topic priority; source powtarza topic==1 trzy razy. Nie zastąpiono tego keyword flattening. Command branches muszą ustawiać SuccessSwitch iff Direction zgadza się oraz Direction=0 atomowo."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:135"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 152,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Captain Haba: komenda speed",
+        "pattern": "P09",
+        "trigger": "Captain Haba (open sea): speed",
+        "condition": "gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction",
+        "effect": "SuccessSwitch=1 iff poprzedni Direction=4, inaczej0; Direction=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 151,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): speed”: warunki gałąź nie przechwycona przez wcześniejsze instructions; odczyt Direction; wynik SuccessSwitch=1 iff poprzedni Direction=4, inaczej0; Direction=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak kontekstowego Haba(open sea) command7 handlera zachowującego wcześniejszą gałąź instructions i topic priority; source powtarza topic==1 trzy razy. Nie zastąpiono tego keyword flattening. Command branches muszą ustawiać SuccessSwitch iff Direction zgadza się oraz Direction=0 atomowo."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:145"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 153,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Captain Haba: instructions topics",
+        "pattern": "P09",
+        "trigger": "Captain Haba (open sea): instructions i odpowiedzi",
+        "condition": "donor sprawdza topic==1 w trzech kolejnych gałęziach; !=straight, !=larboard, !=starboard",
+        "effect": "tylko dialog/topic; literalne topic2/3 nie mają odpowiadających następnych warunków; pytanie o naprawę",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 152,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): instructions i odpowiedzi”: warunki donor sprawdza topic==1 w trzech kolejnych gałęziach; !=straight, !=larboard, !=starboard; wynik tylko dialog/topic; literalne topic2/3 nie mają odpowiadających następnych warunków; pytanie o naprawę. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak kontekstowego Haba(open sea) command7 handlera zachowującego wcześniejszą gałąź instructions i topic priority; source powtarza topic==1 trzy razy. Nie zastąpiono tego keyword flattening. Command branches muszą ustawiać SuccessSwitch iff Direction zgadza się oraz Direction=0 atomowo."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:96"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 154,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Lookout: przejście 31943,31046,7",
+        "pattern": "P03",
+        "trigger": "stepin@31943,31046,7",
+        "condition": "gracz",
+        "effect": "teleport31943,31045,2",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 153,
+        "status": "IMPLEMENTED_CORE_MAP_FACTS_COMPATIBLE",
+        "implemented_parts": [
+          "Źródłowy callback Sea lookout up zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Up source408Ground+1949(blocks_movement=false), destination486Ground mają zgodne native facts. Brak osobnego real-map STEP testu w tym raporcie; nie deklaruje to całości Sea Serpent ani obu kierunków jako grywalnych. TELEPORT cue pozostaje w osobnym wierszu212."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/sea-serpent-lookout-up",
+        "runtime_callback_present": true,
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 155,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Lookout: przejście 31943,31046,2",
+        "pattern": "P03",
+        "trigger": "stepin@31943,31046,2",
+        "condition": "gracz",
+        "effect": "teleport31943,31044,7",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 154,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback Sea lookout down zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Down source31943,31046,2 zawiera tylko470 bez TerrainGround; nie ma kwalifikowanego ingress do callbacka. Destination408Ground jest obecny. Nie dodano sztucznego podłoża."
+        ],
+        "question_ids": [
+          "sea-serpent-dive-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:4"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/sea-serpent-lookout-down",
+        "runtime_callback_present": true,
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 156,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Nurkowanie: przejście 31938,31041,6",
+        "pattern": "P03",
+        "trigger": "stepin@31938,31041,6",
+        "condition": "QuestLine=2; equipped HEAD item5460/11585/13995",
+        "effect": "teleport31938,31041,8; odmowa fromPosition",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 155,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin@31938,31041,6”: warunki QuestLine=2; equipped HEAD item5460/11585/13995; wynik teleport31938,31041,8; odmowa fromPosition. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 5460: brak native profile; 11585: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Brak zamkniętego same-transaction odczytu rzeczywistego HEAD5460/11585/13995 przed teleportem.13995 ma native materializable HEAD, ale vocation requirements są UNKNOWN;5460/11585 nie mają native profile. Plecak ani caller-supplied item proof nie zastępuje wyposażonego HEAD.",
+          "Oba Sea entry tiles31938,31041,6 i31939,31050,6 mają470+571/572 bez kwalifikowanego Ground; obie docelowe lokacje fizycznie istnieją. Nie napisano martwego helmet helpera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "sea-serpent-dive-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:5"
+        ],
+        "item_facts": {
+          "5460": {
+            "key": "oteryn:item.tibia.i5460",
+            "definition": {
+              "path": "content/items/definitions/items-29000-29499.json",
+              "line": 1,
+              "record": 156,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5460",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "11585": {
+            "key": "oteryn:item.tibia.i11585",
+            "definition": {
+              "path": "content/items/definitions/items-01500-01999.json",
+              "line": 1,
+              "record": 40,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11585",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "13995": {
+            "key": "oteryn:item.tibia.i13995",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 482,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i13995",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1530,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i13995",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "KNOWN",
+                "value": {
+                  "patterns": {
+                    "state": "KNOWN",
+                    "value": [
+                      {
+                        "additional_reserved_slots": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "compatibility_rule": {
+                          "state": "UNKNOWN"
+                        },
+                        "level": {
+                          "state": "KNOWN",
+                          "value": 150
+                        },
+                        "mutually_exclusive_groups": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "pattern_id": 1,
+                        "primary_slot": {
+                          "state": "KNOWN",
+                          "value": "HEAD"
+                        },
+                        "vocations": {
+                          "state": "UNKNOWN"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [
+          "5460: brak native profile",
+          "11585: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 157,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Nurkowanie: przejście 31939,31050,6",
+        "pattern": "P03",
+        "trigger": "stepin@31939,31050,6",
+        "condition": "QuestLine=2; equipped HEAD item5460/11585/13995",
+        "effect": "teleport31912,31187,9; odmowa fromPosition",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 156,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin@31939,31050,6”: warunki QuestLine=2; equipped HEAD item5460/11585/13995; wynik teleport31912,31187,9; odmowa fromPosition. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 5460: brak native profile; 11585: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Brak zamkniętego same-transaction odczytu rzeczywistego HEAD5460/11585/13995 przed teleportem.13995 ma native materializable HEAD, ale vocation requirements są UNKNOWN;5460/11585 nie mają native profile. Plecak ani caller-supplied item proof nie zastępuje wyposażonego HEAD.",
+          "Oba Sea entry tiles31938,31041,6 i31939,31050,6 mają470+571/572 bez kwalifikowanego Ground; obie docelowe lokacje fizycznie istnieją. Nie napisano martwego helmet helpera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "sea-serpent-dive-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:6"
+        ],
+        "item_facts": {
+          "5460": {
+            "key": "oteryn:item.tibia.i5460",
+            "definition": {
+              "path": "content/items/definitions/items-29000-29499.json",
+              "line": 1,
+              "record": 156,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5460",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "11585": {
+            "key": "oteryn:item.tibia.i11585",
+            "definition": {
+              "path": "content/items/definitions/items-01500-01999.json",
+              "line": 1,
+              "record": 40,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11585",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "13995": {
+            "key": "oteryn:item.tibia.i13995",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 482,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i13995",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1530,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i13995",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "KNOWN",
+                "value": {
+                  "patterns": {
+                    "state": "KNOWN",
+                    "value": [
+                      {
+                        "additional_reserved_slots": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "compatibility_rule": {
+                          "state": "UNKNOWN"
+                        },
+                        "level": {
+                          "state": "KNOWN",
+                          "value": 150
+                        },
+                        "mutually_exclusive_groups": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "pattern_id": 1,
+                        "primary_slot": {
+                          "state": "KNOWN",
+                          "value": "HEAD"
+                        },
+                        "vocations": {
+                          "state": "UNKNOWN"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [
+          "5460: brak native profile",
+          "11585: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314787"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 158,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Powrót do Svargrond",
+        "pattern": "P03",
+        "trigger": "Captain Haba (open sea): god/svargrond/back/hunt/passage/trip → yes",
+        "condition": "topic4",
+        "effect": "teleport32342,31123,6",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 157,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): god/svargrond/back/hunt/passage/trip → yes”: warunki topic4; wynik teleport32342,31123,6. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:154"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 159,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Zakup przynęty",
+        "pattern": "P10/P11",
+        "trigger": "Captain Haba (open sea): trade",
+        "condition": "cena50 gp/szt.; typ939 wg tabeli shop",
+        "effect": "kupno przynęty używanej na dźwigu",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 158,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Captain Haba (open sea): trade”: warunki cena50 gp/szt.; typ939 wg tabeli shop; wynik kupno przynęty używanej na dźwigu. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 939: brak native profile. Nie zmieniono materializable ani istniejących holds."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:181"
+        ],
+        "item_facts": {
+          "939": {
+            "key": "oteryn:item.tibia.i939",
+            "definition": {
+              "path": "content/items/definitions/items-33000-33499.json",
+              "line": 1,
+              "record": 457,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i939",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "939: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 213,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Prezentacja: Lookout: przejście 31943,31046,7",
+        "pattern": "P03",
+        "trigger": "stepin@31943,31046,7",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 212,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 214,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_hunt_for_the_sea_serpent",
+        "step": "Prezentacja: Lookout: przejście 31943,31046,2",
+        "pattern": "P03",
+        "trigger": "stepin@31943,31046,2",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 213,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:4"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "canonical_storage_owner": "oteryn:quest.tibia_tales",
+        "ownership_note": "Wszystkie istniejące Sea Serpent tracks już należą do TibiaTales; nie jest to cross-owner blocker i nie zmieniono ownership.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    }
+  ]
+}

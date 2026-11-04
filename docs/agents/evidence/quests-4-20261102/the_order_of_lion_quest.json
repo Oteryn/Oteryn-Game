@@ -1,0 +1,2612 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "the_order_of_lion_quest",
+    "frozen_stage1": {
+      "total": 41,
+      "auto": 6,
+      "manual": 35
+    },
+    "authored_callback_definitions": 9,
+    "runtime_catalogue_callback_definitions": 7,
+    "runtime_exclusions": [
+      {
+        "key": "oteryn:quest-callback/lion-bounac-stairs-down",
+        "reason": "The native floor resolver can skip the down callback and land on the up callback selector. If the lower tile is admissible, the subsequent up callback can return the player to floor 6. Both callbacks require one ordinary-step test through the compiled map before integration.",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+      },
+      {
+        "key": "oteryn:quest-callback/lion-bounac-stairs-up",
+        "reason": "The native floor resolver can skip the down callback and land on the up callback selector. If the lower tile is admissible, the subsequent up callback can return the player to floor 6. Both callbacks require one ordinary-step test through the compiled map before integration.",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+      }
+    ],
+    "npc_source_files": 15,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "9 definicji, 7 w katalogu; 15 pełnych źródeł NPC.",
+    "left_out_summary": "Dwa schodki wyłączone przez konflikt routingu; brak AID59603–59605 i Drume kill binding. Nowe rozmowy Evrard/Kesar pozostają Left out."
+  },
+  "steps": [
+    {
+      "cluster": "rotten",
+      "cluster_row": 96,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C096",
+        "original_index": 96,
+        "quest": "the_order_of_lion_quest",
+        "element": "Bounac entrance",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Bounac entrance",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "Use AID59602",
+          "guard": "level≥250",
+          "effect": "teleport32423,32448,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:2"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C096"
+        },
+        "status": "LEFT_OUT_SHARED_CALLBACK_ADAPTER",
+        "reason": "Source Bounac entrance ma level250 i statyczny teleport, bez zapisu Quest. Bieżący parser minimum_level wymaga niepustego storage; sztuczny guard/write zmieniłby źródło. AID59602 wymaga osobnej kwalifikacji mapy.",
+        "missing_function": "Existing level owner predicate dla stateless source Use59602 i teleportu bez sztucznego tracka; zmiana parsera/adaptera jest Left out.",
+        "exact_guard": "level≥250",
+        "exact_effect": "teleport32423,32448,7",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:2",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:150-172"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 97,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+      ],
+      "disposition": {
+        "row_id": "R4C097",
+        "original_index": 97,
+        "quest": "the_order_of_lion_quest",
+        "element": "Bounac return",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Bounac return",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "Use AID59603",
+          "guard": "player",
+          "effect": "teleport33183,31756,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:11"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C097"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Zamknięty source callback jest zachowany; elevator ascent używa preserve i nie cofa Trust do5. Pełny native probe nie zawiera AID59603/59604/59605.",
+        "missing_function": "Source-backed native binding odpowiedniego AID oraz compiled ingress, z dokładnym read-only Trust>=5 tylko przy ascent.",
+        "exact_guard": "player",
+        "exact_effect": "teleport33183,31756,7",
+        "question_ids": [
+          "the_order_of_lion_quest-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:11"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-bounac-return",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": false,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 98,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+      ],
+      "disposition": {
+        "row_id": "R4C098",
+        "original_index": 98,
+        "quest": "the_order_of_lion_quest",
+        "element": "Bounac stairs 32475,32497,7",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Bounac stairs 32475,32497,7",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn 32475,32497,7",
+          "guard": "player",
+          "effect": "teleport32475,32496,6",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:24"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C098"
+        },
+        "status": "SOURCE_CALLBACK_EXCLUDED_NATIVE_ROUTE",
+        "reason": "Oba source inputs i tile są zachowane, ale native DOWN może ominąć upper callback i wylądować na przeciwnym lower selectorze, powodując odbicie. Oba klucze usunięto z runtime danych.",
+        "missing_function": "Kwalifikacja jednego canonical ordinary-step stair route bez podwójnego teleportu/odbicia; nie zmieniać native floor resolver w tej partii.",
+        "exact_guard": "player",
+        "exact_effect": "teleport32475,32496,6",
+        "question_ids": [
+          "lion-stairs-ingress"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:24",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:25",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/teleport.lua:5",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor_catalogue.rs:317",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor.rs:278",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:176",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/terrain/terrain-00000-00499.json:1"
+        ],
+        "evidence": [
+          "runtime-exclusions.json",
+          "runtime-path-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-bounac-stairs-up",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": false,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": true,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 99,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+      ],
+      "disposition": {
+        "row_id": "R4C099",
+        "original_index": 99,
+        "quest": "the_order_of_lion_quest",
+        "element": "Bounac stairs 32475,32497,6",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Bounac stairs 32475,32497,6",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn 32475,32497,6",
+          "guard": "player",
+          "effect": "teleport32475,32498,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:24"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C099"
+        },
+        "status": "SOURCE_CALLBACK_EXCLUDED_NATIVE_ROUTE",
+        "reason": "Oba source inputs i tile są zachowane, ale native DOWN może ominąć upper callback i wylądować na przeciwnym lower selectorze, powodując odbicie. Oba klucze usunięto z runtime danych.",
+        "missing_function": "Kwalifikacja jednego canonical ordinary-step stair route bez podwójnego teleportu/odbicia; nie zmieniać native floor resolver w tej partii.",
+        "exact_guard": "player",
+        "exact_effect": "teleport32475,32498,7",
+        "question_ids": [
+          "lion-stairs-ingress"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413536"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:24",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:25",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/teleport.lua:5",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor_catalogue.rs:317",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor.rs:278",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:176",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/terrain/terrain-00000-00499.json:1"
+        ],
+        "evidence": [
+          "runtime-exclusions.json",
+          "runtime-path-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-bounac-stairs-down",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": false,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": true,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 100,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C100",
+        "original_index": 100,
+        "quest": "the_order_of_lion_quest",
+        "element": "Evrard initial",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Evrard initial",
+          "patterns": [
+            "P09",
+            "P10",
+            "P13"
+          ],
+          "trigger": "Evrard / Evrard the Miller: yes/news",
+          "guard": "Evrard<1; two confirmations",
+          "effect": "Evrard=1; AccessEastern=1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C100"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Niezależne scalar rules są kompletne. Evrard i Evrard the Miller wymagają dwóch dokładnych yes; Kesar siege zapisuje Mission1+now, po600s context-bound yes dajeMission2+now. Istniejący timed NPC owner zapewnia source actors; brak danych/placement nie jest powodem Left out.",
+        "missing_function": "Montowanie zamkniętych Evrard/Kesar topic callerów w shared NPC book/router, Quest loader i retained reconciliation, przy użyciu obecnego Quest/clock ownera bez nowych placements.",
+        "exact_guard": "Evrard<1; two confirmations",
+        "exact_effect": "Evrard=1; AccessEastern=1",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:64"
+        ],
+        "evidence": [
+          "scalar-npc-map-qualification.json",
+          "lion_npcs.red.rs",
+          "lion_quest.red.rs",
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 101,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C101",
+        "original_index": 101,
+        "quest": "the_order_of_lion_quest",
+        "element": "Evrard news",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Evrard news",
+          "patterns": [
+            "P09",
+            "P10",
+            "P13"
+          ],
+          "trigger": "Evrard / Evrard the Miller: yes/news",
+          "guard": "Evrard=1; Parchment/Map≥1; held635+2822",
+          "effect": "consume635+2822; Evrard=2",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:79",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:79"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C101"
+        },
+        "status": "LEFT_OUT_SHARED_EXCHANGE_OWNER",
+        "reason": "Source item IDs/ilości/guardy i właściwe Quest writes są kompletne. Wymiana wymaga source NPC caller i jednej atomowej Inventory/Quest operacji;0831/0832 i limit8 pozostają bez rozszerzeń.",
+        "missing_function": "Zamknięty source exchange całego zestawu z literalnym etapem i rollback przy braku zasobów/miejsca, bez oddzielnego ungated SET Trust/quest progress.",
+        "exact_guard": "Evrard=1; Parchment/Map≥1; held635+2822",
+        "exact_effect": "consume635+2822; Evrard=2",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:79",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:79"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 102,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C102",
+        "original_index": 102,
+        "quest": "the_order_of_lion_quest",
+        "element": "Evrard southern access",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Evrard southern access",
+          "patterns": [
+            "P09",
+            "P10",
+            "P13"
+          ],
+          "trigger": "Evrard / Evrard the Miller: yes/news",
+          "guard": "topic3; Evrard=2; yes",
+          "effect": "Evrard=3; AccessSouthern=1; Trust=0",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:96",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:96"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C102"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "topic3; Evrard=2; yes",
+        "exact_effect": "Evrard=3; AccessSouthern=1; Trust=0",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:96",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:96"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 103,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C103",
+        "original_index": 103,
+        "quest": "the_order_of_lion_quest",
+        "element": "Evrard document 47404",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Evrard document 47404",
+          "patterns": [
+            "P05",
+            "P14"
+          ],
+          "trigger": "Use UID47404",
+          "guard": "storage47404!=1",
+          "effect": "give635 with donor text; storage47404=1 even if addItem failed",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_evrard_quest.lua:1"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C103"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_REWARD_OWNER",
+        "reason": "Source UID47404/47405 oraz pełne teksty dokumentów635/2822 są znane. Native capture nie przenosi unique. Donor zapisuje flagę nawet przy nieudanym addItem, lecz ANSWER4 wymaga atomowego grant albo zero zmian; nie wdrożono nowej ścieżki.",
+        "missing_function": "Qualified actual document UID i istniejący atomowy text-item grant z właściwą flagą; source text zachowany, brak miejsca/udźwigu bez zmiany flagi.",
+        "exact_guard": "storage47404!=1",
+        "exact_effect": "give635 with donor text; storage47404=1 even if addItem failed",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_evrard_quest.lua:1"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 104,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C104",
+        "original_index": 104,
+        "quest": "the_order_of_lion_quest",
+        "element": "Evrard document 47405",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Evrard document 47405",
+          "patterns": [
+            "P05",
+            "P14"
+          ],
+          "trigger": "Use UID47405",
+          "guard": "storage47405!=1",
+          "effect": "give2822 with donor text; storage47405=1 even if addItem failed",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_evrard_quest.lua:1"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C104"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_REWARD_OWNER",
+        "reason": "Source UID47404/47405 oraz pełne teksty dokumentów635/2822 są znane. Native capture nie przenosi unique. Donor zapisuje flagę nawet przy nieudanym addItem, lecz ANSWER4 wymaga atomowego grant albo zero zmian; nie wdrożono nowej ścieżki.",
+        "missing_function": "Qualified actual document UID i istniejący atomowy text-item grant z właściwą flagą; source text zachowany, brak miejsca/udźwigu bez zmiany flagi.",
+        "exact_guard": "storage47405!=1",
+        "exact_effect": "give2822 with donor text; storage47405=1 even if addItem failed",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_evrard_quest.lua:1"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 105,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C105",
+        "original_index": 105,
+        "quest": "the_order_of_lion_quest",
+        "element": "Castle enter 32480",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Castle enter 32480",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn32400,32480,4",
+          "guard": "AccessEastern≥1",
+          "effect": "teleport32397,32480,4; no forced return on refusal; readonly >= guard not expressible as fixed SET",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C105"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Cztery dokładne zamkowe pozycje mają B3 i zamknięte source callback inputs. Dwa wejścia używają read-only AccessEastern>=1 preserve, wyjścia nie mają tego guardu. To nie dowodzi kompletnej misji ani producenta AccessEastern.",
+        "missing_function": "Zwykły compiled ingress do każdego source wejścia/wyjścia pozostaje osobną kwalifikacją parent; source magic effects są odłożone do presentation ownera.",
+        "exact_guard": "AccessEastern≥1",
+        "exact_effect": "teleport32397,32480,4; no forced return on refusal; readonly >= guard not expressible as fixed SET",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-castle-enter-32480",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 106,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C106",
+        "original_index": 106,
+        "quest": "the_order_of_lion_quest",
+        "element": "Castle exit 32480",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Castle exit 32480",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn32398,32480,4",
+          "guard": "player",
+          "effect": "teleport32401,32480,4",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C106"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Cztery dokładne zamkowe pozycje mają B3 i zamknięte source callback inputs. Dwa wejścia używają read-only AccessEastern>=1 preserve, wyjścia nie mają tego guardu. To nie dowodzi kompletnej misji ani producenta AccessEastern.",
+        "missing_function": "Zwykły compiled ingress do każdego source wejścia/wyjścia pozostaje osobną kwalifikacją parent; source magic effects są odłożone do presentation ownera.",
+        "exact_guard": "player",
+        "exact_effect": "teleport32401,32480,4",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-castle-exit-32480",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 107,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C107",
+        "original_index": 107,
+        "quest": "the_order_of_lion_quest",
+        "element": "Castle enter 32481",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Castle enter 32481",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn32400,32481,4",
+          "guard": "AccessEastern≥1",
+          "effect": "teleport32397,32481,4; no forced return on refusal; readonly >= guard not expressible as fixed SET",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C107"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Cztery dokładne zamkowe pozycje mają B3 i zamknięte source callback inputs. Dwa wejścia używają read-only AccessEastern>=1 preserve, wyjścia nie mają tego guardu. To nie dowodzi kompletnej misji ani producenta AccessEastern.",
+        "missing_function": "Zwykły compiled ingress do każdego source wejścia/wyjścia pozostaje osobną kwalifikacją parent; source magic effects są odłożone do presentation ownera.",
+        "exact_guard": "AccessEastern≥1",
+        "exact_effect": "teleport32397,32481,4; no forced return on refusal; readonly >= guard not expressible as fixed SET",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-castle-enter-32481",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 108,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C108",
+        "original_index": 108,
+        "quest": "the_order_of_lion_quest",
+        "element": "Castle exit 32481",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Castle exit 32481",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn32398,32481,4",
+          "guard": "player",
+          "effect": "teleport32401,32481,4",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C108"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Cztery dokładne zamkowe pozycje mają B3 i zamknięte source callback inputs. Dwa wejścia używają read-only AccessEastern>=1 preserve, wyjścia nie mają tego guardu. To nie dowodzi kompletnej misji ani producenta AccessEastern.",
+        "missing_function": "Zwykły compiled ingress do każdego source wejścia/wyjścia pozostaje osobną kwalifikacją parent; source magic effects są odłożone do presentation ownera.",
+        "exact_guard": "player",
+        "exact_effect": "teleport32401,32481,4",
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-castle-exit-32481",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": true,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 109,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C109",
+        "original_index": 109,
+        "quest": "the_order_of_lion_quest",
+        "element": "Guard pass",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Guard pass",
+          "patterns": [
+            "P09",
+            "P13"
+          ],
+          "trigger": "Bounac guard: pass/in or out",
+          "guard": "Eastern≥1 OR Trust≥5",
+          "effect": "setEastern1 when Trust route; teleport32397,32480,4",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:53"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C109"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_MOVEMENT_ADAPTER",
+        "reason": "Source Guard pass/exit i pozycje są znane. Wejście ma OR AccessEastern>=1 lub Trust>=5; tylko druga gałąź ustawia Eastern1. Niezależny teleport lub blanket SET zmieniłby zachowanie.",
+        "missing_function": "Context-bound Bounac Guard NPC caller z source OR, warunkowym zapisem i teleportem przez istniejących Quest/movement owners; exit tylko Eastern>=1.",
+        "exact_guard": "Eastern≥1 OR Trust≥5",
+        "exact_effect": "setEastern1 when Trust route; teleport32397,32480,4",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:53"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 110,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C110",
+        "original_index": 110,
+        "quest": "the_order_of_lion_quest",
+        "element": "Guard exit",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Guard exit",
+          "patterns": [
+            "P09",
+            "P13"
+          ],
+          "trigger": "Bounac guard: pass/in or out",
+          "guard": "Eastern≥1",
+          "effect": "teleport32401,32480,4",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:82"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C110"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_MOVEMENT_ADAPTER",
+        "reason": "Source Guard pass/exit i pozycje są znane. Wejście ma OR AccessEastern>=1 lub Trust>=5; tylko druga gałąź ustawia Eastern1. Niezależny teleport lub blanket SET zmieniłby zachowanie.",
+        "missing_function": "Context-bound Bounac Guard NPC caller z source OR, warunkowym zapisem i teleportem przez istniejących Quest/movement owners; exit tylko Eastern>=1.",
+        "exact_guard": "Eastern≥1",
+        "exact_effect": "teleport32401,32480,4",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:82"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 111,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C111",
+        "original_index": 111,
+        "quest": "the_order_of_lion_quest",
+        "element": "Wes request",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Wes request",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "Wes day/night: yselda",
+          "guard": "Southern≥1; Wes<1",
+          "effect": "Wes=1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C111"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "Southern≥1; Wes<1",
+        "exact_effect": "Wes=1",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 112,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C112",
+        "original_index": 112,
+        "quest": "the_order_of_lion_quest",
+        "element": "wes_the_blacksmith delivery",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "wes_the_blacksmith delivery",
+          "patterns": [
+            "P09",
+            "P10"
+          ],
+          "trigger": "day/night: yselda→yes",
+          "guard": "Southern≥1; eligible Wes; held34161×20",
+          "effect": "consume34161×20; Wes=2; Trust+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:79",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:79"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C112"
+        },
+        "status": "LEFT_OUT_SHARED_EXCHANGE_OWNER",
+        "reason": "Source item IDs/ilości/guardy i właściwe Quest writes są kompletne. Wymiana wymaga source NPC caller i jednej atomowej Inventory/Quest operacji;0831/0832 i limit8 pozostają bez rozszerzeń.",
+        "missing_function": "Zamknięty source exchange całego zestawu z literalnym etapem i rollback przy braku zasobów/miejsca, bez oddzielnego ungated SET Trust/quest progress.",
+        "exact_guard": "Southern≥1; eligible Wes; held34161×20",
+        "exact_effect": "consume34161×20; Wes=2; Trust+1",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:79",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:79"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 113,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C113",
+        "original_index": 113,
+        "quest": "the_order_of_lion_quest",
+        "element": "jehan_the_baker delivery",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "jehan_the_baker delivery",
+          "patterns": [
+            "P09",
+            "P10"
+          ],
+          "trigger": "day/night: yselda→yes",
+          "guard": "Southern≥1; eligible Jehan; held3600×10",
+          "effect": "consume3600×10; Jehan=1; Trust+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C113"
+        },
+        "status": "LEFT_OUT_SHARED_EXCHANGE_OWNER",
+        "reason": "Source item IDs/ilości/guardy i właściwe Quest writes są kompletne. Wymiana wymaga source NPC caller i jednej atomowej Inventory/Quest operacji;0831/0832 i limit8 pozostają bez rozszerzeń.",
+        "missing_function": "Zamknięty source exchange całego zestawu z literalnym etapem i rollback przy braku zasobów/miejsca, bez oddzielnego ungated SET Trust/quest progress.",
+        "exact_guard": "Southern≥1; eligible Jehan; held3600×10",
+        "exact_effect": "consume3600×10; Jehan=1; Trust+1",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 114,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C114",
+        "original_index": 114,
+        "quest": "the_order_of_lion_quest",
+        "element": "fral_the_butcher delivery",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "fral_the_butcher delivery",
+          "patterns": [
+            "P09",
+            "P10"
+          ],
+          "trigger": "day/night: yselda→yes",
+          "guard": "Southern≥1; eligible Fral; held3582×20",
+          "effect": "consume3582×20; Fral=1; Trust+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C114"
+        },
+        "status": "LEFT_OUT_SHARED_EXCHANGE_OWNER",
+        "reason": "Source item IDs/ilości/guardy i właściwe Quest writes są kompletne. Wymiana wymaga source NPC caller i jednej atomowej Inventory/Quest operacji;0831/0832 i limit8 pozostają bez rozszerzeń.",
+        "missing_function": "Zamknięty source exchange całego zestawu z literalnym etapem i rollback przy braku zasobów/miejsca, bez oddzielnego ungated SET Trust/quest progress.",
+        "exact_guard": "Southern≥1; eligible Fral; held3582×20",
+        "exact_effect": "consume3582×20; Fral=1; Trust+1",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 115,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C115",
+        "original_index": 115,
+        "quest": "the_order_of_lion_quest",
+        "element": "onfroi assignment",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "onfroi assignment",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "day/night: yselda",
+          "guard": "Southern≥1; OnfroiTask<1",
+          "effect": "OnfroiTask=1; OnfroiKills=0",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C115"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "Southern≥1; OnfroiTask<1",
+        "exact_effect": "OnfroiTask=1; OnfroiKills=0",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 116,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516"
+      ],
+      "disposition": {
+        "row_id": "R4C116",
+        "original_index": 116,
+        "quest": "the_order_of_lion_quest",
+        "element": "onfroi kill counter",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "onfroi kill counter",
+          "patterns": [
+            "P08",
+            "P21"
+          ],
+          "trigger": "onDeathForParty(mostDamage)",
+          "guard": "OnfroiTask=1; OnfroiKills<20",
+          "effect": "OnfroiKills+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_crypt_warrior_kill.lua:3"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C116"
+        },
+        "status": "LEFT_OUT_SOURCE_DEATH_BINDING",
+        "reason": "Ciała CryptWarriorKill/DeerKill i warunki są znane, ale pełne source closure nie potwierdziło registration do rzeczywistych monster/player deaths. Deklaracja CreatureEvent nie jest aktywnym callerem.",
+        "missing_function": "Potwierdzony source death binding, właściwi beneficjenci i scoped kill increment w istniejącym Quest/death ownerze, bez wymyślonego gatunku lub hooka.",
+        "exact_guard": "OnfroiTask=1; OnfroiKills<20",
+        "exact_effect": "OnfroiKills+1",
+        "question_ids": [
+          "lion-kill-bindings"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_crypt_warrior_kill.lua:3"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 117,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C117",
+        "original_index": 117,
+        "quest": "the_order_of_lion_quest",
+        "element": "onfroi report",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "onfroi report",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "day/night: yselda",
+          "guard": "Southern≥1; OnfroiTask=1; OnfroiKills≥20",
+          "effect": "OnfroiTask=2; Trust+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C117"
+        },
+        "status": "LEFT_OUT_UPSTREAM_CREDIT_AND_SHARED_NPC_ADAPTER",
+        "reason": "Report przy20 kills, Task2 i Trust+1 są znane. Brak potwierdzonego source death bindingu producenta licznika nie pozwala deklarować ukończenia; dodatkowo nowy NPC caller jest Left out.",
+        "missing_function": "Po kwalifikacji source kill producer: context-bound Onfroi/Dal report dokładnie przy progu20 z atomowym Task2/Trust+1, bez ręcznego zaliczania.",
+        "exact_guard": "Southern≥1; OnfroiTask=1; OnfroiKills≥20",
+        "exact_effect": "OnfroiTask=2; Trust+1",
+        "question_ids": [
+          "lion-kill-bindings",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:64"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [
+          "R4C116",
+          "R4C119"
+        ],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 118,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C118",
+        "original_index": 118,
+        "quest": "the_order_of_lion_quest",
+        "element": "dal_the_huntress assignment",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "dal_the_huntress assignment",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "day/night: yselda",
+          "guard": "Southern≥1; DalTask<1",
+          "effect": "DalTask=1; DalKills=0",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C118"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "Southern≥1; DalTask<1",
+        "exact_effect": "DalTask=1; DalKills=0",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 119,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516"
+      ],
+      "disposition": {
+        "row_id": "R4C119",
+        "original_index": 119,
+        "quest": "the_order_of_lion_quest",
+        "element": "dal_the_huntress kill counter",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "dal_the_huntress kill counter",
+          "patterns": [
+            "P08",
+            "P21"
+          ],
+          "trigger": "onDeathForParty(mostDamage)",
+          "guard": "DalTask=1; DalKills<20",
+          "effect": "DalKills+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_deer_kill.lua:3"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C119"
+        },
+        "status": "LEFT_OUT_SOURCE_DEATH_BINDING",
+        "reason": "Ciała CryptWarriorKill/DeerKill i warunki są znane, ale pełne source closure nie potwierdziło registration do rzeczywistych monster/player deaths. Deklaracja CreatureEvent nie jest aktywnym callerem.",
+        "missing_function": "Potwierdzony source death binding, właściwi beneficjenci i scoped kill increment w istniejącym Quest/death ownerze, bez wymyślonego gatunku lub hooka.",
+        "exact_guard": "DalTask=1; DalKills<20",
+        "exact_effect": "DalKills+1",
+        "question_ids": [
+          "lion-kill-bindings"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_deer_kill.lua:3"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 120,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C120",
+        "original_index": 120,
+        "quest": "the_order_of_lion_quest",
+        "element": "dal_the_huntress report",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "dal_the_huntress report",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "day/night: yselda",
+          "guard": "Southern≥1; DalTask=1; DalKills≥20",
+          "effect": "DalTask=2; Trust+1",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:64",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C120"
+        },
+        "status": "LEFT_OUT_UPSTREAM_CREDIT_AND_SHARED_NPC_ADAPTER",
+        "reason": "Report przy20 kills, Task2 i Trust+1 są znane. Brak potwierdzonego source death bindingu producenta licznika nie pozwala deklarować ukończenia; dodatkowo nowy NPC caller jest Left out.",
+        "missing_function": "Po kwalifikacji source kill producer: context-bound Onfroi/Dal report dokładnie przy progu20 z atomowym Task2/Trust+1, bez ręcznego zaliczania.",
+        "exact_guard": "Southern≥1; DalTask=1; DalKills≥20",
+        "exact_effect": "DalTask=2; Trust+1",
+        "question_ids": [
+          "lion-kill-bindings",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589064516",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:64"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [
+          "R4C116",
+          "R4C119"
+        ],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 121,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+      ],
+      "disposition": {
+        "row_id": "R4C121",
+        "original_index": 121,
+        "quest": "the_order_of_lion_quest",
+        "element": "Elevator ascent",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Elevator ascent",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn AID59604",
+          "guard": "Trust≥5",
+          "effect": "teleport32374,32497,3; otherwise fromPosition; preserve Trust without fixed SET",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:2"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C121"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Zamknięty source callback jest zachowany; elevator ascent używa preserve i nie cofa Trust do5. Pełny native probe nie zawiera AID59603/59604/59605.",
+        "missing_function": "Source-backed native binding odpowiedniego AID oraz compiled ingress, z dokładnym read-only Trust>=5 tylko przy ascent.",
+        "exact_guard": "Trust≥5",
+        "exact_effect": "teleport32374,32497,3; otherwise fromPosition; preserve Trust without fixed SET",
+        "question_ids": [
+          "the_order_of_lion_quest-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:2"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-elevator-up",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": false,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 122,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+      ],
+      "disposition": {
+        "row_id": "R4C122",
+        "original_index": 122,
+        "quest": "the_order_of_lion_quest",
+        "element": "Elevator descent",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Elevator descent",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn AID59605",
+          "guard": "player",
+          "effect": "teleport32371,32497,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:13"
+          ],
+          "oteryn": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "AUTO",
+          "note": "",
+          "row_id": "R4C122"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Zamknięty source callback jest zachowany; elevator ascent używa preserve i nie cofa Trust do5. Pełny native probe nie zawiera AID59603/59604/59605.",
+        "missing_function": "Source-backed native binding odpowiedniego AID oraz compiled ingress, z dokładnym read-only Trust>=5 tylko przy ascent.",
+        "exact_guard": "player",
+        "exact_effect": "teleport32371,32497,7",
+        "question_ids": [
+          "the_order_of_lion_quest-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589317796"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:13"
+        ],
+        "evidence": [
+          "native-map-qualification.json",
+          "callbacks-the_order_of_lion_quest.json",
+          "callbacks-preserve-pending.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/lion-elevator-down",
+          "source_input_preserved": true,
+          "present_in_current_callback_data": true,
+          "native_selector_and_tile_present": false,
+          "runtime_excluded": false,
+          "qualification_evidence": "native-map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_FROM_B3"
+        }
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 123,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C123",
+        "original_index": 123,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar siege request",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar siege request",
+          "patterns": [
+            "P09",
+            "P13",
+            "P17"
+          ],
+          "trigger": "Kesar the Younger (Day): siege→yes",
+          "guard": "Mission<1",
+          "effect": "Mission=1; KesarTimer=now",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:156"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C123"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Niezależne scalar rules są kompletne. Evrard i Evrard the Miller wymagają dwóch dokładnych yes; Kesar siege zapisuje Mission1+now, po600s context-bound yes dajeMission2+now. Istniejący timed NPC owner zapewnia source actors; brak danych/placement nie jest powodem Left out.",
+        "missing_function": "Montowanie zamkniętych Evrard/Kesar topic callerów w shared NPC book/router, Quest loader i retained reconciliation, przy użyciu obecnego Quest/clock ownera bez nowych placements.",
+        "exact_guard": "Mission<1",
+        "exact_effect": "Mission=1; KesarTimer=now",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:156"
+        ],
+        "evidence": [
+          "scalar-npc-map-qualification.json",
+          "lion_npcs.red.rs",
+          "lion_quest.red.rs",
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 124,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C124",
+        "original_index": 124,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar waiting period",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar waiting period",
+          "patterns": [
+            "P09",
+            "P13",
+            "P17"
+          ],
+          "trigger": "Kesar the Younger (Day): siege→yes",
+          "guard": "Mission=1; elapsed≥600s; yes",
+          "effect": "Mission=2; KesarTimer=now",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:171"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C124"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Niezależne scalar rules są kompletne. Evrard i Evrard the Miller wymagają dwóch dokładnych yes; Kesar siege zapisuje Mission1+now, po600s context-bound yes dajeMission2+now. Istniejący timed NPC owner zapewnia source actors; brak danych/placement nie jest powodem Left out.",
+        "missing_function": "Montowanie zamkniętych Evrard/Kesar topic callerów w shared NPC book/router, Quest loader i retained reconciliation, przy użyciu obecnego Quest/clock ownera bez nowych placements.",
+        "exact_guard": "Mission=1; elapsed≥600s; yes",
+        "exact_effect": "Mission=2; KesarTimer=now",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:171"
+        ],
+        "evidence": [
+          "scalar-npc-map-qualification.json",
+          "lion_npcs.red.rs",
+          "lion_quest.red.rs",
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 125,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C125",
+        "original_index": 125,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar Fugue retry",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar Fugue retry",
+          "patterns": [
+            "P09",
+            "P13",
+            "P17"
+          ],
+          "trigger": "Kesar the Younger (Day): siege→yes",
+          "guard": "Mission=2; elapsedKesarTimer≥3600; FugueTime older20h",
+          "effect": "FugueSpawned=0 when elapsed; dialogue otherwise",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:185"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C125"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "Mission=2; elapsedKesarTimer≥3600; FugueTime older20h",
+        "exact_effect": "FugueSpawned=0 when elapsed; dialogue otherwise",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:185"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "source_guard_refinement": {
+          "guard": "Mission2; now-KesarTimer>=3600; FugueSpawned==1; lastSpawn>0; now-lastSpawn>=20h",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:185-205",
+          "note": "The frozen short A row omitted Spawned==1 and lastSpawn>0. Full source Lua is retained; no code change."
+        },
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 126,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C126",
+        "original_index": 126,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar revenge",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar revenge",
+          "patterns": [
+            "P09",
+            "P13",
+            "P17"
+          ],
+          "trigger": "Kesar the Younger (Day): siege→yes",
+          "guard": "Mission=3; SecretLibrary.FalconBastion.Access≥1 AND GraveDanger.CobraBastion.Access≥1; yes",
+          "effect": "Mission=4",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:208"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C126"
+        },
+        "status": "LEFT_OUT_FOREIGN_TRACK_AND_SHARED_NPC_ADAPTER",
+        "reason": "Kesar Mission3→4 zależy jawnie od SecretLibrary.FalconBastion.Access i GraveDanger.CobraBastion.Access. Nie przejmujemy ich własności ani nie tworzymy drugiego producenta dostępu.",
+        "missing_function": "Source Kesar confirmation odczytujące oba canonical foreign tracks przez uzgodnioną granicę i wykonujące wyłącznie własny Mission4; shared NPC mount pozostaje odłożony.",
+        "exact_guard": "Mission=3; SecretLibrary.FalconBastion.Access≥1 AND GraveDanger.CobraBastion.Access≥1; yes",
+        "exact_effect": "Mission=4",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:208"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 127,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C127",
+        "original_index": 127,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar final reward",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar final reward",
+          "patterns": [
+            "P09",
+            "P13",
+            "P17"
+          ],
+          "trigger": "Kesar the Younger (Day): siege→yes",
+          "guard": "Mission≥5; AugustinDoor!=1",
+          "effect": "AugustinDoor=1; achievement Lionheart",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:241"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C127"
+        },
+        "status": "LEFT_OUT_SHARED_REWARD_ADAPTER",
+        "reason": "Source Mission>=5 ustawia AugustinDoor1 bez guardu poprzedniej wartości; tylko Lionheart sprawdza hasAchievement. To jawna korekta zwięzłego frozen wiersza A. Gałąź nadal zależy od zakwalifikowanego Drume kill oraz NPC/Achievement callerów.",
+        "missing_function": "Context-bound końcowy Kesar report, atomowe door entitlement i existing Achievement owner, bez nagrody przed prawdziwym Mission5.",
+        "exact_guard": "Mission>=5; AugustinDoor=1 is unconditional within that branch; only achievement creation requires !hasAchievement(Lionheart).",
+        "exact_effect": "AugustinDoor=1; achievement Lionheart",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:241",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:241-254"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [
+          "R4C136"
+        ],
+        "complete_runtime_step_claim": false,
+        "source_guard_refinement": {
+          "guard": "Mission>=5; AugustinDoor=1 is unconditional within that branch; only achievement creation requires !hasAchievement(Lionheart).",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:241-254",
+          "note": "Corrects the frozen summary AugustinDoor!=1; original_row remains unchanged for audit. No runtime mutation."
+        },
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 128,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C128",
+        "original_index": 128,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar night conversation",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar night conversation",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "Kesar (Night): siege→yes",
+          "guard": "Mission=4",
+          "effect": "dialogue only; no progress mutation",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_night.lua:64"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C128"
+        },
+        "status": "LEFT_OUT_SHARED_NPC_ADAPTER",
+        "reason": "Dokładny scalar/dialogue branch jest źródłowo kompletny, lecz zależy od odpowiedniego source etapu. Montaż nowego stateful NPC caller przekracza późniejszą granicę shared adaptera; nie jest brakiem danych.",
+        "missing_function": "Context-bound source NPC/topic caller wykonujący literalne guardy/writes lub sam tekst; dla retry Kesar zachować Mission2, timer3600s i Fugue last-spawn20h bez resetu cudzych stanów.",
+        "exact_guard": "Mission=4",
+        "exact_effect": "dialogue only; no progress mutation",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_night.lua:64"
+        ],
+        "evidence": [
+          "npc-inputs-the_order_of_lion_quest.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false,
+        "npc_scope_answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 129,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589065065"
+      ],
+      "disposition": {
+        "row_id": "R4C129",
+        "original_index": 129,
+        "quest": "the_order_of_lion_quest",
+        "element": "Fugue spawn",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Fugue spawn",
+          "patterns": [
+            "P06",
+            "P16",
+            "P17"
+          ],
+          "trigger": "StepIn32375,32480,2 or32378,32481,2",
+          "guard": "Mission=2; FugueSpawned!=1; cooldown20h",
+          "effect": "room32358,32465→32398,32485,z2; spawnFugue32371,32476,2+5warlocks; setSpawned1,timeNow; existingFugue still consumes personal attempt",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_fugue.lua:1"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C129"
+        },
+        "status": "LEFT_OUT_SOURCE_MONSTER_PROFILE",
+        "reason": "Source spawn Fugue i Mission2→3 są znane, ale przypięty donor nie dostarcza definicji Fugue. Nie wolno zastąpić go innym bossem, wymyśloną statystyką lub fake corpse; source death caller również wymaga kwalifikacji.",
+        "missing_function": "Źródłowy profil Fugue i qualified encounter/death admission z source20h cooldown, room/world lifecycle i właściwymi beneficjentami Mission3.",
+        "exact_guard": "Mission=2; FugueSpawned!=1; cooldown20h",
+        "exact_effect": "room32358,32465→32398,32485,z2; spawnFugue32371,32476,2+5warlocks; setSpawned1,timeNow; existingFugue still consumes personal attempt",
+        "question_ids": [
+          "lion-fugue-profile"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589065065"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_fugue.lua:1"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 130,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589065065"
+      ],
+      "disposition": {
+        "row_id": "R4C130",
+        "original_index": 130,
+        "quest": "the_order_of_lion_quest",
+        "element": "Fugue death",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Fugue death",
+          "patterns": [
+            "P07",
+            "P21"
+          ],
+          "trigger": "onDeathForParty(mostDamage)",
+          "guard": "Mission=2",
+          "effect": "Mission=3; FugueSpawned=0 for every credited player",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_fugue_kill.lua:3"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C130"
+        },
+        "status": "LEFT_OUT_SOURCE_MONSTER_PROFILE",
+        "reason": "Source spawn Fugue i Mission2→3 są znane, ale przypięty donor nie dostarcza definicji Fugue. Nie wolno zastąpić go innym bossem, wymyśloną statystyką lub fake corpse; source death caller również wymaga kwalifikacji.",
+        "missing_function": "Źródłowy profil Fugue i qualified encounter/death admission z source20h cooldown, room/world lifecycle i właściwymi beneficjentami Mission3.",
+        "exact_guard": "Mission=2",
+        "exact_effect": "Mission=3; FugueSpawned=0 for every credited player",
+        "question_ids": [
+          "lion-fugue-profile"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589065065"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_fugue_kill.lua:3"
+        ],
+        "evidence": [],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 131,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C131",
+        "original_index": 131,
+        "quest": "the_order_of_lion_quest",
+        "element": "Drume cooldown gate",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Drume cooldown gate",
+          "patterns": [
+            "P03",
+            "P17"
+          ],
+          "trigger": "StepIn AID59601",
+          "guard": "canFightBoss Drume",
+          "effect": "reject→fromPosition; text10h differs actualconfig20h",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_drume_entrance.lua:2"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C131"
+        },
+        "status": "LEFT_OUT_SHARED_BOSS_ACTIVITY_OWNER",
+        "reason": "Source Drume room,1–5 uczestników,20h config cooldown,20min timeout i commander/Kesar events są znane. LionCommanderDeath/UsurperCommanderDeath/KesarImmortal są rzeczywiście bound w donorze. Tekst10h nie zastępuje kodu20h; brak nowego ownera nie jest brakiem danych.",
+        "missing_function": "Qualified existing BossActivity/Instance admission i source world fight: commander counters, terminal loss cleanup, last-usurper spawn Kesar/Drume, Kesar zero-damage oraz timeout; bez rozszerzenia W02 i fake corpse.",
+        "exact_guard": "canFightBoss Drume",
+        "exact_effect": "reject→fromPosition; text10h differs actualconfig20h",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_drume_entrance.lua:2"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 132,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C132",
+        "original_index": 132,
+        "quest": "the_order_of_lion_quest",
+        "element": "Drume lever admission",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Drume lever admission",
+          "patterns": [
+            "P06",
+            "P22",
+            "P27"
+          ],
+          "trigger": "UseAID59601; first tile32457,32508,6; next4 east",
+          "guard": "all1–5participants Mission≥4; all cooldownready; roomempty",
+          "effect": "spawn3LionCommanders+3UsurperCommanders; setbothglobalcounts3; teleport32453,32510,7;20hdefaultcd;20min timeoutclear+exit32453,32503,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_drume.lua:38"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C132"
+        },
+        "status": "LEFT_OUT_SHARED_BOSS_ACTIVITY_OWNER",
+        "reason": "Source Drume room,1–5 uczestników,20h config cooldown,20min timeout i commander/Kesar events są znane. LionCommanderDeath/UsurperCommanderDeath/KesarImmortal są rzeczywiście bound w donorze. Tekst10h nie zastępuje kodu20h; brak nowego ownera nie jest brakiem danych.",
+        "missing_function": "Qualified existing BossActivity/Instance admission i source world fight: commander counters, terminal loss cleanup, last-usurper spawn Kesar/Drume, Kesar zero-damage oraz timeout; bez rozszerzenia W02 i fake corpse.",
+        "exact_guard": "all1–5participants Mission≥4; all cooldownready; roomempty",
+        "exact_effect": "spawn3LionCommanders+3UsurperCommanders; setbothglobalcounts3; teleport32453,32510,7;20hdefaultcd;20min timeoutclear+exit32453,32503,7",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action_drume.lua:38"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 133,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C133",
+        "original_index": 133,
+        "quest": "the_order_of_lion_quest",
+        "element": "Lion commander defeat",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Lion commander defeat",
+          "patterns": [
+            "P22",
+            "P27"
+          ],
+          "trigger": "LionCommander.onPrepareDeath",
+          "guard": "globalLionCount>1 vs last",
+          "effect": "decrement; lastlion losesroom, remove nonsummonmonsters and teleportplayers",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:8"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C133"
+        },
+        "status": "LEFT_OUT_SHARED_BOSS_ACTIVITY_OWNER",
+        "reason": "Source Drume room,1–5 uczestników,20h config cooldown,20min timeout i commander/Kesar events są znane. LionCommanderDeath/UsurperCommanderDeath/KesarImmortal są rzeczywiście bound w donorze. Tekst10h nie zastępuje kodu20h; brak nowego ownera nie jest brakiem danych.",
+        "missing_function": "Qualified existing BossActivity/Instance admission i source world fight: commander counters, terminal loss cleanup, last-usurper spawn Kesar/Drume, Kesar zero-damage oraz timeout; bez rozszerzenia W02 i fake corpse.",
+        "exact_guard": "globalLionCount>1 vs last",
+        "exact_effect": "decrement; lastlion losesroom, remove nonsummonmonsters and teleportplayers",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:8"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 134,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C134",
+        "original_index": 134,
+        "quest": "the_order_of_lion_quest",
+        "element": "Usurper commander defeat",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Usurper commander defeat",
+          "patterns": [
+            "P22",
+            "P27"
+          ],
+          "trigger": "UsurperCommander.onPrepareDeath",
+          "guard": "globalUsurperCount>0",
+          "effect": "decrement; last spawnsKesar32444,32515,7+Drume32444,32516,7",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:30"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C134"
+        },
+        "status": "LEFT_OUT_SHARED_BOSS_ACTIVITY_OWNER",
+        "reason": "Source Drume room,1–5 uczestników,20h config cooldown,20min timeout i commander/Kesar events są znane. LionCommanderDeath/UsurperCommanderDeath/KesarImmortal są rzeczywiście bound w donorze. Tekst10h nie zastępuje kodu20h; brak nowego ownera nie jest brakiem danych.",
+        "missing_function": "Qualified existing BossActivity/Instance admission i source world fight: commander counters, terminal loss cleanup, last-usurper spawn Kesar/Drume, Kesar zero-damage oraz timeout; bez rozszerzenia W02 i fake corpse.",
+        "exact_guard": "globalUsurperCount>0",
+        "exact_effect": "decrement; last spawnsKesar32444,32515,7+Drume32444,32516,7",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:30"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 135,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R4C135",
+        "original_index": 135,
+        "quest": "the_order_of_lion_quest",
+        "element": "Kesar immortal",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Kesar immortal",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "KesarImmortal.onHealthChange",
+          "guard": "any hit",
+          "effect": "zero primary/secondary damage",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:45"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C135"
+        },
+        "status": "LEFT_OUT_SHARED_BOSS_ACTIVITY_OWNER",
+        "reason": "Source Drume room,1–5 uczestników,20h config cooldown,20min timeout i commander/Kesar events są znane. LionCommanderDeath/UsurperCommanderDeath/KesarImmortal są rzeczywiście bound w donorze. Tekst10h nie zastępuje kodu20h; brak nowego ownera nie jest brakiem danych.",
+        "missing_function": "Qualified existing BossActivity/Instance admission i source world fight: commander counters, terminal loss cleanup, last-usurper spawn Kesar/Drume, Kesar zero-damage oraz timeout; bez rozszerzenia W02 i fake corpse.",
+        "exact_guard": "any hit",
+        "exact_effect": "zero primary/secondary damage",
+        "question_ids": [
+          "lion-drume-binding",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_commander_kills.lua:45"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "rotten",
+      "cluster_row": 136,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666"
+      ],
+      "disposition": {
+        "row_id": "R4C136",
+        "original_index": 136,
+        "quest": "the_order_of_lion_quest",
+        "element": "Drume death",
+        "original_row": {
+          "quest": "the_order_of_lion_quest",
+          "element": "Drume death",
+          "patterns": [
+            "P07",
+            "P21"
+          ],
+          "trigger": "onDeathForParty(mostDamage)",
+          "guard": "Mission=4",
+          "effect": "Mission=5",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_drume_kill.lua:6"
+          ],
+          "oteryn": "NIE w zamkniętym world_callbacks; odrębny adapter tej reguły niepotwierdzony. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+          "import_mode": "RĘCZNIE",
+          "note": "",
+          "row_id": "R4C136"
+        },
+        "status": "LEFT_OUT_SOURCE_DEATH_BINDING",
+        "reason": "DrumeKill posiada ciało Mission4→5, ale source closure nie znalazło bindingu tego eventu do Drume/player. Rzeczywiste commander registrations nie rozwiązują tej osobnej luki.",
+        "missing_function": "Potwierdzony source DrumeKill registration i właściwy onDeathForParty(mostDamageKiller) caller przez existing death/Quest owners.",
+        "exact_guard": "Mission=4",
+        "exact_effect": "Mission=5",
+        "question_ids": [
+          "lion-drume-binding"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589318666"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/creaturescripts_drume_kill.lua:6"
+        ],
+        "evidence": [
+          "source-closure-supplement.json"
+        ],
+        "upstream_row_ids": [],
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

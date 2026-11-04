@@ -219,6 +219,850 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_0",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32731,
+          "y": 31531,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_1",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32739,
+          "y": 31489,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_10",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32740,
+          "y": 31494,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 10
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_11",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32741,
+          "y": 31494,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_12",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32745,
+          "y": 31523,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 12
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_2",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32739,
+          "y": 31507,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_3",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32761,
+          "y": 31518,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 3
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_4",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32720,
+          "y": 31545,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_5",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32745,
+          "y": 31423,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 5
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_6",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32742,
+          "y": 31410,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 6
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_7",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32685,
+          "y": 31430,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 7
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_8",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32746,
+          "y": 31462,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/barkless_symbol_9",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32683,
+          "y": 31537,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 5535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/mission",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:1-52"
+      ],
+      "native_rule": {
+        "kind": "cults_symbol",
+        "symbol": 9
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/carlin_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32351,
+          "y": 31679,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32403,
+        "y": 31813,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_movement-cults-of-carlin-teleport.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/essence_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33085,
+          "y": 31963,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32349,
+        "y": 31668,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_teleport_from_essence_of_malice.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/find_oasis",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 5560,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/cults_of_tibia/life/mission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_check_oasis.lua:3-18"
+      ],
+      "success_message": "You have found a lovely oasis with green fauna and juicy fruit. You didn't expect that."
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/orc_entry",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33167,
+          "y": 31930,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10842
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33182,
+        "y": 31837,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cults_of_tibia/orc_exit",
+      "quest": "oteryn:quest.cults_of_tibia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33183,
+          "y": 31837,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 10842
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33168,
+        "y": 31930,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua:9-21"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/dawnport-rare-herb",
       "quest": "oteryn:quest.dawnport_quest",
       "trigger": "use",
@@ -331,6 +1175,195 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/hugo_exit",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2242,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32240,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:23-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2250",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2250,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32915,
+        "y": 32263,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2251",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2251,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32946,
+        "y": 32270,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2252",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2252,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32976,
+        "y": 32270,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2253",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2253,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32933,
+        "y": 32282,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2254",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2254,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2255",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2255,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/dryad-garden-enter",
       "quest": "oteryn:quest.flower_month",
       "trigger": "use",
@@ -383,6 +1416,166 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/elemental_spheres/lord_room_exit",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 9029,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33265,
+        "y": 31838,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10005",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10006",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10007",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10008",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3-19"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35005",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35005,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33234,
+        "y": 32278,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35006",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35006,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33162,
+        "y": 31320,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35007",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35007,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33002,
+        "y": 31595,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/first-dragon-exit-35008",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 35008,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32278,
+        "y": 31367,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:1-40"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/fish-napping-key",
       "quest": "oteryn:quest.the_thieves_guild_quest",
       "trigger": "use",
@@ -420,6 +1613,100 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3059",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3059,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3061",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3061,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
       ]
     },
     {
@@ -1031,6 +2318,676 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-bleeding",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57526,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/nine/owl",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/tem/bleeds",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Sorry",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_sangra.lua:13"
+      ],
+      "success_message": "The arrow is still sticking in the tree. Fresh blood keeps trickling from the spot where the arrow hit the trunk."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-books",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57504,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Empty.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_books.lua:13"
+      ],
+      "success_message": "You find nothing in the Ambassador's house. If he's in fact a traitor he got rid of any evidence that could incriminate him."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-mind-mirror-57505",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 57505,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33936,
+        "y": 31648,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:48",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:57"
+      ],
+      "success_message": "You were moved to the right brain side"
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-mind-mirror-57506",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 57506,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33899,
+        "y": 31644,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:65",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:64",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua:73"
+      ],
+      "success_message": "You were moved to the left brain side"
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-owl",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57525,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/nine/owl",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Sorry",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/actions_coruja.lua:13"
+      ],
+      "success_message": "You discover an owl resting in a tree. Thats special, because you have never seen an owl in all of Kilmaresh."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-paper-scraps",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40031,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:32"
+      ],
+      "success_message": "Paper scraps lie scattered on the floor. It takes some time to put them back together. But it's only a badly written poem."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-roof",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50307,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:57",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:59",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:64"
+      ],
+      "success_message": "You find nothing in the Ambassador's house. If he's in fact a traitor he got rid of any evidence that could incriminate him."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-scrolls",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40029,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:39",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:41",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:42",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:49"
+      ],
+      "success_message": "You examine the scrolls carefully. Those are orders from Rathleton for the Ambassador. No sign of treason here."
+    },
+    {
+      "key": "oteryn:quest-callback/kilmaresh-soot-paper",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 40030,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/second/investigating",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You already investigated this.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua:15"
+      ],
+      "success_message": "Documents were burnt here recently. Only the part of one scroll still lies in front of the chimney but it's too sooted to read."
+    },
+    {
+      "key": "oteryn:quest-callback/krailos-depot-entrance",
+      "quest": "oteryn:quest.krailos_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 19049,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33657,
+        "y": 31658,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-bounac-return",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59603,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33183,
+        "y": 31756,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/action-bounac_entrance.lua:21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-enter-32480",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32400,
+          "y": 32480,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32397,
+        "y": 32480,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-enter-32481",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32400,
+          "y": 32481,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32397,
+        "y": 32481,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-exit-32480",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32398,
+          "y": 32480,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32401,
+        "y": 32480,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-castle-exit-32481",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32398,
+          "y": 32481,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32401,
+        "y": 32481,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_castle.lua:45"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-elevator-down",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59605,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32371,
+        "y": 32497,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lion-elevator-up",
+      "quest": "oteryn:quest.the_order_of_the_lion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 59604,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32374,
+        "y": 32497,
+        "floor": -3
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/bounac_trust",
+          "minimum": 5,
+          "maximum": 2147483647,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua:16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lions-rock-inner-sanctum-entry",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33128,
+          "y": 32308,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33122,
+        "y": 32308,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 4,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You have to pass the Lion's Tests to enter the inner sanctum!",
+      "success_message": "You have passed the Lion's Tests and are now worthy to enter the inner sanctum!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:28-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lions-rock-temple-message",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32274,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/message",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You enter a temple area which is gorgeously decorated and mysteriously unaffected by the course of time.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:128-144"
       ]
     },
     {
@@ -2363,6 +4320,201 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/rotten-blood-exit",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34070,
+          "y": 31974,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32955,
+        "y": 32398,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:53",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-enter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34120,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34101,
+        "y": 31679,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-full-counter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34065,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32972,
+        "y": 32336,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task",
+          "minimum": 100,
+          "maximum": 2147483647,
+          "set": 100,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You need to reach 100 points to enter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3070",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-leave",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34101,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34120,
+        "y": 31980,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-down",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31044,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-lookout-up",
+      "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31943,
+          "y": 31046,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31943,
+        "y": 31045,
+        "floor": -2
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/soul-war-claustrophobic-exit",
       "quest": "oteryn:quest.soul_war_quest",
       "trigger": "step_in",
@@ -2391,6 +4543,610 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua:90-112"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4227",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4227,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32624,
+        "y": 31855,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4228",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4228,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32228,
+        "y": 32596,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4229",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4229,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4230",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4230,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32243,
+        "y": 32619,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4231",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4231,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4232",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4232,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32240,
+        "y": 32620,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4233",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4233,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4234",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4234,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32227,
+        "y": 32598,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4235",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4235,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4236",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4236,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32238,
+        "y": 32622,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4237",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4237,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4238",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4238,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32244,
+        "y": 32619,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:14",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4239",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4239,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4240",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4240,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32244,
+        "y": 32588,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4241",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4241,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4242",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4242,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32224,
+        "y": 32606,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spike-portal-4243",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4243,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32237,
+        "y": 32605,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:54"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-ladder",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30004,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32276,
+            "floor": -8
+          },
+          "appearance": 351,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/the-lost-brother-remains",
+      "quest": "oteryn:quest.adventurers_guild",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32959,
+          "y": 32674,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:18"
+      ],
+      "success_message": "You stumble over some old bones. Something is carved into the stone wall here: 'Tarun, my brother, you were right. She's evil.'"
     },
     {
       "key": "oteryn:quest-callback/threatened-dreams-kroazur-exit",
@@ -2580,6 +5336,520 @@
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-1",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-2",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-3",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31496,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 3
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-4",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-5",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 5
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-6",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31497,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 6
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-7",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32990,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 7
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-8",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32991,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-dance-9",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32992,
+          "y": 31498,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+          "minimum": 1,
+          "maximum": 16,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67"
+      ],
+      "native_rule": {
+        "kind": "unnatural_dance",
+        "tile": 9
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/unnatural-selection-ray-of-light",
+      "quest": "oteryn:quest.unnatural_selection_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1052,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/mission05",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/unnatural_selection/questline",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 11
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13"
+      ],
+      "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
     }
   ]
 }

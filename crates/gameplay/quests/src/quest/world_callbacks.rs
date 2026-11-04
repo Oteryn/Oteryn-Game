@@ -1,4 +1,5 @@
 //! QUESTCB2: bounded, declarative world callbacks. Coordinates use native negative floors.
+pub use super::native_rules::NativeRule;
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
@@ -6,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-pub const MAX_CALLBACKS: usize = 128;
+// The merged quest batches contain 151 static callbacks plus the dynamic altar.
+pub const MAX_CALLBACKS: usize = 256;
 pub const MAX_EFFECTS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -57,7 +59,17 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// A read-only gate: validate the locked value without resetting later progress.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub preserve: bool,
 }
+
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+mod native;
+use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
 /// recipe language: the source is consumed or changed exactly once by the receipt owner.
@@ -104,6 +116,10 @@ pub struct Callback {
     pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
     pub failure_message: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub success_message: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_rule: Option<NativeRule>,
     pub sources: Vec<String>,
 }
 
@@ -197,6 +213,13 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .as_ref()
                 .is_some_and(|s| s.is_empty() || s.len() > 256 || s.contains(['\n', '\r', '\0']))
             || callback
+                .success_message
+                .as_ref()
+                .is_some_and(|s| s.is_empty() || s.len() > 256 || s.contains(['\n', '\r', '\0']))
+            || callback
+                .native_rule
+                .is_some_and(|rule| !valid_native_callback(callback, rule))
+            || callback
                 .lever
                 .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
             || callback.passages.iter().any(|p| !valid_pos(p.position))
@@ -219,19 +242,38 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let callbacks = load()?;
+    extend_callbacks(catalogue, &callbacks)
+}
+
+fn extend_callbacks(
+    catalogue: QuestStateCatalogue,
+    callbacks: &[Callback],
+) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
-                track.max = track.max.max(storage.set).max(storage.maximum);
+                if callback.native_rule.is_none() && !storage.preserve {
+                    track.max = track.max.max(storage.set).max(storage.maximum);
+                }
             } else {
+                if callback.native_rule.is_some() {
+                    return Err(format!(
+                        "native callback {} requires an existing track {}",
+                        callback.key, storage.track
+                    ));
+                }
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
                     initial: -1,
                     min: -1,
-                    max: storage.set.max(storage.maximum),
+                    max: if storage.preserve {
+                        storage.maximum
+                    } else {
+                        storage.set.max(storage.maximum)
+                    },
                 });
             }
         }
@@ -244,7 +286,11 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
                 .map(|s| QuestEffect {
                     track: s.track.clone(),
                     from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: QuestEffectKind::Set(s.set),
+                    effect: match callback.native_rule {
+                        Some(rule) => QuestEffectKind::Native(rule),
+                        None if s.preserve => QuestEffectKind::Add(0),
+                        None => QuestEffectKind::Set(s.set),
+                    },
                 })
                 .collect(),
             completes: false,
@@ -254,6 +300,9 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
 }
+
+#[cfg(test)]
+mod batch4_tests;
 
 #[cfg(test)]
 mod tests {

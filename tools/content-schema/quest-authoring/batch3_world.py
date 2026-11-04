@@ -52,7 +52,7 @@ def compile_callbacks(existing, previous, shards):
             callbacks.append(row)
         sources.append({'path': path, 'keys': sorted(source_keys)})
     # Runtime adds one existing Rotten Blood altar. Keep its reserved slot.
-    if len(callbacks) >= 128:
+    if len(callbacks) >= 256:
         raise ValueError('callback budget including existing Rotten Blood altar')
     return {'schema': 1, 'callbacks': sorted(callbacks, key=lambda row: row['key'])}, {'schema': SCHEMA, 'sources': sources}
 

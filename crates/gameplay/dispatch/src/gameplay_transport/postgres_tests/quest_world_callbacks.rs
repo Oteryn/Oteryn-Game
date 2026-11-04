@@ -479,12 +479,16 @@ pub(super) async fn wire(
 mod actions;
 #[path = "quest_world_callbacks/assertions.rs"]
 mod assertions;
+#[path = "quest_world_callbacks/lions_rock.rs"]
+mod lions_rock;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
 #[path = "quest_world_callbacks/stateless.rs"]
 mod stateless;
+#[path = "quest_world_callbacks/unnatural_selection.rs"]
+mod unnatural_selection;
 pub(super) use scenario::scenario;
 #[allow(
     unused_imports,
