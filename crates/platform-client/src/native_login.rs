@@ -6,6 +6,9 @@
 //! and `Display`, never logged. This module decodes its own typed Gateway response, so it does not
 //! pass through the directory's forbidden-field filter; nothing else may.
 
+mod owner_characters;
+pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
+
 use crate::{PlatformClientConfig, PlatformClientError};
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
@@ -369,29 +372,6 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum CharacterAvailability {
-    Available,
-    Unavailable,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct OwnerCharacter {
-    pub character_id: String,
-    pub world_id: String,
-    pub name: String,
-    pub availability: CharacterAvailability,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct OwnerCharacters {
-    protocol_version: u64,
-    characters: Vec<OwnerCharacter>,
-}
-
 /// A one-time native Game Login Ticket, the instant after which the client stops using it, and
 /// the Gateway requests already sent with it (one budget for the ticket and its `attempt_ref`).
 #[derive(Debug)]
@@ -406,18 +386,6 @@ impl NativeTicket {
     pub const fn usable_until(&self) -> Instant {
         self.usable_until
     }
-}
-
-/// The Gateway login request's caller-chosen members (N4-P §3.1).
-#[derive(Debug, Clone)]
-pub struct GatewayLogin<'a> {
-    pub attempt_ref: &'a AttemptRef,
-    /// Canonical lowercase UUIDv7 chosen from the owner character feed.
-    pub character_id: &'a str,
-    /// Optional canonical UUIDv7 channel selected from the directory.
-    pub channel_id: Option<&'a str>,
-    /// 1..64 visible ASCII; diagnostics only.
-    pub client_build: &'a str,
 }
 
 /// The routed endpoint of a successful login (N4-P §3.2). The client connects here and nowhere
@@ -582,46 +550,6 @@ impl NativeLoginClient {
             Ok(AccessToken(SecretText(token.access_token)))
         };
         run(cancellation, request).await
-    }
-
-    /// Reads the authenticated owner's characters without consuming the OAuth token.
-    pub async fn owner_characters(
-        &self,
-        token: &AccessToken,
-        cancellation: CancellationToken,
-    ) -> Result<Vec<OwnerCharacter>, NativeLoginError> {
-        let endpoint = self
-            .platform
-            .join("/api/v1/game-auth/native-characters")
-            .map_err(|_| PlatformClientError::InvalidBaseUrl)?;
-        run(cancellation, async {
-            let response = self
-                .client
-                .get(endpoint)
-                .bearer_auth(token.0.expose())
-                .send()
-                .await
-                .map_err(|_| PlatformClientError::Request)?;
-            match response.status() {
-                StatusCode::OK => {}
-                StatusCode::UNAUTHORIZED => return Err(NativeLoginError::TokenRefused),
-                status => return Err(PlatformClientError::HttpStatus(status.as_u16()).into()),
-            }
-            let body = read_bounded(response, 16_384).await?;
-            let feed: OwnerCharacters =
-                serde_json::from_slice(&body).map_err(|_| PlatformClientError::InvalidPayload)?;
-            if feed.protocol_version != 2
-                || feed.characters.iter().any(|character| {
-                    parse_uuid_v7(&character.character_id).is_none()
-                        || parse_uuid_v7(&character.world_id).is_none()
-                        || character.name.is_empty()
-                })
-            {
-                return Err(PlatformClientError::InvalidPayload.into());
-            }
-            Ok(feed.characters)
-        })
-        .await
     }
 
     /// `POST /api/v1/game-auth/tickets` with the bearer: one native ticket. The access token is
