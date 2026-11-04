@@ -251,15 +251,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         run.spent = 0;
         run.durable = result.weapon;
         run.checkpoint_due = now.checked_add(60_000_000)?;
-        if let Some(key) = run.house_dummy {
-            if !self
+        if let Some(key) = run.house_dummy
+            && !self
                 .root
                 .reserve_exercise_dummy(self.character, self.holder, fence, key)
                 .await
                 .ok()?
-            {
-                return Some(false);
-            }
+        {
+            return Some(false);
         }
         // Replays are historical completion. Only independently current authority may rebase live state.
         if self.training_fence(run.fence).await.is_none() {
