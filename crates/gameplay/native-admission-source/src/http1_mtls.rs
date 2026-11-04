@@ -240,6 +240,15 @@ async fn exchange_status(
             // apart so it is decided invalid rather than retried as unavailable.
             let oversized_ok = operation == Operation::ReadCharacterCommandIntentV1;
             read_response_framed(&mut tls, require_ok, body_max, false, &[], oversized_ok).await
+        } else if operation == Operation::PublishGameRestoreNoticeV1 {
+            read_response_bounded(
+                &mut tls,
+                require_ok,
+                super::restore_notice::RESPONSE_BYTES,
+                false,
+                &[],
+            )
+            .await
         } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {

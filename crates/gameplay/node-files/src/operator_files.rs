@@ -128,6 +128,20 @@ pub struct CharacterRecoveryRequestFile {
 }
 operator_file!(CharacterRecoveryRequestFile);
 
+/// A retained Character restore request, replayed unchanged until Platform acknowledges it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CharacterRestoreRequestFile {
+    pub version: u8,
+    /// 16-byte UUIDv7 recovery event id, hexadecimal.
+    pub recovery_event_id: String,
+    pub issued_at: u64,
+    pub expected_predecessor: u64,
+    pub restore_point: u64,
+    pub backup_label: String,
+}
+operator_file!(CharacterRestoreRequestFile);
+
 /// One native entry Content activation issuance for a Channel scope (#935). The digests are
 /// computed by the issuer from the committed room qualified for `world_id`; a re-run replays
 /// exactly this file.
@@ -200,5 +214,25 @@ mod tests {
         assert_eq!(id[6] >> 4, 7);
         assert_eq!(id[8] & 0xc0, 0x80);
         assert_ne!(uuid_v7().expect("uuid"), id);
+    }
+
+    #[test]
+    fn restore_request_file_round_trips_and_rejects_unknown_members() {
+        let file = CharacterRestoreRequestFile {
+            version: 1,
+            recovery_event_id: hex(&[7; 16]),
+            issued_at: 1_790_000_100,
+            expected_predecessor: 3,
+            restore_point: 1_790_000_000,
+            backup_label: "nas-2026-11-05.base".into(),
+        };
+        let bytes = file.encode().expect("encode");
+        assert_eq!(CharacterRestoreRequestFile::decode(&bytes), Ok(file));
+        assert!(
+            CharacterRestoreRequestFile::decode(
+                br#"{"version":1,"recovery_event_id":"","issued_at":1,"expected_predecessor":1,"restore_point":1,"backup_label":"a","extra":1}"#
+            )
+            .is_err()
+        );
     }
 }
