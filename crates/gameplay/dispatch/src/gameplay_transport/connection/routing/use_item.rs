@@ -230,6 +230,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return Some(Dispatch::Use(outcome));
                 }
+                if let Some(outcome) = transport::house_destroy::dispatch_map_use(authority, actor, UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                }, intent.clone(), item_view.as_ref()).await {
+                    return Some(Dispatch::Use(outcome));
+                }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,

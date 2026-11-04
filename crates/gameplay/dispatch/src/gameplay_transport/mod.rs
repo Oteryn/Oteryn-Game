@@ -77,6 +77,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod house_destroy;
 mod house_furnishing;
 mod house_query;
 mod house_transfer;
