@@ -73,6 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ),
             source: [0; 16],
             tool: None,
+            ingredient: None,
             station: None,
             gathering: None,
             enchanting: None,

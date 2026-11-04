@@ -100,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
             tool: None,
+            ingredient: None,
             gathering: None,
             enchanting: None,
             station: None,
@@ -127,68 +128,109 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
-        let (station, map_target) = {
-            let mut runtime = self.runtime.lock().await;
+        // Crystal 201189f8 data-global/scripts/actions/other/baking.lua:8-37,49-51 uses a
+        // second carried ingredient for dough, chocolate/garlic dough, trays and sugar oat.
+        // Resolve its exact current definition here; the durable owner locks and consumes it.
+        if let Some(ItemKey::Instance(ingredient)) = target {
+            // I11's carried second-ingredient branch is an action in Crystal's baking handler;
+            // unlike the other craft owners above, it must not run while dead or casting.
+            let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
-            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
-            {
+            if !carried_ingredient_action_allowed(
+                states.is_dead(actor),
+                states.spell_idle(&runtime, actor, command.game_session_id),
+            ) {
                 return disposition(UseDisposition::Rejected);
             }
-            let index = pinned_index(&runtime, self.active_generation)?;
-            let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
-            let facts = at.map.facts.pinned();
-            let map = super::world_map::MapViewSource {
-                overlay: &at.map.overlay,
-                facts: &facts,
-                content_generation: at.content_generation,
-                reset_epoch: self.reset_epoch,
-            };
-            let resolved = match &intent.use_with_map_item {
-                Some(MapUseTarget::Object(object)) => {
-                    super::world_map::resolve_map_target(&map, object, |_| None::<()>)
-                        .ok()
-                        .map(|t| (t.pos, MapEntryKey::Base(t.placement_key)))
+            drop(states);
+            drop(runtime);
+            let inventory = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+                .ok()?;
+            let entry = inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| &bag.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find(|entry| entry.item.item_instance_id == ingredient)?;
+            request.ingredient = Some(ingredient);
+            request.station = Some(entry.item.definition.clone());
+        }
+        let (station, map_target) = {
+            if let Some(station) = request.station.clone() {
+                (
+                    station,
+                    (
+                        MapEntryKey::Base(0),
+                        0,
+                        false,
+                        crate::map::overlay::TilePos {
+                            x: 0,
+                            y: 0,
+                            floor: 0,
+                        },
+                    ),
+                )
+            } else {
+                let mut runtime = self.runtime.lock().await;
+                let index = pinned_index(&runtime, self.active_generation)?;
+                let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+                let facts = at.map.facts.pinned();
+                let map = super::world_map::MapViewSource {
+                    overlay: &at.map.overlay,
+                    facts: &facts,
+                    content_generation: at.content_generation,
+                    reset_epoch: self.reset_epoch,
+                };
+                let resolved = match &intent.use_with_map_item {
+                    Some(MapUseTarget::Object(object)) => {
+                        super::world_map::resolve_map_target(&map, object, |_| None::<()>)
+                            .ok()
+                            .map(|t| (t.pos, MapEntryKey::Base(t.placement_key)))
+                    }
+                    Some(MapUseTarget::Item(_)) => target
+                        .and_then(|key| super::world_map::resolve_map_handle(&map, key).ok())
+                        .and_then(|t| match t {
+                            super::world_map::MapHandleTarget::Base {
+                                pos, placement_key, ..
+                            } => Some((pos, MapEntryKey::Base(placement_key))),
+                            _ => None,
+                        }),
+                    None => None,
+                };
+                let Some((pos, key)) = resolved else {
+                    return disposition(UseDisposition::StaleState);
+                };
+                if i16::from(pos.floor) != at.at.floor
+                    || at.at.x.abs_diff(i32::from(pos.x)) > 1
+                    || at.at.y.abs_diff(i32::from(pos.y)) > 1
+                {
+                    return disposition(UseDisposition::TooFar);
                 }
-                Some(MapUseTarget::Item(_)) => target
-                    .and_then(|key| super::world_map::resolve_map_handle(&map, key).ok())
-                    .and_then(|t| match t {
-                        super::world_map::MapHandleTarget::Base {
-                            pos, placement_key, ..
-                        } => Some((pos, MapEntryKey::Base(placement_key))),
-                        _ => None,
+                let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
+                let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
+                let MapDefinition::Item(reference) = entry.facts.definition else {
+                    return disposition(UseDisposition::NothingToUse);
+                };
+                let map_target = (
+                    key,
+                    facts.object_revision(match key {
+                        MapEntryKey::Base(k) => k,
+                        _ => return None,
                     }),
-                None => None,
-            };
-            let Some((pos, key)) = resolved else {
-                return disposition(UseDisposition::StaleState);
-            };
-            if i16::from(pos.floor) != at.at.floor
-                || at.at.x.abs_diff(i32::from(pos.x)) > 1
-                || at.at.y.abs_diff(i32::from(pos.y)) > 1
-            {
-                return disposition(UseDisposition::TooFar);
+                    entry.facts.bound
+                        || facts.house_tile(pos)
+                        || entry.facts.count != 1
+                        || entry.facts.sub_type != 0,
+                    pos,
+                );
+                (
+                    super::item_look::typed_definition(index, reference)?,
+                    map_target,
+                )
             }
-            let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
-            let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
-            let MapDefinition::Item(reference) = entry.facts.definition else {
-                return disposition(UseDisposition::NothingToUse);
-            };
-            let map_target = (
-                key,
-                facts.object_revision(match key {
-                    MapEntryKey::Base(k) => k,
-                    _ => return None,
-                }),
-                entry.facts.bound
-                    || facts.house_tile(pos)
-                    || entry.facts.count != 1
-                    || entry.facts.sub_type != 0,
-                pos,
-            );
-            (
-                super::item_look::typed_definition(index, reference)?,
-                map_target,
-            )
         };
         request.station = Some(station);
         let mut catch_roll = 1;
@@ -394,6 +436,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         disposition(result)
     }
+}
+
+/// Decision used by the real I11 two-carried-item baking handler.
+pub(super) fn carried_ingredient_action_allowed(is_dead: bool, spell_idle: bool) -> bool {
+    !is_dead && spell_idle
 }
 
 fn item_id(key: &str) -> Option<u16> {
