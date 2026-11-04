@@ -80,6 +80,101 @@ pub fn activated_reward_boss_fixture(
     activate(world, &supplied)
 }
 
+/// Native kneebiter fixture with a materializable corpse and deterministic equipment loot.
+pub fn activated_boss_slot_loot_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = manifest_input();
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    let rat_corpse = creatures
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .and_then(|record| match &record.profile.data {
+            ProjectV2AuthoringProfileData::Creature(profile) => profile.details.as_ref(),
+            _ => None,
+        })
+        .and_then(|details| details.corpse_item.clone())
+        .expect("source rat corpse");
+    let kneebiter = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.foreman_kneebiter")
+        .expect("source kneebiter");
+    let ProjectV2AuthoringProfileData::Creature(profile) = &mut kneebiter.profile.data else {
+        panic!("kneebiter Creature profile");
+    };
+    profile
+        .details
+        .as_mut()
+        .expect("source kneebiter details")
+        .corpse_item = Some(rat_corpse);
+    refresh_fixture_attack_roots(kneebiter);
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+
+    let mut loot: serde_json::Value = serde_json::from_slice(
+        &supplied
+            .loot_tables
+            .as_ref()
+            .expect("manifest loot tables")
+            .bytes,
+    )
+    .unwrap();
+    let table = loot["tables"]
+        .as_array_mut()
+        .expect("loot tables array")
+        .iter_mut()
+        .find(|table| table["identity"]["key"] == "oteryn:loot.creature.foreman_kneebiter")
+        .expect("kneebiter loot table");
+    table["entries"] = serde_json::json!([
+        {
+            "item": {"family": "Item", "key": "oteryn:item.tibia.i3051", "revision": "definition-r1"},
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 1_000_000
+        },
+        {
+            "item": {"family": "Item", "key": "oteryn:item.tibia.i3031", "revision": "definition-r1"},
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 1_000_000
+        }
+    ]);
+    supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
+    supplied.source_world = source_world.map(pinned);
+    activate(world, &supplied)
+}
+
+#[cfg(test)]
+#[test]
+fn boss_slot_loot_fixture_compiles_kneebiter_row() {
+    let world = test_source(1).unwrap().world_id;
+    let (fixture, _) = activated_boss_slot_loot_fixture(world, None);
+    let native = fixture.active().unwrap().native_gameplay().unwrap();
+    let row = native
+        .reward_table()
+        .row("oteryn:creature.foreman_kneebiter")
+        .unwrap();
+    assert_eq!(row.boss.as_ref().unwrap().category, "nemesis");
+    assert!(
+        native
+            .reward_table()
+            .is_daily_boss_equipment("oteryn:item.tibia.i3051")
+    );
+    let policy = native
+        .policies()
+        .policies()
+        .iter()
+        .find(|policy| policy.definition_key == "oteryn:creature.foreman_kneebiter")
+        .unwrap();
+    assert_eq!(policy.reward_boss, Some(false));
+}
+
 #[cfg(test)]
 #[test]
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()

@@ -99,6 +99,8 @@ pub struct PlayerSpellState {
     /// Runtime-only; a fresh actor starts at zero.
     pub(super) regen_health_ms: u32,
     pub(super) regen_mana_ms: u32,
+    pub(super) regen_health_carry: u32,
+    pub(super) regen_mana_carry: u32,
     /// Runtime-only clock, anchored when admission makes this actor playable.
     pub(super) regeneration_next_tick_us: Option<u64>,
     /// Owner-qualified daily streak for the current resting tile; runtime-only.
@@ -196,6 +198,8 @@ impl PlayerSpellState {
                 mana: facts.max_mana,
                 regen_health_ms: 0,
                 regen_mana_ms: 0,
+                regen_health_carry: 0,
+                regen_mana_carry: 0,
                 regeneration_next_tick_us: None,
                 resting_streak: 0,
                 premium_current: false,

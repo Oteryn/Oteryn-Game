@@ -1735,7 +1735,9 @@ fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay(
     ];
     // PHOSPHORUS_NATIVE_REGENERATION_ACCOUNTING: source_take_due advances the
     // same always-on regeneration owner before applying the curse. This hungry
-    // Druid gains one HP per four credited owner seconds. The early call above
+    // Druid credits one health tick per four owner seconds; each tick is the
+    // REGEN-PCT-4 Druid share (8 bp of 100_000 max health = 80 HP), above the
+    // Global floor of half a point. The early call above
     // credits one second at 3_999_999us; the 4_000_000us call is too early for the
     // next second. Later two-second observations each credit one owner second,
     // so the five health credits occur at these exact times (no catch-up burst).
@@ -1757,7 +1759,7 @@ fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay(
         assert_eq!(tick.damage, amount, "source tick {index}");
         total += amount;
         if regeneration_due_us.contains(&now) {
-            regenerated += 1;
+            regenerated += 80;
         }
         assert_eq!(
             vitals

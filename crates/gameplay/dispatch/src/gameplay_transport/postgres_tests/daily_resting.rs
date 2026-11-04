@@ -125,12 +125,18 @@ fn resting_scenario(premium: bool) -> TestResult {
                 .ok_or("actor")?
                 .vitals();
             // Free accounts retain the day-2/day-3 rates, even with a persisted streak of 7.
+            // Crystal 201189f8 src/creatures/combat/condition.cpp:1348-1356,1385-1391
+            // unlocks resting credits and doubles them, rather than adding a flat bonus
+            // (data/libs/systems/daily_reward.lua:1-6). This unfed level-8 Monk has
+            // max HP/MP 185/90. REGEN-PCT-4 credits max(185*8/10000, 1*3/6)=0.5 HP
+            // per 4 s and max(90*10/10000, 2*3/6)=1 MP per 6 s: 120 s gains 15/20,
+            // or 30/40 with Premium inside; outside receives the base gains.
             assert_eq!(
                 (vitals.health, vitals.mana),
                 if premium && inside {
-                    (160, 90)
-                } else {
                     (130, 50)
+                } else {
+                    (115, 30)
                 }
             );
             // Free soul stays at the seeded 5: resting_area.rs:95 gates the streak-seven
