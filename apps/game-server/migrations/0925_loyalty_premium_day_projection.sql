@@ -1,5 +1,6 @@
 -- LOYALTY: Platform writes the absolute account-wide spent-Premium-day total; Game derives
 -- loyalty points 1:1 (TibiaWiki "Loyalty System" rev 1065529: one point per Premium day).
+-- A higher Platform revision may lower the total for refunds, chargebacks, or admin corrections.
 CREATE FUNCTION game_account_loyalty_project_premium_days(
     p_account_id UUID,
     p_spent_premium_days BIGINT,
@@ -38,9 +39,6 @@ BEGIN
                     USING ERRCODE = '23000';
             END IF;
             RETURN v_current.loyalty_points;
-        END IF;
-        IF v_points < v_current.loyalty_points THEN
-            RAISE EXCEPTION 'spent Premium-day total cannot decrease' USING ERRCODE = '23000';
         END IF;
         UPDATE game_account_loyalty_projections
            SET loyalty_points = v_points,

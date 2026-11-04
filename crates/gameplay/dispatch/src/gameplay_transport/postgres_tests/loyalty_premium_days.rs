@@ -1,4 +1,4 @@
-//! LOYALTY: Platform's absolute Premium-day projection is 1:1, idempotent, monotonic and control-only.
+//! LOYALTY: Platform's absolute Premium-day projection is 1:1, revisioned and control-only.
 use super::TestResult;
 use super::fixture::{Harness, debug, id, run};
 use sqlx::Executor;
@@ -77,14 +77,21 @@ fn loyalty_premium_days_project_one_point_per_day_idempotently_for_control_only(
             .expect_err("stale revision must be rejected");
         assert_eq!(sqlstate(&stale).as_deref(), Some("40001"));
 
-        let decrease = sqlx::query_scalar::<_, i64>(PROJECT)
+        let corrected: i64 = sqlx::query_scalar(PROJECT)
             .bind(account.as_slice())
             .bind(70_i64)
             .bind(3_i64)
             .fetch_one(&mut *control)
-            .await
-            .expect_err("spent Premium-day total must not decrease");
-        assert_eq!(sqlstate(&decrease).as_deref(), Some("23000"));
+            .await?;
+        assert_eq!(corrected, 70);
+
+        let stored: (i64, i64) = sqlx::query_as(
+            "SELECT loyalty_points, platform_revision FROM game_account_loyalty_projections WHERE account_id=encode($1,'hex')::uuid",
+        )
+        .bind(account.as_slice())
+        .fetch_one(&mut *control)
+        .await?;
+        assert_eq!(stored, (70, 3));
 
         let negative = sqlx::query_scalar::<_, i64>(PROJECT)
             .bind(account.as_slice())
@@ -110,7 +117,7 @@ fn loyalty_premium_days_project_one_point_per_day_idempotently_for_control_only(
         .bind(account.as_slice())
         .fetch_one(&mut *control)
         .await?;
-        assert_eq!(stored, (73, 2));
+        assert_eq!(stored, (70, 3));
         control.detach();
 
         let mut runtime = h.pool.acquire().await?;
