@@ -786,6 +786,15 @@ jobs:
           fi
           python -I tools/repository/job_result_key.py select --plan "$RUNNER_TEMP/jr-plan.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --dir "$RUNNER_TEMP/jobresult" --out "$RUNNER_TEMP/rust-fast-run.tsv"
 
+      # The restored target/ is ~26G extracted; hosted runners ran out of disk mid-extract
+      # (No space left on device, worker crash). Drop preinstalled SDKs this job never uses.
+      - name: Free hosted runner disk before the Cargo cache restore
+        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Restore trimmed Cargo cache from protected main
         if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
