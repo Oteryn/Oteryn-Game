@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-pub const MAX_CALLBACKS: usize = 128;
+// The merged catalogue has 137 authored callbacks, plus the runtime Rotten Blood altar.
+pub const MAX_CALLBACKS: usize = 138;
 pub const MAX_EFFECTS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]

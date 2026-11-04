@@ -204,7 +204,12 @@ fn steps(recipe: &QualifiedFieldCondition) -> Option<(DotElement, Vec<FieldDamag
 fn expected_steps(item: u32) -> Option<(DotElement, Vec<FieldDamageEntry>)> {
     let (element, entries) = crystal_expected(item)?;
     let total: u32 = entries.iter().map(|e| e.amount * e.repetitions).sum();
-    (total > 0).then(|| (element.condition_element(), entries))
+    (total > 0).then(|| {
+        (
+            element.condition_element().expect("elemental field"),
+            entries,
+        )
+    })
 }
 
 #[test]
@@ -322,9 +327,25 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
                 assert!(CRYSTAL_NON_DAMAGING.contains(&item), "item {item}");
                 assert_eq!(steps(recipe), None);
             }
-            // Crystal's `agony` field (start 260 above damage 100) has no Oteryn element.
-            (FieldConditionKind::Unsupported { source_element }, None) => {
-                assert_eq!((item, source_element.as_str()), (43297, "agony"));
+            (
+                FieldConditionKind::Damage {
+                    element: FieldElement::Agony,
+                    entries,
+                },
+                None,
+            ) => {
+                // Crystal items.xml:75219 and agony_field.lua:6 admit only item 43297.
+                assert_eq!(item, 43297);
+                assert_eq!(
+                    entries,
+                    &crystal_entries(&[("ticks", 5_000), ("start", 260), ("damage", 100)])
+                );
+                assert_eq!(entries.first().map(|entry| entry.amount), Some(260));
+                assert_eq!(entries.last().map(|entry| entry.amount), Some(1));
+                assert!(matches!(
+                    recipe.condition_values(),
+                    Ok(Some(ConditionValues::AgonyRamp { .. }))
+                ));
             }
             (condition, expected) => panic!("item {item}: {condition:?} vs {expected:?}"),
         }
@@ -367,8 +388,22 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
             .iter()
             .filter(|r| matches!(r.source.server_item_id, 1998..=2000 | 2131 | 10069..=10071)),
     ) {
-        assert_eq!(recipe.source.server, "canary");
         let item = recipe.source.server_item_id;
+        if recipe.source.server == "crystal" {
+            assert_eq!(item, 43297);
+            assert_eq!(recipe.total_damage().unwrap(), 33_930);
+            assert!(matches!(
+                recipe.condition_values(),
+                Ok(Some(ConditionValues::AgonyRamp {
+                    start: 260,
+                    repetitions: 260,
+                    interval_ms: 5_000,
+                    delayed: false
+                }))
+            ));
+            continue;
+        }
+        assert_eq!(recipe.source.server, "canary");
         if steps(recipe) == expected_steps(item) {
             assert!(!DIVERGENT.contains(&item), "item {item}");
         } else {
@@ -393,9 +428,10 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
         // preserve these donor assertions without changing the pinned capture.
         let got = if matches!(item, 2131 | 2132 | 2134 | 2135) {
             match &recipe.condition {
-                FieldConditionKind::Damage { element, entries } if !entries.is_empty() => {
-                    Some((element.condition_element(), entries.clone()))
-                }
+                FieldConditionKind::Damage { element, entries } if !entries.is_empty() => Some((
+                    element.condition_element().expect("elemental field"),
+                    entries.clone(),
+                )),
                 _ => None,
             }
         } else {
@@ -454,4 +490,36 @@ fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
             assert_eq!(decay["state"], "NOT_APPLICABLE");
         }
     }
+}
+
+#[test]
+fn c08_agony_field_43297_is_admitted() {
+    let recipe = profiles("crystal")
+        .into_iter()
+        .find(|r| r.source.server_item_id == 43297)
+        .expect("agony field");
+    assert!(
+        recipe.condition_values().expect("valid field").is_some(),
+        "43297 must apply donor agony damage"
+    );
+    let production = production_recipes()
+        .into_iter()
+        .find(|r| r.source.server_item_id == 43297)
+        .expect("admitted production agony field");
+    assert_eq!(production, recipe);
+    assert_eq!(
+        production.element().expect("standing field"),
+        None,
+        "agony must never preserve an unrelated cursed condition"
+    );
+    assert_eq!(production.total_damage().expect("source total"), 33_930);
+    assert_eq!(
+        production.condition_values().expect("runtime condition"),
+        Some(ConditionValues::AgonyRamp {
+            start: 260,
+            repetitions: 260,
+            interval_ms: 5_000,
+            delayed: false,
+        })
+    );
 }

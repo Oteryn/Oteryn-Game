@@ -24,7 +24,7 @@
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
-use super::overlay::{AddedItem, TilePos, pickup};
+use super::overlay::{AddedItem, EntryId, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
@@ -38,6 +38,15 @@ mod quest_callbacks;
 use quest_callbacks::CallbackStates;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
+
+/// A source movement talk line, retained for the shared presentation publisher.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MovementSpeech {
+    pub speaker: crate::foundation::ExactActorRef,
+    pub position: TilePos,
+    pub talk_type: u8,
+    pub text: &'static str,
+}
 
 /// The served definition of the Item a palette key names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +103,8 @@ struct Placement {
 #[derive(Debug, Default)]
 pub struct BundleFacts {
     palette: Vec<PaletteFacts>,
+    /// Movement targets may be unplaced; these are resolved by the same served Item index.
+    movement_definitions: BTreeMap<u16, EntryFacts>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -133,8 +144,29 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        let movement_definitions = [12369, 26077, 26087, 26100]
+            .into_iter()
+            .chain(6594..=6608)
+            .filter_map(|id| {
+                let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
+                Some((
+                    id,
+                    EntryFacts {
+                        definition: MapDefinition::Item(definition.reference),
+                        terrain_kind: None,
+                        appearance_id: id,
+                        blocks_projectile: definition.blocks_projectile,
+                        pickupable: definition.pickupable,
+                        bound: false,
+                        count: 1,
+                        sub_type: 0,
+                    },
+                ))
+            })
+            .collect();
         Ok(Self {
             palette,
+            movement_definitions,
             ids: unique,
             placements: Vec::new(),
             houses: Vec::new(),
@@ -402,10 +434,29 @@ impl BundleFacts {
         let Some((pos, _)) = view::placement_of(key) else {
             return false;
         };
+        let bound_allowed = !after.bound
+            || match self.terrain_tool_action(key) {
+                Some(Some(101)) => true,
+                Some(Some(40041))
+                    if matches!(after.definition, MapDefinition::Item(_))
+                        && matches!(after.appearance_id, 3134 | 4848) =>
+                {
+                    // M08's quest cask keeps its authored action through opening
+                    // and regrowth. That action never admits another bound item.
+                    self.placements
+                        .binary_search_by_key(&key, |(key, _)| *key)
+                        .ok()
+                        .and_then(|i| self.palette.get(self.placements[i].1.palette as usize))
+                        .is_some_and(|source| {
+                            source.family == Family::Item && source.facts.appearance_id == 4848
+                        })
+                }
+                _ => false,
+            };
         if revision == 0
             || self.house_tile(pos)
             || self.doors.contains(key)
-            || (after.bound && self.terrain_tool_action(key) != Some(Some(101)))
+            || !bound_allowed
             || after.pickupable
             || after.count != 1
             || after.sub_type != 0
@@ -835,6 +886,16 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.callbacks.lock().ok()?.movement_item(id)
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.callbacks
+            .lock()
+            .ok()
+            .and_then(|s| s.movement_items.get(&pos).cloned())
+            .unwrap_or_default()
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         let found = self
             .placements
@@ -896,6 +957,15 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.callbacks.as_ref()?.movement_item(id)
+    }
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.callbacks
+            .as_ref()
+            .and_then(|s| s.movement_items.get(&pos).cloned())
+            .unwrap_or_default()
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         self.facts.base_text(key)
     }
@@ -1037,6 +1107,73 @@ mod tests {
         assert_eq!(facts.terrain_tool_action(key), Some(Some(101)));
         facts.placements[0].1.attrs.unique = Some(1);
         assert_eq!(facts.terrain_tool_action(key), None);
+    }
+
+    #[test]
+    fn terrain_projection_admits_only_the_bound_cask_pair_and_existing_pick_action() {
+        let key = placement_key(
+            TilePos {
+                x: 7,
+                y: 0,
+                floor: -7,
+            },
+            1,
+        )
+        .expect("placement");
+        for (action, source, target, allowed) in [
+            (40041, 4848, 3134, true),
+            (40041, 4848, 4848, true),
+            (40041, 3696, 3134, false),
+            (40042, 4848, 3134, false),
+            (40041, 4848, 5462, false),
+            (101, 354, 394, true),
+        ] {
+            let before = EntryFacts {
+                definition: MapDefinition::Item(NonZeroU32::MIN),
+                terrain_kind: None,
+                appearance_id: source,
+                blocks_projectile: false,
+                pickupable: false,
+                bound: true,
+                count: 1,
+                sub_type: 0,
+            };
+            let mut facts = BundleFacts::default();
+            facts.palette.push(PaletteFacts {
+                family: Family::Item,
+                id: 0,
+                facts: before,
+                solid: false,
+                door: PaletteDoor::No,
+            });
+            facts.placements.push((
+                key,
+                Placement {
+                    palette: 0,
+                    bound: true,
+                    dropped: false,
+                    count: 1,
+                    sub_type: 0,
+                    attrs: Attrs {
+                        action: Some(action),
+                        ..Attrs::default()
+                    },
+                    pickup: Err(pickup::Ineligible::NotPickupable),
+                },
+            ));
+            assert_eq!(
+                facts.install_terrain_state(
+                    key,
+                    1,
+                    EntryFacts {
+                        appearance_id: target,
+                        ..before
+                    }
+                ),
+                allowed,
+                "action={action} source={source} target={target}"
+            );
+        }
     }
 
     fn item_solid(key: &str) -> bool {

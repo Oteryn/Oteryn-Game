@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import regenerate_content as rc
 
@@ -271,8 +272,20 @@ def test_spells_manifest_conflict_on_one_key_fails_closed() -> None:
         assert (root / rc.SPELLS_MANIFEST).read_bytes() == before
 
 
+def test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        (root / "resolved.json.gz").write_bytes(b"\x1f\x8b\xff\x00")
+        (root / "conflict.json").write_bytes(b"<<<<<<< ours\n{}\n=======\n{}\n>>>>>>> theirs\n")
+        with patch.object(rc, "ROOT", root), patch.object(
+            rc, "git", return_value="resolved.json.gz\nconflict.json\nmissing.json\n"
+        ):
+            assert rc.unresolved_worktree_paths() == ["conflict.json", "missing.json"]
+
+
 def main() -> None:
     tests = [
+        test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths,
         test_import_conflict_fails_closed_and_keeps_both_sides,
         test_interactions_index_conflict_fails_closed,
         test_derived_only_conflict_is_resolved,

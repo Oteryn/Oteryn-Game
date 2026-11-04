@@ -27,6 +27,9 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
+        (self.root / 'tools/content-schema').mkdir(parents=True)
+        (self.root / 'tools/content-schema/native-gameplay').symlink_to(
+            ROOT / 'tools/content-schema/native-gameplay', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())

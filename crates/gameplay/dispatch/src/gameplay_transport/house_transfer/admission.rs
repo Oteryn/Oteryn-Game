@@ -253,6 +253,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self,
             &admitted,
             &saved.position.record,
+            true,
         )
         .await
         .ok_or(Unavailable)?;

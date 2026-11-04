@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.pending_response.v1.json",
+  "title": "oteryn.store_wire.pending_response.v1",
+  "description": "200 body of ListPendingStoreOperationsV1. At most 8192 bytes and 32 entries, ascending by (source_revision, operation_id).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "pending"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "pending": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_kind",
+          "operation_id",
+          "source_revision"
+        ],
+        "properties": {
+          "operation_kind": {
+            "enum": [
+              "DELIVER",
+              "CLAIM",
+              "REVOKE_UNCLAIMED",
+              "RECLAIM",
+              "FLAG"
+            ]
+          },
+          "operation_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "source_revision": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          }
+        }
+      }
+    }
+  }
+}

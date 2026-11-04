@@ -1,5 +1,6 @@
 //! Temporary Character attributes. Base Character build values are never mutated.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum AttributeModifier {
     PercentOfBase(i32),
     Add(i32),
@@ -21,7 +22,8 @@ impl AttributeModifier {
         u32::try_from((i128::from(base) + delta).max(0)).ok()
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AttributeModifiers {
     pub melee: Option<AttributeModifier>,
     pub distance: Option<AttributeModifier>,

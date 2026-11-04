@@ -1,5 +1,8 @@
 use super::*;
-use crate::durability::item_use::fluid::{ItemFluidChange, ItemFluidOutcome, ItemFluidRequest};
+use crate::durability::item_use::fluid::{
+    ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
+};
+use crate::foundation::RuntimeScopeRefV1;
 
 // I10a (migration 0560): a carried vial is filled and emptied through `commit_item_fluid` under
 // the Character's item fence. Only setup bypasses guards.
@@ -30,6 +33,33 @@ fn fluid(command: u64, tx: u8, item: u8, before: u8, after: u8) -> ItemFluidRequ
 }
 
 impl Use {
+    async fn splash_fluid(
+        &self,
+        request: &ItemFluidRequest,
+        splash: ItemFluidSplash,
+    ) -> Result<ItemFluidOutcome, ItemUseError> {
+        let seal = self
+            .harness
+            .recovery
+            .seal_current()
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        let authority = self
+            .harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.harness
+            .root
+            .commit_item_fluid_at(
+                &authority,
+                &self.harness.node,
+                item_fence().map_err(|_| ItemUseError::InvalidInput)?,
+                request.clone(),
+                Some(splash),
+            )
+            .await
+    }
     async fn change_fluid_under(
         &self,
         fence: CurrentCharacterItemFence,
@@ -88,6 +118,123 @@ impl Use {
         .fetch_optional(&self.harness.pool)
         .await?)
     }
+}
+
+#[test]
+fn a_map_source_fill_persists_the_donor_fluid_subtype() -> TestResult {
+    run(async |admin| {
+        let used = Use::create(admin, "fluid_map_fill").await?;
+        println!("POSTGRES_STARTED item_use_fluid_map_fill");
+        seed_vials(&used).await?;
+        // Crystal 201189f8 data/scripts/actions/items/fluids.lua:35-40 and items.xml i137.
+        let water = fluid(40, 170, VIAL, 0, 1);
+        assert_eq!(
+            used.change_fluid(&water).await.map_err(debug)?,
+            ItemFluidOutcome::Written
+        );
+        assert_eq!(used.fluid_of(VIAL).await?, Some(1));
+        used.cleanup().await
+    })
+}
+
+#[test]
+fn pouring_on_ground_persists_a_ten_second_donor_splash_and_empties_container() -> TestResult {
+    run(async |admin| {
+        let used = Use::create(admin, "fluid_ground_splash").await?;
+        println!("POSTGRES_STARTED item_use_fluid_ground_splash");
+        seed_vials(&used).await?;
+        used.change_fluid(&fluid(41, 172, VIAL, 0, MANA))
+            .await
+            .map_err(debug)?;
+        let empty = fluid(42, 174, VIAL, MANA, 0);
+        let splash = ItemFluidSplash {
+            placement: b"test-ground".to_vec(),
+            fluid_subtype: MANA,
+            splash_item_id: 2886,
+            lifetime_millis: 10_000,
+        };
+        assert_eq!(
+            used.splash_fluid(&empty, splash).await.map_err(debug)?,
+            ItemFluidOutcome::Written
+        );
+        assert_eq!(used.fluid_of(VIAL).await?, None);
+        let row: (i16, i32, bool) = sqlx::query_as(
+            "SELECT fluid_subtype,splash_item_id, expires_at BETWEEN clock_timestamp()+interval '9 seconds' AND clock_timestamp()+interval '10 seconds' FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(id(174).as_slice()).fetch_one(&used.harness.pool).await?;
+        assert_eq!(row, (i16::from(MANA), 2886, true));
+        let seal = used.harness.recovery.seal_current().map_err(debug)?;
+        let authority = used
+            .harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let fence = item_fence().map_err(debug)?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Err("expected Channel scope".into());
+        };
+        let active = used
+            .harness
+            .root
+            .refresh_item_fluid_splashes(&authority, *world_id.as_bytes(), *channel_id.as_bytes())
+            .await
+            .map_err(debug)?;
+        assert!(active.iter().any(|row| row.placement == b"test-ground"));
+        // Age the splash past its lifetime. Both stamps move together because the table
+        // requires expires_at = created_at + 10 seconds.
+        sqlx::query("UPDATE game_item_fluid_splashes SET created_at=created_at-interval '11 seconds',expires_at=expires_at-interval '11 seconds' WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(id(174).as_slice()).execute(&used.harness.pool).await?;
+        // A map/object read filters an expired object but never writes. The periodic Channel
+        // tick below is the durable decay owner.
+        assert!(
+            used.harness
+                .root
+                .refresh_item_fluid_splashes(
+                    &authority,
+                    *world_id.as_bytes(),
+                    *channel_id.as_bytes(),
+                )
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
+        let still_stored: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(174).as_slice())
+        .fetch_one(&used.harness.pool)
+        .await?;
+        assert_eq!(
+            still_stored, 1,
+            "map/object reads do not perform decay writes"
+        );
+        assert_eq!(
+            used.harness
+                .root
+                .expire_item_fluid_splashes(
+                    &authority,
+                    *world_id.as_bytes(),
+                    *channel_id.as_bytes(),
+                )
+                .await
+                .map_err(debug)?,
+            1
+        );
+        let expired: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_fluid_splashes WHERE transaction_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(174).as_slice())
+        .fetch_one(&used.harness.pool)
+        .await?;
+        assert_eq!(expired, 0, "periodic decay removes the splash");
+        drop(authority);
+        drop(seal);
+        used.cleanup().await
+    })
 }
 
 async fn seed_vials(used: &Use) -> TestResult {

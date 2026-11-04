@@ -53,7 +53,12 @@ impl SessionAppearance {
         let visible = staged_view.appearance_actors(self.forge);
         let player_refs = candidate.players(&visible);
         let observation = authority
-            .appearance_observation(actor, admitted.game_session_id, player_refs.clone())
+            .appearance_observation_projected(
+                actor,
+                admitted.game_session_id,
+                candidate.empty_outfit,
+                player_refs.clone(),
+            )
             .await?;
         let old_catalogue = self.catalogue.as_ref()?;
         let upserts = candidate.upserts(observation, &player_refs)?;

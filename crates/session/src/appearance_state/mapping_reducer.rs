@@ -11,6 +11,7 @@ impl AppearanceState {
                 return Err(invalid());
             }
             match binding.look {
+                wire::Look::EmptyOutfit => {}
                 wire::Look::Outfit { colours, .. }
                     if colours
                         .iter()

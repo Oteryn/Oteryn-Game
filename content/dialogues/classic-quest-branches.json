@@ -1,0 +1,1229 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.mr_morris",
+      "branches": [
+        {
+          "key": "line-79",
+          "reply": [
+            "One of our ...less fortunate members lost an ancient amulet somewhere on the island, along with his life. If you could retrieve the amulet at least, there's a little reward. Would you go on that errand?"
+          ]
+        },
+        {
+          "key": "line-86",
+          "reply": [
+            "Ah, you found the amulet! Ah. Really? Poor Dormovo. Always a bit hasty. Forgot his rope, or food, or potions - it was to be expected he would meet an early end. Oh, well. ..."
+          ]
+        },
+        {
+          "key": "line-98",
+          "reply": [
+            "The first log book from the first foray group has been stolen by trolls. One wonders what for, as they can hardly read! Anyway, we need it back. Would you go looking for it?"
+          ]
+        },
+        {
+          "key": "line-107",
+          "reply": [
+            "Ah, yes, that's it! Torn and gnawed, but, ah well, the information is still retrievable. Thank you. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-120",
+          "reply": [
+            "Some of those salamanders have crawled into Oressa's herb garden and munched all her Dawnfire herbs. Would you get some fresh herbs?"
+          ]
+        },
+        {
+          "key": "line-128",
+          "reply": [
+            "Ah, wonderful. Freshly cut and full of potent... whatever it is it does. Thanks. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-140",
+          "reply": [
+            "This is an undercover thing - the key to the dormitory has disappeared. No one wants to own up who has lost it, at least not to me. Maybe they'll talk to you. I'll reward you if you find it. You in?"
+          ]
+        },
+        {
+          "key": "line-149",
+          "reply": [
+            "Ah, you're here to report about the {key} - any progress?"
+          ]
+        },
+        {
+          "key": "line-154",
+          "reply": [
+            "Wonderful. I don't believe you will find Dormovo alive, though. He would not have stayed abroad that long without refilling his inkpot for his research notes. But at least the amulet should be retrieved."
+          ]
+        },
+        {
+          "key": "line-164",
+          "reply": [
+            "Good. The logbook or whatever is left of it is very valuable to my research. If you return its contents to me, I will reward you accordingly."
+          ]
+        },
+        {
+          "key": "line-173",
+          "reply": [
+            "Splendid. Those Dawnfire buds are just the thing against nasty troll bites, you know? But they're quite rare.",
+            "Look for a bush with yellow glowing flower buds. It grows only on a special, light grey-brown sand, and is usually surrounded by fireflies. Use the herb to pluck off the fresh flower buds, and return to me."
+          ]
+        },
+        {
+          "key": "line-184",
+          "reply": [
+            "Good. Just chat with the guys. Someone is bound to remember *something* about that key."
+          ]
+        },
+        {
+          "key": "line-188",
+          "reply": [
+            "The key to the dormitory! Finally! You're a real sleuth. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-194",
+          "reply": [
+            "Good. Killing 20 will teach them a lesson, without provoking desperate retaliation. Still, take care!"
+          ]
+        },
+        {
+          "key": "line-204",
+          "reply": [
+            "Good. Killing 20 will teach them a lesson, without provoking desperate retaliation. Still, take care!"
+          ]
+        },
+        {
+          "key": "line-214",
+          "reply": [
+            "Good. Killing 20 will teach them a lesson, without provoking desperate retaliation. Still, take care!"
+          ]
+        },
+        {
+          "key": "line-228",
+          "reply": [
+            "Mountain trolls are worse than magpies, stealing everything that's not nailed down. Lately, they have raided our ship and made off with most of the Captain's rum stock!",
+            "I will reward you if you kill 20 mountain trolls. Would you do that?"
+          ]
+        },
+        {
+          "key": "line-236",
+          "reply": [
+            "Ah, very good job. That should put a crimp in their activities. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-241",
+          "reply": [
+            "Come back when you have slain {20 mountain trolls!}"
+          ]
+        },
+        {
+          "key": "line-246",
+          "reply": [
+            "Footmen of the muglex clan are worse than magpies, stealing everything that's not nailed down. Lately, they have raided our ship and made off with most of the Captain's rum stock!",
+            "I will reward you if you kill 20 muglex clan footmen. Would you do that?"
+          ]
+        },
+        {
+          "key": "line-254",
+          "reply": [
+            "Ah, very good job. That should put a crimp in their activities. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-259",
+          "reply": [
+            "Come back when you have slain {20 muglex clan footman!}"
+          ]
+        },
+        {
+          "key": "line-264",
+          "reply": [
+            "Minotaur bruisers are worse than magpies, stealing everything that's not nailed down. Lately, they have raided our ship and made off with most of the Captain's rum stock!",
+            "I will reward you if you kill 20 minotaur bruisers. Would you do that?"
+          ]
+        },
+        {
+          "key": "line-272",
+          "reply": [
+            "Ah, very good job. That should put a crimp in their activities. Here's your reward."
+          ]
+        },
+        {
+          "key": "line-277",
+          "reply": [
+            "Come back when you have slain {20 minotaur bruisers!}"
+          ]
+        },
+        {
+          "key": "line-280",
+          "reply": [
+            "You already done this task."
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.woblin",
+      "branches": [
+        {
+          "key": "line-65",
+          "reply": [
+            "Me not give key! Key my precious now!"
+          ]
+        },
+        {
+          "key": "line-69",
+          "reply": [
+            "Me not give key! Key my precious now! By old goblin law all that one has in his pockets for two days is family heirloom! Me no part with my precious ... hm unless you provide Woblin with some {reward}!"
+          ]
+        },
+        {
+          "key": "line-79",
+          "reply": [
+            "You can keep lousy key! Didn't like it anymore anyway."
+          ]
+        },
+        {
+          "key": "line-86",
+          "reply": [
+            "Me good angler but one fish eludes me since many many weeks. I call fish ''Old Nasty''. You might catch him in this cave, in that pond there. Bring me {Old Nasty} and I'll give you key!"
+          ]
+        },
+        {
+          "key": "line-99",
+          "reply": [
+            "You bring me Old Nasty?"
+          ]
+        },
+        {
+          "key": "line-108",
+          "reply": [
+            "You did it! That's my old arch enemy! Here take lousy key. Didn't like it anymore anyway."
+          ]
+        },
+        {
+          "key": "line-115",
+          "reply": [
+            "You have not Old Nasty! Odd, you stink just like him though!"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "branches": [
+        {
+          "key": "line-40",
+          "reply": [
+            "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+          ]
+        },
+        {
+          "key": "line-62",
+          "reply": [
+            "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+          ]
+        },
+        {
+          "key": "line-67",
+          "reply": [
+            "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"
+          ]
+        },
+        {
+          "key": "line-73",
+          "reply": [
+            "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rottin_wood",
+      "branches": [
+        {
+          "key": "line-91",
+          "reply": [
+            "Oh, you want some work? You can help us, alright. Did you know that the people of the city think those rabbit feet are actually lucky charms?"
+          ]
+        },
+        {
+          "key": "line-94",
+          "reply": [
+            "Good to see you back. Now, did you bring us the lucky charms?"
+          ]
+        },
+        {
+          "key": "line-98",
+          "reply": [
+            "Of course, of course, there is indeed something you can help us with. Remember that we also have some tasks for you. So, are you ready for another quest to help the men of the forest?",
+            "There is a problem with one of our deer stands. Right. Well, there are two problems, our deer stands - and some of the walls of the buildings in the camp are broken. ...",
+            "You know, the guys built all of that themselves. Sure, at first it didn't quite work out as we planned and in the end we had to tear down half the forest - but - it was worth it. ...",
+            "Still, most of the camp is kind of... broken now. And someone with a good hammer and a steady hand needs to fix that. Or I am afraid we will have to freeze... during the cold evenings... well you know, hard times. ...",
+            "So what do you say, in for this one?"
+          ]
+        },
+        {
+          "key": "line-107",
+          "reply": [
+            "Ah there you are. So, did you repair all the broken structures?"
+          ]
+        },
+        {
+          "key": "line-111",
+          "reply": [
+            "Oh |PLAYERNAME| my good friend, good to see you! Today you will help us with a very important task. Very important indeed. ...",
+            "You know, a large group of merchants is travelling from Thais to Venore and they are crossing the forest to shorten their way - can you believe it? ...",
+            "They will enter the forest near our camp which is where you come in - uhm I mean you do want to help us with this, right?"
+          ]
+        },
+        {
+          "key": "line-119",
+          "reply": [
+            "You did it!! And I assume you took only what you needed? Heh. No, I know it. Because my men took the rest. Thanks for helping us, you did a very good job. In fact I have a little 'extra' for you here, thanks again."
+          ]
+        },
+        {
+          "key": "line-131",
+          "reply": [
+            "It looks like you need more traps to finish the job. Here. Go now, and happy hunting."
+          ]
+        },
+        {
+          "key": "line-136",
+          "reply": [
+            "I can only get you more traps in half an hour."
+          ]
+        },
+        {
+          "key": "line-141",
+          "reply": [
+            "Thanks again for everything you did for us. I don't have any more missions for you, but I could always use a hand with a {task} or two."
+          ]
+        },
+        {
+          "key": "line-149",
+          "reply": [
+            "Good, because that is exactly what you will help us with - getting more 'lucky charms'. If we won't get our hands on new charms in time, we will surely have to starve... during the autumn. That would be a hard time for all of us. So... you in?"
+          ]
+        },
+        {
+          "key": "line-152",
+          "reply": [
+            "Fine, now hurry into the woods and find some rabbits. Find them and kill them that is. Use a sharp, thin knife to get the rabbit foot and be careful not to destroy it - no one would buy it in a bad condition after all. ...",
+            "Once you gathered some rabbit feet, put one of our - handcrafted by the guys - ribbons on each of them. That will make two lucky charms per rabbit. ...",
+            "We will need at least seven. And seven is a lucky number, don't you think? Heh. ...",
+            "If you need some more ribbons just come back to me and ask."
+          ]
+        },
+        {
+          "key": "line-163",
+          "reply": [
+            "Good hunt. That will be enough to help us uhm... get through the winter yes. Now if you want to help us getting even more lucky charms, you can always ask."
+          ]
+        },
+        {
+          "key": "line-171",
+          "reply": [
+            "You do not have sufficient rabbit's foot."
+          ]
+        },
+        {
+          "key": "line-175",
+          "reply": [
+            "Good, good. Do you remember the old saying? If it ain't broken, it was not made by us. Now, off you go!"
+          ]
+        },
+        {
+          "key": "line-182",
+          "reply": [
+            "Mmmmh, I have to say - good workmanship. No doubt. Yes, the person who made that tool you used to fix all this was a pure professional. Something I can't say about your work, though. ...",
+            "The walls look as if they will come off in a matter of hours. Oh well, you can always come back and repair this mess, ask me for a task if you want to. Yeah, yeah and here's your reward for today."
+          ]
+        },
+        {
+          "key": "line-192",
+          "reply": [
+            "Mmmmh. It seems that some walls haven't been repaired yet. Come back when you finish your mission."
+          ]
+        },
+        {
+          "key": "line-197",
+          "reply": [
+            "Right, now before the merchants enter the woods, you will install several traps - nothing too dangerous, just nets and ropes. ...",
+            "When they enter said area which is located close to our hidden camp, they will be trapped and you can... lighten their heavy burden of valuable goods. ...",
+            "There is but a tiny little catch - we cannot help you laying these traps. You know, some of the guys became sick recently, we talk about several broken legs here, one almost lost his arm ...",
+            "So... it's entirely up to you, will you do this or not?"
+          ]
+        },
+        {
+          "key": "line-205",
+          "reply": [
+            "Alright very good. Now the only thing you need to do is taking these traps and moving out to the area I have marked on your map where you need to place them. ...",
+            "Once you did that go to the large high seat near the camp and watch for the travelling merchants. ...",
+            "Once all of them are trapped in the nets, you can go down and gather anything of value you can find. But only take what we... you really need - around 100 gold should be enough for any man to take. ...",
+            "We have manners after all, haven't we. ...",
+            "My men will take their share of course and... help you relieve the merchants of any valuables. ...",
+            "You're done if you get at least... let's say 5 of these fools. Return to me and you will be rewarded. ...",
+            "Off you go and - good hunt, heh."
+          ]
+        },
+        {
+          "key": "line-225",
+          "reply": [
+            "Fine, now hurry into the woods and find some rabbits. Find them and kill them that is. Use a sharp, thin knife to get the rabbit foot and be careful not to destroy it - no one would buy it in a bad condition after all. ...",
+            "Once you gathered some rabbit feet, put one of our - handcrafted by the guys - ribbons on each of them. That will make two lucky charms per rabbit. ...",
+            "We will need at least seven. And seven is a lucky number, don't you think? Heh. ...",
+            "If you need some more ribbons just come back to me and I will see what I can do."
+          ]
+        },
+        {
+          "key": "line-239",
+          "reply": [
+            "Good hunt. That will be enough to help us uhm... get through the winter yes. Here is your reward for today."
+          ]
+        },
+        {
+          "key": "line-258",
+          "reply": [
+            "You do not have sufficient rabbit's foot."
+          ]
+        },
+        {
+          "key": "line-264",
+          "reply": [
+            "There is a problem with one of our deer stands. Right. Well, there are two problems, our deer stands - and some of the walls of the buildings in the camp are broken. ...",
+            "You know, the guys built all of that themselves. Sure, at first it didn't quite work out as we planned and in the end we had to tear down half the forest - but - it was worth it. ...",
+            "Still, most of the camp is kind of... broken now. And someone with a good hammer and a steady hand needs to fix that. Or I am afraid we will have to freeze... during the cold evenings... well, you know, hard times. ...",
+            "So what do you say, in for this one?"
+          ]
+        },
+        {
+          "key": "line-279",
+          "reply": [
+            "Mmmmh, I have to say - good workmanship. No doubt. Yes, the person who made that tool you used to fix all this was a pure professional. Something I can't say about your work, though. ...",
+            "The walls look as if they will come off in a matter of hours. Oh well, you can always come back and repair this mess, ask me for a task if you want to. Yeah, yeah and here's your reward for today."
+          ]
+        },
+        {
+          "key": "line-289",
+          "reply": [
+            "Mmmmh. It seems that some walls haven't been repaired yet. Come back when you finish the task."
+          ]
+        },
+        {
+          "key": "line-297",
+          "reply": [
+            "People like to think that their personal luck will rise if they buy, wear or give away one of these rabbit feet. ...",
+            "Of course you and me know that this is complete nonsense but our valued customers want to be supplied with the finest rabbit feet the forest has to offer. ...",
+            "And that's exactly where you come in - helping us getting more 'lucky charms'. And if we do not get our hands on them in time, we will surely starve... during the dry period, real hard times. You in?"
+          ]
+        },
+        {
+          "key": "line-304",
+          "reply": [
+            "Mmmmh. Come back when you have all seven lucky charms."
+          ]
+        },
+        {
+          "key": "line-307",
+          "reply": [
+            "Thats okay. Let me know if you change your mind."
+          ]
+        },
+        {
+          "key": "line-310",
+          "reply": [
+            "Looks like a few walls are still broken. Come back when you finish it."
+          ]
+        },
+        {
+          "key": "line-313",
+          "reply": [
+            "Mmmmh. Come back if you decide to help us again."
+          ]
+        },
+        {
+          "key": "line-316",
+          "reply": [
+            "Mmmmh. Come back if you decide to help us again."
+          ]
+        },
+        {
+          "key": "line-319",
+          "reply": [
+            "Mmmmh. Come back if you decide to help us again."
+          ]
+        },
+        {
+          "key": "line-322",
+          "reply": [
+            "Mmmmh. Come back if you decide to help us again."
+          ]
+        },
+        {
+          "key": "line-330",
+          "reply": [
+            "Alright of course. You can help us getting even more {lucky charms}. There are also some {repairs} to be made around the camp. For now these are the only tasks we can offer."
+          ]
+        },
+        {
+          "key": "line-333",
+          "reply": [
+            "Alright of course. You can help us getting even more {lucky charms}. For now that's the only task we can offer."
+          ]
+        },
+        {
+          "key": "line-336",
+          "reply": [
+            "I don't have any tasks for you yet. Come back once you have helped us a bit more."
+          ]
+        },
+        {
+          "key": "line-345",
+          "reply": [
+            "Good to see you back. Now, did you bring us the lucky charms?"
+          ]
+        },
+        {
+          "key": "line-348",
+          "reply": [
+            "Are you ready to get more 'lucky charms'? You know, if we won't get our hands on new charms in time, we will surely have to starve... during the autumn. That would be a hard time for all of us. So... you in once again?"
+          ]
+        },
+        {
+          "key": "line-357",
+          "reply": [
+            "Welcome back, did you repair all the broken structures?"
+          ]
+        },
+        {
+          "key": "line-360",
+          "reply": [
+            "Ah yes, the sorry state of the camp... after your last repair. There is indeed a lot to do, some of the makeshift walls came down already. So, you know, would you...?"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "branches": [
+        {
+          "key": "line-63",
+          "reply": [
+            "If you have passed the first six seals and entered the blue fires that lead to the chamber of the seal you might receive my {kiss} ... It will open the last seal. Do you think you are ready?"
+          ]
+        },
+        {
+          "key": "line-67",
+          "reply": [
+            "Are you prepared to receive my kiss, even though this will mean that your death as well as a part of your soul will forever belong to me, my dear?"
+          ]
+        },
+        {
+          "key": "line-70",
+          "reply": [
+            "You have already received my kiss. You should know better then to ask for it."
+          ]
+        },
+        {
+          "key": "line-75",
+          "reply": [
+            "Your wish for a spectral dress is silly. Although I will grant you the permission to take one. My maidens left one in a box in a room, directly south of here."
+          ]
+        },
+        {
+          "key": "line-80",
+          "reply": [
+            "Say... I have been longing for something for an eternity now... if you help me retrieve it, I will reward you. Do you consent to this arrangement?"
+          ]
+        },
+        {
+          "key": "line-85",
+          "reply": [
+            "Have you really brought me 50 holy orchids?"
+          ]
+        },
+        {
+          "key": "line-91",
+          "reply": [
+            "The Queen of the Banshee: Yessss, I can sense you have passed the seal of sacrifice. Have you passed any other seal yet?"
+          ]
+        },
+        {
+          "key": "line-94",
+          "reply": [
+            "You have not passed the seal of sacrifice yet. Return to me when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-99",
+          "reply": [
+            "The Queen of the Banshee: I sense you have passed the hidden seal as well. Have you passed any other seal yet?"
+          ]
+        },
+        {
+          "key": "line-102",
+          "reply": [
+            "You have not found the hidden seal yet. Return when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-107",
+          "reply": [
+            "The Queen of the Banshee: Oh yes, you have braved the plague seal. Have you passed any other seal yet?"
+          ]
+        },
+        {
+          "key": "line-110",
+          "reply": [
+            "You have not faced the plagueseal yet. Return to me when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-115",
+          "reply": [
+            "The Queen of the Banshee: Ah, I can sense the power of the seal of demonrage burning in your heart. Have you passed any other seal yet?"
+          ]
+        },
+        {
+          "key": "line-118",
+          "reply": [
+            "You are not filled with the fury of the imprisoned demon. Return when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-123",
+          "reply": [
+            "The Queen of the Banshee: So, you have managed to pass the seal of the true path. Have you passed any other seal yet?"
+          ]
+        },
+        {
+          "key": "line-126",
+          "reply": [
+            "You have not found your true path yet. Return when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-131",
+          "reply": [
+            "The Queen of the Banshee: I see! You have mastered the seal of logic. You have made the sacrifice, you have seen the unseen, you possess fortitude, you have filled yourself with power and found your path. You may ask me for my {kiss} now."
+          ]
+        },
+        {
+          "key": "line-134",
+          "reply": [
+            "You have not found your true path yet. Return to meh when you are better prepared."
+          ]
+        },
+        {
+          "key": "line-139",
+          "reply": [
+            "So be it! Hmmmmmm..."
+          ]
+        },
+        {
+          "key": "line-147",
+          "reply": [
+            "You have spilled too much blood recently and the dead are hungry for your soul. Perhaps return when you regained you inner balance."
+          ]
+        },
+        {
+          "key": "line-151",
+          "reply": [
+            "Listen... there are no blooming flowers down here and the only smell present is that of death and decay. I wish that I could breathe the lovely smell of beautiful flowers just one more time, especially those which elves cultivate. Could you please bring me 50 holy orchids?"
+          ]
+        },
+        {
+          "key": "line-154",
+          "reply": [
+            "Thank you. I will wait for your return."
+          ]
+        },
+        {
+          "key": "line-159",
+          "reply": [
+            "Thank you! You have no idea what that means to me. As promised, here is your reward... as a follower of Zathroth, I hope that you will like this accessory."
+          ]
+        },
+        {
+          "key": "line-166",
+          "reply": [
+            "You need 50 holy orchid."
+          ]
+        },
+        {
+          "key": "line-172",
+          "reply": [
+            "Then try to be better prepared next time we meet."
+          ]
+        },
+        {
+          "key": "line-174",
+          "reply": [
+            "Perhaps it is the better choice for you, my dear."
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jerom",
+      "branches": [
+        {
+          "key": "line-69",
+          "reply": [
+            "I'm not sure but I suppose that an evil troll lives in the mountains here! I saw him rummaging in the ruins of my house. ...",
+            "I took a closer look and found my family casket ripped open. It contained a precious necklace. If I had it back, I could sell it and start over! ...",
+            "Could you look for this mean beast, find out why he did and either get me some money ormy necklace to rebuild my business?"
+          ]
+        },
+        {
+          "key": "line-76",
+          "reply": [
+            "Thank you sooo much <sniffs>. Well, you know I lost everything, but recently I found this strange rope here. I don't need it, here take it!"
+          ]
+        },
+        {
+          "key": "line-82",
+          "reply": [
+            "Great! Finally, some light at the end of the tunnel! Come back and ask me for the quest when you solved this mystery!"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chief_grarkharok",
+      "branches": [
+        {
+          "key": "line-68",
+          "reply": [
+            "Hahaha! Grarkharok take cloak from pretty girl. Then ... girl is swan. Grarkharok wants eat but flies away. Grarkharok not understand. Not need cloak, too many feathers. Give cloak to To ... Ta ... Tereban in Edron. Getting shiny coins and meat."
+          ]
+        },
+        {
+          "key": "line-70",
+          "reply": [
+            "Grarkharok already say everything! Not want talk! Go away!"
+          ]
+        },
+        {
+          "key": "line-77",
+          "reply": [
+            "Hrhrhrhr! Me no fear of human! Me Chief Grarkharok!!"
+          ]
+        },
+        {
+          "key": "line-80",
+          "reply": [
+            "You help?? Human know troll lady for Grarkharok??"
+          ]
+        },
+        {
+          "key": "line-83",
+          "reply": [
+            "Found lady for Grarkharok?!? Must be good-looking, hairy lady, yknow! Go find!!"
+          ]
+        },
+        {
+          "key": "line-87",
+          "reply": [
+            "What name of troll lady??"
+          ]
+        },
+        {
+          "key": "line-91",
+          "reply": [
+            "Gimme gimme! Yumyumyum! <BUUUURP>."
+          ]
+        },
+        {
+          "key": "line-94",
+          "reply": [
+            "You no have dead frog! Bring dead frog!!! Grarkharok hungry!!"
+          ]
+        },
+        {
+          "key": "line-99",
+          "reply": [
+            "Gimme gimme! Yumyumyum! <BUUUURP>."
+          ]
+        },
+        {
+          "key": "line-102",
+          "reply": [
+            "You no have tasty snake! Bring tasty snake!!! Grarkharok hungry!!"
+          ]
+        },
+        {
+          "key": "line-107",
+          "reply": [
+            "|PLAYERNAME|?!? Sound good! Bring troll lady to Grarkharok!! Here, give troll lady! Take take! Bring lady to Grarkharok for make tribe!! Now GO!"
+          ]
+        },
+        {
+          "key": "line-112",
+          "reply": [
+            "Have dead frog for Grarkharok??"
+          ]
+        },
+        {
+          "key": "line-115",
+          "reply": [
+            "Have tasty snake for Grarkharok??"
+          ]
+        },
+        {
+          "key": "line-119",
+          "reply": [
+            "Grarkharok angry now!! Want throw rock on human cave down hill again!"
+          ]
+        },
+        {
+          "key": "line-123",
+          "reply": [
+            "Huh?? No understand!"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.menesto",
+      "branches": [
+        {
+          "key": "line-58",
+          "reply": [
+            "Finally, reinforcements - oh but no, you came through the crystal portal, like the others! I am ser Menesto, I guard the portal. That beast caught me by surprise, I lost my dagger and had to retreat. ...",
+            "... ...",
+            "Hmm. ...",
+            "You look hungry, you should eat regularly to reagain your strength! See what you can find while hunting. Or buy food in a city shop. Here, have some of my rations, I'll take my dagger. Tell me when you're {ready}."
+          ]
+        },
+        {
+          "key": "line-83",
+          "reply": [
+            "I'll stay here till reinforcements come. Go up the ladder to reach the surface. You'll need a rope for the ropestot that comes after the ladder - here, take my spare equipment. ...",
+            "And remember: Tibia is a world with many dangers and mysteries, so be careful! Farewell, friend."
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.oressa",
+      "branches": [
+        {
+          "key": "line-182",
+          "reply": [
+            "You are hurt, my child. I will heal your wounds."
+          ]
+        },
+        {
+          "key": "line-185",
+          "reply": [
+            "You do not need any healing right now."
+          ]
+        },
+        {
+          "key": "line-190",
+          "reply": [
+            "You do not need any healing right now."
+          ]
+        },
+        {
+          "key": "line-201",
+          "reply": [
+            "You are hurt, my child. I will heal your wounds."
+          ]
+        },
+        {
+          "key": "line-211",
+          "reply": [
+            "I'll help you decide. Tell me: Do you like to keep your {distance}, or do you like {close} combat?"
+          ]
+        },
+        {
+          "key": "line-223",
+          "reply": [
+            "Tell me: Do you prefer to fight with {bow} and {spear}, or do you want to cast {magic}?"
+          ]
+        },
+        {
+          "key": "line-227",
+          "reply": [
+            "Then you should choose the {vocation} of a knight and become a valiant fighter with sword and shield. ...",
+            "Knights are the toughest of all vocations. They can take more damage and carry more items than the other vocations, but they will deal less damage than paladins, druids or sorcerers. ...",
+            "Knights can wield one- or two-handed swords, axes and clubs, and they can cast a few spells to draw a monster's attention to them. ...",
+            "So tell me: DO YOU WISH TO BECOME A VALIANT KNIGHT? Answer with a proud {YES} if that is your choice!"
+          ]
+        },
+        {
+          "key": "line-238",
+          "reply": [
+            "Then you should join the ranks of the paladins, noble hunters and rangers of the wild, who rely on the swiftness of movement and ranged attacks. ...",
+            "Paladins are jacks of all trades. They are tougher than the magically gifted and can carry more items than druids or sorcerers, but they can take not as much damage as a knight can. ...",
+            "Paladins deal more damage than knights but less than druids or sorcerers, and have the longest range in their distance attacks. ...",
+            "They can also use holy magic to slay the unholy and undead in particular. ...",
+            "DO YOU WISH TO BECOME A DARING PALADIN? Answer with a proud {YES} if that is your choice!"
+          ]
+        },
+        {
+          "key": "line-251",
+          "reply": [
+            "Tell me: Do you prefer to {heal} and cast the power of nature and ice, or do you want to rain fire and {death} on your foes?"
+          ]
+        },
+        {
+          "key": "line-260",
+          "reply": [
+            "Then you should learn the ways of the druids, healers and powerful masters of natural magic. ...",
+            "Druids can heal their friends and allies, but they can also cast powerful ice and earth magic to kill their enemies. They can do a little energy, fire or death damage as well. ...",
+            "Druids cannot take much damage or carry many items, but they deal much more damage than paladins or knights. ...",
+            "So tell me: DO YOU WISH TO BECOME A SAGACIOUS DRUID? Answer with a proud {YES} if that is your choice!"
+          ]
+        },
+        {
+          "key": "line-271",
+          "reply": [
+            "Then you should become a sorcerer, a mighty wielder of deathly energies and arcane fire. ...",
+            "Sorcerers are powerful casters of magic. They use fire, energy and death magic to lay low their enemies. They can do a little ice or earth damage as well. ...",
+            "Sorcerers cannot take much damage or carry many items, but they deal much more damage than paladins or knights. ...",
+            "So tell me: DO YOU WISH TO BECOME A POWERFUL SORCERER? Answer with a proud {YES} if that is your choice!"
+          ]
+        },
+        {
+          "key": "line-282",
+          "reply": [
+            "So tell me, which {vocation} do you want to choose: {knight}, {sorcerer}, {paladin} or {druid}?"
+          ]
+        },
+        {
+          "key": "line-348",
+          "reply": [
+            "If you are interested in becoming a monk, please speak to Ambassador Manop."
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_dreadnought",
+      "branches": [
+        {
+          "key": "line-235",
+          "reply": [
+            "Well, that's really generous of you. That'll feed a lot of hungry mouths for a while. Right, now which {city} did you say you wanted to go to?"
+          ]
+        },
+        {
+          "key": "line-243",
+          "reply": [
+            "Well, har har. Very funny. Come on, pick up the gold you just dropped."
+          ]
+        },
+        {
+          "key": "line-269",
+          "reply": [
+            "Negative, can't bring you there without a premium account. You should be glad you get to travel by ship - usually that's a premium service too, you know."
+          ]
+        },
+        {
+          "key": "line-294",
+          "reply": [
+            "Cast off! Don't forget to talk to the guide at the port for directions to nearest bars... err, shops and bank and such!"
+          ]
+        },
+        {
+          "key": "line-449",
+          "reply": [
+            "Kid, listen. Answering with a clear {yes} or {no} will get you much further in Tibia. Most people are not as sharp-eared as I am. Got that?"
+          ]
+        },
+        {
+          "key": "line-456",
+          "reply": [
+            "Errr... was that a foreign language? Could you just answer with a clear {yes} or {no}?"
+          ]
+        },
+        {
+          "key": "line-458",
+          "reply": [
+            "Aw, come on! Talk to me in human words! {Yes}, {no}, or mention a city's name, that kind of stuff."
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.inigo",
+      "branches": [
+        {
+          "key": "line-244",
+          "reply": [
+            "It seems to emanate a magical call or pulse that draws all sorts of creatures to it - no offense meant. When we first found it, we were flabbergasted - we thought maybe a mad sorcerer had built it, or a cult, to summon something evil. ...",
+            "But we didn't find any conclusive hints. {Menesto} and a few others volunteered to guard the portal from the {monsters} of this isle. You say you came through it from your world! Astounding. ...",
+            "You couldn't have chosen a better time. We really need help against the monsters that swarm this island, and the whole world of {Tibia}. If you're unsure on how to {help} exactly, I can give you directions."
+          ]
+        },
+        {
+          "key": "line-256",
+          "reply": [
+            "Hasn't been with us for very long. Very interested in all things mystical, so Menesto was sent down to guard the strange crystal {portal} we found here. ...",
+            "... But of course, you met him. ... So it really is a portal, and you came through it from another plane of existence! I never quite believed the tales of old, not really. But now... it's wonderful, truly wonderful. ...",
+            "Well, if you have any questions as to THIS plane of existence, which we call {Tibia}, just ask me. I can give directions, {hints}, you name it. <winks at you>"
+          ]
+        },
+        {
+          "key": "line-266",
+          "reply": [
+            "Our world {Tibia} is swarmed by many dangerous {monsters}, so {fighting} is something you will have to learn and master quickly. You can fight as a {sorcerer}, druid, {paladin} or {knight}. ...",
+            "We need your help in keeping the monsters at bay - walk out of one of the four gates here, and you will receive one of the four {vocations} and its gear to try out and fight monsters. ...",
+            "{Dawnport} is just a small, but dangerous island. You will have to reach level 8 at least and choose your definite vocation before you can leave for the {mainland}. To reach level 8, you will have to fight some monsters in order to progress. ... ",
+            "Fighting is essential in Tibia, and though Dawnport is quite safe in comparison to the mainland, be careful not to die, as {dying} HURTS. ...",
+            "If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-279",
+          "reply": [
+            "There are many dangers in {Tibia}. You may have to defend yourself not only against {monsters}, but if {PvP} is allowed, against other {players}, too. ...",
+            "To attack, click on your chosen target in the battle list. A red frame will show you which target you are currently attacking. ...",
+            "To automatically follow your target, click on 'Chase Opponent' in your combat controls - the top left button. ...",
+            "You can also define your attack and defense mode, by selecting {offensive}, {balanced} or {defensive} fighting."
+          ]
+        },
+        {
+          "key": "line-288",
+          "reply": [
+            "Depending on the world you chose in {Tibia}, {players} may attack you at all times or only if you consent. ...",
+            "On an Optional PvP world, PvP is only possible if both players consent to it; but on Open PvP or Hardcore PvP worlds, any player may always attack you, so be watchful. ...",
+            "A brown frame around a player indicates he or she is in a PvP situation. A {skull} next to a player name means he or she attacked or killed another player. ...",
+            "Here on {Dawnport}, PvP is not allowed inside the outpost, and not possible until you have reached level 8 at least. If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-298",
+          "reply": [
+            "To chat with other players, you can click on one of the chat channels and see who is posting in there. ...",
+            "If you want to message a specific player, right-click on his or her name and select 'Message to <player name>'. This will open up a chat channel where you can type in your message to him or her."
+          ]
+        },
+        {
+          "key": "line-304",
+          "reply": [
+            "NPC means someone like me or {Hamish} or {Coltrayne}, for example. You can easily discern us from {players} like you, because there is a speech bubble next to our {name}. ...",
+            "We all have our different ways, but normally, addressing an NPC with 'hi' or 'hello' will open a conversation. ...",
+            "Some NPCs will have secret words that they react to that are not highlighted in their conversation. In that case, you need to type in your question. ...",
+            "To do so, open the NPC Chat Channel and click on the empty space below the NPCs dialogue, and start typing. ...",
+            "You can try this out by asking an NPC about their {job}, as this is a keyword most will react to. If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-316",
+          "reply": [
+            "Every vocation has specific spells that can only be used if you have that vocation. Sorcerers and druids of course rely heavily on spells, while knights only have a few at their disposal. ...",
+            "As an adventurer in training, you have a few spells at your disposal at the beginning, but more will become available as you progress. ...",
+            "Once you're level 8, new spells become available upstairs at the spell trainers {Garamond} and {Tybald}. They can tell you more."
+          ]
+        },
+        {
+          "key": "line-325",
+          "reply": [
+            "Second best thing to a rope - a shovel will reveal secret entrances buried under loose stone piles, or under sand, or earth... you will see! ...",
+            "Shovels can be bought at {Richard}'s, like the other equipment, or food. If you don't have the money yet, go out and kill some {monsters} outside - and maybe you'll even find a shovel, who knows!"
+          ]
+        },
+        {
+          "key": "line-333",
+          "reply": [
+            "We found the island following a strange glow we saw at night, close before dawn. We were looking for a source of unknown, powerful magic, and it seemed that this island was its source. ...",
+            "When we arrived, we found goblins, minotaurs, trolls and undead warring on this island. We wondered why. Then they seemed to reach an agreement, and settled down in the caves. We decided to investigate. ...",
+            "That is when we found the strange crystal {portal}, through which you came. Perhaps this is why the {monsters} battle, but won't leave. ...",
+            "It certainly is a place of power, so {Menesto}'s group was sent down to guard it. However, we are but few, so we need every help we can get to defend and maintain the outpost on this isle. ...",
+            "That is why we need your help - choose the vocation that suits you, take up its arms and help us defend this place against the evil that wants to claim it! If you need any help in how to do these things, ask me."
+          ]
+        },
+        {
+          "key": "line-347",
+          "reply": [
+            "The mainland harbours the most ancient cities of {Tibia}, and many dangers and adventures as well. When you have helped us defend {Dawnport}, and learned enough of the ways of Tibia to reach level 8 at least, you should leave for the mainland. ...",
+            "There you can continue to battle evil - and believe me, there is much of that in our world, alas. <sigh> ...",
+            "Premium adventurers can also sail to the many islands that surround the mainland, which offer many more dangers and mysteries to be explored; and you can do quests to ride mounts, and dress in a variety of new outfits."
+          ]
+        },
+        {
+          "key": "line-356",
+          "reply": [
+            "Go through one of the open gates on this floor and you will be equipped with training weapons and {spells} of a specific vocation. ...",
+            "There are four vocations in Tibia: {knight}, {druid}, {paladin} and {sorcerer}. Each one has its unique abilities, strengths and weaknesses. Just try them out to see which one suits you best. ...",
+            "We need your help in our battle. Fight {monsters} to gain experience and better {skills}, until you reach level 8 at least. Make sure you always have not only a weapon, but a {rope} with you, as well! ...",
+            "Once you reached level 8 or more, you have to choose one vocation as your definite vocation before you can leave for the Tibian {mainland}, where more dangers await you. ... ",
+            "To choose your definite vocation, talk to {Oressa} downstairs in the {temple}. She can also heal you if you are severely wounded or poisoned - just say 'heal' or 'help' to her. ...",
+            "If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-372",
+          "reply": [
+            "A vocation is your profession and chosen destiny, rolled into one. There are four vocations in {Tibia}: {knight}, {sorcerer}, {paladin} or {druid}. Each vocation has its unique special abilities with which to fight evil. ...",
+            "You need to choose your vocation before you can leave {Dawnport} to go to the {Mainland}. But first, you have to gain enough experience to reach level 8 in order to do so. ...",
+            "Once you've reached level 8 and want to choose your definite vocation, talk to {Oressa} downstairs in the temple. She can also heal you if you are hurt or poisoned. ...",
+            "If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-383",
+          "reply": [
+            "I can give you directions how to {play}, some basic survival and {combat} tips, or explain {PvP}, ...",
+            "I can also tell you how to talk with other {players} or {NPC}s, or can inform you about {questing} or {spells}. ...",
+            "I also have a list of small {hints} if you prefer that, and can tell you something of the {people} here. Just tell me what you want to know. ...",
+            "Oh, but first that help I mentioned - you should get yourself a {shovel}, friend. It will come in handy when you set about finding secret entrances to dungeons or hidden treasures - many useful things lie hidden beneath earth, sand or stones! "
+          ]
+        },
+        {
+          "key": "line-394",
+          "reply": [
+            "Offensive {fighting} means you deal harder attacks, but have a weaker defense. Magical damage you deal is not affected by this. ...",
+            "You should switch to offensive only if you want to finish off a monster quickly and are sure you can survive its harder attacks. I can also tell you something about {balanced} and {defensive} fighting."
+          ]
+        },
+        {
+          "key": "line-402",
+          "reply": [
+            "Balanced {fighting} balances out your attack strength as well as your defense strength. Magical damage you deal is not affected by this. ...",
+            "I can also tell you something about {offensive} and {defensive} fighting."
+          ]
+        },
+        {
+          "key": "line-408",
+          "reply": [
+            "Defensive {fighting} increases your defense but reduces your attack strength. The magical damage you deal is not affected by this. ...",
+            "I can also tell you something about {offensive} and {balanced} fighting."
+          ]
+        },
+        {
+          "key": "line-414",
+          "reply": [
+            "A white skull means that this player attacked and maybe killed another player without justification. ...",
+            "A red skull means someone has killed many other {players}, while a black skull depicts someone on a serious killing spree - so watch out!"
+          ]
+        },
+        {
+          "key": "line-420",
+          "reply": [
+            "Some sort of misguided genius, I think. Brilliant with potions and runes, but couldn't get on with his master or with the other students. Ran away and set up his own little lab, selling to travellers along the road. ...",
+            "Was robbed and left for dead by some plunderers, when Morris found him. {Morris} patched him up and said he could use him, so Hamish came here. If you need a wand, rune or potion, Hamish's your man."
+          ]
+        },
+        {
+          "key": "line-429",
+          "reply": [
+            "Coltrayne doesn't say much about himself. What I gathered from the 15 years I've known him is that he was raised by a blacksmith as a foundling. ...",
+            "When a fire destroyed his foster family's home, he took up an unsteady life, always wandering around. Then he met {Morris} and decided to go adventuring with him."
+          ]
+        },
+        {
+          "key": "line-436",
+          "reply": [
+            "Ah, there are lots of stories about Morris. Likes to insist on the 'Mr'. Nobody knows his first name, and the telling goes that he has gambled with a demon and lost his first name to him. ...",
+            "The demon is said to have set Morris free so he can reclaim him at the end of his life, meanwhile having fun watching Morris struggle through hardship and adventures. ...",
+            "Anyway. One way or another, Morris picked us all up and gathered us here. Not sure that sending others on missions is really all it's about for him, but if you're looking for a quest, go ask Morris for one."
+          ]
+        },
+        {
+          "key": "line-446",
+          "reply": [
+            "Not your level, but your skill with your weapon determines how much damage you make. With a distance weapon like a bow, you {train} your distance {fighting} skill, with a sword your sword fighting, etc. ...",
+            "Druids and sorcerers train their magic level by using their mana through {spells} and runes. Their wand or rod damage is not affected by their magic level. If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-454",
+          "reply": [
+            "You should never leave without a rope. NEVER. A rope can save your life. I once fell down into a poison spider lair - without a rope, I wouldn't be standing here today! ...",
+            "You can buy a rope over at {Richard}'s shop. If you don't have the money, kill and loot a few {monsters} - maybe one of them even has a rope with it, that sort of thing happens."
+          ]
+        },
+        {
+          "key": "line-462",
+          "reply": [
+            "Our local healer. Don't know why that druid girl decided she wanted the unsteady life of an adventurer, but she's quite hardy, to tell the truth. I once saw her confront a polar bear.... but I'm getting carried away. ...",
+            "If you need healing, go see her. Oressa can also help you decide if you want to choose your vocation to leave for the {Mainland}."
+          ]
+        },
+        {
+          "key": "line-470",
+          "reply": [
+            "When you die, you will be resurrected in the temple of the city you chose as your home. Temple {NPC}s, like {Oressa} here on {Dawnport}, can heal you if you're wounded or poisoned. Some special temple NPCs can also {bless} you. ...",
+            "To be fully blessed, you should start the Pilgrimage of Ashes at a local guide in the harbour once you have reached the {mainland}."
+          ]
+        },
+        {
+          "key": "line-478",
+          "reply": [
+            "Don't be deceived by its sweet looks - {Tibia} is a rough world. If you die, you will lose skill and experience and perhaps even some items, and other {players} can rob your corpse. ...",
+            "On the {Mainland}, you can buy blessings from {temple} {NPC}s to prevent item loss, but you will always lose some {skills} and experience, so be careful. ...",
+            "Always have a {rope} with you, for a start. A rope is essential."
+          ]
+        },
+        {
+          "key": "line-487",
+          "reply": [
+            "Every vocation has specific {spells} that can only be used if you have that vocation. Sorcerers and druids of course rely heavily on spells, while knights only have a few at their disposal. ...",
+            "As an adventurer in training, you have a few spells at your disposal at the beginning, but more will become available as you progress. ...",
+            "Once you're level 8, new spells become available upstairs at the spell trainers {Garamond} and {Tybald}. They can tell you more."
+          ]
+        },
+        {
+          "key": "line-497",
+          "reply": [
+            "Go through one of the open gates on this floor and you will be equipped with training weapons and {spells} of a specific vocation. ...",
+            "There are four {vocations} in Tibia: {knight}, {sorcerer}, {paladin} or {druid}. Each one has its unique abilities, strengths and weaknesses. Just try them out to see which one suits you best. ...",
+            "We need your help in our battle. Fight {monsters} to gain experience and better {skills}, until you reach level 8 at least. Make sure you always have not only a weapon, but a {rope} with you, as well! ...",
+            "Once you reached level 8 or more, you have to choose one vocation as your definite vocation before you can leave for the Tibian {mainland}, where more dangers await you. ...",
+            "To choose your definite vocation, talk to {Oressa} downstairs in the {temple}. She can also heal you if you are severely wounded or poisoned - just say 'heal' or 'help' to her. ...",
+            "If you have any other questions, tell me."
+          ]
+        },
+        {
+          "key": "line-513",
+          "reply": [
+            "The blessings of the gods will protect you from item loss and alleviate the skill and experience loss when you die. But you will have to undertake the Pilgrimage of Ashes on the {mainland} to get the blessings. ...",
+            "If you die in a fight from a monster's attack, your blessings will be lost, and you will have to get them again. ...",
+            "There is also a blessing that will protect you specifically from losses in a {PvP} fight. This blessing you will need to get again when you have been killed in a PvP fight. ...",
+            "Here on {Dawnport}, you are protected from losses in a PvP fight by the Adventurer's Blessing - unless you attack another player. If you attack another player or reach level 20, you will lose this blessing."
+          ]
+        },
+        {
+          "key": "line-534",
+          "reply": [
+            "Hmmm. Long time I visited that isle. Not very exciting place. Why do you ask? Do you wish to go there?"
+          ]
+        },
+        {
+          "key": "line-542",
+          "reply": [
+            "I'm sorry, but I cannot let you go there, you'll get much better training here than on that ancient isle."
+          ]
+        },
+        {
+          "key": "line-546",
+          "reply": [
+            "Careful, careful, it's a one-way ticket only! You can never come back here if you leave now, and you will loso all your Dawnport equipment and products! ...",
+            "Are you {SURE} you want to {LEAVE} Dawnport for ROOKGAARD?"
+          ]
+        },
+        {
+          "key": "line-615",
+          "reply": [
+            "Then so be it. I'm sorry to see you go, but if this is what you want, step this way... right. Now, cover your eyes... GO!"
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mysterious_ornate_chest",
+      "branches": []
+    }
+  ]
+}

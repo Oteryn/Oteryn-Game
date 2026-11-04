@@ -25,6 +25,13 @@ fn valid_atom(value: &str) -> bool {
         })
 }
 
+#[cfg(test)]
+#[path = "condition_agony_ramp_tests.rs"]
+mod agony_ramp_tests;
+
+#[path = "condition_persistence.rs"]
+mod persistence;
+
 #[path = "condition_spell.rs"]
 mod spell;
 pub use spell::{SkillAdjustments, SpellSpeedError};
@@ -73,7 +80,8 @@ const fn shared_mutation_slot(key: ConflictKey) -> ConflictKey {
 
 /// An item appearance retains the exact activated Item identity and generation.
 /// These historical selection bytes do not grant an Outfit unlock or ownership.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TemporaryItemAppearance {
     definition_key: String,
     revision_ref: String,
@@ -97,7 +105,8 @@ pub enum TemporaryDisplayedAppearance<'a> {
 }
 
 /// A versioned `ConditionDefinition` (GAME-ABILITY-01), built by the content loader.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConditionDefinition {
     key: String,
     revision: u32,
@@ -199,6 +208,12 @@ impl ConditionDefinition {
                         && per_tick > 0
                         && interval_ok(interval_ms)
                 }
+                ConditionValues::AgonyRamp {
+                    start,
+                    repetitions,
+                    interval_ms,
+                    ..
+                } => start > 0 && repetitions > 0 && interval_ok(interval_ms),
                 ConditionValues::DamageSequence { steps, len, .. } => {
                     let count = usize::from(len);
                     count > 0
@@ -241,6 +256,18 @@ impl ConditionDefinition {
                 look_type,
                 duration_ms: 1,
             },
+        )?;
+        definition.permanent_outfit = true;
+        Some(definition)
+    }
+
+    /// Crystal bath_tub.lua:9-11: ticks -1 with lookTypeEx is a permanent Item outfit.
+    /// The caller must attach the qualified Item with `with_item_appearance`.
+    pub fn new_permanent_item_outfit(key: &str, revision: u32) -> Option<Self> {
+        let mut definition = Self::new(
+            key,
+            revision,
+            ConditionValues::ItemOutfit { duration_ms: 1 },
         )?;
         definition.permanent_outfit = true;
         Some(definition)
@@ -347,6 +374,7 @@ impl ConditionDefinition {
             ConditionValues::DamageSequence { element, .. } => {
                 ConditionType::DamageOverTime(element)
             }
+            ConditionValues::AgonyRamp { .. } => ConditionType::Agony,
             ConditionValues::FoodRegeneration { .. } => ConditionType::FoodRegeneration,
             ConditionValues::Recovery { .. }
             | ConditionValues::SpellRegeneration { sub_id: 0, .. } => ConditionType::Recovery,
@@ -370,7 +398,8 @@ impl ConditionDefinition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum ConditionSourceKind {
     Creature,
     Player,
@@ -378,11 +407,14 @@ pub enum ConditionSourceKind {
     Field,
     /// The actor's own use of an item or spell (food, potion, self spell).
     SelfUse,
+    /// A logout snapshot restored without attacker authority. Ordinary application refuses it.
+    Restored,
 }
 
 /// §3.2: provenance frozen at application. `S` is the owner's source actor identity; the owner
 /// looks it up again at each tick.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConditionProvenance<S> {
     pub source: Option<S>,
     pub source_kind: ConditionSourceKind,
@@ -391,7 +423,18 @@ pub struct ConditionProvenance<S> {
     /// Historical application lineage, never refreshed from a tick command.
     pub lineage: Option<ConditionLineage>,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl<S> ConditionProvenance<S> {
+    /// A restored condition has no attacker or retained attack authority. Its
+    /// target still requires the current actor/session fence at every damage write.
+    pub fn is_unattributed(&self) -> bool {
+        self.source_kind == ConditionSourceKind::Restored
+            && self.source.is_none()
+            && self.lineage.is_none()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConditionLineage {
     pub source_character: [u8; 16],
     pub source_session: [u8; 16],
@@ -405,7 +448,8 @@ pub struct ConditionLineage {
 }
 
 /// One live instance of a definition on one actor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConditionInstance<S> {
     definition: ConditionDefinition,
     provenance: ConditionProvenance<S>,
@@ -419,6 +463,11 @@ pub struct ConditionInstance<S> {
     /// (§3.1); it runs through `take_due` under the same budget as every other tick.
     immediate_due: Option<u64>,
     started_at: u64,
+    /// Online age retained when a logout snapshot is rebased onto a fresh process clock.
+    elapsed_before_start: u64,
+    /// Overdue timers retain their logical order when a new clock cannot represent the past.
+    tick_debt_us: u64,
+    immediate_debt_us: u64,
     /// The remaining damage total of a damage over time.
     remaining_total: u32,
     scheduled_damage: Option<DamageCursor>,
@@ -434,7 +483,8 @@ pub struct ConditionInstance<S> {
     buff_delta: ConditionBuffDelta,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConditionBuffDelta {
     pub damage_dealt: i32,
     pub healing_received: i32,
@@ -453,6 +503,11 @@ fn source_buff_delta(base: i32, percent: u32) -> Result<i32, ConditionRefusal> {
 }
 
 impl<S> ConditionInstance<S> {
+    fn age_at(&self, now: u64) -> u64 {
+        self.elapsed_before_start
+            .saturating_add(now.saturating_sub(self.started_at))
+    }
+
     pub const fn definition(&self) -> &ConditionDefinition {
         &self.definition
     }
@@ -502,7 +557,10 @@ impl<S> ConditionInstance<S> {
         else {
             return 0;
         };
-        let total = ends_at.saturating_sub(self.started_at).max(1);
+        let total = ends_at
+            .saturating_sub(self.started_at)
+            .saturating_add(self.elapsed_before_start)
+            .max(1);
         let left = ends_at.saturating_sub(now);
         u8::try_from(u64::from(level) * left / total).unwrap_or(level)
     }
@@ -663,7 +721,7 @@ impl<S: Clone> ConditionStore<S> {
         *self = staged;
         Ok(applied)
     }
-    /// §6.2 fresh admission: no instances (food time is restored by COND-DUR-1).
+    /// Empty store; fresh admission separately restores the durable condition snapshot.
     pub fn new() -> Self {
         Self::default()
     }
@@ -783,6 +841,9 @@ impl<S: Clone> ConditionStore<S> {
         {
             return Err(ConditionRefusal::ArithmeticBounds);
         }
+        if source_kind == ConditionSourceKind::Restored {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
         if now < self.pass_at || self.instances.iter().any(|v| v.started_at > now) {
             return Err(ConditionRefusal::ArithmeticBounds);
         }
@@ -793,6 +854,13 @@ impl<S: Clone> ConditionStore<S> {
             | ConditionValues::Gate { duration_ms, .. }
             | ConditionValues::SourceAttributes { duration_ms, .. }
             | ConditionValues::RationalSpeed { duration_ms, .. } => duration_ms,
+            ConditionValues::AgonyRamp {
+                repetitions,
+                interval_ms,
+                ..
+            } => repetitions
+                .checked_mul(interval_ms)
+                .ok_or(ConditionRefusal::ArithmeticBounds)?,
             ConditionValues::DamageSequence { steps, len, .. } => {
                 sequence_duration(&steps[..usize::from(len)])
                     .ok_or(ConditionRefusal::ArithmeticBounds)?
@@ -889,6 +957,9 @@ impl<S: Clone> ConditionStore<S> {
             next_tick_at: None,
             immediate_due: None,
             started_at: now,
+            elapsed_before_start: 0,
+            tick_debt_us: 0,
+            immediate_debt_us: 0,
             remaining_total: 0,
             scheduled_damage: None,
             sequence_step: 0,
@@ -1006,6 +1077,21 @@ impl<S: Clone> ConditionStore<S> {
                 }
                 instance.remaining_total = total;
                 instance.next_tick_at = Some(keep_timing(steps[0].interval_ms)?);
+                instance.immediate_due = (!delayed).then_some(now);
+            }
+            ConditionValues::AgonyRamp {
+                start,
+                repetitions,
+                interval_ms,
+                delayed,
+            } => {
+                let ramp = u64::from(start.min(repetitions));
+                let plateau = u64::from(repetitions) - ramp;
+                instance.remaining_total =
+                    u32::try_from(ramp * (ramp + 1) / 2 + plateau * u64::from(start))
+                        .map_err(|_| ConditionRefusal::ArithmeticBounds)?;
+                instance.sequence_repetition = repetitions;
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
                 instance.immediate_due = (!delayed).then_some(now);
             }
             ConditionValues::Agony {
@@ -1305,15 +1391,31 @@ impl<S: Clone> ConditionStore<S> {
                     let scheduled = instance
                         .next_tick_at
                         .filter(|&due| instance.ends_at.is_none_or(|end| due <= end));
-                    let due = match (instance.immediate_due, scheduled) {
-                        (Some(a), Some(b)) => a.min(b),
-                        (a, b) => a.or(b)?,
-                    };
-                    (due <= now).then_some((due, instance.sequence, index))
+                    let immediate = instance
+                        .immediate_due
+                        .map(|due| (due, instance.immediate_debt_us, true));
+                    let scheduled = scheduled.map(|due| (due, instance.tick_debt_us, false));
+                    let (due, debt, immediate) = [immediate, scheduled]
+                        .into_iter()
+                        .flatten()
+                        .min_by_key(|(due, debt, immediate)| {
+                            (i128::from(*due) - i128::from(*debt), !immediate)
+                        })?;
+                    (due <= now).then_some((
+                        i128::from(due) - i128::from(debt),
+                        instance.sequence,
+                        index,
+                        due,
+                        debt,
+                        immediate,
+                    ))
                 })
                 .min();
-            let Some((due, _, index)) = next else { break };
+            let Some((_, _, index, due, debt, immediate)) = next else {
+                break;
+            };
             let instance = &mut self.instances[index];
+            let previous_next = instance.next_tick_at;
             let kind = match instance.definition.values {
                 ConditionValues::DamageSchedule { element } => {
                     // A malformed internal cursor must not emit a fabricated tick or remove
@@ -1324,7 +1426,6 @@ impl<S: Clone> ConditionStore<S> {
                     let Some(segment) = cursor.current() else {
                         return ticks;
                     };
-                    let immediate = instance.immediate_due == Some(due);
                     if immediate {
                         instance.immediate_due = None;
                     }
@@ -1357,7 +1458,6 @@ impl<S: Clone> ConditionStore<S> {
                 } => {
                     let step = steps[usize::from(instance.sequence_step)];
                     let amount = step.amount.min(instance.remaining_total);
-                    let immediate = instance.immediate_due == Some(due);
                     if immediate {
                         instance.immediate_due = None;
                     }
@@ -1394,7 +1494,7 @@ impl<S: Clone> ConditionStore<S> {
                     interval_ms,
                     ..
                 } => {
-                    if instance.immediate_due == Some(due) {
+                    if immediate {
                         instance.immediate_due = None;
                     } else {
                         instance.next_tick_at =
@@ -1410,12 +1510,28 @@ impl<S: Clone> ConditionStore<S> {
                         refused: facts.in_protection_zone && !element.ticks_in_protection_zone(),
                     }
                 }
+                ConditionValues::AgonyRamp {
+                    start, interval_ms, ..
+                } => {
+                    let amount = start.min(instance.sequence_repetition);
+                    instance.remaining_total -= amount;
+                    if immediate {
+                        instance.immediate_due = None;
+                    }
+                    instance.sequence_repetition = instance.sequence_repetition.saturating_sub(1);
+                    instance.next_tick_at = (instance.sequence_repetition > 0)
+                        .then(|| due + u64::from(interval_ms) * MICROS_PER_MS);
+                    TickKind::Agony {
+                        amount,
+                        refused: false,
+                    }
+                }
                 ConditionValues::Agony {
                     per_tick,
                     interval_ms,
                     ..
                 } => {
-                    if instance.immediate_due == Some(due) {
+                    if immediate {
                         instance.immediate_due = None;
                     } else {
                         instance.next_tick_at =
@@ -1446,15 +1562,11 @@ impl<S: Clone> ConditionStore<S> {
                     mana_interval_ms,
                     ..
                 } => {
-                    let elapsed = due - instance.started_at;
+                    let elapsed = instance.age_at(due).saturating_sub(debt);
                     let h = u64::from(health_interval_ms) * MICROS_PER_MS;
                     let m = u64::from(mana_interval_ms) * MICROS_PER_MS;
-                    let next_h = (elapsed / h + 1)
-                        .checked_mul(h)
-                        .and_then(|v| instance.started_at.checked_add(v));
-                    let next_m = (elapsed / m + 1)
-                        .checked_mul(m)
-                        .and_then(|v| instance.started_at.checked_add(v));
+                    let next_h = due.checked_add(h - elapsed % h);
+                    let next_m = due.checked_add(m - elapsed % m);
                     instance.next_tick_at = match (next_h, next_m) {
                         (Some(a), Some(b)) => Some(a.min(b)),
                         (a, b) => a.or(b),
@@ -1479,6 +1591,17 @@ impl<S: Clone> ConditionStore<S> {
                     continue;
                 }
             };
+            if debt > 0
+                && (!immediate || instance.next_tick_at != previous_next)
+                && let Some(next) = instance.next_tick_at
+            {
+                let interval = next.saturating_sub(due);
+                instance.next_tick_at = Some(due.saturating_add(interval.saturating_sub(debt)));
+                instance.tick_debt_us = debt.saturating_sub(interval);
+            }
+            if immediate {
+                instance.immediate_debt_us = 0;
+            }
             self.pass_ticks += 1;
             ticks.push(ConditionTick {
                 due,

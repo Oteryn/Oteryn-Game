@@ -2,13 +2,13 @@
 //! pinned Canary GameStore catalogue by `tools/content-schema/store-authoring/build_runtime_catalogue.py`).
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: String,
-    catalog_revision: String,
     #[serde(rename = "source")]
     _source: serde_json::Value,
     offers: Vec<Offer>,
@@ -62,7 +62,9 @@ pub(super) struct RuntimeCatalogue {
 impl RuntimeCatalogue {
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
     pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
-        let document: Document = serde_json::from_slice(bytes).ok()?;
+        let mut value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
+        let revision = catalogue_revision(&mut value)?;
+        let document: Document = serde_json::from_value(value).ok()?;
         if document.schema != "OTERYN_STORE_RUNTIME_CATALOGUE/v1" || document.offers.is_empty() {
             return None;
         }
@@ -119,7 +121,7 @@ impl RuntimeCatalogue {
             });
         }
         Some(Self {
-            rules: rules::Catalogue::admit(document.catalog_revision, offers).ok()?,
+            rules: rules::Catalogue::admit(revision, offers).ok()?,
             titles,
             item_revisions,
             hirelings,
@@ -139,10 +141,57 @@ impl RuntimeCatalogue {
     }
 }
 
+/// D2(b): lowercase hex SHA-256 of the entire catalogue JSON, with object keys
+/// sorted recursively and no insignificant whitespace. Non-ASCII remains raw UTF-8,
+/// never `\u` escapes. Numbers must be integers; floats (including `1.0` or `1e2`)
+/// are rejected everywhere, including metadata. The derived revision is not an input field.
+fn catalogue_revision(value: &mut serde_json::Value) -> Option<String> {
+    fn integers_only(value: &serde_json::Value) -> bool {
+        match value {
+            serde_json::Value::Number(n) => n.is_i64() || n.is_u64(),
+            serde_json::Value::Array(values) => values.iter().all(integers_only),
+            serde_json::Value::Object(values) => values.values().all(integers_only),
+            _ => true,
+        }
+    }
+    if !integers_only(value) { return None; }
+    value.sort_all_objects();
+    Some(Sha256::digest(serde_json::to_vec(value).ok()?).iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
 /// The Platform and wire spelling of a currency.
 pub(super) const fn currency_text(currency: rules::CurrencyKind) -> &'static str {
     match currency {
         rules::CurrencyKind::TibiaCoin => "TIBIA_COIN",
         rules::CurrencyKind::TransferableTibiaCoin => "TRANSFERABLE_TIBIA_COIN",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const UTF8: &[u8] = include_bytes!("../../../../../../tools/content-schema/store-authoring/samples/revision-utf8.json");
+
+    #[test]
+    fn storefix_revision_matches_python_utf8_fixture() -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = RuntimeCatalogue::from_json(UTF8).ok_or("catalogue")?;
+        assert_eq!(catalogue.rules.revision(), include_str!("../../../../../../tools/content-schema/store-authoring/samples/revision-utf8.sha256").trim());
+        Ok(())
+    }
+
+    #[test]
+    fn storefix_catalogue_rejects_all_float_numbers() -> Result<(), Box<dyn std::error::Error>> {
+        for number in ["1.0", "1.5", "1e2"] {
+            let mut value: serde_json::Value = serde_json::from_slice(UTF8)?;
+            value["source"]["a"] = serde_json::from_str(number)?;
+            assert!(RuntimeCatalogue::from_json(&serde_json::to_vec(&value)?).is_none(), "{number}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn storefix_dispatch_loads_generated_catalogues() {
+        assert!(super::super::CATALOGUE.is_some());
+        assert!(super::super::HIRELING_CATALOGUE.is_some());
     }
 }

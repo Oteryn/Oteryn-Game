@@ -6,6 +6,8 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
+    ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
     // 99902524e052f37574194466c2949c576e4ab269 (content/craft/runtime-item-profiles.json):
     // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;
@@ -164,6 +166,18 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Crystal 201189f (tools/content-migration/drome_item_profiles.py). All have
     // speed_bonus=0. P15 Forge reuses the existing Exalted Core 37110 and adds none.
     ("W22C-DROME", 21),
+    // W2V harvest/craft: 3134, 3651..=3653, 4848, 5462..=5466, 5470,
+    // 9594/9596/9598, 10426..=10429 and 17151/17153. Each is source-qualified
+    // by harvest-item-profiles.json from Crystal 201189f871d23597b82caf88fd611454a2ddefb8
+    // data/items/items.xml and appearances.dat; all twenty have speed_bonus=0.
+    ("W2V-HARVEST-CRAFT", 20),
+    // Batch 2 callback Items: 2859, 3217, 18931, 19084, 19089 and 19129.
+    // zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:
+    // data/items/items.xml:5996,8015,38639,39126,39147,39279 has no speed override;
+    // src/items/items.hpp:38 defaults ability speed to zero. The accepted
+    // quest_callback_profiles.py and quests_2_emperor_item_profiles.py producers
+    // retain that qualified zero for these six newly materializable profiles.
+    ("QUESTS-2", 6),
 ];
 
 #[test]
@@ -175,6 +189,15 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    for id in [2859, 3217, 18931, 19084, 19089, 19129] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified batch 2 profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     // This expected set comes from the independently pinned source catalogue and the
     // explicit Item admission gaps, never from the native profiles being tested.
     // These are known zero-speed Items, so the pre-existing unknown-speed set below

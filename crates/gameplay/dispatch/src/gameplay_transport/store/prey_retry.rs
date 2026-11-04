@@ -38,22 +38,28 @@ pub(super) async fn resume(
     let Some(retained) = owner.root.read_prey_expansion_purchase(
         owner.character, owner.holder, fence, journal.clone(),
     ).await.ok()? else {
-        return Some(Resume::Fresh);
+        // A bare journal without the original reservation cannot already have debited
+        // this permanent offer. Restore mode must not create that missing reservation.
+        return Some(if owner.store_purchases == StorePurchaseMode::DisabledRestoredBackup {
+            Resume::Completed(refusal(wire::StorePurchaseCode::PurchaseDisabled))
+        } else { Resume::Fresh });
     };
     let saved = match retained {
         PurchaseRequestState::Answered(answer) => answer,
         PurchaseRequestState::Sent => {
             // The first answer may have been lost after Platform debited the purchase.
             // Reconcile its original request id and immutable quote, never create a new id.
-            let answer = platform.lock().await.purchase(&PurchaseStoreOffer {
+            let answer = purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
                 purchase_request_id: uuid_text(&request.purchase_request_id),
                 account_id: uuid_text(&account),
                 character_id: uuid_text(fence.character_id.as_bytes()),
                 offer_key: binding.offer_key.clone(),
                 catalog_revision: binding.catalog_revision.clone(),
-                price: binding.price,
-                currency: currency_text(binding.currency).into(),
-            }).await.ok()?;
+                unit_price: binding.price.to_string(),
+                world_id: uuid_text(admitted.world_id.as_bytes()),
+                quantity: 1,
+                currency: "COINS".into(),
+            }, "ITEM").await)?;
             let answer = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
             owner.root.record_store_answer(journal.clone(), answer).await.ok()?
         }
@@ -91,25 +97,24 @@ async fn deliver(
     operation: &str,
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
-    let intent = platform.lock().await.read_intent(operation).await.ok()?;
+    let intent = platform.lock().await.read_intent(crate::native_admission_source::store::OperationKind::Deliver, operation).await.ok()?;
     let account_id = *binding.account_id.as_bytes();
     let world_id = *admitted.world_id.as_bytes();
-    if intent.operation_id != operation
+    if intent.quantity != Some(1)
+        || intent.operation_id != operation
         || intent.account_id != uuid_text(&account_id)
-        || intent.character_id.as_deref() != Some(uuid_text(binding.character_id.as_bytes()).as_str())
-        || intent.world_id.as_deref().is_some_and(|world| world != uuid_text(&world_id))
-        || intent.offer_key != OFFER_KEY
-        || intent.offer_key != binding.offer_key
-        || intent.catalog_revision != binding.catalog_revision
+        || intent.offer_key.as_deref() != Some(OFFER_KEY)
+        || intent.offer_key.as_deref() != Some(binding.offer_key.as_str())
+        || intent.catalog_revision.as_deref() != Some(binding.catalog_revision.as_str())
     {
         return None;
     }
     // The retained reservation already fixes this product's permanent effect. Consulting
     // a newer catalogue here would strand an accepted old operation or change its effect.
     let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
-        operation_id, account_id, world_id, fulfilment_unit_id: intent.fulfilment_unit_id,
+        operation_id, account_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone(),
     }).await?;
-    let bytes = serde_json::to_vec(&receipt).ok()?;
+    let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
     if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
         let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
     }

@@ -5,13 +5,15 @@ const MIN_INTERVAL_MS: u32 = 1_000;
 const MAX_DECREASING_AMOUNT: u32 = 2_500;
 const COUNT_DRAW: &str = "oteryn.condition.dot_count_draw.v1";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DamageSegment {
     pub count: u32,
     pub amount: u32,
     pub interval_ms: u32,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum DamageSchedule {
     Fixed {
         delayed: bool,
@@ -151,7 +153,8 @@ impl DamageSchedule {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DamageCursor {
     segments: Vec<DamageSegment>,
     at: usize,
@@ -159,6 +162,22 @@ pub struct DamageCursor {
     pub remaining: u32,
 }
 impl DamageCursor {
+    pub(super) fn valid(&self) -> bool {
+        let Some(current) = self.current() else {
+            return false;
+        };
+        self.segments.len() <= MAX_SEGMENTS
+            && self.left > 0
+            && self.left <= current.count
+            && self
+                .segments
+                .iter()
+                .all(|s| s.count > 0 && s.amount > 0 && s.interval_ms >= MIN_INTERVAL_MS)
+            && total(&self.segments[self.at + 1..])
+                .and_then(|sum| sum.checked_add(self.left.checked_mul(current.amount)?))
+                == Some(self.remaining)
+    }
+
     pub fn current(&self) -> Option<DamageSegment> {
         self.segments.get(self.at).copied()
     }

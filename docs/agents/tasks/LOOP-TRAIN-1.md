@@ -60,16 +60,16 @@ Client UI is outside this allocation.
 |---|---|---|
 | Only Current Premium may select a statue skill and log out | Accepted OFFLINE0 §6; `training-content-1/facts.json`, `training.offline` | Real command 66 resolves a pinned same-floor reachable PZ statue, refuses houses/PvP/PvE locks/cooldown and commits selection with logout; Free and NotActivated refused in PG |
 | Next login settles once after at least 600 seconds offline | Accepted OFFLINE0 §§3–5 | Immutable DB session clock + explicit predecessor, latest build-carrying logout check, capped pool/time, clearing selection, shielding/native curves and stamina; crash/missing predecessor grants no offline gain |
-| Offline gain coefficients and percent scale | OFFLINE0 candidate formula; Reference `gameplay-source-reconciliation.json` withdrawal of runtime selection | **PROVISIONAL / ENABLED (2026-10-29)**; vocation/skill inputs loaded from `rulesets/training/provisional-v1.json`; Global offline coefficients in progression; native formula used for progress/percent |
+| Offline gain coefficients and percent scale | OFFLINE0 candidate formula; Reference `gameplay-source-reconciliation.json` withdrawal of runtime selection | **PROVISIONAL / ENABLED (2026-10-29)**; vocation/skill inputs loaded from `rulesets/training/crystal-201189f-v1.json`; Global offline coefficients in progression; native formula used for progress/percent |
 | Exercise starts on a public dummy, ticks every two seconds and retires on the last charge | Accepted EXERCISE0 §§2–5; staged item charges PROVEN | Real command 67 starts/status/stops; cadence catches up at most 30 ticks, checkpoints at 60 seconds/level/stop, and composes charge/build/last-charge retirement in one TX; 500-charge PG scenario passes |
-| Exercise gain per charge | Retained Canary `52550d5` training/vocation sources; reconciliation records melee/bow conflicts and unqualified final magic gain | **PROVISIONAL / ENABLED (2026-10-29)**; data values 600 mana / 7 skill tries remain donor candidates with the named Global gaps below |
+| Exercise gain, skill mapping and charges | Crystal `201189f` exercise script and `items.xml` | Donor-verified 600 mana or 7 skill tries per charge; sword/axe/club/distance/magic mappings and 500/1800/14400 charge tiers are enforced by the production training context. |
 | Inventory sources and item selection | EXERCISE0 ordinary carried charge weapons | Basic path accepts direct main-backpack entries and public non-house dummies; nested/equipment sources refuse. 23 known item profiles admitted; regular wraps 50293 remain unavailable because source movable fact is UNKNOWN |
 | Training interruptions and durability | EXERCISE0 §§3–5 | Activity other than chat/look/status stops training; actor-end saves flush; old connection generation cannot stop the current run; unknown saves block control-loss detachment; exact pending checkpoint survives an unknown outcome in-process; restart reloads committed gain/charges without restarting training |
 
 ### Owner-selected implementation gate (2026-10-29, WAVE-B/B1)
 
 Owner decision WAVE_A_PLAN §9 Q3 opens training in the shipped configuration.
-`rulesets/training/provisional-v1.json` has `enabled: true`; the environment opt-in
+`rulesets/training/crystal-201189f-v1.json` has `enabled: true`; the environment opt-in
 has been removed. The ruleset's `enabled` flag controls availability through the
 existing training context, including capability 54 and commands 66–67. Native item
 policies, pinned statue/dummy definitions and a native training formula remain required.
@@ -86,7 +86,7 @@ retained official manual `CIPSOFT_OFFICIAL`, Crystal `OTS_HYPOTHESIS_ONLY`.
 
 **Named open values: non-magic exercise gains (including fractional accumulation and
 house-dummy rounding), and independent Global confirmation of per-vocation ticks.**
-Exercise/vocation candidates remain unchanged and `provisional: true`.
+Exercise values now follow the pinned Crystal donor; offline vocation values retain their separate Global reconciliation status.
 The Wiki specifies fractional melee/wrap gains, conflicting bow rates on the same page,
 and shielding rates different from Crystal's uniform integer 7. It does not establish
 Global's integer per-charge conversion/accumulation rule. The Wiki offline table takes
@@ -116,7 +116,7 @@ The Reference reconciliation record is unchanged. Publication/review belong to t
 ## Implementation locations
 
 - L3: `crates/gameplay/progression/src/loop_training.rs` and child tests; data in
-  `rulesets/training/provisional-v1.json`.
+  `rulesets/training/crystal-201189f-v1.json`.
 - L4: `crates/gameplay/durability/src/durability/{loop_training,exercise_training,offline_training_state}.rs`;
   existing D88 initializer extracted to `progression_initialization.rs` for same-TX use.
   Small integration changes in build, recovery, revision sequencer, terminal release and timed-item owners.
@@ -199,11 +199,10 @@ Writer obligations:
 
 ## Unfinished / deliberately gated
 
-- Rate reconciliation remains **PROVISIONAL / ENABLED** under the 2026-10-29 owner decision;
-  named Global value gaps are listed above. The environment opt-in is removed.
+- Offline-rate reconciliation retains the named Global value gaps above. Exercise values and charge tiers are pinned to Crystal `201189f`; the environment opt-in is removed.
 - Full EXERCISE0 inventory parity: nested/equipment sources, movement/trade of an already checkpointed
   timed item (existing ITEM-LOOP guard), regular wraps 50293 with UNKNOWN movable evidence,
-  house/expert dummies, NPC sales and additional world placements are not implemented here.
+  NPC sales and additional world placements are not implemented here.
   Unsupported sources/targets fail closed. Known statue/dummy definitions and public placements can
   be used with the shipped ruleset; the PG mini World proves both target types through real dispatch.
 - No client UI, publication, frozen candidate, independent exact-head review or GitHub CI evidence.
@@ -299,7 +298,7 @@ No bound-policy paid review was emitted by this direct worker.
 - `docs/contracts/resource-limits/entries/0841-LOOPTRAIN1-RL-RESULT-BYTES.json`
 - `docs/contracts/resource-limits/entries/0842-LOOPTRAIN1-RL-CONFIG-BYTES.json`
 - `docs/contracts/resource-limits/entries/0843-LOOPTRAIN1-RL-CATCHUP-TICKS.json`
-- `rulesets/training/provisional-v1.json`
+- `rulesets/training/crystal-201189f-v1.json`
 - `tools/content-migration/loop_training_profiles.py`
 - `tools/content-migration/register_spell_families.py`
 

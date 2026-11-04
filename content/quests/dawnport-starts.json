@@ -1,0 +1,522 @@
+{
+  "schema": "OTERYN_QUEST_STATE_LOWERING/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "family": "Quest",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "authoring_sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 161,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 180,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 185,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 170,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 200,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 210,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/mr_morris.lua",
+      "line": 220,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/woblin.lua",
+      "line": 92,
+      "scope": "EXACT_NATIVE_NPC_BRANCH"
+    }
+  ],
+  "counts": {
+    "transitions": 8,
+    "tracks": 12
+  },
+  "quests": [
+    {
+      "quest": "oteryn:quest.dawnport_quest",
+      "source_quest": "Crystal201189f pinned source",
+      "completion": "NOT_COMPLETED_BY_START_ADAPTER",
+      "tracks": [
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/herb_flower",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/herb_flower"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morris_goblin",
+          "max": 2,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morris_goblin"
+        },
+        {
+          "bounds_basis": "source_storage_width",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morris_goblin_count",
+          "max": 2147483647,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morris_goblin_count"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morris_minos",
+          "max": 2,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morris_minos"
+        },
+        {
+          "bounds_basis": "source_storage_width",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morris_minos_count",
+          "max": 2147483647,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morris_minos_count"
+        },
+        {
+          "bounds_basis": "source_storage_width",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morris_troll_count",
+          "max": 2147483647,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morris_troll_count"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/morrisk_troll",
+          "max": 2,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/morrisk_troll"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/the_dorm_key",
+          "max": 5,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/the_dorm_key"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/the_lost_amulet",
+          "max": 3,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/the_lost_amulet"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/the_rare_herb",
+          "max": 3,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/the_rare_herb"
+        },
+        {
+          "bounds_basis": "observed_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/the_stolen_log_book",
+          "max": 2,
+          "min": 0,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/the_stolen_log_book"
+        },
+        {
+          "bounds_basis": "explicit_crystal_values",
+          "initial": 0,
+          "key": "oteryn:quest-progress/quest/u10_55/dawnport/torn_log_book",
+          "min": 0,
+          "max": 1,
+          "quest": "oteryn:quest.dawnport_quest",
+          "source_key": "canary:quest-progress/quest/u10_55/dawnport/torn_log_book"
+        }
+      ],
+      "transitions": [
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-the-lost-amulet",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_lost_amulet",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              1
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 161,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-the-rare-herb",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_rare_herb",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/herb_flower",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              3
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 180,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-the-dorm-key",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_dorm_key",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              4
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 185,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-logbook",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/torn_log_book",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "ADD",
+                "value": 0
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_stolen_log_book",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              2
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 170,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-morrisk-troll",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morrisk_troll",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morris_troll_count",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 0
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              6
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 200,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-morris-goblin",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morris_goblin",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morris_goblin_count",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 0
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              7
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 210,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/start-morris-minos",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morris_minos",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/morris_minos_count",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 0
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/mr_morris",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              8
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/mr_morris.lua",
+            "line": 220,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/classic/dawnport/find-old-nasty",
+          "quest": "oteryn:quest.dawnport_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_dorm_key",
+              "from": {
+                "op": "EQ",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 2
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/woblin",
+            "keywords": [
+              "reward"
+            ],
+            "topics": [
+              1
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/woblin.lua",
+            "line": 92,
+            "scope": "EXACT_NATIVE_NPC_BRANCH"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -13,10 +13,11 @@ use super::*;
 /// complete their prerequisite closure on shipped bundle Worlds.
 /// 272 adds live Atelier resource queries to the existing 148 panel. The mechanic panels added
 /// by CLIENT-E2E-1 advertise their typed command routes so the shipped session loop and the
-/// qualification client negotiate the same feature set. NPC shop and hireling remain opt-in
-/// until their prerequisite NPC service and staff routes are implemented by the client session.
+/// qualification client negotiate the same feature set. NPC service and staff use the registry
+/// raw routes; negotiating staff never grants the signed-envelope authority it requires.
 /// 92 consumes ordered server status, warning and advance messages on domain 57.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
+    oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
     CAPABILITY_CHAT_V1,
@@ -38,6 +39,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     guild::CAPABILITY_GUILD_V1,
     party::CAPABILITY_PARTY_V1,
     vip::CAPABILITY_VIP_V1,
+    oteryn_protocol_oteryn::staff::CAPABILITY_STAFF_V1,
     player_trade::CAPABILITY_PLAYER_TRADE_V1,
     stash::CAPABILITY_STASH_V1,
     market::CAPABILITY_MARKET_V1,
@@ -45,6 +47,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     task_board::CAPABILITY_TASK_BOARD_V1,
     // CL26s1: private-channel prerequisite of public channels (259); ids stay ascending.
     chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+    oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     // CL26s4: boss encounter prerequisite of boss rewards (224).
@@ -56,6 +59,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::item_forge::CAPABILITY_ITEM_FORGE_V1,
     oteryn_protocol_oteryn::depot_search::CAPABILITY_DEPOT_SEARCH_V1,
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_V1,
+    hireling::CAPABILITY_HIRELING_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
@@ -71,11 +75,14 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     chat::public_channels::CAPABILITY_CHAT_PUBLIC_CHANNELS_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
+    oteryn_protocol_oteryn::appearance::CAPABILITY_EMPTY_OUTFIT_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+    oteryn_protocol_oteryn::staff::CAPABILITY_STAFF_V1,
     // CLIENT-E2E-1 adapters use gated_command for their typed exchanges too.
     CAPABILITY_BESTIARY_CHARMS_V1,
     CAPABILITY_ACHIEVEMENT_NOTICES_V1,

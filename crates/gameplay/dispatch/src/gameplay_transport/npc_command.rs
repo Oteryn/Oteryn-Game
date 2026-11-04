@@ -35,16 +35,20 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod classic_quests;
 mod coin_exchange;
 mod endgame;
 mod grizzly;
 mod grizzly_shop;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod liquid_black;
 mod monk;
 mod premium_purchase;
 mod service_context;
 mod session_transfer;
+mod threatened_dreams;
+mod wrath_sleeping_dragon;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
@@ -66,6 +70,10 @@ struct SessionNpc {
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
     endgame: Option<endgame::Pending>,
+    classic: Option<classic_quests::Pending>,
+    liquid_black: Option<liquid_black::State>,
+    threatened_dreams: Option<threatened_dreams::Pending>,
+    dragon: wrath_sleeping_dragon::Conversation,
     hireling: Option<hireling_services::State>,
 }
 
@@ -540,10 +548,16 @@ impl NpcConversations {
                 inventory_changed: false,
                 disposition: Disposition::NotInRange,
                 window: None,
-                // The walk-away closes the conversation here, so the farewell is sent now: the
+                // The walk-away closes the conversation here, so its line is sent now: the
                 // follow tick sees nothing left to close (NPC-0 section 4.1).
                 conversation: end(chat, session, intent).map(|mut closed| {
-                    closed.lines.push(entry.farewell().to_owned());
+                    let line = oteryn_gameplay_npc::quest_greetings::walkaway(&npc.key)
+                        .unwrap_or(entry.farewell());
+                    if let Some(name) = chat.speaker_name(session) {
+                        closed.lines.push(
+                            oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name),
+                        );
+                    }
                     closed
                 }),
             };
@@ -725,6 +739,30 @@ pub(super) async fn npc_bank_talk(
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return classic_quests::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) =
+        liquid_black::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return liquid_black::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = threatened_dreams::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return threatened_dreams::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) =
+        wrath_sleeping_dragon::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
