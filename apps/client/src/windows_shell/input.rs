@@ -14,6 +14,7 @@ impl Application {
                 || play.link.wheel_input(events)
                 || play.link.exiva_input(events)
                 || play.link.loyalty_skills_input(events)
+                || play.link.guild_input(events)
                 || play.link.stash_input(events)
                 || play.link.quest_input(events)
                 || play.link.boss_difficulty_input(events)

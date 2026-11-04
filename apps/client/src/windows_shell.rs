@@ -359,7 +359,7 @@ impl ApplicationHandler for Application {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let status = play.view.combat_status();
             if status != play.status {
-                window.set_title(&format!("Oteryn — {status}"));
+                window.set_title(&format!("Oteryn — {status} — Ctrl+G: Guild"));
                 play.status = status;
             }
         }
