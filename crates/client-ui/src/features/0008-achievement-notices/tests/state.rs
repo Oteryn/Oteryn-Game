@@ -13,10 +13,8 @@ fn earned(name: &str, facts: u32) -> oteryn_client_runtime::achievement_notices:
 
 #[test]
 fn pushed_achievement_shows_popup_and_one_advancement_line() {
-    let mut notices = AchievementNotices {
-        selected: true,
-        ..Default::default()
-    };
+    let mut notices = AchievementNotices::default();
+    notices.selected = true;
     apply(&mut notices, earned("Allow Cookies?!", 1));
     let expected = "Congratulations! You earned the achievement \"Allow Cookies?!\".";
     assert_eq!(popup_text(&notices).as_deref(), Some(expected));
@@ -32,10 +30,8 @@ fn pushed_achievement_shows_popup_and_one_advancement_line() {
 
 #[test]
 fn advancement_log_is_bounded_and_keeps_the_newest_lines() {
-    let mut notices = AchievementNotices {
-        selected: true,
-        ..Default::default()
-    };
+    let mut notices = AchievementNotices::default();
+    notices.selected = true;
     for index in 0..=MAX_ADVANCEMENT_LOG_LINES {
         apply(
             &mut notices,
