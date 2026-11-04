@@ -25,8 +25,12 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         tx.execute("SET LOCAL session_replication_role=replica").await?;
         sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,ownership_generation,revision,acl_revision,acquisition_receipt_ref,paid_until) VALUES($1::uuid,$2,'private_house',3,100,decode(repeat('01',32),'hex'),$3::uuid,$4::uuid,1,1,1,game_character_uuid_v7(),statement_timestamp())")
             .bind(&world).bind(HOUSE).bind(&character).bind(&account).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES($1::uuid,$2,$3::uuid,1,game_character_uuid_v7())")
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) SELECT $1::uuid,$2,$3::uuid,1,acquisition_receipt_ref FROM game_house_properties WHERE world_id=$1::uuid AND house_key=$2")
             .bind(&world).bind(HOUSE).bind(&character).execute(&mut *tx).await?;
+        // game_house_property_proven (0143/0228) checks every UPDATE of this house at commit:
+        // the canonical owner row carries the property's receipt and the account holds its slot.
+        sqlx::query("INSERT INTO game_account_housing_slots(account_id,world_id,house_key) VALUES($1::uuid,$2::uuid,$3)")
+            .bind(&account).bind(&world).bind(HOUSE).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_house_rent_state VALUES($1::uuid,$2,0,statement_timestamp()-interval '1 day')")
             .bind(&world).bind(HOUSE).execute(&mut *tx).await?;
         tx.commit().await?;
