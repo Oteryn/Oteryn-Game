@@ -98,12 +98,15 @@ fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     })
 }
 
-struct TileEntries {
-    protection_zone: bool,
-    entries: Vec<(u64, EntryFacts)>,
+pub(super) struct TileEntries {
+    pub(super) protection_zone: bool,
+    pub(super) entries: Vec<(u64, EntryFacts)>,
 }
 
-fn tile_entries(map: &BundleMap, position: MovementLocalPosition) -> Option<TileEntries> {
+pub(super) fn tile_entries(
+    map: &BundleMap,
+    position: MovementLocalPosition,
+) -> Option<TileEntries> {
     let pos = tile_position(position)?;
     let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
     let mut ordinal = 0_u8;
@@ -126,7 +129,7 @@ fn tile_entries(map: &BundleMap, position: MovementLocalPosition) -> Option<Tile
     })
 }
 
-fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };

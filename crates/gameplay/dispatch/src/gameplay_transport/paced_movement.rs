@@ -3,6 +3,7 @@ use super::*;
 
 mod autowalk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
+pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
 
