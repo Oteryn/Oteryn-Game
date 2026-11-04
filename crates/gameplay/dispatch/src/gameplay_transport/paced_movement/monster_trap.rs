@@ -260,7 +260,7 @@ mod tests {
                 reward_boss: Some(false),
                 blocked_by_nearby_players: false,
             }],
-        ))?;
+        )?)?;
         let rat = runtime
             .admit_pinned_monster_lab_creature(at, "oteryn:creature.rat", 1_000)
             .map_err(|error| format!("{error:?}"))?;
