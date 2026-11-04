@@ -1,7 +1,7 @@
 use super::*;
 use crate::domain::timed_item::TimedValues;
 use crate::durability::character_build::BuildOccurrence;
-use crate::durability::exercise_training::{ExerciseCheckpoint, TrainingWeapon};
+use crate::durability::exercise_training::{ExerciseCheckpoint, ExerciseDummyKey, TrainingWeapon};
 use crate::durability::item_timed_state::TimedDefinitionFacts;
 use oteryn_protocol_oteryn::loop_training::ExerciseIntent;
 
@@ -13,12 +13,16 @@ pub(super) struct Run {
     family: usize,
     gain_per_charge: u64,
     dummy: ItemKey,
+    house_dummy: Option<ExerciseDummyKey>,
     durable: TrainingWeapon,
     spent: u32,
     next_tick: u64,
     checkpoint_due: u64,
     pending: Option<(CurrentCharacterGameplayFence, ExerciseCheckpoint)>,
 }
+
+// Crystal 201189f exercise_training_weapons.lua:1,200-203,211.
+const EXERCISE_START_EXHAUST_US: u64 = 10_000_000;
 impl Run {
     pub(super) fn matches_session(&self, admitted: AdmittedSession) -> Option<bool> {
         (admitted.runtime_actor == Some(self.actor) && admitted.item_fence == Some(self.fence))
@@ -91,6 +95,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 state.last_weapon = Some(run.durable.clone());
                 if running {
                     state.exercise = Some(run);
+                } else {
+                    self.release_house_dummy(&run).await;
                 }
                 true
             }
@@ -99,6 +105,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false
             }
         }
+    }
+    async fn release_house_dummy(&self, run: &Run) {
+        let Some(key) = run.house_dummy else { return };
+        let Some(fence) = self.training_fence(run.fence).await else {
+            return;
+        };
+        let _ = self
+            .root
+            .release_exercise_dummy(self.character, self.holder, fence, key)
+            .await;
     }
     async fn advance_exercise(&self, run: &mut Run, stop: bool) -> Option<bool> {
         let context = self.training_context()?;
@@ -120,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if matches!(run.family, 0 | 5) { 7 } else { 1 },
             )
             .await
-            .and_then(|key| context.rates.dummies.get(&key))
+            .and_then(|target| context.rates.dummies.get(&target.production_key))
             .is_some_and(|percentage| {
                 context.rates.exercise_gain(run.family, *percentage) == Ok(run.gain_per_charge)
             });
@@ -235,6 +251,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         run.spent = 0;
         run.durable = result.weapon;
         run.checkpoint_due = now.checked_add(60_000_000)?;
+        if let Some(key) = run.house_dummy
+            && !self
+                .root
+                .reserve_exercise_dummy(self.character, self.holder, fence, key)
+                .await
+                .ok()?
+        {
+            return Some(false);
+        }
         // Replays are historical completion. Only independently current authority may rebase live state.
         if self.training_fence(run.fence).await.is_none() {
             return Some(false);
@@ -309,7 +334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(TrainingResult::REFUSED);
             };
             let family = weapon_profile.family;
-            let Some(key) = self
+            let Some(target) = self
                 .training_target(
                     actor,
                     command,
@@ -323,7 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(gain_per_charge) = context
                 .rates
                 .dummies
-                .get(&key)
+                .get(&target.production_key)
                 .and_then(|percentage| context.rates.exercise_gain(family, *percentage).ok())
             else {
                 return Some(TrainingResult::REFUSED);
@@ -360,7 +385,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .ok()?;
-            state.ready_at_us = now.checked_add(30_000_000)?;
+            if let Some(key) = target.house_dummy {
+                match self
+                    .root
+                    .reserve_exercise_dummy(self.character, self.holder, fence, key)
+                    .await
+                {
+                    Ok(true) => {}
+                    Ok(false) => return Some(TrainingResult::REFUSED),
+                    Err(_) => return None,
+                }
+            }
+            state.ready_at_us = now.checked_add(EXERCISE_START_EXHAUST_US)?;
             state.exercise = Some(Run {
                 actor,
                 fence: item,
@@ -369,6 +405,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 family,
                 gain_per_charge,
                 dummy,
+                house_dummy: target.house_dummy,
                 durable,
                 spent: 0,
                 next_tick: now.checked_add(2_000_000)?,
@@ -404,6 +441,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn exercise_start_exhaust_is_crystals_ten_seconds() {
+        assert_eq!(super::EXERCISE_START_EXHAUST_US, 10_000_000);
+    }
+
     #[test]
     fn status_charge_count_includes_uncheckpointed_ticks() {
         assert_eq!(super::remaining_charges(500, 0), 500);

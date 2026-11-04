@@ -688,7 +688,31 @@ fn scenario() -> TestResult {
 
         // Restart the same public dummy after its cooldown, then drive the real owner cadence
         // through every remaining charge, including the atomic last-charge expiry BURN.
-        owner.clock_origin -= Duration::from_secs(30);
+        owner.clock_origin -= Duration::from_secs(7);
+        let receipts_before: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        let refused = crate::gameplay_transport::loop_training::wire::dispatch(
+            &owner,
+            admitted,
+            UseCommand {
+                command_id: 30,
+                ..command
+            },
+            67,
+            &start,
+            Some(&items),
+        )
+        .await
+        .ok_or("nine-second restart refusal")?;
+        assert_eq!(refused.disposition, 2);
+        let receipts_after: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(receipts_after, receipts_before);
+        owner.clock_origin -= Duration::from_secs(1);
         let result = crate::gameplay_transport::loop_training::wire::dispatch(
             &owner,
             admitted,
