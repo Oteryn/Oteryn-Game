@@ -286,7 +286,7 @@ fn scenario() -> TestResult {
                 .0,
             CommandStatus::Rejected
         );
-        // Epoch-zero draw is server-owned. This World has no random winner at epoch zero.
+        // Epoch selection has no random winner at all.
         assert_eq!(initial[28], 1, "fixture World must allow a donation");
         let before_donation = admitted;
         let (_, donated) =
@@ -366,7 +366,7 @@ fn scenario() -> TestResult {
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *snapshot)
             .await?;
-        sqlx::query("UPDATE game_world_cyclopedia SET pool=10000000")
+        sqlx::query("UPDATE game_world_cyclopedia SET pool=25000000")
             .execute(&mut *snapshot)
             .await?;
         snapshot.commit().await?;
@@ -384,26 +384,79 @@ fn scenario() -> TestResult {
         owner.reset_epoch = 1;
         let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
         assert_eq!(epoch[28], 2);
-        assert_eq!(pool(&epoch), 0);
+        assert_eq!(pool(&epoch), 15_000_000);
         // PAR-W12: Crystal `discovery_system.lua:191` DONATION_GOAL = 10,000,000 (MATCH, `>=`).
         let (winner, before): (bool, i64) = sqlx::query_as(
             "SELECT donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=1",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!((winner, before), (true, 10_000_000));
-        let (_, frozen_pool) =
+        assert_eq!((winner, before), (true, 25_000_000));
+        let (_, donated_while_improved) =
             support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
-        assert_eq!(
-            frozen_pool[0], 7,
-            "current improved area refuses donation atomically"
-        );
+        assert_eq!(donated_while_improved[0], 0);
+        assert_eq!(pool(&donated_while_improved), 15_000_001);
+        let (receipt_before, receipt_after): (i64, i64) = sqlx::query_as(
+            "SELECT pool_before,pool_after FROM game_character_cyclopedia_receipts WHERE donation=1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((receipt_before, receipt_after), (15_000_000, 15_000_001));
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
                 .fetch_one(&h.pool)
                 .await?,
-            990
+            989
         );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_bank_entries WHERE kind=5"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            2
+        );
+        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,2,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=1").execute(&h.pool).await?;
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2")
+            .execute(&h.pool)
+            .await?;
+        owner.reset_epoch = 2;
+        let (_, epoch_two) = support::exchange(&owner, &mut admitted, 21, 72, &[]).await?;
+        assert_eq!(epoch_two[28], 2);
+        assert_eq!(pool(&epoch_two), 5_000_001);
+        let (improved, winner, before): (bool, bool, i64) = sqlx::query_as(
+            "SELECT improved,donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=2",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((improved, winner, before), (true, true, 15_000_001));
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let (point, _, live) = runtime.spawn_point_creatures()[0];
+            assert!(runtime.kill_creature_for_test(live.ok_or("home rat")?));
+            runtime
+                .drive_spawn_respawns(1000, |_, _| false)
+                .map_err(debug)?;
+            assert_eq!(
+                runtime.pending_respawn(point).map(|p| p.due_micros),
+                Some(30_001_000),
+                "native 60-second home delay gets the persisted factor two"
+            );
+        }
+        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,3,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=2").execute(&h.pool).await?;
+        sqlx::query("UPDATE game_world_reset_active SET reset_epoch=3")
+            .execute(&h.pool)
+            .await?;
+        owner.reset_epoch = 3;
+        let (_, epoch_three) = support::exchange(&owner, &mut admitted, 22, 72, &[]).await?;
+        assert_eq!(epoch_three[28], 1);
+        assert_eq!(pool(&epoch_three), 5_000_001);
+        let (improved, winner): (bool, bool) = sqlx::query_as(
+            "SELECT improved,donation_winner FROM game_world_cyclopedia_epochs WHERE epoch=3",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((improved, winner), (false, false));
         // A stale socket reserves its command before the Bank prelude refuses it, so its
         // unresolved original ends this GameSession's command stream (SESSION-INGRESS-1):
         // exercise it last.
@@ -422,7 +475,7 @@ fn scenario() -> TestResult {
             sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
                 .fetch_one(&h.pool)
                 .await?,
-            990
+            989
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
@@ -430,28 +483,15 @@ fn scenario() -> TestResult {
             )
             .fetch_one(&h.pool)
             .await?,
-            1
+            2
         );
-        {
-            let mut runtime = owner.runtime.lock().await;
-            let (point, _, live) = runtime.spawn_point_creatures()[0];
-            assert!(runtime.kill_creature_for_test(live.ok_or("home rat")?));
-            runtime
-                .drive_spawn_respawns(1000, |_, _| false)
-                .map_err(debug)?;
-            assert_eq!(
-                runtime.pending_respawn(point).map(|p| p.due_micros),
-                Some(30_001_000),
-                "native 60-second home delay gets the persisted factor two"
-            );
-        }
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_world_cyclopedia_epochs WHERE donation_winner"
             )
             .fetch_one(&h.pool)
             .await?,
-            1
+            2
         );
         drop(owner);
         drop(authority);

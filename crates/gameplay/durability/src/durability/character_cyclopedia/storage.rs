@@ -1,5 +1,15 @@
 use super::*;
 
+pub(super) const DONATION_GOAL: u64 = 10_000_000;
+
+pub(super) fn select_epoch(pool: u64) -> (bool, u64) {
+    if pool >= DONATION_GOAL {
+        (true, pool - DONATION_GOAL)
+    } else {
+        (false, pool)
+    }
+}
+
 pub(super) async fn load(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
@@ -45,33 +55,21 @@ pub(super) async fn world(
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut ***tx).await? {
         return Ok((pool,improved));
     }
-    let previous:bool=sqlx::query_scalar("SELECT COALESCE((SELECT improved FROM game_world_cyclopedia_epochs WHERE world_id=encode($1,'hex')::uuid AND epoch=$2::text::numeric-1),false)")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut ***tx).await?;
-    // Oteryn default, not Reference-qualified: donation first; one-area catalogue
-    // makes ties impossible. 33/100 deterministic World/epoch draw, prior winner excluded.
-    let donation = !previous && pool >= 10_000_000;
-    let mut hash = Sha256::new();
-    hash.update(b"improved_respawn_random:oteryn-basic-v1");
-    hash.update(world.as_bytes());
-    hash.update(epoch.to_be_bytes());
-    let draw = u64::from_be_bytes(
-        hash.finalize()[..8]
-            .try_into()
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
-    );
-    let improved = !previous && (donation || draw % 100 < 33);
+    let (improved, pool_after) = select_epoch(pool);
     sqlx::query("INSERT INTO game_world_cyclopedia_epochs(world_id,epoch,improved,donation_winner,pool_before) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5)")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(improved).bind(donation).bind(pool as i64).execute(&mut ***tx).await?;
-    if donation {
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(improved).bind(improved).bind(pool as i64).execute(&mut ***tx).await?;
+    if improved {
         sqlx::query(
-            "UPDATE game_world_cyclopedia SET pool=0 WHERE world_id=encode($1,'hex')::uuid",
+            "UPDATE game_world_cyclopedia SET pool=$2 WHERE world_id=encode($1,'hex')::uuid",
         )
         .bind(world.as_bytes().as_slice())
+        .bind(pool_after as i64)
         .execute(&mut ***tx)
         .await?;
     }
-    Ok((if donation { 0 } else { pool }, improved))
+    Ok((pool_after, improved))
 }
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn save(
     tx: &mut Type2Transaction<'_>,
@@ -105,4 +103,25 @@ pub(super) async fn save(
         .await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::select_epoch;
+
+    #[test]
+    fn w12_selection_carries_excess_over_goal() {
+        assert_eq!(select_epoch(25_000_000), (true, 15_000_000));
+        assert_eq!(select_epoch(10_000_000), (true, 0));
+    }
+
+    #[test]
+    fn w12_selection_has_no_random_or_winner_exclusion() {
+        assert_eq!(select_epoch(9_999_999), (false, 9_999_999));
+        assert_eq!(select_epoch(0), (false, 0));
+        let (first_improved, pool_after) = select_epoch(20_000_000);
+        let (second_improved, _) = select_epoch(pool_after);
+        assert!(first_improved);
+        assert!(second_improved);
+    }
 }
