@@ -116,3 +116,6 @@ impl SoundCatalog {
 #[cfg(windows)]
 #[path = "native.rs"]
 pub mod native;
+
+#[cfg(windows)]
+pub use native::{AudioOutput, NativeAudio};

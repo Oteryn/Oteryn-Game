@@ -121,8 +121,7 @@ impl PlayView {
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
-                    let room = MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
-                    self.sounds.extend(pushed.sounds.into_iter().take(room));
+                    self.enqueue(pushed.sounds);
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
                 PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
@@ -164,10 +163,7 @@ mod session_stepper;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
-use feature_0023_presentation::state::MAX_PENDING_SOUNDS;
-#[cfg(windows)]
-pub use feature_0023_presentation::state::native::AudioOutput;
-pub use feature_0023_presentation::state::{AudioSettings, SoundCatalog, SoundCue, decode_mapping};
+pub use feature_0023_presentation::state::*;
 
 pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;

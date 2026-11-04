@@ -75,3 +75,51 @@ impl AudioOutput {
         Ok(())
     }
 }
+
+/// Process-local audio preferences and output owned by the native presentation feature.
+pub struct NativeAudio {
+    output: Result<AudioOutput, String>,
+    settings: AudioSettings,
+}
+
+impl Default for NativeAudio {
+    fn default() -> Self {
+        Self {
+            output: AudioOutput::from_environment(),
+            settings: AudioSettings::default(),
+        }
+    }
+}
+
+impl NativeAudio {
+    pub fn restore(&self, view: &mut crate::play::PlayView) {
+        let mut preferences = view.preferences().clone();
+        preferences.audio = self.settings;
+        let _ = view.set_preferences(preferences);
+    }
+
+    pub fn stop(&mut self) {
+        if let Ok(audio) = &mut self.output {
+            audio.stop();
+        }
+    }
+
+    /// Drains transient cues and formats native feedback on the shell thread.
+    pub fn status(&mut self, view: &mut crate::play::PlayView) -> String {
+        self.settings = view.preferences().audio;
+        let cues = view.take_sound_cues();
+        let status = match &mut self.output {
+            Ok(audio) => {
+                audio.update(self.settings, cues);
+                audio.status().unwrap_or("ready")
+            }
+            Err(error) => error.as_str(),
+        };
+        format!(
+            "{} | Audio {}%{} ({status}); F10 mute, F11/F12 volume",
+            view.combat_status(),
+            self.settings.master_volume,
+            if self.settings.muted { " muted" } else { "" }
+        )
+    }
+}

@@ -1,13 +1,11 @@
 //! Headless C28 scenario through the real native client's feature reducer and input.
 use oteryn_client::play::{PlayView, play_channel};
-use oteryn_dev_client::{AppliedDelta, SessionEvent};
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
-use oteryn_protocol_oteryn::presentation::{
-    PresentationEvent, PresentationEventKind, PresentationSource, decode_presentation_batch,
-    encode_presentation_batch,
-};
-use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use oteryn_renderer::TileCoord;
+use oteryn_session::{
+    ActorPosition, AppliedDelta, PresentationEvent, PresentationEventKind, PresentationSource,
+    SessionEvent,
+};
 
 #[test]
 fn audio_sound_batch_reaches_native_projection_and_mute_retains_master_volume()
@@ -26,14 +24,12 @@ fn audio_sound_batch_reaches_native_projection_and_mute_retains_master_volume()
             source: PresentationSource::Creatures,
         },
     };
-    let bytes = encode_presentation_batch(&[event]).map_err(|e| format!("{e:?}"))?;
-    let decoded = decode_presentation_batch(&bytes).map_err(|e| format!("{e:?}"))?;
     let (link, _commands, outbox) = play_channel();
     outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
         server_sequence: 41,
         base_revision: 0,
         new_revision: 1,
-        value: decoded,
+        value: vec![event],
     })]);
     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
     assert!(view.tick(&link).is_ok());
