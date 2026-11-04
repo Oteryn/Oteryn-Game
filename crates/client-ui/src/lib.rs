@@ -6,6 +6,9 @@ include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
 pub mod boss_difficulty;
 #[path = "features/0230-browse-field/mod.rs"]
 pub mod browse_field;
+/// Local speech and named private messages.
+#[path = "features/0007-chat/mod.rs"]
+pub mod chat;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
 #[path = "features/0199-cyclopedia-character/mod.rs"]

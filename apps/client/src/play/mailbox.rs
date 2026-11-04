@@ -113,6 +113,7 @@ pub(super) struct Mailbox {
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     // CL26s1
+    pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_public_shutdown: bool,
     // CL26s2: player-typing panel state and native-window shutdown.

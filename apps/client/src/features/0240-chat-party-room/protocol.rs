@@ -14,6 +14,11 @@ impl Outbox {
     ) {
         if matches!(intent, oteryn_session::ChatIntent::Party { .. }) {
             self.chat_party_room_result();
+        } else if matches!(
+            intent,
+            oteryn_session::ChatIntent::Say { .. } | oteryn_session::ChatIntent::Private { .. }
+        ) {
+            self.local_chat_result(outcome);
         } else {
             self.chat_public_result(outcome);
         }

@@ -200,6 +200,9 @@ pub mod hireling;
 #[path = "features/0063-market/protocol.rs"]
 pub mod market;
 
+/// Local speech and named private messages.
+#[path = "features/0007-chat/protocol.rs"]
+pub mod chat;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;
