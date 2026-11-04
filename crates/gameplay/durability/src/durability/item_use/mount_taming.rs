@@ -158,7 +158,7 @@ async fn attempt(
         .iter()
         .find(|r| {
             r.item_key == item.source_definition.production_key
-                && r.creature_key == request.creature_key
+                && r.target_item_key.as_deref().unwrap_or(&r.creature_key) == request.creature_key
         })
         .ok_or(ItemUseError::InvalidInput)?;
     if request.cosmetics.earned_unlock(

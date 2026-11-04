@@ -2,6 +2,7 @@
 //!
 //! These journals are not a purchase or coin ledger. Platform owns both.
 mod codec;
+mod charm_expansion;
 mod hireling_capacity;
 mod hireling_delivery;
 mod hireling_model;

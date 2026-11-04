@@ -531,7 +531,7 @@ async fn lookup_plan(
 
 /// The exact existing reward_claim_mint CommandRef lock, before the Character
 /// root lock. This is the CHEST writer's key, not a new advisory-lock namespace.
-async fn lock_reward_claim_cause(
+pub(crate) async fn lock_reward_claim_cause(
     tx: &mut Transaction<'_, Postgres>,
     command: CommandRef,
 ) -> Result<(), DurabilityError> {

@@ -33,13 +33,13 @@ fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revisi
     assert_eq!(catalogue.rules.offers_in_category("houses.hirelings",None,32).expect("page").len(),7);
     assert_eq!(catalogue.rules.offers_in_category("houses.hireling-dresses",None,32).expect("page").len(),9);
     assert_eq!(catalogue.item_revision("store:hireling:25440"),Some("definition-r1"));
-    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
+    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
 }
 
 #[test]
 fn store_catalogue_admits_the_exercise_weapon_offers() {
     let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
-    assert_eq!(catalogue.rules.revision(), "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
+    assert_eq!(catalogue.rules.revision(), "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
     let offer = catalogue.rules.offer("store:exercise-sword").expect("offer");
     // Canary 52550d5e consumables_exercise_weapons.lua:118-121: 25 coins, item 28552.
     assert_eq!(offer.price_coins, 25);
@@ -57,6 +57,19 @@ fn store_catalogue_admits_the_exercise_weapon_offers() {
         .offers_in_category("consumables.exercise-weapons", None, 100)
         .expect("page");
     assert_eq!(page.len(), 23);
+}
+
+#[test]
+fn charm_expansion_store_offer_matches_crystal_and_is_one_per_character() {
+    let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
+    let offer = catalogue.rules.offer("store:charm-expansion").expect("offer");
+    // Crystal data/modules/scripts/gamestore/gamestore.lua:6554-6558.
+    assert_eq!((offer.price_coins, catalogue.title(&offer.key)), (450, "Charm Expansion"));
+    assert_eq!(offer.delivery, rules::DeliveryKind::Unlock { unlock_key: "charm-expansion".into() });
+    assert_eq!(offer.eligibility.per_character_limit, Some(1));
+    let mut character = rules::CharacterStoreView::default();
+    character.owned_unlocks.insert("charm-expansion".into());
+    assert_eq!(rules::build_quote(&catalogue.rules, &offer.key, &character), Err(rules::QuoteRefusal::UnlockAlreadyOwned));
 }
 
 #[test]

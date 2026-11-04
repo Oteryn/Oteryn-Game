@@ -96,10 +96,11 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
+        item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         self.0
-            .tame_mount(actor, command, intent, source, visible)
+            .tame_mount(actor, command, intent, source, item_target, visible)
             .await
     }
 }

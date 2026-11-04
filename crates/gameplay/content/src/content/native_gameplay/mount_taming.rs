@@ -16,6 +16,11 @@ pub struct TamingFailure {
 #[serde(deny_unknown_fields)]
 pub struct TamingRule {
     pub item_key: String,
+    /// Item/object target for Crystal's construction-style mount rows. Exactly one of this and
+    /// `creature_key` is populated. Donor: `data-global/scripts/actions/mounts/mounts.lua:16,31,48,71`.
+    #[serde(default)]
+    pub target_item_key: Option<String>,
+    #[serde(default)]
     pub creature_key: String,
     pub mount_key: String,
     pub grant_key: String,
@@ -68,7 +73,12 @@ pub fn rules() -> &'static [TamingRule] {
             return Vec::new();
         }
         for rule in &rules {
-            if !pairs.insert((&rule.item_key, &rule.creature_key))
+            let target = rule
+                .target_item_key
+                .as_deref()
+                .unwrap_or(&rule.creature_key);
+            if !pairs.insert((&rule.item_key, target))
+                || (rule.creature_key.is_empty() == rule.target_item_key.is_none())
                 || !(1..=100).contains(&rule.chance)
                 || rule.failures.len() > 3
                 || (rule.chance != 100 && rule.failures.is_empty())
@@ -88,7 +98,7 @@ mod tests {
 
     #[test]
     fn mount_taming_bear_threshold_and_reference_effects() -> Result<(), &'static str> {
-        assert_eq!(rules().len(), 47);
+        assert_eq!(rules().len(), 51);
         let bear = rules()
             .iter()
             .find(|r| r.item_key == "oteryn:item.tibia.i5907")
@@ -247,8 +257,36 @@ mod tests {
         Some("The foxmouse ran away.")
     );
 
-    /// S06 keeps Global's 15% Wild Horse rule and admits the three missing creature rows.
-    /// Item targets need a different production consumer and remain unadmitted.
+    fn assert_item_target(item: u32, target: u32, mount: &str) {
+        let found = rule_for(item);
+        assert_eq!(found.len(), 1);
+        assert_eq!(
+            found[0].target_item_key.as_deref(),
+            Some(format!("oteryn:item.tibia.i{target}").as_str())
+        );
+        assert_eq!(found[0].mount_key, mount);
+    }
+
+    // Crystal 201189f8, data-global/scripts/actions/mounts/mounts.lua:16,31,48,71.
+    #[test]
+    fn tin_lizzard_item_target_rule() {
+        assert_item_target(12305, 12305, "oteryn:content.mount.tin_lizzard");
+    }
+    #[test]
+    fn uniwheel_item_target_rule() {
+        assert_item_target(12801, 12801, "oteryn:content.mount.uniwheel");
+    }
+    #[test]
+    fn wind_up_loco_item_target_rule() {
+        assert_item_target(37397, 37397, "oteryn:content.mount.wind_up_loco");
+    }
+    #[test]
+    fn glooth_glider_item_target_rule() {
+        assert_item_target(21897, 21897, "oteryn:content.mount.glooth_glider");
+    }
+
+    /// S06 keeps Global's 15% Wild Horse rule and admits every donor row. Crystal has 51 rows;
+    /// no row is excluded (the duplicate Wild Horse behaviour is represented by Global's rule).
     #[test]
     fn s06_missing_crystal_taming_rows_are_admitted_and_global_horse_wins() {
         let horse = rule_for(12802);
@@ -263,7 +301,15 @@ mod tests {
             assert_eq!(rule_for(item).len(), 1, "item {item}");
         }
         for item in [12305, 12801, 37397, 21897] {
-            assert!(rule_for(item).is_empty(), "item-only target {item}");
+            let found = rule_for(item);
+            assert_eq!(found.len(), 1, "item-only target {item}");
+            assert!(found[0].creature_key.is_empty());
+            assert!(found[0].target_item_key.is_some());
         }
+        assert_eq!(
+            rules().len(),
+            51,
+            "Crystal rows (no exclusions) == Oteryn rules"
+        );
     }
 }

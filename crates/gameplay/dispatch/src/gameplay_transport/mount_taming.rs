@@ -47,9 +47,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
+        item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        match self.tame(actor, command, intent, source, visible).await {
+        match self
+            .tame(actor, command, intent, source, item_target, visible)
+            .await
+        {
             Ok(value) => Ok(value.map(outcome)),
             Err(Some(disposition)) => Ok(Some(outcome(disposition))),
             Err(None) => Err(()),
@@ -62,9 +66,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: UseIntent,
         source: Option<ItemKey>,
+        item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseDisposition>, Option<UseDisposition>> {
         let reject = Some(UseDisposition::Rejected);
+        let Some(native) = self
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay)
+        else {
+            return Ok(None);
+        };
+        let index = {
+            let runtime = self.runtime.lock().await;
+            super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+        };
+        let Some(index) = index else {
+            return Ok(None);
+        };
+        // A definition-targeted USE names its source item directly. Reject an item which
+        // has no taming rule before taking the spell permit or reading any durable fence.
+        if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            let (key, _) = index.definition_at(wanted).ok_or(reject)?;
+            if !rules().iter().any(|rule| rule.item_key == key) {
+                return Ok(None);
+            }
+        }
         let fence = command.item_fence.ok_or(reject)?;
         let command_ref = CommandRef::new(
             command.game_session_id,
@@ -83,30 +109,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(ItemUseError::Unavailable(_)) => return Err(None),
             Err(_) => return Err(reject),
         }
-        let Some(native) = self
-            .active_generation
-            .and_then(crate::content::ActiveGeneration::native_gameplay)
-        else {
-            return Ok(None);
-        };
-        let index = {
-            let runtime = self.runtime.lock().await;
-            super::item_ref_admission::pinned_index(&runtime, self.active_generation)
-        };
-        let Some(index) = index else {
-            return Ok(None);
-        };
-        if let UseTarget::ItemByDefinition(wanted) = intent.target {
-            let (key, _) = index.definition_at(wanted).ok_or(reject)?;
-            if !rules().iter().any(|r| r.item_key == key) {
-                return Ok(None);
-            }
-        };
-        let inventory = self
+        let inventory = match self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| reject)?;
+        {
+            Ok(inventory) => inventory,
+            // An unresolved carried source may belong to another owner. Its
+            // historical receipt must remain reachable after a scope change.
+            // Fresh taming writes still require the current inventory fence.
+            Err(ItemUseError::AuthorityRejected)
+                if matches!(intent.target, UseTarget::Item(_))
+                    && intent.use_with_map_item.is_some() =>
+            {
+                return Ok(None);
+            }
+            Err(_) => return Err(reject),
+        };
         let bag = inventory
             .backpack
             .as_ref()
@@ -158,26 +177,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        if !visible {
+        let item_target = item_target.and_then(|key| match key {
+            ItemKey::Instance(id) => bag
+                .entries
+                .iter()
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find(|entry| entry.item.item_instance_id == id)
+                .map(|entry| (id, entry.item.definition.production_key.as_str())),
+            _ => None,
+        });
+        if intent.use_with.is_some() && !visible {
             return Err(Some(UseDisposition::NoTarget));
         }
         let mut runtime = self.runtime.lock().await;
-        let wanted = intent.use_with.ok_or(reject)?;
-        let target = runtime
-            .visible_entities()
-            .creatures
+        let creature_target = intent.use_with.and_then(|wanted| {
+            runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|c| {
+                    c.actor.placement_identity() == wanted.identity
+                        && c.generation == wanted.generation
+                })
+                .map(|c| (wanted, c.actor))
+        });
+        let rule = rules()
             .iter()
-            .find(|c| {
-                c.actor.placement_identity() == wanted.identity && c.generation == wanted.generation
+            .find(|r| {
+                r.item_key == entry.item.definition.production_key
+                    && match (creature_target, item_target) {
+                        (Some((_, target)), None) => runtime
+                            .matches_live_creature_identity(target, r.creature_key.as_bytes()),
+                        (None, Some((_, key))) => r.target_item_key.as_deref() == Some(key),
+                        _ => false,
+                    }
             })
-            .map(|c| c.actor)
-            .ok_or(Some(UseDisposition::NoTarget))?;
-        let Some(rule) = rules().iter().find(|r| {
-            r.item_key == entry.item.definition.production_key
-                && runtime.matches_live_creature_identity(target, r.creature_key.as_bytes())
-        }) else {
-            return Err(Some(UseDisposition::NothingToUse));
-        };
+            .ok_or(Some(UseDisposition::NothingToUse))?;
         let cosmetics = native.cosmetics().ok_or(reject)?;
         if !cosmetics.mount_exists(&rule.mount_key)
             || cosmetics.earned_unlock(
@@ -207,19 +242,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(reject);
         }
         drop(states);
-        runtime
-            .check_mount_taming_subject(target, &rule.creature_key)
-            .map_err(|_| Some(UseDisposition::NothingToUse))?;
-        let from = runtime
-            .read_actor_position(actor)
-            .map_err(|_| reject)?
-            .position();
-        let to = runtime
-            .read_actor_position(target)
-            .map_err(|_| reject)?
-            .position();
-        if from.floor != to.floor || from.x.abs_diff(to.x) > 1 || from.y.abs_diff(to.y) > 1 {
-            return Err(Some(UseDisposition::TooFar));
+        if let Some((_, target)) = creature_target {
+            runtime
+                .check_mount_taming_subject(target, &rule.creature_key)
+                .map_err(|_| Some(UseDisposition::NothingToUse))?;
+            let from = runtime
+                .read_actor_position(actor)
+                .map_err(|_| reject)?
+                .position();
+            let to = runtime
+                .read_actor_position(target)
+                .map_err(|_| reject)?
+                .position();
+            if from.floor != to.floor || from.x.abs_diff(to.x) > 1 || from.y.abs_diff(to.y) > 1 {
+                return Err(Some(UseDisposition::TooFar));
+            }
         }
         let transaction_id = crate::operator_files::uuid_v7().map_err(|_| reject)?;
         let digest = Sha256::new()
@@ -275,9 +312,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 flask: ItemUseFlaskPlan::None,
             },
             binding,
-            target_identity: wanted.identity,
-            target_generation: wanted.generation,
-            creature_key: rule.creature_key.clone(),
+            target_identity: creature_target
+                .map_or_else(|| item_target.map_or([0; 16], |v| v.0), |v| v.0.identity),
+            target_generation: creature_target.map_or(1, |v| v.0.generation),
+            creature_key: rule
+                .target_item_key
+                .clone()
+                .unwrap_or_else(|| rule.creature_key.clone()),
             cosmetics: cosmetics.clone(),
             draw,
             achievements,
@@ -293,7 +334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(receipt)) => {
                 let (_, remove, text) = rule.effects(receipt.outcome).ok_or(reject)?;
-                if remove {
+                if remove && let Some((_, target)) = creature_target {
                     guard
                         .runtime
                         .remove_mount_taming_subject(target, &rule.creature_key)

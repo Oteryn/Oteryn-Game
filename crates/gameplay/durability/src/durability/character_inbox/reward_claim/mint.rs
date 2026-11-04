@@ -490,6 +490,99 @@ async fn mint_inbox(
 }
 
 impl RewardClaimInboxMintCandidate {
+    /// Compose a fresh source claim with the native reservation, mint, Inbox and
+    /// audit in one already fenced transaction. A definite rollback retains none
+    /// of them; the source's immutable receipt resolves an unknown commit.
+    pub(crate) async fn mint_atomic_in_transaction(
+        tx: &mut Type2Transaction<'_>,
+        fence: CurrentCharacterItemFence,
+        source_plan: RewardClaimInboxPlan,
+        request: RewardClaimInboxMintRequest,
+    ) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
+        source_plan.validate()?;
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Err(RewardClaimInboxError::AuthorityRejected);
+        };
+        if source_plan.character_id != fence.character_id
+            || source_plan.command.game_session_id() != fence.game_session_id
+            || source_plan.world_id != world_id
+            || source_plan.channel_id != channel_id
+            || source_plan.item_instance_ids.len() != request.outputs.len()
+        {
+            return Err(RewardClaimInboxError::AuthorityRejected);
+        }
+        let spec = mint_spec(&request)?;
+        let plan = bound_plan(&source_plan, &spec);
+        let binding = plan.binding();
+        let mint_intent_sha256 = Sha256::digest(&spec).into();
+        let item_ids: Vec<String> = plan
+            .item_instance_ids
+            .iter()
+            .map(|bytes| bytes.iter().map(|b| format!("{b:02x}")).collect())
+            .collect();
+        let row = sqlx::query(
+            "SELECT event_id::text AS event_id, occurred_at FROM game_reward_claim_inbox_mint_reserve(\
+             encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,\
+             encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,\
+             $7,$8,$9::text[]::uuid[],$10)",
+        )
+        .bind(plan.command.game_session_id().as_bytes().as_slice())
+        .bind(plan.command.command_id().get().to_string())
+        .bind(plan.character_id.as_bytes().as_slice())
+        .bind(plan.world_id.as_bytes().as_slice())
+        .bind(plan.channel_id.as_bytes().as_slice())
+        .bind(plan.transaction_id.as_slice())
+        .bind(source_plan.source_binding.as_slice())
+        .bind(binding.as_slice())
+        .bind(item_ids)
+        .bind(spec)
+        .fetch_one(&mut ***tx)
+        .await
+        .map_err(mint_sql_error)?;
+        let event_id = uuid_text(row.try_get("event_id")?)?;
+        let occurred_at: i64 = row.try_get("occurred_at")?;
+        if occurred_at <= 0
+            || occurred_at
+                .checked_add(common::AUDIT_RETENTION_P90D_MS)
+                .is_none()
+        {
+            return Err(RewardClaimInboxError::InvalidPlan);
+        }
+        let charged: Option<i16> = sqlx::query_scalar(
+            "SELECT work_units_used FROM game_reward_claim_inbox_mint_charge(\
+             encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4)",
+        )
+        .bind(plan.command.game_session_id().as_bytes().as_slice())
+        .bind(plan.command.command_id().get().to_string())
+        .bind(plan.transaction_id.as_slice())
+        .bind(binding.as_slice())
+        .fetch_optional(&mut ***tx)
+        .await
+        .map_err(mint_sql_error)?;
+        if !charged.is_some_and(|used| (1..=i16::from(RL08_RETRY_WORK_UNITS_MAX)).contains(&used)) {
+            return Err(RewardClaimInboxError::CapacityExceeded);
+        }
+        mint_frozen_in_transaction(
+            tx,
+            &FrozenInboxMint {
+                plan,
+                request,
+                source_binding: source_plan.source_binding,
+                mint_intent_sha256,
+                event_id,
+                occurred_at,
+            },
+            fence.connection_generation.get(),
+            fence.character_lease_generation,
+            None,
+        )
+        .await
+    }
+
     /// Existing mint/Inbox/audit owner participates in a composed, already fenced
     /// transaction. Preparation and retry-budget charging are separate durable passes.
     pub(crate) async fn mint_in_transaction(

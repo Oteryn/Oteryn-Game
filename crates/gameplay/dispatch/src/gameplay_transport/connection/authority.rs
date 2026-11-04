@@ -572,6 +572,7 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _intent: UseIntent,
         _source: Option<ItemKey>,
+        _item_target: Option<ItemKey>,
         _visible: bool,
     ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
         async { Ok(None) }
