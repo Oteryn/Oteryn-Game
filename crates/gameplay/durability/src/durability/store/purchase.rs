@@ -1,6 +1,7 @@
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::{DurabilityError, DurabilityRoot};
-use super::codec::{MAX_ANSWER_BYTES, PurchaseRequest, StoreValidationError, uuid_string};
+use super::codec::{MAX_ANSWER_BYTES, PurchaseRequest, StoreValidationError, uuid_string, uuid_v7};
+use super::purchase_history::StorePurchaseHistoryEntry;
 use super::storage::{PurchaseRequestState, StoreDurabilityError};
 use sqlx::Row;
 
@@ -55,9 +56,31 @@ impl DurabilityRoot {
         request: PurchaseRequest,
         answer: Vec<u8>,
     ) -> Result<Vec<u8>, StoreDurabilityError> {
+        self.record_store_answer_with_history(request, answer, None).await
+    }
+
+    /// Save the Platform answer and its optional immutable Game display row atomically.
+    pub async fn record_store_answer_with_history(
+        &self,
+        request: PurchaseRequest,
+        answer: Vec<u8>,
+        history: Option<StorePurchaseHistoryEntry>,
+    ) -> Result<Vec<u8>, StoreDurabilityError> {
         request.validate()?;
         if answer.is_empty() || answer.len() > MAX_ANSWER_BYTES {
             return Err(StoreValidationError::InvalidBytes.into());
+        }
+        if let Some(entry) = history.as_ref() {
+            let bounded = |text: &str| !text.is_empty() && text.len() <= 128;
+            if !uuid_v7(&entry.order_id)
+                || !bounded(&entry.offer_key)
+                || !bounded(&entry.catalog_revision)
+                || !bounded(&entry.currency)
+                || entry.price == 0
+                || entry.price > i64::MAX as u64
+            {
+                return Err(StoreValidationError::InvalidBytes.into());
+            }
         }
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -77,6 +100,26 @@ impl DurabilityRoot {
                             .bind(&answer)
                             .execute(&mut *tx)
                             .await?;
+                            if let Some(entry) = history.as_ref() {
+                                sqlx::query(
+                                    "INSERT INTO game_store_purchase_history \
+                                     (purchase_request_id,account_id,character_id,order_id,offer_key, \
+                                     catalog_revision,price,currency,purchased_at_ms) VALUES \
+                                     (encode($1,'hex')::uuid,encode($2,'hex')::uuid, \
+                                     encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,$8, \
+                                     floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+                                )
+                                .bind(request.purchase_request_id.as_slice())
+                                .bind(request.account_id.as_slice())
+                                .bind(request.character_id.as_slice())
+                                .bind(entry.order_id.as_slice())
+                                .bind(&entry.offer_key)
+                                .bind(&entry.catalog_revision)
+                                .bind(entry.price as i64)
+                                .bind(&entry.currency)
+                                .execute(&mut *tx)
+                                .await?;
+                            }
                         }
                         Err(error) => return Ok(Err(error)),
                     }

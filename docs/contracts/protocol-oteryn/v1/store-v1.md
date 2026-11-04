@@ -20,6 +20,14 @@ Command 184 request: optional opaque page cursor. An empty request starts the Pl
 
 Command 184 response: up to 32 Platform purchase rows (order UUIDv7, offer key, catalog revision, positive price, currency, and purchase time) and an optional next cursor.
 
+## StorePurchaseHistoryRequestV1
+
+Command 501 reuses the `StoreHistoryRequest` encoding. It lists only Game-recorded in-game purchases of the admitted account, newest first. An empty request starts the first page; a non-empty opaque cursor has the format `<purchased_at_ms decimal>.<32 lowercase hex purchase_request_id>`. The journal is display-only; Platform remains the coin and order ledger.
+
+## StorePurchaseHistoryPageV1
+
+Command 501 reuses the `StoreHistoryPage` encoding and returns at most 32 Game-recorded in-game purchases of the admitted account, newest first. Its opaque continuation cursor has the format `<purchased_at_ms decimal>.<32 lowercase hex purchase_request_id>`. The journal is display-only; coin top-ups and payments remain on the Platform account page.
+
 ## StorePurchaseRequestV1
 
 Command 185 request: UUIDv7 purchase request id, offer key, exact catalog revision, positive price, and currency. The same id is retained only for retries of the same confirmation binding.

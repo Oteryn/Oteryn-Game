@@ -1,0 +1,16 @@
+{
+  "mechanic": "0285-store-purchase-history",
+  "kind": "handlers",
+  "id": "0285-store-purchase-history-page",
+  "status": "unsupported",
+  "commands": [],
+  "not_applicable": {
+    "view": "The native client has no Store purchase history tab yet.",
+    "input": "The native client has no Store purchase history tab yet.",
+    "settings": "The history page has no client setting.",
+    "state": "The display journal is server-owned.",
+    "protocol": "The native client has no Store purchase history decoder yet."
+  },
+  "direction": "client_to_server",
+  "reason": "The native client has no history tab yet."
+}
