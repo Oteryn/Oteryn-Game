@@ -3,7 +3,7 @@
 //! `ConditionRegeneration::executeCondition`. The Crystal values are reference data, not code.
 use crate::regeneration::{
     FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS, RegenerationState, UNFED_HEALTH_PERIOD_MS,
-    UNFED_MANA_PERIOD_MS, credit_second, rate,
+    UNFED_MANA_PERIOD_MS, credit_second, percent, rate,
 };
 use oteryn_gameplay_content::content::spell_data::Vocation;
 
@@ -58,11 +58,11 @@ fn c10_monk_ticks_are_the_recorded_d5b_canary_crystal_conflict() {
 }
 
 #[test]
-fn c10_production_clocks_are_the_recorded_news_8541_8543_divergence_from_crystal() {
+fn c10_production_clocks_apply_percentage_with_the_global_floor() {
     // Crystal: a fed player gains 1 HP per `gainhpticks` and 2 MP per `gainmanaticks`; an
-    // unfed one gains nothing. Oteryn (NEWS-HIST-REGEN-1): always on, one vocation amount per
-    // fixed 3 s/5 s (fed) or 4 s/6 s (hungry) for every vocation.
-    assert_eq!((FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS), (3_000, 5_000));
+    // unfed one gains nothing. Oteryn (REGEN-PCT-4): always on, with fixed fed and hungry
+    // clocks and percentage credit bounded below by the recorded Global speed.
+    assert_eq!((FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS), (3_000, 3_000));
     assert_eq!(
         (UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS),
         (4_000, 6_000)
@@ -75,14 +75,46 @@ fn c10_production_clocks_are_the_recorded_news_8541_8543_divergence_from_crystal
             mana: 0,
             regen_health_ms: 0,
             regen_mana_ms: 0,
+            regen_health_carry: 0,
+            regen_mana_carry: 0,
         };
         let mut hungry = fed;
         for _ in 0..60 {
-            credit_second(&mut fed, rate(vocation), u32::MAX, u32::MAX, true);
-            credit_second(&mut hungry, rate(vocation), u32::MAX, u32::MAX, false);
+            credit_second(&mut fed, vocation, rate(vocation), u32::MAX, u32::MAX, true);
+            credit_second(
+                &mut hungry,
+                vocation,
+                rate(vocation),
+                u32::MAX,
+                u32::MAX,
+                false,
+            );
         }
-        assert_eq!((fed.health - 1, fed.mana), (20, 24), "{vocation:?}");
-        assert_eq!((hungry.health - 1, hungry.mana), (15, 20), "{vocation:?}");
+        let bp = percent(vocation);
+        let health_per_tick = u64::from(u32::MAX) * u64::from(bp.health_bp);
+        let mana_per_tick = u64::from(u32::MAX) * u64::from(bp.mana_bp);
+        let expected_fed = if vocation == Vocation::None {
+            (20, 40)
+        } else {
+            (
+                (20 * health_per_tick / 10_000) as u32,
+                (20 * mana_per_tick / 10_000) as u32,
+            )
+        };
+        let expected_hungry = if vocation == Vocation::None {
+            (15, 20)
+        } else {
+            (
+                (15 * health_per_tick / 10_000) as u32,
+                (10 * mana_per_tick / 10_000) as u32,
+            )
+        };
+        assert_eq!((fed.health - 1, fed.mana), expected_fed, "{vocation:?}");
+        assert_eq!(
+            (hungry.health - 1, hungry.mana),
+            expected_hungry,
+            "{vocation:?}"
+        );
         assert_ne!((fed.health - 1, fed.mana), crystal_fed, "{vocation:?}");
     }
 }
