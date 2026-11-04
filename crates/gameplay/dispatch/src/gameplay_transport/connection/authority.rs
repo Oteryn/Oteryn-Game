@@ -25,6 +25,20 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    fn observe_sounds(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _after: u64,
+    ) -> impl Future<
+        Output = Option<(
+            u64,
+            Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+        )>,
+    > {
+        async { None }
+    }
+
     /// Native movement effects committed by special-tile entry after `after`.
     fn observe_movement_effects(
         &self,

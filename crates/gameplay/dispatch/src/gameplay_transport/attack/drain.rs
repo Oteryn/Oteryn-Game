@@ -730,6 +730,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
+                if !extension && result.applied {
+                    publish_hit_sound(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry.actor,
+                        &selected.weapon,
+                    );
+                }
                 train_swing(
                     &mut states,
                     &runtime,
@@ -1159,6 +1168,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let magnitude = i64::from(damage.magnitude());
         if magnitude <= 0 {
+            if !hit.extension {
+                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            }
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
             return;
         }
@@ -1209,6 +1221,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
+            if !hit.extension {
+                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            }
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
         } else if !hit.extension {
             attack.clear_target_of(hit.actor, hit.session);
@@ -1687,6 +1702,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             protections: effects.protections,
         })
     }
+}
+
+/// Canary weapons.cpp:23-33, player.cpp:11959-12053 (99902524): weapon
+/// sounds originate at the wielder; the hit cue precedes the attack cue.
+fn publish_hit_sound(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    actor: ExactActorRef,
+    weapon: &WeaponFacts,
+) {
+    let Ok(position) = runtime.read_actor_position(actor) else {
+        return;
+    };
+    let (cue, secondary) = if let Some(ranged) = &weapon.ranged {
+        use crate::content::{ProjectV2RangedWeapon, ReferenceAmmoType};
+        let Some(profile) = content
+            .item_policy(
+                &ranged.weapon.definition.production_key,
+                &ranged.weapon.definition.revision_ref,
+            )
+            .and_then(|policy| policy.record().authoring.ranged.as_ref())
+        else {
+            return;
+        };
+        match profile {
+            ProjectV2RangedWeapon::Distance {
+                ammunition: ReferenceAmmoType::Arrow,
+                ..
+            } => (13, 6),
+            ProjectV2RangedWeapon::Distance {
+                ammunition: ReferenceAmmoType::Bolt,
+                ..
+            } => (14, 7),
+            ProjectV2RangedWeapon::Wand(_) | ProjectV2RangedWeapon::Rod(_) => (17, 9),
+            _ => (15, 8),
+        }
+    } else {
+        let skill = match weapon.weapon {
+            SwingWeapon::Fists => 0,
+            SwingWeapon::Melee { skill, .. } => skill.index(),
+        };
+        (
+            match skill {
+                1 => 4,
+                2 => 3,
+                3 => 5,
+                _ => 1,
+            },
+            0,
+        )
+    };
+    if let Some(owner) = states.presentations.as_mut() {
+        let _ = states.sounds.capture(owner, runtime);
+    }
+    states
+        .sounds
+        .record(runtime, actor, position.position(), cue, secondary);
 }
 
 #[cfg(test)]

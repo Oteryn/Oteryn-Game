@@ -266,6 +266,12 @@ async fn qualify_global_baseline(
         .set_test_creature_health(creature, RAT_HEALTH)
         .map_err(debug)?;
     owner.drain_auto_attacks().await;
+    let (_, sounds) = crate::gameplay_transport::connection::FreshAdmissionAuthority::observe_sounds(
+        owner, actor, session, 0,
+    ).await.ok_or("sound observation")?;
+    assert!(sounds.iter().any(|event| matches!(event.kind,
+        oteryn_protocol_oteryn::presentation::PresentationEventKind::Sound { cue_id: 1, source: oteryn_protocol_oteryn::presentation::PresentationSource::Own, .. }
+    )), "the committed fist hit emits its reference weapon sound");
     let after = owner
         .runtime
         .lock()
