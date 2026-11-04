@@ -111,8 +111,8 @@ pub const HIGHSCORE_FILTERS: [(&str, u8); FILTERS] = [
 ];
 /// The highscores category ids (§4.1, HIGHSCORES-0 §3), pinned to the
 /// Platform consumer's `CommunityDataPolicy` ids 1..9 (its `level` page reads
-/// category 1); 10 and 11 have no Platform page yet.
-pub const HIGHSCORE_CATEGORIES: [(&str, u8); 11] = [
+/// category 1); 10, 11 and 12 have no Platform page yet.
+pub const HIGHSCORE_CATEGORIES: [(&str, u8); 12] = [
     ("experience", 1),
     ("magic", 2),
     ("fist", 3),
@@ -124,6 +124,7 @@ pub const HIGHSCORE_CATEGORIES: [(&str, u8); 11] = [
     ("fishing", 9),
     ("achievement", 10),
     ("charm", 11),
+    ("boss", 12),
 ];
 /// Compiled namespace of the public-projection descriptor; never a
 /// configured source authority, so no other purpose's descriptor matches it.
@@ -427,7 +428,7 @@ pub fn encode_highscores(
         snapshot.projection_revision,
         snapshot.source_observed_at,
     ) && canonical_uuid(&snapshot.world_id, Some(b'7'))
-        && (1..=11).contains(&snapshot.category)
+        && (1..=12).contains(&snapshot.category)
         && usize::from(snapshot.filter) < FILTERS
         && snapshot.computed_at > 0
         && rows.len() <= MAX_HIGHSCORE_ROWS

@@ -448,8 +448,8 @@ async fn projection_cases(database: &Database) -> TestResult {
         highscores(&pool).await?,
         vec![(0x90, 1, 1, 1), (0x90, 1, 1, 2), (0x91, 11, 1, 1)]
     );
-    // A category outside 1..=11 refuses the job's snapshot with it.
-    let refused = attempt(&pool, &snapshot(4, 0x90, 12)).await;
+    // A category outside 1..=12 refuses the job's snapshot with it.
+    let refused = attempt(&pool, &snapshot(4, 0x90, 13)).await;
     assert_eq!(sqlstate(&refused).as_deref(), Some("23514"), "{refused:?}");
     assert_eq!(highscores(&pool).await?.len(), 3);
     // With a source, a highscores resync queues every pair at a new revision.
