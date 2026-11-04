@@ -13,6 +13,18 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::Row;
 
+/// Crystal 201189f `src/items/bed.cpp:262-285` regenerates only until wake and,
+/// when somebody frees the bed first, only until that earlier instant.
+fn offline_bed_seconds(
+    slept_at: i64,
+    wake_at: i64,
+    freed_at: Option<i64>,
+) -> Result<u64, DurabilityError> {
+    let end = freed_at.unwrap_or(wake_at).min(wake_at);
+    u64::try_from((i128::from(end) - i128::from(slept_at)).max(0) / 1000)
+        .map_err(|_| DurabilityError::InvalidStoredState)
+}
+
 impl DurabilityRoot {
     /// Settle before first-entry installs an actor. Same-session replay is a read
     /// of durable history; no new sleep can be consumed by an old admission retry.
@@ -74,8 +86,11 @@ impl DurabilityRoot {
                     .ok_or(DurabilityError::InvalidStoredState)?;
                 let slept: i64 = sleeper.try_get("slept_at")?;
                 let wake: i64 = sleeper.try_get("wake_at")?;
-                let end = sleeper.try_get::<Option<i64>, _>("freed_at")?.unwrap_or(wake).min(wake);
-                let seconds = u64::try_from((i128::from(end)-i128::from(slept)).max(0)/1000).map_err(|_| DurabilityError::InvalidStoredState)?;
+                let seconds = offline_bed_seconds(
+                    slept,
+                    wake,
+                    sleeper.try_get::<Option<i64>, _>("freed_at")?,
+                )?;
                 let before = stored.record.vitals.map_or([hp,mana,rest[0]], |v| [v.health(),v.mana(),rest[0]]);
                 let (after,food) = oteryn_gameplay_housing::house_bed_regen::settle(before,[hp,mana,soul],rest[1],seconds).ok_or(DurabilityError::InvalidStoredState)?;
                 rest[0]=after[2]; rest[1]=food;

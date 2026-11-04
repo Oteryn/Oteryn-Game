@@ -33,7 +33,7 @@ impl TrainingRuntime {
 impl Default for TrainingRuntime {
     fn default() -> Self {
         let config = TrainingRates::from_json(include_bytes!(
-            "../../../../../../rulesets/training/provisional-v1.json"
+            "../../../../../../rulesets/training/crystal-201189f-v1.json"
         ))
         .ok()
         .filter(|rates| rates.enabled)
@@ -319,7 +319,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: u16::try_from(at.at.y).ok()?,
             floor: i8::try_from(at.at.floor).ok()?,
         };
-        if at.map.facts.house_tile(player) || at.map.facts.house_tile(pos) {
+        // Crystal 201189f exercise_training_weapons.lua:177-185 permits a house
+        // dummy only while the player and dummy are in that same house scope.
+        let house_at = |tile: crate::map::overlay::TilePos| {
+            self.movement_cells
+                .house_tiles()
+                .house_at(
+                    self.movement_cells.scope(),
+                    crate::content::LogicalCell {
+                        x: i32::from(tile.x),
+                        y: i32::from(tile.y),
+                        z: -i32::from(tile.floor),
+                    },
+                )
+                .ok()
+                .flatten()
+                .map(|placement| placement.house().key.as_str())
+        };
+        if !same_training_house(house_at(player), house_at(pos)) {
             return None;
         }
         if player.floor != pos.floor
@@ -512,6 +529,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+fn same_training_house(player_house: Option<&str>, dummy_house: Option<&str>) -> bool {
+    player_house == dummy_house
+}
+
+#[cfg(test)]
+mod donor_house_tests {
+    #[test]
+    fn exercise_dummy_requires_player_and_dummy_in_the_same_house_class() {
+        assert!(super::same_training_house(None, None));
+        assert!(super::same_training_house(Some("house-a"), Some("house-a")));
+        assert!(!super::same_training_house(None, Some("house-a")));
+        assert!(!super::same_training_house(Some("house-a"), None));
+        assert!(!super::same_training_house(
+            Some("house-a"),
+            Some("house-b")
+        ));
+    }
+}
+
 pub(super) fn offer(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     base: &'static [OfferedCapability],
@@ -549,8 +585,11 @@ mod tests {
             .as_ref()
             .ok_or("shipped training unavailable")?;
         assert!(rates.enabled);
-        // Magic is verified; integer non-magic gains remain explicitly provisional.
-        assert!(rates.provisional);
+        // Exercise gains and integer conversion are pinned to the Crystal donor.
+        assert_eq!(
+            rates.donor_revision,
+            "201189f871d23597b82caf88fd611454a2ddefb8"
+        );
         assert_eq!(rates.exercise_gains, [600, 7, 7, 7, 7, 7, 7, 0]);
         assert_eq!(rates.percent_scale, 100);
         assert_eq!(rates.offline_divisors, [1, 2, 2, 2, 2, 5, 4, 0]);

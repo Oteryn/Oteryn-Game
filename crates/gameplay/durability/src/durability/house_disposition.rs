@@ -188,6 +188,17 @@ async fn execute(
 fn hex(id: &[u8; 16]) -> String {
     id.iter().map(|b| format!("{b:02x}")).collect()
 }
+pub(in crate::durability) async fn write_disposition_audit(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    operation: &str,
+) -> std::result::Result<(), DurabilityError> {
+    let p = scope_payload(scope, generation).map_err(|_| DurabilityError::Unavailable)?;
+    audit::write(tx, node, &p, operation).await
+}
+
 fn scope_payload(scope: RuntimeScopeRefV1, generation: u64) -> Result<Value> {
     let RuntimeScopeRefV1::Channel {
         world_id,

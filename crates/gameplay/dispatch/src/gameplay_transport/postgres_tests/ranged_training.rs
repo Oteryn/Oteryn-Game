@@ -95,7 +95,7 @@ fn scenario(item: u32, family: usize) -> TestResult {
         owner.movement_cells = &cells;
         deps.initialize(&owner).await;
         let mut rates = TrainingRates::from_json(include_bytes!(
-            "../../../../../../rulesets/training/provisional-v1.json"
+            "../../../../../../rulesets/training/crystal-201189f-v1.json"
         ))
         .map_err(debug)?;
         rates.enabled = true;
