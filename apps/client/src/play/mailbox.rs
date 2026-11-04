@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub notices: Box<oteryn_client_ui::tutorial_notices::NoticePanel>,
     /// Transient domain-16 updates, reduced before publication to the shell.
     pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
@@ -48,6 +49,13 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        for text in newer.notices.tutorial {
+            self.notices
+                .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(
+                    text,
+                ));
+        }
+        self.notices.save_minutes = newer.notices.save_minutes.or(self.notices.save_minutes);
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
@@ -66,6 +74,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) notices: oteryn_client_ui::tutorial_notices::NoticePanel,
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
@@ -174,6 +183,18 @@ impl Outbox {
         }
         coalesce_pushed(&mut mailbox.pushed, events);
         mailbox.check_server_messages();
+        for text in std::mem::take(&mut mailbox.pushed.notices.tutorial) {
+            mailbox
+                .notices
+                .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(
+                    text,
+                ));
+        }
+        if let Some(minutes) = mailbox.pushed.notices.save_minutes.take() {
+            mailbox
+                .notices
+                .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
+        }
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
         for line in std::mem::take(&mut mailbox.pushed.chat_lines) {

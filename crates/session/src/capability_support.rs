@@ -45,6 +45,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     market::CAPABILITY_MARKET_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
+    oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
     // CL26s1: private-channel prerequisite of public channels (259); ids stay ascending.
     chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
@@ -101,6 +102,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     market::CAPABILITY_MARKET_V1,
     imbuement::CAPABILITY_IMBUE_V1,
     task_board::CAPABILITY_TASK_BOARD_V1,
+    oteryn_protocol_oteryn::server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     prey::CAPABILITY_PREY_V1,

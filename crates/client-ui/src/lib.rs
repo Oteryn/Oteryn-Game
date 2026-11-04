@@ -96,6 +96,13 @@ pub mod prey;
 #[path = "features/0148-wheel-allocation/mod.rs"]
 pub mod wheel_allocation;
 
+/// Tutorial notices and their shared server-save history.
+#[path = "features/0031-tutorial-notices/mod.rs"]
+pub mod tutorial_notices;
+
+#[path = "features/0075-server-save-countdown/protocol.rs"]
+pub mod server_save_countdown;
+
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]
 pub mod task_board;

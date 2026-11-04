@@ -176,6 +176,9 @@ pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.
 pub mod server_mechanic;
 
+#[path = "features/0031-tutorial-notices/protocol.rs"]
+pub mod tutorial_notices;
+
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
 pub mod stash;

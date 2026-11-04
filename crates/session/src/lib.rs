@@ -83,7 +83,10 @@ pub use oteryn_protocol_oteryn::item_view::{
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;
+mod server_save_countdown;
 mod tutorial_notices;
+pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
+pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 pub use oteryn_protocol_oteryn::{
     boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     weapon_proficiency, zones_nologout::ServerMessage,

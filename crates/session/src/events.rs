@@ -10,6 +10,7 @@ pub enum SessionEvent {
     /// Domain 16: the requested view and tracked lines, replaced whole.
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
+    ServerSaveCountdown(AppliedDelta<ServerSaveCountdown>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 57: one server status, warning or advance message, retained in wire order.
     ServerMessage(AppliedDelta<ServerMessage>),
@@ -54,6 +55,7 @@ impl SessionEvent {
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
+            Self::ServerSaveCountdown(_) => 40,
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }

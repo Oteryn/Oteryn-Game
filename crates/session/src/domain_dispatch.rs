@@ -64,6 +64,7 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
+            40 => crate::server_save_countdown::apply(self, server_sequence, payload),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
             oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {
                 crate::server_messages::apply(self, server_sequence, payload)

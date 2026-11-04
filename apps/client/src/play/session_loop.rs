@@ -339,6 +339,7 @@ pub async fn run_session<T: Stepper>(
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.notices_initialize(session.feature_selected(31), session.feature_selected(75));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     let mut held = Vec::new();
