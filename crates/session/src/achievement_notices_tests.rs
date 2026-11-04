@@ -99,7 +99,8 @@ fn achievement_notices_join_requires_the_domain_13_snapshot_when_selected() {
         revision: 0,
         payload: encode_achievement_notices_snapshot(AchievementWatermark::default()),
     };
-    assert!(crate::achievement_notices::validate_join(&[8], &[snapshot.clone()]).is_ok());
+    let snapshots = std::slice::from_ref(&snapshot);
+    assert!(crate::achievement_notices::validate_join(&[8], snapshots).is_ok());
     assert!(matches!(
         crate::achievement_notices::validate_join(
             &[8],
