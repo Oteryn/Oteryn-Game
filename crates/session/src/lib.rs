@@ -16,6 +16,9 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+/// Account achievement query and typed result.
+pub mod account_achievements;
+
 mod appearance_state;
 mod depot;
 mod domain_dispatch;

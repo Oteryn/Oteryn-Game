@@ -15,6 +15,15 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn account_achievements(
+        &mut self,
+        _page: u32,
+    ) -> impl Future<
+        Output = Result<oteryn_client_runtime::account_achievements::Response, SessionError>,
+    > + Send {
+        async { Err(SessionError::SessionUnusable) }
+    }
+
     fn animus_selected(&self) -> bool {
         false
     }
@@ -341,9 +350,20 @@ pub async fn run_session<T: Stepper>(
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
+    outbox.achievements_initialize();
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::AccountAchievements(page)) => {
+                match session.account_achievements(page).await {
+                    Ok(response) => {
+                        outbox.achievements_result(&response);
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {

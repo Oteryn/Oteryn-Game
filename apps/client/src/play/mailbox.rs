@@ -80,6 +80,7 @@ pub(super) struct Mailbox {
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
+    pub(super) achievements: oteryn_client_ui::account_achievements::AchievementsPanel,
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
@@ -220,6 +221,7 @@ impl Outbox {
     /// The first end wins.
     pub(super) fn end(&self, class: PublicClass) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievements = Default::default();
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
@@ -227,6 +229,7 @@ impl Outbox {
 
     pub(super) fn logged_out(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.achievements = Default::default();
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);

@@ -11,6 +11,13 @@ use std::future::Future;
 use std::time::Duration;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn account_achievements(
+        &mut self,
+        page: u32,
+    ) -> Result<oteryn_client_runtime::account_achievements::Response, SessionError> {
+        oteryn_client_runtime::account_achievements::send(self, page).await
+    }
+
     fn player_typing_selected(&self) -> bool {
         self.is_selected(oteryn_session::player_typing::CAPABILITY_PLAYER_TYPING_V1)
     }

@@ -1,5 +1,9 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+/// Account achievement pages from core command 10.
+#[path = "features/local-account-achievements/mod.rs"]
+pub mod account_achievements;
+
 pub mod connection;
 pub mod hotkey_equip;
 
