@@ -120,6 +120,19 @@ mod tests;
 /// CP D1143 / ITEMLOOK1-RL-01, per GameSession, including resume and transfer.
 pub const ITEM_LOOK_COMMANDS_PER_SECOND: usize = 10;
 
+/// Crystal spellbook.lua:54.
+const SPELLBOOK_ITEM_IDS: [u16; 19] = [
+    3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
+    25699, 29431, 20089, 20090, 34153,
+];
+
+pub(super) fn is_spellbook(production_key: &str) -> bool {
+    production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u16>().ok())
+        .is_some_and(|id| SPELLBOOK_ITEM_IDS.contains(&id))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LookWindow([Option<Instant>; ITEM_LOOK_COMMANDS_PER_SECOND]);
 
@@ -443,7 +456,7 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
-    if definition.production_key == "oteryn:item.tibia.i6120" {
+    if is_spellbook(&definition.production_key) {
         // The runtime and spell-state locks preserve the Channel owner's established order. The
         // state lookup rechecks the exact actor/session binding, so reconnect cannot expose a
         // previous incarnation's vocation-filtered list.
@@ -456,9 +469,9 @@ async fn observe_look_item(
     Ok(ordinary)
 }
 
-/// Crystal `spellbook.lua`: instant spells for the current vocation, grouped by required level,
-/// sorted by that level, with percentage mana replacing the fixed mana field. Oteryn currently
-/// has no instant-spell magic-level requirement; rune magic levels are intentionally excluded.
+/// LOOK serves every donor spellbook id with Crystal `spellbook.lua` instant spells for the
+/// current vocation, grouped and sorted by required level, with percentage mana replacing the
+/// fixed mana field. Oteryn has no instant-spell magic-level requirement; runes are excluded.
 pub(super) fn spellbook_text(book: &SpellBook, vocation: Vocation) -> Option<String> {
     let mut spells: Vec<_> = book
         .spells
