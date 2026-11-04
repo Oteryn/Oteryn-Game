@@ -131,6 +131,8 @@ pub struct PlayerSpellState {
     pub(super) equipped_armor: u32,
     /// ENERGY-RING-1: the active equipment form from the last fenced equipment read.
     pub(super) equipped_mana_shield: bool,
+    /// I05-r2: a worn item's active form grants invisibility (Crystal CONDITION_INVISIBLE per slot).
+    pub(super) equipped_invisible: bool,
     /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
     pub(super) equipped_defence:
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
@@ -223,6 +225,7 @@ impl PlayerSpellState {
                 equipped_mantra: 0,
                 equipped_armor: 0,
                 equipped_mana_shield: false,
+                equipped_invisible: false,
                 equipped_defence: None,
                 equipped_physical_protection: None,
                 equipped_ice_protection: None,
@@ -240,6 +243,7 @@ impl PlayerSpellState {
 }
 
 mod equipped_armor;
+mod equipped_invisibility;
 mod gate;
 mod level_up_vitals;
 mod live_skill;

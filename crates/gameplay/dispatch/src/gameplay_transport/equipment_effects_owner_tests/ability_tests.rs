@@ -525,6 +525,45 @@ fn equipment_effects_owner_uses_primary_slot_and_extra_never_suppresses() -> Tes
 }
 
 #[test]
+fn equipment_effects_owner_invisibility_reads_worn_item_in_own_slot_only() -> TestResult {
+    let invisible = |value| {
+        serde_json::json!({"kind":"INVISIBILITY",
+          "parameter":{"state":"KNOWN","value":{"kind":"BOOLEAN","value":value}},
+          "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(true)]),
+        Some(0),
+    )?)?;
+    for slot in 1..=10 {
+        assert_eq!(
+            equipped_invisibility(
+                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
+                &content
+            ),
+            Some(slot == 9),
+            "slot {slot}"
+        );
+    }
+
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(false)]),
+        Some(0),
+    )?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
+
+    let content = native(&input()?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
+    Ok(())
+}
+
+#[test]
 fn equipment_effects_owner_preserves_unknown_speed_and_rejects_ability_errors() -> TestResult {
     let content = native(&fixture_input(serde_json::json!([]), None)?)?;
     let equipment = snapshot(&content, "oteryn:item.tibia.i2854", 9);

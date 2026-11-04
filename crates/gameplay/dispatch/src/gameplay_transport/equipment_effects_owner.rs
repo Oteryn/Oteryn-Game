@@ -212,6 +212,42 @@ pub(in crate::gameplay_transport) fn equipped_mana_shield(
     )
 }
 
+/// I05-r2 (Crystal movement.cpp:647-650): any worn item in its own slot whose worn form has
+/// INVISIBILITY true. `None` for the same unreadable equipment `equipment_effects` refuses.
+pub(in crate::gameplay_transport) fn equipped_invisibility(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<bool> {
+    use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    for item in &equipment.items {
+        if item.definition.family != "Item" {
+            return None;
+        }
+        let (_, semantic_slot) = canonical_slot(item.slot)?;
+        let Some(active) =
+            super::super::timed_item_content::equipped_definition(content, &item.definition)
+        else {
+            continue;
+        };
+        let policy = content.item_policy(&active.production_key, &active.revision_ref)?;
+        let semantics = &policy.record().semantics;
+        if !in_own_slot(semantics, semantic_slot) {
+            continue;
+        }
+        if matches!(&semantics.skill_modifiers, ReferenceItemField::Known(group)
+            if matches!(&group.modifiers, ReferenceItemField::Known(modifiers)
+                if modifiers.iter().any(|modifier| modifier.kind == ReferenceSkillModifierKind::Invisibility
+                    && modifier.parameter == ReferenceItemField::Known(ReferenceModifierParameter::Boolean(true)))))
+        {
+            return Some(true);
+        }
+    }
+    Some(false)
+}
+
 /// ARMOR-MITIGATION-1 (`Player::getArmor`): the armor of the items worn in their own head,
 /// necklace, torso, legs, feet, ring and ammo slots; the hands and the container never count.
 /// An item whose armor is not known contributes nothing; a negative armor value contributes
@@ -665,6 +701,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let invisible =
+                equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
             let wheel_hands =
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
@@ -678,6 +716,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            state.install_equipped_invisibility(invisible);
         }
         Some(())
     }
@@ -695,6 +734,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_house_proficiency_equipment(runtime, actor, session, fence, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let invisible =
+                equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
             let wheel_hands =
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
@@ -708,6 +749,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            state.install_equipped_invisibility(invisible);
         }
         Some(())
     }
