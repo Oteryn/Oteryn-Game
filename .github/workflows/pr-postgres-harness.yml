@@ -9,7 +9,7 @@ name: PR PostgreSQL harness
 # every pull request. Adding the label starts a run; later pushes to a
 # labelled pull request run it again. Protected main still runs every
 # PostgreSQL lane after each merge (merge-group-gate.yml on push to main).
-# It is not the PR gate (merge-gate.yml) and not a required check; the Merge
+# Its required heavy-gate enforces the harness for heavy-tests PRs; the Merge
 # Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
 # runs the full workspace suite and every PostgreSQL lane once (D1471). The
 # build job keeps the Merge Queue custody checks and compiles the test set
@@ -20,9 +20,10 @@ name: PR PostgreSQL harness
 # them against PostgreSQL, so nothing is compiled twice and the twelve
 # planned partitions together run every test exactly once.
 #
-# OTERYN_SELF_HOSTED_PG=on runs the twelve partitions on the Molehill runners
-# against a throwaway native PostgreSQL 18 cluster per job instead of the
-# hosted service container; turn it off or delete it when the PC is offline.
+# OTERYN_SELF_HOSTED_PG=on runs all twelve partitions on Molehill; split runs
+# partitions 1-4 on Molehill and 5-12 on ubuntu-24.04. Off or unset runs all
+# partitions hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
+# per job instead of the hosted service container; turn it off when offline.
 # Forks and Dependabot always stay hosted. The build job stays hosted: the
 # test binaries embed its workspace path at compile time, so a Molehill
 # partition exposes a checkout of the same head at that path (one head at a
@@ -338,7 +339,7 @@ jobs:
     name: PR early signal / Durability PostgreSQL harness
     needs: build
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_PG == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ ((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read
@@ -351,7 +352,7 @@ jobs:
     # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
-        image: ${{ !(vars.OTERYN_SELF_HOSTED_PG == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
+        image: ${{ !((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -678,3 +679,60 @@ jobs:
             kill -- "-$PG_WS_HOLDER" 2>/dev/null || true
           fi
           exit 0
+
+  # A non-heavy event may race with heavy-tests being added: check live labels.
+  # If this head already has a passing non-heavy heavy-gate, that stale success
+  # stays visible until the real run finishes. Do not enable auto-merge in that
+  # window; wait for the real run or push after labelling.
+  heavy_gate:
+    name: heavy-gate
+    needs: [build, durability_postgres]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      checks: read
+      pull-requests: read
+    steps:
+      - name: Require the heavy PostgreSQL harness
+        env:
+          IS_ELIGIBLE: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' }}
+          IS_HEAVY: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && contains(github.event.pull_request.labels.*.name, 'heavy-tests') }}
+          IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          POSTGRES_RESULT: ${{ needs.durability_postgres.result }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$IS_ELIGIBLE" != 'true' ]]; then
+            echo 'Not a heavy-tests PR; game-gate governs qualification.'
+            exit 0
+          fi
+          if [[ "$IS_HEAVY" != 'true' ]]; then
+            live_labels=$(gh api "repos/$REPOSITORY/issues/$PR_NUMBER/labels" --paginate --jq '.[].name')
+            if grep -Fxq 'heavy-tests' <<< "$live_labels"; then
+              echo 'heavy-tests was added after this event; the heavy-tests run publishes heavy-gate'
+              exit 1
+            fi
+            echo 'Not a heavy-tests PR; game-gate governs qualification.'
+            exit 0
+          fi
+          if [[ "$IS_REAL_RUN" == 'true' ]]; then
+            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
+            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
+            exit
+          fi
+          # Other label events have skipped dependencies: mirror the latest
+          # completed gate on this exact head without cancelling the real run.
+          conclusion=$(gh api --paginate --slurp \
+            "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?check_name=heavy-gate&filter=all&per_page=100" |
+            jq -r '[.[].check_runs[] | select(.status == "completed")] | max_by([.completed_at, .id]) | .conclusion // "none"')
+          if [[ "$conclusion" == 'none' ]]; then
+            echo 'The real heavy-tests run is still running and will publish the final heavy-gate.'
+            exit 1
+          fi
+          echo "Latest completed heavy-gate on this head: $conclusion"
+          [[ "$conclusion" == 'success' ]]
