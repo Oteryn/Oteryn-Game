@@ -85,6 +85,42 @@ fn the_board_reply_projects_every_task_and_the_stored_tracks() {
 }
 
 #[test]
+fn board_wire_rejects_an_overflowed_durable_completion_snapshot() {
+    let mut commit = committed();
+    commit.view.data.weekly = Some(rules::WeeklyBoard {
+        period: 20_754,
+        difficulty: 0,
+        any_required: 1,
+        any_kills: 1,
+        kills: (0..255)
+            .map(|index| rules::WeeklyKillTask {
+                race: format!("oteryn:creature.overflow{index}"),
+                required: 1,
+                current: 1,
+            })
+            .collect(),
+        deliveries: vec![rules::WeeklyDeliveryTask {
+            item_id: 3031,
+            required: 1,
+            delivered: true,
+        }],
+        finished: false,
+    });
+
+    assert_eq!(
+        commit
+            .view
+            .data
+            .weekly
+            .as_ref()
+            .expect("weekly fixture")
+            .completion_summary(),
+        Err(rules::TaskBoardRefusal::ArithmeticOverflow)
+    );
+    assert_eq!(projection::full(&commit), None);
+}
+
+#[test]
 fn full_actions_preserve_legacy_reply_and_retire_fixed_task_mutations() {
     let query = wire::full::encode_request(&wire::full::Request::query()).expect("full query");
     assert_eq!(decode_action(&query), Some((TaskBoardAction::Query, false)));

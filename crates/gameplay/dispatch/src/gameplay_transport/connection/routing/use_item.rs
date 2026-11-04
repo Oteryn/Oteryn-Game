@@ -211,6 +211,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return Some(Dispatch::Use(outcome));
                 }
+                if let (
+                    Some(source),
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)),
+                ) = (source, intent.use_with_map_item.clone())
+                    && let Some(outcome) = authority
+                        .use_fluid_on_map(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: command.command_id,
+                                item_fence: admitted.item_fence,
+                            },
+                            source,
+                            target,
+                        )
+                        .await
+                {
+                    return Some(Dispatch::Use(outcome));
+                }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
@@ -376,4 +395,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
     })
+}
+
+#[cfg(test)]
+mod fluid_routing_tests {
+    #[test]
+    fn donor_generic_fluid_handler_runs_after_specific_map_handlers() {
+        let route = include_str!("use_item.rs");
+        let fluid = route.find(".use_fluid_on_map(");
+        let imbuement = route.find(".use_imbuement_item(");
+        let key = route.find(".use_key_on_door(");
+        assert!(fluid.is_some() && imbuement.is_some() && key.is_some(), "handlers present");
+        assert!(imbuement < fluid, "imbuement handler before fluid");
+        assert!(key < fluid, "key handler before fluid");
+    }
 }

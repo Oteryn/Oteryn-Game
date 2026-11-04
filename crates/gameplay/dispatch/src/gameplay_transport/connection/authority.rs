@@ -490,6 +490,17 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// I10a: a carried fluid container used on a map source or ground tile.
+    fn use_fluid_on_map(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// A parked native item-use successor must reconcile before ingress can
     /// terminalize USE. `true` closes the connection without acknowledging it.
     fn item_use_pending(

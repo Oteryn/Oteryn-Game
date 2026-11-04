@@ -14,12 +14,11 @@
 The owner supplied `https://www.tibiamonk.com/en/info/perk-shaping` and its vocation pages
 `/en/info/perk-shaping/<vocation>` (read 2026-10-30) as owner-verified evidence. They join
 1B §3.3's list as class `OWNER_VERIFIED`, after `CIPSOFT_OFFICIAL` and before English TibiaWiki.
-OTS sources stay excluded.
+OTS sources stay excluded. **Amendment (owner decision, 2026-11-03):** ranks 1-9 are admitted from pinned donor Crystal `201189f871d23597b82caf88fd611454a2ddefb8`, `src/creatures/players/proficiencies/proficiencies.hpp:78-85` and `proficiencies.cpp:244-329`, as evidence class `OWNER_VERIFIED_CRYSTAL_DONOR`.
 
 ## 2. Values (amends 1B §3.1)
 
-Committed in `rulesets/progression/weapon-proficiency/shaping.json` (revision `shaping-r1`),
-imported by `import_committed_proficiency_shaping`.
+Revision `shaping-r1` remains unchanged in `rulesets/progression/weapon-proficiency/shaping.json`; the 2026-11-03 amendment is committed as `shaping-r2.json` and imported by `import_committed_proficiency_shaping`.
 
 | Cell | Value | Evidence |
 |---|---|---|
@@ -39,8 +38,7 @@ Values keep the source's display unit (`percent` or `points`); the effect consum
 - **Draw weights.** `ASSUMPTION: uniform; Global weights unpublished.` Every entry draws with weight
   1 (`PROFICIENCY_SHAPING_ASSUMED_WEIGHT`, the one place it is set). A published weight replaces
   it in a new shaping revision.
-- **Ranks 1-9.** Their values are unpublished, so `RANK_UP` stays `NOT_ADMITTED` (1B §3.3).
-  `MODIFY`, `RESHAPE_OFFER`, `RESHAPE_CHOOSE`, `CLEAR` and `ORB_RANK` read only evidenced cells.
+- **Ranks 1-9.** Revision `shaping-r2` derives them with Crystal’s `rank0 + perRank * rank` rule and admits `RANK_UP`; retained `shaping-r1` continues to answer `NOT_ADMITTED`.
 - **Pool by weapon vocation (UNVERIFIED).** 1B keys shaping by proficiency definition, and the
   source publishes one pool per vocation. A definition takes the pool of its weapons' vocation:
   sword, axe and club → knight; distance and ammunition → paladin; wand → sorcerer; rod → druid;
@@ -53,8 +51,7 @@ Values keep the source's display unit (`percent` or `points`); the effect consum
 "10 refinement ranks", refine table from rank 1 to rank 10). Migration 0575 widens the rank CHECKs
 of 0055 forward (0055 is never edited), and the domain, the resource-limit entry
 `docs/contracts/resource-limits/entries/0432-PROF1-RL-02.json` and the wire change with it in the
-same batch. The production shaping source exposes the rank 0 and rank 10 values; every rank step
-cost stays unevidenced, so `RANK_UP` answers `NOT_ADMITTED`.
+same batch. The production shaping source exposes ranks 0 through 10 in active `shaping-r2`; donor-evidenced rank-step costs and values admit `RANK_UP`. Retained `shaping-r1` remains endpoint-only and rejects it.
 
 ## 5. Orb burn (amends 1B §7.2)
 

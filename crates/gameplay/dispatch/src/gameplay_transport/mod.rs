@@ -67,6 +67,7 @@ mod equipment_reflection;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
+mod furniture_catalog;
 pub mod gameplay_drain;
 mod gameplay_idle_presence;
 mod grizzly_boss;

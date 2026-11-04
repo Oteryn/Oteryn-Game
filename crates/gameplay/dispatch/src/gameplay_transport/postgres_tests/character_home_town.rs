@@ -58,7 +58,7 @@ fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> Test
 }
 
 #[test]
-fn p20_ended_premium_moves_a_premium_area_citizen_to_the_thais_temple() -> TestResult {
+fn p20_login_path_moves_an_ended_premium_area_citizen_to_the_thais_temple() -> TestResult {
     on_large_stack(Some(PremiumEntry::Stored))
 }
 
