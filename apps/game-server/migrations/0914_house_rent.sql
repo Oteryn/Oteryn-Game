@@ -80,7 +80,7 @@ DO $$ DECLARE expr TEXT; BEGIN
  EXECUTE format('ALTER TABLE game_account_bank_entries ADD CONSTRAINT game_account_bank_entries_house_value CHECK(CASE WHEN house_rent_kind IS NOT NULL THEN escrow_before IS NULL AND escrow_after IS NULL AND recipient_character_id IS NULL AND counterpart_entry_id IS NULL AND balance_after=balance_before-amount ELSE (%s) END)',expr);
 END $$;
 
-CREATE FUNCTION game_house_rent_tick(w UUID,n UUID,nr NUMERIC,secret BYTEA) RETURNS BOOLEAN
+CREATE FUNCTION game_house_rent_tick(w UUID,n UUID,nr NUMERIC,secret BYTEA,OUT changed BOOLEAN,OUT operation TEXT) RETURNS RECORD
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE p game_house_properties; s game_house_rent_state; b game_account_bank_balances; entry UUID; payment UUID; letter UUID; letter_tx UUID; due_cycle TIMESTAMPTZ; now_ms BIGINT; period INTERVAL;
 BEGIN
@@ -91,14 +91,14 @@ BEGIN
  END IF;
  SELECT CASE rent_period WHEN 'daily' THEN interval '1 day' WHEN 'weekly' THEN interval '7 days'
   WHEN 'monthly' THEN interval '30 days' WHEN 'yearly' THEN interval '365 days' END INTO period FROM game_house_rent_config;
- IF period IS NULL THEN RETURN FALSE; END IF;
+ IF period IS NULL THEN changed:=FALSE; RETURN; END IF;
  INSERT INTO game_house_rent_state(world_id,house_key,next_rent_at)
   SELECT world_id,house_key,greatest(paid_until,statement_timestamp()) FROM game_house_properties
    WHERE world_id=w AND owner_character_id IS NOT NULL ON CONFLICT DO NOTHING;
  SELECT hp.* INTO p FROM game_house_properties hp JOIN game_house_rent_state rs USING(world_id,house_key)
   WHERE hp.world_id=w AND hp.owner_character_id IS NOT NULL AND hp.paid_until<=statement_timestamp() AND rs.next_rent_at<=statement_timestamp()
   ORDER BY rs.next_rent_at,hp.house_key LIMIT 1 FOR UPDATE OF hp,rs SKIP LOCKED;
- IF NOT FOUND THEN RETURN FALSE; END IF;
+ IF NOT FOUND THEN changed:=FALSE; RETURN; END IF;
  SELECT * INTO s FROM game_house_rent_state WHERE world_id=w AND house_key=p.house_key FOR UPDATE;
  due_cycle:=s.next_rent_at;
  SELECT * INTO b FROM game_account_bank_balances WHERE account_id=p.owner_account_id AND world_id=w FOR UPDATE;
@@ -113,7 +113,7 @@ BEGIN
   END IF;
   UPDATE game_house_properties SET paid_until=greatest(paid_until,statement_timestamp())+period,revision=revision+1 WHERE world_id=w AND house_key=p.house_key;
   UPDATE game_house_rent_state SET warnings=0,next_rent_at=(SELECT paid_until FROM game_house_properties WHERE world_id=w AND house_key=p.house_key) WHERE world_id=w AND house_key=p.house_key;
-  RETURN TRUE;
+  changed:=TRUE; RETURN;
  END IF;
  IF s.warnings<7 THEN
   UPDATE game_house_rent_state SET warnings=warnings+1,next_rent_at=next_rent_at+period WHERE world_id=w AND house_key=p.house_key RETURNING * INTO s;
@@ -134,16 +134,16 @@ BEGIN
   BEGIN
    INSERT INTO game_house_dispositions(world_id,house_key,owner_character_id,ownership_revision,state,noticed_at,due_at,cause)
     SELECT w,p.house_key,o.owner_character_id,o.ownership_revision,1,now_ms,now_ms,'EVICTION' FROM game_house_ownership o
-     WHERE o.world_id=w AND o.house_key=p.house_key;
+     WHERE o.world_id=w AND o.house_key=p.house_key RETURNING operation_id::text INTO operation;
    UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE world_id=w AND runtime_scope_kind=2
     AND runtime_scope_house_key=p.house_key AND session_state IN(1,2);
   EXCEPTION WHEN unique_violation THEN
    -- A competing disposition belongs to this house only. Keep its warning
    -- transition committed so the world worker can advance the next house.
-   NULL;
+   operation:=NULL;
   END;
  END IF;
- RETURN TRUE;
+ changed:=TRUE; RETURN;
 END $$;
 DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) SET search_path=pg_catalog,%I,pg_temp',current_schema()); END $$;
 

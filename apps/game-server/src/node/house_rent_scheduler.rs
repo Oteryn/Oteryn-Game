@@ -3,7 +3,7 @@ use crate::durability::{
     DurabilityRoot, character_authority::ReconciledCharacterAuthority,
     runtime_scope_assignment::NodeIncarnationProof,
 };
-use crate::foundation::WorldId;
+use crate::foundation::RuntimeScopeRefV1;
 use oteryn_foundation::CancellationToken;
 use std::time::Duration;
 
@@ -11,13 +11,14 @@ pub(super) async fn run(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
-    world: WorldId,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
     stop: &CancellationToken,
 ) {
     loop {
         for _ in 0..100 {
             let Some(result) = super::cancellation::first(
-                root.advance_house_rent(authority, node, world),
+                root.advance_house_rent(authority, node, scope, generation),
                 stop.cancelled(),
             )
             .await
