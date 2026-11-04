@@ -15,7 +15,6 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::domain::cyclopedia::{BasicArea, MapAction, MapProgress, MapRefusal, Point};
 use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
-use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 mod storage;
@@ -120,7 +119,6 @@ impl DurabilityRoot {
                 u64::from(amount)
             } else {0};
             let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch).await?;
-            if donation>0 && improved { return Ok(Ok((root.revision,projection(7,root.revision,&progress,pool,improved,&request)?))); }
             let pool_after=pool.checked_add(donation).filter(|v|*v<=i64::MAX as u64).ok_or(DurabilityError::InvalidStoredState)?;
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
