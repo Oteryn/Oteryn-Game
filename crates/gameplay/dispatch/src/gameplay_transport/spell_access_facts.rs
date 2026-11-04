@@ -1032,10 +1032,14 @@ mod progression_dispatch_tests {
                 .vitals();
             let fed_seconds = if fed { second.min(6) } else { 0 };
             let hungry_seconds = second - fed_seconds;
-            let expected = (
-                100 + fed_seconds / 3 + hungry_seconds / 4,
-                100 + 2 * (fed_seconds / 5 + (hungry_seconds + fed_seconds % 5) / 6),
-            );
+            // REGEN-PCT-4: fed ticks every 3 s for both pools, hungry 4 s (health)
+            // and 6 s (mana); progress carries across the food change. Knight
+            // 185 max health: 10 bp is below the Global floor of 1 HP / 6 s, so
+            // each tick credits half a point. 200 max mana: 8 bp is below the
+            // floor of 2 mana / 6 s, so each tick credits one point.
+            let health_ticks = fed_seconds / 3 + (hungry_seconds + fed_seconds % 3) / 4;
+            let mana_ticks = fed_seconds / 3 + (hungry_seconds + fed_seconds % 3) / 6;
+            let expected = (100 + health_ticks / 2, 100 + mana_ticks);
             assert_eq!(
                 (u64::from(vitals.health), u64::from(vitals.mana)),
                 expected,
