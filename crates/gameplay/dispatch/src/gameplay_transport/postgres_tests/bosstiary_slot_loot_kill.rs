@@ -176,7 +176,9 @@ async fn native_kill(
 
 async fn item_count(h: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
-        "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1",
+        "SELECT count(*) FROM game_item_instances i \
+         JOIN game_item_corpse_container_entries e USING(item_instance_id) \
+         WHERE i.definition_production_key=$1",
     )
     .bind(key)
     .fetch_one(&h.pool)
@@ -256,10 +258,11 @@ fn scenario(assigned: bool) -> TestResult {
             );
         let room = source_pin.qualified_room().clone();
         let pin = source_pin.into_channel_pin();
-        let deps = Dependencies::with_content(
+        let deps = Dependencies::with_content_and_capacity(
             pin,
             room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
+            3,
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
