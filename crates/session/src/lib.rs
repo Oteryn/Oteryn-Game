@@ -25,7 +25,11 @@ mod gated_command;
 mod hotkey_equip_transport;
 mod join;
 mod map_transport;
+mod presentation;
 mod quest_log_transport;
+pub use oteryn_protocol_oteryn::presentation::{
+    PresentationEvent, PresentationEventKind, PresentationSource,
+};
 mod recovery;
 use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};

@@ -30,6 +30,7 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    pub sounds: Vec<super::SoundCue>,
     /// Transient domain-16 updates, reduced before publication to the shell.
     pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
     /// Transient domain-57 messages retained in order; they are never coalesced to one value.
@@ -48,6 +49,8 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        let room = super::MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
+        self.sounds.extend(newer.sounds.into_iter().take(room));
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.server_messages.append(newer.server_messages);
@@ -162,7 +165,8 @@ impl Outbox {
         mailbox.stepped = Some(Box::new(outcome));
     }
 
-    pub(super) fn push(&self, events: Vec<SessionEvent>) {
+    /// Delivers validated session events to the native view (also used by the headless harness).
+    pub fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {

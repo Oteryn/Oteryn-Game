@@ -24,6 +24,7 @@ rustls.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+oteryn-client = { version = "=0.1.0", path = "../../apps/client" }
 rcgen.workspace = true
 tokio-rustls.workspace = true
 

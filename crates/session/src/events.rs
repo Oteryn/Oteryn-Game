@@ -5,6 +5,8 @@ use super::*;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    Presentation(AppliedDelta<Vec<PresentationEvent>>),
+    ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
@@ -54,6 +56,8 @@ impl SessionEvent {
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
+            Self::Presentation(_) => 19,
+            Self::ActorCooldowns(_) => 20,
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }

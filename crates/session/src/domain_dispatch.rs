@@ -63,6 +63,7 @@ impl<S: SessionStream> Session<S> {
                 }
                 Ok(event)
             }
+            19 | 20 => crate::presentation::apply(self, server_sequence, payload),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
             oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {

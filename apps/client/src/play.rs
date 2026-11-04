@@ -30,6 +30,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    sounds: Vec<SoundCue>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -75,6 +76,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            sounds: Vec::new(),
             own,
             facing: StepDir::South,
             floor,
@@ -119,6 +121,8 @@ impl PlayView {
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                    let room = MAX_PENDING_SOUNDS.saturating_sub(self.sounds.len());
+                    self.sounds.extend(pushed.sounds.into_iter().take(room));
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
                 PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
@@ -159,6 +163,11 @@ mod session_loop;
 mod session_stepper;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+use feature_0023_presentation::state::MAX_PENDING_SOUNDS;
+#[cfg(windows)]
+pub use feature_0023_presentation::state::native::AudioOutput;
+pub use feature_0023_presentation::state::{AudioSettings, SoundCatalog, SoundCue, decode_mapping};
 
 pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;

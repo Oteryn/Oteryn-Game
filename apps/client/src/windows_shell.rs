@@ -54,6 +54,8 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    audio: Result<oteryn_client::play::AudioOutput, String>,
+    audio_settings: oteryn_client::play::AudioSettings,
     smoke: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
@@ -87,6 +89,8 @@ impl Application {
             entry.request();
         }
         Ok(Self {
+            audio: oteryn_client::play::AudioOutput::from_environment(),
+            audio_settings: oteryn_client::play::AudioSettings::default(),
             smoke,
             window: None,
             renderer: None,
@@ -132,6 +136,9 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Ok(audio) = &mut self.audio {
+            audio.stop();
+        }
         self.play = None;
         if let Some(entry) = &mut self.entry {
             entry.leave_play();
@@ -160,6 +167,9 @@ impl Application {
         };
         match result {
             Ok((mut view, link)) => {
+                let mut preferences = view.preferences().clone();
+                preferences.audio = self.audio_settings;
+                let _ = view.set_preferences(preferences);
                 let center = view.map_center();
                 let (world, reason) = World::from_env(center);
                 if let Some(reason) = reason {
@@ -357,7 +367,25 @@ impl ApplicationHandler for Application {
             }
         }
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
-            let status = play.view.combat_status();
+            self.audio_settings = play.view.preferences().audio;
+            let cues = play.view.take_sound_cues();
+            let audio_status = match &mut self.audio {
+                Ok(audio) => {
+                    audio.update(self.audio_settings, cues);
+                    audio.status().unwrap_or("ready")
+                }
+                Err(error) => error.as_str(),
+            };
+            let status = format!(
+                "{} | Audio {}%{} ({audio_status}); F10 mute, F11/F12 volume",
+                play.view.combat_status(),
+                self.audio_settings.master_volume,
+                if self.audio_settings.muted {
+                    " muted"
+                } else {
+                    ""
+                }
+            );
             if status != play.status {
                 window.set_title(&format!("Oteryn — {status}"));
                 play.status = status;
