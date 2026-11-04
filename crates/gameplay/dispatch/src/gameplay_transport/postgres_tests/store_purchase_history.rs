@@ -6,7 +6,7 @@ use super::store::{FakePlatform, Ledger, purchase, purchase_request, serve, uuid
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::CommandStatus;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::native_admission_source::store::StoreClient;
 use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc, Mutex as SyncMutex};
