@@ -398,7 +398,7 @@ async fn exchange_checked(
     reply.ok_or_else(|| format!("wrap command {command}: {end:?}").into())
 }
 
-fn wrap_bundle(
+pub(super) fn wrap_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
