@@ -65,6 +65,9 @@ impl<S: SessionStream> Session<S> {
             }
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
+            oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES => {
+                crate::achievement_notices::apply(self, server_sequence, payload)
+            }
             oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {
                 crate::server_messages::apply(self, server_sequence, payload)
             }
