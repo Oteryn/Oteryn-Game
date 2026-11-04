@@ -27,7 +27,11 @@ fn scenario() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let fence = fence(1)?;
+        // Fresh admission advances the character lease from generation 1 to 2.
+        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_lease_generation: 2,
+            ..fence(1)?
+        };
         let key = ExerciseDummyKey {
             world_id: WorldId::decode(&id(10)).map_err(debug)?,
             bundle_digest: [7; 32],
