@@ -25,12 +25,11 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
             protection_zone,
             entries,
         }) = tile_entries(map, step.from)
+            && !protection_zone
         {
-            if !protection_zone {
-                for (key, entry) in entries {
-                    if matches!(entry.appearance_id, 2146 | 2148 | 3945 | 44530) {
-                        transform(map, key, entry.appearance_id - 1);
-                    }
+            for (key, entry) in entries {
+                if matches!(entry.appearance_id, 2146 | 2148 | 3945 | 44530) {
+                    transform(map, key, entry.appearance_id - 1);
                 }
             }
         }
