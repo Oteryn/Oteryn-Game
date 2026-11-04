@@ -20,13 +20,12 @@ class RuntimeCatalogueTests(unittest.TestCase):
             with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
                 catalogue = json.loads(runtime.OUT.read_text(encoding="utf-8"))
                 offer = next(
-                    row for row in catalogue["offers"]
+                    row
+                    for row in catalogue["offers"]
                     if row["key"] == "store:charm-expansion"
                 )
                 offer[field] = value
                 path = Path(directory) / "catalogue.json"
                 path.write_text(json.dumps(catalogue), encoding="utf-8")
                 with patch.object(runtime, "OUT", path):
-                    self.assertIn(
-                        f"store:charm-expansion: {message}", runtime.check()
-                    )
+                    self.assertIn(f"store:charm-expansion: {message}", runtime.check())
