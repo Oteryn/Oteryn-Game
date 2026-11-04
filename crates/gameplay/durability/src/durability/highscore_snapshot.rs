@@ -108,14 +108,15 @@ pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
     None
 }
 
-/// The highest category this server publishes and answers: 11 with an activated Charm point
-/// source, otherwise 10.
-pub fn served_categories() -> u8 {
-    if activated_charm_points().is_some() {
-        11
-    } else {
-        10
-    }
+/// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
+pub const BOSS_POINTS_CATEGORY: u8 = 12;
+
+/// Categories 1-10 and 12 are always served; category 11 requires an activated Charm point
+/// source.
+pub fn served_category(category: u8) -> bool {
+    (1..=10).contains(&category)
+        || category == BOSS_POINTS_CATEGORY
+        || (category == 11 && activated_charm_points().is_some())
 }
 
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
@@ -157,9 +158,14 @@ impl SnapshotCatalogues {
         })
     }
 
-    /// The categories one publication writes: 1..=11, or 1..=10 without a Charm point source.
-    fn published_categories(&self) -> i32 {
-        if self.charm_points { 11 } else { 10 }
+    /// The categories one publication writes: 1..=10 and 12, plus 11 with a Charm point source.
+    fn published_categories(&self) -> Vec<i32> {
+        let mut categories: Vec<i32> = (1..=10).collect();
+        if self.charm_points {
+            categories.push(11);
+        }
+        categories.push(i32::from(BOSS_POINTS_CATEGORY));
+        categories
     }
 }
 
@@ -330,7 +336,7 @@ impl DurabilityRoot {
         snapshot_id: u64,
         character: CharacterId,
     ) -> Result<SnapshotPage> {
-        if !(1..=11).contains(&category) {
+        if !(1..=12).contains(&category) {
             return Err(SnapshotError::NotSupported);
         }
         if page == 0 || (page > 1 && snapshot_id == 0) {
@@ -387,7 +393,7 @@ fn uuid_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The eligible Characters of categories 1-9 and 11 at the cut: keyset pages in CharacterId
+/// The eligible Characters of categories 1-9, 11 and 12 at the cut: keyset pages in CharacterId
 /// order, all inside the caller's repeatable-read cut, so the pages are one consistent set. More
 /// than `limits` eligible Characters refuse the whole cut.
 pub async fn read_source_within(
@@ -584,6 +590,40 @@ async fn read_extra_sources(
     Ok([achievements, charms])
 }
 
+/// HIGHSCORES0 §3 category 12: Bosstiary boss points, Crystal `game.cpp:9897` `boss_points`;
+/// same eligibility as categories 1-9 and 11.
+async fn read_boss_points(
+    tx: &mut Transaction<'_, Postgres>,
+    characters: &[Source],
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut bosses = Vec::with_capacity(characters.len());
+    for page in characters.chunks(limits.page_rows) {
+        let ids: Vec<String> = page
+            .iter()
+            .map(|source| uuid_hex(source.character_id.as_bytes()))
+            .collect();
+        let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,sum(boss_points)::bigint AS boss_points FROM game_character_bosstiary_progress WHERE character_id=ANY($1::text[]::uuid[]) GROUP BY character_id ORDER BY character_id")
+            .bind(&ids).fetch_all(&mut **tx).await?;
+        let mut earned: BTreeMap<CharacterId, u64> = BTreeMap::new();
+        for row in rows {
+            earned.insert(character(&row)?, nonnegative(&row, "boss_points")?);
+        }
+        for source in page {
+            let mut values = [(0, 0); 9];
+            values[0] = (earned.remove(&source.character_id).unwrap_or(0), 0);
+            bosses.push(Source {
+                character_id: source.character_id,
+                name: source.name.clone(),
+                vocation: source.vocation.clone(),
+                level: source.level,
+                values,
+            });
+        }
+    }
+    Ok(bosses)
+}
+
 #[derive(Serialize)]
 struct StoredRow {
     filter: i16,
@@ -658,15 +698,15 @@ async fn publish_cut(
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
         .execute(&mut **tx)
         .await?;
-    let categories: i32 = catalogues.published_categories();
+    let categories: Vec<i32> = catalogues.published_categories();
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
     // concurrent head insertion also conflicts; an invisible head never becomes an empty cut.
-    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) SELECT encode($1,'hex')::uuid,category FROM generate_series(1,$2) category ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(categories).execute(&mut **tx).await?;
-    let heads = sqlx::query("SELECT category,current_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid AND category<=$2 ORDER BY category FOR UPDATE")
-        .bind(world.as_bytes().as_slice()).bind(categories).fetch_all(&mut **tx).await?;
-    if heads.len() != usize::try_from(categories).map_err(|_| corrupt())? {
+    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) SELECT encode($1,'hex')::uuid,category FROM unnest($2::int[]) category ON CONFLICT DO NOTHING")
+        .bind(world.as_bytes().as_slice()).bind(&categories).execute(&mut **tx).await?;
+    let heads = sqlx::query("SELECT category,current_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid AND category=ANY($2::int[]) ORDER BY category FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).bind(&categories).fetch_all(&mut **tx).await?;
+    if heads.len() != categories.len() {
         return Err(SnapshotError::RetryableConflict);
     }
     let cut = sqlx::query("SELECT pg_current_snapshot()::text AS source_cut,floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS computed_at_ms")
@@ -676,10 +716,12 @@ async fn publish_cut(
     // Read due state while holding the same per-category locks used by publication. A stale
     // concurrent RR cut loses with a typed conflict rather than publishing a second generation.
     if only_if_due {
-        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category<=$2 AND s.computed_at_ms>$3")
-            .bind(world.as_bytes().as_slice()).bind(categories)
+        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[]) AND s.computed_at_ms>$3")
+            .bind(world.as_bytes().as_slice()).bind(&categories)
             .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).fetch_one(&mut **tx).await?;
-        if recent.try_get::<i64, _>("recent")? == i64::from(categories) {
+        if recent.try_get::<i64, _>("recent")?
+            == i64::try_from(categories.len()).map_err(|_| corrupt())?
+        {
             let oldest: i64 = recent.try_get("oldest")?;
             let remaining = oldest
                 .saturating_add(SNAPSHOT_INTERVAL_MS)
@@ -694,16 +736,19 @@ async fn publish_cut(
     }
     let source = read_source_within(tx, world, limits).await?;
     let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
+    let bosses = read_boss_points(tx, &source, limits).await?;
     let mut published = Vec::new();
     for (index, head) in heads.into_iter().enumerate() {
         let category = u8::try_from(head.try_get::<i32, _>("category")?).map_err(|_| corrupt())?;
-        if usize::from(category) != index + 1 {
+        if i32::from(category) != categories[index] {
             return Err(corrupt());
         }
         let old: Option<i64> = head.try_get("current_snapshot_id")?;
-        let rows = match index {
-            0..=8 => materialize(&source, index)?,
-            9 | 10 => materialize(&extra[index - 9], 0)?,
+        let rows = match category {
+            1..=9 => materialize(&source, usize::from(category) - 1)?,
+            10 => materialize(&extra[0], 0)?,
+            11 => materialize(&extra[1], 0)?,
+            BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
             _ => return Err(corrupt()),
         };
         let count = i32::try_from(rows.len()).map_err(|_| corrupt())?;
@@ -793,4 +838,20 @@ async fn read_in_transaction(
         rows,
         own_row,
     })
+}
+
+#[cfg(test)]
+mod category_set_tests {
+    use super::{BOSS_POINTS_CATEGORY, served_category};
+
+    #[test]
+    fn served_category_admits_boss_points_and_withholds_unsourced_charm_points() {
+        assert!(served_category(12));
+        assert!(served_category(1));
+        assert!(served_category(10));
+        assert!(!served_category(11));
+        assert!(!served_category(0));
+        assert!(!served_category(13));
+        assert_eq!(BOSS_POINTS_CATEGORY, 12);
+    }
 }

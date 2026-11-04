@@ -37,7 +37,7 @@
 | HS-WIRE-1 | impl, protocol review | capability 9 `HIGHSCORES_V1` and command type 14, the paged query (§6) | HS-1 |
 
 Later, each with its own decision or amendment:
-- Boss Points, when the Bosstiary state of BOSS-RAID-0 §10 exists (HS-1 adds the category then);
+- Boss Points, added by migration 0929 now that the Bosstiary state of BOSS-RAID-0 §10 exists;
 - Loyalty (Platform owns loyalty points);
 - Drome Score, Goshnar's Taint and Phosphorus Record (their systems);
 - the Platform and Atlas export of the snapshot rows (an export profile);
@@ -99,7 +99,7 @@ who may read them?
 | 3-9 | Fist, Club, Sword, Axe, Distance, Shielding, Fishing | (skill level, tries) | character | yes |
 | 10 | Achievement Points | the account's points (owner contract §4) | account | yes |
 | 11 | Charm Points | the Charm Points earned, as CHARM-0 derives them | character | yes |
-| 12 | Boss Points | BOSS-RAID-0 §10.2 | character | when Bosstiary state exists |
+| 12 | Boss Points | BOSS-RAID-0 §10.2 | character | Now (migration 0929) |
 | 13 | Loyalty Bonus | Platform | account | later (Platform) |
 | 14-16 | Drome Score, Goshnar's Taint, Phosphorus Record | their systems | character | later |
 

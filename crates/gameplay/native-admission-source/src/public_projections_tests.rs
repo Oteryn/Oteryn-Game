@@ -372,7 +372,7 @@ fn highscores_outside_the_contract_are_refused() {
     zero.level = 0;
     assert!(refused(vec![zero]));
     assert!(refused(vec![row(1, 1, "Al\"dric")]));
-    for (category, filter) in [(0, 0), (12, 0), (1, 6)] {
+    for (category, filter) in [(0, 0), (13, 0), (1, 6)] {
         let mut snapshot = highscores(vec![]);
         snapshot.category = category;
         snapshot.filter = filter;
@@ -1447,6 +1447,14 @@ fn line_and_paragraph_separators_are_outside_the_name_grammar() {
 }
 
 #[test]
+fn highscores_accept_boss_points_category_twelve() {
+    let mut snapshot = highscores(vec![]);
+    snapshot.category = 12;
+    assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    assert!(HIGHSCORE_CATEGORIES.contains(&("boss", 12)));
+}
+
+#[test]
 fn highscores_filters_and_categories_match_the_platform_consumer() {
     // Filter 0 is all; 1..5 are the base vocations by their wire vocation id
     // (Platform `highscoreVocationFilter`: Druid 1, Knight 2, Monk 3,
@@ -1459,7 +1467,7 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
             assert_eq!(vocation_id(name), Some(*id), "{name}");
         }
     }
-    // Platform `CommunityDataPolicy` category ids 1..9, then 10 and 11.
+    // Platform `CommunityDataPolicy` category ids 1..9, then 10, 11 and 12.
     let platform = [
         ("experience", 1),
         ("magic", 2),

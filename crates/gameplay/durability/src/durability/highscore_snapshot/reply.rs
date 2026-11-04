@@ -1,7 +1,7 @@
 //! RANK-1 (HS-WIRE-1, HIGHSCORES0 §6, CP D1155): command type 14 `HIGHSCORES_QUERY_V1` under
 //! capability 9. The handler reads one page of a persisted World snapshot (migration 0129) and
 //! never computes ranks. The World and the asking Character come from the admitted session, never
-//! from the payload. A category this server does not publish (outside 1..=11, or 11 while no Charm
+//! from the payload. A category this server does not publish (outside 1..=12, or 11 while no Charm
 //! point source is activated) is `NOT_SUPPORTED` (1200) and an echoed token that
 //! is no longer retained `SNAPSHOT_EXPIRED` (1201), both FND-02 error results without a payload.
 //! A malformed query, unreadable storage or a stored row the wire grammar refuses is `REJECTED`
@@ -12,7 +12,7 @@
 //! gameplay transport dispatches, including durable resolution of the current session.
 
 use super::super::fresh_admission::FreshAdmissionStore;
-use super::{DurabilityRoot, SnapshotError, SnapshotPage, SnapshotRow, served_categories};
+use super::{DurabilityRoot, SnapshotError, SnapshotPage, SnapshotRow, served_category};
 use crate::foundation::{
     CharacterId, FoundationProtocolError, GameSessionId, GameSessionState, WorldId,
 };
@@ -77,7 +77,7 @@ pub async fn answer_highscores(
     // NOT_SUPPORTED, never an empty or fabricated ranking.
     let Some(category) = u8::try_from(query.category)
         .ok()
-        .filter(|category| (1..=served_categories()).contains(category))
+        .filter(|category| served_category(*category))
     else {
         return HighscoresReply::Terminal(FoundationProtocolError::NotSupported);
     };
