@@ -20,7 +20,12 @@ class GrizzlyRoomTests(unittest.TestCase):
             else:
                 self.assertIsNone(room['bounds'])
                 self.assertTrue(room['reason'])
-        self.assertEqual([r['boss_id'] for r in actual['rooms'] if not r['qualified']], [2,6,16])
+        self.assertEqual([r['boss_id'] for r in actual['rooms'] if not r['qualified']], [])
+        counts = {room["boss_id"]: room["connected_tiles"] for room in actual["rooms"]}
+        self.assertEqual(
+            {boss: counts[boss] for boss in (2, 6, 16)},
+            {2: 90, 6: 64, 16: 73},
+        )
 
 if __name__ == '__main__':
     unittest.main()
