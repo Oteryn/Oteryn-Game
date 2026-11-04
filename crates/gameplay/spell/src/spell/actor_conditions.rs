@@ -640,6 +640,8 @@ pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    state.regen_health_carry = 0;
+    state.regen_mana_carry = 0;
     state.regeneration_next_tick_us = None;
     state.soul_window = None;
     if let Some(monk) = state.monk.as_mut() {

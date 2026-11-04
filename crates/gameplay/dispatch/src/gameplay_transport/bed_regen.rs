@@ -21,17 +21,20 @@ mod tests {
     // Crystal 201189f: data/libs/systems/daily_reward.lua:1-6 unlocks HP/MP at
     // streaks 2/3, doubles them at 5/6, and unlocks soul at 7 (player.lua:789).
     // The production daily projection and resting consumer already exist on this base.
+    // REGEN-PCT-4: this hungry Druid (185 max health) credits the Global floor of
+    // 1 HP / 12 s per 4 s tick (a quarter point), so 30 ticks give 7 HP; 90 max
+    // mana credits the floor of 2 mana per 6 s tick (20 ticks give 40).
     #[test]
     fn daily_streak_projection_credits_resting_actor_pools_at_each_unlock() -> Result<(), String> {
         use super::super::resting_area::RestingAreaSessions;
         for (streak, expected) in [
             (1, (100, 10)),
-            (2, (130, 10)),
-            (3, (130, 50)),
-            (4, (130, 50)),
-            (5, (160, 50)),
-            (6, (160, 90)),
-            (7, (160, 90)),
+            (2, (107, 10)),
+            (3, (107, 50)),
+            (4, (107, 50)),
+            (5, (114, 50)),
+            (6, (114, 90)),
+            (7, (114, 90)),
         ] {
             let (runtime, actor, session) = runtime_with_player(92);
             let mut states = ChannelSpellStates::default();
