@@ -3,13 +3,11 @@
 //! Donor: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8, whose world changes
 //! are `onStartup` global events that run once per daily server save. Each rule below cites the
 //! donor script; [`DailyWorldChanges::npcs`] lists the effects this repository applies to the
-//! live map. The chance draws come from the caller, keyed on the committed reset epoch, so a
-//! restart within the same day rolls the same day again without a second state owner.
+//! live map. Thawing is applied through the Channel callback item layer. The chance draws come
+//! from the caller, keyed on the committed reset epoch, so a restart within the same day rolls
+//! the same day again without a second state owner.
 //!
 //! Not applied (no live-map owner yet; the roll is still taken so the day is fixed):
-//! - Thawing places Ice Flowers (13842) on 14 tiles (`thawing.lua:4-19,34-36`): the live map
-//!   has no owner that adds a volatile item to a tile (`BundleFacts::added_entry` returns
-//!   `None` for a volatile item, `crates/gameplay/world/src/map/facts.rs`).
 //! - Their Master's Voice turns 30% of the fungus 12065 on floor 9 into 12059..=12063
 //!   (`their_masters_voice.lua:5-14`): 12065 is a Terrain ground in this bundle
 //!   (`content/world/terrain/terrain-03000-03499.json`), and the map rotation owner
@@ -41,6 +39,25 @@ const GRIMVALE_DAY: u8 = 13;
 const FLOWER_MONTH: u8 = 6;
 /// `raids/world_changes/flower_month.lua:3,64`.
 const ROSEMARIE: (&str, (u16, u16, i8)) = ("oteryn:npc.rosemarie", (32_534, 32_827, 7));
+/// `thawing.lua:1`: the ice flower Item placed by Thawing.
+pub const ICE_FLOWER: u16 = 13_842;
+/// `thawing.lua:4-19`, in donor order: `(x, y, z)`.
+pub const THAWING_ICE_FLOWERS: [(u16, u16, i8); 14] = [
+    (32_255, 31_079, 5),
+    (32_255, 31_066, 5),
+    (32_204, 31_054, 5),
+    (32_192, 31_048, 5),
+    (32_163, 31_030, 5),
+    (32_145, 31_036, 5),
+    (32_136, 31_049, 5),
+    (32_122, 31_060, 5),
+    (32_112, 31_071, 5),
+    (32_120, 31_082, 5),
+    (32_149, 31_061, 5),
+    (32_155, 31_085, 5),
+    (32_183, 31_091, 5),
+    (32_217, 31_091, 5),
+];
 
 /// Where Yasir would arrive (`oriental_trader.lua:4-24`, picked at :44).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,6 +114,15 @@ impl DailyWorldChanges {
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
         self.flower_month.then_some(ROSEMARIE).into_iter()
+    }
+
+    /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
+    pub fn items(&self) -> impl Iterator<Item = (u16, (u16, u16, i8))> {
+        self.thawing
+            .then_some(THAWING_ICE_FLOWERS)
+            .into_iter()
+            .flatten()
+            .map(|position| (ICE_FLOWER, position))
     }
 }
 
@@ -167,5 +193,30 @@ mod tests {
         for month in [5, 7] {
             assert_eq!(day(month).npcs().count(), 0);
         }
+    }
+
+    #[test]
+    fn w05b_thawing_places_fourteen_ice_flowers_only_on_a_thawing_day() {
+        let day = |draws: [u64; 4]| {
+            let mut draws = draws.into_iter();
+            DailyWorldChanges::roll(1, 1, 1, |_| draws.next().unwrap_or(u64::MAX))
+        };
+        let items = day([0, u64::MAX, u64::MAX, u64::MAX])
+            .items()
+            .collect::<Vec<_>>();
+        assert_eq!(items.len(), 14);
+        assert!(
+            items
+                .iter()
+                .all(|(appearance, (_, _, z))| { *appearance == ICE_FLOWER && *z == 5 })
+        );
+        assert_eq!(items.first(), Some(&(ICE_FLOWER, (32_255, 31_079, 5))));
+        assert_eq!(items.last(), Some(&(ICE_FLOWER, (32_217, 31_091, 5))));
+        let positions = items
+            .iter()
+            .map(|(_, position)| position)
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(positions.len(), 14);
+        assert_eq!(day([u64::MAX; 4]).items().count(), 0);
     }
 }

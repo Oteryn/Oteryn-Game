@@ -144,7 +144,8 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
-        let movement_definitions = [12369, 26077, 26087, 26100]
+        // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
+        let movement_definitions = [12369, 13842, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {
@@ -1073,6 +1074,32 @@ mod tests {
         assert_eq!(facts.house_id(at(100)), None);
         assert!(facts.house_tile(at(100)));
         assert_eq!(facts.house_id(at(101)), Some(3438));
+    }
+
+    #[test]
+    fn world_change_item_is_added_without_an_effect() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let items = |key: &str| {
+            if key == "oteryn:item.tibia.i13842" {
+                fixture::items("item:coin")
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts = BundleFacts::palette(&bundle.manifest, items).expect("palette");
+        let pos = TilePos {
+            x: 32_255,
+            y: 31_079,
+            floor: -5,
+        };
+        assert!(facts.create_world_change_item(pos, 13_842));
+        let entries = MapFacts::movement_items(&facts, pos);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].facts.appearance_id, 13_842);
+        assert!(facts.movement_effects_since(0).is_empty());
+        assert!(!facts.create_world_change_item(pos, 1));
+        assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
     }
 
     #[test]

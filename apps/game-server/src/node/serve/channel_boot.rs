@@ -253,9 +253,12 @@ pub(super) async fn prepare_channel(
         .unwrap_or(0);
     let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
     let daily_npcs = daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily);
+    let daily_items =
+        daily_world_changes::apply_items(bundle.as_ref().map(|world| world.facts()), &daily);
     event(&format!(
         "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
-         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
+         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs} \
+         items={daily_items}",
         daily.reset_epoch,
         daily.thawing,
         daily.their_masters_voice,
