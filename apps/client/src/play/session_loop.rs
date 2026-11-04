@@ -535,17 +535,14 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Guild(command)) => {
-                match super::feature_0040_guild::protocol::execute(&mut session, &command, &outbox)
-                    .await
-                {
-                    Ok(()) => {
-                        publish(&mut session, &outbox, &mut held);
-                        continue;
-                    }
-                    Err(error) => error,
+            Ok(PlayCommand::Guild(command)) => match outbox.guild_run(&mut session, &command).await
+            {
+                Ok(()) => {
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
                 }
-            }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Party(request)) => match session.party(&request).await {
                 Ok(response) => {
                     outbox.party_result(&response);
