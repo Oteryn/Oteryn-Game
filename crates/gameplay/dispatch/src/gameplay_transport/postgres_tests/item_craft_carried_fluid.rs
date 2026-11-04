@@ -220,7 +220,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        let (end, result, actual) = exchange_carried(
+        let (_, result, actual) = exchange_carried(
             &owner,
             admitted,
             1,
@@ -257,32 +257,6 @@ fn scenario(case: Case, name: &str) -> TestResult {
                         .await?,
                     initial_instances + 2
                 );
-                if matches!(case, Case::Water) {
-                    let (_, replay, _) =
-                        exchange_carried(&owner, end, 1, &actual, None, None).await?;
-                    assert_eq!(replay, UseDisposition::Committed);
-                    assert_eq!(
-                        sqlx::query_scalar::<_, i64>(
-                            "SELECT count(*) FROM game_item_craft_records"
-                        )
-                        .fetch_one(&harness.pool)
-                        .await?,
-                        1
-                    );
-                    assert_eq!(
-                        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_instances")
-                            .fetch_one(&harness.pool)
-                            .await?,
-                        initial_instances + 2
-                    );
-                    assert_eq!(
-                        live_backpack_item_count(&harness, vessel, Some(72)).await?,
-                        1
-                    );
-                    assert_eq!(live_backpack_item_count(&harness, output, None).await?, 1);
-                    assert_eq!(sqlx::query_as::<_, (i64, i16)>("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?, (1, 1));
-                    assert_eq!(sqlx::query_as::<_, (i16, i64)>("SELECT lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, (2, 0));
-                }
             }
             Case::Empty => {
                 assert_eq!(result, UseDisposition::NothingToUse);
@@ -317,6 +291,37 @@ fn scenario(case: Case, name: &str) -> TestResult {
             }
         }
         drop(owner);
+        if matches!(case, Case::Water) {
+            // Reconstruct the owner and replay the original command on the original admission.
+            let mut restarted = deps.owner(&harness, &authority);
+            restarted.active_generation = Some(active);
+            restarted.movement_cells = &cells;
+            deps.initialize(&restarted).await;
+            let output = "oteryn:item.tibia.i3604";
+            let (_, replay, _) =
+                exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
+            assert_eq!(replay, UseDisposition::Committed);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                1
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_instances")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                initial_instances + 2
+            );
+            assert_eq!(
+                live_backpack_item_count(&harness, vessel, Some(72)).await?,
+                1
+            );
+            assert_eq!(live_backpack_item_count(&harness, output, None).await?, 1);
+            assert_eq!(sqlx::query_as::<_, (i64, i16)>("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?, (1, 1));
+            assert_eq!(sqlx::query_as::<_, (i16, i64)>("SELECT lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, (2, 0));
+            drop(restarted);
+        }
         drop(authority);
         drop(seal);
         harness.cleanup().await
