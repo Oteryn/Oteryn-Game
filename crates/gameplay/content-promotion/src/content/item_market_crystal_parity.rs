@@ -18,6 +18,7 @@ pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET: &[u8] = include_bytes!(
 pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET_SHA256: &str =
     "0ea1fbee37110cdf3fa81a8db8e1ff75167653055926cfc1b3b4ec4ff5b1114d";
 const PROMOTIONS: usize = 205;
+const CRYSTAL_MARKET_ITEMS: usize = 5_095;
 const SUPERSEDES_WAVE1_FALSE: &str = "WAVE1_WIKI_MARKETABLE_FALSE";
 
 type TradeGroup = ReferenceItemField<ReferenceItemTradeRestrictions>;
@@ -26,14 +27,17 @@ type TradeGroup = ReferenceItemField<ReferenceItemTradeRestrictions>;
 struct Packet {
     schema: String,
     counts: Counts,
+    crystal_market_ids: Vec<u64>,
     promotions: Vec<Row>,
 }
 #[derive(Deserialize)]
 struct Counts {
+    crystal_market_ids: usize,
     promotions: usize,
 }
 #[derive(Deserialize)]
 struct Row {
+    source_item_id: u64,
     item_key: String,
     marketable: bool,
     #[serde(default)]
@@ -84,11 +88,22 @@ fn apply_rows<'a>(
 ) -> Result<MarketCrystalParity, String> {
     let packet: Packet = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
     if packet.schema != "OTERYN_ITEM_MARKET_CRYSTAL_PARITY/v1"
+        || packet.counts.crystal_market_ids != CRYSTAL_MARKET_ITEMS
+        || packet.crystal_market_ids.len() != CRYSTAL_MARKET_ITEMS
         || packet.counts.promotions != expected
         || packet.promotions.len() != expected
+        || packet
+            .crystal_market_ids
+            .windows(2)
+            .any(|ids| ids[0] >= ids[1])
     {
         return Err("Market Crystal parity packet shape/count drift".into());
     }
+    let market_ids = packet
+        .crystal_market_ids
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
     let mut items = items.try_fold(BTreeMap::new(), |mut map, (key, group)| {
         if map.insert(key, group).is_some() {
             return Err("duplicate native Item key".to_owned());
@@ -102,7 +117,10 @@ fn apply_rows<'a>(
             Some(SUPERSEDES_WAVE1_FALSE) => true,
             Some(_) => return Err("unknown Market Crystal parity supersession".into()),
         };
-        if !row.marketable || !seen.insert(&row.item_key) {
+        if !row.marketable
+            || !market_ids.contains(&row.source_item_id)
+            || !seen.insert(&row.item_key)
+        {
             return Err("invalid or duplicate Market Crystal parity row".into());
         }
         let group = items
@@ -144,10 +162,17 @@ mod tests {
     use super::*;
     use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
     fn row(key: &str) -> serde_json::Value {
-        serde_json::json!({"item_key":key,"marketable":true})
+        let id = match key {
+            "a" => 1,
+            "b" => 2,
+            "c" => 3,
+            _ => 4,
+        };
+        serde_json::json!({"source_item_id":id,"item_key":key,"marketable":true})
     }
     fn packet(rows: serde_json::Value) -> Vec<u8> {
-        serde_json::to_vec(&serde_json::json!({"schema":"OTERYN_ITEM_MARKET_CRYSTAL_PARITY/v1","counts":{"promotions":rows.as_array().expect("rows").len()},"promotions":rows})).expect("packet")
+        let ids = (1..=CRYSTAL_MARKET_ITEMS).collect::<Vec<_>>();
+        serde_json::to_vec(&serde_json::json!({"schema":"OTERYN_ITEM_MARKET_CRYSTAL_PARITY/v1","counts":{"crystal_market_ids":CRYSTAL_MARKET_ITEMS,"promotions":rows.as_array().expect("rows").len()},"crystal_market_ids":ids,"promotions":rows})).expect("packet")
     }
     fn trade(state: ReferenceItemField<bool>) -> TradeGroup {
         Known(ReferenceItemTradeRestrictions {
@@ -199,7 +224,7 @@ mod tests {
     }
     #[test]
     fn flips_known_false_only_for_a_superseding_row() {
-        let superseding = serde_json::json!([{"item_key":"item","marketable":true,"supersedes":SUPERSEDES_WAVE1_FALSE}]);
+        let superseding = serde_json::json!([{"source_item_id":1,"item_key":"item","marketable":true,"supersedes":SUPERSEDES_WAVE1_FALSE}]);
         let mut item = trade(Known(false));
         let applied = apply_rows(
             std::iter::once(("item", &mut item)),
@@ -210,7 +235,7 @@ mod tests {
         assert_eq!((applied.changed, item), (1, trade(Known(true))));
         for rows in [
             serde_json::json!([row("item")]),
-            serde_json::json!([{"item_key":"item","marketable":true,"supersedes":"OTHER"}]),
+            serde_json::json!([{"source_item_id":1,"item_key":"item","marketable":true,"supersedes":"OTHER"}]),
         ] {
             let mut item = trade(Known(false));
             assert!(apply_rows(std::iter::once(("item", &mut item)), &packet(rows), 1).is_err());

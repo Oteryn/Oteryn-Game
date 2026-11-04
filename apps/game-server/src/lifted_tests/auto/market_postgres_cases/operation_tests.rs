@@ -1,6 +1,46 @@
 use super::*;
 
 #[test]
+fn market_expiry_returns_sell_items_to_inbox_and_buy_gold_to_bank() -> TestResult {
+    run("marketexpiryreturn", async |h| {
+        let expired = now(h).await? - LIFETIME_US - 1;
+        let sell = offer(60, Side::Sell, 40, expired);
+        let buy = offer(61, Side::Buy, 70, expired);
+        seed(h, &sell).await?;
+        seed_escrow(h, &sell, 10).await?;
+        seed(h, &buy).await?;
+
+        for offer in [&sell, &buy] {
+            sqlx::query("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
+                .bind(offer.world.as_bytes().as_slice())
+                .bind(offer.id.as_bytes().as_slice())
+                .execute(&h.pool)
+                .await?;
+        }
+
+        let inbox_units: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id) WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid")
+            .bind(sell.character.as_bytes().as_slice())
+            .bind(sell.world.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(inbox_units, 10);
+        let balance: i64 = sqlx::query_scalar("SELECT balance::text::bigint FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+            .bind(buy.account.as_bytes().as_slice())
+            .bind(buy.world.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(balance, 1_000);
+        let states: Vec<i16> = sqlx::query_scalar("SELECT state FROM game_market_offers WHERE offer_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ORDER BY offer_id")
+            .bind(sell.id.as_bytes().as_slice())
+            .bind(buy.id.as_bytes().as_slice())
+            .fetch_all(&h.pool)
+            .await?;
+        assert_eq!(states, vec![4, 4]);
+        Ok(())
+    })
+}
+
+#[test]
 fn market_schema_uses_current_placement_fee_rate_and_cap() -> TestResult {
     run("marketfee", async |h| {
         let function: String = sqlx::query_scalar(

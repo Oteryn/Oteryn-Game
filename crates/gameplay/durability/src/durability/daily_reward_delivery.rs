@@ -5,9 +5,8 @@ use super::daily_reward::{load_receipt, load_state};
 use super::daily_reward_claim::{
     DailyRewardClaimError, DailyRewardClaimOutcome, DailyRewardClaimRequest, write_claim,
 };
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, begin_type2_transaction, lock_admission_relations};
+use super::item_mint_audit::Type2Transaction;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -153,15 +152,17 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run_with_context(&mut gate, move |holder, deadline, gate| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    super::character_inbox::lock_reward_claim_cause(&mut tx, request.command)
+                        .await?;
                     if !current(&mut tx, &node, fence, request.command).await? {
                         return Ok(Err(Error::AuthorityRejected));
                     }
                     let outcome = apply(&mut tx, fence, request, *gate).await;
                     if outcome.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                     }
                     Ok(outcome)
                 })
@@ -196,7 +197,7 @@ async fn current(
 }
 
 async fn apply<G: DailyRewardPremiumGate>(
-    tx: &mut Transaction<'_, Postgres>,
+    tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     gate: &G,
@@ -218,7 +219,7 @@ async fn apply<G: DailyRewardPremiumGate>(
         };
     }
     let account: String = sqlx::query_scalar("SELECT account_id::text FROM public.game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
     let premium = gate
         .current(tx, super::item_mint::uuid_text(&account)?)
         .await?;
@@ -230,7 +231,7 @@ async fn apply<G: DailyRewardPremiumGate>(
     super::daily_reward_jokers::spend(tx, fence, request, joker, receipt.jokers_spent).await?;
     sqlx::query("INSERT INTO public.game_daily_reward_commands VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid)")
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
-        .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
+        .bind(request.transaction_id.as_slice()).execute(&mut ***tx).await?;
     super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
     Ok(outcome)
 }

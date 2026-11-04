@@ -362,6 +362,10 @@ async fn purchase_retained_or_new(
         &catalogue.rules.offer(&binding.offer_key)?.delivery,
         rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::PREY_EXPANSION_UNLOCK
     );
+    let charm_expansion = matches!(
+        &catalogue.rules.offer(&binding.offer_key)?.delivery,
+        rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::CHARM_EXPANSION_UNLOCK
+    );
     let hireling_purchase=hireling_action.as_ref().map(|action|HirelingStorePurchase {purchase_request_id:request.purchase_request_id,origin_channel:*admitted.channel_id.as_bytes(),action:action.clone()});
     let request_state=if let Some(action)=hireling_action {
         let current=gameplay_fence(owner,admitted).await?;
@@ -379,6 +383,11 @@ async fn purchase_retained_or_new(
             let reserved = if prey_expansion {
                 let fence = gameplay_fence(owner, admitted).await?;
                 owner.root.reserve_prey_expansion_purchase(
+                    owner.character, owner.holder, fence, journal.clone()
+                ).await.ok()?
+            } else if charm_expansion {
+                let fence = gameplay_fence(owner, admitted).await?;
+                owner.root.reserve_charm_expansion_purchase(
                     owner.character, owner.holder, fence, journal.clone()
                 ).await.ok()?
             } else { true };
@@ -408,10 +417,12 @@ async fn purchase_retained_or_new(
     if code != wire::StorePurchaseCode::Accepted {
         if prey_expansion {
             owner.root.release_refused_prey_expansion_purchase(owner.character, journal).await.ok()?;
+        } else if charm_expansion {
+            owner.root.release_refused_charm_expansion_purchase(owner.character, journal).await.ok()?;
         }
         return Some(refusal(code));
     }
-    if prey_expansion {
+    if prey_expansion || charm_expansion {
         // This permanent product has exactly one effect; reject a malformed retained
         // order or several operations before committing even the first entitlement.
         prey_retry::delivery_ids(&answer)?;
@@ -477,11 +488,16 @@ async fn deliver(
     )
     .ok()?;
     if let [rules::DeliveryEffect::GrantUnlock { unlock_key }] = effects.as_slice() {
-        if unlock_key != catalogue::PREY_EXPANSION_UNLOCK { return None; }
-        let receipt = owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
-            operation_id, account_id: account, world_id,
-            fulfilment_unit_id: intent.entitlement_id.clone(),
-        }).await?;
+        let receipt = if unlock_key == catalogue::PREY_EXPANSION_UNLOCK {
+            owner.deliver_prey_expansion(admitted, crate::durability::prey::PreyStoreDelivery {
+                operation_id, account_id: account, world_id,
+                fulfilment_unit_id: intent.entitlement_id.clone(),
+            }).await?
+        } else if unlock_key == catalogue::CHARM_EXPANSION_UNLOCK {
+            let fence = gameplay_fence(owner, admitted).await?;
+            owner.root.grant_charm_expansion(owner.character, owner.holder, fence, operation_id,
+                DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }).await.ok()?
+        } else { return None };
         let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
         if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
             let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;

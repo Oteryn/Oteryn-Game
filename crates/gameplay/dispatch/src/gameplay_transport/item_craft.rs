@@ -261,20 +261,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target_pos.y,
                 target_pos.floor,
             );
-            let rod = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.item_instance_id == source
-                        && oteryn_gameplay_items::fishing::accepts_fishing_rod(
-                            &entry.item.definition.production_key,
-                            water_key,
-                        )
-                        || (entry.item.item_instance_id == source
-                            && mechanical_sewer
-                            && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
-                })?
-                .item
-                .item_instance_id;
+            let rod = entries.clone().find(|entry| {
+                entry.item.item_instance_id == source
+                    && oteryn_gameplay_items::fishing::accepts_fishing_rod(
+                        &entry.item.definition.production_key,
+                        water_key,
+                    )
+                    || (entry.item.item_instance_id == source
+                        && mechanical_sewer
+                        && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
+            });
+            let Some(rod) = rod else {
+                return disposition(UseDisposition::NothingToUse);
+            };
+            let rod = rod.item.item_instance_id;
             let worm = entries
                 .clone()
                 .find(|entry| {
@@ -355,9 +355,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|s| item_id(&s.production_key));
         if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
-            && oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
-        {
-            let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
+            // The real gathering dispatcher calls the complete donor classifier directly:
+            // M09's mechanical-water and tiered-sculpture branches are not simple table rows.
+            && let Some(attempt) = oteryn_gameplay_items::fishing::gathering_attempt(
                 tool_id,
                 target_id,
                 fishing_skill,
@@ -368,7 +368,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.command_id,
                     &request.intent,
                 )?,
-            )?;
+            )
+        {
             let (MapEntryKey::Base(key), revision, invalid, _) = map_target else {
                 return None;
             };
@@ -401,6 +402,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
+                    } else if tool_id == 9306 && attempt.after == Some(4609) {
+                        // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
+                        vec![(4597, 1_200_000)]
                     } else {
                         Vec::new()
                     },

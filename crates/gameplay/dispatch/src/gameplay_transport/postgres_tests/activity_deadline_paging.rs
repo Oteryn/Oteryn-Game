@@ -128,7 +128,11 @@ async fn case(h: &Harness) -> TestResult {
         // transient busy holder into a boss-room refusal.
         let settle = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
         while !h.root.is_ready() && tokio::time::Instant::now() < settle {
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            // Without a node maintenance loop nothing re-establishes a retired sole holder:
+            // `try_acquire_ready` only records demand. Run the node's own bounded window.
+            if !h.root.maintain_ready_once().await.unwrap_or(false) {
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
         }
         if !h.root.is_ready() {
             return Err(
@@ -148,7 +152,12 @@ async fn case(h: &Harness) -> TestResult {
                 Err(crate::durability::DurabilityError::Unavailable)
                     if tokio::time::Instant::now() < retry_until =>
                 {
-                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    // The refused checkout recorded ready demand. Serve it as the node's
+                    // maintenance loop would; otherwise a retired holder never comes back
+                    // (CI saw Unavailable for the whole 30 s at entry 15).
+                    if !h.root.maintain_ready_once().await.unwrap_or(false) {
+                        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    }
                 }
                 other => {
                     break other.map_err(|error| format!("pager room entry {member}: {error}"))?;

@@ -924,19 +924,21 @@ impl KillSettlementQueue {
         };
         let entry = &state.queued[index];
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
-            plan_creature_loot(
-                loot_plan_seed(entry.facts.death),
-                &row.loot_table_ref,
-                &row.loot_table,
-            )
-            // The flattened plan counts descendants as well as direct corpse entries.
-            .map_or(0, |plan| plan.entries.len())
-                + entry.callback_loot.len()
-                + if entry.creature == "oteryn:creature.the_corruptor" {
-                    3
-                } else {
-                    0
-                }
+            loot_table_mint_ceiling(entry.facts.death, row)
+                .and_then(|mints| {
+                    // Reserve the table's complete mint ceiling, rather than only this roll's
+                    // successful entries. Crystal applies its 95..105% factor while generating
+                    // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
+                    // point; capacity therefore has to cover every direct and nested candidate.
+                    mints
+                        .checked_add(entry.callback_loot.len())
+                        .and_then(|mints| {
+                            mints.checked_add(
+                                usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
+                            )
+                        })
+                })
+                .unwrap_or(0)
         });
         // A plan that cannot fit even an idle scope must reach settle's terminal
         // capacity refusal, rather than wait forever for impossible headroom.
@@ -1031,6 +1033,30 @@ impl KillSettlementQueue {
             state.reserved_loot_mints,
         )
     }
+}
+
+fn loot_table_mint_ceiling(
+    death: CreatureDeathOccurrenceKey,
+    row: &CreatureRewardRow,
+) -> Option<usize> {
+    fn guarantee(entries: &mut [oteryn_gameplay_items::loot_plan::LootTableEntry]) {
+        for entry in entries {
+            if entry
+                .probability_ppm
+                .is_some_and(|probability| probability > 0)
+            {
+                entry.probability_ppm = Some(1_000_000);
+            }
+            entry.details.gut_bonus_hundredths = 1_000;
+            guarantee(&mut entry.details.children);
+        }
+    }
+
+    let mut table = row.loot_table.clone();
+    guarantee(&mut table.entries);
+    plan_creature_loot(loot_plan_seed(death), &row.loot_table_ref, &table)
+        .ok()
+        .map(|plan| plan.entries.len())
 }
 
 /// An in-flight entry. Dropping it gives back its MINT reservation and requeues the entry at
@@ -2658,18 +2684,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
         // W05d: the scheduled event loot rate scales each drop chance (Crystal
         // `functions.lua:68-70`), capped at certainty.
-        for loot in &mut loot_table.entries {
-            if let Some(probability) = &mut loot.probability_ppm {
-                *probability = u32::try_from(
-                    oteryn_gameplay_foundation::scheduled_events::scale_gain(
-                        u64::from(*probability),
-                        event_rates.loot,
-                    )
-                    .min(1_000_000),
-                )
-                .unwrap_or(1_000_000);
-            }
-        }
+        oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(
+            &mut loot_table,
+            event_rates.loot,
+        );
         if !loot_table.entries.is_empty() {
             let Ok(active) = admission
                 .root

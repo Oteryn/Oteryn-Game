@@ -22,6 +22,7 @@ use sqlx::postgres::PgConnection;
 
 mod reward_claim;
 
+pub(crate) use reward_claim::lock_reward_claim_cause;
 pub use reward_claim::{
     HirelingRecallRequest, REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError, RewardClaimInboxMintCandidate,
     RewardClaimInboxMintOutput, RewardClaimInboxMintRequest, RewardClaimInboxOutcome,

@@ -16,6 +16,36 @@ pub(super) async fn run(
     let source = index
         .definition_ref("Item", key, index.revision(key).ok_or("sling")?)
         .ok_or("sling index")?;
+    let unrelated_key = "oteryn:item.tibia.i25718";
+    let unrelated = index
+        .definition_ref(
+            "Item",
+            unrelated_key,
+            index.revision(unrelated_key).ok_or("temple scroll")?,
+        )
+        .ok_or("temple scroll index")?;
+    let ignored = owner
+        .tame_mount(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 1,
+                item_fence: None,
+            },
+            UseIntent {
+                target: UseTarget::ItemByDefinition(unrelated),
+                use_with: None,
+                use_with_map_item: None,
+                use_with_position: None,
+            },
+            None,
+            None,
+            false,
+        )
+        .await
+        .map_err(|()| "unrelated item tame_mount failed")?;
+    assert!(ignored.is_none());
+    assert_eq!(h.count("game_mount_taming_attempts").await?, 0);
     let use_on = |entity| UseIntent {
         target: UseTarget::ItemByDefinition(source),
         use_with: Some(entity),

@@ -5,6 +5,14 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn observe_movement_effects(
+        &self,
+        after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        self.bundle_map()
+            .map(|map| map.facts.movement_effects_since(after))
+            .unwrap_or_default()
+    }
     async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
         self.resolve_runtime_view(admitted).await
     }
@@ -732,9 +740,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::world_object::UseIntent,
         source: Option<item_view::ItemKey>,
+        item_target: Option<item_view::ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.tame_mount_impl(actor, command, intent, source, visible)
+        self.tame_mount_impl(actor, command, intent, source, item_target, visible)
             .await
     }
 

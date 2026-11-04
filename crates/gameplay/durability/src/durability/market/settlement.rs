@@ -213,12 +213,26 @@ async fn advance_jobs(
             .execute(&mut **tx)
             .await?;
         } else {
-            sqlx::query("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
-                .bind(world.as_bytes().as_slice()).bind(offer.as_slice()).execute(&mut **tx).await?;
+            expire_offer(tx, world, offer).await?;
         }
         return Ok(true);
     }
     Ok(false)
+}
+
+/// Expires one offer through the same atomic writer as cancellation. Crystal
+/// `src/io/iomarket.cpp:174-237` returns sell escrow to the Inbox and buy escrow to the bank.
+async fn expire_offer(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    offer: [u8; 16],
+) -> Result<()> {
+    sqlx::query("SELECT game_market_write(encode($1,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,game_market_identity(encode($2,'hex')::uuid,'expire'),4::smallint,encode($2,'hex')::uuid,NULL,NULL,NULL,NULL,NULL,NULL,NULL,sha256($2),NULL)")
+        .bind(world.as_bytes().as_slice())
+        .bind(offer.as_slice())
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
 }
 
 impl DurabilityRoot {

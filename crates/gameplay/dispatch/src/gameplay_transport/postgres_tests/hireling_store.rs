@@ -94,7 +94,7 @@ fn command(seed:u8,offer:u16,price:u64,custom:Option<wire::StoreHirelingCustomiz
 }
 fn new_hire(name:&str)->wire::StoreHirelingCustomization {wire::StoreHirelingCustomization{hireling_id:None,name:Some(name.into()),sex:Some(1)}}
 fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d".into(),price:25,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),price:25,currency:"TIBIA_COIN".into()};
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,wire::encode_purchase_request(&request).map_err(debug)?))
 }
 async fn purchase(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,command:(u32,Vec<u8>))->TestResult<wire::StorePurchaseResult> {

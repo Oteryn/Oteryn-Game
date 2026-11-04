@@ -183,6 +183,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // quest_callback_profiles.py and quests_2_emperor_item_profiles.py producers
     // retain that qualified zero for these six newly materializable profiles.
     ("QUESTS-2", 6),
+    // M08-M10 sewer/fishing harvest: 953 (nail), 4609 (worked mechanical rod),
+    // 9307, 21341 and 21342, added to tools/content-migration/harvest_item_profiles.py
+    // IDS from Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml.
+    // None has a speed override, so all five keep speed_bonus=0.
+    ("M08-M10-SEWER-HARVEST", 5),
 ];
 
 #[test]
