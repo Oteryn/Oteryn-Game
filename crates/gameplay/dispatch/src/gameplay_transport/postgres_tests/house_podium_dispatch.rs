@@ -48,7 +48,7 @@ fn house_podium_dispatch_refusals_leave_display_unchanged_postgres() -> TestResu
 }
 
 #[test]
-fn house_podium_dispatch_without_capability_150_gets_no_result_postgres() -> TestResult {
+fn house_podium_dispatch_without_capability_150_is_rejected_postgres() -> TestResult {
     postgres_case("house_podium_without_capability", Case::MissingCapability)
 }
 
@@ -241,7 +241,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let command = admitted.continuity.next_command_id;
         assert_eq!(
             exchange(&owner, &mut admitted, command, wire::COMMAND_SET, &set).await?,
-            None
+            Some((CommandStatus::Rejected, Vec::new()))
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_podium_displays")
