@@ -261,20 +261,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target_pos.y,
                 target_pos.floor,
             );
-            let rod = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.item_instance_id == source
-                        && oteryn_gameplay_items::fishing::accepts_fishing_rod(
-                            &entry.item.definition.production_key,
-                            water_key,
-                        )
-                        || (entry.item.item_instance_id == source
-                            && mechanical_sewer
-                            && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
-                })?
-                .item
-                .item_instance_id;
+            let rod = entries.clone().find(|entry| {
+                entry.item.item_instance_id == source
+                    && oteryn_gameplay_items::fishing::accepts_fishing_rod(
+                        &entry.item.definition.production_key,
+                        water_key,
+                    )
+                    || (entry.item.item_instance_id == source
+                        && mechanical_sewer
+                        && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
+            });
+            let Some(rod) = rod else {
+                return disposition(UseDisposition::NothingToUse);
+            };
+            let rod = rod.item.item_instance_id;
             let worm = entries
                 .clone()
                 .find(|entry| {
@@ -402,6 +402,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
+                    } else if tool_id == 9306 && attempt.after == Some(4609) {
+                        // Crystal items.xml:13998-14005: spent sewer water recovers in 20 min.
+                        vec![(4597, 1_200_000)]
                     } else {
                         Vec::new()
                     },

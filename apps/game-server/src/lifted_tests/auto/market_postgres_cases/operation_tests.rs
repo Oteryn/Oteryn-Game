@@ -18,7 +18,7 @@ fn market_expiry_returns_sell_items_to_inbox_and_buy_gold_to_bank() -> TestResul
                 .await?;
         }
 
-        let inbox_units: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0) FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id) WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid")
+        let inbox_units: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_character_inbox_locations l JOIN game_item_instances i USING(item_instance_id,world_id) WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid")
             .bind(sell.character.as_bytes().as_slice())
             .bind(sell.world.as_bytes().as_slice())
             .fetch_one(&h.pool)

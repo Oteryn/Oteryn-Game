@@ -283,8 +283,8 @@ fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
         assert_eq!(result, UseDisposition::Committed);
-        let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (i64::from(after), 1, !decay.is_empty()));
+        let state: (i64,i64,Option<bool>) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
+        assert_eq!(state, (i64::from(after), 1, (!decay.is_empty()).then_some(true)));
         let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
         assert_eq!(map.facts().pinned().object_revision(key), 1);
         // A new owner recovers the committed state and original receipt without current handles.
