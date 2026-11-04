@@ -16,20 +16,29 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+// Source qualification only: the coordinator retained new NPC execution in
+// Left out. These evaluators are not a second production conversation adapter.
+#[cfg(test)]
+pub mod batch3_a;
 pub mod classic_dialogue;
 pub mod classic_talk;
+pub mod cults_of_tibia;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_rules;
+#[cfg(test)]
+pub mod npc_rules;
 mod quests_2_focus;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
 pub mod threatened_dreams;
+pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod wrath_sleeping_dragon;
 
@@ -153,6 +162,8 @@ pub enum QuestEffectKind {
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
+    /// A source-specific bounded rule over its complete locked snapshot.
+    Native(native_rules::NativeRule),
 }
 
 impl QuestEffectKind {
@@ -168,6 +179,10 @@ impl QuestEffectKind {
             }
             Self::SetNow => out.push(3),
             Self::Computed => out.push(4),
+            Self::Native(rule) => {
+                out.push(5);
+                rule.encode(out);
+            }
         }
     }
 }
@@ -301,6 +316,12 @@ impl QuestStateCatalogue {
             {
                 return Err(E::InvalidExperience(transition.key));
             }
+            if transition.effects.iter().any(|effect| {
+                matches!(effect.effect, QuestEffectKind::Native(rule)
+                    if !rule.valid_effects(&transition.quest, &transition.effects))
+            }) {
+                return Err(E::InvalidEffect(transition.key));
+            }
             let mut seen = BTreeSet::new();
             for effect in &transition.effects {
                 let Some(track) = track_map.get(&effect.track) else {
@@ -432,6 +453,25 @@ impl QuestStateCatalogue {
             }
             current.push((track, value));
         }
+        let native = transition
+            .effects
+            .iter()
+            .find_map(|effect| match effect.effect {
+                QuestEffectKind::Native(rule) => Some(rule),
+                _ => None,
+            });
+        let native_after = if let Some(rule) = native {
+            if !rule.valid_effects(&transition.quest, &transition.effects) {
+                return Err(QuestRefusal::NotSupported);
+            }
+            let snapshot = current
+                .iter()
+                .map(|(track, value)| (track.key.clone(), *value))
+                .collect();
+            Some(rule.evaluate(&snapshot)?)
+        } else {
+            None
+        };
         transition
             .effects
             .iter()
@@ -442,6 +482,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::Add(delta) => before.checked_add(delta),
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
+                    QuestEffectKind::Native(_) => native_after
+                        .as_ref()
+                        .and_then(|after| after.get(&effect.track).copied()),
                 }
                 .filter(|after| (track.min..=track.max).contains(after))
                 .ok_or(QuestRefusal::OutOfRange)?;

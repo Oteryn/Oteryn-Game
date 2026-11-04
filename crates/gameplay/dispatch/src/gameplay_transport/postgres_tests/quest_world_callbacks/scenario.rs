@@ -1,6 +1,27 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
+    scenario_case(name, trigger, lever_fixture, None)
+}
+
+#[allow(
+    dead_code,
+    reason = "per-quest stateless PG cases are independently picked after the common harness"
+)]
+pub(crate) fn stateless_scenario(
+    name: &str,
+    trigger: Position,
+    expected_destination: Position,
+) -> TestResult {
+    scenario_case(name, trigger, false, Some(expected_destination))
+}
+
+fn scenario_case(
+    name: &str,
+    trigger: Position,
+    lever_fixture: bool,
+    stateless_destination: Option<Position>,
+) -> TestResult {
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(name, "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
@@ -28,6 +49,9 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
         callback.selector.unique = Some(25012);
         callback.selector.appearance = Some(2772);
         callback.lever = Some([2772, 2773]);
+    }
+    if stateless_destination.is_some() {
+        assert_eq!(callback.selector.position, Some(trigger));
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
@@ -152,7 +176,18 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "conditional-quest-greetings" {
+        if let Some(expected_destination) = stateless_destination {
+            super::stateless::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                expected_destination,
+            )
+            .await?;
+        } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "threatened-dreams-npc" {
             super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority).await?;
@@ -174,7 +209,17 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
             )
             .await?;
         } else if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
-            super::rotten_blood::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger,rotten_purchase).await?;
+            super::rotten_blood::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                trigger,
+                rotten_purchase,
+            )
+            .await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"
@@ -244,6 +289,10 @@ pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
                 .await
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&1));
+        } else if name == "lions-rock-inner-sanctum-entry" {
+            super::lions_rock::exercise(&mut owner, &mut admitted, &h, &authority, fence, &callback, origin).await?;
+        } else if name == "unnatural-selection-dance-2" {
+            super::unnatural_selection::exercise(&mut owner, &mut admitted, &h, &authority, fence, &callback, trigger).await?;
         } else if name == "liquid-black-shortcut" {
             // The source shortcut has no text. Exercise the generic authored refusal message
             // without changing that source binding in production content.

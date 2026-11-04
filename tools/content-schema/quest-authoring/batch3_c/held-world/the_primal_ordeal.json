@@ -1,0 +1,517 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33543-32912-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33543,
+          "y": 32912,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33637,
+        "y": 32841,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:2-2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33546-32911-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33546,
+          "y": 32911,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33765,
+        "y": 32909,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:4-4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33549-32912-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33549,
+          "y": 32912,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33563,
+        "y": 32862,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:6-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33562-32862-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33562,
+          "y": 32862,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33549,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:7-7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33571-32868-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33571,
+          "y": 32868,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33592,
+        "y": 32909,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:8-8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33591-32909-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33591,
+          "y": 32909,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33571,
+        "y": 32869,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:9-9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33597-32914-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33597,
+          "y": 32914,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33662,
+        "y": 32976,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:10-10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33637-32840-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33637,
+          "y": 32840,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33543,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:3-3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33661-32976-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33661,
+          "y": 32976,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33597,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:11-11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-cart-33765-32908-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33765,
+          "y": 32908,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33546,
+        "y": 32912,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:5-5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-magma-access",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33714,
+          "y": 32797,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33556,
+        "y": 32754,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/magma_bubble_killed",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You don't have access to this teleport yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:5-5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-travel-33567-32758-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33567,
+          "y": 32758,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33555,
+        "y": 32752,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:7-7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-travel-33658-32919-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33658,
+          "y": 32919,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33669,
+        "y": 32933,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:4-4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-travel-33660-32895-14",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33660,
+          "y": 32895,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33669,
+        "y": 32933,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-travel-33671-32933-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33671,
+          "y": 32933,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33660,
+        "y": 32897,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:3-3"
+      ]
+    }
+  ],
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545",
+  "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+  "reason": "Preserve the existing qualified Primal entry/required-boss/hazard/content availability contract (ANSWER points 5, 6 and 9); do not enable sibling-cart bypasses in this batch.",
+  "left_out": {
+    "magma_access": {
+      "runtime_enabled": false,
+      "callback": "oteryn:quest-callback/primal-ordeal-magma-access",
+      "missing_fields": [
+        "read_only",
+        "per-guard failure_message"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:20-28"
+      ],
+      "reason": "Crystal reads access >0 without changing it. Baseline Storage always emits SET; changing set to 0 removes access, while a constant SET would not preserve arbitrary later source values. Guard failure also needs the exact source refusal text. No SET approximation is activated."
+    },
+    "unqualified_static_collision": {
+      "runtime_enabled": false,
+      "callbacks": [
+        "oteryn:quest-callback/primal-ordeal-travel-33567-32758-15",
+        "oteryn:quest-callback/primal-ordeal-travel-33658-32919-15",
+        "oteryn:quest-callback/primal-ordeal-travel-33660-32895-14",
+        "oteryn:quest-callback/primal-ordeal-travel-33671-32933-15"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "missing_operation": "Qualification of static native collision profiles for34111 at three source selectors and6383/3919 at the fourth destination; no override of boot_bundle_items or callback teleport admission.",
+      "source_blocker_items": [
+        34111
+      ],
+      "destination_blocker_items": [
+        6383,
+        3919
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:7-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:4-4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:3-3"
+      ],
+      "proof": [
+        "apps/game-server/src/node/serve.rs:2285-2306",
+        "crates/gameplay/content/src/content/native_gameplay.rs:522-531",
+        "crates/gameplay/world/src/map/facts.rs:661-713",
+        "crates/gameplay/world/src/map/facts.rs:745-752",
+        "crates/gameplay/world/src/map/floor/quest_callback.rs:43-49"
+      ],
+      "reason": "All ground tiles exist, but the current generation has no solidity profile for these plain/WorldObject Items. Native map boot defaults them to solid. The source teleport also checks destination Ground::Walkable and cannot bypass the blocked fourth target."
+    }
+  },
+  "runtime_enabled": false
+}

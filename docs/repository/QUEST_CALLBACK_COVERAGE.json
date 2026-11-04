@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 8,
+    "dispatch_pg_qualified": 11,
     "not_playable": 28,
-    "supported_unqualified": 300
+    "supported_unqualified": 297
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -1868,8 +1868,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield",
@@ -1896,8 +1896,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_demon_helmet_chests_demon_shield_once_and_replay",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
@@ -1924,8 +1924,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/demon_helmet_quest"

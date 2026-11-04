@@ -1,0 +1,2018 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/sea_of_light/mission1",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1614",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 10,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1613",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission--1",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": -1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Alright, you look bright enough to fulfil my requests - at least you do not fall asleep while standing there. Ahem... I heard about a certain inventor who created a {magic device} to actually sail the {sea of light}. Will you help me find him?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:113-115"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission-1",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You should find the beggar somewhere in Edron. Stay persistent, I'm sure he knows more than he wants to tell us."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:116-118"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission-4",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 4
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Did you enter the Lost Mines yet? They are west of Edron, close to the sea. You will also need a pick once you get to the crystal deposit."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:138-140"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission-6",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 6
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, the only thing left to do would be to offer the crystal at the well of the collector. There must be a pedestal near the well, where you need to put your donation. Ha, do you think you could do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:153-155"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission-7",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 7
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Found the well yet? Look on one of the ice isles near Carlin. I'm perfectly sure that the well with the pedestal is located on one of them. And be careful with the carrying device, I only have this one prototype."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:156-158"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/mission-8",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 8
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "So have you found the well and entered the lair? I hope you can find the {mirror crystal} in there. It is the only way to finish the {Lightboat}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:158-160"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/accept-investigation",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research",
+            "mission"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/mission1",
+          "value": 1
+        }
+      ],
+      "experience": 100,
+      "replies": [
+        "That's the spirit! As time is of the essence, we should start right now. ...",
+        "A beggar here in Edron brags about how smart he is and that he knows about a man who lost his sanity because of an experiment, but he won't tell anyone any details. Maybe he knows more."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:197-205"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/yes-2",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research",
+            "mission"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The device needs a special crystal. It's called {mirror crystal}. The inventor somehow damaged it - with fatal results. He had to give up, as no second crystal was left to try. I, however, know of another one... but are you up to the task?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:207-209"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/yes-3",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research",
+            "mission"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "One remaining mirror crystal is in the hands of a creature called the collector which collects all kinds of crystals. The only way to get access to its lair is to donate a very rare crystal to a secret well. I need you to get one, will you help me?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:210-212"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/spectulus/yes-5",
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "research",
+            "mission"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Good, because if you wouldn't do it... listen, this well is on one of the isles near Carlin. There you offer the crystal. Once you get access to its lair, find the collector and... convince it to give you the mirror crystal. Understood?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:223-225"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [
+          {
+            "keywords": [
+              "device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:463"
+          },
+          {
+            "keywords": [
+              "lightboat"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:467"
+          },
+          {
+            "keywords": [
+              "magic device"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:471"
+          },
+          {
+            "keywords": [
+              "sea of light"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:475"
+          },
+          {
+            "keywords": [
+              "mirror crystal"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:479"
+          },
+          {
+            "keywords": [
+              "lost mines"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:483"
+          },
+          {
+            "keywords": [
+              "collector"
+            ],
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:487"
+          }
+        ],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/spare",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "spare"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Hmm, if you can spare a coin... we can talk. What do you say?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:70-72"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/device",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "device"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Persistent little nuisance, aren't we? Well, I like your spirit so I will tell you a secret. I may not look the part but I was once a {scientist}. The academy seemed to not like my... attitude and never actually invited me."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:73-76"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/scientist",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "scientist"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Indeed, I was one myself a long time ago. I may seem a little... distracted by now, but I was working on many important projects. I even created a device to... well, it will cost you another gold coin if you want me to tell you the whole story. You're in?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:77-81"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-3",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Good, good. So eventually I found a way and invented a magic device I called the Lightboat. It was a large construction you could sit in and... well, judging by your looks you don't believe a word. Do you want to hear the story or not?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:105-107"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-4",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Fine. For years I gathered all the necessary items to build the device. I travelled, traded and took advantage of some rare opportunities. With luck and patience I eventually got every component I needed. Can you imagine the excitement I experienced?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:108-110"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-5",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "And there I stood before my greatest invention. Door to unknown places, mysterious worlds... yet one of my components was flawed. A small crack in a vital element of my construction quickly led to the failure of the whole project. Still following?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:111-113"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-6",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The device was ultimately destroyed. I barely escaped the chaos with my life. My laboratory was shattered, as were all the components of the cursed device. With nothing left, I started to lead a new, different life. Do you know what that means?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:114-116"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-7",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Pah!! You have NO idea, leave me alone now."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:117-119"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-8",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 8,
+      "next_topic": 9,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Right... I'm glad everything was destroyed. I don't even know why I kept the remaining copy of the plans all those years... oh, did I say this aloud?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:120-122"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-9",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 9,
+      "next_topic": 10,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Yes, well... I do have one remaining copy of the plans. I will keep them as a... reminder. Such ill-fated devices only cause trouble and despair. Mankind would be better off, without them, right?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:123-125"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/yes-10",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Ah, you think you are wise but you know nothing, nothing about science, nothing about the opportunities it offers... You will never understand scientists like me."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:126-128"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-1",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Mean, heartless... go and leave me be."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:137-139"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-2",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, whatever then..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:140-142"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-3",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Then stop bothering me."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:143-145"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-4",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Your decision."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:146-148"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-5",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Yes and I, I... you mean what? Can't imagine? Well, then there is no purpose to continue telling you this story."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:149-151"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-6",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "*mumbles*"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:152-154"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-7",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Thought so. It means starting anew, without any home, money or goal in your life. However, it also opens up opportunities... don't you agree?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:155-157"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-8",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "No, no, you are right, I should have tried to rebuild it, I should have been more careful, I should... ah, why did I even tell you this."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:158-160"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-9",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Phew... alright, it was nice talking to you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:161-163"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/sea_of_light/shoddy_beggar/no-10",
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "spare",
+            "device",
+            "scientist",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 10,
+      "next_topic": 11,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Hm, maybe you are right. You could give these plans to someone who might be able to finish this project. Someone who will not make the mistakes I made. Someone... hm, do you know the astronomer Spectulus?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:164-166"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.spectulus",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+              "comparison": "lt",
+              "value": 10
+            }
+          ],
+          "reply": "Hello |PLAYERNAME|! You're late, do you have no concept of time? My mission is of utmost importance. If you are not interested in helping me, you might as well just leave.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:67"
+          ]
+        },
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_54/sea_of_light/questline",
+              "comparison": "ge",
+              "value": 10
+            }
+          ],
+          "reply": "Ah hello again |PLAYERNAME|! I still have one or two other {missions} for you. There are also some {tasks} someone needs to attend to.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:70"
+          ]
+        }
+      ],
+      "farewell": "Yes yes. Goodbye |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:493",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "What do you want? Listen to the old madman? If you have nothing to spare, leave me alone.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:172"
+          ]
+        }
+      ],
+      "farewell": "Yes, whatever.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:172",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:173",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "sea_of_light.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "note": "Literal source dialogue and selected owned branches are prepared; the shared dispatch, matching, greeting and authoritative guard contract is held."
+      }
+    }
+  ]
+}

@@ -1,0 +1,1523 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "a_pirates_tail_quest",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-b/implementation-status.json",
+    "sha256": "98cc334442a4a9fea839a26080688aac4e308fee5a41e2eeeba4d92d7ee9ae92"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 35,
+  "import_counts": {
+    "RĘCZNIE": 30,
+    "AUTO": 5
+  },
+  "content_counts": {
+    "npc_rules_source_only": 12,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 4,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-b-a_pirates_tail_quest.json",
+      "sha256": "992217a1aef354e3584ad473338245229761211d8a936b3f4bfba7028f5b2b79",
+      "count": 12,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-a_pirates_tail_quest.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json",
+      "sha256": "43f188b87cd2a3d2e964feaa94a7100831e0e16e4828dcf7a9637b2b8c0109c5",
+      "count": 4,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "1e9e35f56c5023b51f918814fd220bd8c6738c85dd1aef11081cbe62e18ce206",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Dostęp i inicjalizacja (brak naturalnego nadawcy)",
+        "pattern": "P09, P13",
+        "trigger": "customs/freequests login",
+        "guard": "konfiguracja custom/freequests, nie przebieg questa",
+        "effect": "QuestLine=1; RascacoonShortcut=1; TentuglyDoor=1; naturalnego toku misji nie znaleziono — B-Q01",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/creaturescripts/customs/freequests.lua:6",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3022"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Brak naturalnego inicjatora; custom login freequests nie jest przyjętą regułą questa.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104570"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/creaturescripts/customs/freequests.lua:6",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3022"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "ea71af61dd07be9131841c6845e2c283ac6ba1603072d202a97750106dd81593",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Eustacio: shortcut, yes",
+        "pattern": "P09, P03",
+        "trigger": "NPC Eustacio, shortcut → yes; topic1",
+        "guard": "RascacoonShortcut=1",
+        "effect": "teleport (33774,31347,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:79"
+        ],
+        "oteryn": "CZĘŚCIOWO — brak questowego adaptera rozmowy; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/loader.rs:276",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne gałęzie w JSON; trwały adapter i travel niezakwalifikowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d836c959d44e11887c5694f1a4cbb6cc51d861939bdfa53dd07c9b1edc3a4277",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Captain Jack Rat: sail/safe, yes",
+        "pattern": "P09, P03",
+        "trigger": "NPC Captain Jack Rat, sail/safe → yes; topic1/2",
+        "guard": "TentuglyKilled=1 sprawdzane przez greet",
+        "effect": "teleport (33839,31222,5)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:56",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:72"
+        ],
+        "oteryn": "CZĘŚCIOWO — brak questowego adaptera rozmowy; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/loader.rs:276",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne gałęzie w JSON; trwały adapter i travel niezakwalifikowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:56",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:72",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "92891b98b634bdc6577da66d9d58c6849f517712c71defe899b1f3fee670e9ab",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Skrót Thais → Rascacoon",
+        "pattern": "P03",
+        "trigger": "Use (32941,32030,7)",
+        "guard": "level≥200",
+        "effect": "teleport (33774,31347,7); odmowa do fromPosition",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:12"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Czysty level>=200 bez storage; obecny model level guard wymaga storage. Nie dodano fikcyjnego tracka.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104570"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:12"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2275c76b21985f8ed8aef13ff03a0ce5feb019880fda89e2e1b6f55e27987182",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Skrót Rascacoon → Thais",
+        "pattern": "P03",
+        "trigger": "Use (33774,31348,7)",
+        "guard": "level≥200",
+        "effect": "teleport (32941,32031,7); odmowa do fromPosition",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:12"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Czysty level>=200 bez storage; obecny model level guard wymaga storage. Nie dodano fikcyjnego tracka.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104570"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_rascacoon_shortcut.lua:12"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7e8e9d7203999cf7b91a3fb391af3089af3c5ef5069ae12884dfb00fd776c58c",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Drzwi do Tentugly",
+        "pattern": "P04",
+        "trigger": "door position (33793,31388,6)",
+        "guard": "TentuglyDoor",
+        "effect": "wspólna bramka storage; nadawca dostępu B-Q01",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:842"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca drzwi istnieje; kwalifikacja i nadawca niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca tożsamość bramki; naturalnego nadawcy TentuglyDoor nie ma w donorze.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104570"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:842"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f3a9bb030d3edb55d4cffef04cd9ab37fae2a4b7afc6387733786af47b596172",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przyjęcie grupy",
+        "pattern": "P06, P17, P25",
+        "trigger": "Use lever (33791,31391,6); 5 pól x33792..33796,y31391,z6",
+        "guard": "level≥150; minPlayers domyślnie1; occupancy; cooldown20h; timeout20min",
+        "effect": "teleport uczestników (33722,31186,7); boss (33722,31182,7); wyjście (33799,31356,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:174",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:174",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "83e1abe1bfdcb097c794ac5217f50cf2775d0c1c883efed8789047e2876a6ed1",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: odtworzenie pokoju przed użyciem",
+        "pattern": "P01, P16, P25",
+        "trigger": "onUse cleanRoom przed originalOnUse",
+        "guard": "wywoływane także przed rozstrzygnięciem przyjęcia",
+        "effect": "usuń tentacles; odtwórz10 linii/rekwizyty; usuń35136,6065,5523,5530,5531,5762",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:174"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:174",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "30655cb674fe5be673515e04f827ae902c88454f2e0797bfff27f24bc053651e",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: faza 80% i powrót",
+        "pattern": "P30, P16, P27",
+        "trigger": "onHealthChange tentuglysHeadPhase; monitor co1s",
+        "guard": "health−max(0,primary)−max(0,secondary)≤80% max; creature storage1 niezapisany",
+        "effect": "po100ms boss do(33723,31166,7);11 linii i10tentacles; po ich zniknięciu boss wraca",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:10",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:21"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:10",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:21",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2962fed30b61fa8901530fa0b1a8d2ec99b0f03ba65107e239f7be1cf4b8e2f7",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 1",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 1",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33723..33725,y31180,z7; final(33726,31180,7)35119→35120",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle1.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle1.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c71384ad1bed17f6d17a1159fc58061898bc779f3339a8cf91b1359fefe3a7fb",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 2",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 2",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33723,y31186..31189,z7; final(33723,31191,7)35109→35110; remove(33723,31190,7)35112",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle2.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle2.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e3a4c34f920f7522bfc4199e94412a0df75ae786d2f6800f851649862d6c75f1",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 3",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 3",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33727,y31184..31185,z7; final(33727,31186,7)35109→35110",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle3.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle3.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "cc801e812297f08c483d2f91f0270d3d07db4d1b6e7dfc97065c03fcc6240315",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 4",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 4",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33731..33735,y31180,z7; final(33736,31180,7)35119→35120",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle4.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle4.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e626da0eb6f46ab37274dd455fb6ae7c2e76c7d5f528f112e16e577442023e24",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 5",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 5",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33718,y31180..31178,z7; remove(33718,31177,7)35510; create(33718,31176,7)35107",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle5.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle5.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d7c4d9f3c2516c45226d8afd1fea061ed827ac84aaef909af73936cf94a30cfc",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 6",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 6",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33714,y31180..31178,z6; remove(33714,31177,6)35510; create(33714,31176,6)35107",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle6.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle6.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e5d93f6112f427d4c269636313628df89163442d9cd8c105ec65eeb13168cf04",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 7",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 7",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33726,y31182..31178,z6; remove(33726,31177,6)35510; create(33726,31176,6)35107",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle7.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle7.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b9f9ed6c407633e5e3bd68651ea5b544956788083e490486d01b94b3d1d1c9df",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 8",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 8",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33718,y31187..31190,z6; final(33718,31191,6)35109→35110",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle8.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle8.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "db84ac0461423e186082b6333755bd58a8b072f790878b3ce389c2bd12eb656a",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 9",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 9",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33714..33712,y31185,z6; remove(33711,31185,6)35511; create(33710,31185,6)35122",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle9.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle9.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "630dcd8e571c737b64ce296a620f8325951ecd985bf68b9fcdc3a16c1ea03b04",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: przesuwająca się tentacle 10",
+        "pattern": "P30, P27",
+        "trigger": "death Tentacle 10",
+        "guard": "pozycja w linii albo indeks0",
+        "effect": "usuń następny rekwizyt i spawn kolejnego segmentu; x33716,y31181..31182,z6; final(33716,31183,6)35109→35110",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle10.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle10.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7c6de75be126e80f13e4d7500a7784eb911fd3b1e764613f1c1a7864c41ebd65",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Tentugly: nagroda uczestników obrażeń",
+        "pattern": "P07, P12, P21",
+        "trigger": "death tentuglysDeath",
+        "guard": "online Player z damageMap; TentuglyKilled<1",
+        "effect": "TentuglyKilled=1; mount175 jeśli brak; achievement Release the Kraken",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly_death.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly_death.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "250be56500afa2c21d46a383233f9999ea0f5bd50d262097b967f7c72e45e561",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Ratmiral: przyjęcie i reset pokoju",
+        "pattern": "P06, P17, P25",
+        "trigger": "lever(33892,31388,15); pola x33893..33897,y31388,z15",
+        "guard": "level≥150; minPlayers1; occupancy; cooldown20h/timeout20min",
+        "effect": "grupa→(33903,31374,15); Ratmiral(33917,31350,13) locked; 4pomocnicy,12cheeses; usuń35686/5542; exit(33891,31197,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "29430d4192a78e6205c5a4b0408258d424f782d89f4dd295f5dd5a3e9da74135",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Mister Catkiller: odwrót",
+        "pattern": "P30, P16",
+        "trigger": "onHealthChange catkillerHealth",
+        "guard": "health+primaryDamage≤25000; lokalny hasRetreated",
+        "effect": "po500ms teleport(33891,31352,13),lock; ladder5542@(33902,31347,15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_catkillerHealth.lua:5"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_catkillerHealth.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2944fea505ffa8954118951a364deb4eb4df10faa6fcc9935955f3e8ed8b6a55",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "1st Mate Ratticus: odwrót i Ratmiral",
+        "pattern": "P30, P16",
+        "trigger": "onHealthChange mateRatticusHealth",
+        "guard": "health+primaryDamage≤25000; lokalny hasRetreated",
+        "effect": "po500ms mate→(33917,31350,13),lock; Ratmiral→(33904,31349,14),unlock",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_1st_mate_health.lua:5"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_1st_mate_health.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b6bff2b1abf1fe86358a164ed3abd8d07a291140d89f56d18c2837cd59b1a51c",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Ratmiral: druga faza pomocników",
+        "pattern": "P30, P16",
+        "trigger": "onHealthChange ratmiralHealth",
+        "guard": "health+primaryDamage≤110000; lokalny hasRetreated",
+        "effect": "po500ms mate→(33905,31351,14),Catkiller→(33903,31350,14),unlock; spawnRateyeRic(33905,31350,14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_ratmiral_health.lua:5"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_ratmiral_health.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "3d5f3f1ddb904af738b86093e3ece5ec0a44a9425cf70870dcdb1dc8bfa5cce4",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Woda: blue shield i cykl życia",
+        "pattern": "P02, P25, P15",
+        "trigger": "Use26100@(33903,31345,14); login; logout; GlobalEvent2s",
+        "guard": "wewnątrz(33898,31344,14)..(33914,31358,14); WaterIcon≤0",
+        "effect": "WaterIcon=6 i ikona6; nie uzupełnia aktywnej; login/cykl przywraca; logout zeruje",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "06ceaa7f4311296210938b4191129c10d9074217f456e2ec5054a28661d668a7",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Ratmiral fire wave: redukcja wetness",
+        "pattern": "P30",
+        "trigger": "spell ratmiral fire wave; target tile",
+        "guard": "top creature player; poprawna ikona blue-shield",
+        "effect": "najpierw count−1; po decrement>0 damage500..1000, inaczej1000..1500; zapisWaterIcon; geometria fali",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/ratmiral_fire_wave.lua:5",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/ratmiral_fire_wave.lua:20"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/ratmiral_fire_wave.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/ratmiral_fire_wave.lua:20",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "92160771da2dba282d23c7122c5800bc4771ec33a9a0a61e66eae02f95d1e017",
+      "quest_row": 27,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Rum Barrel: obrażenia Weak Spot",
+        "pattern": "P30",
+        "trigger": "death RumBarrelExplotes",
+        "guard": "top monster Weak Spot w3×3 wokół beczki",
+        "effect": "life-drain66666..88888; pozostali bez efektu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_rum_barrel.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_rum_barrel.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "5dfe253af8b479a4ac99b816d79f9ee2101764927fbb087a692af2357843baf1",
+      "quest_row": 28,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Weak Spot: komunikat zniszczenia",
+        "pattern": "P30",
+        "trigger": "death WeakSpotDeath",
+        "guard": "nazwa zdarzenia",
+        "effect": "komunikat; brak dodatkowego zapisu progresu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_weak_spot_crashes.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_weak_spot_crashes.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d90b65d013db6d15a8cf4eb73a92710dc4b9746dde0e83b338003d56c806fafa",
+      "quest_row": 29,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Ratmiral: progres i Rascoohan outfits",
+        "pattern": "P07, P12, P21",
+        "trigger": "death ratmiralDeath",
+        "guard": "online Player z damageMap; RatmiralKilled≤1",
+        "effect": "setRatmiralKilled1; jeśli brak obu outfit1371/1372, grant obu addon0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_ratmiral_death.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_ratmiral_death.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2fcb65c1bc348769c75d037656427b607db734a671e77d39cd00c65f609584ee",
+      "quest_row": 30,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Cheesy Key: familiar według profesji",
+        "pattern": "P12",
+        "trigger": "Use aid35508",
+        "guard": "base vocation; !hasFamiliar(lookType)",
+        "effect": "Sorcerer1367,Druid1364,Paladin1366,Knight1365,Monk1819; grant trwały",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:26"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagany właściciel kompozycji walki, faz, obiektów, obrażeń, cooldownów lub trwałych grantów wyglądu. Decyzja B-Q12: Brakuje wspólnego ownera całych encounterów Tentugly/Ratmiral: admission, uczestnicy, fazy i obiekty walki, obrażenia, cooldown, rozliczenie śmierci i cleanup. Reguły źródłowe pozostają danymi; podłączenie nastąpi w osobnym PR shared boss encounter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875169"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_tentugly's_head.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentugly.lua:257",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_blue_shield.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "77806730b15d9f92e39c24e489bbb2692ac9e71522e74fd5a2f191bb9b0ac1c0",
+      "quest_row": 31,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Portal A: przejście",
+        "pattern": "P03",
+        "trigger": "StepIn aid47501@(33927,31368,7)",
+        "guard": "player",
+        "effect": "teleport(33927,31366,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: wymagane success_message. Crystal actions_cheesy_key.lua:68/100 wysyła dokładny MESSAGE_EVENT_ADVANCE po teleportacji; pominięcie pola usunęłoby źródłowy efekt. Dodatkowo brak mapowych AID47501/47502 (R-MAP-BINDINGS). Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "900bb020a69b883dfcd03844f3b8fc2cb7958609fc406e2d99c2271ba1300295",
+      "quest_row": 32,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Portal B: przejście",
+        "pattern": "P03",
+        "trigger": "StepIn aid47502@(33924,31365,7)",
+        "guard": "player",
+        "effect": "teleport(33919,31366,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: wymagane success_message. Crystal actions_cheesy_key.lua:68/100 wysyła dokładny MESSAGE_EVENT_ADVANCE po teleportacji; pominięcie pola usunęłoby źródłowy efekt. Dodatkowo brak mapowych AID47501/47502 (R-MAP-BINDINGS). Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b796c17c0c2d7ba8d06a5be14cce063f173e11e893c1e38d7340efbdbfb768d1",
+      "quest_row": 33,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Łódź: wyjście z nagród",
+        "pattern": "P03",
+        "trigger": "Use(33925,31355,7)",
+        "guard": "player",
+        "effect": "teleport(33799,31321,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: źródłowe Action:position obejmuje łódź1760 ordinal1, lecz niezmieniony adapter obsługuje position-only USE przy ordinal0. Brak zgody na zmianę adaptera/selektora. Osobno wymagane success_message z actions_cheesy_key.lua:117; pominięcie usuwa źródłowy tekst. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7f4af73d146dae99badd544399fe8602c29ec0afb228d05cd72414feca2648e2",
+      "quest_row": 34,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Dostęp do familiar room",
+        "pattern": "P03",
+        "trigger": "StepIn(33734,31273,7)",
+        "guard": "TentuglyKilled=1 i RatmiralKilled=1",
+        "effect": "teleport(33922,31370,7); player failure→fromPosition",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Istniejący native portal34111 na wejściu prowadzi na33966,31378,z15 przed quest guardem, zamiast źródłowego33922,31370,z7. Wymagana kwalifikacja kolizji mapy lub guard przed native teleportem; owner bez zmian. Decyzja B-Q21: Pełny Familiar chess callback pozostaje held: natywny teleport Item 34111 (ordinal 2) na (33734,31273,7) wykonuje się przed callbackiem, więc guard TentuglyKilled/RatmiralKilled nigdy nie rusza. Brakuje rozwiązania kolejności w ownerze mapy/movement.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590288251"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122-151"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1a355b7821dc296e5eaf8f6bb7158760445374a735f51c8fe41dcc74da342239",
+      "quest_row": 35,
+      "inventory": {
+        "quest": "a_pirates_tail_quest",
+        "step": "Portale/familiar room: komunikaty i specyficzne efekty",
+        "pattern": "P03, P30",
+        "trigger": "udane/przegrane powyższe callbacki",
+        "guard": "jak portal i dostęp; nonplayer na końcowym polu także cofany",
+        "effect": "przenieś teksty, effect214/effect168 i obsługę nonplayer; to nie jest samo teleport",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełne teksty trzech przejść zachowane w held. success_message jest zabronionym polem adaptera; dokładne efekty214/168 oraz cofanie nonplayer także nie są zakwalifikowane. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    }
+  ]
+}

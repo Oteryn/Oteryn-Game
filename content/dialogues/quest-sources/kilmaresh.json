@@ -1,0 +1,983 @@
+{
+  "quest": "kilmaresh",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "eshaya",
+      "source_blob_sha256": "0b84914661498605630d5e98bfb74579760e035d280e5395862c14b975e749db",
+      "review_rows": [
+        "R4C006",
+        "R4C007",
+        "R4C008",
+        "R4C015"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eshaya.lua:53-151",
+          "line_start": 53,
+          "line_end": 151,
+          "source_sha256": "3d2a4431dd226ddeb87befad1d5b52c812e361fbd076489c6b822a628edebd2a",
+          "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- First\n\nlocal firstMission = keywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I'm willing to admit that I need help. And the help of someone who is not from {Issavi} at that. But the task could be dangerous and you would become embroiled in the politics and court intrigues of {Kilmaresh}. Will you help me anyhow?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) == -1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.First.Title, 1)\nend)\n\nfirstMission:addChildKeyword(\n\t{ \"yes\" },\n\tStdModule.say,\n\t{\n\t\tnpcHandler = npcHandler,\n\t\ttext = {\n\t\t\t\"You are a noble soul! So listen: for many decades, over a century actually, the city of {Rathleton} had an Ambassador here in {Issavi}. ...\",\n\t\t\t\"Kilmaresh and Oramond maintain important commercial relations, and for this reason Rathleton has an envoy here. In the past, the relations were good but now ...\",\n\t\t\t\"I hate to admit it but I heavily suspect that the current Ambassador is a traitor and consorts with the forbidden cult of Fafnar. I have several hints and Kallimae saw it in one of her visions ...\",\n\t\t\t\"But the vision of a Kilmareshian seer is no proof they will ever accept in Rathleton. And without proof we can't banish the Ambassador, this would cause major diplomatic fallout or even a war. I can't risk that. ...\",\n\t\t\t\"I need unequivocal evidence that the Ambassador conspires with the Fafnar cultists. Please go to his residence in the eastern part of the city and search for letters, journals ... anything that could prove him guilty.\",\n\t\t},\n\t},\n\tnil,\n\tfunction(player)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Second.Investigating, 1)\n\tend\n)\n\n-- Second\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = {\n\t\t\"It seems that he destroyed every visible evidence of his treason. That's very unfortunate and I see only one remaining possibility: You need to see the {Ambassador}'s memories. ...\",\n\t\t\"But there is only one way to achieve this: You have to find a Ring of {Secret Thoughts}. Legend has it that a monstrous being called {Urmahlullu} has such a ring. If the myths are true you can find this creature in a subterranean tomb south of Issavi.\",\n\t},\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) == 5\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Second.Investigating, 6)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 1)\nend)\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You haven't investigated all the evidence.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) >= 0 and player:getStorageValue(Storage.Kilmaresh.Second.Investigating) < 5\nend)\n\n-- Third\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You found the Ring of {Secret Thoughts}! Well done! Now give it to the {Ambassador} as a present. He's a peacock and will accept such a precious gift for sure. As soon as he wears it, his memories will be stored in the ring.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 1 and player:getItemById(31263, true)\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 2)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You don't have the ring I need.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 1\nend)\n\n-- Fifth\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"This is the proof we need! Very well done! You have to report this to our {Empress}. She will grant you an audience now.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 4\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 5)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Suon's and Bastesh's blessing, dear guest!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 63,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"I'm willing to admit that I need help. And the help of someone who is not from {Issavi} at that. But the task could be dangerous and you would become embroiled in the politics and court intrigues of {Kilmaresh}. Will you help me anyhow?\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"You are a noble soul! So listen: for many decades, over a century actually, the city of {Rathleton} had an Ambassador here in {Issavi}. ...\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"Kilmaresh and Oramond maintain important commercial relations, and for this reason Rathleton has an envoy here. In the past, the relations were good but now ...\""
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"I hate to admit it but I heavily suspect that the current Ambassador is a traitor and consorts with the forbidden cult of Fafnar. I have several hints and Kallimae saw it in one of her visions ...\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"But the vision of a Kilmareshian seer is no proof they will ever accept in Rathleton. And without proof we can't banish the Ambassador, this would cause major diplomatic fallout or even a war. I can't risk that. ...\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"I need unequivocal evidence that the Ambassador conspires with the Fafnar cultists. Please go to his residence in the eastern part of the city and search for letters, journals ... anything that could prove him guilty.\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"It seems that he destroyed every visible evidence of his treason. That's very unfortunate and I see only one remaining possibility: You need to see the {Ambassador}'s memories. ...\""
+            },
+            {
+              "line": 97,
+              "lua_literal": "\"But there is only one way to achieve this: You have to find a Ring of {Secret Thoughts}. Legend has it that a monstrous being called {Urmahlullu} has such a ring. If the myths are true you can find this creature in a subterranean tomb south of Issavi.\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"You haven't investigated all the evidence.\""
+            },
+            {
+              "line": 115,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"You found the Ring of {Secret Thoughts}! Well done! Now give it to the {Ambassador} as a present. He's a peacock and will accept such a precious gift for sure. As soon as he wears it, his memories will be stored in the ring.\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"You don't have the ring I need.\""
+            },
+            {
+              "line": 133,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\"This is the proof we need! Very well done! You have to report this to our {Empress}. She will grant you an audience now.\""
+            },
+            {
+              "line": 142,
+              "lua_literal": "\"Suon's and Bastesh's blessing, dear guest!\""
+            },
+            {
+              "line": 143,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Eshaya\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1200,\n\tlookHead = 95,\n\tlookBody = 86,\n\tlookLegs = 79,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Praised be Suon and Bastesh.\" },\n\t{ text = \"I should talk to Kallimae soon.\" },\n\t{ text = \"Issavi's safety is my first concern.\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- First\n\nlocal firstMission = keywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I'm willing to admit that I need help. And the help of someone who is not from {Issavi} at that. But the task could be dangerous and you would become embroiled in the politics and court intrigues of {Kilmaresh}. Will you help me anyhow?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) == -1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.First.Title, 1)\nend)\n\nfirstMission:addChildKeyword(\n\t{ \"yes\" },\n\tStdModule.say,\n\t{\n\t\tnpcHandler = npcHandler,\n\t\ttext = {\n\t\t\t\"You are a noble soul! So listen: for many decades, over a century actually, the city of {Rathleton} had an Ambassador here in {Issavi}. ...\",\n\t\t\t\"Kilmaresh and Oramond maintain important commercial relations, and for this reason Rathleton has an envoy here. In the past, the relations were good but now ...\",\n\t\t\t\"I hate to admit it but I heavily suspect that the current Ambassador is a traitor and consorts with the forbidden cult of Fafnar. I have several hints and Kallimae saw it in one of her visions ...\",\n\t\t\t\"But the vision of a Kilmareshian seer is no proof they will ever accept in Rathleton. And without proof we can't banish the Ambassador, this would cause major diplomatic fallout or even a war. I can't risk that. ...\",\n\t\t\t\"I need unequivocal evidence that the Ambassador conspires with the Fafnar cultists. Please go to his residence in the eastern part of the city and search for letters, journals ... anything that could prove him guilty.\",\n\t\t},\n\t},\n\tnil,\n\tfunction(player)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Second.Investigating, 1)\n\tend\n)\n\n-- Second\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = {\n\t\t\"It seems that he destroyed every visible evidence of his treason. That's very unfortunate and I see only one remaining possibility: You need to see the {Ambassador}'s memories. ...\",\n\t\t\"But there is only one way to achieve this: You have to find a Ring of {Secret Thoughts}. Legend has it that a monstrous being called {Urmahlullu} has such a ring. If the myths are true you can find this creature in a subterranean tomb south of Issavi.\",\n\t},\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) == 5\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Second.Investigating, 6)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 1)\nend)\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You haven't investigated all the evidence.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Second.Investigating) >= 0 and player:getStorageValue(Storage.Kilmaresh.Second.Investigating) < 5\nend)\n\n-- Third\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You found the Ring of {Secret Thoughts}! Well done! Now give it to the {Ambassador} as a present. He's a peacock and will accept such a precious gift for sure. As soon as he wears it, his memories will be stored in the ring.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 1 and player:getItemById(31263, true)\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 2)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You don't have the ring I need.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 1\nend)\n\n-- Fifth\n\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"This is the proof we need! Very well done! You have to report this to our {Empress}. She will grant you an audience now.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 4\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 5)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Suon's and Bastesh's blessing, dear guest!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eshaya.lua:1-151"
+    },
+    {
+      "npc_source_name": "ambassador_of_rathleton",
+      "source_blob_sha256": "d19955a95e8a55c634f50326cde734050435a51582ce88f6a7f20e644b8ba705",
+      "review_rows": [
+        "R4C009"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_of_rathleton.lua:53-88",
+          "line_start": 53,
+          "line_end": 88,
+          "source_sha256": "ce21ff91d32d9e17fc38c886bf665173ee226a777a1fe2b0a5cf3f6d4562a7e4",
+          "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"present\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"This is a very beautiful ring. Thank you for this generous present!\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 2 and player:getItemById(31263, true)\nend, function(player)\n\tplayer:removeItem(31263, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 3)\nend)\n\nkeywordHandler:addKeyword({ \"present\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Didn't you bring my gift?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 2\nend)\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, friend.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 61,
+              "lua_literal": "\"present\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"This is a very beautiful ring. Thank you for this generous present!\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"present\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"Didn't you bring my gift?\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"Greetings, friend.\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Ambassador Of Rathleton\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 472,\n\tlookHead = 19,\n\tlookBody = 53,\n\tlookLegs = 61,\n\tlookFeet = 3,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"What a beautiful palace. The Kilmareshians are highly skilful architects.\" },\n\t{ text = \"The new treaty of amity and commerce with Kilmaresh is of utmost importance.\" },\n\t{ text = \"The pending freight from the saffron coasts is overdue.\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"present\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"This is a very beautiful ring. Thank you for this generous present!\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 2 and player:getItemById(31263, true)\nend, function(player)\n\tplayer:removeItem(31263, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Third.Recovering, 3)\nend)\n\nkeywordHandler:addKeyword({ \"present\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Didn't you bring my gift?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Third.Recovering) == 2\nend)\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, friend.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_of_rathleton.lua:1-88"
+    },
+    {
+      "npc_source_name": "moe",
+      "source_blob_sha256": "966720ba80434ac1626cea5c9592f06c8c709132bd58802727e0c83bea515953",
+      "review_rows": [
+        "R4C010",
+        "R4C011",
+        "R4C012",
+        "R4C094"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/moe.lua:53-123",
+          "line_start": 53,
+          "line_end": 123,
+          "source_sha256": "1a8e49fbba99c9ded4bf39cd4069ef213c7c52b98d5449f90478f840940cc822",
+          "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"help\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I guess I could do this, yes. But I have to impose a condition. If you bring me ten sphinx {feathers} I will steal this ring for you.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 2)\nend)\n\nkeywordHandler:addKeyword({ \"feathers\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Thank you! They look so pretty, I'm very pleased. Agreed, now I will steal the ring from the Ambassador of Rathleton. Just be patient, I have to wait for a good moment.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 2 and player:getItemById(31437, 10)\nend, function(player)\n\tplayer:removeItem(31437, 10)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 3)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.MoeTimer, os.time() + 60 * 60) -- one hour\nend)\n\nkeywordHandler:addKeyword({ \"feathers\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"If you bring me ten sphinx {feathers} I will steal this ring for you.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 2 and not player:getItemById(31437, 10)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You're arriving at the right time. I have the ring you asked for. It was not too difficult. I just had to wait until the Ambassador left his residence and then I climbed in through the window. Here it is.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 3 and player:getStorageValue(Storage.Kilmaresh.Fourth.MoeTimer) - os.time() <= 0\nend, function(player)\n\tplayer:addItem(31306, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 4)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I will steal it, promised. I'm just waiting for a good moment.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 3 and player:getStorageValue(Storage.Kilmaresh.Fourth.MoeTimer) - os.time() > 0\nend)\nkeywordHandler:addKeyword({ \"lyre\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I'm upset to accuse myself, the lyre is hidden in a tomb west of Kilmaresh.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 2)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, traveller. It seems, you're a {guest} here, just like me.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 61,
+              "lua_literal": "\"help\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"I guess I could do this, yes. But I have to impose a condition. If you bring me ten sphinx {feathers} I will steal this ring for you.\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"feathers\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"Thank you! They look so pretty, I'm very pleased. Agreed, now I will steal the ring from the Ambassador of Rathleton. Just be patient, I have to wait for a good moment.\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"feathers\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"If you bring me ten sphinx {feathers} I will steal this ring for you.\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"You're arriving at the right time. I have the ring you asked for. It was not too difficult. I just had to wait until the Ambassador left his residence and then I climbed in through the window. Here it is.\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 100,
+              "lua_literal": "\"I will steal it, promised. I'm just waiting for a good moment.\""
+            },
+            {
+              "line": 104,
+              "lua_literal": "\"lyre\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"I'm upset to accuse myself, the lyre is hidden in a tomb west of Kilmaresh.\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"Greetings, traveller. It seems, you're a {guest} here, just like me.\""
+            },
+            {
+              "line": 114,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Moe\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 118,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"The menu of the day sounds delicious!\" },\n\t{ text = \"The last visit to the theatre was quite rewarding.\" },\n\t{ text = \"Such a beautiful and wealthy city - with so many opportunities ...\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"help\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I guess I could do this, yes. But I have to impose a condition. If you bring me ten sphinx {feathers} I will steal this ring for you.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 2)\nend)\n\nkeywordHandler:addKeyword({ \"feathers\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Thank you! They look so pretty, I'm very pleased. Agreed, now I will steal the ring from the Ambassador of Rathleton. Just be patient, I have to wait for a good moment.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 2 and player:getItemById(31437, 10)\nend, function(player)\n\tplayer:removeItem(31437, 10)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 3)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.MoeTimer, os.time() + 60 * 60) -- one hour\nend)\n\nkeywordHandler:addKeyword({ \"feathers\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"If you bring me ten sphinx {feathers} I will steal this ring for you.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 2 and not player:getItemById(31437, 10)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You're arriving at the right time. I have the ring you asked for. It was not too difficult. I just had to wait until the Ambassador left his residence and then I climbed in through the window. Here it is.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 3 and player:getStorageValue(Storage.Kilmaresh.Fourth.MoeTimer) - os.time() <= 0\nend, function(player)\n\tplayer:addItem(31306, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 4)\nend)\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I will steal it, promised. I'm just waiting for a good moment.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 3 and player:getStorageValue(Storage.Kilmaresh.Fourth.MoeTimer) - os.time() > 0\nend)\nkeywordHandler:addKeyword({ \"lyre\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"I'm upset to accuse myself, the lyre is hidden in a tomb west of Kilmaresh.\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 1\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 2)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, traveller. It seems, you're a {guest} here, just like me.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/moe.lua:1-123"
+    },
+    {
+      "npc_source_name": "the_librarian",
+      "source_blob_sha256": "79a2903e42ebd5f55b92ba0c9a4eb2e21778c4c6e4639d9221e936d04029a8dd",
+      "review_rows": [
+        "R4C013"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_librarian.lua:53-83",
+          "line_start": 53,
+          "line_end": 83,
+          "source_sha256": "632484414acc82e182afafb11d3e3ed3e3d07437991dfaada79bd0dff1dee393",
+          "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = {\n\t\t\"To extract memories from the ring, you have to enter a trance-like state with the help of a hallucinogen. Like this you can see all memories that are stored in the ring. Ask {Faloriel} for a respective potion. ...\",\n\t\t\"Drink it while wearing the ring in the Temple of {Bastesh} and say: 'Sa Katesa Tarsani na'. If the legends are true you will be able to take memories with you in the form of memory shards.\",\n\t},\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 4\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.MemoriesShards, 0)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 5)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, dear guest. If you are interested in paperware such as books or scrolls, ask me for a trade.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 61,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"To extract memories from the ring, you have to enter a trance-like state with the help of a hallucinogen. Like this you can see all memories that are stored in the ring. Ask {Faloriel} for a respective potion. ...\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Drink it while wearing the ring in the Temple of {Bastesh} and say: 'Sa Katesa Tarsani na'. If the legends are true you will be able to take memories with you in the form of memory shards.\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"Greetings, dear guest. If you are interested in paperware such as books or scrolls, ask me for a trade.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"The Librarian\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1065,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"I really have to find this scroll. Where did I put it?\" },\n\t{ text = \"Too much dust here. I should tidy up on occasion.\" },\n\t{ text = \"Someone opened the Grimoire of Flames without permission. Egregious!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = {\n\t\t\"To extract memories from the ring, you have to enter a trance-like state with the help of a hallucinogen. Like this you can see all memories that are stored in the ring. Ask {Faloriel} for a respective potion. ...\",\n\t\t\"Drink it while wearing the ring in the Temple of {Bastesh} and say: 'Sa Katesa Tarsani na'. If the legends are true you will be able to take memories with you in the form of memory shards.\",\n\t},\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fourth.Moe) == 4\nend, function(player)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 1)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.MemoriesShards, 0)\n\tplayer:setStorageValue(Storage.Kilmaresh.Fourth.Moe, 5)\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, dear guest. If you are interested in paperware such as books or scrolls, ask me for a trade.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"Inkwell black\", clientId = 28568, sell = 720 },\n\t{ itemName = \"atlas\", clientId = 6108, buy = 150 },\n\t{ itemName = \"black book\", clientId = 2838, buy = 20 },\n\t{ itemName = \"blue book\", clientId = 2844, sell = 40 },\n\t{ itemName = \"book page\", clientId = 28569, sell = 640 },\n\t{ itemName = \"brown book\", clientId = 2837, buy = 20 },\n\t{ itemName = \"bunch of reed\", clientId = 30975, sell = 25 },\n\t{ itemName = \"document\", clientId = 2834, buy = 20 },\n\t{ itemName = \"gemmed book\", clientId = 2842, sell = 150 },\n\t{ itemName = \"glowing rune\", clientId = 28570, sell = 350 },\n\t{ itemName = \"green book\", clientId = 2831, sell = 30 },\n\t{ itemName = \"greeting card\", clientId = 6386, buy = 40 },\n\t{ itemName = \"grey small book\", clientId = 2839, buy = 20 },\n\t{ itemName = \"inkwell\", clientId = 3509, buy = 20, sell = 9 },\n\t{ itemName = \"orange book\", clientId = 2843, sell = 60 },\n\t{ itemName = \"parchment\", clientId = 2833, buy = 15, sell = 10 },\n\t{ itemName = \"parchment\", clientId = 2835, buy = 15 },\n\t{ itemName = \"quill\", clientId = 28567, sell = 1100 },\n\t{ itemName = \"scroll\", clientId = 2815, buy = 10 },\n\t{ itemName = \"silken bookmark\", clientId = 28566, sell = 1300 },\n\t{ itemName = \"valentine's card\", clientId = 6538, buy = 40 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_librarian.lua:1-120"
+    },
+    {
+      "npc_source_name": "faloriel",
+      "source_blob_sha256": "1ea067bd1bd7fbe8c7575ec689b776c64b4a44ac271a7190667a905a6b0c4dcc",
+      "review_rows": [
+        "R4C014"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/faloriel.lua:53-92",
+          "line_start": 53,
+          "line_end": 92,
+          "source_sha256": "fbc30bad59ac291b362058073d9d275ccef9d15cd30c8d81ab15d1e41fb70318",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal potionTalk = keywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"So, the Librarian sent you. Well, yes, I have a vial of the hallucinogen you need. I'll give it to you for 1000 gold. Do you agree?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 1\nend)\n\npotionTalk:addChildKeyword({ \"yes\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Great. Here, take it.\",\n}, function(player)\n\treturn player:getMoney() + player:getBankBalance() >= 1000\nend, function(player)\n\tplayer:removeMoneyBank(1000)\n\tplayer:addItem(31350, 1) -- flask of hallucinogen\nend)\n\npotionTalk:addChildKeyword({ \"yes\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You do not have enough money.\",\n}, function(player)\n\treturn player:getMoney() + player:getBankBalance() < 1000\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, dear guest and welcome to my {potion} shop.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 60,
+              "lua_literal": "\"ring\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"So, the Librarian sent you. Well, yes, I have a vial of the hallucinogen you need. I'll give it to you for 1000 gold. Do you agree?\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"Great. Here, take it.\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"You do not have enough money.\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"Greetings, dear guest and welcome to my {potion} shop.\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Faloriel\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 159,\n\tlookHead = 113,\n\tlookBody = 100,\n\tlookLegs = 29,\n\tlookFeet = 97,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Health potions! Mana potions! Buy them here!\" },\n\t{ text = \"All kinds of potions available here!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal potionTalk = keywordHandler:addKeyword({ \"ring\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"So, the Librarian sent you. Well, yes, I have a vial of the hallucinogen you need. I'll give it to you for 1000 gold. Do you agree?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 1\nend)\n\npotionTalk:addChildKeyword({ \"yes\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Great. Here, take it.\",\n}, function(player)\n\treturn player:getMoney() + player:getBankBalance() >= 1000\nend, function(player)\n\tplayer:removeMoneyBank(1000)\n\tplayer:addItem(31350, 1) -- flask of hallucinogen\nend)\n\npotionTalk:addChildKeyword({ \"yes\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"You do not have enough money.\",\n}, function(player)\n\treturn player:getMoney() + player:getBankBalance() < 1000\nend)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings, dear guest and welcome to my {potion} shop.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n\t{ itemName = \"empty potion flask\", clientId = 284, sell = 5 },\n\t{ itemName = \"empty potion flask\", clientId = 285, sell = 5 },\n\t{ itemName = \"great health potion\", clientId = 239, buy = 225 },\n\t{ itemid = 238, clientId = 238, buy = 158 },\n\t{ itemName = \"great spirit potion\", clientId = 7642, buy = 254 },\n\t{ itemName = \"health potion\", clientId = 266, buy = 50 },\n\t{ itemName = \"mana potion\", clientId = 268, buy = 56 },\n\t{ itemName = \"strong health potion\", clientId = 236, buy = 115 },\n\t{ itemName = \"strong mana potion\", clientId = 237, buy = 108 },\n\t{ itemName = \"supreme health potion\", clientId = 23375, buy = 650 },\n\t{ itemName = \"ultimate health potion\", clientId = 7643, buy = 379 },\n\t{ itemName = \"ultimate mana potion\", clientId = 23373, buy = 488 },\n\t{ itemName = \"ultimate spirit potion\", clientId = 23374, buy = 488 },\n\t{ itemName = \"vial\", clientId = 2874, sell = 5 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/faloriel.lua:1-124"
+    },
+    {
+      "npc_source_name": "the_empress",
+      "source_blob_sha256": "a4bfa77657f9382a61828946a9e4e2b34787ae41d39fa409a7ba0d2dcb5df26f",
+      "review_rows": [
+        "R4C016",
+        "R4C017"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_empress.lua:53-106",
+          "line_start": 53,
+          "line_end": 106,
+          "source_sha256": "8a4bc4b7d5dabc22c87b6216af396cb3b71f80bd66d26a3bd030ff030de7fedf",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 4 then\n\t\tplayer:addItem(31414, 1)\n\t\tnpcHandler:setMessage(MESSAGE_GREET, {\n\t\t\t\"I see. There is enough and adequate evidence that the Ambassador of Rathleton is indeed an arch traitor. So, Eshaya was right. Well done, mortal being. You have proven your loyalty and bravery, therefore allow me to ask you one more favour. ...\",\n\t\t\t\"The Cult of Fafnar is a serious problem for Issavi. The cultists are roaming the sewers and catacombs beneath the city now and again but this time they are really up to something. ...\",\n\t\t\t\"As a member of the Sapphire Blade found out, they are planning to cause a major earthquake, that could severely damage or even destroy Issavi. You may wonder how. ...\",\n\t\t\t\"Well, they want to activate five Fafnar statues which they have already enchanted. They are hidden in the catacombs underneath the city. Please go down and search for the statues. ...\",\n\t\t\t\"Then use this sceptre to bless them in the name of Suon and Bastesh. This will destroy the disastrous enchantment and Issavi will be safe again.\",\n\t\t})\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 1)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.FourMasks, 0)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.BlessedStatues, 0)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 6)\n\telse\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Greetings.\")\n\tend\n\treturn true\nend\n\nlocal masksDialogue = keywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Did you take all the masks and enchant all the statues?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 10\nend)\n\nmasksDialogue:addChildKeyword(\n\t{ \"yes\" },\n\tStdModule.say,\n\t{\n\t\tnpcHandler = npcHandler,\n\t\ttext = \"Thank you.\",\n\t},\n\tnil,\n\tfunction(player)\n\t\tplayer:addItem(31573, 1) -- Sun Medal\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 11)\n\tend\n)\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 60,
+              "lua_literal": "\"I see. There is enough and adequate evidence that the Ambassador of Rathleton is indeed an arch traitor. So, Eshaya was right. Well done, mortal being. You have proven your loyalty and bravery, therefore allow me to ask you one more favour. ...\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"The Cult of Fafnar is a serious problem for Issavi. The cultists are roaming the sewers and catacombs beneath the city now and again but this time they are really up to something. ...\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"As a member of the Sapphire Blade found out, they are planning to cause a major earthquake, that could severely damage or even destroy Issavi. You may wonder how. ...\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"Well, they want to activate five Fafnar statues which they have already enchanted. They are hidden in the catacombs underneath the city. Please go down and search for the statues. ...\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"Then use this sceptre to bless them in the name of Suon and Bastesh. This will destroy the disastrous enchantment and Issavi will be safe again.\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Greetings.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"Did you take all the masks and enchant all the statues?\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Thank you.\""
+            },
+            {
+              "line": 97,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"The Empress\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1188,\n\tlookHead = 79,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 3,\n\tlookAddons = 3,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.Fifth.Memories) == 4 then\n\t\tplayer:addItem(31414, 1)\n\t\tnpcHandler:setMessage(MESSAGE_GREET, {\n\t\t\t\"I see. There is enough and adequate evidence that the Ambassador of Rathleton is indeed an arch traitor. So, Eshaya was right. Well done, mortal being. You have proven your loyalty and bravery, therefore allow me to ask you one more favour. ...\",\n\t\t\t\"The Cult of Fafnar is a serious problem for Issavi. The cultists are roaming the sewers and catacombs beneath the city now and again but this time they are really up to something. ...\",\n\t\t\t\"As a member of the Sapphire Blade found out, they are planning to cause a major earthquake, that could severely damage or even destroy Issavi. You may wonder how. ...\",\n\t\t\t\"Well, they want to activate five Fafnar statues which they have already enchanted. They are hidden in the catacombs underneath the city. Please go down and search for the statues. ...\",\n\t\t\t\"Then use this sceptre to bless them in the name of Suon and Bastesh. This will destroy the disastrous enchantment and Issavi will be safe again.\",\n\t\t})\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 1)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.FourMasks, 0)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.BlessedStatues, 0)\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Fifth.Memories, 6)\n\telse\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Greetings.\")\n\tend\n\treturn true\nend\n\nlocal masksDialogue = keywordHandler:addKeyword({ \"mission\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Did you take all the masks and enchant all the statues?\",\n}, function(player)\n\treturn player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 10\nend)\n\nmasksDialogue:addChildKeyword(\n\t{ \"yes\" },\n\tStdModule.say,\n\t{\n\t\tnpcHandler = npcHandler,\n\t\ttext = \"Thank you.\",\n\t},\n\tnil,\n\tfunction(player)\n\t\tplayer:addItem(31573, 1) -- Sun Medal\n\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 11)\n\tend\n)\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_empress.lua:1-106"
+    },
+    {
+      "npc_source_name": "kallimae",
+      "source_blob_sha256": "f075d0e544783b1100e46f881467a54baba392e07ed57e35c8f279de200a66f3",
+      "review_rows": [
+        "R4C018",
+        "R4C019",
+        "R4C020"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kallimae.lua:53-145",
+          "line_start": 53,
+          "line_end": 145,
+          "source_sha256": "cebdb0072371d6f416978726788742afceb549093115f06b9fbd471b417e72a5",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\t\tnpcHandler:say({ \"Some residents are in need of ingredients to finish a ritual. You can help?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\t\tnpcHandler:say({ \"Search for the NPCs Yonan, Narsai, Shimun and Tefrit.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Set.Ritual, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Yonan, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Narsai, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Shimun, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Tefrit, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 12)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\t\tnpcHandler:say({ \"Did you help some residents with ingredients?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\t\tnpcHandler:say({ \"Thanks. I need you to go to 4 places indicated by Goddess Bastesh.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Nine.Owl, 1)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\t\tnpcHandler:say({ \"Did you check all the points and bring the Symbol of Sun and Sea?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 and player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 and player:getItemById(31431, 1) then\n\t\t\tplayer:addItem(31572, 1)\n\t\t\tnpcHandler:say({ \"Thanks. Here is your reward.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eleven.Basin, 2)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 58,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\t\tnpcHandler:say({ \"Some residents are in need of ingredients to finish a ritual. You can help?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"Search for the NPCs Yonan, Narsai, Shimun and Tefrit.\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Set.Ritual, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Yonan, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Narsai, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Shimun, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Tefrit, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 12)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 100,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"Did you help some residents with ingredients?\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "'s not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\t\tnpcHandler:say({ \"Thanks. I need you to go to 4 places indicated by Goddess Bastesh.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"Sorry.\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "'s not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\t\tnpcHandler:say({ \"Did you check all the points and bring the Symbol of Sun and Sea?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 122,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "\"Thanks. Here is your reward.\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eleven.Basin, 2)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 137,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Kallimae\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1199,\n\tlookHead = 95,\n\tlookBody = 52,\n\tlookLegs = 0,\n\tlookFeet = 71,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\t\tnpcHandler:say({ \"Some residents are in need of ingredients to finish a ritual. You can help?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Sixth.Favor) == 11 then\n\t\t\tnpcHandler:say({ \"Search for the NPCs Yonan, Narsai, Shimun and Tefrit.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Set.Ritual, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Yonan, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Narsai, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Shimun, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_20.Kilmaresh.Eighth.Tefrit, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Sixth.Favor, 12)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\t\tnpcHandler:say({ \"Did you help some residents with ingredients?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 3 then\n\t\t\tnpcHandler:say({ \"Thanks. I need you to go to 4 places indicated by Goddess Bastesh.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Nine.Owl, 1)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\t\tnpcHandler:say({ \"Did you check all the points and bring the Symbol of Sun and Sea?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 and player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eleven.Basin) == 1 and player:getItemById(31431, 1) then\n\t\t\tplayer:addItem(31572, 1)\n\t\t\tnpcHandler:say({ \"Thanks. Here is your reward.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eleven.Basin, 2)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kallimae.lua:1-145"
+    },
+    {
+      "npc_source_name": "yonan",
+      "source_blob_sha256": "ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848",
+      "review_rows": [
+        "R4C040",
+        "R4C041",
+        "R4C095"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yonan.lua:134-230",
+          "line_start": 134,
+          "line_end": 230,
+          "source_sha256": "8677be5d5aeeb8ada06eb296702a83a18f5b5a3fdf610723b0f366d00a9ee6cf",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\t\tplayer:addItem(31717, 1) -- Yonans List\n\t\t\tplayer:addItem(31613, 1) -- Pick Enchanted\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about? \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 and player:getItemById(9651, 3) and player:getItemById(31325, 12) and player:getItemById(31333, 10) then\n\t\t\tplayer:removeItem(9651, 3)\n\t\t\tplayer:removeItem(31325, 12)\n\t\t\tplayer:removeItem(31333, 10)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\n\tif MsgContains(message, \"regalia of suon\") then\n\t\tnpcHandler:say({ \"You have all parts of the famous Regalia of Suon! Only a few of them were ever forged, back in the times of the old empire. You are holding a very rare and precious treasure, my friend. ... As you have all four pieces, I could combine them into the full insignia. Shall I do this for you?\" }, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 5)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 then\n\t\tif player:getItemById(31572, 1) and player:getItemById(31573, 1) and player:getItemById(31574, 1) and player:getItemById(31575, 1) then\n\t\t\tif player:addItem(31576, 1) then -- regalia of suon\n\t\t\t\tplayer:removeItem(31572, 1) -- blue and golden cordon\n\t\t\t\tplayer:removeItem(31573, 1) -- sun medal\n\t\t\t\tplayer:removeItem(31574, 1) -- sunray emblem\n\t\t\t\tplayer:removeItem(31575, 1) -- golden bijou\n\t\t\t\tnpcHandler:say({ \"Well then, let me have a look.\" }, npc, creature)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry, you dont have the necessary items.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 139,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 139,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 145,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 145,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 166,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 170,
+              "lua_literal": "\"Here is the list with the missing ingredients to complete the ritual.\""
+            },
+            {
+              "line": 170,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about? \" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 184,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 189,
+              "lua_literal": "\"Thank you this stage of the ritual is complete.\""
+            },
+            {
+              "line": 189,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 198,
+              "lua_literal": "\"regalia of suon\""
+            },
+            {
+              "line": 199,
+              "lua_literal": "\"You have all parts of the famous Regalia of Suon! Only a few of them were ever forged, back in the times of the old empire. You are holding a very rare and precious treasure, my friend. ... As you have all four pieces, I could combine them into the full insignia. Shall I do this for you?\""
+            },
+            {
+              "line": 201,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 208,
+              "lua_literal": "\"Well then, let me have a look.\""
+            },
+            {
+              "line": 211,
+              "lua_literal": "\"Sorry, you dont have the necessary items.\""
+            },
+            {
+              "line": 218,
+              "lua_literal": "\"Well, bye then.\""
+            },
+            {
+              "line": 228,
+              "lua_literal": "\"trade\""
+            },
+            {
+              "line": 228,
+              "lua_literal": "\"bye\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Yonan\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1200,\n\tlookHead = 76,\n\tlookBody = 49,\n\tlookLegs = 10,\n\tlookFeet = 0,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.shop = {\n\t{ itemName = \"amber with a bug\", clientId = 32624, sell = 41000 },\n\t{ itemName = \"amber with a dragonfly\", clientId = 32625, sell = 56000 },\n\t{ itemName = \"amber\", clientId = 32626, sell = 20000 },\n\t{ itemName = \"ancient coin\", clientId = 24390, sell = 350 },\n\t{ itemName = \"black pearl\", clientId = 3027, buy = 560, sell = 280 },\n\t{ itemName = \"blue crystal shard\", clientId = 16119, sell = 1500 },\n\t{ itemName = \"blue crystal splinter\", clientId = 16124, sell = 400 },\n\t{ itemName = \"bronze goblet\", clientId = 5807, buy = 2000 },\n\t{ itemName = \"brown crystal splinter\", clientId = 16123, sell = 400 },\n\t{ itemName = \"brown giant shimmering pearl\", clientId = 282, sell = 3000 },\n\t{ itemName = \"coral brooch\", clientId = 24391, sell = 750 },\n\t{ itemName = \"crunor idol\", clientId = 30055, sell = 30000 },\n\t{ itemName = \"cyan crystal fragment\", clientId = 16125, sell = 800 },\n\t{ itemName = \"dragon figurine\", clientId = 30053, sell = 45000 },\n\t{ itemName = \"gemmed figurine\", clientId = 24392, sell = 3500 },\n\t{ itemName = \"giant amethyst\", clientId = 32622, sell = 60000 },\n\t{ itemName = \"giant emerald\", clientId = 30060, sell = 90000 },\n\t{ itemName = \"giant ruby\", clientId = 30059, sell = 70000 },\n\t{ itemName = \"giant sapphire\", clientId = 30061, sell = 50000 },\n\t{ itemName = \"giant topaz\", clientId = 32623, sell = 80000 },\n\t{ itemName = \"gold ingot\", clientId = 9058, sell = 5000 },\n\t{ itemName = \"gold nugget\", clientId = 3040, sell = 850 },\n\t{ itemName = \"golden amulet\", clientId = 3013, buy = 6600 },\n\t{ itemName = \"golden goblet\", clientId = 5805, buy = 5000 },\n\t{ itemName = \"greater guardian gem\", clientId = 44604, sell = 10000 },\n\t{ itemName = \"greater marksman gem\", clientId = 44607, sell = 10000 },\n\t{ itemName = \"greater mystic gem\", clientId = 44613, sell = 10000 },\n\t{ itemName = \"greater sage gem\", clientId = 44610, sell = 10000 },\n\t{ itemName = \"green crystal fragment\", clientId = 16127, sell = 800 },\n\t{ itemName = \"green crystal shard\", clientId = 16121, sell = 1500 },\n\t{ itemName = \"green crystal splinter\", clientId = 16122, sell = 400 },\n\t{ itemName = \"green giant shimmering pearl\", clientId = 281, sell = 3000 },\n\t{ itemName = \"guardian gem\", clientId = 44603, sell = 5000 },\n\t{ itemName = \"lesser guardian gem\", clientId = 44602, sell = 1000 },\n\t{ itemName = \"lesser marksman gem\", clientId = 44605, sell = 1000 },\n\t{ itemName = \"lesser mystic gem\", clientId = 44611, sell = 1000 },\n\t{ itemName = \"lesser sage gem\", clientId = 44608, sell = 1000 },\n\t{ itemName = \"lion figurine\", clientId = 33781, sell = 10000 },\n\t{ itemName = \"marksman gem\", clientId = 44606, sell = 5000 },\n\t{ itemName = \"mystic gem\", clientId = 44612, sell = 5000 },\n\t{ itemName = \"onyx chip\", clientId = 22193, sell = 400 },\n\t{ itemName = \"opal\", clientId = 22194, sell = 500 },\n\t{ itemName = \"ornate locket\", clientId = 30056, sell = 18000 },\n\t{ itemName = \"prismatic quartz\", clientId = 24962, sell = 450 },\n\t{ itemName = \"rainbow quartz\", clientId = 25737, sell = 500 },\n\t{ itemName = \"red crystal fragment\", clientId = 16126, sell = 800 },\n\t{ itemName = \"ruby necklace\", clientId = 3016, buy = 3560 },\n\t{ itemName = \"sage gem\", clientId = 44609, sell = 5000 },\n\t{ itemName = \"silver goblet\", clientId = 5806, buy = 3000 },\n\t{ itemName = \"skull coin\", clientId = 32583, sell = 12000 },\n\t{ itemName = \"small amethyst\", clientId = 3033, buy = 400, sell = 200 },\n\t{ itemName = \"small diamond\", clientId = 3028, buy = 600, sell = 300 },\n\t{ itemName = \"small emerald\", clientId = 3032, buy = 500, sell = 250 },\n\t{ itemName = \"small enchanted amethyst\", clientId = 678, sell = 200 },\n\t{ itemName = \"small enchanted emerald\", clientId = 677, sell = 250 },\n\t{ itemName = \"small enchanted ruby\", clientId = 676, sell = 250 },\n\t{ itemName = \"small enchanted sapphire\", clientId = 675, sell = 250 },\n\t{ itemName = \"small ruby\", clientId = 3030, buy = 500, sell = 250 },\n\t{ itemName = \"small sapphire\", clientId = 3029, buy = 500, sell = 250 },\n\t{ itemName = \"small topaz\", clientId = 9057, sell = 200 },\n\t{ itemName = \"tiger eye\", clientId = 24961, sell = 350 },\n\t{ itemName = \"unicorn figurine\", clientId = 30054, sell = 50000 },\n\t{ itemName = \"violet crystal shard\", clientId = 16120, sell = 1500 },\n\t{ itemName = \"wedding ring\", clientId = 3004, buy = 990 },\n\t{ itemName = \"white pearl\", clientId = 3026, buy = 320, sell = 160 },\n\t{ itemName = \"white silk flower\", clientId = 34008, sell = 9000 },\n\t{ itemName = \"bounty talisman\", clientId = 51978, buy = 5000 },\n}\n\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 1 then\n\t\t\tplayer:addItem(31717, 1) -- Yonans List\n\t\t\tplayer:addItem(31613, 1) -- Pick Enchanted\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about? \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Yonan) == 2 and player:getItemById(9651, 3) and player:getItemById(31325, 12) and player:getItemById(31333, 10) then\n\t\t\tplayer:removeItem(9651, 3)\n\t\t\tplayer:removeItem(31325, 12)\n\t\t\tplayer:removeItem(31333, 10)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Yonan, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\n\tif MsgContains(message, \"regalia of suon\") then\n\t\tnpcHandler:say({ \"You have all parts of the famous Regalia of Suon! Only a few of them were ever forged, back in the times of the old empire. You are holding a very rare and precious treasure, my friend. ... As you have all four pieces, I could combine them into the full insignia. Shall I do this for you?\" }, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 5)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 then\n\t\tif player:getItemById(31572, 1) and player:getItemById(31573, 1) and player:getItemById(31574, 1) and player:getItemById(31575, 1) then\n\t\t\tif player:addItem(31576, 1) then -- regalia of suon\n\t\t\t\tplayer:removeItem(31572, 1) -- blue and golden cordon\n\t\t\t\tplayer:removeItem(31573, 1) -- sun medal\n\t\t\t\tplayer:removeItem(31574, 1) -- sunray emblem\n\t\t\t\tplayer:removeItem(31575, 1) -- golden bijou\n\t\t\t\tnpcHandler:say({ \"Well then, let me have a look.\" }, npc, creature)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry, you dont have the necessary items.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/yonan.lua:1-230"
+    },
+    {
+      "npc_source_name": "narsai",
+      "source_blob_sha256": "f3f196c573ac1781e93586ed984c42bb5cf792db70d3a1d58039ebc6b2e42a59",
+      "review_rows": [
+        "R4C042",
+        "R4C043"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/narsai.lua:53-128",
+          "line_start": 53,
+          "line_end": 128,
+          "source_sha256": "91fa660cbbe918f4cafbeb9c4b92a04137dff052d023e9d1facd88b6107f4058",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\t\tplayer:addItem(31714, 1)\n\t\t\tnpcHandler:say({ \"Here is the list of ingredients that are missing to complete the ritual. \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Narsai, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 and player:getItemById(31335, 10) and player:getItemById(10279, 2) and player:getItemById(31332, 5) then\n\t\t\tplayer:removeItem(31335, 10)\n\t\t\tplayer:removeItem(10279, 2)\n\t\t\tplayer:removeItem(31332, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Narsai, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 58,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Here is the list of ingredients that are missing to complete the ritual. \""
+            },
+            {
+              "line": 88,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Narsai, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "\"Did you bring all the materials I informed you about?\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "'s not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 and player:getItemById(31335, 10) and player:getItemById(10279, 2) and player:getItemById(31332, 5) then\n\t\t\tplayer:removeItem(31335, 10)\n\t\t\tplayer:removeItem(10279, 2)\n\t\t\tplayer:removeItem(31332, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"Sorry.\""
+            },
+            {
+              "line": 118,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Narsai\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1199,\n\tlookHead = 114,\n\tlookBody = 74,\n\tlookLegs = 10,\n\tlookFeet = 79,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 1 then\n\t\t\tplayer:addItem(31714, 1)\n\t\t\tnpcHandler:say({ \"Here is the list of ingredients that are missing to complete the ritual. \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Narsai, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Narsai) == 2 and player:getItemById(31335, 10) and player:getItemById(10279, 2) and player:getItemById(31332, 5) then\n\t\t\tplayer:removeItem(31335, 10)\n\t\t\tplayer:removeItem(10279, 2)\n\t\t\tplayer:removeItem(31332, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Narsai, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/narsai.lua:1-128"
+    },
+    {
+      "npc_source_name": "shimun",
+      "source_blob_sha256": "99c6d1971c4b7c6b103d7b2db2da2e4a8c1e2b6036bcb41415fa9eac83d4ef1f",
+      "review_rows": [
+        "R4C044",
+        "R4C045"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shimun.lua:53-128",
+          "line_start": 53,
+          "line_end": 128,
+          "source_sha256": "f2667519ffb139c2f30fc4fa55599d8368c9f9d592770b99e1687407fd69a9e0",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\t\tplayer:addItem(31715, 1)\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Shimun, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about? \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 and player:getItemById(31340, 1) and player:getItemById(31336, 12) and player:getItemById(2874, 5) then\n\t\t\tplayer:removeItem(31340, 1)\n\t\t\tplayer:removeItem(31336, 12)\n\t\t\tplayer:removeItem(2874, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Shimun, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 58,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Here is the list with the missing ingredients to complete the ritual.\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Shimun, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "\"Did you bring all the materials I informed you about? \""
+            },
+            {
+              "line": 98,
+              "lua_literal": "'s not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 and player:getItemById(31340, 1) and player:getItemById(31336, 12) and player:getItemById(2874, 5) then\n\t\t\tplayer:removeItem(31340, 1)\n\t\t\tplayer:removeItem(31336, 12)\n\t\t\tplayer:removeItem(2874, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"Sorry.\""
+            },
+            {
+              "line": 118,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Shimun\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1199,\n\tlookHead = 114,\n\tlookBody = 74,\n\tlookLegs = 10,\n\tlookFeet = 79,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 1 then\n\t\t\tplayer:addItem(31715, 1)\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Shimun, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about? \" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Shimun) == 2 and player:getItemById(31340, 1) and player:getItemById(31336, 12) and player:getItemById(2874, 5) then\n\t\t\tplayer:removeItem(31340, 1)\n\t\t\tplayer:removeItem(31336, 12)\n\t\t\tplayer:removeItem(2874, 5)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Shimun, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shimun.lua:1-128"
+    },
+    {
+      "npc_source_name": "tefrit",
+      "source_blob_sha256": "4a62d6cdd45fd73e33c67291f9f0944ae578d326a277acc7c5b43118a2240c4b",
+      "review_rows": [
+        "R4C046",
+        "R4C047"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tefrit.lua:53-129",
+          "line_start": 53,
+          "line_end": 129,
+          "source_sha256": "80b5e267c120be9ac40a94f24985df935bd968d023afa46cee92be732d8385fd",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\t\tplayer:addItem(31716, 1)\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 and player:getItemById(31329, 20) and player:getItemById(31339, 25) and player:getItemById(31330, 15) then\n\t\t\tplayer:removeItem(10272, 5)\n\t\t\tplayer:removeItem(31329, 20)\n\t\t\tplayer:removeItem(31339, 25)\n\t\t\tplayer:removeItem(31330, 15)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 58,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Here is the list with the missing ingredients to complete the ritual.\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about?\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Thank you this stage of the ritual is complete.\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "'s not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it'"
+            },
+            {
+              "line": 119,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Tefrit\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1199,\n\tlookHead = 114,\n\tlookBody = 74,\n\tlookLegs = 10,\n\tlookFeet = 79,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\t\tnpcHandler:say({ \"Could you help me do a ritual?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 1 then\n\t\t\tplayer:addItem(31716, 1)\n\t\t\tnpcHandler:say({ \"Here is the list with the missing ingredients to complete the ritual.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\t\tnpcHandler:say({ \"Did you bring all the materials I informed you about?\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Eighth.Tefrit) == 2 and player:getItemById(31329, 20) and player:getItemById(31339, 25) and player:getItemById(31330, 15) then\n\t\t\tplayer:removeItem(10272, 5)\n\t\t\tplayer:removeItem(31329, 20)\n\t\t\tplayer:removeItem(31339, 25)\n\t\t\tplayer:removeItem(31330, 15)\n\t\t\tnpcHandler:say({ \"Thank you this stage of the ritual is complete.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Eighth.Tefrit, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature) -- It needs to be revised, it's not the same as the global\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tefrit.lua:1-129"
+    },
+    {
+      "npc_source_name": "alyxo",
+      "source_blob_sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
+      "review_rows": [
+        "R4C082",
+        "R4C083",
+        "R4C084",
+        "R4C085",
+        "R4C086",
+        "R4C087",
+        "R4C088",
+        "R4C089"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:48-218",
+          "line_start": 48,
+          "line_end": 218,
+          "source_sha256": "b92ad141a87a7cbb6dcc5102267fef578154637ff8a59643ab2429dd7fa7d1ab",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\t\tnpcHandler:say({ \"Could you kill 3 bosses for me?\" }, npc, creature) -- needs review, this is not the speech of the global\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:say({ \"Come back as soon as you kill all 3 bosses.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 2)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Bragrumol, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Mozradek, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Xogixath, 1)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry, you do not have access.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\t\tnpcHandler:say({ \"Did you manage to face all 3 bosses?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Bragrumol) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Mozradek) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Xogixath) == 2 then\n\t\t\tnpcHandler:say({ \"I am very satisfied.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Could you help me with some more work?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Kill 300 members of the Fafnar cult, help me find Ivory Lyre and help me find an animal to stone.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 4)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 1)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \"Have you finished killing the 300 members of Fafnar's cult?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 7)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 7 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \"Thanks. You killed the 300 members of the Fafnar cult.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 301)\n\t\t\tnpcHandler:setTopic(playerId, 8)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\t\tnpcHandler:say({ \"Did you manage to find Lyre?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 9)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 9 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 and player:getItemById(31447, 1) then\n\t\t\tplayer:removeItem(31447, 1)\n\t\t\tnpcHandler:say({ \"Thanks. I was looking for Lyre for a long time.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\t\tnpcHandler:say({ \"Did you manage to find Small Tortoise?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 11)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 11 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 and player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tnpcHandler:say({ \"Thanks. I was looking for Small Tortoise.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 3)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"small tortoise\") then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tnpcHandler:say({ \"Do you want me to stone a small tortoise?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 15)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 15 then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tplayer:addItem(31446, 1)\n\t\t\tnpcHandler:say({ \"Here's your Small Petrified Tortoise.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 16)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tnpcHandler:say({ \"Did you finish the 3 jobs I gave you?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 13)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 13 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tplayer:addAchievement(\"Sculptor Apprentice\", 'Congratulations! You earned the achievement \"Sculptor Apprentice\".')\n\t\t\tplayer:addItem(31574, 1)\n\t\t\tnpcHandler:say({ \"Congratulations, you have completed the 3 jobs I gave you.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Fourteen.Remains, 1)\n\t\t\tnpcHandler:setTopic(playerId, 14)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 53,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 53,
+              "lua_literal": "'s not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it'"
+            },
+            {
+              "line": 59,
+              "lua_literal": "\"How could I help you?\""
+            },
+            {
+              "line": 59,
+              "lua_literal": "'s not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\t\tnpcHandler:say({ \"Could you kill 3 bosses for me?\" }, npc, creature) -- needs review, this is not the speech of the global\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:say({ \"Come back as soon as you kill all 3 bosses.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 2)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Bragrumol, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Mozradek, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Xogixath, 1)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry, you do not have access.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\t\tnpcHandler:say({ \"Did you manage to face all 3 bosses?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Bragrumol) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Mozradek) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Xogixath) == 2 then\n\t\t\tnpcHandler:say({ \"I am very satisfied.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Could you help me with some more work?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Kill 300 members of the Fafnar cult, help me find Ivory Lyre and help me find an animal to stone.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 4)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 1)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \"Have you finished killing the 300 members of Fafnar'"
+            },
+            {
+              "line": 130,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 7)\n\t\tend\n\telseif MsgContains(message, \""
+            },
+            {
+              "line": 133,
+              "lua_literal": "\") and npcHandler:getTopic(playerId) == 7 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 301)\n\t\t\tnpcHandler:setTopic(playerId, 8)\n\t\telse\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 139,
+              "lua_literal": "\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \""
+            },
+            {
+              "line": 143,
+              "lua_literal": "\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 145,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 9)\n\t\tend\n\telseif MsgContains(message, \""
+            },
+            {
+              "line": 148,
+              "lua_literal": "\") and npcHandler:getTopic(playerId) == 9 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 and player:getItemById(31447, 1) then\n\t\t\tplayer:removeItem(31447, 1)\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 151,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 154,
+              "lua_literal": "\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \""
+            },
+            {
+              "line": 158,
+              "lua_literal": "\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 160,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 11)\n\t\tend\n\telseif MsgContains(message, \""
+            },
+            {
+              "line": 163,
+              "lua_literal": "\") and npcHandler:getTopic(playerId) == 11 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 and player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 166,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 3)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\telse\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 170,
+              "lua_literal": "\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \""
+            },
+            {
+              "line": 174,
+              "lua_literal": "\") then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 176,
+              "lua_literal": "\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 15)\n\t\tend\n\telseif MsgContains(message, \""
+            },
+            {
+              "line": 179,
+              "lua_literal": "\") and npcHandler:getTopic(playerId) == 15 then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tplayer:addItem(31446, 1)\n\t\t\tnpcHandler:say({ \""
+            },
+            {
+              "line": 183,
+              "lua_literal": "'s your Small Petrified Tortoise.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 16)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tnpcHandler:say({ \"Did you finish the 3 jobs I gave you?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 13)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 13 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tplayer:addAchievement(\"Sculptor Apprentice\", '"
+            },
+            {
+              "line": 197,
+              "lua_literal": "\"Sculptor Apprentice\""
+            },
+            {
+              "line": 199,
+              "lua_literal": "\"Congratulations, you have completed the 3 jobs I gave you.\""
+            },
+            {
+              "line": 203,
+              "lua_literal": "\"Sorry.\""
+            },
+            {
+              "line": 210,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Alyxo\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 330,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif (player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) >= 0 and player:getStorageValue(Storage.Kilmaresh.First.JamesfrancisTask) <= 50) and player:getStorageValue(Storage.Kilmaresh.First.Mission) < 3 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tnpcHandler:setTopic(playerId, 15)\n\telseif player:getStorageValue(Storage.Kilmaresh.First.Mission) == 4 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"How could I help you?\") -- It needs to be revised, it's not the same as the global\n\t\tplayer:setStorageValue(Storage.Kilmaresh.First.Mission, 5)\n\t\tnpcHandler:setTopic(playerId, 20)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\t\tnpcHandler:say({ \"Could you kill 3 bosses for me?\" }, npc, creature) -- needs review, this is not the speech of the global\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 1 then\n\t\t\tnpcHandler:say({ \"Come back as soon as you kill all 3 bosses.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 2)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Bragrumol, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Mozradek, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Xogixath, 1)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry, you do not have access.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\t-- Mission 3 Steal The Ambassador Ring\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\t\tnpcHandler:say({ \"Did you manage to face all 3 bosses?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Bragrumol) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Mozradek) == 2 and player:getStorageValue(Storage.Kilmaresh.Twelve.Xogixath) == 2 then\n\t\t\tnpcHandler:say({ \"I am very satisfied.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 3)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Could you help me with some more work?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 5 and player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Twelve.Boss) == 3 then\n\t\t\tnpcHandler:say({ \"Kill 300 members of the Fafnar cult, help me find Ivory Lyre and help me find an animal to stone.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Twelve.Boss, 4)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 1)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 1)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \"Have you finished killing the 300 members of Fafnar's cult?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 7)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 7 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 300 then\n\t\t\tnpcHandler:say({ \"Thanks. You killed the 300 members of the Fafnar cult.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Fafnar, 301)\n\t\t\tnpcHandler:setTopic(playerId, 8)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\t\tnpcHandler:say({ \"Did you manage to find Lyre?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 9)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 9 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Lyre) == 3 and player:getItemById(31447, 1) then\n\t\t\tplayer:removeItem(31447, 1)\n\t\t\tnpcHandler:say({ \"Thanks. I was looking for Lyre for a long time.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Lyre, 4)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"report\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\t\tnpcHandler:say({ \"Did you manage to find Small Tortoise?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 11)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 11 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Presente) == 2 and player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tnpcHandler:say({ \"Thanks. I was looking for Small Tortoise.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Thirteen.Presente, 3)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"small tortoise\") then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tnpcHandler:say({ \"Do you want me to stone a small tortoise?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 15)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 15 then\n\t\tif player:getItemById(31445, 1) then\n\t\t\tplayer:removeItem(31445, 1)\n\t\t\tplayer:addItem(31446, 1)\n\t\t\tnpcHandler:say({ \"Here's your Small Petrified Tortoise.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 16)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tnpcHandler:say({ \"Did you finish the 3 jobs I gave you?\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tnpcHandler:setTopic(playerId, 13)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 13 and player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Thirteen.Fafnar) == 301 then\n\t\t\tplayer:addAchievement(\"Sculptor Apprentice\", 'Congratulations! You earned the achievement \"Sculptor Apprentice\".')\n\t\t\tplayer:addItem(31574, 1)\n\t\t\tnpcHandler:say({ \"Congratulations, you have completed the 3 jobs I gave you.\" }, npc, creature) -- needs review, this is not the speech of the global\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Fourteen.Remains, 1)\n\t\t\tnpcHandler:setTopic(playerId, 14)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:1-218"
+    },
+    {
+      "npc_source_name": "saideh",
+      "source_blob_sha256": "0cc92a89195067f1d94b21c3d5e1694cd7d21a3e8333ff769dfa05af280feb09",
+      "review_rows": [
+        "R4C021"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/saideh.lua:48-96",
+          "line_start": 48,
+          "line_end": 96,
+          "source_sha256": "a889c5fa548354782b57da5d61a394ea1ac43eacfc3067b0aad7303b38e385b9",
+          "guarded_source_lua": "local function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Hello, my name is Saideh. Once this was the entry to the crypt of our heroes. One of the graves belongs to our beloved hero Dayyan. Nowadays it is not a good idea to visit this place.\")\n\t\tnpcHandler:setTopic(playerId, 1)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\t\tnpcHandler:say({ \" I would like you to visit the grave of our beloved hero Dayyan. His remains have to be reburied, because a horde of ogres controls this place. Do you want to start this holy mission?\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\t\tnpcHandler:say({ \"Well, I appreciate that. Good luck!\" }, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Fourteen.Remains, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 53,
+              "lua_literal": "\"Hello, my name is Saideh. Once this was the entry to the crypt of our heroes. One of the graves belongs to our beloved hero Dayyan. Nowadays it is not a good idea to visit this place.\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\" I would like you to visit the grave of our beloved hero Dayyan. His remains have to be reburied, because a horde of ogres controls this place. Do you want to start this holy mission?\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"Well, I appreciate that. Good luck!\""
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"Sorry.\""
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"Well, bye then.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Saideh\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 330,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function greetCallback(npc, creature)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Kilmaresh.First.Access) < 1 then\n\t\tnpcHandler:setMessage(MESSAGE_GREET, \"Hello, my name is Saideh. Once this was the entry to the crypt of our heroes. One of the graves belongs to our beloved hero Dayyan. Nowadays it is not a good idea to visit this place.\")\n\t\tnpcHandler:setTopic(playerId, 1)\n\tend\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") and player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\t\tnpcHandler:say({ \" I would like you to visit the grave of our beloved hero Dayyan. His remains have to be reburied, because a horde of ogres controls this place. Do you want to start this holy mission?\" }, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\tif player:getStorageValue(Storage.Kilmaresh.Fourteen.Remains) == 1 then\n\t\t\tnpcHandler:say({ \"Well, I appreciate that. Good luck!\" }, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Kilmaresh.Fourteen.Remains, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telse\n\t\t\tnpcHandler:say({ \"Sorry.\" }, npc, creature)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Well, bye then.\")\n\nnpcHandler:setCallback(CALLBACK_SET_INTERACTION, onAddFocus)\nnpcHandler:setCallback(CALLBACK_REMOVE_INTERACTION, onReleaseFocus)\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/saideh.lua:1-96"
+    }
+  ],
+  "policy": "Existing Rotten Blood owner ANSWERs and Newhaven native travel design remain authoritative; do not activate superseded raw branches. Kesar Order of Stag branches excluded."
+}

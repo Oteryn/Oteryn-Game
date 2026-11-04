@@ -32,13 +32,6 @@ pub(super) fn source_world_choices(
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
-    data.manifest.world = bundle::Extent {
-        min_x: chest.0 / 32 * 32,
-        min_y: chest.1 / 32 * 32,
-        max_x: (chest.0 / 32 + 1) * 32,
-        max_y: (chest.1 / 32 + 1) * 32,
-        floors: vec![chest.2],
-    };
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
     data.manifest.palette.truncate(1);
@@ -69,6 +62,13 @@ pub(super) fn source_world_choices(
         .max()
         .ok_or("source choices")?
         .max(chest.0);
+    data.manifest.world = bundle::Extent {
+        min_x,
+        min_y: chest.1,
+        max_x: max_x + 1,
+        max_y: chest.1 + 1,
+        floors: vec![chest.2],
+    };
     let tiles = (min_x..=max_x)
         .map(|x| sector::Tile {
             x,
@@ -92,17 +92,24 @@ pub(super) fn source_world_choices(
                 vec![ground()]
             },
         })
-        .collect();
-    let bytes = oteryn_world_bundle::writer::write(
-        &data.manifest,
-        &[bundle::Sector {
+        .collect::<Vec<_>>();
+    // The Demon Helmet source chest is one tile from a sector boundary; its
+    // approach tiles belong to the neighbouring sector. Preserve every tile's
+    // actual sector rather than assigning the whole fixture to the chest sector.
+    let mut grouped = std::collections::BTreeMap::<u16, Vec<sector::Tile>>::new();
+    for tile in tiles {
+        grouped.entry(tile.x / 32).or_default().push(tile);
+    }
+    let sectors = grouped
+        .into_iter()
+        .map(|(sx, tiles)| bundle::Sector {
             floor: chest.2,
-            sx: chest.0 / 32,
+            sx,
             sy: chest.1 / 32,
             tiles,
-        }],
-        &Default::default(),
-    )?;
+        })
+        .collect::<Vec<_>>();
+    let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
     crate::map::boot::boot(

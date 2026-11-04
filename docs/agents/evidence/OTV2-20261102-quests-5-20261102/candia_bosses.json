@@ -1,0 +1,209 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "candia_bosses",
+    "elements": 6,
+    "auto": 0,
+    "manual": 6,
+    "statuses": {
+      "LEFT_OUT": 6
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Sugar Daddy: dźwignia areny",
+      "pattern": "P06/P17/P25",
+      "trigger": "Use (33339,32220,9)",
+      "condition": "gracz na jednym z5 pól; wolna arena; cooldown2h; minPlayers1; level0",
+      "effect": "5 pól (33339,32221..32225,9)→(33372,32234,9); boss(33369,32220,9); obszar(33360,32215,9)..(33382,32246,9); exit(33397,32201,9); domyślny timeout20min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/candia_bosses/sugar_daddy_lever.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Wejście do korytarza",
+      "pattern": "P03",
+      "trigger": "StepIn(33397,32200,9)",
+      "condition": "specPos brak: powrót przed testem requiredLevel300",
+      "effect": "teleport(33337,32223,9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/candia_bosses/sugar_daddy_teleports.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Powrót z korytarza",
+      "pattern": "P03",
+      "trigger": "StepIn(33338,32227,9)",
+      "condition": "specPos brak: powrót przed testem requiredLevel300",
+      "effect": "teleport(33397,32201,9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/candia_bosses/sugar_daddy_teleports.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Wyjście z areny",
+      "pattern": "P03",
+      "trigger": "StepIn(33372,32241,9)",
+      "condition": "specPos brak: powrót przed testem requiredLevel300",
+      "effect": "teleport(33336,32222,9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/candia_bosses/sugar_daddy_teleports.lua:13",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "Sugar Daddy: atak ciastem",
+      "pattern": "P30",
+      "trigger": "monster spell sugar daddy cake",
+      "condition": "cel jest graczem",
+      "effect": "grupy cooldownów3 i2 po5000ms; efekt dystansowy Cake",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/sugar_daddy_cake.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "Sugar Daddy: definicja bossa",
+      "pattern": "P30",
+      "trigger": "spawn Sugar Daddy",
+      "condition": "zestaw ataków/loot źródła",
+      "effect": "HP9500; XP15550; corpse48416; rewardBoss=true; root i cake",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/sugar_daddy.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak potwierdzonej tożsamości canonical Quest dla katalogu Candia; nie tworzono nowej bez źródła. Dalsze BossLever/cake wymagają kwalifikacji BossActivity/combat.",
+      "missing_owner_function": "CANONICAL_QUEST_IDENTITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589436604",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    }
+  ]
+}

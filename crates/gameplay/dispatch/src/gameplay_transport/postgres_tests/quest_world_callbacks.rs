@@ -207,7 +207,10 @@ pub(super) async fn input_item(
     Ok(())
 }
 
-pub(super) fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn world(
+    callback: &Callback,
+    trigger: Position,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -476,8 +479,19 @@ pub(super) async fn wire(
 mod actions;
 #[path = "quest_world_callbacks/assertions.rs"]
 mod assertions;
+#[path = "quest_world_callbacks/lions_rock.rs"]
+mod lions_rock;
 #[path = "quest_world_callbacks/rotten_blood.rs"]
 mod rotten_blood;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
+#[path = "quest_world_callbacks/stateless.rs"]
+mod stateless;
+#[path = "quest_world_callbacks/unnatural_selection.rs"]
+mod unnatural_selection;
 pub(super) use scenario::scenario;
+#[allow(
+    unused_imports,
+    reason = "per-quest stateless PG cases are independently picked after the common harness"
+)]
+pub(super) use scenario::stateless_scenario;

@@ -104,6 +104,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
+    // Batch 3 admits only the canonical demon helmet 3387 through quest_callback_profiles.py.
+    // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
+    // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
+    // no speed attribute (speed_bonus=0); boots 3554 and shield 3420 already exist.
+    ("QUESTS3-DEMON-HELMET", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.

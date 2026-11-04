@@ -15,6 +15,8 @@ content digests are derived from committed inputs.
   (`tools/merge-driver/regen.sh` is the same command; prefer the python form,
   which the repository's `.claude/settings.json` allows.) Add `--no-stage` to
   leave the index untouched, `--skip-checks` to regenerate only.
+  The command also refreshes the Quest callback inventory proof in the SOURCE
+  approval and receipt, preserving their reviewed core and graph snapshots.
   With `OTERYN_SPELL_SOURCE_ROOT` pointing to `canary/` and `crystal/` Git sources
   or extracted snapshots verified against the pinned input digests, this command also regenerates the field source catalogue
   before materializing the native Item provider.
@@ -45,6 +47,8 @@ content digests are derived from committed inputs.
   and update the count in the same PR, saying so in its description.
 - Quest and binding hashes have their own authoring scripts under
   `tools/content-schema/`; use them rather than editing evidence hashes.
+  `quest-authoring/batch3_world.py` and `quest-authoring/quest_batch4.py --available`
+  preserve other batches' callback values and sort the combined registry by key.
 
 ## Writing data files
 

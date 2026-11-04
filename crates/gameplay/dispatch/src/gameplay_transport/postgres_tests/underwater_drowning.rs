@@ -435,6 +435,7 @@ fn scenario_in_world(
                         minimum: 0,
                         maximum: 0,
                         set: 1,
+                        preserve: false,
                     }]
                 } else {
                     vec![]
@@ -446,6 +447,8 @@ fn scenario_in_world(
                 item_on_target: None,
                 return_on_failure: refused,
                 failure_message: None,
+                success_message: None,
+                native_rule: None,
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;

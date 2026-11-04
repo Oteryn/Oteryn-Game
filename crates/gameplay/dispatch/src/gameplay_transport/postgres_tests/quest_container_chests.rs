@@ -23,6 +23,9 @@ enum Case {
     FullCharge,
     Full,
     Weight,
+    DemonBoots,
+    DemonHelmet,
+    DemonShield,
 }
 
 fn execute(case: Case, marker: &'static str) -> TestResult {
@@ -75,6 +78,21 @@ fn quest_container_chests_capacity_counts_every_child_before_reservation() -> Te
     execute(Case::Weight, "W15B_CONTAINER_WEIGHT")
 }
 
+// Crystal 201189f:data-global/startup/tables/chest.lua:799-819. The three
+// independent storage claims must survive both command and cold-owner replay.
+#[test]
+fn quest_demon_helmet_chests_steel_boots_once_and_replay() -> TestResult {
+    execute(Case::DemonBoots, "QUESTS3_DEMON_BOOTS")
+}
+#[test]
+fn quest_demon_helmet_chests_demon_helmet_once_and_replay() -> TestResult {
+    execute(Case::DemonHelmet, "QUESTS3_DEMON_HELMET")
+}
+#[test]
+fn quest_demon_helmet_chests_demon_shield_once_and_replay() -> TestResult {
+    execute(Case::DemonShield, "QUESTS3_DEMON_SHIELD")
+}
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -85,6 +103,27 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 fn scenario(case: Case) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::DemonBoots => (
+            "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+            (33313, 31574, -15),
+            6029,
+            "oteryn:item.tibia.i3554",
+            vec![],
+        ),
+        Case::DemonHelmet => (
+            "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet",
+            (33313, 31575, -15),
+            6030,
+            "oteryn:item.tibia.i3387",
+            vec![],
+        ),
+        Case::DemonShield => (
+            "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield",
+            (33313, 31576, -15),
+            6031,
+            "oteryn:item.tibia.i3420",
+            vec![],
+        ),
         Case::RootText => (
             "oteryn:reward-claim.kv.powerbolt2",
             (32814, 32281, -8),

@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-boat-return",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33874,
+          "y": 32250,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32395,
+        "y": 32511,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:44-46"
+      ],
+      "success_message": "You row back to the shore of Bounac."
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32393,
+          "y": 32513,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33875,
+        "y": 32249,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 3,
+          "maximum": 13,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This small fishing boat is tied up firmly. You have no reason to set sail.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27-39",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-82"
+      ],
+      "success_message": "After a rough journey, you reach the shore of the Isle of Ada."
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32402,
+          "y": 32472,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32402,
+        "y": 32473,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:157-157"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33834,
+          "y": 32139,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33833,
+        "y": 32138,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 11,
+          "maximum": 13,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The wall does not move. There must be a way to open it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134-145",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-82"
+      ]
+    }
+  ],
+  "left_out": {
+    "runtime_enabled": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "reason": "Position-only Use requires the existing shared adapter to select the source object above ordinal 0; schema extensions read_only and success_message are also prohibited for guarded branches. All four source interactions remain held."
+  }
+}
