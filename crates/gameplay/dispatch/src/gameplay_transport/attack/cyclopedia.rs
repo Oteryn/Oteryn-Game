@@ -400,8 +400,7 @@ impl Observation<'_> {
             out.set(Stat::AttackElement, 0)?;
             if let Some(skill) = self.skill(skill_index) {
                 // Crystal protocolgame.cpp:5114-5126,5142-5154 reports these display values.
-                let (total_attack, raw_attack) =
-                    attack_totals(flat, attack, skill, self.mode);
+                let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);
                 out.set(Stat::AttackTotal, total_attack)?;
                 out.set(Stat::AttackFightMode, total_attack - raw_attack)?;
                 out.set(Stat::AttackSkill, attack_skill(attack, skill))?;
