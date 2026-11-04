@@ -529,7 +529,20 @@ pub async fn run_session<T: Stepper>(
             },
             Ok(PlayCommand::Vip(request)) => match session.vip(&request).await {
                 Ok(response) => {
-                    outbox.vip_result(&response);
+                    if let Some(refresh) =
+                        super::feature_0043_vip::protocol::refresh_after(&request, &response)
+                    {
+                        let refreshed = match session.vip(&refresh).await {
+                            Ok(response) => response,
+                            Err(error) => {
+                                outbox.end(public_class(&error));
+                                return;
+                            }
+                        };
+                        outbox.vip_result(&refreshed);
+                    } else {
+                        outbox.vip_result(&response);
+                    }
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
