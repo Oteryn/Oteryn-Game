@@ -5,6 +5,7 @@ pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
 pub mod public_projections;
+pub mod restore_notice;
 pub mod runtime_status;
 pub mod scope_assignment;
 pub mod store;

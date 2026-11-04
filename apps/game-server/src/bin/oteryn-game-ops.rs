@@ -11,6 +11,7 @@ use oteryn_game_server::content::{
     qualify_native_entry_room, qualify_native_entry_room_from_gameplay_manifest,
 };
 use oteryn_game_server::durability::DurabilityRoot;
+use oteryn_game_server::durability::character_authority::CharacterAuthorityError;
 use oteryn_game_server::durability::content_activation::ContentActivationRequest;
 use oteryn_game_server::durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance,
@@ -21,6 +22,9 @@ use oteryn_game_server::durability::runtime_scope_assignment::{
     OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
+use oteryn_game_server::native_admission_source::restore_notice::{
+    self, Ack as RestoreAck, RestoreNotice, RestoreNoticeConfig, RestoreNoticeDescriptor,
+};
 use oteryn_game_server::native_admission_source::scope_assignment::{
     self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
@@ -28,9 +32,9 @@ use oteryn_game_server::native_admission_source::scope_assignment::{
 use oteryn_game_server::node::config::{DatabaseConfig, NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
-    AssignmentRequestFile, CharacterRecoveryRequestFile, ContentActivationRequestFile,
-    LaunchAuthorizationFile, MAX_OPERATOR_FILE_BYTES, S2AuthorizationFile, hex, hex_bytes,
-    random_bytes, uuid_v7,
+    AssignmentRequestFile, CharacterRecoveryRequestFile, CharacterRestoreRequestFile,
+    ContentActivationRequestFile, LaunchAuthorizationFile, MAX_OPERATOR_FILE_BYTES,
+    S2AuthorizationFile, hex, hex_bytes, random_bytes, uuid_v7,
 };
 use oteryn_game_server::node::secure_file::{self, FileClass};
 use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes, uuid_text};
@@ -547,6 +551,123 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 ))),
             }
         }
+        Some("restore") => {
+            let name = arguments.take("request")?;
+            let restore_point = arguments
+                .take("restore-point")?
+                .parse::<u64>()
+                .map_err(|_| Failure::Input("--restore-point".into()))?;
+            let backup_label = arguments.take("backup-label")?;
+            let notice_config = arguments.take("notice-config")?;
+            arguments.finish()?;
+            let fence = &operator.config.character;
+            let store = CharacterRecoveryStore::open_owned_by(
+                &fence.fence_directory,
+                fence.authority_scope_id.clone(),
+                fence.issuer_identity.clone(),
+                operator.config.operator.service_uid,
+            )
+            .map_err(|error| Failure::Input(format!("character.fence_directory: {error:?}")))?;
+            let request = match operator.read_state_optional(&name)? {
+                Some(bytes) => {
+                    let request = CharacterRestoreRequestFile::decode(&bytes)
+                        .map_err(|_| Failure::Input("restore request".into()))?;
+                    if request.restore_point != restore_point
+                        || request.backup_label != backup_label
+                    {
+                        return Err(Failure::Input(
+                            "restore request inputs differ from retained request".into(),
+                        ));
+                    }
+                    request
+                }
+                None => {
+                    let expected_predecessor = {
+                        let seal = store.seal_current().map_err(|error| {
+                            Failure::Rejected(format!("restore fence: {error:?}"))
+                        })?;
+                        seal.record().recovery_generation
+                    };
+                    let request = CharacterRestoreRequestFile {
+                        version: FILE_VERSION,
+                        recovery_event_id: hex(
+                            &uuid_v7().map_err(|_| Failure::Unavailable("randomness".into()))?
+                        ),
+                        issued_at: u64::try_from(now_seconds()?)
+                            .map_err(|_| Failure::Unavailable("clock".into()))?,
+                        expected_predecessor,
+                        restore_point,
+                        backup_label,
+                    };
+                    let bytes = request
+                        .encode()
+                        .map_err(|_| Failure::Input("restore request".into()))?;
+                    operator.create_state(&name, None, &bytes)?;
+                    request
+                }
+            };
+            let event_id = hex_bytes::<16>(&request.recovery_event_id)
+                .map_err(|_| Failure::Input("restore request".into()))?;
+            let transition = store
+                .begin_recovery(request.expected_predecessor, event_id, request.issued_at)
+                .map_err(|error| Failure::Rejected(format!("restore fence: {error:?}")))?;
+            match operator
+                .root
+                .reconcile_character_recovery(&transition)
+                .await
+            {
+                Ok(()) => {}
+                Err(CharacterAuthorityError::Conflict) => {
+                    return Err(Failure::Rejected(
+                        "restored store generation is not the register's predecessor; a restore below the latest generation needs the chained procedure".into(),
+                    ));
+                }
+                Err(error) => {
+                    return Err(Failure::Ambiguous(format!(
+                        "restore admission: {error:?}; re-run with the same request"
+                    )));
+                }
+            }
+            let record = transition.record();
+            let notice = RestoreNotice {
+                source_authority: String::new(),
+                restore_event_id: record.recovery_event_id,
+                restored_generation: record.predecessor_generation,
+                new_recovery_generation: record.recovery_generation,
+                restore_point: request.restore_point,
+                backup_label: request.backup_label,
+            };
+            let generation = notice.new_recovery_generation;
+            drop(transition);
+            let (config, descriptor) = restore_notice_descriptor(&notice_config)?;
+            let mut notice = notice;
+            notice.source_authority = config.source_authority;
+            let report = restore_notice::publish_until_acknowledged(
+                &descriptor,
+                &notice,
+                restore_notice::RetryPolicy::default(),
+            )
+            .await;
+            match report.result {
+                Ok(RestoreAck::Acknowledged { reopened }) => {
+                    event(&format!(
+                        "character_restore=acknowledged generation={generation} reopened={reopened}"
+                    ));
+                    Ok(())
+                }
+                Ok(RestoreAck::Reconciling { .. }) => Err(Failure::Unavailable(
+                    "restore notice remains reconciling; re-run with the same request".into(),
+                )),
+                Err(error) if error.definite() => Err(Failure::Rejected(format!(
+                    "restore notice: {}",
+                    error.class()
+                ))),
+                Err(error) => Err(Failure::Unavailable(format!(
+                    "restore notice: {}; re-run with the same request",
+                    error.class()
+                ))),
+            }
+        }
         Some("interpretation") => {
             let profile = arguments.take("profile")?;
             let ruleset = arguments.take("ruleset")?;
@@ -587,9 +708,57 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
             }
         }
         _ => Err(Failure::Usage(
-            "character fresh-store|interpretation|bootstrap",
+            "character fresh-store|restore|interpretation|bootstrap; keep every node stopped until restore reports acknowledged",
         )),
     }
+}
+
+fn restore_notice_descriptor(
+    path: &str,
+) -> Result<(RestoreNoticeConfig, RestoreNoticeDescriptor), Failure> {
+    let invalid = |key: &str| Failure::Input(format!("--notice-config {key}"));
+    let document = read_file(
+        "--notice-config",
+        std::path::Path::new(path),
+        FileClass::Trusted,
+        0,
+        restore_notice::CONFIG_BYTES,
+    )?;
+    let config = RestoreNoticeConfig::parse(&document).map_err(|_| invalid("document"))?;
+    let roots = certificates(&read_file(
+        "trust_roots_file",
+        &config.trust_roots_file,
+        FileClass::Trusted,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("trust_roots_file"))?;
+    let chain = certificates(&read_file(
+        "client_certificate_file",
+        &config.client_certificate_file,
+        FileClass::Trusted,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("client_certificate_file"))?;
+    let key = PrivateKeyDer::from_pem_slice(&read_file(
+        "client_key_file",
+        &config.client_key_file,
+        FileClass::Secret,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("client_key_file"))?;
+    let descriptor = RestoreNoticeDescriptor::new(
+        (config.endpoint.ip().to_string(), config.endpoint.port()),
+        config.peer_name.clone(),
+        roots,
+        chain,
+        key,
+        &[],
+    )
+    .map_err(|_| invalid("identity"))?;
+    Ok((config, descriptor))
 }
 
 /// One bounded request over the node's local control socket.

@@ -55,6 +55,7 @@ pub enum Operation {
     PublishWorldOnlineV1,
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
+    PublishGameRestoreNoticeV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -90,6 +91,7 @@ impl Operation {
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
+            Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
@@ -123,6 +125,7 @@ impl Operation {
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
+            Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2
