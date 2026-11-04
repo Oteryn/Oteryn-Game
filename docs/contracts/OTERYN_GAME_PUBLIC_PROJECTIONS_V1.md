@@ -211,7 +211,7 @@ different content, `429` rate limited, `503` unavailable.
 {"contract_version":1,"operation":"PublishWorldHighscoresV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","category":1,"filter":0,"projection_epoch":"1","projection_revision":"17","source_observed_at":"1790000000","computed_at":"1790000000","rows":[{"rank":"1","character_id":"01934f10-7c04-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","value":"11400000000"}]}
 ```
 
-- Subject: `world_id`, `category` 1..11 (the HIGHSCORES-0 §3 ids that have a Game source; 13
+- Subject: `world_id`, `category` 1..12 (the HIGHSCORES-0 §3 ids that have a Game source; 13
   Loyalty is Platform's and never published by Game), and `filter` 0..5 (0 = all, otherwise a base
   vocation by its §4.0 id 1..5, HIGHSCORES-0 §5). Every row of a base-vocation filter carries
   that `vocation`; Game refuses a list that does not.
@@ -712,9 +712,9 @@ the owner decided (Q3) that the pages answer 503 until their families are fresh.
   accepted is not sent again.
 - **Highscores ids.** Filter 0 is all vocations and filters 1..5 are the base vocations by their
   §4.0 id; categories are 1 experience, 2 magic, 3 fist, 4 club, 5 sword, 6 axe, 7 distance,
-  8 shielding, 9 fishing, 10 achievement and 11 charm. Ids 1..9 and filters 1..5 are the
-  Platform consumer's (`CommunityDataPolicy`, Oteryn/Oteryn-Platform#1645); the producer's tests
-  pin both tables.
+  8 shielding, 9 fishing, 10 achievement points, 11 charm and 12 boss points. Ids 1..9 and filters
+  1..5 are the Platform consumer's (`CommunityDataPolicy`, Oteryn/Oteryn-Platform#1645); the
+  producer's tests pin both tables.
 - **Transport.** A dedicated client certificate and key (`[platform.public_projections]`),
   distinct from every other Game identity. Each exchange uses a new connection
   (`Connection: close`, as every Game client to Platform does), so every `world_online` exchange

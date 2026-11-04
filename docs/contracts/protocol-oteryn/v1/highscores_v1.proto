@@ -4,7 +4,7 @@
 // one page of a persisted World snapshot (migration 0129); it never computes ranks. The World and
 // the asking Character come from the admitted session, never from the payload. FND-02 envelopes
 // own CommandRef, server sequence and the command status; these payloads never duplicate them.
-// NOT_SUPPORTED (1200, a category outside 1..=11) and SNAPSHOT_EXPIRED (1201, an echoed token no
+// NOT_SUPPORTED (1200, a category outside 1..=12) and SNAPSHOT_EXPIRED (1201, an echoed token no
 // longer retained) are FND-02 error results without a payload, not a status field here. Unknown
 // fields, repeated singular fields, wrong wire types, invalid UTF-8, a zero category, rank or
 // level, a filter above 5, page 0, a later page with token 0, a name or vocation outside its
@@ -17,7 +17,8 @@ package oteryn.protocol.v1.highscores;
 // ClientCommand.payload of command type 14. At most 25 encoded bytes.
 message HighscoresQueryV1 {
   // 1 experience, 2 magic level, 3 fist, 4 club, 5 sword, 6 axe, 7 distance, 8 shielding,
-  // 9 fishing, 10 achievement points (one row per account), 11 Charm points. Zero fails closed;
+  // 9 fishing, 10 achievement points (one row per account), 11 Charm points, 12 boss points.
+  // Zero fails closed;
   // any other value is NOT_SUPPORTED.
   uint32 category = 1;
   // 0 all, 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 monk (a promotion counts as its base).
