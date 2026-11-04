@@ -27,19 +27,19 @@ const SWORD_ITEM: &str = "oteryn:item.tibia.i28552";
 const CHARM_EXPANSION: &str = "store:charm-expansion";
 
 #[derive(Default)]
-struct Ledger {
-    balance: u64,
-    world: String,
-    purchases: usize,
-    debits: Vec<u64>,
-    intents: BTreeMap<String, serde_json::Value>,
-    receipts: usize,
-    malformed: bool,
-    answers: BTreeMap<String, (String, serde_json::Value)>,
+pub(super) struct Ledger {
+    pub(super) balance: u64,
+    pub(super) world: String,
+    pub(super) purchases: usize,
+    pub(super) debits: Vec<u64>,
+    pub(super) intents: BTreeMap<String, serde_json::Value>,
+    pub(super) receipts: usize,
+    pub(super) malformed: bool,
+    pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
 /// The Platform side of the existing Store port: balance, debit, order and delivery intent.
-struct FakePlatform(Arc<SyncMutex<Ledger>>);
+pub(super) struct FakePlatform(pub(super) Arc<SyncMutex<Ledger>>);
 
 impl StoreTransport for FakePlatform {
     fn exchange<'a>(
@@ -109,7 +109,7 @@ pub(super) fn platform(world: &[u8; 16]) -> crate::gameplay_transport::store::St
     )))
 }
 
-fn uuid(bytes: &[u8; 16]) -> String {
+pub(super) fn uuid(bytes: &[u8; 16]) -> String {
     let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
     format!(
         "{}-{}-{}-{}-{}",
@@ -133,7 +133,7 @@ fn store_real_dispatch_pages_purchases_mints_once_and_replays() -> TestResult {
 }
 
 /// One connection carrying `commands` from the session's next command id.
-async fn serve(
+pub(super) async fn serve(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     commands: &[(u32, Vec<u8>)],
@@ -193,7 +193,7 @@ fn page_request() -> TestResult<(u32, Vec<u8>)> {
     ))
 }
 
-fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u8>)> {
+pub(super) fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u8>)> {
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
@@ -207,7 +207,7 @@ fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u
     ))
 }
 
-async fn purchase(
+pub(super) async fn purchase(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: (u32, Vec<u8>),
