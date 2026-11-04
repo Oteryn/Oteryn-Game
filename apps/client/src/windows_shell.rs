@@ -133,10 +133,15 @@ impl Application {
         self.leave_play(error_text(GameplayEntryError::Rejected(class)));
     }
 
-    /// A committed logout ends play like a session end, without an error: the character is
-    /// chosen again at the next login (character mode 33a takes it from configuration).
+    /// Reauthenticate after the consumed ticket, then show account character selection.
     fn return_to_character_selection(&mut self) {
-        self.leave_play("logged out");
+        self.leave_play("Choose a character after browser sign-in.");
+        if let Some(login) = &self.login {
+            login.finish(Ok(()));
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.request();
+        }
     }
 
     fn leave_play(&mut self, message: &str) {

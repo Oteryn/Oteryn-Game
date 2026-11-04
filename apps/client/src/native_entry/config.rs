@@ -20,15 +20,15 @@ impl Display for NativeLoginSettingError {
 
 impl std::error::Error for NativeLoginSettingError {}
 
-/// Native login settings (character mode 33a: the character comes from configuration).
+/// Native login settings with an optional character preselection.
 #[derive(Clone)]
 pub struct NativeLoginConfig {
     pub platform_url: String,
     pub gateway_url: String,
     pub oauth_client_id: String,
-    /// The directory `world_ref` that must be listed before any credential is requested.
+    /// Legacy optional world hint; owner character membership selects the world.
     pub world_ref: String,
-    /// Canonical lowercase UUIDv7.
+    /// Optional canonical lowercase UUIDv7 preselection.
     pub character_id: String,
     /// The only trust root the game endpoint's certificate may chain to (PEM or DER).
     pub dev_root: PathBuf,
@@ -37,6 +37,7 @@ pub struct NativeLoginConfig {
     /// Backoff unit of every retry; one second in production.
     pub retry_unit: Duration,
     pub open_browser: BrowserOpener,
+    pub select_character: crate::character_selection::CharacterSelector,
 }
 
 impl Debug for NativeLoginConfig {
@@ -70,13 +71,14 @@ impl NativeLoginConfig {
             platform_url,
             gateway_url: setting("OTERYN_GATEWAY_URL")?,
             oauth_client_id: setting("OTERYN_OAUTH_CLIENT_ID")?,
-            world_ref: setting("OTERYN_WORLD")?,
-            character_id: setting("OTERYN_CHARACTER_ID")?,
+            world_ref: lookup("OTERYN_WORLD").unwrap_or_default(),
+            character_id: lookup("OTERYN_CHARACTER_ID").unwrap_or_default(),
             dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
             client_build: CLIENT_BUILD.to_owned(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
             retry_unit: Duration::from_secs(1),
             open_browser: Arc::new(open_system_browser),
+            select_character: Arc::new(crate::character_selection::select),
         }))
     }
 }

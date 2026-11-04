@@ -14,8 +14,11 @@ pub const FIELDS: [(&str, &str); 6] = [
     ("Platform URL", "OTERYN_PLATFORM_URL"),
     ("Gateway URL", "OTERYN_GATEWAY_URL"),
     ("OAuth client ID", "OTERYN_OAUTH_CLIENT_ID"),
-    ("World reference", "OTERYN_WORLD"),
-    ("Character UUIDv7", "OTERYN_CHARACTER_ID"),
+    ("World reference (optional)", "OTERYN_WORLD"),
+    (
+        "Character UUIDv7 (optional preselect)",
+        "OTERYN_CHARACTER_ID",
+    ),
     ("Trust certificate path (PEM / DER)", "OTERYN_DEV_ROOT"),
 ];
 
@@ -71,7 +74,10 @@ impl LoginSettings {
 
     pub fn validate(&self) -> Result<(), String> {
         for (index, value) in self.values().iter().enumerate() {
-            if value.trim().is_empty() || value.contains('\0') || value.len() > 4096 {
+            if (value.trim().is_empty() && ![3, 4].contains(&index))
+                || value.contains('\0')
+                || value.len() > 4096
+            {
                 return Err(format!("Enter a valid {}.", FIELDS[index].0));
             }
         }
@@ -89,7 +95,7 @@ impl LoginSettings {
                 ));
             }
         }
-        if parse_uuid_v7(&self.character_id).is_none() {
+        if !self.character_id.is_empty() && parse_uuid_v7(&self.character_id).is_none() {
             return Err("Character: enter a canonical lowercase UUIDv7.".into());
         }
         oteryn_session_tcp::load_root_certificate(Path::new(&self.dev_root)).map_err(|_| {
@@ -195,7 +201,7 @@ pub const fn error_text(error: GameplayEntryError) -> &'static str {
             "Enter connection settings and choose Save and sign in."
         }
         GameplayEntryError::InvalidConfiguration => {
-            "Check Platform and Gateway URLs, OAuth client ID, character UUIDv7 and the trust certificate path, then sign in again."
+            "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
         }
         GameplayEntryError::WorldUnavailable => {
             "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."

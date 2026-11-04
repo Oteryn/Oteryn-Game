@@ -1,4 +1,6 @@
 //! Native client process and component composition.
+#[path = "features/local-character-selection/mod.rs"]
+pub mod character_selection;
 pub mod combat_input;
 pub mod cyclopedia;
 pub mod input;

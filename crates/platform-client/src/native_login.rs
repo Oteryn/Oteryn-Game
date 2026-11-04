@@ -369,6 +369,29 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CharacterAvailability {
+    Available,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OwnerCharacter {
+    pub character_id: String,
+    pub world_id: String,
+    pub name: String,
+    pub availability: CharacterAvailability,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OwnerCharacters {
+    protocol_version: u64,
+    characters: Vec<OwnerCharacter>,
+}
+
 /// A one-time native Game Login Ticket, the instant after which the client stops using it, and
 /// the Gateway requests already sent with it (one budget for the ticket and its `attempt_ref`).
 #[derive(Debug)]
@@ -389,8 +412,10 @@ impl NativeTicket {
 #[derive(Debug, Clone)]
 pub struct GatewayLogin<'a> {
     pub attempt_ref: &'a AttemptRef,
-    /// Canonical lowercase UUIDv7 (mode 33a: from configuration).
+    /// Canonical lowercase UUIDv7 chosen from the owner character feed.
     pub character_id: &'a str,
+    /// Optional canonical UUIDv7 channel selected from the directory.
+    pub channel_id: Option<&'a str>,
     /// 1..64 visible ASCII; diagnostics only.
     pub client_build: &'a str,
 }
@@ -559,7 +584,47 @@ impl NativeLoginClient {
         run(cancellation, request).await
     }
 
-    /// `POST /v1/game-auth/tickets` with the bearer: one native ticket. The access token is
+    /// Reads the authenticated owner's characters without consuming the OAuth token.
+    pub async fn owner_characters(
+        &self,
+        token: &AccessToken,
+        cancellation: CancellationToken,
+    ) -> Result<Vec<OwnerCharacter>, NativeLoginError> {
+        let endpoint = self
+            .platform
+            .join("/api/v1/game-auth/native-characters")
+            .map_err(|_| PlatformClientError::InvalidBaseUrl)?;
+        run(cancellation, async {
+            let response = self
+                .client
+                .get(endpoint)
+                .bearer_auth(token.0.expose())
+                .send()
+                .await
+                .map_err(|_| PlatformClientError::Request)?;
+            match response.status() {
+                StatusCode::OK => {}
+                StatusCode::UNAUTHORIZED => return Err(NativeLoginError::TokenRefused),
+                status => return Err(PlatformClientError::HttpStatus(status.as_u16()).into()),
+            }
+            let body = read_bounded(response, 16_384).await?;
+            let feed: OwnerCharacters =
+                serde_json::from_slice(&body).map_err(|_| PlatformClientError::InvalidPayload)?;
+            if feed.protocol_version != 2
+                || feed.characters.iter().any(|character| {
+                    parse_uuid_v7(&character.character_id).is_none()
+                        || parse_uuid_v7(&character.world_id).is_none()
+                        || character.name.is_empty()
+                })
+            {
+                return Err(PlatformClientError::InvalidPayload.into());
+            }
+            Ok(feed.characters)
+        })
+        .await
+    }
+
+    /// `POST /api/v1/game-auth/tickets` with the bearer: one native ticket. The access token is
     /// consumed; Platform revokes it.
     pub async fn issue_native_ticket(
         &self,
@@ -568,7 +633,7 @@ impl NativeLoginClient {
     ) -> Result<NativeTicket, NativeLoginError> {
         let endpoint = self
             .platform
-            .join("v1/game-auth/tickets")
+            .join("/api/v1/game-auth/tickets")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let request = async {
             let response = self
@@ -633,7 +698,11 @@ impl NativeLoginClient {
             .gateway
             .join("v1/login")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        if parse_uuid_v7(login.character_id).is_none() || !is_visible_ascii(login.client_build, 64)
+        if parse_uuid_v7(login.character_id).is_none()
+            || login
+                .channel_id
+                .is_some_and(|id| parse_uuid_v7(id).is_none())
+            || !is_visible_ascii(login.client_build, 64)
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
@@ -642,7 +711,7 @@ impl NativeLoginClient {
             "game_login_ticket": ticket.secret.expose(),
             "attempt_ref": login.attempt_ref.as_str(),
             "character_id": login.character_id,
-            "channel_id": null,
+            "channel_id": login.channel_id,
             "offer": {
                 "client_build": login.client_build,
                 "client_platform": "windows",
