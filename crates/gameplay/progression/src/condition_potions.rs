@@ -83,9 +83,100 @@ impl ConditionPotion {
     }
 }
 
+/// Source-qualified effects sharing the existing reserved item-condition transaction.
+/// Crystal 201189f potions.lua:21-26,36-42,57,62,78-110,125-147.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PotionCondition {
+    Skill(ConditionPotion),
+    Antidote,
+    MagicShield,
+}
+
+impl From<ConditionPotion> for PotionCondition {
+    fn from(value: ConditionPotion) -> Self {
+        Self::Skill(value)
+    }
+}
+
+impl PotionCondition {
+    pub fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "oteryn:item.tibia.i7644" => Some(Self::Antidote),
+            "oteryn:item.tibia.i35563" => Some(Self::MagicShield),
+            _ => ConditionPotion::from_key(key).map(Self::Skill),
+        }
+    }
+
+    pub const fn key(self) -> &'static str {
+        match self {
+            Self::Skill(potion) => potion.key(),
+            Self::Antidote => "oteryn:item.tibia.i7644",
+            Self::MagicShield => "oteryn:item.tibia.i35563",
+        }
+    }
+
+    pub const fn duration_ms(self) -> u32 {
+        match self {
+            Self::Skill(_) => DURATION_MS,
+            Self::Antidote => 0,
+            Self::MagicShield => 60_000,
+        }
+    }
+
+    pub const fn values(self) -> Option<ConditionValues> {
+        match self {
+            Self::Skill(potion) => Some(potion.values()),
+            Self::Antidote => None,
+            Self::MagicShield => Some(ConditionValues::ManaShield {
+                duration_ms: 60_000,
+            }),
+        }
+    }
+
+    pub fn allows_base_vocation(self, vocation: &str) -> bool {
+        match self {
+            Self::Skill(potion) => potion.allows_base_vocation(vocation),
+            Self::Antidote => true,
+            Self::MagicShield => matches!(vocation, "sorcerer" | "druid"),
+        }
+    }
+
+    /// Lua's integer setter truncates the donor's positive floating-point formula.
+    /// The wider intermediate also bounds the formula for the full actor fact domain.
+    pub fn mana_shield_capacity(self, level: u32, magic_level: u32, max_mana: u32) -> u32 {
+        if self != Self::MagicShield {
+            return 0;
+        }
+        let capacity = (3_000 + 76 * u64::from(level) + 70 * u64::from(magic_level)) / 10;
+        u32::try_from(capacity.min(u64::from(max_mana))).unwrap_or(max_mana)
+    }
+
+    pub const fn achievement(self) -> Option<Counted> {
+        match self {
+            Self::Skill(potion) => Some(potion.achievement()),
+            // The antidote takes the donor's combat branch at :83-110.
+            Self::Antidote => Some(crate::item_use_achievement::POTION_ADDICT),
+            // The func branch at :115-123 never reaches the Potion Addict counter.
+            Self::MagicShield => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn magic_shield_source_formula_is_truncated_and_capped_by_maximum_mana() {
+        let potion = PotionCondition::MagicShield;
+        assert_eq!(potion.mana_shield_capacity(50, 12, 1_000), 764);
+        assert_eq!(potion.mana_shield_capacity(14, 0, 1_000), 406);
+        assert_eq!(potion.mana_shield_capacity(50, 12, 500), 500);
+        assert_eq!(
+            potion.mana_shield_capacity(u32::MAX, u32::MAX, u32::MAX),
+            u32::MAX
+        );
+    }
 
     #[test]
     fn condition_potions_source_profiles_and_earnable_keys()
