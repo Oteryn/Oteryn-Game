@@ -88,6 +88,7 @@ fn derived_gated_routes_match_previous_table() {
         (25, &[25], &[21]),
         (1, &[4, 5], &[4, 5]),
         (8, &[], &[13]),
+        (9, &[14], &[]),
         (10, &[], &[15]),
         (14, &[21], &[14]),
         (179, &[348], &[]),
@@ -847,4 +848,43 @@ fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Resul
             Ok::<(), BoxError>(())
         })?
     })?.join().map_err(|_| "NPC session thread panicked")?
+}
+
+#[test]
+fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        block_on(async {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&9));
+            for selected in [false, true] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    let caps: &[u32] = if selected { &[9] } else { &[] };
+                    join_peer(&mut server, &[9], caps, &[]).await?;
+                    if selected {
+                        let frame = read_frame(&mut server).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        let command = envelope.client_command(1)?;
+                        assert_eq!(command.command_type, 14);
+                        let query = highscores::decode_highscores_query(command.payload).map_err(|e| format!("{e:?}"))?;
+                        assert_eq!((query.category, query.page, query.snapshot_id), (1, 1, 0));
+                        let reply = highscores::HighscoresResult { category: 1, snapshot_id: 77, computed_at: 1234, page: 1, has_more: false, rows: vec![], own_row: None };
+                        let payload = highscores::encode_highscores_result(&reply).map_err(|e| format!("{e:?}"))?;
+                        write_frame(&mut server, &encode_command_result(1, 41, command.command_id, CommandStatus::Accepted, &payload)?).await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[9])?).await?;
+                let payload = highscores::encode_highscores_query(highscores::HighscoresQuery { category: 1, vocation: 0, page: 1, snapshot_id: 0 }).map_err(|e| format!("{e:?}"))?;
+                let result = session.gated_command(9, 14, &payload).await;
+                if selected {
+                    let reply = highscores::decode_highscores_result(&result?.payload).map_err(|e| format!("{e:?}"))?;
+                    assert_eq!((reply.snapshot_id, reply.computed_at), (77, 1234));
+                } else {
+                    assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: 9 })));
+                }
+                peer.await??;
+            }
+            Ok(())
+        })?
+    })?.join().map_err(|_| "highscores session test panicked")?
 }

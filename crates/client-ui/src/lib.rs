@@ -16,6 +16,9 @@ pub mod cyclopedia_tracker;
 pub mod daily_boost;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
+/// Live server highscores panel.
+#[path = "features/0009-highscores/mod.rs"]
+pub mod highscores;
 #[path = "features/0179-hotkey-equip/mod.rs"]
 pub mod hotkey_equip;
 #[path = "features/0152-item-forge/mod.rs"]

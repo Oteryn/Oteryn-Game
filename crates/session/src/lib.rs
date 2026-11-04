@@ -22,6 +22,8 @@ mod domain_dispatch;
 mod events;
 pub use events::SessionEvent;
 mod gated_command;
+/// Server-owned highscores query and result codecs.
+pub use oteryn_protocol_oteryn::highscores;
 mod hotkey_equip_transport;
 mod join;
 mod map_transport;

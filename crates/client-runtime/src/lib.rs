@@ -171,6 +171,9 @@ pub mod cl25a_protocol {
     };
 }
 
+/// Highscores through the admitted session command adapter.
+#[path = "features/0009-highscores/protocol.rs"]
+pub mod highscores;
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.
