@@ -17,6 +17,13 @@ fn at(micros: u64) -> SemanticTimeMicros {
 
 /// A player at the entry tile and an NPC `distance` tiles east of it.
 fn fixture(distance: u32) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId, EntityRef) {
+    fixture_for(distance, "oteryn:npc.alice")
+}
+
+fn fixture_for(
+    distance: u32,
+    key: &str,
+) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId, EntityRef) {
     let (mut runtime, actor, session) = runtime_with_capacity(0x71, 3);
     runtime
         .initialize_first_entry_position(actor)
@@ -27,7 +34,7 @@ fn fixture(distance: u32) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId, En
         .position();
     let table = NpcPlacementTable {
         npcs: vec![NpcPlacements {
-            key: "oteryn:npc.alice".to_owned(),
+            key: key.to_owned(),
             placements: vec![NpcPlacement {
                 floor: -i8::try_from(spot.floor).expect("floor"),
                 y: u16::try_from(spot.y).expect("y"),
@@ -841,6 +848,48 @@ fn a_move_closes_only_beyond_talk_range_and_the_follow_carries_the_walk_away_lin
         .expect("conversation");
     assert_eq!(closed.open, None);
     assert_eq!(closed.lines, vec!["Farewell.".to_owned()]);
+}
+
+#[test]
+fn quest_source_walkaway_uses_its_own_text_and_the_admitted_player_name() {
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .expect("NPC catalogue");
+    let book = Arc::new(NpcTalkBook::from_model(
+        &catalogue.service_model_for_project().expect("NPC model"),
+    ));
+    for (key, expected) in [
+        (
+            "oteryn:npc.the_queen_of_the_banshees",
+            "Yes, flee from death. But know it shall be always one step behind you.",
+        ),
+        ("oteryn:npc.taegen", "May enlightenment be your path, Aela."),
+    ] {
+        let (runtime, _, session, npc) = fixture_for(TALK_RANGE_TILES + 1, key);
+        let chat = ChatRuntime::default();
+        chat.admit(session, "Aela", at(BASE));
+        chat.set_npc_service(session);
+        chat.install_npc_talk(Arc::clone(&book));
+        let actor = runtime.visible_entities().npcs[0].actor;
+        chat.converse(session, |engaged| *engaged = Some(actor))
+            .expect("open conversation before moving");
+        let conversations = NpcConversations::default();
+        let closed = conversations
+            .follow(&chat, &runtime, session, Some(npc))
+            .expect("closed update")
+            .conversation
+            .expect("conversation");
+        assert_eq!(closed.open, None);
+        assert_eq!(closed.lines, vec![expected.to_owned()]);
+        assert!(
+            conversations
+                .follow(&chat, &runtime, session, None)
+                .is_none()
+        );
+    }
 }
 
 #[test]

@@ -1,5 +1,6 @@
 """Market parity: the Oteryn marketable set equals Crystal's market set on defined Items."""
 
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -55,6 +56,22 @@ class MarketCrystalParity(unittest.TestCase):
         self.assertEqual(self.crystal - defined, set(NO_DEFINITION))
         self.assertEqual(
             {i for i, value in known.items() if not value} & self.crystal, set()
+        )
+
+    def test_generated_fixture_contains_every_pinned_donor_market_item(self):
+        """The generator reads every flags.market object from Crystal appearances.dat.
+
+        Crystal 201189f has no wareId attribute in data/items/items.xml; its authoritative
+        equivalent is flags.market in data/items/appearances.dat (generator lines 1-12, 63-74).
+        This digest pins the complete ordered 5,095-id donor list, not only promoted rows.
+        """
+        ordered = self.packet["crystal_market_ids"]
+        self.assertEqual(len(ordered), 5_095)
+        self.assertEqual(len(set(ordered)), len(ordered))
+        self.assertEqual(ordered, sorted(ordered))
+        self.assertEqual(
+            hashlib.sha256(",".join(map(str, ordered)).encode()).hexdigest(),
+            "2f1090ea923e6f3b27a6e25240692b68a08cd7a3e8795b7004f63251d7149cb4",
         )
 
     def test_packet_exceptions_and_counts_match_the_explicit_lists(self):

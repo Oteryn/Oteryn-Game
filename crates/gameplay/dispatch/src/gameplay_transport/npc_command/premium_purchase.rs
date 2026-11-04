@@ -321,6 +321,15 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     if let Some(outcome) = super::monk::resume(admission, command).await {
         return Some(outcome);
     }
+    if let Some(outcome) = super::classic_quests::resume(admission, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::liquid_black::resume(admission, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::threatened_dreams::resume(admission, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = admission.resume_paid_travel(actor, command).await {
         return Some(outcome);
     }

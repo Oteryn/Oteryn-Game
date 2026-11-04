@@ -876,7 +876,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if recovered.ack.house.is_some() {
             self.admit_premium(account, admitted.game_session_id);
-            super::item_use::gourmet::restore_house(self, &admitted, &stored.record)
+            super::item_use::gourmet::restore_house(self, &admitted, &stored.record, false)
                 .await
                 .ok_or(Unavailable)?;
             self.restore_house_admission_views(&admitted, Some(recovered.source))

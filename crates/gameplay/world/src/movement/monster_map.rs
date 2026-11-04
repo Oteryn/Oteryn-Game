@@ -6,11 +6,13 @@ mod special_movement;
 mod transaction_test_support;
 
 use super::*;
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
 use crate::durability::spell_item_transaction::{
     SpellItemScopeAuthority, read_creature_scope_tile_in_transaction,
 };
+use crate::map::boot::BundleCollisionIndexExt;
 use crate::world_runtime::LocalObjectRuntime;
 use std::collections::BTreeMap;
 
@@ -101,6 +103,16 @@ impl MonsterMap {
         decision.qualified = true;
         let moved = decision.commit(&mut owner)?;
         special_movement::step_in(runtime, cells, actor, moved.position());
+        if let NativeMovementCollisionIndex::Bundle(collision) = cells.index() {
+            collision
+                .map()
+                .facts
+                .record_monster_step(crate::map::facts::MonsterStep {
+                    actor,
+                    from: before.position(),
+                    to: moved.position(),
+                });
+        }
         Ok(moved)
     }
     pub fn relocate(

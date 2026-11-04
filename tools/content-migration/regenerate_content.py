@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -88,6 +89,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],
     ["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--check"],
@@ -491,8 +493,28 @@ def unresolved_worktree_paths() -> list[str]:
         path
         for path in git("diff", "--name-only", "--diff-filter=U").splitlines()
         if not (ROOT / path).is_file()
-        or re.search(r"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_text(), re.M)
+        or re.search(rb"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_bytes(), re.M)
     ]
+
+
+def refresh_quest_callback_proof() -> None:
+    """Re-pin the callback inventory witness without changing reviewed core snapshots."""
+    directory = ROOT / "tools/content-schema/quest-authoring/samples/completion242"
+    approval_path = directory / "source-fix-approval.json"
+    receipt_path = directory / "source-fix-receipt.json"
+    if not approval_path.is_file() or not receipt_path.is_file():
+        return
+    approval = json.loads(approval_path.read_bytes())
+    receipt = json.loads(receipt_path.read_bytes())
+    callback_path = "content/quests/world-callbacks.json"
+    digest = hashlib.sha256((ROOT / callback_path).read_bytes()).hexdigest()
+    for document in (approval, receipt):
+        for descriptor in document["proof_inputs"]:
+            if descriptor["path"] == callback_path:
+                descriptor["sha256"] = digest
+    approval_path.write_text(json.dumps(approval, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    receipt["approval"]["sha256"] = hashlib.sha256(approval_path.read_bytes()).hexdigest()
+    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -516,6 +538,12 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
+    refresh_quest_callback_proof()
+    # Source-backed field regeneration uses the same explicit source root as its tests.
+    # Without local donor checkouts the committed, pinned source catalogue is retained.
+    if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
+        run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     materialize_world()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])

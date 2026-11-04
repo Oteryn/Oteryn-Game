@@ -22,6 +22,9 @@ QUALIFIED = {
     "oteryn:reward-claim.kv.powerbolt2": "quest_container_chests_leaf_text_is_frozen_and_replayed",
     "oteryn:reward-claim.quest.key.id3002": "quest_container_chests_crystal_key3002_is_minted_once",
     "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots": "quest_demon_helmet_chests_steel_boots_once_and_replay",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
+    "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "quest_demon_helmet_chests_demon_shield_once_and_replay",
 }
 KEY_LOWERING = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"
 SOURCE_SHA256 = {

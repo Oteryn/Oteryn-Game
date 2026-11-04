@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
-EXPECTED_REQUIRED_STATUS = "game-gate"
+EXPECTED_REQUIRED_STATUSES = ["game-gate", "heavy-gate"]
 EXPECTED_CONTROL_PLANE_PATHS = [
     ".github/workflows/*",
     ".github/workflows/**/*",
@@ -43,8 +43,8 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "331213b6a65f8852cd43eaeba80d7cb4bc9b5dc928399cf679475c85bf0a589e"
 EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae42017b1157b4dae1eac7b17bde4"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "af19d064fcb78a26399231df50b5b99d9a2798647ab26c9b955b0a411e62141c"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "6745809a11b87234b9a50358e42f28d419cf138146cf5d3f455225e0cf000c9b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "c6558bc7fd91eb63d05bfe1c4dd298ea48f212ee"
@@ -219,8 +219,8 @@ def main() -> int:
 
     if policy.get("schema_version") != "1.0":
         errors.append("repository policy schema_version must be 1.0")
-    if policy.get("required_status_check") != EXPECTED_REQUIRED_STATUS:
-        errors.append(f"required_status_check must be {EXPECTED_REQUIRED_STATUS}")
+    if policy.get("required_status_check") != EXPECTED_REQUIRED_STATUSES:
+        errors.append(f"required_status_check must be {EXPECTED_REQUIRED_STATUSES}")
 
     licensing = policy.get("licensing", {})
     expected_licensing = {
@@ -321,10 +321,10 @@ def main() -> int:
         errors.append("strict signed commits are incompatible with third-party squash PRs")
 
     contexts = required_status_contexts(ruleset)
-    if contexts != [EXPECTED_REQUIRED_STATUS]:
+    if contexts != EXPECTED_REQUIRED_STATUSES:
         errors.append(
-            "ruleset required status checks must contain only the stable aggregate "
-            f"{EXPECTED_REQUIRED_STATUS!r}; got {contexts!r}"
+            "ruleset required status checks must contain the stable aggregates "
+            f"{EXPECTED_REQUIRED_STATUSES!r}; got {contexts!r}"
         )
 
     push_ruleset = policy.get("push_ruleset", {})
@@ -763,7 +763,7 @@ def main() -> int:
     if github_governance.is_file():
         text = github_governance.read_text(encoding="utf-8")
         for fragment in (
-            f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
+            "`game-gate` and `heavy-gate` are the stable required status checks",
             "PR metadata edits automatically re-run the exact-head aggregate gate",
             "dedicated push ruleset",
             "Dependabot maintains both GitHub Actions and Cargo dependencies",

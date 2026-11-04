@@ -1,0 +1,286 @@
+{
+  "quest": "dreamers_challenge_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "the_dream_master",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:1-141",
+      "source_blob_sha256": "eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+      "full_source_lua": "local internalNpcName = \"The Dream Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 19,\n\tlookBody = 39,\n\tlookLegs = 20,\n\tlookFeet = 58,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\",\n\t\t\t\t\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\",\n\t\t\t\t\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\", npc, creature)\n\t\t\tnpcHandler:say(\"Do you still want to join our order?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Nightmare Knight\")\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 2)\n\t\t\t\tnpcHandler:say(\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6390, 1)\n\t\t\t\tplayer:addAchievement(\"Nightmare Walker\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dreamer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Lord Protector\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Be greeted, visitor.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye. May the gods watch over your path.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:1-141",
+          "line_start": 1,
+          "line_end": 141,
+          "source_sha256": "eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+          "guarded_source_lua": "local internalNpcName = \"The Dream Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 19,\n\tlookBody = 39,\n\tlookLegs = 20,\n\tlookFeet = 58,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\",\n\t\t\t\t\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\",\n\t\t\t\t\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\", npc, creature)\n\t\t\tnpcHandler:say(\"Do you still want to join our order?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Nightmare Knight\")\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 2)\n\t\t\t\tnpcHandler:say(\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6390, 1)\n\t\t\t\tplayer:addAchievement(\"Nightmare Walker\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dreamer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Lord Protector\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Be greeted, visitor.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye. May the gods watch over your path.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 1,
+              "lua_literal": "\"The Dream Master\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"join\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"advancement\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"demonic\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"essence\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"Do you still want to join our order?\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"Nightmare Knight\""
+            },
+            {
+              "line": 101,
+              "lua_literal": "\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\""
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"Nightmare Walker\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"You advanced to {Dreamer} rank!\""
+            },
+            {
+              "line": 115,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 123,
+              "lua_literal": "\"Lord Protector\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 134,
+              "lua_literal": "\"Be greeted, visitor.\""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\"Good bye. May the gods watch over your path.\""
+            }
+          ]
+        }
+      ],
+      "review_elements": [
+        "Nightmare: wybór zakonu",
+        "Nightmare: awans1→2",
+        "Nightmare: awans2→3",
+        "Nightmare: awans3→4"
+      ],
+      "excluded_from_this_quest": [],
+      "ownership_constraint": "Rank track remains owned by oteryn:quest.nightmare_outfits_quest; do not transfer ownership to Dreamer.",
+      "runtime_admission": false,
+      "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+    },
+    {
+      "npc_source_name": "the_bone_master",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:1-145",
+      "source_blob_sha256": "65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+      "full_source_lua": "local internalNpcName = \"The Bone Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 145,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\",\n\t\t\t\t\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\",\n\t\t\t\t\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\",\n\t\t\t\t\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\",\n\t\t\t\t\"Do you still want to join the Brotherhood?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\",\n\t\t\t\t\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Bone Brother\")\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 2)\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tnpcHandler:say(\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6432, 1)\n\t\t\t\tplayer:addAchievement(\"Skull and Bones\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Death Dealer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Dread Lord\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little realm.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"We will meet again.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:1-145",
+          "line_start": 1,
+          "line_end": 145,
+          "source_sha256": "65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+          "guarded_source_lua": "local internalNpcName = \"The Bone Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 145,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\",\n\t\t\t\t\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\",\n\t\t\t\t\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\",\n\t\t\t\t\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\",\n\t\t\t\t\"Do you still want to join the Brotherhood?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\",\n\t\t\t\t\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Bone Brother\")\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 2)\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tnpcHandler:say(\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6432, 1)\n\t\t\t\tplayer:addAchievement(\"Skull and Bones\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Death Dealer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Dread Lord\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little realm.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"We will meet again.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 1,
+              "lua_literal": "\"The Bone Master\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"join\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"advancement\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"demonic\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"essence\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\""
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"Do you still want to join the Brotherhood?\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"Bone Brother\""
+            },
+            {
+              "line": 105,
+              "lua_literal": "\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\""
+            },
+            {
+              "line": 107,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 116,
+              "lua_literal": "\"Skull and Bones\""
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"You advanced to {Death Dealer} rank!\""
+            },
+            {
+              "line": 119,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"Dread Lord\""
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\""
+            },
+            {
+              "line": 130,
+              "lua_literal": "\"Come back when you gather all essences.\""
+            },
+            {
+              "line": 138,
+              "lua_literal": "\"Welcome to my little realm.\""
+            },
+            {
+              "line": 139,
+              "lua_literal": "\"We will meet again.\""
+            }
+          ]
+        }
+      ],
+      "review_elements": [
+        "Brotherhood: wybór zakonu",
+        "Brotherhood: awans1→2",
+        "Brotherhood: awans2→3",
+        "Brotherhood: awans3→4"
+      ],
+      "excluded_from_this_quest": [],
+      "ownership_constraint": "Rank track remains owned by oteryn:quest.brotherhood_outfits_quest; do not transfer ownership to Dreamer.",
+      "runtime_admission": false,
+      "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+    }
+  ],
+  "policy": "Full source is evidence only. Authoring must preserve each branch guard, topic and effect. Source literals do not authorize dialogue activation; canonical track ownership and native item/world admission remain unchanged."
+}

@@ -186,6 +186,24 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         assert!(bonuses[0].1 >= 25);
+        let boosted_bonus = h
+            .root
+            .boss_slot_loot_bonuses(
+                &authority,
+                &h.node,
+                fence.runtime_scope,
+                fence.scope_ownership_generation,
+                boss.clone(),
+                vec![id(41)],
+                u64::try_from(crate::gameplay_transport::npc_trade_command::unix_ms_now())?,
+                true,
+            )
+            .await
+            .map_err(debug)?;
+        // Crystal config.lua.dist:243 and src/io/io_bosstiary.cpp:225-232: the daily
+        // boosted boss multiplier is 250%, while an equipped personal slot uses its level bonus.
+        assert_eq!(boosted_bonus[0].1, 250);
+        assert!(boosted_bonus[0].1 > bonuses[0].1);
         let at_death = h
             .root
             .boss_slot_loot_bonuses(
@@ -206,6 +224,22 @@ fn scenario() -> TestResult {
         let removed = exchange(&owner, &mut admitted, BossSlotRequest::Remove { slot: 1 }).await?;
         assert_eq!(removed.status, 0);
         assert!(removed.bosses[0].is_empty());
+        let outside_slot = h
+            .root
+            .boss_slot_loot_bonuses(
+                &authority,
+                &h.node,
+                fence.runtime_scope,
+                fence.scope_ownership_generation,
+                boss.clone(),
+                vec![id(41)],
+                u64::try_from(crate::gameplay_transport::npc_trade_command::unix_ms_now())?,
+                false,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(outside_slot[0].1, 0);
+        assert!(bonuses[0].1 > outside_slot[0].1);
         assert_eq!(removed.remove_fee, 100000);
         ready(&removed).await?;
         let equipped = exchange(

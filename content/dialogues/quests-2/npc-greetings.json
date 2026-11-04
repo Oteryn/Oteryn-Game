@@ -1,0 +1,828 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.mr_morris",
+      "variants": {},
+      "greet": {
+        "text": "Welcome, young adventurer. If you seek to help me with some things, I might have a little {quest} or {mission} for you.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "line": 398,
+          "sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54"
+        }
+      },
+      "farewell": {
+        "text": "Watch your back, young friend.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "line": 405,
+          "sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54"
+        }
+      },
+      "walkaway": {
+        "text": "Manners.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "line": 406,
+          "sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.woblin",
+      "variants": {},
+      "greet": {
+        "text": "Hi there human!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/woblin.lua",
+          "line": 161,
+          "sha256": "2d8affe3aec52b6501f272cde572b9f2c62c9513ac0f2f84f20d7bd2e428e8ac"
+        }
+      },
+      "farewell": {
+        "text": "Bye, bye!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/woblin.lua",
+          "line": 162,
+          "sha256": "2d8affe3aec52b6501f272cde572b9f2c62c9513ac0f2f84f20d7bd2e428e8ac"
+        }
+      },
+      "walkaway": {
+        "text": "Bye, bye!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/woblin.lua",
+          "line": 163,
+          "sha256": "2d8affe3aec52b6501f272cde572b9f2c62c9513ac0f2f84f20d7bd2e428e8ac"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.jerom",
+      "variants": {},
+      "greet": {
+        "text": "Hello. Sorry, but I'm not in the best {mood} today.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jerom.lua",
+          "line": 134,
+          "sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
+        }
+      },
+      "farewell": {
+        "text": "Bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jerom.lua",
+          "line": 132,
+          "sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
+        }
+      },
+      "walkaway": {
+        "text": "Bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jerom.lua",
+          "line": 133,
+          "sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "variants": {},
+      "greet": {
+        "text": "Be greeted, dear visitor. Come and {stay} ... a while.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/the_queen_of_the_banshees.lua",
+          "line": 217,
+          "sha256": "4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+        }
+      },
+      "farewell": {
+        "text": "We will meet again, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/the_queen_of_the_banshees.lua",
+          "line": 218,
+          "sha256": "4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+        }
+      },
+      "walkaway": {
+        "text": "Yes, flee from death. But know it shall be always one step behind you.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/the_queen_of_the_banshees.lua",
+          "line": 219,
+          "sha256": "4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.alkestios",
+      "variants": {},
+      "greet": {
+        "text": "Nature's blessing, traveller! May you not be affected by any sinister force.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/alkestios.lua",
+          "line": 129,
+          "sha256": "9a06ec54a42419d31b23d6bcaa5a1e65e83e4692bd3b430926d892f670cc227d"
+        }
+      },
+      "farewell": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/alkestios.lua",
+          "line": 130,
+          "sha256": "9a06ec54a42419d31b23d6bcaa5a1e65e83e4692bd3b430926d892f670cc227d"
+        }
+      },
+      "walkaway": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/alkestios.lua",
+          "line": 131,
+          "sha256": "9a06ec54a42419d31b23d6bcaa5a1e65e83e4692bd3b430926d892f670cc227d"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "variants": {},
+      "greet": {
+        "text": "Nature's blessing, traveler!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/ikassis.lua",
+          "line": 94,
+          "sha256": "be3c921fb5987d8d1612b6162abd1a957965f4097558e5fd9a620a49e3f50592"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.ghostly_wolf",
+      "variants": {},
+      "greet": {
+        "text": "You are speaking the language of animals? I'm surprised. But I'm not in the right mood for a chat.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/ghostly_wolf.lua",
+          "line": 100,
+          "sha256": "53da09a26193633cbea5d92184440cd138d08137a66eb524152c925799195c61"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.a_swan",
+      "variants": {},
+      "greet": {
+        "text": "I salute you, mortal being.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/a_swan.lua",
+          "line": 94,
+          "sha256": "4e087a3c28fabd6f339d64003db609921b7c99eb69a63f669b5a9642e53abc54"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.chief_grarkharok",
+      "variants": {},
+      "greet": {
+        "text": "Me Chief Grarkharok! No do {nothing}!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/chief_grarkharok.lua",
+          "line": 166,
+          "sha256": "4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
+        }
+      },
+      "farewell": {
+        "text": "Grarkharok be {chief}!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/chief_grarkharok.lua",
+          "line": 167,
+          "sha256": "4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
+        }
+      },
+      "walkaway": {
+        "text": "Grarkharok be {chief}!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/chief_grarkharok.lua",
+          "line": 168,
+          "sha256": "4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.aurita",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, traveller!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/aurita.lua",
+          "line": 113,
+          "sha256": "d8a1fe20f4ec11245498191b0269ca76ca5949c92db529e640faacc87a57ea35"
+        }
+      },
+      "farewell": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/aurita.lua",
+          "line": 114,
+          "sha256": "d8a1fe20f4ec11245498191b0269ca76ca5949c92db529e640faacc87a57ea35"
+        }
+      },
+      "walkaway": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/aurita.lua",
+          "line": 115,
+          "sha256": "d8a1fe20f4ec11245498191b0269ca76ca5949c92db529e640faacc87a57ea35"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.taegen",
+      "variants": {},
+      "greet": {
+        "text": "Be greeted, mortal being!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/taegen.lua",
+          "line": 202,
+          "sha256": "cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+        }
+      },
+      "farewell": {
+        "text": "May enlightenment be your path, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/taegen.lua",
+          "line": 203,
+          "sha256": "cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+        }
+      },
+      "walkaway": {
+        "text": "May enlightenment be your path, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/taegen.lua",
+          "line": 204,
+          "sha256": "cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.valindara",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, mortal being.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/valindara.lua",
+          "line": 251,
+          "sha256": "8cd64f9b2e7d678e91a07485789f4b08c168b7f52d1c741ecb77cfca3fbeb4fa"
+        }
+      },
+      "farewell": {
+        "text": "May enlightenment be your path, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/valindara.lua",
+          "line": 253,
+          "sha256": "8cd64f9b2e7d678e91a07485789f4b08c168b7f52d1c741ecb77cfca3fbeb4fa"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.tired_tree",
+      "variants": {},
+      "greet": {
+        "text": "*yawn* Nature's blessings.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tired_tree.lua",
+          "line": 94,
+          "sha256": "a0162ecba3b89a4eb215087774bd1929fcf351e8ad62d49881f094d5431794ea"
+        }
+      },
+      "farewell": {
+        "text": "*yawn* Nature's blessings.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tired_tree.lua",
+          "line": 95,
+          "sha256": "a0162ecba3b89a4eb215087774bd1929fcf351e8ad62d49881f094d5431794ea"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.grumpy_stone",
+      "variants": {},
+      "greet": {
+        "text": "Please don't bother me, human being. I have my own {problems}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/grumpy_stone.lua",
+          "line": 113,
+          "sha256": "de0740cf81fed12bbeccabd6ee38c1d649d5c4f0e79c7c4658fbc91826db7b95"
+        }
+      },
+      "farewell": {
+        "text": "Nature's blessing!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/grumpy_stone.lua",
+          "line": 114,
+          "sha256": "de0740cf81fed12bbeccabd6ee38c1d649d5c4f0e79c7c4658fbc91826db7b95"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.scrutinon",
+      "variants": {},
+      "greet": {
+        "text": "|PLAYERNAME|. I have been watching your fate for quite some time. It's about time you came here. Do you seek to enter the riven island of Quirefang or travel back from where you came?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/scrutinon.lua",
+          "line": 101,
+          "sha256": "4d71672acedab63fca203feb8156aeeae7faabe2dcff7430cac12c34b0893f8e"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "variants": {
+        "sea-of-light-complete": {
+          "text": "Ah hello again |PLAYERNAME|! I still have one or two other {missions} for you. There are also some {tasks} someone needs to attend to.",
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 70,
+            "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d"
+          }
+        }
+      },
+      "greet": {
+        "text": "Hello |PLAYERNAME|! You're late, do you have no concept of time? My mission is of utmost importance. If you are not interested in helping me, you might as well just leave.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "line": 67,
+          "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d"
+        }
+      },
+      "farewell": {
+        "text": "Yes yes. Goodbye |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "line": 493,
+          "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d"
+        }
+      },
+      "walkaway": {
+        "text": "Yes yes. Goodbye |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/spectulus.lua",
+          "line": 494,
+          "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "variants": {
+        "dream": {
+          "text": "ZzzzZzzZz...chrrr...",
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/a_sleeping_dragon.lua",
+            "line": 51,
+            "sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a"
+          }
+        }
+      },
+      "greet": {
+        "text": "Greetings, {wayfarer}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/a_sleeping_dragon.lua",
+          "line": 53,
+          "sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.jack_springer",
+      "variants": {
+        "started": {
+          "text": "Welcome, |PLAYERNAME|! Is there anything to {report}?",
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/jack_springer.lua",
+            "line": 67,
+            "sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9"
+          }
+        }
+      },
+      "greet": {
+        "text": "Welcome, |PLAYERNAME|! There is much we have to {discuss}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jack_springer.lua",
+          "line": 65,
+          "sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.flickering_soul",
+      "variants": {},
+      "greet": {
+        "text": "Be greeted, living soul!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/flickering_soul.lua",
+          "line": 198,
+          "sha256": "67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.rottin_wood",
+      "variants": {},
+      "greet": {
+        "text": "Hunter's greeting! I assume you want something from me since you came all the way out here on your own. This is a dangerous place to be, I doubt that all my men will accept strangers like I do. You don't seem to have any problems with that, though.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/rottin_wood.lua",
+          "line": 366,
+          "sha256": "e1fb8d696da8dcd8df7ed55b5ef246019e3a24ee32eafe21897a77dbfc059355"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.maelyrra",
+      "variants": {},
+      "greet": {
+        "text": "Nature's blessings! Welcome to the land of dreams.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/maelyrra.lua",
+          "line": 175,
+          "sha256": "16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88"
+        }
+      },
+      "farewell": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/maelyrra.lua",
+          "line": 176,
+          "sha256": "16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88"
+        }
+      },
+      "walkaway": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/maelyrra.lua",
+          "line": 177,
+          "sha256": "16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.dancing_fairy",
+      "variants": {},
+      "greet": {
+        "text": "Nature's blessing!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dancing_fairy.lua",
+          "line": 87,
+          "sha256": "d27f05743a0acb91570ebdeaee5eb19b407cda07794a641b1afa52f65c4db324"
+        }
+      },
+      "farewell": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dancing_fairy.lua",
+          "line": 88,
+          "sha256": "d27f05743a0acb91570ebdeaee5eb19b407cda07794a641b1afa52f65c4db324"
+        }
+      },
+      "walkaway": {
+        "text": "May your path always be even.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dancing_fairy.lua",
+          "line": 89,
+          "sha256": "d27f05743a0acb91570ebdeaee5eb19b407cda07794a641b1afa52f65c4db324"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.tooth_fairy",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, human being.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tooth_fairy.lua",
+          "line": 152,
+          "sha256": "b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+        }
+      },
+      "farewell": {
+        "text": "Take care of your teeth!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tooth_fairy.lua",
+          "line": 153,
+          "sha256": "b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    }
+  ],
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

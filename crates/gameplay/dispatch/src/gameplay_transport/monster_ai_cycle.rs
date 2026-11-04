@@ -188,6 +188,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             (None, Vec::new())
         };
+        if let Some(map) = self.bundle_map() {
+            super::paced_movement::monster_trap::apply_monster_trap_steps(
+                &mut runtime,
+                &states,
+                map,
+                now.get(),
+            );
+        }
         if periodic_pass {
             states.next_monster_ai_pass_us = due;
             states.monster_ai_sequence = sequence;

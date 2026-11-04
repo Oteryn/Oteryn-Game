@@ -59,7 +59,7 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
@@ -72,7 +72,7 @@ fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_po
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(true, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(true, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "resumed-loss thread panicked")??;
     Ok(())
@@ -84,7 +84,7 @@ fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult 
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "condition reconnect thread panicked")??;
     Ok(())
@@ -97,13 +97,32 @@ fn c08_conditions_postgres_reconnect_with_delayed_pre_prepare_reads() -> TestRes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, true, true).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, true, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "delayed condition reconnect thread panicked")??;
     Ok(())
 }
 
-fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bool) -> TestResult {
+#[test]
+fn a_same_session_resume_keeps_its_item_fence_when_readback_holder_is_busy_postgres() -> TestResult
+{
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario(false, false, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "resume readback thread panicked")??;
+    Ok(())
+}
+
+fn resume_scenario(
+    history_read_fails: bool,
+    conditions: bool,
+    delayed_reads: bool,
+    delayed_readback: bool,
+) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -120,6 +139,7 @@ fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bo
             history_read_fails,
             conditions,
             delayed_reads,
+            delayed_readback,
         ))
     }));
     let cleanup = rt.block_on(h.cleanup());
@@ -158,6 +178,7 @@ async fn resume_case(
     history_read_fails: bool,
     conditions: bool,
     delayed_reads: bool,
+    delayed_readback: bool,
 ) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -183,8 +204,14 @@ async fn resume_case(
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    let supported = if delayed_readback {
+        oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1
+    } else {
+        wire::CAPABILITY_HOUSE_TRANSFER_V1
+    };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
+        SelectedCapabilities::select(owner.offered_capabilities(), &[supported])
+            .ok_or("selection")?;
     let before_conditions = if conditions {
         Some(install_reconnect_conditions(&owner, &deps).await?)
     } else {
@@ -210,12 +237,19 @@ async fn resume_case(
     let runtime = owner.runtime.lock().await;
     let barrier = std::sync::Arc::new(crate::gameplay_transport::resume::PrepareTestBarrier {
         delay: delayed_reads,
+        readback: delayed_readback,
         ..Default::default()
     });
     let mut resume = std::pin::pin!(
         crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
             barrier.clone(),
-            resume_same_session(&owner, admitted.game_session_id, &token, 10)
+            resume_same_session(
+                &owner,
+                admitted.game_session_id,
+                &token,
+                10,
+                u64::from(supported)
+            )
         )
     );
     if delayed_reads {
@@ -232,11 +266,55 @@ async fn resume_case(
     wait_for_resume_barrier(resume.as_mut(), &barrier.ready).await?;
     let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
     drop(runtime);
+    let readback_busy = if delayed_readback {
+        wait_for_resume_barrier(resume.as_mut(), &barrier.committed).await?;
+        let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
+        barrier.readback_release.notify_one();
+        Some(busy)
+    } else {
+        None
+    };
     let resumed = resume.await;
     busy.await??;
-    let resumed = resumed?;
+    if let Some(busy) = readback_busy {
+        busy.await??;
+    }
+    let mut resumed = resumed?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.continuity.connection_generation, 2);
+    if delayed_readback {
+        // Even an unregistered command must receive its ordered refusal. It traverses
+        // the same retained-NPC reconciliation that precedes the node seam's step.
+        let frame = encode_client_command(
+            resumed.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id: resumed.continuity.next_command_id,
+                command_type: 999,
+                payload: &[],
+            },
+        )
+        .map_err(debug)?;
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        client
+            .write_all(&(frame.len() as u32).to_be_bytes())
+            .await?;
+        client.write_all(&frame).await?;
+        client.shutdown().await?;
+        let before = resumed.continuity.server_sequence;
+        resumed = match serve_admitted(&mut server, resumed, &owner, IDLE_LIVENESS).await {
+            ConnectionEnd::AdmittedThenDisconnected(next) => next,
+            end => return Err(format!("resumed command end: {end:?}").into()),
+        };
+        assert_eq!(
+            resumed.continuity.server_sequence,
+            before + 1,
+            "first resumed command disconnected before its result"
+        );
+    }
+    assert!(
+        resumed.item_fence.is_some(),
+        "committed resume lost its current item fence"
+    );
     if let Some(before) = before_conditions {
         assert_eq!(resumed.runtime_actor, Some(deps.actor));
         let runtime = owner.runtime.lock().await;
@@ -396,6 +474,7 @@ async fn resume_same_session(
     source: crate::foundation::GameSessionId,
     token: &str,
     transport: u8,
+    supported: u64,
 ) -> TestResult<AdmittedSession> {
     let mut body = Vec::new();
     bytes(&mut body, 1, source.as_bytes());
@@ -404,7 +483,7 @@ async fn resume_same_session(
     scalar(&mut body, 4, 1);
     scalar(&mut body, 5, 1);
     scalar(&mut body, 6, 1);
-    scalar(&mut body, 7, 86);
+    scalar(&mut body, 7, supported);
     bytes(&mut body, 8, b"resume-busy-holder-test");
     let mut frame = vec![8, MessageType::ClientResume as u8];
     bytes(&mut frame, 4, &body);
@@ -1405,4 +1484,162 @@ fn transfer_bundle(
         fixture::door_items,
     )
     .map_err(debug)
+}
+
+
+#[test]
+fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneration() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_STARTED");
+    let result = std::thread::Builder::new().stack_size(256 << 20)
+        .spawn(|| c08_logout_scenario().map_err(|e| e.to_string()))?
+        .join().map_err(|_| "C08 logout/login thread panicked");
+    eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_FINISHED duration={:.3}s", started.elapsed().as_secs_f64());
+    result??;
+    eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+
+fn c08_logout_scenario() -> TestResult {
+    let admin = crate::bestiary_postgres_harness::configured_admin().ok_or("PG route required")?;
+    let rt = crate::bestiary_postgres_harness::runtime()?;
+    let h = rt.block_on(Harness::create_with_admission_seed(admin, "c08_logout_login", true, false))?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(c08_logout_case(&h))));
+    let cleanup = rt.block_on(h.cleanup());
+    match result { Ok(result) => { result?; cleanup }, Err(panic) => std::panic::resume_unwind(panic) }
+}
+
+async fn c08_logout_case(h: &Harness) -> TestResult {
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionDefinition, TickFacts};
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    let recovery = RecoverySource::start(h).await?;
+    prepare_owned_session(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let deps = Dependencies::new()?;
+    let mut owner = deps.owner(h, &authority);
+    owner.evidence = &recovery.evidence;
+    owner.clock_origin = std::time::Instant::now() - std::time::Duration::from_secs(10);
+    let character = crate::domain::CharacterId::from_bytes(super::fixture::id(41)).map_err(debug)?;
+    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(&h.root, &authority, character).await {
+        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready { facts, .. }
+        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation { facts, .. } => facts,
+        _ => return Err("fixture character facts".into()),
+    };
+    let monk = owner.load_monk_state(character).await.ok_or("fixture monk state")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(owner.states.spell_states.lock().await.initialize(&runtime, deps.actor,
+            deps.admitted.game_session_id, facts, monk, owner.owner_now()).is_some());
+    }
+    owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?;
+    let mut admitted = deps.admitted;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    install_reconnect_conditions(&owner, &deps).await?;
+    let before_at = owner.owner_now().get();
+    let before = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, deps.actor, admitted.game_session_id).ok_or("source state")?;
+        let expected = state.owned_conditions().clone();
+        let mut next = expected.clone();
+        let root = GameplayDecisionRoot::from_bytes([8; 32]);
+        let regeneration = ConditionDefinition::new("fixture:c08.regeneration", 1,
+            ConditionValues::SpellRegeneration { duration_ms: 60_000, sub_id: 0,
+                health_gain: 3, health_interval_ms: 2_000, mana_gain: 2, mana_interval_ms: 3_000 })
+            .ok_or("regeneration definition")?;
+        next.apply(&regeneration, None, oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
+            &[], &ApplicationFacts { now: before_at, base_speed: 220, mana_shield_capacity: 0,
+                target_reentry_protected: false, source_reentry_protected: false, target_is_player: true,
+                decision_root: &root, occurrence: DecisionOccurrenceId::from_bytes([8; 16]) }).map_err(debug)?;
+        // Advance through actual due ticks before saving; a reload must not restart a recipe.
+        // Rebase the owner's clock by six seconds, without waiting on wall time.
+        let ticks = next.take_due(before_at + 6_000_000, TickFacts::default());
+        assert!(!ticks.is_empty());
+        state.apply_batch_conditions(&expected, &next).map_err(debug)?;
+        next
+    };
+    owner.clock_origin -= std::time::Duration::from_secs(6);
+    let logout_before = owner.owner_now().get();
+    assert_eq!(owner.logout_session(admitted).await,
+        crate::gameplay_transport::connection::LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted));
+    assert!(owner.runtime.lock().await.player_control_facts(deps.actor, admitted.game_session_id).is_err(), "logout retires runtime authority");
+    let logout_after = owner.owner_now().get();
+    drop(owner);
+    // A new owner clock and an empty runtime: no same-session or in-memory copy can survive.
+    let fresh_deps = Dependencies::new()?;
+    let mut fresh_owner = fresh_deps.owner(h, &authority);
+    fresh_owner.evidence = &recovery.evidence;
+    let token = RecoverySource::fresh_token(91)?;
+    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
+        schema_revision: 1, character_id: crate::foundation::CharacterId::decode(admitted.item_fence.ok_or("fence")?.character_id.as_bytes()).map_err(debug)?,
+        admission_material: token.as_bytes(), client_build_id: "c08-conditions", supported_capabilities: &[],
+    }).map_err(debug)?;
+    struct FreshIds;
+    impl crate::gameplay_transport::connection::ConnectionIdentifiers for FreshIds {
+        fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> { crate::foundation::GameSessionId::decode(&super::fixture::id(91)).ok() }
+        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> { crate::foundation::AuthenticatedTransportRefV1::decode(&[91; 16]).ok() }
+    }
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let admission_before = fresh_owner.owner_now().get();
+    let fresh = crate::gameplay_transport::connection::admit_frame(&mut server, &frame, &fresh_owner, &FreshIds)
+        .await.map_err(|e| format!("C08 fresh admission: {e:?}"))?;
+    drop(server);
+    let mut output = Vec::new(); client.read_to_end(&mut output).await?;
+    assert_ne!(fresh.game_session_id, admitted.game_session_id);
+    assert!(matches!(fresh.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "C08 fresh placement: {:?}", fresh.first_entry);
+    let runtime = fresh_owner.runtime.lock().await;
+    let states = fresh_owner.states.spell_states.lock().await;
+    let after = states.get(&runtime, fresh.runtime_actor.ok_or("fresh actor")?, fresh.game_session_id)
+        .ok_or("fresh state")?.owned_conditions();
+    assert_eq!(after.instances().len(), 3, "fresh login must restore poison, haste and regeneration");
+    let after_at = fresh_owner.owner_now().get();
+    for old in before.instances() {
+        let new = after.instances().iter().find(|i| i.definition() == old.definition()).ok_or("restored definition")?;
+        assert_eq!(new.remaining_total(), old.remaining_total(), "remaining DOT damage");
+        assert_eq!(new.speed_delta(), old.speed_delta(), "applied speed draw");
+        let upper = old.remaining_duration_ms(logout_before).ok_or("upper duration")?;
+        let lower = old.remaining_duration_ms(logout_after.saturating_add(after_at - admission_before).saturating_add(1000)).ok_or("lower duration")?;
+        let restored = new.remaining_duration_ms(after_at).ok_or("new duration")?;
+        if upper >= 0 {
+            assert!((lower..=upper).contains(&restored), "remaining duration {lower}..={upper} vs {restored}");
+        }
+    }
+    drop(states);
+    drop(runtime);
+    {
+        let mut runtime = fresh_owner.runtime.lock().await;
+        let mut states = fresh_owner.states.spell_states.lock().await;
+        let actor = fresh.runtime_actor.ok_or("live fresh actor")?;
+        let result = states.tick_current_creature_field_damage(&mut runtime, actor, fresh.game_session_id,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_at + 5_000_000), TickFacts::default(), None);
+        assert!(matches!(result, Some(Some(_))), "restored ticks must reach the current HP owner");
+        let poison = states.get(&runtime, actor, fresh.game_session_id).ok_or("ticked player")?
+            .owned_conditions().get(oteryn_gameplay_domain::domain::condition::ConflictKey::Element(
+                oteryn_gameplay_domain::domain::condition::DotElement::Poison)).ok_or("ticked poison")?;
+        assert!(poison.remaining_total() < before.instances().iter().find(|i| i.definition().key() == "fixture:reconnect.poison").ok_or("old poison")?.remaining_total());
+    }
+    let fence = fresh.item_fence.ok_or("fresh fence")?;
+    let saved = h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("saved conditions")?;
+    assert!(saved.lease_generation < fence.character_lease_generation);
+    for field in 0..3 {
+        let mut stale = fence;
+        match field {
+            0 => stale.character_lease_generation += 1,
+            1 => stale.connection_generation = crate::foundation::ConnectionGeneration::new(2).map_err(debug)?,
+            _ => stale.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?,
+        }
+        let mut candidate = saved.clone();
+        candidate.lease_generation = stale.character_lease_generation;
+        assert!(matches!(h.root.save_character_conditions(&authority, &h.node, stale, *fresh.channel_id.as_bytes(), candidate).await,
+            Err(crate::durability::item_use::ItemUseError::AuthorityRejected)), "stale condition fence {field}");
+    }
+    assert_eq!(h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("unchanged snapshot")?.conditions, saved.conditions);
+    Ok(())
 }

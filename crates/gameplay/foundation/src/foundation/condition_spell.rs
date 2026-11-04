@@ -281,7 +281,7 @@ impl<S: Clone> ConditionStore<S> {
             }
             _ => (u64::from(duration_ms) * 1000 / u64::from(level)).max(1),
         };
-        let decayed = (now - instance.started_at) / interval;
+        let decayed = instance.age_at(now) / interval;
         Some((
             level.saturating_sub(u8::try_from(decayed).unwrap_or(u8::MAX)),
             color,

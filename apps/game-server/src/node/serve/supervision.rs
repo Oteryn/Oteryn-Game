@@ -87,19 +87,29 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 both(
                     highscores_loop(root, material.world, achievements, &loops_stop),
                     both(
-                        super::super::guild_scheduler::run(
-                            root,
-                            authority,
-                            proof,
-                            material.world,
-                            &loops_stop
+                        both(
+                            super::super::guild_scheduler::run(
+                                root,
+                                authority,
+                                proof,
+                                material.world,
+                                &loops_stop,
+                            ),
+                            super::super::house_rent_scheduler::run(
+                                root,
+                                authority,
+                                proof,
+                                RuntimeScopeRefV1::channel(material.world, material.channel),
+                                generation,
+                                &loops_stop,
+                            ),
                         ),
                         super::super::market_scheduler::run(
                             root,
                             authority,
                             proof,
                             material.world,
-                            &loops_stop
+                            &loops_stop,
                         ),
                     )
                 ),

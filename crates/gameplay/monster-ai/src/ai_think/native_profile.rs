@@ -109,6 +109,7 @@ impl CreatureAiTable {
         let mut state = CreatureAiState::new(actor, profile, anchor);
         state.spawn = runtime.creature_spawn_cell(actor);
         state.is_summon = !role.is_ordinary();
+        state.creature_key = Some(creature.key.clone());
         self.admit(state, now);
         Ok(())
     }

@@ -1,7 +1,7 @@
 """EXERCISE0 native item overlay from existing exact identities and declared charge facts.
 
-Only item structure is admitted here. Gain rates live in the separate, disabled-by-default
-provisional training configuration; no Reference rate reconciliation is changed.
+Only item structure is admitted here. Gain rates and charge tiers are verified against the
+pinned Crystal donor configuration; no Reference rate reconciliation is changed.
 """
 import copy
 import hashlib
@@ -37,7 +37,7 @@ EXERCISE0_ITEMS = frozenset((
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
-    config = json.loads((root / 'rulesets/training/provisional-v1.json').read_bytes())
+    config = json.loads((root / 'rulesets/training/crystal-201189f-v1.json').read_bytes())
     if not EXERCISE0_ITEMS <= set(config['weapons']):
         raise ValueError('TRAINING_ITEM_RECORD_SET')
     wanted = set(EXERCISE0_ITEMS)
@@ -66,8 +66,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         semantics = copy.deepcopy(source['semantics'])
         physical = semantics['physical']['value']
         charges = semantics['charges']['value']['count']
+        donor = config['weapons'][key]
         if (binding['disposition'] != 'EXACT' or source['identity'] != binding['target']
-                or charges['state'] != 'KNOWN' or charges['value'] not in (500, 1800, 14400)
+                or charges['state'] != 'KNOWN' or charges['value'] != donor['charges']
                 or any(physical[field] != {'state': 'KNOWN', 'value': True}
                        for field in ('movable', 'pickupable'))
                 or physical['weight']['state'] != 'KNOWN'):

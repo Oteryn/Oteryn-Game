@@ -3,6 +3,68 @@
 pub const FISHING_ROD: &str = "oteryn:item.tibia.i3483";
 pub const WORM: &str = "oteryn:item.tibia.i3492";
 pub const FISH: &str = "oteryn:item.tibia.i3578";
+pub const NAIL: &str = "oteryn:item.tibia.i953";
+
+pub const MECHANICAL_FISHING_WATER: [u16; 13] = [
+    4597, 4598, 4599, 4600, 4601, 4602, 629, 630, 631, 632, 633, 634, 21312,
+];
+
+pub const MECHANICAL_FISHING_SPENT_WATER: [u16; 13] = [
+    4609, 4610, 4611, 4612, 4613, 4614, 4809, 4810, 4811, 4812, 4813, 4814, 21314,
+];
+
+/// Result of the Yalahar-sewer branch in Crystal's mechanical rod action.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MechanicalSewerAttempt {
+    NotHandled,
+    SpentWater,
+    Miss,
+    Shocked,
+    Caught { after: u16 },
+}
+
+/// Crystal `data-global/scripts/actions/other/mechanical_fishing.lua:203-248`.
+/// It classifies every donor branch; the durable gathering caller uses `Caught` to consume
+/// one nail, transform the water and mint the mechanical fish atomically.
+pub fn mechanical_sewer_attempt(
+    target: u16,
+    in_sewers: bool,
+    has_nail: bool,
+    caught: bool,
+    shock_roll: u32,
+) -> MechanicalSewerAttempt {
+    if !in_sewers || !has_nail {
+        return MechanicalSewerAttempt::NotHandled;
+    }
+    if MECHANICAL_FISHING_SPENT_WATER.contains(&target) {
+        return MechanicalSewerAttempt::SpentWater;
+    }
+    if !MECHANICAL_FISHING_WATER.contains(&target) {
+        return MechanicalSewerAttempt::NotHandled;
+    }
+    if !caught {
+        return if (1..=10).contains(&shock_roll) {
+            MechanicalSewerAttempt::Shocked
+        } else {
+            MechanicalSewerAttempt::Miss
+        };
+    }
+    let after = match target {
+        4597..=4602 => target + 12,
+        629..=634 => target + 4_180,
+        21312 => 21314,
+        _ => return MechanicalSewerAttempt::NotHandled,
+    };
+    MechanicalSewerAttempt::Caught { after }
+}
+
+/// Crystal mechanical_fishing.lua:85-97,203-248.
+pub fn is_yalahar_sewer_water(target: u16, x: u16, y: u16, floor: i8) -> bool {
+    MECHANICAL_FISHING_WATER.contains(&target)
+        && (32736..=32854).contains(&x)
+        && (31142..=31260).contains(&y)
+        && floor == -8
+}
 
 /// The donor target kind determines when a target is spent and where its yield belongs.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -77,12 +139,48 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
         (5942, 8744) => (8742, 5905, 6000),
         (5942, 18958) => (18959, 5905, 6000),
         (5942, 18961) => (18959, 5905, 6000),
-        (5908 | 5942, 7441) => {
+        (5908, 7441) | (5942, 7441) => {
             return Some((
                 GatheringTarget::Ice { spent_item: 7442 },
                 GatheringYield {
                     item: 7442,
-                    threshold: 22_344,
+                    threshold: 22_000,
+                },
+            ));
+        }
+        (5908, 10426) => {
+            return Some((
+                GatheringTarget::Corpse { spent_item: 0 },
+                GatheringYield {
+                    item: 10429,
+                    threshold: 24_000,
+                },
+            ));
+        }
+        (5908, 7442) => {
+            return Some((
+                GatheringTarget::Ice { spent_item: 7444 },
+                GatheringYield {
+                    item: 7444,
+                    threshold: 4_800,
+                },
+            ));
+        }
+        (5908, 7444) => {
+            return Some((
+                GatheringTarget::Ice { spent_item: 7445 },
+                GatheringYield {
+                    item: 7445,
+                    threshold: 900,
+                },
+            ));
+        }
+        (5908, 7445) => {
+            return Some((
+                GatheringTarget::Ice { spent_item: 7446 },
+                GatheringYield {
+                    item: 7446,
+                    threshold: 40,
                 },
             ));
         }
@@ -101,6 +199,15 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
                 GatheringYield {
                     item: 7158,
                     threshold: 1_000,
+                },
+            ));
+        }
+        (9306, target) if MECHANICAL_FISHING_WATER.contains(&target) => {
+            return Some((
+                GatheringTarget::FishingWater { spent_item: target },
+                GatheringYield {
+                    item: 9307,
+                    threshold: 100_000,
                 },
             ));
         }
@@ -133,6 +240,36 @@ pub fn gathering_attempt(
     catch_roll: u32,
     yield_roll: u32,
 ) -> Option<GatheringAttempt> {
+    if tool == 9306 && MECHANICAL_FISHING_WATER.contains(&target) {
+        if !(1..=100_000).contains(&yield_roll) || !catches(skill, catch_roll) {
+            return None;
+        }
+        let MechanicalSewerAttempt::Caught { after } =
+            mechanical_sewer_attempt(target, true, true, true, 100)
+        else {
+            return None;
+        };
+        return Some(GatheringAttempt {
+            after: Some(after),
+            yield_item: Some(9307),
+            consumes_bait: true,
+        });
+    }
+    if tool == 5908 && target == 10426 {
+        if !(1..=100_000).contains(&yield_roll) {
+            return None;
+        }
+        return Some(GatheringAttempt {
+            after: None,
+            yield_item: match yield_roll {
+                1..=530 => Some(10429),
+                531..=9_600 => Some(10428),
+                9_601..=24_000 => Some(10427),
+                _ => None,
+            },
+            consumes_bait: false,
+        });
+    }
     let (kind, row) = gathering_rule(tool, target)?;
     if !(1..=100_000).contains(&yield_roll) {
         return None;
@@ -244,6 +381,79 @@ mod tests {
     }
 
     #[test]
+    fn m09_mechanical_fishing_sewer_bounds_and_fish_are_pinned() {
+        // Crystal data-global/scripts/actions/other/mechanical_fishing.lua:85-97,203-248.
+        assert!(is_yalahar_sewer_water(4597, 32736, 31142, -8));
+        assert!(is_yalahar_sewer_water(21312, 32854, 31260, -8));
+        assert!(!is_yalahar_sewer_water(4597, 32735, 31142, -8));
+        assert!(!is_yalahar_sewer_water(4597, 32736, 31142, -7));
+        assert_eq!(
+            gathering_attempt(9306, 4597, 10, 10_000, 1),
+            Some(GatheringAttempt {
+                after: Some(4609),
+                yield_item: Some(9307),
+                consumes_bait: true,
+            })
+        );
+        assert_eq!(gathering_attempt(9306, 4597, 10, 10_001, 1), None);
+    }
+
+    #[test]
+    fn m09_mechanical_fishing_covers_every_sewer_branch() {
+        // Crystal data-global/scripts/actions/other/mechanical_fishing.lua:203-248.
+        assert_eq!(
+            mechanical_sewer_attempt(4597, false, true, true, 1),
+            MechanicalSewerAttempt::NotHandled
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, false, true, 1),
+            MechanicalSewerAttempt::NotHandled
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4609, true, true, true, 1),
+            MechanicalSewerAttempt::SpentWater
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, true, false, 11),
+            MechanicalSewerAttempt::Miss
+        );
+        assert_eq!(
+            mechanical_sewer_attempt(4597, true, true, false, 10),
+            MechanicalSewerAttempt::Shocked
+        );
+        for (target, after) in [(4597, 4609), (629, 4809), (21312, 21314)] {
+            assert_eq!(
+                mechanical_sewer_attempt(target, true, true, true, 100),
+                MechanicalSewerAttempt::Caught { after }
+            );
+        }
+    }
+
+    #[test]
+    fn m09_both_sculpting_tools_reach_the_non_simple_ice_row() {
+        // Crystal data-crystal/scripts/actions/tools/skinning.lua:289-305,392-403.
+        for tool in [5908, 5942] {
+            assert!(gathering_rule(tool, 7441).is_some());
+            assert_eq!(
+                gathering_attempt(tool, 7441, 10, 1, 22_000),
+                Some(GatheringAttempt {
+                    after: Some(7442),
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+            assert_eq!(
+                gathering_attempt(tool, 7441, 10, 1, 22_001),
+                Some(GatheringAttempt {
+                    after: None,
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+        }
+    }
+
+    #[test]
     fn m09_all_corpse_rows_use_donor_thresholds_out_of_100000() {
         // Crystal data-crystal/scripts/actions/tools/skinning.lua:6-350,363,394.
         for (tool, target, spent, item, threshold) in [
@@ -325,6 +535,58 @@ mod tests {
     }
 
     #[test]
+    fn m09_marble_sculpture_uses_ordered_chance_tiers_and_removes_the_rock() {
+        // Crystal data-crystal/scripts/actions/tools/skinning.lua:266-288,363-391.
+        for (roll, item) in [
+            (1, Some(10429)),
+            (530, Some(10429)),
+            (531, Some(10428)),
+            (9_600, Some(10428)),
+            (9_601, Some(10427)),
+            (24_000, Some(10427)),
+            (24_001, None),
+            (100_000, None),
+        ] {
+            assert_eq!(
+                gathering_attempt(5908, 10426, 10, 1, roll),
+                Some(GatheringAttempt {
+                    after: None,
+                    yield_item: item,
+                    consumes_bait: false,
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn m09_ice_sculpture_chain_uses_each_donor_threshold() {
+        // Crystal data-crystal/scripts/actions/tools/skinning.lua:289-305,392-403.
+        for (target, next, threshold) in [
+            (7441, 7442, 22_000),
+            (7442, 7444, 4_800),
+            (7444, 7445, 900),
+            (7445, 7446, 40),
+        ] {
+            assert_eq!(
+                gathering_attempt(5908, target, 10, 1, threshold),
+                Some(GatheringAttempt {
+                    after: Some(next),
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+            assert_eq!(
+                gathering_attempt(5908, target, 10, 1, threshold + 1),
+                Some(GatheringAttempt {
+                    after: None,
+                    yield_item: None,
+                    consumes_bait: false,
+                })
+            );
+        }
+    }
+
+    #[test]
     fn global_curve_is_clamped_and_uses_the_reference_slope() {
         assert_eq!(catch_threshold(10), 10_000);
         assert_eq!(catch_threshold(20), 15_970);
@@ -359,13 +621,14 @@ mod tests {
         }
         let ice_row = GatheringYield {
             item: 7442,
-            threshold: 22_344,
+            // Crystal skinning.lua:290-293 pins 22,000 out of 100,000.
+            threshold: 22_000,
         };
         assert_eq!(
             gathering_rule(5908, 7441),
             Some((GatheringTarget::Ice { spent_item: 7442 }, ice_row))
         );
-        assert_eq!(gathering_yield(ice_row, 22_345), None);
+        assert_eq!(gathering_yield(ice_row, 22_001), None);
         let fishing_row = GatheringYield {
             item: 7158,
             threshold: 1_000,
@@ -424,7 +687,7 @@ mod tests {
     fn m09_ice_success_is_map_only_and_failure_removes_block() {
         for tool in [5908, 5942] {
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_344),
+                gathering_attempt(tool, 7441, 10, 1, 22_000),
                 Some(GatheringAttempt {
                     after: Some(7442),
                     yield_item: None,
@@ -432,7 +695,7 @@ mod tests {
                 })
             );
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_345),
+                gathering_attempt(tool, 7441, 10, 1, 22_001),
                 Some(GatheringAttempt {
                     after: None,
                     yield_item: None,

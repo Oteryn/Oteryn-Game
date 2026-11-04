@@ -43,6 +43,26 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Records a committed monster step for the dispatch-owned trap pass.
+    pub fn record_monster_step(&self, step: MonsterStep) -> bool {
+        let Ok(mut steps) = self.monster_steps.lock() else {
+            return false;
+        };
+        if steps.len() == 4096 {
+            steps.pop_front();
+        }
+        steps.push_back(step);
+        true
+    }
+
+    /// Takes committed monster steps in commit order.
+    pub fn take_monster_steps(&self) -> Vec<MonsterStep> {
+        self.monster_steps
+            .lock()
+            .map(|mut steps| steps.drain(..).collect())
+            .unwrap_or_default()
+    }
+
     /// Crystal snow.lua:14-21 and items.xml:18274 onwards: transform and arm one decay.
     pub fn start_movement_decay(
         &self,

@@ -212,11 +212,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            // Harvest must use the audited item mint owner. Never transform and silently lose
-            // the promised yield while that slice remains unqualified.
-            if plan.binding.yield_item.is_some() {
-                return Ok(Some(outcome(UseDisposition::NothingToUse)));
-            }
             for state in std::iter::once(plan.binding.transformed)
                 .chain(plan.binding.decay.iter().map(|s| s.state))
             {
@@ -230,22 +225,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut placement = at.map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            TerrainMutation {
-                tool: entry.item.item_instance_id,
-                tool_key: definition.production_key.clone(),
-                tool_revision: definition.revision_ref.clone(),
-                placement,
-                expected_revision: i64::try_from(facts.object_revision(key)).map_err(|_| ())?,
-                before: state,
-                after: plan.binding.transformed,
-                decay: plan
-                    .binding
-                    .decay
-                    .iter()
-                    .map(|s| Ok((s.state, i64::try_from(s.after.as_millis()).map_err(|_| ())?)))
-                    .collect::<Result<_, ()>>()?,
-            }
+            (
+                TerrainMutation {
+                    tool: entry.item.item_instance_id,
+                    tool_key: definition.production_key.clone(),
+                    tool_revision: definition.revision_ref.clone(),
+                    placement,
+                    expected_revision: i64::try_from(facts.object_revision(key)).map_err(|_| ())?,
+                    before: state,
+                    after: plan.binding.transformed,
+                    decay: plan
+                        .binding
+                        .decay
+                        .iter()
+                        .map(|s| Ok((s.state, i64::try_from(s.after.as_millis()).map_err(|_| ())?)))
+                        .collect::<Result<_, ()>>()?,
+                },
+                plan.binding.yield_item,
+            )
         };
+        if let Some(yield_item) = mutation.1 {
+            let tool = mutation.0.tool;
+            let after = u16::try_from(mutation.0.after).map_err(|_| ())?;
+            let request = ItemCraftRequest {
+                command: command_ref,
+                source: tool,
+                tool: Some(tool),
+                ingredient: None,
+                station: None,
+                intent: encoded,
+                gathering: Some(crate::durability::item_craft::GatheringCraft {
+                    scope,
+                    mutation: mutation.0,
+                    attempt: oteryn_gameplay_items::fishing::GatheringAttempt {
+                        after: Some(after),
+                        yield_item: Some(u16::try_from(yield_item).map_err(|_| ())?),
+                        consumes_bait: false,
+                    },
+                }),
+                enchanting: None,
+            };
+            let result = self
+                .root
+                .craft_item(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &NativeItemWeights(native).with_wheel(self.premium_coordinator),
+                    false,
+                )
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?;
+            drop(permit);
+            if result == UseDisposition::Committed {
+                self.refresh_terrain_tools().await;
+            }
+            return Ok(Some(outcome(result)));
+        }
+        let mutation = mutation.0;
         // The lane remains held until durable acknowledgement. The next clock/read recovers an
         // ambiguous commit from the same rows, so no speculative runtime mutation occurs.
         let result = self

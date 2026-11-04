@@ -1,0 +1,1121 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "hot_cuisine",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-a/implementation-status.json",
+    "sha256": "749700c6749aba9456736bde7c52fc9688d72fd91d7efad022d9c2a9725e64bd"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 23,
+  "import_counts": {
+    "RĘCZNIE": 21,
+    "AUTO": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 131,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+      "sha256": "0db245ea075d9c2d721948b717b41e8fdd339424c3ed1df000af78fe86b117c6",
+      "count": 131,
+      "category": "npc_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "897d58e2dd263459df0ec8ce7977009036457a0d77a9340ad516fd3566a352e3",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Sezonowe przywitanie",
+        "pattern": "P15/P16",
+        "trigger": "Jean Pierre: greet",
+        "guard": "Miesiąc lokalnej daty systemowej =8",
+        "effect": "W sierpniu greeting; poza nim ungreet po1000ms",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:164",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:85"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:164",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:85",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "fa2cc88ecbd14d7c668d94e200b8af411add466b97ce75acd32eaf892fa8f50c",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Zostanie uczniem",
+        "pattern": "P09",
+        "trigger": "cook → recipe/menu → apprentice → yes",
+        "guard": "QuestStart<1; topics1→2→3",
+        "effect": "QuestStart=1, CurrentDish=1, QuestLog=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:190",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:316"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:190",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:316",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "de1c0e31da937acbbd23a3e5931102184d0cd5201d29abb4ebf7ab6ce19ac3b3",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie rotworm stew",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: rotworm stew → yes (topic 5)",
+        "guard": "canCookToday(dishNumber=2) oraz komplet: 3577×2;8010×20;8015×1;8197×1;3603×5;2874×2 subtype3",
+        "effect": "Konsumuje cały komplet; daje 9079×1; CurrentDish=2; QuestLog=2 tylko przed ukończeniem; zapis czasu i cookcount-2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:49",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:327",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:327",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "9efbb3e362a091e1cdc49bf1b4ca7c975528340cc07d8846ec82fabada9f48b4",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie hydra tongue salad",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: hydra tongue salad → yes (topic 7)",
+        "guard": "canCookToday(dishNumber=3) oraz komplet: 7250×2;3596×2;8014×1;3606×2;3741×1;2874×1 subtype2",
+        "effect": "Konsumuje cały komplet; daje 9080×1; CurrentDish=3; QuestLog=3 tylko przed ukończeniem; zapis czasu i cookcount-3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:50",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:350",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:50",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:350",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "01eb3eaca8684983ca007fcfedf95c291b8596471172c25e194d40857301a7e4",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie roasted dragon wings",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: roasted dragon wings → yes (topic 9)",
+        "guard": "canCookToday(dishNumber=4) oraz komplet: 4363×1;8016×3;3602×5;3606×2;3739×1;3724×5",
+        "effect": "Konsumuje cały komplet; daje 9081×1; CurrentDish=4; QuestLog=4 tylko przed ukończeniem; zapis czasu i cookcount-4",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:51",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:373",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:51",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:373",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a46cb39603fcd62f38d4b3c20493c4f3d43c2b2961e89228ceb199971eb24cbb",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie tropical fried terrorbird",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: tropical fried terrorbird → yes (topic 11)",
+        "guard": "canCookToday(dishNumber=5) oraz komplet: 4330×1;8013×2;3586×2;5096×2;2874×2 subtype15;3735×1",
+        "effect": "Konsumuje cały komplet; daje 9082×1; CurrentDish=5; QuestLog=5 tylko przed ukończeniem; zapis czasu i cookcount-5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:52",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:397",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:52",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:397",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "ae7febd42b85524c163443a8b3ef118920ab84c759fda64e66efec3f167d8369",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie banana chocolate shake",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: banana chocolate shake → yes (topic 13)",
+        "guard": "canCookToday(dishNumber=6) oraz komplet: 6574×1;6393×1;3587×2;2874×2 subtype9;3738×1;3736×1",
+        "effect": "Konsumuje cały komplet; daje 9083×1; CurrentDish=6; QuestLog=6 tylko przed ukończeniem; zapis czasu i cookcount-6",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:53",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:421",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:53",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:421",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "268d90e21ff96b7834af150aed8808de6d4b9982fb092296331cd4d2c664e80c",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie veggie casserole",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: veggie casserole → yes (topic 15)",
+        "guard": "canCookToday(dishNumber=7) oraz komplet: 3595×2;3596×2;3597×2;8014×2;8015×1;8197×1;3607×1;3723×20;3725×5",
+        "effect": "Konsumuje cały komplet; daje 9084×1; CurrentDish=7; QuestLog=7 tylko przed ukończeniem; zapis czasu i cookcount-7",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:54",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:445",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:54",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:445",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "687d8bd9b0721c74df7dcd9329854f4defd3716f9dc011527df114e94c0fc101",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie filled jalapeno peppers",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: filled jalapeno peppers → yes (topic 17)",
+        "guard": "canCookToday(dishNumber=8) oraz komplet: 8016×10;3607×2;3741×1;3740×1;2874×1 subtype16;3606×2",
+        "effect": "Konsumuje cały komplet; daje 9085×1; CurrentDish=8; QuestLog=8 tylko przed ukończeniem; zapis czasu i cookcount-8",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:55",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:469",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:55",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:469",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "02a54c3b54eecd5edb41585871a04dba66d3886e49594e814c56de96904c0bd5",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie blessed steak",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: blessed steak → yes (topic 19)",
+        "guard": "canCookToday(dishNumber=9) oraz komplet: 3582×1;8011×5;8015×1;8017×2;3594×1;8016×2",
+        "effect": "Konsumuje cały komplet; daje 9086×1; CurrentDish=9; QuestLog=9 tylko przed ukończeniem; zapis czasu i cookcount-9",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:56",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:494",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:56",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:494",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "1ab842f6b2d1c8ba4cde3398616173a57fdf401eae39c5bf4d4e1fe68951e900",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie northern fishburger",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: northern fishburger → yes (topic 21)",
+        "guard": "canCookToday(dishNumber=10) oraz komplet: 3580×1;7158×1;7159×1;3581×5;3601×2;3737×1",
+        "effect": "Konsumuje cały komplet; daje 9088×1; CurrentDish=10; QuestLog=10 tylko przed ukończeniem; zapis czasu i cookcount-10",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:57",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:518",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:518",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "df2550aa3142e0523b00d1e34308919ffcc774d4a4b9fdd251cd8c4227b1fb93",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie carrot cake",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: carrot cake → yes (topic 23)",
+        "guard": "canCookToday(dishNumber=11) oraz komplet: 3595×5;2874×1 subtype9;8013×1;3603×10;3606×2;3598×10;841×2",
+        "effect": "Konsumuje cały komplet; daje 9087×1; CurrentDish=11; QuestLog=11 tylko przed ukończeniem; zapis czasu i cookcount-11;CookbookDoor=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:58",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:542",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:58",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:542",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "50766ec6b8086e1abf1b8589d6e29a5aac0bb4cb869a5c9ab989de4d6a271a7c",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie coconut shrimp bake",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: coconut shrimp bake → yes (topic 25)",
+        "guard": "canCookToday(dishNumber=12) oraz komplet: 2874×5 subtype15;3725×5;3724×5;10329×10;3581×10",
+        "effect": "Konsumuje cały komplet; daje 11584×1; CurrentDish=12; QuestLog=13 tylko przed ukończeniem; zapis czasu i cookcount-12",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:59",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:570",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:59",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:570",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "ea210a376d9856a3b72772d8065604e752803b80d8ddcb49d5c959450a42138e",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie pot of blackjack",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: pot of blackjack → yes (topic 27)",
+        "guard": "canCookToday(dishNumber=13) oraz komplet: 10456×5;2874×2 subtype1;3595×20;8010×10;8016×3",
+        "effect": "Konsumuje cały komplet; daje 11586×1; CurrentDish=13; QuestLog=14 tylko przed ukończeniem; zapis czasu i cookcount-13",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:60",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:596",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:60",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:596",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "f4bbeca5ff92c3288aaeecaaca014755be93459d3ec8a76e8037284173685c0b",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie demonic candy ball",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: demonic candy ball → yes (topic 29)",
+        "guard": "canCookToday(dishNumber=14) oraz komplet: 6569×3;3599×3;6574×2;6500×15;6558×1",
+        "effect": "Konsumuje cały komplet; daje 11587×1; CurrentDish=14; QuestLog=15 tylko przed ukończeniem; zapis czasu i cookcount-14",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:61",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:622",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:622",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "633096b942811bdb6a782c348ed739ca3f7a7e491146009f6bae49270d54e711",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie sweet mangonaise elixir",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: sweet mangonaise elixir → yes (topic 31)",
+        "guard": "canCookToday(dishNumber=15) oraz komplet: 3606×40;5096×20;5902×10;8758×1;5942×1",
+        "effect": "Konsumuje cały komplet; daje 11588×1; CurrentDish=15; QuestLog=16 tylko przed ukończeniem; zapis czasu i cookcount-15",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:647",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104121"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:62",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:647",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "additional_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589104121"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "62a1ba76e5a7fa786dbe8ad82fd724b30329d969b599ce226f6911dd4a6327e2",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Ugotowanie zaoan sauce",
+        "pattern": "P10/P11/P17/P29",
+        "trigger": "Jean Pierre: zaoan sauce → yes (topic 33)",
+        "guard": "canCookToday(dishNumber=16) oraz komplet: 33930×1;2874×2 subtype15;11682×1;31590×1;48273×1",
+        "effect": "Konsumuje cały komplet; daje 50334×1; CurrentDish=15; QuestLog=17 tylko przed ukończeniem; zapis czasu i cookcount-16; przy pierwszym ukończeniu QuestStart=2, KV bonusyear=currentYear",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:63",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:672",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:63",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:672",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "76c5680fb004ba8657e5b07fab6175493e07d80b4168c2db82a167750c6c41b6",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Roczna powtarzalność i bonus pierwszego ukończenia",
+        "pattern": "P17/P29",
+        "trigger": "Potwierdzenie dowolnego dania",
+        "guard": "Brak wcześniejszego czasu LUB sierpień w nowym okresie LUB bonusyear=currentYear i !bonusused-N",
+        "effect": "Zapis currentDate; bonusused-N przy powtórce tego okresu; cookcount-N+=1; LastInteractionDate2..15 legacy storage, danie16 KV",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:91",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:110",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:139"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:91",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:110",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:139",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "968ec29eca0dc0378f770cf418201fd063d0ab46e6c2e650b4239d41017ef946",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Culinary Master",
+        "pattern": "P11/P29",
+        "trigger": "registerDishCooked po wydaniu dania",
+        "guard": "Brak achievement; każdy cookcount-2..16 >=2",
+        "effect": "Trwałe achievement Culinary Master",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:126"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zaimplementowano czysty planner receptur, UTC, powtarzalności i bonusu; zachowano subtype płynów i dokładne ilości donora.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Rzeczywista konsumpcja, wydanie nagrody, XP/achievement i właściciel fluid semantics pozostają nieaktywne; bez nowego NPC exchange/MINT owner. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-hot_cuisine.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:126",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a782aa03c8e0f8794e33d8625a56115d1be73a5763cdc443b3271be5857a46de",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Odczyt książki 9093",
+        "pattern": "P14",
+        "trigger": "Use itemid=9093",
+        "guard": "Brak guardu w action",
+        "effect": "showTextDialog ze wszystkimi tekstami config; 10 wpisów książka1,4 wpisy książka2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook1.lua:15"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/durability/src/durability/item_text.rs:1; brak dowodu quest showTextDialog transport",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "SOURCE_TEXT_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna literalna treść książki w wygenerowanych danych Hot Cuisine; nie podmieniono tekstu mangonaise ze sprzeczną recepturą NPC.",
+      "left_out": "Brak zatwierdzonego questowego wywołania showTextDialog/odczytu tych dwóch książek w obecnym adapterze. Samo przechowanie tekstu nie publikuje interakcji. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+      ],
+      "implementation_paths": [
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook1.lua:15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "d02d7fadf5dea0b6de7439c58f3fbf78005edab606895ca6baeb42b59f70c554",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Odczyt książki 11541",
+        "pattern": "P14",
+        "trigger": "Use itemid=11541",
+        "guard": "Brak guardu w action",
+        "effect": "showTextDialog ze wszystkimi tekstami config; 10 wpisów książka1,4 wpisy książka2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook2.lua:9"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/durability/src/durability/item_text.rs:1; brak dowodu quest showTextDialog transport",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "SOURCE_TEXT_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna literalna treść książki w wygenerowanych danych Hot Cuisine; nie podmieniono tekstu mangonaise ze sprzeczną recepturą NPC.",
+      "left_out": "Brak zatwierdzonego questowego wywołania showTextDialog/odczytu tych dwóch książek w obecnym adapterze. Samo przechowanie tekstu nie publikuje interakcji. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+      ],
+      "implementation_paths": [
+        "content/quests/hot-cuisine-batch3.json",
+        "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook2.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "891be5a41474ed9794851d742269168d811ea24601a5f7b9daf23f103eb36307",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Drzwi cookbook @ 33065,32529,5",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 33065,32529,5",
+        "guard": "CookbookDoor (numeric42150 w storages.lua:1320)",
+        "effect": "Wspólny quest door itemId=false",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:634"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; dokładne wiązanie placement/track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:634"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "2016460fb5ae80db234ddc56ac150482f7e791a22986402c23561148c02aa620",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "hot_cuisine",
+        "step": "Drzwi cookbook @ 33065,32531,5",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 33065,32531,5",
+        "guard": "CookbookDoor (numeric42150 w storages.lua:1320)",
+        "effect": "Wspólny quest door itemId=false",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:635"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; dokładne wiązanie placement/track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:635"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    }
+  ]
+}

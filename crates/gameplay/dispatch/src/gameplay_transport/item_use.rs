@@ -33,15 +33,18 @@ use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::BackpackEntry;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::durability::item_use::fluid::{ItemFluidChange, ItemFluidOutcome, ItemFluidRequest};
+use crate::durability::item_use::fluid::{
+    ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
+};
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
 use crate::interaction_chest_use::entry_chest;
 use crate::spell::Vocation;
 use crate::spell::actor_conditions::eat_food;
 use crate::spell::cast::CharacterCastFacts;
+use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[path = "condition_potions.rs"]
@@ -709,6 +712,148 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    /// I10a production USE_WITH owner for a map fluid source or ordinary ground object.
+    pub(super) async fn use_fluid_map(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: ItemKey,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        let ItemKey::Instance(source) = source else {
+            return None;
+        };
+        let fence = command.item_fence?;
+        let native = self.active_generation?.native_gameplay()?;
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .ok()?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Some(UseOutcome::rejected());
+        };
+        let backpack = inventory.backpack.as_ref()?;
+        let entry = backpack
+            .entries
+            .iter()
+            .chain(inventory.nested.iter().map(|(_, e)| e))
+            .find(|e| e.item.item_instance_id == source)?;
+        if !record(native, &entry.item.definition)
+            .is_some_and(|r| matches!(r.semantics.fluid, ReferenceItemField::Known(_)))
+        {
+            return None;
+        }
+        let placement = target.placement.clone();
+        let base_target_item = {
+            let mut runtime = self.runtime.lock().await;
+            let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+            let facts = at.map.facts.pinned();
+            let map = super::world_map::MapViewSource {
+                overlay: &at.map.overlay,
+                facts: &facts,
+                content_generation: at.content_generation,
+                reset_epoch: self.reset_epoch,
+            };
+            let resolved =
+                super::world_map::resolve_map_target(&map, &target, |_| None::<()>).ok()?;
+            if !fluid_map_target_in_range(
+                at.at.x,
+                at.at.y,
+                at.at.floor,
+                i32::from(resolved.pos.x),
+                i32::from(resolved.pos.y),
+                i16::from(resolved.pos.floor),
+            ) {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::TooFar,
+                    ..UseOutcome::rejected()
+                });
+            }
+            let tile =
+                crate::map::view::compose_tile(&at.map.overlay, &facts, resolved.pos).ok()??;
+            tile.entries
+                .iter()
+                .find(|entry| {
+                    entry.source.key()
+                        == crate::map::view::MapEntryKey::Base(resolved.placement_key)
+                })
+                .and_then(|entry| match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        let index = native.item_index()?;
+                        let definition = super::item_look::typed_definition(index, reference)?;
+                        definition
+                            .production_key
+                            .strip_prefix("oteryn:item.tibia.i")?
+                            .parse::<u32>()
+                            .ok()
+                    }
+                    _ => None,
+                })
+        };
+        // Only read durable splash objects after the complete map target/range validation.
+        // Refused USE_WITH commands must not mutate (or otherwise refresh) map state.
+        let splashes = self
+            .root
+            .refresh_item_fluid_splashes(
+                self.character,
+                *world_id.as_bytes(),
+                *channel_id.as_bytes(),
+            )
+            .await
+            .ok()?;
+        let target_item = splashes
+            .iter()
+            .find(|splash| splash.placement == placement)
+            .map(|splash| splash.splash_item_id)
+            .or(base_target_item)?;
+        let before = inventory.fluids.get(&source).copied().unwrap_or(0);
+        let (after, splash) = if before == 0 {
+            (fluid_source_subtype(target_item)?, None)
+        } else {
+            if fluid_source_subtype(target_item).is_some() {
+                return Some(UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    ..UseOutcome::rejected()
+                });
+            }
+            // Crystal 201189f8 data/scripts/actions/items/fluids.lua:66-81.
+            (
+                0,
+                Some(ItemFluidSplash {
+                    placement,
+                    fluid_subtype: before,
+                    splash_item_id: 2886,
+                    lifetime_millis: 10_000,
+                }),
+            )
+        };
+        let transaction_id = crate::operator_files::uuid_v7().ok()?;
+        let request = ItemFluidRequest {
+            command_id: command.command_id,
+            transaction_id,
+            change: ItemFluidChange {
+                item_instance_id: source,
+                definition: entry.item.definition.clone(),
+                fluid_before: before,
+                fluid_after: after,
+            },
+            other: None,
+        };
+        let disposition = self
+            .commit_fluid_at(actor, &command, fence, request, splash, None)
+            .await
+            .unwrap_or_else(|d| d);
+        Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+
     async fn pour_fluid_between(
         &self,
         actor: ExactActorRef,
@@ -801,6 +946,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: ItemFluidRequest,
         restore: Option<ReferencePotionRestore>,
     ) -> Result<UseDisposition, UseDisposition> {
+        self.commit_fluid_at(actor, command, fence, request, None, restore)
+            .await
+    }
+
+    async fn commit_fluid_at(
+        &self,
+        actor: ExactActorRef,
+        command: &UseCommand,
+        fence: CurrentCharacterItemFence,
+        request: ItemFluidRequest,
+        splash: Option<ItemFluidSplash>,
+        restore: Option<ReferencePotionRestore>,
+    ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
         let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
             .chain(request.other.as_ref().map(|other| other.item_instance_id))
@@ -815,9 +973,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
-        let commit = self
-            .root
-            .commit_item_fluid(self.character, self.holder, fence, request);
+        let commit =
+            self.root
+                .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
@@ -850,6 +1008,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         Ok(disposition)
+    }
+}
+
+fn fluid_map_target_in_range(ax: i32, ay: i32, af: i16, tx: i32, ty: i32, tf: i16) -> bool {
+    af == tf && ax.abs_diff(tx) <= 1 && ay.abs_diff(ty) <= 1
+}
+
+#[cfg(test)]
+mod fluid_map_tests {
+    use super::*;
+
+    #[test]
+    fn fluid_map_use_refuses_distant_and_other_floor_targets() {
+        assert!(fluid_map_target_in_range(10, 10, 7, 10, 10, 7));
+        assert!(!fluid_map_target_in_range(10, 10, 7, 12, 10, 7));
+        assert!(!fluid_map_target_in_range(10, 10, 7, 10, 10, 8));
+    }
+}
+
+/// Crystal `fluids.lua:35-40` consumes the target's `items.xml` `fluidsource` value.
+/// These are the source objects present in the pinned donor XML used by Oteryn.
+fn fluid_source_subtype(id: u32) -> Option<u8> {
+    match id {
+        137
+        | 629..=634
+        | 880..=891
+        | 1399..=1402
+        | 1439..=1440
+        | 1922..=1931
+        | 4597..=4602
+        | 4609..=4614
+        | 4621..=4652
+        | 4809..=4820
+        | 5076..=5079
+        | 5739..=5740
+        | 6389
+        | 9582
+        | 21302..=21322
+        | 31171..=31182 => Some(1),
+        2520 => Some(3),
+        2098..=2101 => Some(4),
+        2522 => Some(5),
+        2521 | 2527..=2534 => Some(15),
+        391 => Some(19),
+        4848 | 5512..=5513 => Some(27),
+        _ => None,
     }
 }
 

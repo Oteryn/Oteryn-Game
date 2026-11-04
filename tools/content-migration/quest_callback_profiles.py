@@ -4,11 +4,19 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 
-import writable_item_profiles as writing
 import timed_item_profiles as timed
+import writable_item_profiles as writing
 
 SOURCE = 'imports/canary/items-xml/items.xml'
 SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
+# Crystal201189f:data-global/startup/tables/chest.lua:799-817. These exact
+# ordinary one-Item claims already have canonical materialization, equipment and
+# physical facts. They need no new Item owner or charged-instance policy.
+DEMON_HELMET_REWARDS = {
+    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots': 'oteryn:item.tibia.i3554',
+    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet': 'oteryn:item.tibia.i3387',
+    'oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield': 'oteryn:item.tibia.i3420',
+}
 
 
 def complete_native_stack(root, record, definition, binding):
@@ -136,6 +144,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
+            demon_item = DEMON_HELMET_REWARDS.get(definition['identity']['key'])
+            if demon_item is not None:
+                placements = definition['placements']
+                expected = [{'count': 1, 'item': {'family': 'Item', 'key': demon_item,
+                                                'revision': 'definition-r1'}}]
+                if (definition.get('readiness') != 'ready' or len(placements) != 1
+                        or placements[0]['reward']['items'] != expected):
+                    raise ValueError('DEMON_HELMET_QUALIFIED_CLAIM_CHANGED')
+                keys.add(demon_item)
             # W15b's complete recipe already qualified the canonical root and
             # every child. Carry that whole closure into the native provider;
             # admitting only the visible chest reward would mint a partial bag.
@@ -173,7 +190,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
+    import quests_2_emperor_item_profiles
+    source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     for key, definition in sorted(definitions.items()):
+        # These exact source-qualified Items retain their canonical identity;
+        # this is not a general bypass for an unqualified native record.
+        definition = quests_2_emperor_item_profiles.callback_definition(
+            source_packet, present.get(key), definition, root)
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']

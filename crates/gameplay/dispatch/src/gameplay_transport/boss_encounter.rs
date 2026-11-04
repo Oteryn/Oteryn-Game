@@ -221,7 +221,7 @@ pub(super) fn apply_slot_loot_bonus(
     {
         return;
     }
-    let extra = slot_bonus_rolls(percent, death);
+    let extra = slot_bonus_rolls(percent, death, &[]);
     if extra == 0 {
         return;
     }
@@ -235,9 +235,32 @@ pub(super) fn apply_slot_loot_bonus(
     };
 }
 
-pub(super) fn slot_bonus_rolls(percent: u16, death: [u8; 16]) -> u8 {
+pub(super) fn slot_bonus_rolls(percent: u16, death: [u8; 16], recipient: &[u8]) -> u8 {
     use sha2::{Digest, Sha256};
-    let hash = Sha256::digest([b"oteryn:boss-slot-roll:v1".as_slice(), &death].concat());
-    let draw = u16::from_be_bytes([hash[0], hash[1]]) % 101;
+    // Crystal src/io/io_bosstiary.cpp:225-232 supplies the percentage and
+    // src/lua/functions/creatures/player/player_functions.cpp getBossBonus applies it per player.
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:boss-slot-roll:v1")
+        .chain_update(death)
+        .chain_update(recipient)
+        .finalize();
+    let draw = u16::from_be_bytes([hash[0], hash[1]]) % 100;
     (percent / 100 + u16::from(draw < percent % 100)).min(3) as u8
+}
+
+#[cfg(test)]
+mod slot_loot_tests {
+    use super::slot_bonus_rolls;
+
+    #[test]
+    fn donor_percentage_is_an_exact_per_recipient_extra_roll_multiplier() {
+        let death = [9; 16];
+        // These recipients straddle the deterministic 25% draw boundary, proving that one
+        // personal boss death does not share a single bonus roll among all reward chests.
+        assert_eq!(slot_bonus_rolls(25, death, &[6; 16]), 1);
+        assert_eq!(slot_bonus_rolls(25, death, &[1; 16]), 0);
+        assert_eq!(slot_bonus_rolls(100, death, &[2; 16]), 1);
+        assert_eq!(slot_bonus_rolls(250, death, &[2; 16]), 2);
+        assert_eq!(slot_bonus_rolls(300, death, &[2; 16]), 3);
+    }
 }

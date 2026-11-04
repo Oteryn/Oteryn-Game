@@ -26,19 +26,27 @@ fn citizen_town(unique: u16) -> Option<u32> {
     })
 }
 
-/// Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:5-6`: the towns of the
-/// free-account area, by the engine town ids of the pinned catalogue (Ab'Dendriel 5, Carlin 6,
-/// Kazordoon 7, Thais 8, Venore 9, Rookgaard 3, Dawnport 2). Its Dawnport Tutorial, Island of
-/// Destiny and Targuna have no hometown entry in the catalogue, so no Character lives there.
-/// Yalahar 17 is added by the accepted Premium decision (PREMIUM-ACTIVATION-0 §4.5, D70: "the six
-/// free cities (Yalahar included)"), which Crystal's list predates.
+/// Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:5-8` and
+/// `data-global/lib/tables/town.lua:1-30`: the hometowns in the free-account area. Dawnport
+/// Tutorial, Island of Destiny and Targuna occur in Crystal's name list but are not hometowns in
+/// the pinned Oteryn catalogue, so they deliberately do not occur in this id partition. Yalahar
+/// 17 is added by the accepted Premium decision (PREMIUM-ACTIVATION-0 §4.5, D70: "the six free
+/// cities (Yalahar included)"), which Crystal's list predates.
 const FREE_ACCOUNT_TOWNS: [u32; 8] = [2, 3, 5, 6, 7, 8, 9, 17];
+/// The remaining hometowns admitted by the pinned catalogue are Premium territory. Crystal's
+/// two movement-side checks agree with the boundary: `premium_bridge.lua:1-17` protects the
+/// Rookgaard Premium bridge, while `oramond/teleport.lua:1-29` makes each Oramond destination's
+/// Premium flag explicit. Non-hometown engine towns and unknown ids are intentionally unclassified.
+const PREMIUM_ACCOUNT_TOWNS: [u32; 11] = [10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22];
 /// The same file, :5 (`defaultTown = "Thais"`): where a home town in the premium area moves.
 const FREE_ACCOUNT_DEFAULT_TOWN: u32 = 8;
 
 /// P20 (the same file, :8): a home town outside the free-account area.
-fn premium_area_town(town: u32) -> bool {
-    !FREE_ACCOUNT_TOWNS.contains(&town)
+fn premium_area_town(town: u32) -> Option<bool> {
+    FREE_ACCOUNT_TOWNS
+        .contains(&town)
+        .then_some(false)
+        .or_else(|| PREMIUM_ACCOUNT_TOWNS.contains(&town).then_some(true))
 }
 
 /// Crystal `login.lua:15`.
@@ -57,7 +65,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let coordinator = self.premium_coordinator?;
         let table = &self.bundle_map()?.overlay.base().subareas;
         let temple = table.town(FREE_ACCOUNT_DEFAULT_TOWN)?.temple?;
-        if !premium_area_town(self.home_town(session, None).await?) {
+        if premium_area_town(self.home_town(session, None).await?) != Some(true) {
             return None;
         }
         // Settle delivery, then load the durable fence: this account's pulls start only after
@@ -401,17 +409,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
-    /// P20: Crystal `login.lua:6` lists the free-account towns, with Yalahar added by
-    /// PREMIUM-ACTIVATION-0 §4.5; every other hometown of the pinned catalogue is premium.
+    /// P20: Crystal 201189f8 `data-global/lib/tables/town.lua:1-30` supplies the ids and
+    /// `login.lua:6` the free names; the hometown subset is pinned in area-report.json.
     #[test]
-    fn only_the_free_account_towns_are_outside_the_premium_area() {
-        let premium: Vec<u32> = (1..=22)
-            .filter(|town| super::premium_area_town(*town))
-            .collect();
-        assert_eq!(
-            premium,
-            vec![1, 4, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 22]
-        );
-        assert!(!super::premium_area_town(super::FREE_ACCOUNT_DEFAULT_TOWN));
+    fn p20_pinned_hometowns_have_a_complete_premium_partition() {
+        let free = [2, 3, 5, 6, 7, 8, 9, 17];
+        let premium = [10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22];
+        for town in free {
+            assert_eq!(super::premium_area_town(town), Some(false), "town {town}");
+        }
+        for town in premium {
+            assert_eq!(super::premium_area_town(town), Some(true), "town {town}");
+        }
+        for non_hometown in [1, 4, 19, 23, 24, 25, 26, 32, 33, 34] {
+            assert_eq!(super::premium_area_town(non_hometown), None);
+        }
     }
 }

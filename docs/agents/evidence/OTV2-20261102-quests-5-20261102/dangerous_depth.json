@@ -1,0 +1,2791 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "dangerous_depth",
+    "elements": 92,
+    "auto": 3,
+    "manual": 89,
+    "statuses": {
+      "LEFT_OUT": 86,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 3,
+      "CALLBACK_DATA_IMPLEMENTED": 3
+    },
+    "new_callbacks": 3,
+    "prepared_npc": {
+      "rules": 40,
+      "reply_paragraphs": 87,
+      "conversations": 2
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/dangerous-depth-scouts-energy-exit",
+    "oteryn:quest-callback/dangerous-depth-dwarves-energy-exit",
+    "oteryn:quest-callback/dangerous-depth-gnomes-energy-exit"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "gnomus: start measurements",
+      "pattern": "P09/P13",
+      "trigger": "gnomus/measurements→yes",
+      "condition": "Gnomes.Measurements<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Gnomes.Measurements=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Accept wymaga odpowiednio9 lub10 różnych tracków łącznie z warunkowym Questline; limit8 pozostaje bez zmian i bez dzielenia transakcji.",
+      "missing_owner_function": "QUEST_STATE_EIGHT_TRACK_BOUND",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "gnomus: claim measurements",
+      "pattern": "P09/P11/P17",
+      "trigger": "gnomus/measurements",
+      "condition": "Gnomes.Measurements aktywny; LocationCount=5",
+      "effect": "27654×1; Gnomes.Points+1; Gnomes.Measurements=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "gnomus: start ordnance",
+      "pattern": "P09/P13",
+      "trigger": "gnomus/ordnance→yes",
+      "condition": "Gnomes.Ordnance<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Gnomes.Ordnance=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:163",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/dangerous_depth.json"
+      ],
+      "reason": "Literalne DATA gotowe wperquest *.npc.json; aktualny NpcTalkBook potrzebuje kodowego opt-in/routingu, którego koordynator zabronił zmieniać wtejpartii.",
+      "missing_owner_function": "NPC_TALK_BOOK_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "prepared_data_coverage": "Complete source start represented by fresh/existing Questline variants; source matching and runtime opt-in remain held. See npc-readiness.md.",
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 4,
+      "step": "gnomus: claim ordnance",
+      "pattern": "P09/P11/P17",
+      "trigger": "gnomus/ordnance",
+      "condition": "Gnomes.Ordnance aktywny; Ordnance2; GnomesCount≥5",
+      "effect": "CrawlersCount≥3:27654×2/Points+2; inaczej1/1; Gnomes.Ordnance=3; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:146",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "gnomus: start charting",
+      "pattern": "P09/P13",
+      "trigger": "gnomus/charting→yes",
+      "condition": "Gnomes.Charting<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Gnomes.Charting=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:217",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Accept wymaga odpowiednio9 lub10 różnych tracków łącznie z warunkowym Questline; limit8 pozostaje bez zmian i bez dzielenia transakcji.",
+      "missing_owner_function": "QUEST_STATE_EIGHT_TRACK_BOUND",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "gnomus: claim charting",
+      "pattern": "P09/P11/P17",
+      "trigger": "gnomus/charting",
+      "condition": "Gnomes.Charting aktywny; ChartingCount≥3",
+      "effect": "ChartingCount=6:27654×2/Points+2; inaczej1/1; Gnomes.Charting=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:205",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 7,
+      "step": "klom_stonecutter: start subterraneans",
+      "pattern": "P09/P13",
+      "trigger": "klom_stonecutter/subterraneans→yes",
+      "condition": "Dwarves.Subterranean<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Dwarves.Subterranean=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:102",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródłowe powitanie ma2 akapity; przygotowany adapter przyjmuje1literalnyreply, a kodowego opt-in nie wolno zmieniać wpartii. Pełne źródło zachowano.",
+      "missing_owner_function": "MULTI_PARAGRAPH_GREETING_AND_NPC_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 8,
+      "step": "klom_stonecutter: claim subterraneans",
+      "pattern": "P09/P11/P17",
+      "trigger": "klom_stonecutter/subterraneans",
+      "condition": "Dwarves.Subterranean aktywny; Organisms≥50",
+      "effect": "27654×1; Dwarves.Points+1; Dwarves.Subterranean=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:95",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 9,
+      "step": "klom_stonecutter: start home",
+      "pattern": "P09/P13",
+      "trigger": "klom_stonecutter/home→yes",
+      "condition": "Dwarves.Home<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Dwarves.Home=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:150",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródłowe powitanie ma2 akapity; przygotowany adapter przyjmuje1literalnyreply, a kodowego opt-in nie wolno zmieniać wpartii. Pełne źródło zachowano.",
+      "missing_owner_function": "MULTI_PARAGRAPH_GREETING_AND_NPC_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 10,
+      "step": "klom_stonecutter: claim home",
+      "pattern": "P09/P11/P17",
+      "trigger": "klom_stonecutter/home",
+      "condition": "Dwarves.Home aktywny; LostExiles≥20",
+      "effect": "Prisoners≥3:27654×2/Points+2; inaczej1/1; Dwarves.Home=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:136",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 11,
+      "step": "lardoc_bashsmite: start diremaws",
+      "pattern": "P09/P13",
+      "trigger": "lardoc_bashsmite/diremaws→yes",
+      "condition": "Scouts.Diremaw<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Scouts.Diremaw=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:99",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/dangerous_depth.json"
+      ],
+      "reason": "Literalne DATA gotowe wperquest *.npc.json; aktualny NpcTalkBook potrzebuje kodowego opt-in/routingu, którego koordynator zabronił zmieniać wtejpartii.",
+      "missing_owner_function": "NPC_TALK_BOOK_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "prepared_data_coverage": "Complete source start represented by fresh/existing Questline variants; source matching and runtime opt-in remain held. See npc-readiness.md.",
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 12,
+      "step": "lardoc_bashsmite: claim diremaws",
+      "pattern": "P09/P11/P17",
+      "trigger": "lardoc_bashsmite/diremaws",
+      "condition": "Scouts.Diremaw aktywny; DiremawsCount≥20",
+      "effect": "27654×1; Scouts.Points+1; Scouts.Diremaw=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:92",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 13,
+      "step": "lardoc_bashsmite: start growth",
+      "pattern": "P09/P13",
+      "trigger": "lardoc_bashsmite/growth→yes",
+      "condition": "Scouts.Growth<1 albo końcowy i TimeTask≤0 (nie<=now)",
+      "effect": "Scouts.Growth=1; wyzeruj liczniki i flagi źródła; Questline≥1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:150",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/dangerous_depth.json"
+      ],
+      "reason": "Literalne DATA gotowe wperquest *.npc.json; aktualny NpcTalkBook potrzebuje kodowego opt-in/routingu, którego koordynator zabronił zmieniać wtejpartii.",
+      "missing_owner_function": "NPC_TALK_BOOK_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "prepared_data_coverage": "Complete source start represented by fresh/existing Questline variants; source matching and runtime opt-in remain held. See npc-readiness.md.",
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 14,
+      "step": "lardoc_bashsmite: claim growth",
+      "pattern": "P09/P11/P17",
+      "trigger": "lardoc_bashsmite/growth",
+      "condition": "Scouts.Growth aktywny; BarrelCount≥3",
+      "effect": "BarrelCount≥5:27654×2/Points+2; inaczej1/1; Scouts.Growth=2; TimeTask=now+20h",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:138",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 15,
+      "step": "gnomus: wymiana suspicious devices",
+      "pattern": "P09/P10",
+      "trigger": "suspicious devices→liczba→gnomes/dwarves/scouts",
+      "condition": "tonumber(message), count30888≥amount; brak jawnego dodatniego limitu",
+      "effect": "removeItem30888 amount; wybrany Points+amount",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:241",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 16,
+      "step": "gnomus: status",
+      "pattern": "P09",
+      "trigger": "gnomus/status→faction",
+      "condition": "topic5",
+      "effect": "tekst max(Points,0)/10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:241",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Właściwa odpowiedź wymaga interpolacji max(Points,0)/10. DATA zawiera tylko osobny prompt wyboru frakcji; nie przygotowano całego skutku tego wiersza i nie zastąpiono wartości zgadywanym tekstem.",
+      "missing_owner_function": "DYNAMIC_NPC_STATUS_INTERPOLATION",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 17,
+      "step": "klom_stonecutter: wymiana suspicious devices",
+      "pattern": "P09/P10",
+      "trigger": "suspicious devices→liczba→gnomes/dwarves/scouts",
+      "condition": "tonumber(message), count30888≥amount; brak jawnego dodatniego limitu",
+      "effect": "removeItem30888 amount; wybrany Points+amount",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:164",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 18,
+      "step": "klom_stonecutter: status",
+      "pattern": "P09",
+      "trigger": "klom_stonecutter/status→faction",
+      "condition": "topic5",
+      "effect": "tekst max(Points,0)/10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:164",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródłowe powitanie ma2 akapity; przygotowany adapter przyjmuje1literalnyreply, a kodowego opt-in nie wolno zmieniać wpartii. Pełne źródło zachowano.",
+      "missing_owner_function": "MULTI_PARAGRAPH_GREETING_AND_NPC_OPT_IN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 19,
+      "step": "lardoc_bashsmite: wymiana suspicious devices",
+      "pattern": "P09/P10",
+      "trigger": "suspicious devices→liczba→gnomes/dwarves/scouts",
+      "condition": "tonumber(message), count30888≥amount; brak jawnego dodatniego limitu",
+      "effect": "removeItem30888 amount; wybrany Points+amount",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:170",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała gałąź wymaga atomowego odbioru/nadania itemów, money, punktów/timestamp albo outfit/achievement. Właściciel0831/0832/appearance/receipt zamrożony; bez częściowego skutku.",
+      "missing_owner_function": "ATOMIC_NPC_EXCHANGE_OR_ENTITLEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 20,
+      "step": "lardoc_bashsmite: status",
+      "pattern": "P09",
+      "trigger": "lardoc_bashsmite/status→faction",
+      "condition": "topic5",
+      "effect": "tekst max(Points,0)/10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:170",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Właściwa odpowiedź wymaga interpolacji max(Points,0)/10. DATA zawiera tylko osobny prompt wyboru frakcji; nie przygotowano całego skutku tego wiersza i nie zastąpiono wartości zgadywanym tekstem.",
+      "missing_owner_function": "DYNAMIC_NPC_STATUS_INTERPOLATION",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 21,
+      "step": "Gnomish tool chart",
+      "pattern": "P05",
+      "trigger": "uid57235",
+      "condition": "Gnomes.GnomeChartPaper1",
+      "effect": "daj27308; flaga2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_items.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 22,
+      "step": "Gnomish tool trignometre",
+      "pattern": "P05",
+      "trigger": "uid57236",
+      "condition": "Gnomes.GnomeChartChest1",
+      "effect": "daj27307; flaga2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_items.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 23,
+      "step": "Pesticide chest",
+      "pattern": "P05",
+      "trigger": "uid57234",
+      "condition": "Scouts.GnomishChest1",
+      "effect": "daj27498; GnomishChest2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnomish_chest.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 24,
+      "step": "Kartografia OldGate",
+      "pattern": "P02",
+      "trigger": "Use27308 w33978,32177..33982,32177,14",
+      "condition": "Charting1; OldGate<1",
+      "effect": "OldGate1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 25,
+      "step": "Kartografia LostRuin",
+      "pattern": "P02",
+      "trigger": "Use27308 w33946,32161..33951,32163,14",
+      "condition": "Charting1; LostRuin<1",
+      "effect": "LostRuin1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:25",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 26,
+      "step": "Kartografia TheGaze",
+      "pattern": "P02",
+      "trigger": "Use27308 w33962,32139..33976,32148,14",
+      "condition": "Charting1; TheGaze<1",
+      "effect": "TheGaze1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 27,
+      "step": "Kartografia Outpost",
+      "pattern": "P02",
+      "trigger": "Use27308 w33865,32008..33875,32021,14",
+      "condition": "Charting1; Outpost<1",
+      "effect": "Outpost1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 28,
+      "step": "Kartografia Bastion",
+      "pattern": "P02",
+      "trigger": "Use27308 w33923,31983..33942,31998,14",
+      "condition": "Charting1; Bastion<1",
+      "effect": "Bastion1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:49",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 29,
+      "step": "Kartografia BrokenTower",
+      "pattern": "P02",
+      "trigger": "Use27308 w33859,32358..33867,32363,14",
+      "condition": "Charting1; BrokenTower<1",
+      "effect": "BrokenTower1; ChartingCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_chart.lua:57",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 30,
+      "step": "Pomiary A",
+      "pattern": "P02",
+      "trigger": "Use27307 w33921,32141..33926,32146,14",
+      "condition": "Measurements1; LocationA<1",
+      "effect": "LocationA1; LocationCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_trignometre.lua:17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 31,
+      "step": "Pomiary B",
+      "pattern": "P02",
+      "trigger": "Use27307 w33965,32139..33975,32149,14",
+      "condition": "Measurements1; LocationB<1",
+      "effect": "LocationB1; LocationCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_trignometre.lua:25",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 32,
+      "step": "Pomiary C",
+      "pattern": "P02",
+      "trigger": "Use27307 w33911,32176..33914,32180,14",
+      "condition": "Measurements1; LocationC<1",
+      "effect": "LocationC1; LocationCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_trignometre.lua:33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 33,
+      "step": "Pomiary D",
+      "pattern": "P02",
+      "trigger": "Use27307 w33947,32206..33952,32209,14",
+      "condition": "Measurements1; LocationD<1",
+      "effect": "LocationD1; LocationCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_trignometre.lua:41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 34,
+      "step": "Pomiary E",
+      "pattern": "P02",
+      "trigger": "Use27307 w33877,32173..33881,32179,14",
+      "condition": "Measurements1; LocationE<1",
+      "effect": "LocationE1; LocationCount+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnome_trignometre.lua:49",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 35,
+      "step": "Pesticide: neutralizacja",
+      "pattern": "P02/P08",
+      "trigger": "27498 na27494",
+      "condition": "Diremaw1; DiremawsCount<20",
+      "effect": "DiremawsCount+1; target30730;50% spawnDiremaw; pesticide niezużyty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_gnomish_pesticide.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagany konkretny writerKillSettle zdonorową kwalifikacją damageMap lubmostDamage+sharedXP party oraz właściwymtrackiem. Nie podłączono samego last-hit ani nie zmieniono wspólnego routingu.",
+      "missing_owner_function": "KILL_SETTLE_BENEFICIARY_ADAPTER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 36,
+      "step": "Beczka: wydanie i zapalnik",
+      "pattern": "P01/P16/P17",
+      "trigger": "aid57234; lever2772",
+      "condition": "Growth1; BarrelCount<5; BarrelTimer≤0",
+      "effect": "spawn27492 w33838,32077,14; attrBarrel=playerid; po120s eksplozja i Timer0; timer=now+120s;toggle2772/2773",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:109",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 37,
+      "step": "Beczka: sala FirstBarrel",
+      "pattern": "P16/P18",
+      "trigger": "wybuch w33877,32060..33888,32068,14",
+      "condition": "atrybut właściciela; FirstBarrel<1",
+      "effect": "transform27491; po2s efekt radius6; FirstBarrel1,BarrelCount+1; usuńbeczkę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 38,
+      "step": "Beczka: sala SecondBarrel",
+      "pattern": "P16/P18",
+      "trigger": "wybuch w33906,32026..33916,32037,14",
+      "condition": "atrybut właściciela; SecondBarrel<1",
+      "effect": "transform27491; po2s efekt radius6; SecondBarrel1,BarrelCount+1; usuńbeczkę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 39,
+      "step": "Beczka: sala ThirdBarrel",
+      "pattern": "P16/P18",
+      "trigger": "wybuch w33865,32009..33874,32020,14",
+      "condition": "atrybut właściciela; ThirdBarrel<1",
+      "effect": "transform27491; po2s efekt radius6; ThirdBarrel1,BarrelCount+1; usuńbeczkę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 40,
+      "step": "Beczka: sala FourthBarrel",
+      "pattern": "P16/P18",
+      "trigger": "wybuch w33837,31984..33852,31991,14",
+      "condition": "atrybut właściciela; FourthBarrel<1",
+      "effect": "transform27491; po2s efekt radius6; FourthBarrel1,BarrelCount+1; usuńbeczkę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:6",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 41,
+      "step": "Beczka: sala FifthBarrel",
+      "pattern": "P16/P18",
+      "trigger": "wybuch w33923,31982..33942,31998,14",
+      "condition": "atrybut właściciela; FifthBarrel<1",
+      "effect": "transform27491; po2s efekt radius6; FifthBarrel1,BarrelCount+1; usuńbeczkę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_lever_barrel.lua:7",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 42,
+      "step": "Uwolnienie więźnia",
+      "pattern": "P02/P30",
+      "trigger": "aid57233 drewniane szczątki",
+      "condition": "Home1; Prisoners<3",
+      "effect": "25%spawnCapturedDwarf; usuńszczątki; callback5min używa niezdefiniowane creatureid",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_wooden_trash.lua:7",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 43,
+      "step": "Lost Exiles: zabicia",
+      "pattern": "P07/P08/P21",
+      "trigger": "LastExileDeath; mostDamageKiller",
+      "condition": "Home1;33768,32227,14..33851,32352,14; brak makeshift home w10; licznik<20",
+      "effect": "party z aktywnym sharedXP wszyscy+leader; inaczej tylko killer; increment starego stanu (-1→0)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagany konkretny writerKillSettle zdonorową kwalifikacją damageMap lubmostDamage+sharedXP party oraz właściwymtrackiem. Nie podłączono samego last-hit ani nie zmieniono wspólnego routingu.",
+      "missing_owner_function": "KILL_SETTLE_BENEFICIARY_ADAPTER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 44,
+      "step": "Organisms: zabicia",
+      "pattern": "P07/P08/P21",
+      "trigger": "WarzoneWormDeath; mostDamageKiller",
+      "condition": "Subterranean1; Organisms<50",
+      "effect": "źródło odczytuje licznik killera raz i wpisuje killerCount+1 każdemu uprawnionemu członkowi",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:49",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagany konkretny writerKillSettle zdonorową kwalifikacją damageMap lubmostDamage+sharedXP party oraz właściwymtrackiem. Nie podłączono samego last-hit ani nie zmieniono wspólnego routingu.",
+      "missing_owner_function": "KILL_SETTLE_BENEFICIARY_ADAPTER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 45,
+      "step": "Makeshift Home: szczątki",
+      "pattern": "P07",
+      "trigger": "MakeshiftHomeDeath",
+      "condition": "onDeath",
+      "effect": "create398 aid57233",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:68",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagany konkretny writerKillSettle zdonorową kwalifikacją damageMap lubmostDamage+sharedXP party oraz właściwymtrackiem. Nie podłączono samego last-hit ani nie zmieniono wspólnego routingu.",
+      "missing_owner_function": "KILL_SETTLE_BENEFICIARY_ADAPTER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 46,
+      "step": "Eskorta: aktywacja",
+      "pattern": "P09",
+      "trigger": "StepIn aid57241",
+      "condition": "Ordnance1",
+      "effect": "Ordnance2; pełny komunikat eskorty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_gnome_ordnance.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Własna sekwencja/warunek/effect wymaga source-faithful skutku i realnego Use/StepIn dispatch. Zamkniętego shared callback kontraktu nie rozszerzono poANSWER; źródło zachowano, bez odłączonegoRust deklarowanego jako runtime.",
+      "missing_owner_function": "STATEFUL_WORLD_INTERACTION",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 47,
+      "step": "Eskorta: lawina",
+      "pattern": "P24/P30",
+      "trigger": "monster Lost Gnome StepIn aid57240",
+      "condition": "25% losowania",
+      "effect": "CIRCLE6X6; obrażenia1000..1500 każdemu topCreature; efekty ziemi/kamieni",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_gnome_avalanche.lua:30",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 48,
+      "step": "Eskorta: uratowany Lost Gnome",
+      "pattern": "P24/P08/P21",
+      "trigger": "StepIn aid57242 Lost Gnome",
+      "condition": "każdy player-topCreature w5; Ordnance2; GnomesCount<5",
+      "effect": "GnomesCount+1; usuńpotwora",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_gnomes_ordnance_end.lua:27",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 49,
+      "step": "Eskorta: uratowany Gnome Pack Crawler",
+      "pattern": "P24/P08/P21",
+      "trigger": "StepIn aid57242 Gnome Pack Crawler",
+      "condition": "każdy player-topCreature w5; Ordnance2; CrawlersCount<3",
+      "effect": "CrawlersCount+1; usuńpotwora",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_gnomes_ordnance_end.lua:43",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 50,
+      "step": "Więźniowie: uratowany dwarf",
+      "pattern": "P24/P08/P21",
+      "trigger": "StepIn aid57231 Captured Dwarf",
+      "condition": "każdy player-topCreature w5; Home1; Prisoners<3",
+      "effect": "Prisoners+1; usuńpotwora",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_lost_exiles.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 51,
+      "step": "Lawa: obrażenia",
+      "pattern": "P30",
+      "trigger": "StepIn appearance22675",
+      "condition": "gracz lub summon z master",
+      "effect": "500 fire damage",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_lava_damage.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 52,
+      "step": "Energia: dostęp Scouts",
+      "pattern": "P03",
+      "trigger": "StepIn 33831,32138,14",
+      "condition": "Scouts.Points≥10 jeśli Bigfoot3access=1; inaczej≥15",
+      "effect": "→34023,32037,14; odmowa offsetfrom y+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 53,
+      "step": "Energia: dostęp Dwarves",
+      "pattern": "P03",
+      "trigger": "StepIn 33784,32205,14",
+      "condition": "Dwarves.Points≥10 jeśli Bigfoot3access=1; inaczej≥15",
+      "effect": "→33921,32401,14; odmowa offsetfrom x-1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 54,
+      "step": "Energia: dostęp Gnomes",
+      "pattern": "P03",
+      "trigger": "StepIn 33829,32187,14",
+      "condition": "Gnomes.Points≥10 jeśli Bigfoot3access=1; inaczej≥15",
+      "effect": "→33982,32236,14; odmowa offsetfrom y-1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:7",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 55,
+      "step": "Energia: wyjście 34021,32037,14",
+      "pattern": "P03",
+      "trigger": "StepIn 34021,32037,14",
+      "condition": "gracz",
+      "effect": "→33831,32141,14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:4",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Pełny deklaratywny element przekazany rootowi wcallbacks.json przez istniejący world callback runtime. Walidacja cargo/map runtime należy do root frozenhead.",
+      "missing_owner_function": null,
+      "questions": [],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": null,
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 56,
+      "step": "Energia: wyjście 33921,32402,14",
+      "pattern": "P03",
+      "trigger": "StepIn 33921,32402,14",
+      "condition": "gracz",
+      "effect": "→33782,32205,14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:6",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Pełny deklaratywny element przekazany rootowi wcallbacks.json przez istniejący world callback runtime. Walidacja cargo/map runtime należy do root frozenhead.",
+      "missing_owner_function": null,
+      "questions": [],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": null,
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 57,
+      "step": "Energia: wyjście 33982,32234,14",
+      "pattern": "P03",
+      "trigger": "StepIn 33982,32234,14",
+      "condition": "gracz",
+      "effect": "→33829,32186,14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua:8",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Pełny deklaratywny element przekazany rootowi wcallbacks.json przez istniejący world callback runtime. Walidacja cargo/map runtime należy do root frozenhead.",
+      "missing_owner_function": null,
+      "questions": [],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": null,
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+    },
+    {
+      "row": 58,
+      "step": "Pompa VI",
+      "pattern": "P01/P16/P21",
+      "trigger": "Use aid57300;27500",
+      "condition": "wszyscy gracze w5; AccessLavaPumpVI!=1",
+      "effect": "Access=1;27502; po600000ms transform30735",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump.lua:13",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 59,
+      "step": "Pompa V",
+      "pattern": "P01/P16/P21",
+      "trigger": "Use aid57302;27500",
+      "condition": "wszyscy gracze w5; AccessLavaPumpV!=1",
+      "effect": "Access=1;27502; po600000ms transform30735",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump.lua:31",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 60,
+      "step": "Pompa IV",
+      "pattern": "P01/P16/P21",
+      "trigger": "Use aid57301;27500",
+      "condition": "wszyscy gracze w5; AccessLavaPumpIV!=1",
+      "effect": "Access=1;27502; po600000ms transform30735",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump.lua:49",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 61,
+      "step": "Warzone VI: wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57230;33829,32128,14",
+      "condition": "Access1 i timer≤now albo timer>now",
+      "effect": "pierwsze wejścieAccess0,timer+8h; →33367,32307,15; inaczej odmowaoffset x+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 62,
+      "step": "Warzone V: wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57230;33777,32192,14",
+      "condition": "Access1 i timer≤now albo timer>now",
+      "effect": "pierwsze wejścieAccess0,timer+8h; →33208,32119,15; inaczej odmowaoffset y+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua:25",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 63,
+      "step": "Warzone IV: wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57230;33827,32172,14",
+      "condition": "Access1 i timer≤now albo timer>now",
+      "effect": "pierwsze wejścieAccess0,timer+8h; →33534,32184,15; inaczej odmowaoffset y+1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua:41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 64,
+      "step": "Warzone: kopanie kryształów",
+      "pattern": "P02/P17",
+      "trigger": "aid57350..57367;27503/27505/14831/28705",
+      "condition": "kod porównuje ID storage znow, nie zapisaną wartość",
+      "effect": "20131 chance10/50/50/70%; inaczej27509; zapis deadline+300s; pełna tabela flag źródła",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_warzone_crystals.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "UseWith/ofiara wymaga dokładnego itemtarget/zużycia/transformacji i stanumisji jako jednego skutku. Brak przyjętego kontraktu tej kompozycji; shared target/inventory owner pozostaje zamrożony.",
+      "missing_owner_function": "ITEM_TARGET_OR_OFFERING_ATOMICITY",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 65,
+      "step": "Warzone IV: geody",
+      "pattern": "P02/P22",
+      "trigger": "27509 na27510;33459,32267,15",
+      "condition": "Geodes.WarzoneIV<30",
+      "effect": "zużyj1; global=max(stan,0)+1; przy30 przejście388→1949 aid57243 przez8s; rozpoczęciebossa; cleanup30min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:426",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 66,
+      "step": "Warzone IV: boss wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57243;33460,32267,15",
+      "condition": "Baron cooldown≤now",
+      "effect": "cooldown+10h; →33650,32310,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_boss_entrance.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 67,
+      "step": "Warzone V: geody",
+      "pattern": "P02/P22",
+      "trigger": "27509 na27510;33323,32109,15",
+      "condition": "Geodes.WarzoneV<30",
+      "effect": "zużyj1; global=max(stan,0)+1; przy30 przejście388→1949 aid57243 przez8s; rozpoczęciebossa; cleanup30min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:461",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 68,
+      "step": "Warzone V: boss wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57243;33324,32109,15",
+      "condition": "Count cooldown≤now",
+      "effect": "cooldown+10h; →33681,32338,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_boss_entrance.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 69,
+      "step": "Warzone VI: geody",
+      "pattern": "P02/P22",
+      "trigger": "27509 na27510;33274,32316,15",
+      "condition": "Geodes.WarzoneVI<30",
+      "effect": "zużyj1; global=max(stan,0)+1; przy30 przejście388→1949 aid57243 przez8s; rozpoczęciebossa; cleanup30min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:496",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 70,
+      "step": "Warzone VI: boss wejście",
+      "pattern": "P03/P17",
+      "trigger": "aid57243;33275,32316,15",
+      "condition": "Duke cooldown≤now",
+      "effect": "cooldown+10h; →33717,32302,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/movements_boss_entrance.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przejście/drzwi wymagają donorowego read-only guardu i/lubclock comparison, alternatywnej odmowy/zmiany. Istniejący Storage ma obowiązkowy SET; nie zaniżono postępu zgadywaną stałą. Kodowy shared callback routing/contract zostaje doPRkoordynatora.",
+      "missing_owner_function": "STATE_GUARDED_WORLD_CALLBACK",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 71,
+      "step": "Baron: start",
+      "pattern": "P06/P16",
+      "trigger": "30 geod IV",
+      "condition": "arena aktywowana",
+      "effect": "po10s Baron33648,32303,15; po15s startaggressive lavas iholes",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:373",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 72,
+      "step": "Baron: otwory lawy",
+      "pattern": "P16/P30",
+      "trigger": "4 otwory33652/33644×32307/32299 z15",
+      "condition": "Baron/HungryBaron w20",
+      "effect": "390→391; po3s gracze w9×9 bez2129/2130 tracą0..1500;reset390; następnyotwór15s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 73,
+      "step": "Baron: faza głodu",
+      "pattern": "P16/P30",
+      "trigger": "onThink, timer30s",
+      "condition": "Baron istnieje",
+      "effect": "HungryBaron zachowajHP; teleport33648,32300,15; OrganicMatter33647,32300,15; po10s jeśli matter istnieje heal10000..30000 i4AggressiveMatter; powrótBaron",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_the_baron_from_below.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 74,
+      "step": "Organic Matter: rozpad",
+      "pattern": "P30",
+      "trigger": "onDeath OrganicMatter",
+      "condition": "potwór",
+      "effect": "4AggressiveMatter wpozycji matter",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_the_baron_from_below.lua:58",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 75,
+      "step": "Count: start",
+      "pattern": "P06/P16",
+      "trigger": "30 geod V",
+      "condition": "arena aktywowana",
+      "effect": "po5s Count33681,32334,15; SnailSlimeThink; telegraphEmberBeasts; po10s machines;po30s absorpcja",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:379",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 76,
+      "step": "Count: maszyny",
+      "pattern": "P16/P30",
+      "trigger": "5 grup po4 pozycji źródła",
+      "condition": "Count istnieje",
+      "effect": "losuj grupę;31724→31723 po6s; po2s belki10pól,blok2129/2130;Countheal3000..5000,playerdamage0..1500;reset1s; następna6s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:213",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 77,
+      "step": "Count: Ember Beasts",
+      "pattern": "P16/P30",
+      "trigger": "telegraph5×2s",
+      "condition": "Count istnieje",
+      "effect": "4EmberBeasts na33677/33685×32333/32337 z15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:307",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 78,
+      "step": "Count: absorpcja",
+      "pattern": "P16/P30",
+      "trigger": "cykl absorpcji",
+      "condition": "HP<70% i EmberBeast dostępny",
+      "effect": "usuńpierwszy beast;heal0..15000;ponów60s gdybeasts>0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:322",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 79,
+      "step": "Count: Snail Slime spawn",
+      "pattern": "P30",
+      "trigger": "SnailSlimeThink",
+      "condition": "CountHP≤50%;SlimeCount<3 w20",
+      "effect": "spawn1 SnailSlime wpozycji Count",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua:30",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 80,
+      "step": "Snail Slime: leczenie",
+      "pattern": "P30",
+      "trigger": "onDeath SnailSlime",
+      "condition": "Count wCIRCLE2X2",
+      "effect": "heal0..2000;fireexplosion",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 81,
+      "step": "Duke: start",
+      "pattern": "P06/P16",
+      "trigger": "30 geod VI",
+      "condition": "arena aktywowana",
+      "effect": "po10s Duke33712,32303,15;FieryHeartThink;hearts30s;lavas15s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:391",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 82,
+      "step": "Duke: pięć serc",
+      "pattern": "P16/P30",
+      "trigger": "cykl40s",
+      "condition": "Duke istnieje; brakFieryHeart",
+      "effect": "5serc33712,32299;33715,32301;33714,32305;33710,32305;33709,32301 z15; FireEmpoweredDuke zachowajHP",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:176",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 83,
+      "step": "Duke: utrata wzmocnienia",
+      "pattern": "P30",
+      "trigger": "FireEmpoweredDukeThink",
+      "condition": "zeroFieryHeart w20",
+      "effect": "Duke zachowajHP",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_fiery_heart.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 84,
+      "step": "Fiery Heart: krew",
+      "pattern": "P16/P30",
+      "trigger": "FieryHeartThink",
+      "condition": "istniejący monster; brak pendingguarda",
+      "effect": "po20sFieryBlood zachowajHP",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_fiery_heart.lua:25",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 85,
+      "step": "Aggressive Lava: fale",
+      "pattern": "P16/P30",
+      "trigger": "IV:33648,32295/32313;VI:33712,32296/32310,z15",
+      "condition": "aktywnyboss",
+      "effect": "5telegraphs×2s;spawn2;następnycykl15s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:122",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga mapy/monster ingress, spawn/transform/HP/damage, zegara lub lifecyclecleanup i world-scoped stanu. Nie dodano samotnego spawnu; wspólne BossActivity/WorldBundle/combat/temporal owner są zamrożone.",
+      "missing_owner_function": "BOSS_ACTIVITY_WORLD_COMBAT_LIFECYCLE",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 86,
+      "step": "Baron: portal nagrody",
+      "pattern": "P07/P16",
+      "trigger": "onDeath Baron",
+      "condition": "portal1949 w33650,32312,15",
+      "effect": "22761→33668,32301,15; po20min1949→33462,32267,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 87,
+      "step": "Count: portal nagrody",
+      "pattern": "P07/P16",
+      "trigger": "onDeath Count",
+      "condition": "portal1949 w33681,32340,15",
+      "effect": "22761→33682,32315,15; po20min1949→33324,32111,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 88,
+      "step": "Duke: portal nagrody",
+      "pattern": "P07/P16",
+      "trigger": "onDeath Duke",
+      "condition": "portal1949 w33719,32302,15",
+      "effect": "22761→33691,32301,15; po20min1949→33275,32318,15",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Krok wymaga eventu/timera/stanuglobalnego albo ruchupotwora/cyklużycia poza istniejącym committed-player-StepIn. Wspólne WorldBundle/Instance/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_EVENT_AND_TEMPORAL_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 89,
+      "step": "Baron: osiągnięcie",
+      "pattern": "P11",
+      "trigger": "aid57303;33673,32304,15",
+      "condition": "BaronAchiev<1",
+      "effect": "flaga1; Buried the Baron",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:34",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 90,
+      "step": "Count: osiągnięcie",
+      "pattern": "P11",
+      "trigger": "aid57303;33679,32310,15",
+      "condition": "CountAchiev<1",
+      "effect": "flaga1; His Days are Counted",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 91,
+      "step": "Duke: osiągnięcie",
+      "pattern": "P11",
+      "trigger": "aid57303;33685,32304,15",
+      "condition": "DukeAchiev<1",
+      "effect": "flaga1; Duked It Out",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:48",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 92,
+      "step": "Death in the Depths",
+      "pattern": "P11",
+      "trigger": "pompa nagrody aid57303",
+      "condition": "3flagi bossów1;LastAchievement<1",
+      "effect": "Death in the Depths;LastAchievement1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dangerous_depth/actions_crude_lava_pump_achievements.lua:55",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Nadanie itemu/pojemnika lubachievement musi być atomowe zclaimem i jego source selector/placement. Nie rozszerzono zamrożonego RewardClaimMint/appearance ownera.",
+      "missing_owner_function": "ATOMIC_REWARD_CLAIM_OWNER",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    }
+  ]
+}

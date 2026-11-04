@@ -40,6 +40,20 @@
       10
     ]
   },
+  "rank_value_curve": {
+    "donor": "crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/proficiencies/proficiencies.hpp:78-85 (value = rank0 + perRank * rank)",
+    "curve_definitions": "crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/proficiencies/proficiencies.cpp:244-329",
+    "rank0_weights": [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    "rank10_weights": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "denominator": 10,
+    "rank_step_overrides": [
+      {
+        "spell_client_id": 289,
+        "augment": "base_damage",
+        "rank_step": 0.2
+      }
+    ]
+  },
   "universal": [
     {
       "identity": "alpha_strike_damage",

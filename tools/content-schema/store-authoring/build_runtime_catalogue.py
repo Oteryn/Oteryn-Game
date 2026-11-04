@@ -160,10 +160,14 @@ def check() -> list[str]:
     for offer in catalogue["offers"]:
         if offer.get("unlock_key") == "prey-list-expansion":
             continue
-        item = offer["item"]
-        admitted = items.get(item["key"])
-        if admitted != (item["revision"], item["charges"]):
-            errors.append(f"{offer['key']}: item not admitted with these charges")
+        if offer.get("unlock_key") == "charm-expansion":
+            if offer.get("item") is not None:
+                errors.append(f"{offer['key']}: entitlement cannot deliver an item")
+        else:
+            item = offer["item"]
+            admitted = items.get(item["key"])
+            if admitted != (item["revision"], item["charges"]):
+                errors.append(f"{offer['key']}: item not admitted with these charges")
         if not 0 < offer["price"] <= 100_000 or offer["currency"] != "TIBIA_COIN":
             errors.append(f"{offer['key']}: price or currency")
     return errors

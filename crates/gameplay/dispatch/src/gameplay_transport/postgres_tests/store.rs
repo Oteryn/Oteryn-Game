@@ -24,6 +24,7 @@ use sha2::{Digest, Sha256};
 
 const SWORD: &str = "store:exercise-sword";
 const SWORD_ITEM: &str = "oteryn:item.tibia.i28552";
+const CHARM_EXPANSION: &str = "store:charm-expansion";
 
 #[derive(Default)]
 struct Ledger {
@@ -196,7 +197,7 @@ fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
-        catalog_revision: "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d".into(),
+        catalog_revision: "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),
         price,
         currency: "TIBIA_COIN".into(),
     };
@@ -372,7 +373,7 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
         assert_eq!(values.len(), 1, "{values:?}");
         assert_eq!(values[0].0, CommandStatus::Accepted, "{values:?}");
         let page = wire::decode_catalogue_page(&values[0].1).map_err(debug)?;
-        assert_eq!(page.catalog_revision, "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d");
+        assert_eq!(page.catalog_revision, "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
         assert_eq!((page.offers.len(), page.total_coins, page.transferable_coins), (23, 60, 60));
         let sword = page
             .offers
@@ -442,6 +443,55 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
             assert_eq!((ledger.purchases, ledger.debits.len()), (2, 1));
         }
         assert_eq!(swords(&harness).await?, 1);
+
+        // Crystal data/modules/scripts/gamestore/gamestore.lua:6554-6558 prices the
+        // one-time Character product at 450; init.lua:767-770 refuses an owner.
+        ledger.lock().expect("ledger").balance = 500;
+        let charm = purchase(
+            &owner,
+            &mut admitted,
+            purchase_request(70, CHARM_EXPANSION, 450)?,
+        )
+        .await?;
+        assert_eq!(charm.code, wire::StorePurchaseCode::Accepted);
+        assert_eq!(count(&harness, "SELECT count(*) FROM game_character_charm_expansions").await?, 1);
+        let mut forged = harness.pool.begin().await?;
+        sqlx::query("INSERT INTO store_delivery_receipts(operation_id,account_id,character_id,world_id,fulfilment_unit_id,result,recovery_generation,decided_at,receipt,item_instance_id,entitlement_key,purchase_request_id) SELECT game_character_uuid_v7(),account_id,character_id,world_id,fulfilment_unit_id||'-forged',result,recovery_generation,decided_at,receipt,NULL,'charm-expansion',purchase_request_id FROM store_delivery_receipts WHERE entitlement_key='charm-expansion' LIMIT 1")
+            .execute(&mut *forged).await?;
+        assert!(forged.commit().await.is_err(), "receipt without purchase proof must fail");
+        let debits = ledger.lock().expect("ledger").debits.len();
+        let second = purchase(
+            &owner,
+            &mut admitted,
+            purchase_request(71, CHARM_EXPANSION, 450)?,
+        )
+        .await?;
+        assert_eq!(second.code, wire::StorePurchaseCode::OfferUnavailable);
+        assert_eq!(ledger.lock().expect("ledger").debits.len(), debits);
+
+        // The base offer omits dynamically admitted mechanics. Compose the Charm
+        // offer just as the production handshake does before selecting its command.
+        let charm_offered = crate::gameplay_transport::charm_progression::offered(
+            owner.offered_capabilities(), owner.charm_progression_available(),
+        );
+        let charm_capability = oteryn_protocol_oteryn::charm_progression::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &charm_offered,
+            &[wire::CAPABILITY_STORE_V1, charm_capability],
+        ).ok_or("Store and charm selection")?;
+        assert!(admitted.continuity.selected_capabilities.contains(charm_capability));
+        let charm_query = oteryn_protocol_oteryn::charm_progression::encode_charm_progression_request(
+            &oteryn_protocol_oteryn::charm_progression::CharmProgressionAction::Query,
+        ).map_err(debug)?;
+        let query = serve(&owner, &mut admitted, &[(
+            oteryn_protocol_oteryn::charm_progression::COMMAND_TYPE_CHARM_PROGRESSION,
+            charm_query,
+        )]).await?;
+        assert_eq!(query[0].0, CommandStatus::Accepted, "Charm query must reach its native owner");
+        let reply = oteryn_protocol_oteryn::charm_progression::decode_charm_progression_reply(&query[0].1).map_err(debug)?;
+        // Crystal src/io/iobestiary.cpp:603-607 raises Premium from six slots to all
+        // 25 donor runes; Oteryn represents the unbounded catalogue limit as None.
+        assert_eq!(reply.charms.assignment_slot_limit, None);
         eprintln!("STORE PostgreSQL dispatch page, purchase, mint, replay and refusals verified");
         drop(owner);
         drop(authority);

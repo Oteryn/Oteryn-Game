@@ -173,7 +173,7 @@ jobs:
     name: Merge gate / trusted-base risk lanes
     needs: scope
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
     outputs:
@@ -245,7 +245,7 @@ jobs:
     name: Merge gate / governance
     needs: scope
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: read
@@ -407,7 +407,7 @@ jobs:
     name: Merge gate / routing contract
     needs: scope
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -785,6 +785,15 @@ jobs:
             exit 0
           fi
           python -I tools/repository/job_result_key.py select --plan "$RUNNER_TEMP/jr-plan.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --dir "$RUNNER_TEMP/jobresult" --out "$RUNNER_TEMP/rust-fast-run.tsv"
+
+      # The restored target/ is ~26G extracted; hosted runners ran out of disk mid-extract
+      # (No space left on device, worker crash). Drop preinstalled SDKs this job never uses.
+      - name: Free hosted runner disk before the Cargo cache restore
+        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
 
       - name: Restore trimmed Cargo cache from protected main
         if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'

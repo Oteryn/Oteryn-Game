@@ -1,0 +1,5212 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.hot_cuisine_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_log",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date2",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-2",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-2",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date3",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-3",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-3",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date4",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-4",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-4",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date5",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-5",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-5",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date6",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-6",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-6",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date7",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-7",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-7",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date8",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-8",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-8",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date9",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-9",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-9",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date10",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-10",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-10",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date11",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-11",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-11",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date12",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-12",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-12",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date13",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-13",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-13",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date14",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-14",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-14",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/last_interaction_date15",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-15",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-15",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/lastinteractiondate16",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:673"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-16",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:123"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusused-16",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/bonusyear",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:686"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1317"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-191-1-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "cook"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Well, I'm not a simple cook. I travel the whole Tibian continent for the most artfully seasoned {recipes} and constantly develop new ones."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:191"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-190-2-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "cook"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:190"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-201-3-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The first dish we are going to prepare together is called {Rotworm Stew}. Now, don't be scared off. Of course we won't eat those nasty and dirty earth-crawlers! ...",
+        "The name is just for the effect it has on people. <winks> Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two pieces of meat, two vials of beer, twenty potatoes, one onion, one bulb of garlic and five ounces of flour. Make sure that the ingredients are fresh and smell good."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:201"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-201-3-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The first dish we are going to prepare together is called {Rotworm Stew}. Now, don't be scared off. Of course we won't eat those nasty and dirty earth-crawlers! ...",
+        "The name is just for the effect it has on people. <winks> Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two pieces of meat, two vials of beer, twenty potatoes, one onion, one bulb of garlic and five ounces of flour. Make sure that the ingredients are fresh and smell good."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:201"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-208-4-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Hydra Tongue Salad}. The common hydra tongue is a pest plant with an surprisingly aromatic taste. ...",
+        "We'll add some other vegetables and spices for the delicate and distinctive taste. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two hydra tongue plants, two tomatoes, one cucumber, two eggs, one troll green and one vial of wine."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:208"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-208-4-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Hydra Tongue Salad}. The common hydra tongue is a pest plant with an surprisingly aromatic taste. ...",
+        "We'll add some other vegetables and spices for the delicate and distinctive taste. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two hydra tongue plants, two tomatoes, one cucumber, two eggs, one troll green and one vial of wine."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:208"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-215-5-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Roasted Dragon Wings}. Oh, don't give me that look! Of course you don't have to bring a whole dragon up here. ...",
+        "The 'dragon' part derives from the fiery afterburn of this meal, but the wings we use are much smaller, though similar in shape. Bring me the following ingredients and I'll show you how it's done. ...",
+        "One fresh dead bat, three jalapeño peppers, five brown breads, two eggs, one powder herb and five red mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:215"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-215-5-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Roasted Dragon Wings}. Oh, don't give me that look! Of course you don't have to bring a whole dragon up here. ...",
+        "The 'dragon' part derives from the fiery afterburn of this meal, but the wings we use are much smaller, though similar in shape. Bring me the following ingredients and I'll show you how it's done. ...",
+        "One fresh dead bat, three jalapeño peppers, five brown breads, two eggs, one powder herb and five red mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:215"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-222-6-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Tropical Fried Terrorbird}. You might have guessed it, we're not going to use a terrorbird. But! ...",
+        "The dish is quite fried and tropical. Bring me the following ingredients and we're going to prepare it: One fresh dead chicken, two lemons, two oranges, two mangos, one stone herb and two vials of coconut milk."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:222"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-222-6-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Tropical Fried Terrorbird}. You might have guessed it, we're not going to use a terrorbird. But! ...",
+        "The dish is quite fried and tropical. Bring me the following ingredients and we're going to prepare it: One fresh dead chicken, two lemons, two oranges, two mangos, one stone herb and two vials of coconut milk."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:222"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-228-7-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Banana Chocolate Shake}. After all those spicy dishes you should treat your guests with a sweet surprise. ...",
+        "Bring me the following ingredients and we'll make one hell of a drink: one bar of chocolate, one cream cake, two bananas, two vials of milk, one sling herb and one star herb."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:228"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-228-7-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Banana Chocolate Shake}. After all those spicy dishes you should treat your guests with a sweet surprise. ...",
+        "Bring me the following ingredients and we'll make one hell of a drink: one bar of chocolate, one cream cake, two bananas, two vials of milk, one sling herb and one star herb."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:228"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-234-8-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Veggie Casserole}. This one is going to be your masterpiece so far, I'm telling you. ...",
+        "It's also quite healthy! - Well, that's what I keep telling me when I eat the third serving, hehehe. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two carrots, two tomatoes, two corncobs, two cucumbers, one onion, one bulb of garlic, one piece of cheese, twenty white mushrooms and five brown mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:234"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-234-8-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Veggie Casserole}. This one is going to be your masterpiece so far, I'm telling you. ...",
+        "It's also quite healthy! - Well, that's what I keep telling me when I eat the third serving, hehehe. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two carrots, two tomatoes, two corncobs, two cucumbers, one onion, one bulb of garlic, one piece of cheese, twenty white mushrooms and five brown mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:234"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-241-9-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Filled Jalapeño Peppers}. It's a great snack and quite spicy, for those who like it hot. ...",
+        "Bring me the following ingredients and I'll show you how it's done: Ten jalapeño peppers, two pieces of cheese, one troll green, one shadow herb, one vial of mead and two eggs."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:241"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-241-9-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Filled Jalapeño Peppers}. It's a great snack and quite spicy, for those who like it hot. ...",
+        "Bring me the following ingredients and I'll show you how it's done: Ten jalapeño peppers, two pieces of cheese, one troll green, one shadow herb, one vial of mead and two eggs."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:241"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-247-10-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Blessed Steak}. <giggles> I'm sorry, I couldn't resist the pun with this one. ...",
+        "Don't worry, there's no temple trip awaiting you. Just bring me the following: one piece of ham, five plums, one onion, two beetroots, one pumpkin and two jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 18
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:247"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-247-10-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Blessed Steak}. <giggles> I'm sorry, I couldn't resist the pun with this one. ...",
+        "Don't worry, there's no temple trip awaiting you. Just bring me the following: one piece of ham, five plums, one onion, two beetroots, one pumpkin and two jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 18
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:247"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-253-11-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Northern Fishburger}. I hope you like fish, not everyone does. This one is a specialty I picked up in Svargrond. ...",
+        "Bring me the following ingredients and I'll show you how it's done: one northern pike, one rainbow trout, one green perch, five shrimps, two rolls and one fern."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:253"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-253-11-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The next dish we are going to prepare together is called {Northern Fishburger}. I hope you like fish, not everyone does. This one is a specialty I picked up in Svargrond. ...",
+        "Bring me the following ingredients and I'll show you how it's done: one northern pike, one rainbow trout, one green perch, five shrimps, two rolls and one fern."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:253"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-259-12-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The last dish we are going to prepare together is called {Carrot Cake}. Yes, it's a real cake, we need a tasty desert to complete our cooking course. ...",
+        "Bring me the following ingredients and I'll lead you through it: five carrots, one vial of milk, one lemon, ten ounces of flour, two eggs, ten cookies and two peanuts."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:259"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-259-12-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "The last dish we are going to prepare together is called {Carrot Cake}. Yes, it's a real cake, we need a tasty desert to complete our cooking course. ...",
+        "Bring me the following ingredients and I'll lead you through it: five carrots, one vial of milk, one lemon, ten ounces of flour, two eggs, ten cookies and two peanuts."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:259"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-265-13-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Yes, you heard that right! Even though I was laying sick on my divan for weeks, I have some new dishes for you. Ehem. Of course I couldn't have done it without my little helpers travelling around the world and discovering recipes. ...",
+        "So... <rubs hands together> ... each good menu needs an amazing starter to awaken and stimulate all the little taste buds on your tongue. We're going to cook a nice portion of {Coconut Shrimp Bake}! ...",
+        "This is an exotic rice dish with hints of mushrooms and shrimps, topped with sweet coconut goodness - brought to me by a beautiful druid lady a few days ago. My mouth starts watering already! ...",
+        "... because of the dish, I mean, of course. Ehem. Bring me the following ingredients and we'll get started: Five vials of coconut milk, five brown mushrooms, five red mushrooms, ten rice balls and ten shrimps."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 24
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:265"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-265-13-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Yes, you heard that right! Even though I was laying sick on my divan for weeks, I have some new dishes for you. Ehem. Of course I couldn't have done it without my little helpers travelling around the world and discovering recipes. ...",
+        "So... <rubs hands together> ... each good menu needs an amazing starter to awaken and stimulate all the little taste buds on your tongue. We're going to cook a nice portion of {Coconut Shrimp Bake}! ...",
+        "This is an exotic rice dish with hints of mushrooms and shrimps, topped with sweet coconut goodness - brought to me by a beautiful druid lady a few days ago. My mouth starts watering already! ...",
+        "... because of the dish, I mean, of course. Ehem. Bring me the following ingredients and we'll get started: Five vials of coconut milk, five brown mushrooms, five red mushrooms, ten rice balls and ten shrimps."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 24
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:265"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-273-14-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "After this wonderful and tasty starter we're all set for a special dish I learnt from a brave adventurer who almost starved when he got lost in the mountains between Ankrahmun and Port Hope, or so he told me. ...",
+        "Luckily, he was saved by nomads - can you imagine? - and they fed him a special local dish that's very cheap and easy to prepare, yet rich in vitamins and spending energy for hours. ...",
+        "Now don't be shocked, but - they do put sandcrawlers in there. When I tried to prepare that dish at first, I was repelled by its awful appearance, but since it smelled so good I did take a sip and was pleasantly surprised of the great taste. ...",
+        "According to the adventurer, this meal works well with any kind of vegetables or any kind of edible creepy-crawlers, depending on what the nomads get their hands on, but we'll stick to the original for now! ...",
+        "Bring me the following ingredients - if you dare - and I'll show you the secret of {Blackjack}: Five sandcrawler shells, two vials of water, twenty carrots, ten potatoes and three jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 26
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:273"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-273-14-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "After this wonderful and tasty starter we're all set for a special dish I learnt from a brave adventurer who almost starved when he got lost in the mountains between Ankrahmun and Port Hope, or so he told me. ...",
+        "Luckily, he was saved by nomads - can you imagine? - and they fed him a special local dish that's very cheap and easy to prepare, yet rich in vitamins and spending energy for hours. ...",
+        "Now don't be shocked, but - they do put sandcrawlers in there. When I tried to prepare that dish at first, I was repelled by its awful appearance, but since it smelled so good I did take a sip and was pleasantly surprised of the great taste. ...",
+        "According to the adventurer, this meal works well with any kind of vegetables or any kind of edible creepy-crawlers, depending on what the nomads get their hands on, but we'll stick to the original for now! ...",
+        "Bring me the following ingredients - if you dare - and I'll show you the secret of {Blackjack}: Five sandcrawler shells, two vials of water, twenty carrots, ten potatoes and three jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 26
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:273"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-282-15-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Weren't you surprised by the great taste of our main dish? In case you still have some space left in your tummy, we're in for a sweet and fun dessert - but beware unwanted side effects! ...",
+        "It was introduced to me by a fearless knight who invented this recipe rather by accident when a bottle of demonic blood broke in his backpack and spilled its contents over his bag of candy balls. ...",
+        "Curiously, he tried one and red steam came out of his ears - but it tasted so great that he instantly popped another one in his mouth, and then another, and another. ...",
+        "Each one seemed to cause a different effect and he was never really sure what the next one would do. Seems safer to be careful with them and not to eat them in dangerous situations! ...",
+        "In any case, bring me the following ingredients and we'll make some {Demonic Candy Balls}, if you like: Three candies, three candy canes, two bars of chocolate, fifteen gingerbread men and one concentrated demonic blood."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:282"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-282-15-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Weren't you surprised by the great taste of our main dish? In case you still have some space left in your tummy, we're in for a sweet and fun dessert - but beware unwanted side effects! ...",
+        "It was introduced to me by a fearless knight who invented this recipe rather by accident when a bottle of demonic blood broke in his backpack and spilled its contents over his bag of candy balls. ...",
+        "Curiously, he tried one and red steam came out of his ears - but it tasted so great that he instantly popped another one in his mouth, and then another, and another. ...",
+        "Each one seemed to cause a different effect and he was never really sure what the next one would do. Seems safer to be careful with them and not to eat them in dangerous situations! ...",
+        "In any case, bring me the following ingredients and we'll make some {Demonic Candy Balls}, if you like: Three candies, three candy canes, two bars of chocolate, fifteen gingerbread men and one concentrated demonic blood."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:282"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-291-16-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Did you dare eat all of your Demonic Candy Balls...? Hehehe! Well, I almost forgot one of the most essential parts for a perfect dinner. A drink! I have one for you, almost a designer drink you could say. ...",
+        "Its inventor seems to have done some scientific research in order to achieve his desired effect, which is - charging magical rings. You have to drink it while you're wearing one for a miraculous effect! ...",
+        "Bring me the following ingredients and we'll get started: Fourty eggs, twenty mangos, ten honeycombs, one bottle of bug milk and one blessed wooden stake. ...",
+        "Oh yes, I understand your worries about the eggs, but just make sure they're fresh and all should be fine for our {Sweet Mangonaise Elixir}!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 30
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:291"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-291-16-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "Did you dare eat all of your Demonic Candy Balls...? Hehehe! Well, I almost forgot one of the most essential parts for a perfect dinner. A drink! I have one for you, almost a designer drink you could say. ...",
+        "Its inventor seems to have done some scientific research in order to achieve his desired effect, which is - charging magical rings. You have to drink it while you're wearing one for a miraculous effect! ...",
+        "Bring me the following ingredients and we'll get started: Fourty eggs, twenty mangos, ten honeycombs, one bottle of bug milk and one blessed wooden stake. ...",
+        "Oh yes, I understand your worries about the eggs, but just make sure they're fresh and all should be fine for our {Sweet Mangonaise Elixir}!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 30
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:291"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-299-17-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "What a drink! Did I promise too much? I guess not, judging by your satisfied look! Well, if you are really that eager - there's more. ...",
+        "Another part of a meal or even a course of several meals that should not be underestimated is the sauce. ...",
+        "How about a delicious sweet and sour {Zaoan Sauce} to accompany your meal, exciting, fresh and pleasing to the palate. ...",
+        "We need the following ingredients to get cracking: a pinch of salt, two vials of coconut milk, a dragonfruit, a young lich worm and a taiyaki. ...",
+        "What? You think that lich worm will not go well with the dragonfruit? Worry not, for this is a vital ingredient to the 'sour' part of this excellent sweet and sour sauce!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 32
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:299"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-299-17-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "What a drink! Did I promise too much? I guess not, judging by your satisfied look! Well, if you are really that eager - there's more. ...",
+        "Another part of a meal or even a course of several meals that should not be underestimated is the sauce. ...",
+        "How about a delicious sweet and sour {Zaoan Sauce} to accompany your meal, exciting, fresh and pleasing to the palate. ...",
+        "We need the following ingredients to get cracking: a pinch of salt, two vials of coconut milk, a dragonfruit, a young lich worm and a taiyaki. ...",
+        "What? You think that lich worm will not go well with the dragonfruit? Worry not, for this is a vital ingredient to the 'sour' part of this excellent sweet and sour sauce!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 32
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:299"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-200-18-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:200"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-200-18-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:200"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-309-19-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "You can now cook any dish you want from this list: {Rotworm Stew}, {Hydra Tongue Salad}, {Roasted Dragon Wings}, {Tropical Fried Terrorbird}, {Banana Chocolate Shake}, {Veggie Casserole}, {Filled Jalapeno Peppers}, {Blessed Steak}, {Northern Fishburger}, {Carrot Cake}, {Coconut Shrimp Bake}, {Blackjack}, {Demonic Candy Balls}, {Sweet Mangonaise Elixir}, {Zaoan Sauce}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:309"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-309-19-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you.",
+        "You can now cook any dish you want from this list: {Rotworm Stew}, {Hydra Tongue Salad}, {Roasted Dragon Wings}, {Tropical Fried Terrorbird}, {Banana Chocolate Shake}, {Veggie Casserole}, {Filled Jalapeno Peppers}, {Blessed Steak}, {Northern Fishburger}, {Carrot Cake}, {Coconut Shrimp Bake}, {Blackjack}, {Demonic Candy Balls}, {Sweet Mangonaise Elixir}, {Zaoan Sauce}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:309"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-196-20-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:196"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-196-20-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [],
+      "reply": [
+        "You're interested in my recipes? Well. They are not for sale, but if you want to become my {apprentice}, I'll share my knowledge with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:196"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-201-21-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The first dish we are going to prepare together is called {Rotworm Stew}. Now, don't be scared off. Of course we won't eat those nasty and dirty earth-crawlers! ...",
+        "The name is just for the effect it has on people. <winks> Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two pieces of meat, two vials of beer, twenty potatoes, one onion, one bulb of garlic and five ounces of flour. Make sure that the ingredients are fresh and smell good."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:201"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-201-21-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The first dish we are going to prepare together is called {Rotworm Stew}. Now, don't be scared off. Of course we won't eat those nasty and dirty earth-crawlers! ...",
+        "The name is just for the effect it has on people. <winks> Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two pieces of meat, two vials of beer, twenty potatoes, one onion, one bulb of garlic and five ounces of flour. Make sure that the ingredients are fresh and smell good."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:201"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-208-22-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Hydra Tongue Salad}. The common hydra tongue is a pest plant with an surprisingly aromatic taste. ...",
+        "We'll add some other vegetables and spices for the delicate and distinctive taste. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two hydra tongue plants, two tomatoes, one cucumber, two eggs, one troll green and one vial of wine."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:208"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-208-22-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Hydra Tongue Salad}. The common hydra tongue is a pest plant with an surprisingly aromatic taste. ...",
+        "We'll add some other vegetables and spices for the delicate and distinctive taste. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two hydra tongue plants, two tomatoes, one cucumber, two eggs, one troll green and one vial of wine."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:208"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-215-23-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Roasted Dragon Wings}. Oh, don't give me that look! Of course you don't have to bring a whole dragon up here. ...",
+        "The 'dragon' part derives from the fiery afterburn of this meal, but the wings we use are much smaller, though similar in shape. Bring me the following ingredients and I'll show you how it's done. ...",
+        "One fresh dead bat, three jalapeño peppers, five brown breads, two eggs, one powder herb and five red mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:215"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-215-23-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Roasted Dragon Wings}. Oh, don't give me that look! Of course you don't have to bring a whole dragon up here. ...",
+        "The 'dragon' part derives from the fiery afterburn of this meal, but the wings we use are much smaller, though similar in shape. Bring me the following ingredients and I'll show you how it's done. ...",
+        "One fresh dead bat, three jalapeño peppers, five brown breads, two eggs, one powder herb and five red mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:215"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-222-24-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Tropical Fried Terrorbird}. You might have guessed it, we're not going to use a terrorbird. But! ...",
+        "The dish is quite fried and tropical. Bring me the following ingredients and we're going to prepare it: One fresh dead chicken, two lemons, two oranges, two mangos, one stone herb and two vials of coconut milk."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:222"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-222-24-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Tropical Fried Terrorbird}. You might have guessed it, we're not going to use a terrorbird. But! ...",
+        "The dish is quite fried and tropical. Bring me the following ingredients and we're going to prepare it: One fresh dead chicken, two lemons, two oranges, two mangos, one stone herb and two vials of coconut milk."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:222"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-228-25-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Banana Chocolate Shake}. After all those spicy dishes you should treat your guests with a sweet surprise. ...",
+        "Bring me the following ingredients and we'll make one hell of a drink: one bar of chocolate, one cream cake, two bananas, two vials of milk, one sling herb and one star herb."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:228"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-228-25-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Banana Chocolate Shake}. After all those spicy dishes you should treat your guests with a sweet surprise. ...",
+        "Bring me the following ingredients and we'll make one hell of a drink: one bar of chocolate, one cream cake, two bananas, two vials of milk, one sling herb and one star herb."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:228"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-234-26-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Veggie Casserole}. This one is going to be your masterpiece so far, I'm telling you. ...",
+        "It's also quite healthy! - Well, that's what I keep telling me when I eat the third serving, hehehe. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two carrots, two tomatoes, two corncobs, two cucumbers, one onion, one bulb of garlic, one piece of cheese, twenty white mushrooms and five brown mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:234"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-234-26-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Veggie Casserole}. This one is going to be your masterpiece so far, I'm telling you. ...",
+        "It's also quite healthy! - Well, that's what I keep telling me when I eat the third serving, hehehe. Bring me the following ingredients and I'll show you how it's done. ...",
+        "Two carrots, two tomatoes, two corncobs, two cucumbers, one onion, one bulb of garlic, one piece of cheese, twenty white mushrooms and five brown mushrooms."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:234"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-241-27-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Filled Jalapeño Peppers}. It's a great snack and quite spicy, for those who like it hot. ...",
+        "Bring me the following ingredients and I'll show you how it's done: Ten jalapeño peppers, two pieces of cheese, one troll green, one shadow herb, one vial of mead and two eggs."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:241"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-241-27-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Filled Jalapeño Peppers}. It's a great snack and quite spicy, for those who like it hot. ...",
+        "Bring me the following ingredients and I'll show you how it's done: Ten jalapeño peppers, two pieces of cheese, one troll green, one shadow herb, one vial of mead and two eggs."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:241"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-247-28-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Blessed Steak}. <giggles> I'm sorry, I couldn't resist the pun with this one. ...",
+        "Don't worry, there's no temple trip awaiting you. Just bring me the following: one piece of ham, five plums, one onion, two beetroots, one pumpkin and two jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 18
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:247"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-247-28-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Blessed Steak}. <giggles> I'm sorry, I couldn't resist the pun with this one. ...",
+        "Don't worry, there's no temple trip awaiting you. Just bring me the following: one piece of ham, five plums, one onion, two beetroots, one pumpkin and two jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 18
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:247"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-253-29-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Northern Fishburger}. I hope you like fish, not everyone does. This one is a specialty I picked up in Svargrond. ...",
+        "Bring me the following ingredients and I'll show you how it's done: one northern pike, one rainbow trout, one green perch, five shrimps, two rolls and one fern."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:253"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-253-29-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "The next dish we are going to prepare together is called {Northern Fishburger}. I hope you like fish, not everyone does. This one is a specialty I picked up in Svargrond. ...",
+        "Bring me the following ingredients and I'll show you how it's done: one northern pike, one rainbow trout, one green perch, five shrimps, two rolls and one fern."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:253"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-259-30-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "The last dish we are going to prepare together is called {Carrot Cake}. Yes, it's a real cake, we need a tasty desert to complete our cooking course. ...",
+        "Bring me the following ingredients and I'll lead you through it: five carrots, one vial of milk, one lemon, ten ounces of flour, two eggs, ten cookies and two peanuts."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:259"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-259-30-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "The last dish we are going to prepare together is called {Carrot Cake}. Yes, it's a real cake, we need a tasty desert to complete our cooking course. ...",
+        "Bring me the following ingredients and I'll lead you through it: five carrots, one vial of milk, one lemon, ten ounces of flour, two eggs, ten cookies and two peanuts."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:259"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-265-31-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "Yes, you heard that right! Even though I was laying sick on my divan for weeks, I have some new dishes for you. Ehem. Of course I couldn't have done it without my little helpers travelling around the world and discovering recipes. ...",
+        "So... <rubs hands together> ... each good menu needs an amazing starter to awaken and stimulate all the little taste buds on your tongue. We're going to cook a nice portion of {Coconut Shrimp Bake}! ...",
+        "This is an exotic rice dish with hints of mushrooms and shrimps, topped with sweet coconut goodness - brought to me by a beautiful druid lady a few days ago. My mouth starts watering already! ...",
+        "... because of the dish, I mean, of course. Ehem. Bring me the following ingredients and we'll get started: Five vials of coconut milk, five brown mushrooms, five red mushrooms, ten rice balls and ten shrimps."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 24
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:265"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-265-31-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "Yes, you heard that right! Even though I was laying sick on my divan for weeks, I have some new dishes for you. Ehem. Of course I couldn't have done it without my little helpers travelling around the world and discovering recipes. ...",
+        "So... <rubs hands together> ... each good menu needs an amazing starter to awaken and stimulate all the little taste buds on your tongue. We're going to cook a nice portion of {Coconut Shrimp Bake}! ...",
+        "This is an exotic rice dish with hints of mushrooms and shrimps, topped with sweet coconut goodness - brought to me by a beautiful druid lady a few days ago. My mouth starts watering already! ...",
+        "... because of the dish, I mean, of course. Ehem. Bring me the following ingredients and we'll get started: Five vials of coconut milk, five brown mushrooms, five red mushrooms, ten rice balls and ten shrimps."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 24
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:265"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-273-32-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "After this wonderful and tasty starter we're all set for a special dish I learnt from a brave adventurer who almost starved when he got lost in the mountains between Ankrahmun and Port Hope, or so he told me. ...",
+        "Luckily, he was saved by nomads - can you imagine? - and they fed him a special local dish that's very cheap and easy to prepare, yet rich in vitamins and spending energy for hours. ...",
+        "Now don't be shocked, but - they do put sandcrawlers in there. When I tried to prepare that dish at first, I was repelled by its awful appearance, but since it smelled so good I did take a sip and was pleasantly surprised of the great taste. ...",
+        "According to the adventurer, this meal works well with any kind of vegetables or any kind of edible creepy-crawlers, depending on what the nomads get their hands on, but we'll stick to the original for now! ...",
+        "Bring me the following ingredients - if you dare - and I'll show you the secret of {Blackjack}: Five sandcrawler shells, two vials of water, twenty carrots, ten potatoes and three jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 26
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:273"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-273-32-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "After this wonderful and tasty starter we're all set for a special dish I learnt from a brave adventurer who almost starved when he got lost in the mountains between Ankrahmun and Port Hope, or so he told me. ...",
+        "Luckily, he was saved by nomads - can you imagine? - and they fed him a special local dish that's very cheap and easy to prepare, yet rich in vitamins and spending energy for hours. ...",
+        "Now don't be shocked, but - they do put sandcrawlers in there. When I tried to prepare that dish at first, I was repelled by its awful appearance, but since it smelled so good I did take a sip and was pleasantly surprised of the great taste. ...",
+        "According to the adventurer, this meal works well with any kind of vegetables or any kind of edible creepy-crawlers, depending on what the nomads get their hands on, but we'll stick to the original for now! ...",
+        "Bring me the following ingredients - if you dare - and I'll show you the secret of {Blackjack}: Five sandcrawler shells, two vials of water, twenty carrots, ten potatoes and three jalapeño peppers."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 26
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:273"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-282-33-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Weren't you surprised by the great taste of our main dish? In case you still have some space left in your tummy, we're in for a sweet and fun dessert - but beware unwanted side effects! ...",
+        "It was introduced to me by a fearless knight who invented this recipe rather by accident when a bottle of demonic blood broke in his backpack and spilled its contents over his bag of candy balls. ...",
+        "Curiously, he tried one and red steam came out of his ears - but it tasted so great that he instantly popped another one in his mouth, and then another, and another. ...",
+        "Each one seemed to cause a different effect and he was never really sure what the next one would do. Seems safer to be careful with them and not to eat them in dangerous situations! ...",
+        "In any case, bring me the following ingredients and we'll make some {Demonic Candy Balls}, if you like: Three candies, three candy canes, two bars of chocolate, fifteen gingerbread men and one concentrated demonic blood."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:282"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-282-33-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Weren't you surprised by the great taste of our main dish? In case you still have some space left in your tummy, we're in for a sweet and fun dessert - but beware unwanted side effects! ...",
+        "It was introduced to me by a fearless knight who invented this recipe rather by accident when a bottle of demonic blood broke in his backpack and spilled its contents over his bag of candy balls. ...",
+        "Curiously, he tried one and red steam came out of his ears - but it tasted so great that he instantly popped another one in his mouth, and then another, and another. ...",
+        "Each one seemed to cause a different effect and he was never really sure what the next one would do. Seems safer to be careful with them and not to eat them in dangerous situations! ...",
+        "In any case, bring me the following ingredients and we'll make some {Demonic Candy Balls}, if you like: Three candies, three candy canes, two bars of chocolate, fifteen gingerbread men and one concentrated demonic blood."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 28
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:282"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-291-34-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Did you dare eat all of your Demonic Candy Balls...? Hehehe! Well, I almost forgot one of the most essential parts for a perfect dinner. A drink! I have one for you, almost a designer drink you could say. ...",
+        "Its inventor seems to have done some scientific research in order to achieve his desired effect, which is - charging magical rings. You have to drink it while you're wearing one for a miraculous effect! ...",
+        "Bring me the following ingredients and we'll get started: Fourty eggs, twenty mangos, ten honeycombs, one bottle of bug milk and one blessed wooden stake. ...",
+        "Oh yes, I understand your worries about the eggs, but just make sure they're fresh and all should be fine for our {Sweet Mangonaise Elixir}!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 30
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:291"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-291-34-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Did you dare eat all of your Demonic Candy Balls...? Hehehe! Well, I almost forgot one of the most essential parts for a perfect dinner. A drink! I have one for you, almost a designer drink you could say. ...",
+        "Its inventor seems to have done some scientific research in order to achieve his desired effect, which is - charging magical rings. You have to drink it while you're wearing one for a miraculous effect! ...",
+        "Bring me the following ingredients and we'll get started: Fourty eggs, twenty mangos, ten honeycombs, one bottle of bug milk and one blessed wooden stake. ...",
+        "Oh yes, I understand your worries about the eggs, but just make sure they're fresh and all should be fine for our {Sweet Mangonaise Elixir}!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 30
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:291"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-299-35-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "What a drink! Did I promise too much? I guess not, judging by your satisfied look! Well, if you are really that eager - there's more. ...",
+        "Another part of a meal or even a course of several meals that should not be underestimated is the sauce. ...",
+        "How about a delicious sweet and sour {Zaoan Sauce} to accompany your meal, exciting, fresh and pleasing to the palate. ...",
+        "We need the following ingredients to get cracking: a pinch of salt, two vials of coconut milk, a dragonfruit, a young lich worm and a taiyaki. ...",
+        "What? You think that lich worm will not go well with the dragonfruit? Worry not, for this is a vital ingredient to the 'sour' part of this excellent sweet and sour sauce!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 32
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:299"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-299-35-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "What a drink! Did I promise too much? I guess not, judging by your satisfied look! Well, if you are really that eager - there's more. ...",
+        "Another part of a meal or even a course of several meals that should not be underestimated is the sauce. ...",
+        "How about a delicious sweet and sour {Zaoan Sauce} to accompany your meal, exciting, fresh and pleasing to the palate. ...",
+        "We need the following ingredients to get cracking: a pinch of salt, two vials of coconut milk, a dragonfruit, a young lich worm and a taiyaki. ...",
+        "What? You think that lich worm will not go well with the dragonfruit? Worry not, for this is a vital ingredient to the 'sour' part of this excellent sweet and sour sauce!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 32
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:299"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-200-36-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:200"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-200-36-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:200"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-309-37-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You can now cook any dish you want from this list: {Rotworm Stew}, {Hydra Tongue Salad}, {Roasted Dragon Wings}, {Tropical Fried Terrorbird}, {Banana Chocolate Shake}, {Veggie Casserole}, {Filled Jalapeno Peppers}, {Blessed Steak}, {Northern Fishburger}, {Carrot Cake}, {Coconut Shrimp Bake}, {Blackjack}, {Demonic Candy Balls}, {Sweet Mangonaise Elixir}, {Zaoan Sauce}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:309"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-309-37-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You can now cook any dish you want from this list: {Rotworm Stew}, {Hydra Tongue Salad}, {Roasted Dragon Wings}, {Tropical Fried Terrorbird}, {Banana Chocolate Shake}, {Veggie Casserole}, {Filled Jalapeno Peppers}, {Blessed Steak}, {Northern Fishburger}, {Carrot Cake}, {Coconut Shrimp Bake}, {Blackjack}, {Demonic Candy Balls}, {Sweet Mangonaise Elixir}, {Zaoan Sauce}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:309"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-195-38-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "recipe"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-195-38-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "menu"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-317-39-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "apprentice"
+      ],
+      "guards": [],
+      "reply": [
+        "Hmm. You look quite promising. Can't hurt to give it a try, I guess. Would you like to become my apprentice, |PLAYERNAME|?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:317"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/menu-316-40-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "apprentice"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:316"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/apprentice-accept",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Fine, young human. Ask me for a {recipe} anytime and I'll teach you what I know."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_log",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:322"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-706-1-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "rotworm stew"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to cook Rotworm Stew with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:706",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:708"
+      ],
+      "topics": [
+        4
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-706-1-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "rotworm stew"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to cook Rotworm Stew with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:706",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:708"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-705-2-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "rotworm stew"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:705"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-712-3-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "hydra tongue salad"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Hydra Tongue Salad with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:712",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:714"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-712-3-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "hydra tongue salad"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Hydra Tongue Salad with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:712",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:714"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-711-4-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "hydra tongue salad"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:711"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-718-5-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "roasted dragon wings"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Roasted Dragon Wings with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:718",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:720"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-718-5-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "roasted dragon wings"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Roasted Dragon Wings with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:718",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:720"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-717-6-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "roasted dragon wings"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:717"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-724-7-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "tropical fried terrorbird"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Tropical Fried Terrorbird with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:724",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:726"
+      ],
+      "topics": [
+        10
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-724-7-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "tropical fried terrorbird"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Tropical Fried Terrorbird with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:724",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:726"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-723-8-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "tropical fried terrorbird"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:723"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-730-9-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "banana chocolate shake"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to make a Banana Chocolate Shake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:730",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:732"
+      ],
+      "topics": [
+        12
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-730-9-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "banana chocolate shake"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to make a Banana Chocolate Shake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:730",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:732"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-729-10-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "banana chocolate shake"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:729"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-736-11-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "veggie casserole"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to cook a Veggie Casserole with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 15
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:736",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:738"
+      ],
+      "topics": [
+        14
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-736-11-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "veggie casserole"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to cook a Veggie Casserole with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 15
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:736",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:738"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-735-12-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "veggie casserole"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:735"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "filled"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "topics": [
+        16
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "filled"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-3-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "jalapeño"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "topics": [
+        16
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-4-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "jalapeño"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-5-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "peppers"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "topics": [
+        16
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-742-13-6-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "peppers"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare Filled Jalapeño Peppers with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:742",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:744"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-741-14-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "filled"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:741"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-741-14-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "jalapeño"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:741"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-741-14-3-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "peppers"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:741"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-748-15-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blessed steak"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Blessed Steak with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 19
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:748",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:750"
+      ],
+      "topics": [
+        18
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-748-15-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blessed steak"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Blessed Steak with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 19
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:748",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:750"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-747-16-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blessed steak"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:747"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-754-17-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "northern fishburger"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to make a Northern Fishburger with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 21
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:754",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:756"
+      ],
+      "topics": [
+        20
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-754-17-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "northern fishburger"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to make a Northern Fishburger with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 21
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:754",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:756"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-753-18-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "northern fishburger"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:753"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-760-19-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "carrot cake"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to bake a Carrot Cake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 23
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:760",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:762"
+      ],
+      "topics": [
+        22
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-760-19-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "carrot cake"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to bake a Carrot Cake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 23
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:760",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:762"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-759-20-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "carrot cake"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:759"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-766-21-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "coconut shrimp bake"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Coconut Shrimp Bake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 11
+        },
+        {
+          "kind": "set_topic",
+          "value": 25
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:766",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:768"
+      ],
+      "topics": [
+        24
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-766-21-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "coconut shrimp bake"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to prepare a Coconut Shrimp Bake with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 11
+        },
+        {
+          "kind": "set_topic",
+          "value": 25
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:766",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:768"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-765-22-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "coconut shrimp bake"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:765"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-772-23-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blackjack"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to cook a Blackjack with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 12
+        },
+        {
+          "kind": "set_topic",
+          "value": 27
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:772",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:774"
+      ],
+      "topics": [
+        26
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-772-23-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blackjack"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to cook a Blackjack with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 12
+        },
+        {
+          "kind": "set_topic",
+          "value": 27
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:772",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:774"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-771-24-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "blackjack"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:771"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-778-25-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "demonic candy ball"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to make Demonic Candy Balls with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 13
+        },
+        {
+          "kind": "set_topic",
+          "value": 29
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:778",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:780"
+      ],
+      "topics": [
+        28
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-778-25-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "demonic candy ball"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to make Demonic Candy Balls with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 13
+        },
+        {
+          "kind": "set_topic",
+          "value": 29
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:778",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:780"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-777-26-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "demonic candy ball"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:777"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-784-27-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "sweet mangonaise elixir"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to mix Sweet Mangonaise Elixir with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 14
+        },
+        {
+          "kind": "set_topic",
+          "value": 31
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:784",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:786"
+      ],
+      "topics": [
+        30
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-784-27-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "sweet mangonaise elixir"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to mix Sweet Mangonaise Elixir with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 14
+        },
+        {
+          "kind": "set_topic",
+          "value": 31
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:784",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:786"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-783-28-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "sweet mangonaise elixir"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:783"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-790-29-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "zaoan sauce"
+      ],
+      "guards": [],
+      "reply": [
+        "Did you gather all necessary ingredients to cook the Zaoan Sauce with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 15
+        },
+        {
+          "kind": "set_topic",
+          "value": 33
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:790",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:792"
+      ],
+      "topics": [
+        32
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-790-29-2-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "zaoan sauce"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/quest_start",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you gather all necessary ingredients to cook the Zaoan Sauce with me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/current_dish",
+          "value": 15
+        },
+        {
+          "kind": "set_topic",
+          "value": 33
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:790",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:792"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-789-30-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "zaoan sauce"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:789"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/dish-choice-795-31-1-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "No?, come back when you are ready to cook."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:795"
+      ],
+      "exclude_keywords": [
+        "cook",
+        "recipe",
+        "menu",
+        "apprentice",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/greet-august",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "calendar_month",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Greetings, |PLAYERNAME|. What are you doing out here?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:171"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hot_cuisine_quest/jean_pierre/greet-outside-august",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "npc": "oteryn:npc.jean_pierre",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 1000
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jean_pierre.lua:174"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/jean_pierre.lua",
+      "sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

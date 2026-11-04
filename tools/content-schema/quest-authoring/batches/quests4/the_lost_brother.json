@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "quest_directory": "the_lost_brother",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/the-lost-brother-remains",
+      "quest": "oteryn:quest.adventurers_guild",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32959,
+          "y": 32674,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:18"
+      ],
+      "success_message": "You stumble over some old bones. Something is carved into the stone wall here: 'Tarun, my brother, you were right. She's evil.'"
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "the_lost_brother",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "tarun",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:1-164",
+        "source_blob_sha256": "8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde",
+        "full_source_lua": "local internalNpcName = \"Tarun\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 146,\n\tlookHead = 0,\n\tlookBody = 67,\n\tlookLegs = 0,\n\tlookFeet = 67,\n\tlookAddons = 2,\n\tlookMount = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tif not player then\n\t\treturn false\n\tend\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal theLostBrotherStorage = player:getStorageValue(Storage.Quest.U10_80.TheLostBrotherQuest)\n\tif MsgContains(message, \"mission\") then\n\t\tif theLostBrotherStorage < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"My brother is missing. I fear, he went to this evil palace north of here. A place of great beauty, certainly filled with riches and luxury. But in truth it is a threshold to hell and demonesses are after his blood. ...\",\n\t\t\t\t\"He is my brother, and I am deeply ashamed to admit but I don't dare to go there. Perhaps your heart is more courageous than mine. Would you go to see this place and search for my brother?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif theLostBrotherStorage == 1 then\n\t\t\tnpcHandler:say(\"I hope you will find my brother.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif theLostBrotherStorage == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"So, he is dead as I feared. I warned him not to go with this woman, but he gave in to temptation. My heart darkens and moans. But you have my sincere thanks. ...\",\n\t\t\t\t\"Without your help I would have stayed in the dark about his fate. Please, take this as a little recompense.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addItem(3039, 1)\n\t\t\tplayer:addExperience(3000, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U10_80.TheLostBrotherQuest, 3)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif npcHandler:getTopic(playerId) == 1 then\n\t\tif MsgContains(message, \"yes\") then\n\t\t\tnpcHandler:say(\"I thank you! This is more than I could hope!\", npc, creature)\n\t\t\tif theLostBrotherStorage < 1 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U9_80.AdventurersGuild.QuestLine, 1)\n\t\t\tend\n\t\t\tplayer:setStorageValue(Storage.Quest.U10_80.TheLostBrotherQuest, 1)\n\t\telseif MsgContains(message, \"no\") then\n\t\t\tnpcHandler:say(\"As you wish.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\n\treturn true\nend\n\nlocal function onTradeRequest(npc, creature)\n\tlocal player = Player(creature)\n\tif not player then\n\t\treturn false\n\tend\n\tlocal playerId = player:getId()\n\n\tif player:getStorageValue(Storage.Quest.U10_80.TheLostBrotherQuest) ~= 3 then\n\t\treturn false\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings!\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Farewell.\")\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Of course, just have a look.\")\nnpcHandler:setCallback(CALLBACK_ON_TRADE_REQUEST, onTradeRequest)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Farewell.\")\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"colourful feather\", clientId = 11514, sell = 110 },\n\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n\t{ itemName = \"empty potion flask\", clientId = 284, sell = 5 },\n\t{ itemName = \"empty potion flask\", clientId = 285, sell = 5 },\n\t{ itemName = \"golden lotus brooch\", clientId = 21974, sell = 270 },\n\t{ itemName = \"great health potion\", clientId = 239, buy = 225 },\n\t{ itemid = 238, clientId = 238, buy = 158 },\n\t{ itemName = \"great spirit potion\", clientId = 7642, buy = 254 },\n\t{ itemName = \"health potion\", clientId = 266, buy = 50 },\n\t{ itemName = \"hellspawn tail\", clientId = 10304, sell = 475 },\n\t{ itemName = \"mammoth tusk\", clientId = 10321, sell = 100 },\n\t{ itemName = \"mana potion\", clientId = 268, buy = 56 },\n\t{ itemName = \"orc tusk\", clientId = 7786, sell = 700 },\n\t{ itemName = \"peacock feather fan\", clientId = 21975, sell = 350 },\n\t{ itemName = \"sabretooth\", clientId = 10311, sell = 400 },\n\t{ itemName = \"spider silk\", clientId = 5879, sell = 100 },\n\t{ itemName = \"strong health potion\", clientId = 236, buy = 115 },\n\t{ itemName = \"strong mana potion\", clientId = 237, buy = 108 },\n\t{ itemName = \"supreme health potion\", clientId = 23375, buy = 650 },\n\t{ itemName = \"tusk\", clientId = 3044, sell = 100 },\n\t{ itemName = \"ultimate health potion\", clientId = 7643, buy = 379 },\n\t{ itemName = \"ultimate mana potion\", clientId = 23373, buy = 488 },\n\t{ itemName = \"ultimate spirit potion\", clientId = 23374, buy = 488 },\n\t{ itemName = \"vial\", clientId = 2874, sell = 5 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "runtime_admission": false,
+        "scope": "Complete source context retained; only the named quest branches are assigned to this batch."
+      }
+    ],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Tarun: prośba",
+      "patterns": "P09",
+      "trigger": "mission",
+      "condition": "LostBrother45183<1",
+      "effect": "topic1;pełny dwuczęściowy dialog",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tarun: przyjęcie",
+      "patterns": "P09",
+      "trigger": "yes",
+      "condition": "topic1;LostBrother<1 ustawia takżeAdventurersGuildQuestLine",
+      "effect": "LostBrother=1;AdventurersGuildQuestLine=1 w tej gałęzi;topic0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:86"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Znalezienie szczątków",
+      "patterns": "P03",
+      "trigger": "StepIn32959,32674,4",
+      "condition": "LostBrother=1",
+      "effect": "LostBrother=2",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Prezentacja szczątków",
+      "patterns": "P03",
+      "trigger": "Ten samStepIn",
+      "condition": "LostBrother=1",
+      "effect": "Tekst wiadomości wyrytej przez brata;MAGIC_GREEN",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:10"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tarun: nagroda",
+      "patterns": "P11",
+      "trigger": "mission",
+      "condition": "LostBrother=2",
+      "effect": "3039×1+3000XP;LostBrother=3;topic0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:76"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tarun: handel",
+      "patterns": "P13",
+      "trigger": "Trade request",
+      "condition": "LostBrother==3",
+      "effect": "Zezwolenie trade; brak tej wartości odmawia",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:102"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tarun: odmowa/oczekiwanie",
+      "patterns": "P09",
+      "trigger": "mission/no",
+      "condition": "LostBrother1 lubtopic1",
+      "effect": "Tylko odpowiedni tekst;no nie przyznaje nagrody",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:73"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

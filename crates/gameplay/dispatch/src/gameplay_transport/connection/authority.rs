@@ -25,6 +25,13 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Native movement effects committed by special-tile entry after `after`.
+    fn observe_movement_effects(
+        &self,
+        _after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        Vec::new()
+    }
     /// Select the complete native owner for a committed activity successor.
     /// Transport fixtures and the existing House custody path keep their owner.
     fn resolve_native_scope(
@@ -490,6 +497,17 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// I10a: a carried fluid container used on a map source or ground tile.
+    fn use_fluid_on_map(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// A parked native item-use successor must reconcile before ingress can
     /// terminalize USE. `true` closes the connection without acknowledging it.
     fn item_use_pending(
@@ -554,6 +572,7 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _intent: UseIntent,
         _source: Option<ItemKey>,
+        _item_target: Option<ItemKey>,
         _visible: bool,
     ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
         async { Ok(None) }

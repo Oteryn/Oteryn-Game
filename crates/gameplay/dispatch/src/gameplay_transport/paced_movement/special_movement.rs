@@ -98,12 +98,15 @@ fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     })
 }
 
-struct TileEntries {
-    protection_zone: bool,
-    entries: Vec<(u64, EntryFacts)>,
+pub(super) struct TileEntries {
+    pub(super) protection_zone: bool,
+    pub(super) entries: Vec<(u64, EntryFacts)>,
 }
 
-fn tile_entries(map: &BundleMap, position: MovementLocalPosition) -> Option<TileEntries> {
+pub(super) fn tile_entries(
+    map: &BundleMap,
+    position: MovementLocalPosition,
+) -> Option<TileEntries> {
     let pos = tile_position(position)?;
     let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
     let mut ordinal = 0_u8;
@@ -126,7 +129,7 @@ fn tile_entries(map: &BundleMap, position: MovementLocalPosition) -> Option<Tile
     })
 }
 
-fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };
@@ -193,6 +196,73 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         .await
         .ok()
     }
+
+    pub(in crate::gameplay_transport) async fn add_snowbunny_progress(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        session: GameSessionId,
+        event_id: [u8; 16],
+    ) -> bool {
+        use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
+        use crate::foundation::{CommandId, CommandRef};
+        let pin = {
+            let runtime = self.runtime.lock().await;
+            runtime.content_pin().server_artifact_digest()
+        };
+        let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
+            return false;
+        };
+        let Ok(command_id) = CommandId::new(self.owner_now().get().max(1)) else {
+            return false;
+        };
+        let command = CommandRef::new(session, command_id);
+        let character_id = fence.character_id;
+        let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            return false;
+        };
+        let mut context = self;
+        pass.run_with_context(&mut context, move |holder, deadline, owner| {
+            Box::pin(async move {
+                let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                item_tx::assert_spell_item_authority_in_transaction(
+                    &mut tx,
+                    permit,
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    &fence.item_fence(),
+                    command,
+                    pin,
+                )
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+                // The authority read and Snowbunny +1 share this transaction and its only
+                // commit. Crystal donor: data/scripts/movements/snow.lua:13-20
+                // (commit 201189f871d23597b82caf88fd611454a2ddefb8).
+                crate::durability::account_achievement::commit_snowbunny_progress(
+                    tx,
+                    character_id,
+                    &event_id,
+                    deadline,
+                )
+                .await?;
+                Ok(())
+            })
+        })
+        .await
+        .is_ok()
+    }
+}
+
+pub(in crate::gameplay_transport) fn snow_at(
+    map: &BundleMap,
+    position: MovementLocalPosition,
+) -> bool {
+    tile_entries(map, position).is_some_and(|tile| {
+        tile.entries
+            .iter()
+            .any(|(_, entry)| snow_transform(entry.appearance_id, true, false).is_some())
+    })
 }
 
 fn swimming_definition() -> Option<ConditionDefinition> {
@@ -320,6 +390,10 @@ impl ChannelSpellStates {
             next.conditions.remove_type(ConditionType::Outfit);
         }
         if to_swimming {
+            // Crystal data/scripts/movements/swimming.lua:24 emits CONST_ME_WATERSPLASH (53).
+            if let Some(position) = tile_position(destination) {
+                changed |= map.facts.emit_movement_effect(position, 53);
+            }
             // Crystal removes harmful conditions before installing the swimming outfit.
             for condition in [
                 ConditionType::DamageOverTime(DotElement::Poison),
@@ -473,6 +547,10 @@ impl ChannelSpellStates {
                     continue;
                 }
                 changed = true;
+                // Crystal data/scripts/movements/trap.lua:36 emits CONST_ME_HITAREA (11).
+                if let Some(position) = tile_position(destination) {
+                    changed |= map.facts.emit_movement_effect(position, 11);
+                }
                 let occurrence = Sha256::new()
                     .chain_update(actor.placement_identity())
                     .chain_update(session.as_bytes())
@@ -895,6 +973,17 @@ mod tests {
             before != after || before == 2397
         );
         assert_eq!(current(), Some(after));
+        if trap(before).is_some_and(|rule| !rule.player_immune) && !protection_zone {
+            assert_eq!(
+                map.facts
+                    .movement_effects_since(0)
+                    .iter()
+                    .map(|(_, _, effect)| *effect)
+                    .collect::<Vec<_>>(),
+                vec![11],
+                "Crystal trap.lua:36 effect reaches the movement occurrence stream"
+            );
+        }
         if before == 26077 {
             assert!(map.facts.house_tile(pos), "bath tubs are house furniture");
             let state = states.get(&runtime, actor, session).ok_or("state")?;

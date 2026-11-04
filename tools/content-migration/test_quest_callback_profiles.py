@@ -27,6 +27,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
+        (self.root / 'tools').symlink_to(ROOT / 'tools', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())
@@ -68,6 +69,29 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(row['production_binding']['target']['key'], key)
             self.assertEqual(row['semantics']['physical']['value']['pickupable'],
                              {'state': 'KNOWN', 'value': True})
+
+    def test_demon_helmet_chest_reuses_canonical_equipment_without_new_owner(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        key = 'oteryn:item.tibia.i3387'
+        self.assertTrue(key in rows, 'Demon Helmet ready chest must qualify its existing Item identity')
+        canonical = next(row['definition']
+                         for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
+                         for row in json.loads(path.read_bytes())['records']
+                         if row['definition']['identity']['key'] == key)
+        self.assertEqual(rows[key]['semantics'], canonical['semantics'])
+        self.assertEqual(rows[key]['semantics']['protection']['value']['armor'],
+                         {'state': 'KNOWN', 'value': 10})
+        self.assertEqual(rows[key]['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 2950})
+        pattern = rows[key]['semantics']['equipment']['value']['patterns']['value'][0]
+        self.assertEqual(pattern['primary_slot'], {'state': 'KNOWN', 'value': 'HEAD'})
+        self.assertEqual(rows[key]['production_binding']['target'], canonical['identity'])
+        self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows[key]['admission'], {'materializable': True,
+                         'stack_class': 'NonStackable',
+                         'legal_destinations': ['CharacterInventory', 'Ground']})
 
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback

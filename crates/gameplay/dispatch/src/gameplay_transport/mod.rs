@@ -43,6 +43,7 @@ mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
 mod composed_test_owner;
+mod condition_persistence;
 mod condition_snapshots;
 mod connection;
 mod consume_transform_use;
@@ -66,6 +67,7 @@ mod equipment_reflection;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
+mod furniture_catalog;
 pub mod gameplay_drain;
 mod gameplay_idle_presence;
 mod grizzly_boss;

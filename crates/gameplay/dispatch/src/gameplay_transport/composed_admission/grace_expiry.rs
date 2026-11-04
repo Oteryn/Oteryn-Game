@@ -187,6 +187,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            if !self.save_conditions_at_actor_end(actor, session).await {
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
             // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends; a deferred
             // drain sends nothing, and the lifecycle retries the expiry behind its backoff.
             let kills = match self.seal_kill_rewards(session).await {

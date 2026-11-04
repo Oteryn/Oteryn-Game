@@ -250,7 +250,7 @@ def verify() -> None:
             "Protect main required-status mismatch: "
             f"expected {expected_contexts!r}, got {actual_contexts!r}"
         )
-    if expected_contexts != [POLICY["required_status_check"]]:
+    if expected_contexts != POLICY["required_status_check"]:
         raise ApiError("repository policy required_status_check disagrees with branch ruleset")
 
     expected_pr = pull_request_parameters(POLICY["ruleset"])

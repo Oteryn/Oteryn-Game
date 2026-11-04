@@ -5,8 +5,10 @@ authorised; this file only says how the flow behaves.
 
 ## How the gate works now
 
-- `game-gate` (from `.github/workflows/merge-gate.yml`) is the only required
-  check. It is an aggregator that turns red within seconds when any selected
+- `game-gate` (from `.github/workflows/merge-gate.yml`) and `heavy-gate` are required
+  checks; `heavy-gate` enforces the PostgreSQL harness on non-draft,
+  non-Dependabot PRs labelled `heavy-tests` and passes for other PRs.
+  `game-gate` is an aggregator that turns red within seconds when any selected
   sub-job fails, so the cause is always in the failing leaf job: open that,
   not `game-gate` or `Merge gate / validate`.
 - There is no merge queue (owner decision, since 2026-10-23). `merge-group-gate.yml`

@@ -26,6 +26,41 @@ fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
 }
 
 #[test]
+fn m08_scythe_harvests_wheat_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3453", 3653, 3651, vec![3652, 3653])
+}
+
+#[test]
+fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i9596", 3653, 3651, vec![3652, 3653])
+}
+
+#[test]
+fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, vec![5470, 5465])
+}
+
+#[test]
+fn m08_multi_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, vec![5470, 5465])
+}
+
+#[test]
+fn m08_sickle_harvests_cane_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3293", 5463, 5462, vec![5470, 5465])
+}
+
+#[test]
+fn m08_multi_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
+    run_case("oteryn:item.tibia.i9598", 4848, 3134)
+}
+
+#[test]
+fn m08_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
+    run_case("oteryn:item.tibia.i3304", 4848, 3134)
+}
+
+#[test]
 fn m08b_pick_opens_a_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 593, 594)
 }
@@ -40,14 +75,33 @@ fn m08b_pick_opens_a_loose_ice_pile_through_the_wire_and_it_decays_back() -> Tes
     run_case("oteryn:item.tibia.i3456", 608, 609)
 }
 
+#[test]
+fn m08b_pick_opens_the_pits_of_inferno_hole_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3456", 7200, 7236, Vec::new())
+}
+
+#[test]
+fn m08b_pick_opens_the_spike_hole_through_the_wire() -> TestResult {
+    run_case_with_decay("oteryn:item.tibia.i3456", 21341, 21342, Vec::new())
+}
+
 fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
+    run_case_with_decay(tool, before, after, vec![before])
+}
+
+fn run_case_with_decay(
+    tool: &'static str,
+    before: u16,
+    after: u16,
+    decay: Vec<u16>,
+) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(tool, before, after).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(tool, before, after, &decay).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terrain tool e2e panic")??;
     eprintln!(
@@ -57,7 +111,7 @@ fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
     Ok(())
 }
 
-fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
+fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "terrain_tool", true, false).await?;
@@ -89,13 +143,24 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
             );
         }
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (
                 closed_hole,
                 reference(closed_hole).ok_or("closed_hole")?.get() - 1,
             ),
         );
+        if before == 4848 {
+            // The Ape City cask is explicitly bound to source action 40041.
+            let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+            let entry = data.sectors.iter_mut().flat_map(|s| &mut s.tiles)
+                .find(|tile| tile.x == 7).ok_or("cask tile")?
+                .items.last_mut().ok_or("cask entry")?;
+            entry.attrs.action = Some(40041);
+            bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
+                &data.manifest, &data.sectors, &data.spawns, &data.npcs)?;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let boot_pins = crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
@@ -218,8 +283,8 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
         assert_eq!(result, UseDisposition::Committed);
-        let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (i64::from(after), 1, true));
+        let state: (i64,i64,Option<bool>) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
+        assert_eq!(state, (i64::from(after), 1, (!decay.is_empty()).then_some(true)));
         let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
         assert_eq!(map.facts().pinned().object_revision(key), 1);
         // A new owner recovers the committed state and original receipt without current handles.
@@ -258,6 +323,22 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
             .await?,
             1
         );
+        let yield_item = match before {
+            3653 => Some("oteryn:item.tibia.i3605"),
+            5463 | 5464 => Some("oteryn:item.tibia.i5466"),
+            _ => None,
+        };
+        if let Some(yield_item) = yield_item {
+            let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(yield_item).fetch_one(&harness.pool).await?;
+            assert_eq!(quantity, 1, "replay must not mint a second harvest yield");
+            let tool_quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(shovel).fetch_one(&harness.pool).await?;
+            assert_eq!(tool_quantity, 1, "harvesting preserves the carried tool");
+            let crafts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_craft_records")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(crafts, 1);
+        }
         // Still before the durable deadline: a server clock drain cannot revert early.
         restarted.refresh_terrain_tools().await;
         assert_eq!(restored_map.facts().pinned().object_revision(key), 1);
@@ -280,26 +361,32 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
                 .await?,
             i64::from(after)
         );
-        // Test clock arrangement: advance the persisted deadline; no wall-clock sleep or bypass
-        // of the production clock path is needed.
-        sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1").execute(&harness.pool).await?;
-        restarted.refresh_terrain_tools().await;
-        let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (i64::from(before), 2, true));
-        assert_eq!(restored_map.facts().pinned().object_revision(key), 2);
-        assert_eq!(
-            restored_map
-                .facts()
-                .pinned()
-                .base_entry(
-                    target_pos,
-                    1,
-                    reference(closed_hole).ok_or("closed reference")?.get() - 1
-                )
-                .ok_or("reverted entry")?
-                .appearance_id,
-            before
-        );
+        // Advance each persisted deadline through the production clock path.
+        // Harvest has two source-defined stages; check both, including the
+        // retained deadline until the final stage and every recovered revision.
+        for (step, expected) in decay.iter().enumerate() {
+            sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1").execute(&harness.pool).await?;
+            restarted.refresh_terrain_tools().await;
+            let revision = i64::try_from(step)? + 2;
+            let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
+            assert_eq!(state, (i64::from(*expected), revision, step + 1 == decay.len()));
+            assert_eq!(restored_map.facts().pinned().object_revision(key), u64::try_from(revision)?);
+            assert_eq!(
+                restored_map
+                    .facts()
+                    .pinned()
+                    .base_entry(
+                        target_pos,
+                        1,
+                        reference(closed_hole).ok_or("closed reference")?.get() - 1
+                    )
+                    .ok_or("reverted entry")?
+                    .appearance_id,
+                *expected
+            );
+        }
+        let final_revision = i64::try_from(decay.len())? + 1;
+        let final_state = decay.last().copied().unwrap_or(after);
         restarted.refresh_terrain_tools().await;
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
@@ -307,7 +394,7 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
             )
             .fetch_one(&harness.pool)
             .await?,
-            2
+            final_revision
         );
         // A stale map revision cannot start another transform or create another receipt.
         next.continuity.next_command_id = 2;
@@ -324,7 +411,7 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
         // A changed payload cannot use the historical receipt's CommandRef.
         let mut changed = intent.clone();
         changed.use_with_map_item = Some(MapUseTarget::Object(WorldObjectTarget {
-            expected_revision: 2,
+            expected_revision: u64::try_from(final_revision)?,
             ..target.clone()
         }));
         // Transport closes on altered duplicate CommandRef bytes before item dispatch. Probe
@@ -365,8 +452,8 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
             tool_key: shovel.into(),
             tool_revision: "definition-r1".into(),
             placement: target.placement.clone(),
-            expected_revision: 2,
-            before: u32::from(before),
+            expected_revision: final_revision,
+            before: u32::from(final_state),
             after: u32::from(after),
             decay: vec![(
                 u32::from(before),

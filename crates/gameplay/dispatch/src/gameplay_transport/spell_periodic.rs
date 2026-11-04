@@ -137,10 +137,10 @@ impl ChannelSpellStates {
         let environment = |t: &oteryn_gameplay_foundation::foundation::condition::ConditionTick<
             String,
         >| {
-            matches!(t.kind, TickKind::Damage { .. })
+            t.provenance.is_unattributed() || (matches!(t.kind, TickKind::Damage { .. })
                 && crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
                     &t.provenance,
-                )
+                ))
         };
         if !preview.combat_ticks.iter().any(|t| {
             hit(t.kind)

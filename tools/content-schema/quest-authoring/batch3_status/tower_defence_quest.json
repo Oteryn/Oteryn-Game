@@ -1,0 +1,309 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "tower_defence_quest",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-c/status-after-answer.json",
+    "sha256": "af185f5bc16307ef92f85e3f9d76c1a71d11c543fc2bcdb3fddc55c0537000c7"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 7,
+  "import_counts": {
+    "RĘCZNIE": 7
+  },
+  "content_counts": {
+    "npc_rules_source_only": 6,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 1
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-c-tower_defence_quest.json",
+      "sha256": "b867004242c4f7b131ebc06a93d7713bcc5553edbf4ecedb53d93e43bd0b541b",
+      "count": 6,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/tower_defence_quest.json",
+      "sha256": "ed1d62470e853a753da06266227ffc0aca1a6ecafecd7bf27d4e8ff665f34740",
+      "count": 1,
+      "category": "death_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "18cfca2dce9a3682960d7e033251ec118d5b4b5ec6193a626bfe56dd2e3968b1",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Zlecenie Bunny",
+        "pattern": "P09/P11",
+        "trigger": "Bunny mission ->yes topic1",
+        "guard": "przy wyborze mission Questline<1",
+        "effect": "dodaj parcel140x1; Questline41494=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:63"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:63",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "84e715b0ba08fcdc96b34dfd4251349628d5074cbb7a1790a00896cdee160e85",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Oddanie paczki Thanita",
+        "pattern": "P09/P10/P13",
+        "trigger": "Thanita mission",
+        "guard": "Questline==1; removeItem140x1 sukces",
+        "effect": "Questline=2; Door41495=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:63"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:63",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "63273cdab31fb3ee11c2f76b4997250100d0675e3c7b10d418672ae79198b3c8",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Drzwi kryjówki",
+        "pattern": "P04",
+        "trigger": "Use6258(32600,31758,9)",
+        "guard": "wspólnydoor storage41495",
+        "effect": "bramkadostępu;mapa iwartości wspólnegodoorhandlera",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:957"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "existing_data",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Baseline gate and map-authoring binding already use item6258 at32600/31758/z9, action41495, canonical Door track. Crystal door_quest.lua957 is a line number; storage is41495 (storages.lua1033).",
+      "left_out": "NPC Door writer is not newly activated because it requires a conversation adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:957",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "fc18698037d906921a300779c0e443d27fa25ac3669d46321a5d80dcee4f46c4",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Spalenie łóżka i spawn Goblin Leader",
+        "pattern": "P02/P06",
+        "trigger": "instrukcjaThanita ołóżku",
+        "guard": "NIEZNANE: brak konkretnegoAction/pozycji wprzejrzanymzakresie",
+        "effect": "nie wynaleziono triggera;QUESTION o źródło/binding",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:65"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "No authoritative burn-bed selector or Goblin Leader spawn location found in Crystal; dialogue promise is not a spawn definition.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589115892"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:65"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c4d2be58def9dc7988f60d2e883aa5f266e9a2cd20a2d8cd2ae58beed39f174e",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Zabicie Goblin Leader",
+        "pattern": "P07/P21",
+        "trigger": "GoblinLeaderDeath",
+        "guard": "każdyPlayer(id) zdamageMap;Questline==2",
+        "effect": "Questline=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_kill_adapter",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Exact source state-only death rule is preserved with runtime_enabled:false. Parser, test-only qualifier and native adapter are excluded from publication under explicit R-KILL-ADAPTER B.",
+      "left_out": "Missing allowed functions: quest_batch3_c::capture and quest_batch3_c::settle, with source parser/loader and snapshot refresh. Existing Quest writer remains unchanged, but producing these ten events requires a new shared adapter; explicit B requires source-only Left out. Future adapter PR must not map permanent ProgressionContextMismatch to Retry, which can block the ordered kill queue (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134; existing witness character_progression_binding_tests.rs:160-198). Decyzja R-KILL-ADAPTER: Dziesięć reguł śmierci pozostaje nieaktywnymi danymi. Brakuje utrwalenia właściwego rosteru/occurrence i rozliczenia przed zwolnieniem corpse-pin, z kwalifikacją graczy według damage map. Parser quest_batch3_c i sześć hooków zostały wycofane; cztery testy Tower nie dowodzą aktywnego runtime. Przyszły adapter musi też rozwiązać trwały ProgressionContextMismatch mapowany na Retry, który może blokować uporządkowaną kolejkę (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134). Fire-Fighter grant/repair pozostaje Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1081",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3-8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12-23",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4-18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua:26-55",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323-329"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "09f6e33402cb339276ccf79272677fea897a28877c9e7e6c5cd126e75e16d33e",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Hasło od Thanity",
+        "pattern": "P09",
+        "trigger": "Thanita mission",
+        "guard": "Questline==3",
+        "effect": "Questline=4;podaj literal password*",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:74"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:74",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "fde119451225211a111d0799d4ee435567267e7ee22f015da5b7bf69c59099ef",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "tower_defence_quest",
+        "step": "Nagroda Bunny",
+        "pattern": "P09/P11",
+        "trigger": "mission wstage4 ->topic2;password*",
+        "guard": "topic2 (donor nieprzeprowadza ponownego guardstate)",
+        "effect": "50x762,50x774,50x763,50x761;Questline=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:70"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:70",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    }
+  ]
+}

@@ -1,0 +1,445 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.within_the_tides_quest",
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/timira-teleport-4",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33787,
+          "y": 32699,
+          "floor": -10
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33790,
+        "y": 32706,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-6",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33804,
+          "y": 32704,
+          "floor": -9
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33810,
+        "y": 32705,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/marapur-north-temple-ramp",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33613,
+          "y": 32759,
+          "floor": -9
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33614,
+        "y": 32759,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-1",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33803,
+          "y": 32700,
+          "floor": -7
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33806,
+        "y": 32700,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-2",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33802,
+          "y": 32700,
+          "floor": -8
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33804,
+        "y": 32702,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-3",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33790,
+          "y": 32678,
+          "floor": -10
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33810,
+        "y": 32699,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-5",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33788,
+          "y": 32708,
+          "floor": -9
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33810,
+        "y": 32699,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/timira-teleport-7",
+      "quest": "oteryn:quest.within_the_tides_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33816,
+          "y": 32710,
+          "floor": -9
+        },
+        "appearance": 35500
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33804,
+        "y": 32702,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+      ]
+    }
+  ],
+  "holds": [
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/timira-teleport-4"
+      ],
+      "reason": "The existing map correctly contains inactive portal39238. The held Timira Encounter creates active35500 only after the corresponding phase. The source selector remains35500; do not replace the static map or weaken its appearance guard.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:99",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:110",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:111",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:210",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:211",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:212",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:213"
+      ]
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/timira-teleport-6"
+      ],
+      "reason": "The existing map correctly contains inactive portal39238. The held Timira Encounter creates active35500 only after the corresponding phase. The source selector remains35500; do not replace the static map or weaken its appearance guard.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:105",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:110",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:111",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:223",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:224",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:225",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:226"
+      ]
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/marapur-north-temple-ramp"
+      ],
+      "reason": "The existing entry tile contains Item39721 with native NORTH floor-change mask2. Ordinary movement resolves33613,32758,z8 before quest callbacks are selected from the landed position, whereas the source StepIn requires33613,32759,z9 and teleports33614,32759,z8. The native candidate tile exists, so the movement either lands outside the source selector or refuses the step before the callback.",
+      "required_operation": "An owner-qualified StepIn before floor change or exact map collision resolution, without changing this batch owner contract.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590616025",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "schema_decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:16",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor_catalogue.rs:231",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor.rs:306-320",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:176",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:434"
+      ],
+      "map_witness": {
+        "position": {
+          "x": 33613,
+          "y": 32759,
+          "floor": -9
+        },
+        "region": "content/world/placements/region-z09-x131-y127.b3",
+        "region_sha256": "0b05ae7de9176bf7099fc8488d4d3a052d5d05c1ff8834d51919a6d6ec3cd6a6",
+        "source_item_id": 39721,
+        "ordinal": 2,
+        "floor_change_mask": 2,
+        "native_candidate": {
+          "x": 33613,
+          "y": 32758,
+          "floor": -8
+        },
+        "source_destination": {
+          "x": 33614,
+          "y": 32759,
+          "floor": -8
+        },
+        "destination_region": "content/world/placements/region-z08-x131-y127.b3",
+        "destination_region_sha256": "81027e9c721e1c4938a54e84a88dc11ad799f9844a3450c9418af20077a2c03f"
+      }
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/timira-teleport-1",
+        "oteryn:quest-callback/timira-teleport-2",
+        "oteryn:quest-callback/timira-teleport-3",
+        "oteryn:quest-callback/timira-teleport-5",
+        "oteryn:quest-callback/timira-teleport-7"
+      ],
+      "reason": "Source B3 places35500, but its only palette identity is provisional and has no resolved definition. Existing non-production compiler omits it; production refuses the provisional key. The unchanged callback matcher requires an actual bundle appearance35500, so the retained walkable ground cannot match. Qualify the exact object and map binding in a separate approved change; do not replace the appearance guard or invent an Item.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "missing_function": "Qualified canonical object35500 and its exact WorldBundle binding before callback matching.",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/world-bundle-compiler/src/main.rs:214",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/world-bundle-compiler/src/resolve.rs:430",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/world-bundle-compiler/src/compile.rs:933",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:81",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:95",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/mod.rs:549"
+      ],
+      "source_palette": {
+        "key": "donor:crystalserver@00ce02a5:item/35500",
+        "provisional": true,
+        "source_item_id": 35500
+      },
+      "resolved_identity_count": 0,
+      "registry_input_count": 119,
+      "proof_scope": "Static audit of current actual compiler inputs and unchanged code. No compiled artifact was executed or claimed as a runtime test.",
+      "source_map_witnesses": [
+        {
+          "callback": "oteryn:quest-callback/timira-teleport-1",
+          "position": {
+            "x": 33803,
+            "y": 32700,
+            "floor": -7
+          },
+          "region": "content/world/placements/region-z07-x132-y127.b3",
+          "region_sha256": "2d7468c9ce342fba7c60ba39558584acd413da5680baf2cfbb052af7ef1daccb",
+          "ground_source_item_id": 38064,
+          "portal_source_item_id": 35500,
+          "portal_ordinal": 1,
+          "flags": 0,
+          "no_logout": false,
+          "house": 0,
+          "native_teleport": false,
+          "native_floor_change_mask": 0,
+          "retained_ground_walkable": true,
+          "compiled_selector_present": false
+        },
+        {
+          "callback": "oteryn:quest-callback/timira-teleport-2",
+          "position": {
+            "x": 33802,
+            "y": 32700,
+            "floor": -8
+          },
+          "region": "content/world/placements/region-z08-x132-y127.b3",
+          "region_sha256": "6669f4d7585ef0d251a6e8c285b818190af5cd01e8c494016344bc7c3b0c5e9a",
+          "ground_source_item_id": 38062,
+          "portal_source_item_id": 35500,
+          "portal_ordinal": 1,
+          "flags": 0,
+          "no_logout": false,
+          "house": 0,
+          "native_teleport": false,
+          "native_floor_change_mask": 0,
+          "retained_ground_walkable": true,
+          "compiled_selector_present": false
+        },
+        {
+          "callback": "oteryn:quest-callback/timira-teleport-3",
+          "position": {
+            "x": 33790,
+            "y": 32678,
+            "floor": -10
+          },
+          "region": "content/world/placements/region-z10-x131-y127.b3",
+          "region_sha256": "e423770a65cb6f91c7f5156ee7ab6aee56a99528d363a04a619768e41c5dff8e",
+          "ground_source_item_id": 4394,
+          "portal_source_item_id": 35500,
+          "portal_ordinal": 1,
+          "flags": 8,
+          "no_logout": true,
+          "house": 0,
+          "native_teleport": false,
+          "native_floor_change_mask": 0,
+          "retained_ground_walkable": true,
+          "compiled_selector_present": false
+        },
+        {
+          "callback": "oteryn:quest-callback/timira-teleport-5",
+          "position": {
+            "x": 33788,
+            "y": 32708,
+            "floor": -9
+          },
+          "region": "content/world/placements/region-z09-x131-y127.b3",
+          "region_sha256": "0b05ae7de9176bf7099fc8488d4d3a052d5d05c1ff8834d51919a6d6ec3cd6a6",
+          "ground_source_item_id": 38065,
+          "portal_source_item_id": 35500,
+          "portal_ordinal": 1,
+          "flags": 8,
+          "no_logout": true,
+          "house": 0,
+          "native_teleport": false,
+          "native_floor_change_mask": 0,
+          "retained_ground_walkable": true,
+          "compiled_selector_present": false
+        },
+        {
+          "callback": "oteryn:quest-callback/timira-teleport-7",
+          "position": {
+            "x": 33816,
+            "y": 32710,
+            "floor": -9
+          },
+          "region": "content/world/placements/region-z09-x132-y127.b3",
+          "region_sha256": "0084b2b01009c147f8d154016af58a8d87b3abf1d329c7b5b8dac419cb55b1ae",
+          "ground_source_item_id": 38064,
+          "portal_source_item_id": 35500,
+          "portal_ordinal": 1,
+          "flags": 8,
+          "no_logout": true,
+          "house": 0,
+          "native_teleport": false,
+          "native_floor_change_mask": 0,
+          "retained_ground_walkable": true,
+          "compiled_selector_present": false
+        }
+      ]
+    }
+  ]
+}

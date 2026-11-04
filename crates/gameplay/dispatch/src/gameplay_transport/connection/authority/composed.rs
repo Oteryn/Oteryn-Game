@@ -5,6 +5,14 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn observe_movement_effects(
+        &self,
+        after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        self.bundle_map()
+            .map(|map| map.facts.movement_effects_since(after))
+            .unwrap_or_default()
+    }
     async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
         self.resolve_runtime_view(admitted).await
     }
@@ -330,7 +338,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        npc_command::resume_npc_talk(self, actor, command).await
+        let mut outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        Some(outcome)
     }
 
     async fn npc_talk(
@@ -339,7 +355,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        self.vocation_talk(actor, command, intent).await
+        let mut outcome = self.vocation_talk(actor, command, intent).await;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        outcome
     }
 
     fn server_save_countdown(
@@ -716,9 +740,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::world_object::UseIntent,
         source: Option<item_view::ItemKey>,
+        item_target: Option<item_view::ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.tame_mount_impl(actor, command, intent, source, visible)
+        self.tame_mount_impl(actor, command, intent, source, item_target, visible)
             .await
     }
 
@@ -819,6 +844,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: item_view::ItemKey,
     ) -> Option<UseOutcome> {
         self.pour_fluid(actor, command, source, target).await
+    }
+
+    async fn use_fluid_on_map(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_fluid_map(actor, command, source, target).await
     }
 
     async fn use_item_by_definition(

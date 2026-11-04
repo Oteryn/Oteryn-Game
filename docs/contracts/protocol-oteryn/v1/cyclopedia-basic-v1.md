@@ -17,10 +17,13 @@ code u8, Character revision u64, discovered bool u8, found u8, World pool u64,
 reset epoch u64, respawn factor u8 (1 or 2), visible count u8, then count records
 of x u16, y u16, native floor i8. At most eight records. Code 0 success, 1 invalid,
 2 Premium required, 3 already discovered, 4 no active exploration, 5 insufficient
-pool outside current window, 6 insufficient funds, 7 area currently improved.
+pool outside current window, 6 insufficient funds, 7 reserved (no longer emitted;
+donations are accepted while improved).
 Only the requesting character's unfound same-floor POIs in its viewport are sent.
 Intent receipts retain the exact result, including query-time facts, for retries.
 New queries read current facts; progress survives session and process replacement.
+An epoch is improved iff the pool is at least 10,000,000; the goal is subtracted
+and the excess carries over.
 
 ## Durable fee source
 
