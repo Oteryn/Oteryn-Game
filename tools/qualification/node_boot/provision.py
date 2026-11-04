@@ -2,6 +2,7 @@
 
 import argparse
 import socket
+import time
 import uuid
 
 
@@ -13,12 +14,16 @@ def provision(socket_path, session, profile):
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+        deadline = time.monotonic() + 20
         control.settimeout(20)
         control.connect(socket_path)
         control.sendall(f"qualify {session} {profile}\n".encode("ascii"))
         control.shutdown(socket.SHUT_WR)
         answer = bytearray()
         while len(answer) <= 64:
+            control.settimeout(max(0.001, deadline - time.monotonic()))
+            if time.monotonic() >= deadline:
+                raise TimeoutError("qualification provisioning deadline exceeded")
             chunk = control.recv(65 - len(answer))
             if not chunk:
                 break

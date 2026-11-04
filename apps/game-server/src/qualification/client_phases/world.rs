@@ -385,6 +385,23 @@ async fn profile_journey(
         Err(error) => Err(error),
     };
     let spells = client_spell_journey::spell_journey(&mut client, pz).await;
+    // Combat may still hold the logout/PZ lock. Settle it outside the temple
+    // before restoring the peer that main's trade/party phases use.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        if client.session_mut().logout().await?.result
+            == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("profile combat lock did not settle before logout".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    drop(client);
+    client = connect_character(clients, 0x6f, 0).await?;
     let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at == TOWN
     })

@@ -165,6 +165,7 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
     assert_eq!(path.len(), 6);
     assert!(model.path(from, at(2, 1, -8), None).is_none());
     assert!(model.tiles[&at(1, 2, -8)].rope_spot);
+    assert_eq!(model.tiles[&at(1, 2, -8)].rope_ordinal, Some(0));
     assert!(model.tiles[&at(3, 2, -8)].ladder);
     assert!(
         !world.floors().contains(at(3, 2, -8)),

@@ -9,8 +9,7 @@ cd -- "$ROOT" || exit 1
 RUN="$(mktemp -d "$ROOT/.e2e-all.XXXXXX")" || exit 1
 mkdir "$RUN/captures" || exit 1
 export E2E_ALL_CAPTURE_DIR="$RUN/captures"
-readonly CARGO=/home/mole/oteryn-cache/codex-bin/cargo
-export PATH="${CARGO%/*}:$PATH"
+readonly CARGO="${CARGO:-cargo}"
 node_status=0
 client_status=0
 

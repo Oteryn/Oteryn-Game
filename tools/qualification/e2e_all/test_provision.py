@@ -6,6 +6,7 @@ import socket
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -61,6 +62,14 @@ class ProvisionTests(unittest.TestCase):
         for reply in [[b"rejected\n"], [b"qualified"], [b"qualified\nextra"], []]:
             with self.subTest(reply=reply):
                 self.exchange(reply, RuntimeError)
+
+    def test_response_reads_share_one_deadline(self):
+        with mock.patch.object(provision.socket, "socket") as factory, mock.patch.object(
+            provision.time, "monotonic", side_effect=[0, 21, 21]
+        ):
+            with self.assertRaises(TimeoutError):
+                provision.provision("control.sock", SESSION, "sorcerer")
+            factory.return_value.__enter__.return_value.recv.assert_not_called()
 
     def test_bad_sessions_and_profiles_are_rejected_before_connecting(self):
         for session, profile in [

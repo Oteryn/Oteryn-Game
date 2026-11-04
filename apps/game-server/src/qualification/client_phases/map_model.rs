@@ -20,6 +20,8 @@ struct MapTile {
     field: Option<String>,
     ladder: bool,
     rope_spot: bool,
+    rope_ordinal: Option<u8>,
+    shovel_ordinal: Option<u8>,
     shovel_target: bool,
     hole: bool,
     teleport: Option<TilePos>,
@@ -90,10 +92,13 @@ impl<'a> MapModel<'a> {
                 let mut field = None;
                 let mut ladder = false;
                 let mut rope_spot = false;
+                let mut rope_ordinal = None;
+                let mut shovel_ordinal = None;
                 let mut shovel_target = false;
                 let mut hole = false;
                 let mut door = world.facts().doors().at(position);
-                for item in tile.items.iter().filter(|item| item.depth == 0) {
+                for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate()
+                {
                     let entry = &manifest.palette[item.palette as usize];
                     let kind = kinds.get(&entry.key).map(String::as_str);
                     if kind == Some("field")
@@ -110,11 +115,22 @@ impl<'a> MapModel<'a> {
                         let ground = entry.terrain.is_some_and(|terrain| {
                             terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
                         });
-                        rope_spot |= (ground && parameter_contains(rope_ground, id))
-                            || (!ground && parameter_contains(rope_top, id));
-                        shovel_target |= shovel_bindings.iter().any(|binding| {
+                        if (ground && parameter_contains(rope_ground, id))
+                            || (!ground && parameter_contains(rope_top, id))
+                        {
+                            rope_spot = true;
+                            rope_ordinal = Some(u8::try_from(ordinal).map_err(|_| {
+                                oteryn_world_bundle::Error::Limit("map tool ordinal".into())
+                            })?);
+                        }
+                        if shovel_bindings.iter().any(|binding| {
                             binding.target == id && binding.required_action == item.attrs.action
-                        });
+                        }) {
+                            shovel_target = true;
+                            shovel_ordinal = Some(u8::try_from(ordinal).map_err(|_| {
+                                oteryn_world_bundle::Error::Limit("map tool ordinal".into())
+                            })?);
+                        }
                         hole |= shovel_bindings
                             .iter()
                             .any(|binding| binding.transformed == id);
@@ -134,6 +150,8 @@ impl<'a> MapModel<'a> {
                         field,
                         ladder,
                         rope_spot,
+                        rope_ordinal,
+                        shovel_ordinal,
                         shovel_target,
                         hole,
                         teleport: world.floors().teleport(position),

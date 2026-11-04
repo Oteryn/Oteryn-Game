@@ -149,13 +149,85 @@ async fn check(
         client.take_events();
         return Ok(None);
     }
-    if sample.kind == "rope_spot" {
-        return Ok(Some("node_boot_character_bootstrap_has_no_rope_tool_grant"));
-    }
-    if sample.kind == "shovel_hole" {
-        return Ok(Some(
-            "node_boot_character_bootstrap_has_no_shovel_tool_grant",
-        ));
+    if matches!(sample.kind, "rope_spot" | "shovel_hole") {
+        use oteryn_protocol_oteryn::world_object::*;
+        let rope = sample.kind == "rope_spot";
+        let index = provisioning::item_index()?;
+        let reference = provisioning::item_reference(&index, if rope { 3003 } else { 3457 })?;
+        let source = client
+            .inventory()
+            .and_then(|inventory| {
+                inventory
+                    .entries
+                    .iter()
+                    .find(|item| item.item_definition_ref == reference)
+            })
+            .ok_or("provisioned map tool missing from inventory")?
+            .handle;
+        let facts = &model.tiles[&target];
+        let ordinal = if rope {
+            facts.rope_ordinal
+        } else {
+            facts.shovel_ordinal
+        }
+        .ok_or("map tool target ordinal missing")?;
+        let key = crate::map::view::placement_key(target, ordinal)
+            .ok_or("map tool target placement missing")?;
+        let mut placement = model.world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let intent = UseIntent {
+            target: UseTarget::Item(source),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            })),
+            use_with_position: None,
+        };
+        let payload = encode_item_use_intent(&intent)
+            .map_err(|error| format!("map tool encode: {error:?}"))?;
+        let before = tile(client.world_spatial().actor_position)?;
+        let response = client
+            .session_mut()
+            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+            .await?;
+        if response.status != CommandStatus::Accepted
+            || decode_use_result(&response.payload)
+                .map_err(|error| format!("map tool result: {error:?}"))?
+                != UseDisposition::Committed
+        {
+            return Err(format!("map tool use did not commit: {response:?}").into());
+        }
+        if rope {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            loop {
+                let landed = tile(client.world_spatial().actor_position)?;
+                if landed.floor == target.floor + 1
+                    && landed.x.abs_diff(target.x).max(landed.y.abs_diff(target.y)) == 1
+                {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("rope did not publish an adjacent upstairs landing".into());
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+                client.take_events();
+            }
+        } else {
+            if tile(client.world_spatial().actor_position)? != before {
+                return Err("shovel use moved the character before stepping".into());
+            }
+            let result = client.step_retrying(*direction).await?;
+            let landed = tile(client.world_spatial().actor_position)?;
+            if result.disposition != StepDisposition::Moved
+                || result.world_spatial_delta.is_none()
+                || landed.floor >= target.floor
+            {
+                return Err("opened shovel hole did not produce a lower-floor step".into());
+            }
+        }
+        client.take_events();
+        return Ok(None);
     }
     if matches!(sample.kind, "npc" | "monster_spawn") {
         let kind = if sample.kind == "npc" {

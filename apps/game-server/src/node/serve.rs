@@ -2039,9 +2039,7 @@ async fn control_loop(
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
     config: &NodeConfig,
-    progression: Option<
-        &crate::content::character_progression_content::CharacterProgressionContent,
-    >,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2063,15 +2061,8 @@ async fn control_loop(
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
             let answer = match handle_control(&mut stream).await {
                 Some(request) if request.starts_with(b"qualify ") => {
-                    qualification_fixture::prepare(
-                        root,
-                        authority,
-                        proof,
-                        config,
-                        progression,
-                        &request,
-                    )
-                    .await
+                    qualification_fixture::prepare(root, authority, proof, config, native, &request)
+                        .await
                 }
                 Some(request) if parse_operation_id(&request).is_some() => {
                     let Some(operation) = parse_operation_id(&request) else {
