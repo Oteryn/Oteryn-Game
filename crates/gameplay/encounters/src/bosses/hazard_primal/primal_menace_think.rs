@@ -238,6 +238,8 @@ impl PrimalMenaceThinkOwner {
     }
 }
 
+// One call site; the wave inputs are distinct borrows and callbacks, not a reusable bundle.
+#[allow(clippy::too_many_arguments)]
 fn schedule_wave(
     effects: &mut Vec<PrimalMenaceEffect>,
     now_ms: u64,

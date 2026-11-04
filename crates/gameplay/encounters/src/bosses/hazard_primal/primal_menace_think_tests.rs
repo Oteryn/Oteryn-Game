@@ -1,3 +1,6 @@
+// Test-only: `expect` names the scripted precondition that failed.
+#![allow(clippy::expect_used)]
+
 use std::{cell::Cell, collections::VecDeque};
 
 use super::*;
