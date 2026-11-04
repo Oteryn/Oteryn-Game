@@ -6039,10 +6039,10 @@
   "external_wiki_read": false,
   "input_sha256": {
     "content/quests/definitions/quests-00000-00099.json": "400396cd8275b1a913380cafe4a3981fd5ddb0821481deca5aa925b03e0fcf56",
-    "content/quests/definitions/quests-00100-00199.json": "e251d3e8eafc6e7f954dfc295cf69aafa86dc20d013dfc0f2df9e05ab1603828",
-    "content/quests/definitions/quests-00200-00299.json": "5c4f66ad9529751aac14e853aa2ca7ad3cad87acde803e7683e3853972c84c37",
+    "content/quests/definitions/quests-00100-00199.json": "e15504129c0928f0e929c42e67b04719101c1235e1a45d2ea12e99812516c072",
+    "content/quests/definitions/quests-00200-00299.json": "3ee9058cf036e4fc3e158762a7759cc8cebb8f9f8382d0083c5e634bc135a93c",
     "content/quests/definitions/quests-00300-00351.json": "2cb47e5cd136f063fe7ff7607dc795ffff6597896d10c0a725cd17d2fe750781",
-    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "9eda653d93320e6da841026707b4cee71f393851539b4f73d2dc756dbd322f9b",
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "c407ceef00b24ab6a0c99a13c747049fe5351c4a404a7ce6d601da89d8d0dd94",
     "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
   },
   "quests": [
