@@ -30,6 +30,7 @@ const MAX_QUEUED_INPUTS: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    vitals: Option<oteryn_session::ActorVitals>,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -75,6 +76,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            vitals: None,
             own,
             facing: StepDir::South,
             floor,
@@ -126,6 +128,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.vitals = link.actor_vitals();
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
         while let Some(&input) = self.inputs.front() {

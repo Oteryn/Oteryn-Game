@@ -26,3 +26,34 @@ fn bars_draw_track_and_fill_per_vital_and_nothing_without_vitals() -> Result<(),
     assert!(quads[2].position[1] > quads[0].position[1]);
     Ok(())
 }
+
+#[test]
+fn hud_shows_current_max_and_bounded_bars() {
+    assert_eq!(vitals_text(None), "HP —   MP —");
+    let vitals = ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 5,
+        max_mana: 0,
+        ..ActorVitals::default()
+    };
+    assert_eq!(
+        vitals_text(Some(&vitals)),
+        "HP [█████░░░░░] 50/100   MP [░░░░░░░░░░] 5/0"
+    );
+}
+
+#[test]
+fn hud_clamps_overfull_and_handles_largest_vitals() {
+    let vitals = ActorVitals {
+        health: u32::MAX,
+        max_health: 1,
+        mana: u32::MAX,
+        max_mana: u32::MAX,
+        ..ActorVitals::default()
+    };
+    assert_eq!(
+        vitals_text(Some(&vitals)),
+        "HP [██████████] 4294967295/1   MP [██████████] 4294967295/4294967295"
+    );
+}

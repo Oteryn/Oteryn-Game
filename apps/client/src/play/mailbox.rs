@@ -66,6 +66,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) vitals: Option<oteryn_session::ActorVitals>,
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
@@ -164,6 +165,7 @@ impl Outbox {
 
     pub(super) fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
+        super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
         for event in &events {
             if let SessionEvent::PlayerTyping(update) = event {
                 oteryn_client_ui::player_typing::protocol::reduce(

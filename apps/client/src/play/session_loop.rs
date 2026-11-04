@@ -1,6 +1,6 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
 
-use super::{Outbox, public_class, step_direction};
+use super::{Outbox, public_class, session_stepper::publish, step_direction};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
@@ -15,6 +15,9 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
+        None
+    }
     fn animus_selected(&self) -> bool {
         false
     }
@@ -283,21 +286,6 @@ pub trait Stepper: Send {
     }
 }
 
-/// Hands the shell what the session pushed, and the visible entities when they changed.
-fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
-    outbox.push(session.drain());
-    if let Some(payload) = session.feature_snapshot(98) {
-        outbox.cyclopedia_tracker_push(payload);
-    }
-    if let Some(entities) = session.entities_changed(held) {
-        held.clone_from(&entities);
-        outbox.entities(entities);
-    }
-    if let Some((rooms, lines)) = session.chat_state() {
-        outbox.chat_public_state(rooms, lines);
-    }
-}
-
 /// The session task, run on the client runtime: sends requested steps and, while none is
 /// pending, keeps servicing liveness so an idle session is not dropped. It ends with the first
 /// session error (reported with its public class) or when the shell drops its link.
@@ -306,6 +294,7 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.vitals(session.actor_vitals());
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());

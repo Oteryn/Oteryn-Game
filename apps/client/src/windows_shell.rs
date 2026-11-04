@@ -1,3 +1,5 @@
+#[path = "features/local-spell-action-bar/native.rs"]
+mod hud;
 mod input;
 
 use oteryn_client::input::{MouseActions, StepDir};
@@ -54,6 +56,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    hud: Option<hud::Hud>,
     smoke: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
@@ -87,6 +90,7 @@ impl Application {
             entry.request();
         }
         Ok(Self {
+            hud: None,
             smoke,
             window: None,
             renderer: None,
@@ -232,6 +236,11 @@ impl ApplicationHandler for Application {
             event_loop.exit();
             return;
         }
+        self.hud = hud::Hud::new(&window);
+        if self.hud.is_none() {
+            self.fail(event_loop, ShellError::WindowCreation);
+            return;
+        }
         let size = window.inner_size();
         // The map is loaded on the first resume and kept across suspends.
         let center = self
@@ -356,13 +365,7 @@ impl ApplicationHandler for Application {
                 PlayEnd::LoggedOut => self.return_to_character_selection(),
             }
         }
-        if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
-            let status = play.view.combat_status();
-            if status != play.status {
-                window.set_title(&format!("Oteryn — {status}"));
-                play.status = status;
-            }
-        }
+        self.update_hud();
         if let Some(window) = &self.window
             && redraw_eligible(
                 self.renderer
