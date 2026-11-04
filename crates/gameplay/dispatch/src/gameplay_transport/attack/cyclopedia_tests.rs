@@ -30,6 +30,7 @@ fn p12c_offence_rates_preserve_combat_saturation_and_unknown_sources() -> Result
     let wheel = WheelRuntimeEffects {
         life_leech_hundredths_percent: 100,
         mana_leech_hundredths_percent: 200,
+        mitigation_milli_percent: 1_250,
         ..WheelRuntimeEffects::default()
     };
     let observation = Observation {
@@ -121,6 +122,18 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
         reflect_flat: 7,
         ..EquippedOffence::default()
     };
+    let wheel = WheelRuntimeEffects {
+        mitigation_milli_percent: 1_250,
+        sockets: oteryn_gameplay_progression::wheel_effects::WheelSocketSeam {
+            gem_values_milli: [
+                (("dodge".to_owned(), String::new()), 280),
+                (("momentum_chance".to_owned(), String::new()), 330),
+            ]
+            .into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
     let observation = Observation {
         state: &state,
         now_micros: 1,
@@ -129,7 +142,7 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
         ranged: None,
         equipment_only: &offence,
         offence: &offence,
-        wheel: None,
+        wheel: Some(&wheel),
         battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0, 0, 0, 0, 0, 3, 0, 0],
         mantra: 9,
@@ -152,8 +165,10 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
     assert_eq!(value.get(Stat::Armor), Some(32));
     assert_eq!(value.get(Stat::Mantra), Some(9));
     assert_eq!(value.get(Stat::PhysicalReflection), Some(7));
+    assert_eq!(value.get(Stat::Dodge), Some(2_800));
+    assert_eq!(value.get(Stat::DodgeWheel), Some(2_800));
+    assert_eq!(value.get(Stat::MitigationWheel), Some(12_500));
     for key in [
-        Stat::Dodge,
         Stat::Mitigation,
         Stat::MagicShieldCapacity,
         Stat::DefenceWheel,
@@ -164,6 +179,13 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
             "unsupported field {key:?} is not zero"
         );
     }
+    let mut misc =
+        CombatStats::new(CharacterTab::Misc, 1, 1, 1).map_err(|error| format!("{error:?}"))?;
+    observation
+        .misc(&mut misc)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(misc.get(Stat::Momentum), Some(3_300));
+    assert_eq!(misc.get(Stat::MomentumWheel), Some(3_300));
     let boosted = Observation {
         battle_instinct: BattleInstinctBonuses {
             melee: 3,

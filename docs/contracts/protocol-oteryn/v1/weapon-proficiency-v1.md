@@ -75,9 +75,7 @@ and the pending offer's three entry indexes (`255 255 255` = no offer). At most 
 | 8 | `CONFLICT` | 18 | `INSUFFICIENT_DUST` |
 | 9 | `NO_SELECTION` | 19 | `NO_ORB` |
 
-`NOT_ADMITTED` also answers an unknown definition, a weapon without shaping content and an
-operation whose costs or values are unevidenced (PROFICIENCY-1C §3: `RANK_UP` while ranks 1-9 are
-unpublished).
+`NOT_ADMITTED` also answers an unknown definition, a weapon without shaping content and an operation whose costs or values are unevidenced. `RANK_UP` is admitted by active revision `shaping-r2`; retained `shaping-r1` still answers `NOT_ADMITTED`.
 
 ## Modification rules
 

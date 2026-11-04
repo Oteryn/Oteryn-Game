@@ -251,6 +251,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command: command_ref,
                 source: tool,
                 tool: Some(tool),
+                ingredient: None,
                 station: None,
                 intent: encoded,
                 gathering: Some(crate::durability::item_craft::GatheringCraft {
