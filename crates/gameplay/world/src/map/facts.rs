@@ -30,7 +30,7 @@ use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
@@ -46,6 +46,14 @@ pub struct MovementSpeech {
     pub position: TilePos,
     pub talk_type: u8,
     pub text: &'static str,
+}
+
+/// One committed monster step, recorded for the dispatch trap owner (Crystal trap.lua:23-66).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MonsterStep {
+    pub actor: crate::foundation::ExactActorRef,
+    pub from: crate::foundation::MovementLocalPosition,
+    pub to: crate::foundation::MovementLocalPosition,
 }
 
 /// The served definition of the Item a palette key names.
@@ -116,6 +124,7 @@ pub struct BundleFacts {
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
     callbacks: Mutex<Arc<CallbackStates>>,
+    monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -174,6 +183,7 @@ impl BundleFacts {
             doors: DoorBook::default(),
             rotations: Mutex::default(),
             callbacks: Mutex::default(),
+            monster_steps: Mutex::default(),
         })
     }
 
