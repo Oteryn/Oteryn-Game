@@ -1,9 +1,7 @@
 //! Play view after admission (N2N3-1): the map around the own actor, one marker per overlay
 //! object, and the walk over `Session::step`.
 //!
-//! The view holds no authority. It is built from the join snapshot, and only a step outcome's
-//! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
-//! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
+//! The view projects server-owned positions, overlays and live map tiles.
 
 use crate::input::{ClickWalk, StepDir};
 use crate::map::World;
@@ -37,6 +35,7 @@ pub struct PlayView {
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
     local: LocalPlayState,
+    live_map: bool,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
     /// The session floor the map is anchored to; on any other floor no map is drawn.
@@ -81,6 +80,7 @@ impl PlayView {
             markers: BTreeMap::new(),
             scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
             local,
+            live_map: false,
             anchor,
             map_floor: None,
             walk: ClickWalk::new(),

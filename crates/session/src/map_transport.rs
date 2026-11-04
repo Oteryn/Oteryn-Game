@@ -61,3 +61,11 @@ pub(super) fn apply<S: SessionStream>(
         value,
     }))
 }
+
+impl<S: SessionStream> Session<S> {
+    /// The validated join map, when the live-map capability was selected.
+    pub fn world_map_snapshot(&self) -> Option<WorldMapViewSnapshot> {
+        self.gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)
+            .and_then(|snapshot| decode_world_map_snapshot(&snapshot.payload).ok())
+    }
+}

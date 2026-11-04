@@ -298,14 +298,14 @@ fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpa
     }
 }
 
-/// The session task, run on the client runtime: sends requested steps and, while none is
-/// pending, keeps servicing liveness so an idle session is not dropped. It ends with the first
-/// session error (reported with its public class) or when the shell drops its link.
+/// Initializes the live map and serves shell commands and idle liveness.
+/// Ends on the first session error (with its public class) or when the shell drops its link.
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());

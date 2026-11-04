@@ -20,9 +20,13 @@ impl AdmittedSession {
         &self.channel_id
     }
 
-    /// The placeholder view of the join snapshot.
+    /// The server-owned join map, actors and overlays.
     pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
-        crate::play::PlayView::from_join(self.session.join_snapshot())?.with_entities(
+        let mut view = crate::play::PlayView::from_join(self.session.join_snapshot())?;
+        if let Some(map) = self.session.world_map_snapshot() {
+            view.set_live_map(&map)?;
+        }
+        view.with_entities(
             self.session
                 .world_entities()
                 .map(|entities| entities.others().copied().collect())
