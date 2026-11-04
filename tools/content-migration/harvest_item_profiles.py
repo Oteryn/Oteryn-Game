@@ -16,8 +16,8 @@ import build_source_item_profiles as native
 
 PATH = 'tools/content-schema/native-gameplay/harvest-item-profiles.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
-IDS = {3134, 3651, 3652, 3653, 4848, 5462, 5463, 5464, 5465, 5466, 5470,
-       9594, 9596, 9598, 10426, 10427, 10428, 10429, 17151, 17153}
+IDS = {953, 3134, 3651, 3652, 3653, 4609, 4848, 5462, 5463, 5464, 5465, 5466, 5470,
+       9307, 9594, 9596, 9598, 10426, 10427, 10428, 10429, 17151, 17153, 21341, 21342}
 
 
 def build(checkout):
@@ -27,6 +27,11 @@ def build(checkout):
     if subprocess.check_output(['git', '-C', str(checkout), 'status', '--porcelain', '--', *paths], text=True).strip():
         raise ValueError('HARVEST_DONOR_DIRTY')
     sources = [(path, (checkout / path).read_bytes()) for path in paths]
+    return build_sources(sources)
+
+
+def build_sources(sources):
+    """Replay the importer from exact source bytes, including archived pinned inputs."""
     xml, appearances = [raw for _, raw in sources]
     bindings = native.binding_index(native.BINDINGS.read_bytes())
     index = native.xml_index(xml)

@@ -330,6 +330,11 @@ async fn live<A: FreshAdmissionAuthority>(
         actor,
         revision,
         sequence,
+        movement_effect_revision: authority
+            .observe_movement_effects(0)
+            .last()
+            .map(|effect| effect.0)
+            .unwrap_or(0),
         selected_capabilities,
         overlay_served,
         notices_selected,

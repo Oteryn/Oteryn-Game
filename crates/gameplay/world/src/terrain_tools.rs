@@ -20,6 +20,20 @@ pub enum TerrainTool {
 impl TerrainTool {
     /// Resolve the Crystal-compatible tool from its qualified Oteryn production key.
     pub fn from_production_key(key: &str) -> Option<Self> {
+        // Crystal 201189f8 data-global/scripts/lib/register_actions.lua:884-943 and
+        // :1035-1045; data/scripts/actions/tools/sickle.lua:4-7.
+        const SCYTHES: [&str; 2] = ["oteryn:item.tibia.i3453", "oteryn:item.tibia.i9596"];
+        const SICKLES: [&str; 1] = ["oteryn:item.tibia.i3293"];
+        const CROWBARS: [&str; 2] = ["oteryn:item.tibia.i3304", "oteryn:item.tibia.i9598"];
+        if SCYTHES.contains(&key) {
+            return Some(Self::Scythe);
+        }
+        if SICKLES.contains(&key) {
+            return Some(Self::Sickle);
+        }
+        if CROWBARS.contains(&key) {
+            return Some(Self::Crowbar);
+        }
         Some(match key {
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
@@ -28,9 +42,6 @@ impl TerrainTool {
             "oteryn:item.tibia.i3308" | "oteryn:item.tibia.i3330" | "oteryn:item.tibia.i9594" => {
                 Self::Machete
             }
-            "oteryn:item.tibia.i3453" | "oteryn:item.tibia.i9596" => Self::Scythe,
-            "oteryn:item.tibia.i3293" => Self::Sickle,
-            "oteryn:item.tibia.i3304" | "oteryn:item.tibia.i9598" => Self::Crowbar,
             _ => return None,
         })
     }
@@ -255,16 +266,18 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             }],
         },
     ));
-    bindings.extend([(7200, 7236), (21341, 21342)].map(|(target, transformed)| {
-        TerrainToolBinding {
+    // Crystal 201189f8 data-global/scripts/lib/register_actions.lua:629,637.
+    const QUEST_PICK_ROWS: [(u32, u32); 2] = [(7200, 7236), (21341, 21342)];
+    bindings.extend(
+        QUEST_PICK_ROWS.map(|(target, transformed)| TerrainToolBinding {
             tool: TerrainTool::Pick,
             target,
             required_action: None,
             transformed,
             yield_item: None,
             decay: Vec::new(),
-        }
-    }));
+        }),
+    );
     // Global's loose stone piles all open to their immediately following appearance. Keep this
     // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
     // and deadline recovery as the large-hole mapping above.

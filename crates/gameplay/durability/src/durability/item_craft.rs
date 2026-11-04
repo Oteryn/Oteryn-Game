@@ -155,6 +155,15 @@ async fn write<C: ItemLoopContent>(
         .as_ref()
         .is_none_or(|g| g.attempt.consumes_bait);
     let conversion = if let Some(gathering) = &request.gathering {
+        let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
+            && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
+                oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
+            })
+        {
+            oteryn_gameplay_items::fishing::NAIL
+        } else {
+            oteryn_gameplay_items::fishing::WORM
+        };
         let tool_id = request.tool.unwrap_or(request.source);
         let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
             .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
@@ -167,8 +176,7 @@ async fn write<C: ItemLoopContent>(
             ))
             || tool_id != gathering.mutation.tool
             || gathering.scope.content_generation != native.source_digest()
-            || (consumes_source
-                && definition.production_key != oteryn_gameplay_items::fishing::WORM)
+            || (consumes_source && definition.production_key != bait)
         {
             return Ok(UseDisposition::StaleState);
         }

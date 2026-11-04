@@ -23,6 +23,29 @@ enum Case {
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
 #[test]
+fn w22a_configured_loot_rate_scales_the_table_used_by_death_settlement() -> TestResult {
+    // Crystal 201189f8 `data/libs/functions/functions.lua:68-70`: RATE_LOOT multiplies the
+    // effective chance. This is the same helper called by kill_reward.rs before PG settlement.
+    let mut table = crate::combat::LootTableDefinition {
+        algorithm: crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm,
+        entries: vec![crate::combat::LootTableEntry {
+            item: crate::combat::LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i3031",
+                "definition-r1",
+            ),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: Some(400_000),
+            details: Default::default(),
+        }],
+    };
+    oteryn_gameplay_items::loot_plan::apply_configured_loot_rate(&mut table, 200);
+    assert_eq!(table.entries[0].probability_ppm, Some(800_000));
+    Ok(())
+}
+
+#[test]
 fn w22a_more_than_sixteen_entries_drop_into_the_kill_corpse() -> TestResult {
     scenario_thread::run("w22a-large", || {
         CASE.set(Some(Case::Large));

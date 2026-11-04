@@ -25,8 +25,6 @@ const LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
 const DONOR_LOOT_CHANCE_DIVISOR: u32 = 10;
 /// Donor per-entry loot factor `math.random(95, 105) / 100`, inclusive.
 ///
-/// UNVERIFIED: the factor is not applied to an entry at the full scale (100%), which Oteryn
-/// keeps guaranteed. The donor would let a 95% factor miss it; no source confirms Global either way.
 const LOOT_FACTOR_PERCENT_MIN: u32 = 95;
 const LOOT_FACTOR_PERCENT_SPAN: u64 = 11;
 
@@ -579,9 +577,9 @@ fn loot_factor_percent(draw: u64) -> u32 {
 }
 
 /// `success = draw_ppm < probability_ppm * factor / 100`, compared exactly, `draw_ppm` uniform
-/// over `0..1,000,000`: `probability_ppm == 0` never succeeds. An entry at the full scale always
-/// succeeds whatever the factor: Oteryn keeps guaranteed drops guaranteed (the donor lets a 95%
-/// factor drop a 100% entry; Global is unverified there). A Gut bonus raises the factored chance
+/// over `0..1,000,000`: `probability_ppm == 0` never succeeds. The factor also applies at the full
+/// scale, matching Crystal 201189f8 `data/libs/functions/monstertype.lua:89-100`; therefore its
+/// 95% draw can make a nominal 100% entry miss. A Gut bonus raises the factored chance
 /// by `ceil(chance * bonus)` (Crystal and Canary `generateLootRoll`, `adjustedChance +=
 /// math.ceil(adjustedChance * charmChance / 100)`); the donor rounds on its 1/100,000 scale,
 /// Oteryn on the exact ppm-percent product.
@@ -611,7 +609,22 @@ fn factored_success(
 ) -> bool {
     let chance = u64::from(probability_ppm) * u64::from(factor_percent);
     let gut = (chance * u64::from(gut_bonus_hundredths)).div_ceil(10_000);
-    probability_ppm == LOOT_PROBABILITY_PPM_SCALE || draw_ppm(draw) * 100 < chance + gut
+    draw_ppm(draw) * 100 < chance + gut
+}
+
+/// Applies the configured loot-rate percentage before a table reaches the deterministic planner.
+/// Crystal 201189f8 `data/libs/functions/functions.lua:68-70` divides the random threshold by
+/// `RATE_LOOT`; multiplying and capping the entry chance is the equivalent ppm operation.
+pub fn apply_configured_loot_rate(table: &mut LootTableDefinition, rate_percent: u32) {
+    for entry in &mut table.entries {
+        if let Some(probability) = &mut entry.probability_ppm {
+            *probability = u32::try_from(
+                u64::from(*probability).saturating_mul(u64::from(rate_percent)) / 100,
+            )
+            .unwrap_or(u32::MAX)
+            .min(LOOT_PROBABILITY_PPM_SCALE);
+        }
+    }
 }
 
 /// The donor takes the count from the same random value as the chance:
@@ -873,7 +886,10 @@ mod tests {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
-                details: Default::default(),
+                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                    gut_bonus_hundredths: 1_000,
+                    ..Default::default()
+                },
             })
             .collect();
         let table = LootTableDefinition {
@@ -898,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn zero_chance_entry_never_drops_and_max_chance_entry_always_drops() {
+    fn zero_chance_never_drops_and_nominal_max_chance_still_uses_donor_factor() {
         let table_ref = table_ref("oteryn:loot.chance.table");
         let table = LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
@@ -926,12 +942,20 @@ mod tests {
                     .iter()
                     .all(|entry| entry.purpose_key != "oteryn:item.chance.never")
             );
-            assert!(
-                plan.entries
-                    .iter()
-                    .any(|entry| entry.purpose_key == "oteryn:item.chance.always")
-            );
         }
+        // Crystal 201189f8 `data/libs/functions/monstertype.lua:89-100` applies the 95..105%
+        // factor before comparing every entry, including MAX_LOOTCHANCE.
+        assert!(!factored_success(999_999, 1_000_000, 95, 0));
+        assert!(factored_success(999_999, 1_000_000, 105, 0));
+    }
+
+    #[test]
+    fn configured_loot_rate_scales_and_caps_entry_chances() {
+        // Crystal 201189f8 `data/libs/functions/functions.lua:68-70` multiplies the effective
+        // chance by config `RATE_LOOT`; config.lua.dist ships the neutral multiplier.
+        let mut table = one_entry_table("oteryn:item.rate", 1, 1, Some(600_000));
+        apply_configured_loot_rate(&mut table, 200);
+        assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
     }
 
     #[test]
@@ -1371,7 +1395,8 @@ mod w22a_tests {
     }
 
     #[test]
-    fn forty_entry_table_plans_every_guaranteed_drop() -> Result<(), LootPlanError> {
+    fn forty_entry_table_plans_every_drop_when_bonus_covers_the_factor() -> Result<(), LootPlanError>
+    {
         let table = LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: (0..40)
@@ -1384,7 +1409,10 @@ mod w22a_tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
-                    details: Default::default(),
+                    details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                        gut_bonus_hundredths: 1_000,
+                        ..Default::default()
+                    },
                 })
                 .collect(),
         };
@@ -1418,7 +1446,7 @@ mod w22a_tests {
         assert!(factored_success(338_611, 356_433, 95, 0));
         assert!(!factored_success(338_612, 356_433, 95, 0));
         assert!(!factored_success(0, 0, 105, 0));
-        assert!(factored_success(999_999, 1_000_000, 95, 0));
+        assert!(!factored_success(999_999, 1_000_000, 95, 0));
         // The draw is reduced to ppm first.
         assert!(!factored_success(1_000_000 + 475_000, 500_000, 95, 0));
         assert!(factored_success(1_000_000 + 474_999, 500_000, 95, 0));

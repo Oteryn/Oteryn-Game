@@ -375,7 +375,7 @@ fn admitted(outcome: ItemMoveOutcome, selection: ItemMoveSelection) -> ItemMoveO
 }
 
 /// ITEM-LOOP-1 / MAP-PICKUP-1: a durable item or eligible base-map entry into the carried
-/// tree through the loop owner. Base-to-Ground, MapAdded, equipped sources and the main
+/// tree through the loop owner. Base-to-Ground, equipped sources and the main
 /// backpack itself remain unsupported.
 #[allow(clippy::too_many_arguments)]
 async fn loop_move<A: FreshAdmissionAuthority>(
@@ -389,6 +389,13 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
     let supported = matches!(source, ItemKey::Instance(_))
+        || matches!(
+            (source, target),
+            (
+                ItemKey::MapAdded(_),
+                LoopTarget::MainBackpack | LoopTarget::Container(ItemKey::Instance(_))
+            )
+        )
         || matches!(
             (source, target),
             (

@@ -253,6 +253,13 @@ fn m09_gathering_wire_ice_sculpture_stays_on_map() -> TestResult { run_gathering
 fn m09_gathering_wire_failed_ice_removes_block() -> TestResult { run_gathering(5942,7441,None,None,true) }
 #[test]
 fn m09_gathering_wire_ice_hole_catches_rare_fish() -> TestResult { run_gathering(3483,7236,Some(7237),Some(7158),true) }
+
+#[test]
+fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> TestResult { run_gathering(9306,4597,Some(4609),Some(9307),true) }
+#[test]
+fn m09_gathering_wire_mechanical_water_outside_sewers_returns_nothing_to_use() -> TestResult {
+    run_gathering_at(9306,4597,Some(4597),None,false,false)
+}
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult { run_gathering(3483,7236,Some(7236),None,false) }
 
@@ -268,16 +275,20 @@ fn p11_mechanical_ice_fishing_grants_exquisite_taste() -> TestResult { run_gathe
 fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResult { run_gathering(5942,5995,Some(4098),None,true) }
 
 fn run_gathering(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
+    run_gathering_at(tool, target, after, yield_item, committed, true)
+}
+
+fn run_gathering_at(tool: u16, target: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool, in_sewers: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }
     let started = std::time::Instant::now();
     std::thread::Builder::new().stack_size(256 << 20)
-        .spawn(move || gathering_scenario(tool,target,after,yield_item,committed).map_err(|e| e.to_string()))?
+        .spawn(move || gathering_scenario(tool,target,after,yield_item,committed,in_sewers).map_err(|e| e.to_string()))?
         .join().map_err(|_| "gathering e2e panic")??;
     eprintln!("M09_PG_CASE_EXECUTED tool={tool} target={target} yield={yield_item:?} elapsed_ms={}", started.elapsed().as_millis());
     Ok(())
 }
 
-fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool) -> TestResult {
+fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool, in_sewers: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -315,19 +326,49 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             );
         }
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let sewer = in_sewers && tool == 9306
+            && oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target_id);
+        let bait_key = if sewer {
+            oteryn_gameplay_items::fishing::NAIL
+        } else {
+            oteryn_gameplay_items::fishing::WORM
+        };
+        let start = crate::map::overlay::TilePos {
+            x: if sewer { 32742 } else { 6 },
+            y: if sewer { 31168 } else { 0 },
+            floor: if sewer { -8 } else { -7 },
+        };
+        let (mut bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (water, reference(water).ok_or("water")?.get() - 1),
         );
+        if sewer {
+            // Place the fixture inside Crystal's Yalahar sewer rectangle. The original
+            // room at (7, 0, -7) cannot reach the location-qualified mechanical branch.
+            let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+            data.manifest.world.min_x += 32736;
+            data.manifest.world.max_x += 32736;
+            data.manifest.world.min_y += 31168;
+            data.manifest.world.max_y += 31168;
+            data.manifest.world.floors = vec![-8];
+            for sector in &mut data.sectors {
+                sector.floor = -8;
+                sector.sx += 32736 / 32;
+                sector.sy += 31168 / 32;
+                for tile in &mut sector.tiles {
+                    tile.x += 32736;
+                    tile.y += 31168;
+                }
+            }
+            bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
+                &data.manifest, &data.sectors, &data.spawns, &data.npcs)?;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let boot_pins = crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: crate::map::overlay::TilePos {
-                x: 6,
-                y: 0,
-                floor: -7,
-            },
+            start,
         };
         // The production boot policy: an unknown fact blocks and is not pickupable.
         let definitions = |key: &str| {
@@ -358,7 +399,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             pin.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             pin.qualified_room().map_revision_digest(),
-            (6, 0, 7),
+            (i32::from(start.x), i32::from(start.y), -i16::from(start.floor)),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -380,9 +421,9 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: 6,
-                    y: 0,
-                    floor: 7,
+                    x: i32::from(start.x),
+                    y: i32::from(start.y),
+                    floor: -i16::from(start.floor),
                 },
             )
             .map_err(debug)?;
@@ -401,7 +442,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[(rod, 1), ("oteryn:item.tibia.i3492", 3)])
+        super::item_look::seed_main_backpack(&harness, &[(rod, 1), (bait_key, 3)])
             .await?;
         super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
@@ -413,9 +454,9 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
                 .ok_or("craft offer selectable")?;
         let mut placement = map.base().digest().to_vec();
         let target_pos = crate::map::overlay::TilePos {
-            x: 7,
-            y: 0,
-            floor: -7,
+            x: start.x + 1,
+            y: start.y,
+            floor: start.floor,
         };
         placement.extend_from_slice(
             &crate::map::view::placement_key(target_pos, 1)
@@ -487,7 +528,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         assert_eq!(inventory_yield, yield_item.map(|_| 1));
         let tool_quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(rod).fetch_one(&harness.pool).await?;
         assert_eq!(tool_quantity,1);
-        let bait: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3492'").fetch_one(&harness.pool).await?;
+        let bait: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key=$1").bind(bait_key).fetch_one(&harness.pool).await?;
         assert_eq!(bait,if matches!(tool, 3483 | 9306) && committed {2} else {3});
         let earned = match (tool, target_id, yield_item) {
             (5908, 5969, Some(5878)) => Some("oteryn:achievement/skin_deep"),
@@ -520,6 +561,18 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
                 assert_eq!(key,"oteryn:item.tibia.i7442");
             }
 
+        }
+        if sewer && committed {
+            let schedule: (Vec<i64>, Vec<i64>) = sqlx::query_as("SELECT decay_states,decay_delays FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
+            assert_eq!(schedule, (vec![4597], vec![1_200_000]));
+            // Receipt replay preserves the rod and consumes exactly one nail.
+            let bait: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key=$1").bind(bait_key).fetch_one(&harness.pool).await?;
+            assert_eq!(bait, 2);
+            sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=0").execute(&harness.pool).await?;
+            owner.refresh_terrain_tools().await;
+            let map = owner.bundle_map().ok_or("bundle map")?;
+            let tile = crate::map::view::compose_tile(&map.overlay,&map.facts.pinned(),target_pos).map_err(debug)?.ok_or("tile")?;
+            assert!(tile.entries.iter().any(|e| e.facts.appearance_id == 4597));
         }
         if target_id == 7236 && committed {
             let schedule: (Vec<i64>,Vec<i64>) = sqlx::query_as("SELECT decay_states,decay_delays FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
