@@ -42,13 +42,16 @@ pub(super) async fn kills_before_and_at_expiry(
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.activation_sequence().to_string())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    // Each pass reconstructs runtime/session owners from durable authority. The second
-    // pass observes the exact expiry instant on the same server clock, without waiting.
+    // Each pass reconstructs runtime/session owners from durable authority. Appended
+    // durations queue future intervals: observe the latest grant's start, then its
+    // exact expiry on the same server clock, without waiting for wall time.
     for expired in [false, true] {
-        if expired {
-            sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_expires_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$")
-                .execute(&h.pool).await?;
-        }
+        let clock = if expired {
+            "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_expires_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
+        } else {
+            "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_started_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
+        };
+        sqlx::raw_sql(clock).execute(&h.pool).await?;
         // One player plus two expiry-pass creatures must leave half the carrier free
         // for player admission. Five slots is the smallest capacity that fits both.
         let mut deps = Dependencies::with_content_and_capacity(

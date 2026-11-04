@@ -261,6 +261,10 @@ fn scenario(premium: bool) -> TestResult {
         epoch(&harness, 1).await?;
         // A real Store delivery owns this row; seed its durable effect before the
         // real daily dispatch so the claim must append rather than replace it.
+        // The expiry pass advances this clock explicitly. A slow 30-day dispatch
+        // loop must not consume the Store boost's five minutes of fixture time.
+        sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT TIMESTAMPTZ '2026-10-22 08:00:00+00' $$")
+            .execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_character_store_xp_boosts(operation_id,character_id,world_id,starts_at,expires_at,percent) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,encode($2,'hex')::uuid,game_daily_effect_now(),game_daily_effect_now()+interval '5 minutes',50)")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&harness.pool).await?;
         let potion = Vec::<u8>::new();
@@ -362,6 +366,8 @@ fn scenario(premium: bool) -> TestResult {
             let picks = Vec::<u8>::new();
             if matches!(day, 3 | 7) {
                 // Fail after all effect writes. The enclosing claim transaction must roll back.
+                let mint_before: (i64,i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_reward_claim_inbox_mint_reservations),(SELECT count(*) FROM game_reward_claim_inbox_mint_receipts),(SELECT count(*) FROM game_item_audit_outbox),(SELECT coalesce(sum(next_ordinal),0)::bigint FROM game_character_inbox_counters)")
+                    .fetch_one(&harness.pool).await?;
                 sqlx::raw_sql("CREATE FUNCTION dailyfx_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'DAILYFX injected failure'; END $$; CREATE CONSTRAINT TRIGGER dailyfx_fail AFTER INSERT ON game_character_daily_reward_lines DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION dailyfx_fail()")
                     .execute(&harness.pool).await?;
                 let (_, output) =
@@ -375,6 +381,9 @@ fn scenario(premium: bool) -> TestResult {
                         .fetch_one(&harness.pool)
                         .await?;
                 assert_eq!(entries, if day == 3 { 1 } else { 2 });
+                let mint_after: (i64,i64,i64,i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_reward_claim_inbox_mint_reservations),(SELECT count(*) FROM game_reward_claim_inbox_mint_receipts),(SELECT count(*) FROM game_item_audit_outbox),(SELECT coalesce(sum(next_ordinal),0)::bigint FROM game_character_inbox_counters)")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(mint_after, mint_before, "failed claim must roll back the entire native mint");
                 sqlx::raw_sql("DROP TRIGGER dailyfx_fail ON game_character_daily_reward_lines; DROP FUNCTION dailyfx_fail()")
                     .execute(&harness.pool).await?;
             }
@@ -415,6 +424,11 @@ fn scenario(premium: bool) -> TestResult {
             .fetch_all(&harness.pool).await?;
         assert!(!scrolls.is_empty(), "daily temple scroll reaches the production Inbox owner");
         assert!(scrolls.iter().all(|row| row == &("oteryn:item.tibia.i25718".to_string(), 1)));
+        let scroll_count = i64::try_from(expected.iter().filter(|line| line.1 == "TEMPLE_SCROLL").count())?;
+        assert_eq!(i64::try_from(scrolls.len())?, scroll_count);
+        let proven_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_inbox_mint_receipts r JOIN game_character_daily_reward_claims c USING(transaction_id) JOIN game_item_audit_outbox a USING(transaction_id,event_id) WHERE a.envelope_sha256=r.envelope_sha256")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(usize::try_from(proven_mints)?, scrolls.len(), "every scroll has a native mint receipt and audit");
         let balance: (i16,i64) = sqlx::query_as("SELECT balance,(SELECT count(*) FROM game_account_prey_wildcard_entries) FROM game_account_prey_wildcards").fetch_one(&harness.pool).await?;
         assert_eq!(balance, (if premium { 19 } else { 10 }, 10));
         let tokens: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT balance FROM game_character_cosmetic_tokens),(SELECT balance FROM game_character_bounty_reroll_tokens),(SELECT count(*) FROM game_character_bounty_reroll_token_entries)").fetch_one(&harness.pool).await?;
@@ -429,6 +443,9 @@ fn scenario(premium: bool) -> TestResult {
         assert_eq!(flags, 30);
         let minutes: i32 = sqlx::query_scalar("SELECT max(extract(epoch FROM (effect_expires_at-effect_started_at))/60)::integer FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'").fetch_one(&harness.pool).await?;
         assert_eq!(minutes, 60);
+        let appended: bool = sqlx::query_scalar("SELECT min(effect_started_at)=(SELECT max(expires_at) FROM game_character_store_xp_boosts) FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'")
+            .fetch_one(&harness.pool).await?;
+        assert!(appended, "daily XP duration appends to the Store timer");
         // New composed owners reload the saved grant; no in-memory boost flag is carried over.
         effects::kills_before_and_at_expiry(&harness, &authority, premium).await?;
         let state: (i16, i32) =
@@ -462,7 +479,10 @@ fn scenario(premium: bool) -> TestResult {
         let (_, output) = serve(&owner, &mut admitted, &retry).await?;
         assert_ne!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let rollback:(i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
-        assert_eq!(rollback, (31, i64::try_from(expected.len())? + 2, 0, 0));
+        // Crystal 201189f8 data/modules/scripts/daily_reward/daily_reward.lua:499-513
+        // delivers items into the Inbox. The completed cycle's scroll bindings and
+        // locations must survive this later rollback; the old zero counts predated P09.
+        assert_eq!(rollback, (31, i64::try_from(expected.len())? + 2, scroll_count, scroll_count));
         assert_eq!(ledger_snapshot(&harness).await?, before_balances);
         sqlx::query("DROP TRIGGER daily_fixture_fail ON game_character_daily_reward_lines")
             .execute(&harness.pool)

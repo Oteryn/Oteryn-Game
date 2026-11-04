@@ -17,12 +17,37 @@ UPDATE game_character_daily_reward_lines
 SET definition='oteryn:item.tibia.i25718'
 WHERE kind='TEMPLE_SCROLL' AND status='PENDING' AND definition IS NULL;
 ALTER TABLE game_character_daily_reward_lines ENABLE TRIGGER daily_reward_lines_immutable;
+ALTER TABLE game_character_daily_reward_lines DROP CONSTRAINT IF EXISTS daily_reward_item_definition;
 ALTER TABLE game_character_daily_reward_lines ADD CONSTRAINT daily_reward_item_definition CHECK(
     (kind IN('ITEM','TEMPLE_SCROLL'))=(definition IS NOT NULL));
+ALTER TABLE game_character_daily_reward_lines DROP CONSTRAINT IF EXISTS daily_reward_item_instance;
 ALTER TABLE game_character_daily_reward_lines ADD CONSTRAINT daily_reward_item_instance CHECK(
     (kind IN('ITEM','TEMPLE_SCROLL') AND status='DELIVERED')=(item_instance_id IS NOT NULL));
 
-CREATE TABLE game_character_store_xp_boosts (
+-- The v2 guard still required an unimplemented, PENDING temple scroll. New
+-- scrolls are delivered in the claim transaction and need the same receipt and
+-- bound Inbox MINT proof as ITEM lines. Preserve the other reward/ledger guards.
+DO $$
+DECLARE body TEXT;
+    pending TEXT := 'OR (l.kind=''TEMPLE_SCROLL'' AND l.status<>''PENDING'')
+                OR (l.kind<>''TEMPLE_SCROLL'' AND (l.status<>''DELIVERED'' OR l.delivering_transaction_id<>c.transaction_id))';
+    delivered TEXT := 'OR (l.status<>''DELIVERED'' OR l.delivering_transaction_id<>c.transaction_id)';
+BEGIN
+    SELECT pg_get_functiondef('game_daily_reward_delivery_guard()'::regprocedure) INTO STRICT body;
+    IF position(pending IN body)>0 THEN
+        EXECUTE replace(body,pending,delivered);
+    ELSIF position(delivered IN body)=0 THEN
+        RAISE EXCEPTION 'missing DAILY v2 delivery proof';
+    END IF;
+    SELECT pg_get_functiondef('game_daily_reward_line_guard()'::regprocedure) INTO STRICT body;
+    IF position('NEW.kind=''ITEM''' IN body)>0 THEN
+        EXECUTE replace(body,'NEW.kind=''ITEM''','NEW.kind IN(''ITEM'',''TEMPLE_SCROLL'')');
+    ELSIF position('NEW.kind IN(''ITEM'',''TEMPLE_SCROLL'')' IN body)=0 THEN
+        RAISE EXCEPTION 'missing DAILY bound Inbox MINT proof';
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS game_character_store_xp_boosts (
     operation_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(operation_id)),
     character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
     world_id UUID NOT NULL,
@@ -31,8 +56,9 @@ CREATE TABLE game_character_store_xp_boosts (
     percent SMALLINT NOT NULL CHECK(percent=50),
     UNIQUE(character_id,world_id,operation_id)
 );
-CREATE INDEX game_character_store_xp_boost_active
+CREATE INDEX IF NOT EXISTS game_character_store_xp_boost_active
     ON game_character_store_xp_boosts(character_id,world_id,expires_at DESC);
+DROP TRIGGER IF EXISTS game_character_store_xp_boosts_immutable ON game_character_store_xp_boosts;
 CREATE TRIGGER game_character_store_xp_boosts_immutable BEFORE UPDATE OR DELETE OR TRUNCATE
     ON game_character_store_xp_boosts FOR EACH STATEMENT EXECUTE FUNCTION game_daily_reward_immutable();
 REVOKE ALL ON game_character_store_xp_boosts FROM PUBLIC;

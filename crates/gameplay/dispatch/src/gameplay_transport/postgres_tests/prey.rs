@@ -44,6 +44,13 @@ fn scenario() -> TestResult {
         ))
         .execute(&h.pool)
         .await?;
+        // Restore the current delivery successor after reapplying v2: 0547's
+        // guard intentionally still describes the old pending temple scroll.
+        sqlx::raw_sql(include_str!(
+            "../../../../../../apps/game-server/migrations/0913_daily_reward_missing_parts.sql"
+        ))
+        .execute(&h.pool)
+        .await?;
         prepare_current_session(&h).await?;
         super::daily_reward::epoch(&h, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;

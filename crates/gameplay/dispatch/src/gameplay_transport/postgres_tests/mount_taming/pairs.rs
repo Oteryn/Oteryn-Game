@@ -9,17 +9,19 @@ async fn item_quantity(h: &Harness, key: &str) -> TestResult<i64> {
 }
 
 async fn equip_mask(h: &Harness, index: &ItemDefinitionIndex, key: &str) -> TestResult {
+    // The authored item fixtures now reach seed 240; the mask needs its own identity.
+    let item = crate::operator_files::uuid_v7().map_err(debug)?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
-        .bind(id(240).as_slice()).bind(id(42).as_slice()).bind(key).bind(index.revision(key).ok_or("mask revision")?)
+        .bind(item.as_slice()).bind(id(42).as_slice()).bind(key).bind(index.revision(key).ok_or("mask revision")?)
         .bind(id(241).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_slots VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
-        .bind(id(41).as_slice()).bind(id(240).as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
+        .bind(id(41).as_slice()).bind(item.as_slice()).bind(id(42).as_slice()).bind(id(242).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }

@@ -18,6 +18,14 @@ ALTER TABLE store_delivery_receipts ADD CONSTRAINT store_delivery_payload_kind C
     OR (item_instance_id IS NULL AND entitlement_key IS NULL AND purchase_request_id IS NOT NULL)
 );
 
+-- Purchase-bound Charm receipts use their own atomic effect proof below.
+-- The Hireling proof continues to cover every other purchase-bound receipt.
+DROP TRIGGER store_hireling_delivery_proven ON store_delivery_receipts;
+CREATE CONSTRAINT TRIGGER store_hireling_delivery_proven AFTER INSERT ON store_delivery_receipts
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+    WHEN(NEW.purchase_request_id IS NOT NULL AND NEW.entitlement_key IS DISTINCT FROM 'charm-expansion')
+    EXECUTE FUNCTION game_store_hireling_delivery_proven();
+
 CREATE FUNCTION game_charm_expansion_delivery_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN

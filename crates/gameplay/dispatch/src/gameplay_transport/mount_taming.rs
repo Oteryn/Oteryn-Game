@@ -109,11 +109,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(ItemUseError::Unavailable(_)) => return Err(None),
             Err(_) => return Err(reject),
         }
-        let inventory = self
+        let inventory = match self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| reject)?;
+        {
+            Ok(inventory) => inventory,
+            // An unresolved carried source may belong to another owner. Its
+            // historical receipt must remain reachable after a scope change.
+            // Fresh taming writes still require the current inventory fence.
+            Err(ItemUseError::AuthorityRejected)
+                if matches!(intent.target, UseTarget::Item(_))
+                    && intent.use_with_map_item.is_some() =>
+            {
+                return Ok(None);
+            }
+            Err(_) => return Err(reject),
+        };
         let bag = inventory
             .backpack
             .as_ref()
