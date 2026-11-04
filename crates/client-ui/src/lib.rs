@@ -71,6 +71,10 @@ pub mod bestiary_charms;
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
 
+/// Boss encounter status and Bosstiary progress.
+#[path = "features/0117-boss-encounter/mod.rs"]
+pub mod boss_encounter;
+
 /// Personal boss reward browsing and custody collection.
 #[path = "features/0224-boss-rewards/mod.rs"]
 pub mod boss_rewards;

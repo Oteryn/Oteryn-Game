@@ -130,6 +130,9 @@ pub use oteryn_session::exiva;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
 
+#[path = "features/0117-boss-encounter/protocol.rs"]
+pub mod boss_encounter;
+
 /// Personal boss reward commands through the admitted session.
 #[path = "features/0224-boss-rewards/protocol.rs"]
 pub mod boss_rewards;

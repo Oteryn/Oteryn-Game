@@ -79,6 +79,8 @@ fn derived_gated_routes_match_previous_table() {
         (68, &[85], &[]),
         (72, &[89], &[]),
         (81, &[97], &[]),
+        // C49: the boss status panel uses the registry-owned capability 117 route.
+        (117, &[133, 169, 178, 179, 180, 340, 491], &[99]),
         (140, &[160], &[]),
         (165, &[220], &[]),
         (16, &[22], &[16]),

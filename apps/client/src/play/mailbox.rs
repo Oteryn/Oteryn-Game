@@ -66,6 +66,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) boss_encounter: oteryn_client_ui::boss_encounter::BossEncounterPanel,
+    pub(super) boss_encounter_shutdown: bool,
     pub(super) boss_difficulty: oteryn_client_ui::boss_difficulty::BossDifficultyPanel,
     pub(super) browse_field: oteryn_client_ui::browse_field::BrowseFieldPanel,
     pub(super) chat_party_room: oteryn_client_ui::chat_party_room::ChatPartyRoomPanel,
@@ -306,6 +308,7 @@ impl Drop for PlayLink {
         // CL26s3
         mailbox.daily_reward_shutdown = true;
         // CL26s4
+        mailbox.boss_encounter_shutdown = true;
         mailbox.boss_rewards_shutdown = true;
     }
 }

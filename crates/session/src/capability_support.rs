@@ -103,6 +103,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     task_board::CAPABILITY_TASK_BOARD_V1,
     oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+    oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     prey::CAPABILITY_PREY_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
     wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
