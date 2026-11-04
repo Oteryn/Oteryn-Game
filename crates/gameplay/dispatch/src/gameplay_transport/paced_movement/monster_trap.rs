@@ -159,7 +159,10 @@ mod tests {
         let key = format!("oteryn:item.tibia.i{trap}");
         let other = format!(
             "oteryn:item.tibia.i{}",
-            super::trap(trap).map_or(100, |rule| rule.closed)
+            super::trap(trap)
+                .map(|rule| rule.closed)
+                .filter(|closed| *closed != trap)
+                .unwrap_or(100)
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&key, 0), (&other, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
