@@ -55,6 +55,11 @@ impl State {
             self.stash_rows = None;
         }
         match command.command_type {
+            oteryn_protocol_oteryn::house_podium::COMMAND_QUERY
+            | oteryn_protocol_oteryn::house_podium::COMMAND_SET
+            | oteryn_protocol_oteryn::house_podium::COMMAND_PROJECTION => {
+                routing::house_podium::route(authority, admitted, command).await
+            }
             world_object::COMMAND_TYPE_USE_INTENT => {
                 // The House services use carried items/Inbox definitions. Map,
                 // creature and rune targets retain their separate scope owners.
