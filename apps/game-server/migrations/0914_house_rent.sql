@@ -111,7 +111,7 @@ BEGIN
     VALUES(entry,payment,'HOUSE_RENT',p.owner_account_id,w,NULL,p.rent_gold,b.balance,b.balance-p.rent_gold,b.last_entry_id,p.owner_character_id);
    UPDATE game_account_bank_balances SET balance=b.balance-p.rent_gold,last_entry_id=entry WHERE account_id=p.owner_account_id AND world_id=w;
   END IF;
-  UPDATE game_house_properties SET paid_until=greatest(paid_until,statement_timestamp())+period WHERE world_id=w AND house_key=p.house_key;
+  UPDATE game_house_properties SET paid_until=greatest(paid_until,statement_timestamp())+period,revision=revision+1 WHERE world_id=w AND house_key=p.house_key;
   UPDATE game_house_rent_state SET warnings=0,next_rent_at=(SELECT paid_until FROM game_house_properties WHERE world_id=w AND house_key=p.house_key) WHERE world_id=w AND house_key=p.house_key;
   RETURN TRUE;
  END IF;

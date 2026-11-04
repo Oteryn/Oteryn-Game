@@ -34,11 +34,11 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
 
         // paid_until is the donor's collection gate: a prepaid house is not charged early.
-        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()+interval '1 day' WHERE house_key=$1")
+        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()+interval '1 day',revision=revision+1 WHERE house_key=$1")
             .bind(HOUSE).execute(&h.pool).await?;
         assert!(!h.root.advance_house_rent(&authority, &h.node, crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
         assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,0);
-        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day' WHERE house_key=$1")
+        sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day',revision=revision+1 WHERE house_key=$1")
             .bind(HOUSE).execute(&h.pool).await?;
 
         // No balance: one durable Inbox letter, exactly as payHouses warns its owner.
@@ -67,7 +67,7 @@ fn rent_payment_warning_and_seventh_warning_eviction_moves_items_to_inbox() -> T
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES($1::uuid,$2::uuid,$3,$4::uuid,$5::uuid,1)").bind(&item).bind(&world).bind(HOUSE).bind(&character).bind(&placement).execute(&mut *tx).await?;
         tx.commit().await?;
         for expected in 1..=7_i16 {
-            sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
+            sqlx::query("UPDATE game_house_properties SET paid_until=statement_timestamp()-interval '1 day',revision=revision+1 WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
             sqlx::query("UPDATE game_house_rent_state SET next_rent_at=statement_timestamp()-interval '1 day' WHERE house_key=$1").bind(HOUSE).execute(&h.pool).await?;
             assert!(h.root.advance_house_rent(&authority,&h.node,crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?).await?);
             assert_eq!(sqlx::query_scalar::<_,i16>("SELECT warnings FROM game_house_rent_state WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?,expected);
