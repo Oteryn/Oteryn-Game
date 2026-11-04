@@ -1,4 +1,5 @@
 //! Capability-81 NPC shop commands sent through the admitted session.
+pub use oteryn_session::npc_service;
 pub use oteryn_session::npc_shop;
 pub use oteryn_session::{CommandStatus, EntityRef};
 pub use oteryn_session::{NpcIntentDisposition, NpcTradeSide};
@@ -37,4 +38,39 @@ pub async fn send<S: SessionStream>(
         status: reply.status,
         result,
     })
+}
+
+/// NPC service shares the same admitted command and domain revision owners as the shop.
+pub async fn talk<S: SessionStream>(
+    session: &mut Session<S>,
+    intent: &npc_service::NpcTalkIntent,
+) -> Result<NpcIntentDisposition, SessionError> {
+    let payload =
+        npc_service::encode_npc_talk_intent(intent).map_err(|_| SessionError::SessionUnusable)?;
+    let result = session
+        .gated_command(
+            npc_service::CAPABILITY_NPC_SERVICE_V1,
+            npc_service::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    npc_service::decode_npc_intent_result(&result.payload)
+        .map_err(|_| SessionError::SessionUnusable)
+}
+
+pub async fn buy<S: SessionStream>(
+    session: &mut Session<S>,
+    intent: &npc_service::NpcTradeIntent,
+) -> Result<NpcIntentDisposition, SessionError> {
+    let payload =
+        npc_service::encode_npc_trade_intent(intent).map_err(|_| SessionError::SessionUnusable)?;
+    let result = session
+        .gated_command(
+            npc_service::CAPABILITY_NPC_SERVICE_V1,
+            npc_service::COMMAND_TYPE_NPC_TRADE_INTENT,
+            &payload,
+        )
+        .await?;
+    npc_service::decode_npc_intent_result(&result.payload)
+        .map_err(|_| SessionError::SessionUnusable)
 }

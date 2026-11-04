@@ -2,6 +2,156 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-callback/banshees-final-battle-exit",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32219,
+          "y": 31913,
+          "floor": -15
+        },
+        "unique": 35019,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32269,
+        "y": 31853,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/first_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/second_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/third_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fourth_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/sixth_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/last_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/final_battle",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-7-last_seal_flame.lua:3-24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:591-594"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-first-seal-return",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25019,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32266,
+        "y": 31886,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_teleport_back.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/banshees-second-seal",
+      "quest": "oteryn:quest.the_queen_of_the_banshees_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32171,
+          "y": 31853,
+          "floor": -15
+        },
+        "unique": 35014,
+        "action": null,
+        "appearance": 1959
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32272,
+        "y": 31849,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/second_seal",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/second_seal_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_queen_of_the_banshees/movement-2-second_seal_flame.lua:3-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:566-569"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/behemoth",
       "quest": "oteryn:quest.behemoth_quest",
       "trigger": "use",
@@ -66,6 +216,170 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/behemoth/action-lever.lua:1-28",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/behemoth/action-lever.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dawnport-rare-herb",
+      "quest": "oteryn:quest.dawnport_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32028,
+          "y": 31882,
+          "floor": -7
+        },
+        "unique": 40027,
+        "action": null,
+        "appearance": 21377
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_55/dawnport/the_rare_herb",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_the_rare_herb.lua:3-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4658-4661"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-lever-30006",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32792,
+          "y": 31595,
+          "floor": -7
+        },
+        "unique": 30006,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32792,
+            "y": 31581,
+            "floor": -7
+          },
+          "appearance": 1282
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/action-lever.lua:3-16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:781-784"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-lever-30035",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32792,
+          "y": 31579,
+          "floor": -7
+        },
+        "unique": 30035,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32790,
+            "y": 31594,
+            "floor": -7
+          },
+          "appearance": 1772
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/action-lever.lua:20-33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1027-1030"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dryad-garden-enter",
+      "quest": "oteryn:quest.flower_month",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 33331,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33202,
+        "y": 32012,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dryad-garden-leave",
+      "quest": "oteryn:quest.flower_month",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 33332,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33264,
+        "y": 32012,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
       ]
     },
     {
@@ -141,6 +455,528 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/giant_smithhammer/lever.lua:1-18",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/giant_smithhammer/lever.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grave-danger-cobra-access",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33384,
+          "y": 32627,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/cobra_bastion/access",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grave_danger/cobra_bastion/movements_access_storage.lua:3-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grave-danger-zelos-lever-access",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32174,
+          "y": 31916,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33492,
+        "y": 31546,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grave_danger/movements_teleport_king_zelos.lua:3-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-ashes",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4638,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission28",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission29",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19129",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_ashes.lua:1-16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-dormitory-exit",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4535,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33018,
+        "y": 32437,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_dormitory_teleport.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-hallowed",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4634,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission19",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission20",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19089",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_hallowed.lua:1-16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4641",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4641,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32a",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4642",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4642,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32a",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32b",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-monk-4643",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4643,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission32b",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission33",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18931",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_monks.lua:1-24"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-sacrifice-teleport-4541",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4541,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33017,
+        "y": 32419,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission74",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-sacrifice-teleport-4542",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4542,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33018,
+        "y": 32425,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission75",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/movements_sacrifice_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-scroll-note",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4662,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission53",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission54",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission55",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_scroll.lua:1-13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-statue",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32998,
+          "y": 32416,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 4636,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission24",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission25",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_statue.lua:1-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-switch",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4650,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission40",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua:1-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-tears",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4632,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission14",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission15",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19084",
+        "count": 3,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_tears.lua:1-16"
       ]
     },
     {
@@ -229,6 +1065,39 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/liquid-black-spectulus-chair",
+      "quest": "oteryn:quest.liquid_black_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 57744,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33269,
+        "y": 31832,
+        "floor": -1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/actions_chairteleport.lua:1-18"
       ]
     },
     {
@@ -766,6 +1635,224 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/new-frontier-mountain-passage-31532",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33082,
+          "y": 31532,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movement_wayout.lua:11-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-mountain-passage-31533",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33082,
+          "y": 31533,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movement_wayout.lua:11-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-snake-head-33004",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33004,
+          "y": 31540,
+          "floor": 0
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31347,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movements_snake_head_teleport.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-snake-head-33005",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33005,
+          "y": 31540,
+          "floor": 0
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31347,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movements_snake_head_teleport.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-vine-4",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33021,
+          "y": 31536,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33022,
+        "y": 31536,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_vine.lua:1-21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-vine-6",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33021,
+          "y": 31536,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33021,
+        "y": 31536,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_vine.lua:1-21"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/outlaw-camp-door",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "trigger": "use",
@@ -797,6 +1884,36 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/outlaw-camp-entrance",
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32619,
+          "y": 32248,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32619,
+        "y": 32249,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/movements_entrance.lua:1-25"
       ]
     },
     {
@@ -871,14 +1988,14 @@
       ]
     },
     {
-      "key": "oteryn:quest-callback/travelling-trader-delivery",
-      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "key": "oteryn:quest-callback/postman-letterbag-delivery",
+      "quest": "oteryn:quest.the_postman_missions_quest",
       "trigger": "use",
       "selector": {
         "position": null,
-        "unique": 3020,
-        "action": null,
-        "appearance": null
+        "unique": null,
+        "action": 101,
+        "appearance": 3221
       },
       "lever": null,
       "reversible": false,
@@ -886,71 +2003,23 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission09",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
         }
       ],
       "offerings": [],
-      "item_on_target": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3217",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2859",
+        "target_replacement": null
+      },
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433"
-      ]
-    },
-    {
-      "key": "oteryn:quest-callback/dryad-garden-enter",
-      "quest": "oteryn:quest.flower_month",
-      "trigger": "use",
-      "selector": {
-        "position": null,
-        "unique": 33331,
-        "action": null,
-        "appearance": null
-      },
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "teleport": {
-        "x": 33202,
-        "y": 32012,
-        "floor": -11
-      },
-      "storage": [],
-      "offerings": [],
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
-      ]
-    },
-    {
-      "key": "oteryn:quest-callback/dryad-garden-leave",
-      "quest": "oteryn:quest.flower_month",
-      "trigger": "use",
-      "selector": {
-        "position": null,
-        "unique": 33332,
-        "action": null,
-        "appearance": null
-      },
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "teleport": {
-        "x": 33264,
-        "y": 32012,
-        "floor": -7
-      },
-      "storage": [],
-      "offerings": [],
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/dryad_garden.lua:1-26"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_postman_missions_quest/actions_package.lua:1-14"
       ]
     },
     {
@@ -981,6 +2050,535 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:6-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33543-32912-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33543,
+          "y": 32912,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33637,
+        "y": 32841,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33546-32911-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33546,
+          "y": 32911,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33765,
+        "y": 32909,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33549-32912-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33549,
+          "y": 32912,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33563,
+        "y": 32862,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33562-32862-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33562,
+          "y": 32862,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33549,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33571-32868-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33571,
+          "y": 32868,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33592,
+        "y": 32909,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33591-32909-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33591,
+          "y": 32909,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33571,
+        "y": 32869,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33597-32914-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33597,
+          "y": 32914,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33662,
+        "y": 32976,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33637-32840-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33637,
+          "y": 32840,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33543,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33661-32976-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33661,
+          "y": 32976,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33597,
+        "y": 32913,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/primal-ordeal-wagon-33765-32908-15",
+      "quest": "oteryn:quest.primal_ordeal_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33765,
+          "y": 32908,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33546,
+        "y": 32912,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:15-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/soul-war-claustrophobic-exit",
+      "quest": "oteryn:quest.soul_war_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34022,
+          "y": 31091,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33685,
+        "y": 31599,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua:90-112"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-kroazur-exit",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33591,
+          "y": 32321,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25029,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33619,
+        "y": 32306,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:3-35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua:76-78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32949",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32949,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32950",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32950,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/threatened-dreams-poacher-discovery-32951",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32951,
+          "y": 31811,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 7
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2509",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:2344"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/travelling-trader-delivery",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3020,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433"
       ]
     }
   ]

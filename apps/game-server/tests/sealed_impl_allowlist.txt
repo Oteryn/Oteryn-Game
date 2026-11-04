@@ -1,5 +1,13 @@
 # Allowlist of `impl <seal>::Sealed for T` and `impl PremiumGateOwner for T` sites (file | trait | type).
 # Seals must stay inside the owning crate. Add entries only with CP review.
+# MAINRED14: the native bed adapter carries House-owner-checked presence into the
+# durability boundary; the terminal fallback and test adapter stay in durability,
+# while relocation and admission-release proofs are owner-crate test fixtures.
+crates/gameplay/dispatch/src/gameplay_transport/bed_sleep_production.rs | house_presence_seal::Sealed | NativeBedPresence
+crates/gameplay/durability/src/durability/endgame_terminal/owner.rs | sealed::Sealed | TestSharedTerminalOwner
+crates/gameplay/durability/src/durability/endgame_terminal/owner.rs | sealed::Sealed | UnavailableSharedTerminalOwner
+crates/gameplay/entities/src/carrier/channel_actor_position_tests.rs | relocation_seal::Sealed | Proof
+crates/gameplay/foundation/src/foundation/admission_authority_publication.rs | fresh_source_sealed::Sealed | ReleaseOwner
 # 60f2542a5 (Wheel): the due-combat compositor owns ChannelSpellStates in dispatch;
 # its delayed-execution fixture exercises the same spell-owned commit boundary.
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs | due_commit_seal::Sealed | ChannelSpellStates

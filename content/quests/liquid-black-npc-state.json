@@ -1,0 +1,173 @@
+{
+  "schema": "OTERYN_QUEST_STATE_LOWERING/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "family": "Quest",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "authoring_sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/scrutinon.lua",
+      "sha256": "4d71672acedab63fca203feb8156aeeae7faabe2dcff7430cac12c34b0893f8e",
+      "speech": [
+        {
+          "key": "scrutinon_quirefang",
+          "line": 57
+        },
+        {
+          "key": "scrutinon_visitor",
+          "line": 65
+        }
+      ],
+      "greeting_line": 101,
+      "additional_lines": [
+        95,
+        96,
+        97
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/spectulus.lua",
+      "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+      "speech": [
+        {
+          "key": "spectulus_machine",
+          "line": 380
+        },
+        {
+          "key": "spectulus_yes_21",
+          "line": 389
+        },
+        {
+          "key": "spectulus_yes_22",
+          "line": 401
+        },
+        {
+          "key": "spectulus_yes_23",
+          "line": 411
+        }
+      ],
+      "greeting_line": 492,
+      "additional_lines": [
+        70,
+        493,
+        494
+      ]
+    }
+  ],
+  "counts": {
+    "quests": 1,
+    "tracks": 2,
+    "transitions": 2
+  },
+  "quests": [
+    {
+      "quest": "oteryn:quest.liquid_black_quest",
+      "source_quest": "crystal:quest/liquid_black",
+      "completion": "NOT_LOWERED_MULTI_TRACK",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/questline",
+          "quest": "oteryn:quest.liquid_black_quest",
+          "initial": -1,
+          "min": -1,
+          "max": 1,
+          "bounds_basis": "pinned_source_and_existing_canonical_track",
+          "source_key": "storage:Quest.U9_4.LiquidBlackQuest.Questline"
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "quest": "oteryn:quest.liquid_black_quest",
+          "initial": 0,
+          "min": 0,
+          "max": 5,
+          "bounds_basis": "pinned_source_and_existing_canonical_track",
+          "source_key": "storage:Quest.U9_4.LiquidBlackQuest.Visitor"
+        }
+      ],
+      "transitions": [
+        {
+          "key": "oteryn:quest-transition/liquid-black/visitor-start",
+          "quest": "oteryn:quest.liquid_black_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/questline",
+              "from": {
+                "op": "LT",
+                "value": 1
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+              "from": {
+                "op": "ANY"
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 1
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/scrutinon",
+            "keywords": [
+              "visitor"
+            ],
+            "topics": [
+              1
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/scrutinon.lua",
+            "line": 69
+          }
+        },
+        {
+          "key": "oteryn:quest-transition/liquid-black/machine-access",
+          "quest": "oteryn:quest.liquid_black_quest",
+          "completes": false,
+          "effects": [
+            {
+              "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+              "from": {
+                "op": "EQ",
+                "value": 3
+              },
+              "from_exact": true,
+              "effect": {
+                "kind": "SET",
+                "value": 4
+              }
+            }
+          ],
+          "requested_by": {
+            "npc": "crystal:npc/spectulus",
+            "keywords": [
+              "yes"
+            ],
+            "topics": [
+              23
+            ]
+          },
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/spectulus.lua",
+            "line": 409
+          }
+        }
+      ]
+    }
+  ]
+}

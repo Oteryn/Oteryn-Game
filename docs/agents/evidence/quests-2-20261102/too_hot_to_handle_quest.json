@@ -1,0 +1,675 @@
+{
+  "schema": "OTERYN_QUESTS_2_REVIEW_SNAPSHOT/v1",
+  "classification": "DERIVED",
+  "quest": "too_hot_to_handle_quest",
+  "lane": "root",
+  "batch": "quests-2-20261102",
+  "scope": "Frozen source rows and author dispositions preserved verbatim as JSON values. IMPLEMENTED means the named code/data subset only; all limitations and validation claims remain in the source disposition.",
+  "input_documents": [
+    {
+      "path": "too_hot_to_handle_quest.json",
+      "sha256": "72369edfdbe26623c0401563c9a417c76b565016da9b284cf96376b8f4937874"
+    }
+  ],
+  "source_context": {
+    "schema": 1,
+    "quest": "too_hot_to_handle_quest",
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "inventory_rows": 8,
+    "new_runtime_rules": 0,
+    "left_out_rows": 8,
+    "note": "The quest directory is Canary-only; the identical pinned Crystal BossLever exists outside quests/. No new gameplay is activated by this evidence packet.",
+    "source_comparison": {
+      "crystal": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:1-23",
+      "canary": "opentibiabr/canary@47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/too_hot_to_handle_quest/the_brainstealer.lua:1-23",
+      "sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+      "byte_identical": true
+    }
+  },
+  "source_rows_sha256": "2f3a79f9aa4a74ba4efde7e17d8e8e8dfb8987ee9a4305d44e31873491a03bef",
+  "source_dispositions_sha256": "9581582489bf9f10e52867288e3825ca1e11bf711dda339dded55a081d5eda5c",
+  "summary": {
+    "inventory_rows": 8,
+    "new_pattern_rows_without_assigned_id": 0,
+    "import_kinds": {
+      "RĘCZNIE": 8
+    },
+    "normalized_status": {
+      "LEFT_OUT": 8
+    },
+    "source_status": {
+      "LEFT_OUT": 8
+    },
+    "complete_playable_quest_claimed": false
+  },
+  "rows": [
+    {
+      "ordinal": 1,
+      "element": "Dźwignia Brainstealera",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Dźwignia Brainstealera",
+        "patterns": [
+          "P06"
+        ],
+        "trigger": "pozycja(32529,31122,15)",
+        "condition": "requiredLevel250; helperBossLever sprawdza grupę/pokój",
+        "effect": "boss The Brainstealer(32499,31124,15); pokój(32490,31117,15)–(32506,31132,15); wyjście(32536,31122,15)",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:1-23",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 1,
+        "source_end": 23,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Dźwignia Brainstealera",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Dźwignia Brainstealera",
+          "patterns": [
+            "P06"
+          ],
+          "trigger": "pozycja(32529,31122,15)",
+          "condition": "requiredLevel250; helperBossLever sprawdza grupę/pokój",
+          "effect": "boss The Brainstealer(32499,31124,15); pokój(32490,31117,15)–(32506,31132,15); wyjście(32536,31122,15)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:1-23",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 1,
+          "source_end": 23,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 1,
+          "end_line": 23,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L1-L23"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "element": "Stanowisko grupy 1",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Stanowisko grupy 1",
+        "patterns": [
+          "P03",
+          "P06"
+        ],
+        "trigger": "playerPosition(32530,31122,15)",
+        "condition": "BossLever kwalifikuje gracza",
+        "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:8",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 8,
+        "source_end": 8,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Stanowisko grupy 1",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Stanowisko grupy 1",
+          "patterns": [
+            "P03",
+            "P06"
+          ],
+          "trigger": "playerPosition(32530,31122,15)",
+          "condition": "BossLever kwalifikuje gracza",
+          "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:8",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 8,
+          "source_end": 8,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 8,
+          "end_line": 8,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "3c69ef3d8c8c2c37ce5797fe88447aa0862f3f9b9b47ecc8eb50125a61ab7f47",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L8-L8"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "element": "Stanowisko grupy 2",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Stanowisko grupy 2",
+        "patterns": [
+          "P03",
+          "P06"
+        ],
+        "trigger": "playerPosition(32531,31122,15)",
+        "condition": "BossLever kwalifikuje gracza",
+        "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:9",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 9,
+        "source_end": 9,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Stanowisko grupy 2",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Stanowisko grupy 2",
+          "patterns": [
+            "P03",
+            "P06"
+          ],
+          "trigger": "playerPosition(32531,31122,15)",
+          "condition": "BossLever kwalifikuje gracza",
+          "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:9",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 9,
+          "source_end": 9,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 9,
+          "end_line": 9,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "3e91f559a5622677a3917dc82624a2a20a83cb2ec1f962f09f0a4137a6c8b75d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L9-L9"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "element": "Stanowisko grupy 3",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Stanowisko grupy 3",
+        "patterns": [
+          "P03",
+          "P06"
+        ],
+        "trigger": "playerPosition(32532,31122,15)",
+        "condition": "BossLever kwalifikuje gracza",
+        "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:10",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 10,
+        "source_end": 10,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Stanowisko grupy 3",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Stanowisko grupy 3",
+          "patterns": [
+            "P03",
+            "P06"
+          ],
+          "trigger": "playerPosition(32532,31122,15)",
+          "condition": "BossLever kwalifikuje gracza",
+          "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:10",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 10,
+          "source_end": 10,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 10,
+          "end_line": 10,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "e7cf18b70f65f9ee5d18c76676970122580627569d0fe088bdcfd518ab23de26",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L10-L10"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "element": "Stanowisko grupy 4",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Stanowisko grupy 4",
+        "patterns": [
+          "P03",
+          "P06"
+        ],
+        "trigger": "playerPosition(32533,31122,15)",
+        "condition": "BossLever kwalifikuje gracza",
+        "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:11",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 11,
+        "source_end": 11,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Stanowisko grupy 4",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Stanowisko grupy 4",
+          "patterns": [
+            "P03",
+            "P06"
+          ],
+          "trigger": "playerPosition(32533,31122,15)",
+          "condition": "BossLever kwalifikuje gracza",
+          "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:11",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 11,
+          "source_end": 11,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 11,
+          "end_line": 11,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "e8fc35b92415fd715195de6d4cbdba44fc8cb902e22dae42a565870eb7cd3335",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L11-L11"
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "element": "Stanowisko grupy 5",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Stanowisko grupy 5",
+        "patterns": [
+          "P03",
+          "P06"
+        ],
+        "trigger": "playerPosition(32534,31122,15)",
+        "condition": "BossLever kwalifikuje gracza",
+        "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:12",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 12,
+        "source_end": 12,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Stanowisko grupy 5",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Stanowisko grupy 5",
+          "patterns": [
+            "P03",
+            "P06"
+          ],
+          "trigger": "playerPosition(32534,31122,15)",
+          "condition": "BossLever kwalifikuje gracza",
+          "effect": "teleport(32495,31129,15); CONST_ME_TELEPORT",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:12",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 12,
+          "source_end": 12,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 12,
+          "end_line": 12,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "e33e7cb5c5acbbe5b7659758d96d1e7d200deb4f04a9c2ac670da7d2119de7a7",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L12-L12"
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "element": "Walka Brainstealer: podstawowe parametry",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Walka Brainstealer: podstawowe parametry",
+        "patterns": [
+          "P30"
+        ],
+        "trigger": "Game.createMonsterType(\"The Brainstealer\")",
+        "condition": "boss spawnowany przez dźwignię",
+        "effect": "HP300000; XP72000; corpse36843; summon brain parasite max2; ataki, odporności i loot z jawnej definicji",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/the_brainstealer.lua:1-134",
+        "source_path": "data-global/monster/bosses/the_brainstealer.lua",
+        "source_line": 1,
+        "source_end": 134,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Walka Brainstealer: podstawowe parametry",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Walka Brainstealer: podstawowe parametry",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "Game.createMonsterType(\"The Brainstealer\")",
+          "condition": "boss spawnowany przez dźwignię",
+          "effect": "HP300000; XP72000; corpse36843; summon brain parasite max2; ataki, odporności i loot z jawnej definicji",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/the_brainstealer.lua:1-134",
+          "source_path": "data-global/monster/bosses/the_brainstealer.lua",
+          "source_line": 1,
+          "source_end": 134,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json (SOURCE); crates/gameplay/quests/src/quest/world_callbacks.rs:84 (ograniczony executor); brak kompletnego powiązania tej reguły",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "The complete BossLever needs group admission, qualified physical room/objects, occupancy, spawn, timeout and return under W02/WorldBundle/Instance. The closed callback model cannot replace this lifecycle with an unconditional teleport; coordinator deferred shared owner extensions.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589075023",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/monster/bosses/the_brainstealer.lua",
+          "start_line": 1,
+          "end_line": 134,
+          "blob_sha256": "561e1afba75c08f68c864fe69628466fa01dd9af0cc3281a6c8be5449b9f5098",
+          "blob_line_count": 134,
+          "excerpt_sha256": "561e1afba75c08f68c864fe69628466fa01dd9af0cc3281a6c8be5449b9f5098",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/bosses/the_brainstealer.lua#L1-L134"
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "element": "Pełna linia misji i fazy spoza donora",
+      "source_row": {
+        "quest": "too_hot_to_handle_quest",
+        "step": "Pełna linia misji i fazy spoza donora",
+        "patterns": [
+          "P30"
+        ],
+        "trigger": "NIEZNANE — brak w dostępnym korpusie Crystal",
+        "condition": "NIEZNANE; nie przyjmować selected approximation z Oteryn za Crystal",
+        "effect": "NIEZNANE; Global-only wymaga ANSWER",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:1-23",
+        "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+        "source_line": 1,
+        "source_end": 23,
+        "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json: oteryn_recipe jest CHOSEN_OTERYN_APPROXIMATION, runtime WAITING_IMPLEMENTATION",
+        "import_kind": "RĘCZNIE"
+      },
+      "source_disposition": {
+        "quest": "too_hot_to_handle_quest",
+        "element": "Pełna linia misji i fazy spoza donora",
+        "inventory": {
+          "quest": "too_hot_to_handle_quest",
+          "step": "Pełna linia misji i fazy spoza donora",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "NIEZNANE — brak w dostępnym korpusie Crystal",
+          "condition": "NIEZNANE; nie przyjmować selected approximation z Oteryn za Crystal",
+          "effect": "NIEZNANE; Global-only wymaga ANSWER",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_brainstealer.lua:1-23",
+          "source_path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "source_line": 1,
+          "source_end": 23,
+          "oteryn": "CZĘŚCIOWO — content/quests/definitions/quests-00200-00299.json: oteryn_recipe jest CHOSEN_OTERYN_APPROXIMATION, runtime WAITING_IMPLEMENTATION",
+          "import_kind": "RĘCZNIE"
+        },
+        "disposition": "LEFT_OUT",
+        "implemented": false,
+        "reason": "Crystal and Canary only supply the boss lever and monster definitions; no source-qualified complete quest flow. MediaWiki API is blocked. Coordinator prohibits Global-only construction and activating the selected Oteryn approximation without runtime qualification.",
+        "questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589074027",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589073504",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "runtime_paths": []
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Crystal and Canary only supply the boss lever and monster definitions; no source-qualified complete quest flow. MediaWiki API is blocked. Coordinator prohibits Global-only construction and activating the selected Oteryn approximation without runtime qualification.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589074027",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589073504",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+          "start_line": 1,
+          "end_line": 23,
+          "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "blob_line_count": 23,
+          "excerpt_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L1-L23"
+        }
+      ]
+    }
+  ],
+  "source_comparison_witnesses": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/actions/bosses_levers/the_brainstealer.lua",
+      "start_line": 1,
+      "end_line": 23,
+      "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+      "blob_line_count": 23,
+      "excerpt_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_brainstealer.lua#L1-L23"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/too_hot_to_handle_quest/the_brainstealer.lua",
+      "start_line": 1,
+      "end_line": 23,
+      "blob_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+      "blob_line_count": 23,
+      "excerpt_sha256": "f1b75c267fc976cdc528d577a32ec766a6a9dab47f3a6040e56cdd38ea0d7c1f",
+      "url": "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/too_hot_to_handle_quest/the_brainstealer.lua#L1-L23"
+    }
+  ]
+}

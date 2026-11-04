@@ -77,3 +77,48 @@ pub fn panel_text(panel: &NpcShopPanel) -> String {
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+/// Production NPC prerequisite reducer. Closed windows retain no stale offers.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct NpcServicePanel {
+    pub conversation: Option<npc_service::NpcConversation>,
+    pub window: Option<npc_service::NpcTradeWindow>,
+}
+
+pub use oteryn_client_runtime::npc_shop::npc_service;
+
+pub fn apply_conversation(panel: &mut NpcServicePanel, payload: &[u8]) -> bool {
+    let Ok(conversation) = npc_service::decode_npc_conversation(payload) else {
+        return false;
+    };
+    if conversation.open.is_none() {
+        panel.window = None;
+    }
+    panel.conversation = Some(conversation);
+    true
+}
+
+pub fn apply_window(panel: &mut NpcServicePanel, payload: &[u8]) -> bool {
+    let Ok(window) = npc_service::decode_npc_trade_window(payload) else {
+        return false;
+    };
+    panel.window = Some(window);
+    true
+}
+
+pub fn buy_request(
+    panel: &NpcServicePanel,
+    offer_index: usize,
+) -> Option<npc_service::NpcTradeIntent> {
+    let window = panel.window.as_ref()?;
+    let (npc_actor, catalogue_revision) = window.open?;
+    let offer = window.offers.get(offer_index)?;
+    (offer.side == NpcTradeSide::Buy).then_some(npc_service::NpcTradeIntent {
+        npc_actor,
+        catalogue_revision,
+        offer_index: u32::try_from(offer_index).ok()?,
+        side: offer.side,
+        quantity: 1,
+        expected_unit_price: offer.unit_price,
+    })
+}

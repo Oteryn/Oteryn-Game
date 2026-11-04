@@ -1,8 +1,9 @@
-//! Real native damage/capture proves the current corpse-content refusal. The
-//! captured identity then exercises the existing fenced party-XP/Quest consumer
-//! seam, followed by real NPC mutations and immutable reconciliation. Per
-//! ANSWER6548332205, this is consumer integration, not physical loot-drain E2E;
-//! native corpse qualification and instance admission remain owner dependencies.
+//! Real native damage/capture proves Primal's admitted corpse settlement and the
+//! remaining bosses' corpse-content refusals. Refused deaths exercise the fenced
+//! party-XP/Quest consumer seam, followed by real NPC mutations and immutable
+//! reconciliation. Per ANSWER6548332205, the refused bosses remain consumer
+//! integration; their native corpse qualification and instance admission remain
+//! owner dependencies.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -94,8 +95,8 @@ fn scenario() -> TestResult {
         owner.admit_progression_session(&mut admitted).await;
         assert!(owner.progression_binding(admitted.game_session_id).is_some());
 
-        // This captured Primal death first proves the physical refusal, then
-        // the accepted consumer seam creates a real Hazard CharacterRevision.
+        // This Primal death settles through the admitted physical reward path
+        // and creates a real Hazard CharacterRevision.
         // The imported access prerequisite belongs to that fixture snapshot.
         kill_key(&owner,&h,&deps,native.reward_table(),"oteryn:creature.the_primal_menace",90).await?;
         let primal:(i16,i16)=sqlx::query_as("SELECT unlocked,selected FROM game_character_hazard WHERE character_id=encode($1,'hex')::uuid")
@@ -224,7 +225,7 @@ fn scenario() -> TestResult {
         ] {
             assert!(sqlx::query(sql).execute(&h.pool).await.is_err(), "unproven mutation: {sql}");
         }
-        eprintln!("ROTTEN_BLOOD POSTGRES_CASE_COMPLETED physical_corpse_refusals captured_death_consumer_chain final_reward shared_terminal_failure replay npc_command7_cleanse fences guards");
+        eprintln!("ROTTEN_BLOOD POSTGRES_CASE_COMPLETED primal_corpse_settlement physical_corpse_refusals captured_death_consumer_chain final_reward shared_terminal_failure replay npc_command7_cleanse fences guards");
         drop(owner);
         drop(authority);
         drop(seal);
@@ -316,10 +317,19 @@ async fn kill_key(
     use crate::content::ProjectV2AuthoringProfileData;
     use super::soul_war::{CapturedEndgameDeath, settle_captured_endgame_death};
 
-    // The six actual source corpses have no admitted bounded container facts.
-    // Do not invent a corpse, substitute another Item, or alter the reward row.
-    assert!(matches!(rewards.row(creature_key), Err(NoSettlementReason::CorpseItemInadmissible)),
-        "{creature_key}: retain physical corpse qualification refusal");
+    let primal = creature_key=="oteryn:creature.the_primal_menace";
+    if primal {
+        // PR #2851 admits Primal corpse stages 39527-39530 from Crystal.
+        let row=rewards.row(creature_key).map_err(debug)?;
+        assert_eq!(row.corpse_item,crate::combat::LootDefinitionRef::new(
+            "Item","oteryn:item.tibia.i39530","definition-r1"));
+        assert_eq!(row.xp_amount.get(),0);
+        assert!(owner.refresh_source_party_presence(deps.actor,deps.admitted.game_session_id).await);
+    } else {
+        // The five Rotten Blood corpses still lack admitted container facts.
+        assert!(matches!(rewards.row(creature_key), Err(NoSettlementReason::CorpseItemInadmissible)),
+            "{creature_key}: retain physical corpse qualification refusal");
+    }
     let native=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or("native content")?;
     let record=native.creature_profiles().records.iter()
         .find(|record|record.profile.target.key==creature_key).ok_or("source boss profile")?;
@@ -327,7 +337,7 @@ async fn kill_key(
         return Err("source boss profile kind".into());
     };
     let raw_xp=i64::try_from(profile.experience.ok_or("source boss experience")?)?;
-    if creature_key=="oteryn:creature.the_primal_menace" { assert_eq!(raw_xp,0); }
+    if primal { assert_eq!(raw_xp,0); }
     let queue = owner.states.attack.lock().await.kills().clone();
     let session = deps.admitted.game_session_id;
     let at = owner.owner_now().get() / 1000;
@@ -351,8 +361,8 @@ async fn kill_key(
                 lease_generation:2, session, actor:deps.actor,
             }, at, Some(observed),
         );
-        // The production death owner captured the real event before the corpse
-        // refusal. Read its retained identity and actual damage contribution.
+        // The production death owner captured the real event before reward
+        // admission. Read its retained identity and actual damage contribution.
         let mut death_owner=runtime.borrow_combat_death();
         let top=death_owner.top_damage_contributor(target).map_err(debug)?;
         let winner=top.present().ok_or("native damage contributor")?;
@@ -384,22 +394,37 @@ async fn kill_key(
             death_at_ms:facts.death_at_ms,death_at_us:observed.get(),damaged }
     };
     match queue.take(session, 2) {
-        TakeOutcome::Empty => assert_eq!(creature_key,"oteryn:creature.the_primal_menace"),
+        TakeOutcome::Empty => return Err("native boss death did not queue its reward".into()),
         TakeOutcome::Taken(held) => {
-            let entry = held.entry().ok_or("native Bosstiary fallback")?;
-            assert!(entry.row.is_none(),"unqualified corpse cannot enter the physical reward path");
-            assert!(entry.bosstiary_only.is_some(),"only the existing Bosstiary fallback is admitted");
+            let entry = held.entry().ok_or("native boss reward")?;
+            if primal {
+                let row=entry.row.as_ref().ok_or("admitted Primal reward row")?;
+                assert_eq!(row.corpse_item,rewards.row(creature_key).map_err(debug)?.corpse_item);
+                assert!(entry.bosstiary_only.is_none(),"Primal must use the full reward path");
+            } else {
+                assert!(entry.row.is_none(),"unqualified corpse cannot enter the physical reward path");
+                assert!(entry.bosstiary_only.is_some(),"only the existing Bosstiary fallback is admitted");
+            }
             held.requeue();
         }
-        TakeOutcome::CapacityWait => return Err("native refusal left a blocked loot queue".into()),
+        TakeOutcome::CapacityWait => return Err("native boss left a blocked loot queue".into()),
     }
     drain(owner, session).await?;
-    assert_eq!(progression_receipts(h).await?,before_physical,
-        "physical corpse refusal must not create a native XP, Hazard or Rotten receipt");
-    eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
-
-    settle_captured_endgame_death(owner,&h.pool,session,&source).await
-        .map_err(|error|format!("Rotten captured death settlement {creature_key} command {command_id}: {error}"))?;
+    if primal {
+        assert_eq!(progression_receipts(h).await?,
+            (before_physical.0,before_physical.1,before_physical.2+1,before_physical.3+1),
+            "admitted zero-XP Primal death must commit Hazard and party kill receipts through the drain");
+        let corpses:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_mint_receipts r JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id WHERE r.loot_purpose_key=$1 AND r.materialized_at IS NOT NULL AND i.definition_production_key='oteryn:item.tibia.i39530'")
+            .bind(crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY)
+            .fetch_one(&h.pool).await?;
+        assert_eq!(corpses,1,"real admitted Primal corpse must materialize");
+    } else {
+        assert_eq!(progression_receipts(h).await?,before_physical,
+            "physical corpse refusal must not create a native XP, Hazard or Rotten receipt");
+        eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
+        settle_captured_endgame_death(owner,&h.pool,session,&source).await
+            .map_err(|error|format!("Rotten captured death settlement {creature_key} command {command_id}: {error}"))?;
+    }
     let before_replay=progression_receipts(h).await?;
     settle_captured_endgame_death(owner,&h.pool,session,&source).await
         .map_err(|error|format!("Rotten captured death replay {creature_key} command {command_id}: {error}"))?;

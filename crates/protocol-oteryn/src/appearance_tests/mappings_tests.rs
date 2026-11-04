@@ -18,6 +18,18 @@ fn appearance_dictionary_has_an_independent_byte_golden() {
     );
 }
 #[test]
+fn empty_outfit_look_has_an_independent_wire_tag() {
+    let original = Snapshot::decode(GOLDEN).expect("valid appearance fixture");
+    let mut binding = original.bindings[0].clone();
+    binding.look = Look::EmptyOutfit;
+    let encoded = binding.encode().expect("empty outfit binding");
+    assert_eq!(
+        Binding::decode(&encoded).expect("empty outfit binding"),
+        binding
+    );
+    assert!(encoded.windows(4).any(|bytes| bytes == [66, 2, 8, 3]));
+}
+#[test]
 fn appearance_catalogue_palette_and_list_bounds_are_symmetric() {
     let mut catalogue = Snapshot::decode(GOLDEN)
         .expect("valid appearance fixture")

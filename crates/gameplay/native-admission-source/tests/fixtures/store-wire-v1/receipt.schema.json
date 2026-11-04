@@ -1,0 +1,883 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.receipt.v1.json",
+  "title": "oteryn.store_wire.receipt.v1",
+  "description": "Request body of POST /internal/v1/products-entitlements/store/operations/receipt (PublishStoreDeliveryReceiptV1): one StoreDeliveryReceipt. At most 1024 bytes. The 200 body is {\"contract_version\":1,\"result\":\"accepted\"}.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "delivered_quantity",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "DELIVER"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "COMMITTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_OK"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "delivered_quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "DELIVER"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "REJECTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_ACCOUNT_NOT_FOUND",
+            "STORE_GRANT_UNKNOWN",
+            "STORE_INTENT_INVALID",
+            "STORE_OPERATION_CONFLICT",
+            "STORE_UNSUPPORTED"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "character_id",
+        "world_id",
+        "minted_quantity",
+        "minted_units_digest",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "CLAIM"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "COMMITTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_OK"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "character_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "world_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "minted_quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "minted_units_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "CLAIM"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "REJECTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_GRANT_UNKNOWN",
+            "STORE_LINE_REVOKED",
+            "STORE_LINE_NOT_FOUND",
+            "STORE_INTENT_INVALID",
+            "STORE_OPERATION_CONFLICT",
+            "STORE_UNSUPPORTED"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "revoked_quantity",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "REVOKE_UNCLAIMED"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "COMMITTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_OK"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "revoked_quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "REVOKE_UNCLAIMED"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "REJECTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_LINE_ALREADY_CLAIMED",
+            "STORE_LINE_NOT_FOUND",
+            "STORE_INTENT_INVALID",
+            "STORE_OPERATION_CONFLICT",
+            "STORE_UNSUPPORTED"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "character_id",
+        "world_id",
+        "reclaimed_quantity",
+        "shortfall_quantity",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "RECLAIM"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "COMMITTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_RECLAIMED",
+            "STORE_RECLAIM_SHORTFALL"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "character_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "world_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "reclaimed_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "shortfall_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "RECLAIM"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "REJECTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_LINE_NOT_FOUND",
+            "STORE_INTENT_INVALID",
+            "STORE_OPERATION_CONFLICT",
+            "STORE_UNSUPPORTED"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "FLAG"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "COMMITTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_OK"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation",
+        "source_authority",
+        "issuer_authority",
+        "operation_kind",
+        "operation_id",
+        "binding_digest",
+        "outcome",
+        "result_code",
+        "account_id",
+        "entitlement_id",
+        "product_id",
+        "product_version",
+        "recovery_generation",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation": {
+          "const": "PublishStoreDeliveryReceiptV1"
+        },
+        "source_authority": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "operation_kind": {
+          "const": "FLAG"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "outcome": {
+          "const": "REJECTED"
+        },
+        "result_code": {
+          "enum": [
+            "STORE_LINE_NOT_FOUND",
+            "STORE_INTENT_INVALID",
+            "STORE_OPERATION_CONFLICT",
+            "STORE_UNSUPPORTED"
+          ]
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "recovery_generation": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    }
+  ]
+}

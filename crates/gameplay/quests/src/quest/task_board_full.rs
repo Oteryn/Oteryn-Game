@@ -337,20 +337,34 @@ pub const fn completion_multiplier(completed: u8) -> u32 {
 impl WeeklyBoard {
     #[must_use]
     pub fn completed_kills(&self) -> u8 {
-        u8::from(self.any_required > 0 && self.any_kills >= self.any_required)
-            + u8::try_from(
+        u8::from(self.any_required > 0 && self.any_kills >= self.any_required).saturating_add(
+            u8::try_from(
                 self.kills
                     .iter()
                     .filter(|task| task.current >= task.required)
                     .count(),
             )
-            .unwrap_or(u8::MAX)
+            .unwrap_or(u8::MAX),
+        )
     }
 
     #[must_use]
     pub fn completed_deliveries(&self) -> u8 {
         u8::try_from(self.deliveries.iter().filter(|task| task.delivered).count())
             .unwrap_or(u8::MAX)
+    }
+
+    /// Completed weekly rows and their Crystal streak multiplier.
+    ///
+    /// Keeping the checked total here makes the reset award and client projection use the same
+    /// bounded calendar snapshot, including malformed durable rows from an older deployment.
+    pub fn completion_summary(&self) -> Result<(u8, u8, u32), TaskBoardRefusal> {
+        let kills = self.completed_kills();
+        let deliveries = self.completed_deliveries();
+        let total = kills
+            .checked_add(deliveries)
+            .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
+        Ok((kills, deliveries, completion_multiplier(total)))
     }
 
     /// Points and soulseals are due only at the reset owner's calendar boundary.
@@ -362,15 +376,10 @@ impl WeeklyBoard {
             3 => 110,
             _ => return Err(TaskBoardRefusal::InvalidInput),
         };
-        let kills = self.completed_kills();
-        let deliveries = self.completed_deliveries();
-        let total = kills
-            .checked_add(deliveries)
-            .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
+        let (kills, deliveries, multiplier) = self.completion_summary()?;
         Ok((
-            (u32::from(kills) * per_kill + u32::from(deliveries) * 75)
-                * completion_multiplier(total),
-            u32::from(total),
+            (u32::from(kills) * per_kill + u32::from(deliveries) * 75) * multiplier,
+            u32::from(kills) + u32::from(deliveries),
         ))
     }
 }

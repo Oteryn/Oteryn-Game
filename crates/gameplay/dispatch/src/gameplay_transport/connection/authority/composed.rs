@@ -330,7 +330,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        npc_command::resume_npc_talk(self, actor, command).await
+        let mut outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        Some(outcome)
     }
 
     async fn npc_talk(
@@ -339,7 +347,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        self.vocation_talk(actor, command, intent).await
+        let mut outcome = self.vocation_talk(actor, command, intent).await;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        outcome
     }
 
     fn server_save_countdown(
@@ -415,12 +431,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        loop_training::offer(
-            self,
-            world_required_capabilities::offered_for_scope(
-                self.bundle_map().is_some(),
-                self.active_generation,
+        store::with_store_offer(
+            loop_training::offer(
+                self,
+                world_required_capabilities::offered_for_scope(
+                    self.bundle_map().is_some(),
+                    self.active_generation,
+                ),
             ),
+            self.store.is_some(),
         )
     }
 
@@ -816,6 +835,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: item_view::ItemKey,
     ) -> Option<UseOutcome> {
         self.pour_fluid(actor, command, source, target).await
+    }
+
+    async fn use_fluid_on_map(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_fluid_map(actor, command, source, target).await
     }
 
     async fn use_item_by_definition(

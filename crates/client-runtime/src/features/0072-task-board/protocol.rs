@@ -2,6 +2,28 @@
 pub use oteryn_session::{CommandStatus, task_board};
 use oteryn_session::{Session, SessionError, SessionStream};
 
+pub async fn send_full<S: SessionStream>(
+    session: &mut Session<S>,
+    request: &task_board::full::Request,
+) -> Result<task_board::full::Reply, SessionError> {
+    let payload =
+        task_board::full::encode_request(request).map_err(|_| SessionError::SessionUnusable)?;
+    let result = session
+        .gated_command(
+            task_board::CAPABILITY_TASK_BOARD_V1,
+            task_board::COMMAND_TYPE_TASK_BOARD,
+            &payload,
+        )
+        .await?;
+    if !matches!(
+        result.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Err(SessionError::SessionUnusable);
+    }
+    task_board::full::decode_reply(&result.payload).map_err(|_| SessionError::SessionUnusable)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaskBoardCommand(pub task_board::TaskBoardRequest);
 

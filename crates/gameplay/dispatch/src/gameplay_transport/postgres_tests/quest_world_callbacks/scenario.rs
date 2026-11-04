@@ -23,9 +23,12 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
+    let classic_npc = matches!(name, "classic-quests-npc" | "classic-rottin-disrepair" | "threatened-dreams-npc" | "conditional-quest-greetings");
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if rotten_purchase {
+    let mut callback = callback(if classic_npc {
+        "behemoth"
+    } else if rotten_purchase {
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
@@ -92,7 +95,7 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if monk { 4 } else { 2 },
+            if classic_npc { 5 } else if monk { 4 } else { 2 },
             pin,
         )
         .map_err(debug)?;
@@ -184,6 +187,16 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name == "conditional-quest-greetings" {
+            super::super::conditional_quest_greetings::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "threatened-dreams-npc" {
+            super::super::threatened_dreams::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "classic-rottin-disrepair" {
+            super::super::classic_quests::exercise_rottin(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if classic_npc {
+            super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if matches!(name, "outlaw-camp-entrance" | "banshees-first-seal-return" | "banshees-second-seal" | "banshees-final-battle-exit") {
+            super::super::classic_quests::exercise_step(&mut owner, &mut admitted, &h, &authority, &world, &callback, trigger, origin).await?;
         } else if monk {
             super::super::monk_shrines::exercise(
                 &mut owner,

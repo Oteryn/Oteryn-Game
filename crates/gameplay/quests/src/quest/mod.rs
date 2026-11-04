@@ -20,16 +20,24 @@
 // Left out. These evaluators are not a second production conversation adapter.
 #[cfg(test)]
 pub mod batch3_a;
+pub mod classic_dialogue;
+pub mod classic_talk;
+pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
 #[cfg(test)]
 pub mod npc_rules;
+mod quests_2_focus;
 pub mod rotten_blood;
 pub mod soul_war;
+pub mod soul_war_dialogue;
 pub mod task_board;
+pub mod threatened_dreams;
 pub mod world_callbacks;
+pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};
 

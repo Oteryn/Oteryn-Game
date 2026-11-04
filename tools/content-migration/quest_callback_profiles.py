@@ -190,7 +190,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
+    import quests_2_emperor_item_profiles
+    source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     for key, definition in sorted(definitions.items()):
+        # These exact source-qualified Items retain their canonical identity;
+        # this is not a general bypass for an unqualified native record.
+        definition = quests_2_emperor_item_profiles.callback_definition(
+            source_packet, present.get(key), definition, root)
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']

@@ -1,0 +1,379 @@
+{
+  "schema": "OTERYN_QUESTS_2_REVIEW_SNAPSHOT/v1",
+  "classification": "DERIVED",
+  "quest": "mintwallin_quest",
+  "lane": "classic",
+  "batch": "quests-2-20261102",
+  "scope": "Frozen source rows and author dispositions preserved verbatim as JSON values. IMPLEMENTED means the named code/data subset only; all limitations and validation claims remain in the source disposition.",
+  "input_documents": [
+    {
+      "path": "inventory_donor.json",
+      "sha256": "17c874ce448998e1f01793fd8e3775691b78e465b75a4fc2c341492f9f595ab9"
+    },
+    {
+      "path": "implementation-disposition-classic.json",
+      "sha256": "4a89189d7b66ee039cb556153a0b052550bc5996516ca0f5d07cbb8291720a42"
+    }
+  ],
+  "source_context": {
+    "inventory": {
+      "status": "REPORT_ETAP1_CURRENT_MAIN_VERIFIED",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "auto": 1,
+          "manual": 34,
+          "already": "CZĘŚCIOWO: logbook/key claims, statyczne dialogi, vocation owner; bez Morris quest adapterów",
+          "dependencies": "Dawnport/rookgaard mapa; 4 vocation chests; shovel/fishing; NPC Morris/Woblin/Menesto/Oressa/Inigo/Captain; Morris death events",
+          "difficulty": "XL",
+          "notes": "Historyczny Sanctuary i istniejąca nazwa Newhaven mają konflikt zakresu CLASSIC-1; pełny onboarding wymaga osobnej zgodności ownerów."
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "auto": 3,
+          "manual": 2,
+          "already": "CZĘŚCIOWO: 3 leaf reward claims",
+          "dependencies": "mapa uid25030; StepOut i utworzenie435; chest6139..6141",
+          "difficulty": "S",
+          "notes": "StepIn i StepOut są jedną parą; same nagrody nie kończą implementacji płyty."
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "auto": 3,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: 2 claims; draconia2 supported_unqualified; draconia1 hold",
+          "dependencies": "levers30006/30035; old dragonlord; offering3206/3723; item3284; mapowe4dźwignie",
+          "difficulty": "M",
+          "notes": "CLASSIC-5 item3284; source reward3081 operand5 to charge, nie pięć egzemplarzy."
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "auto": 0,
+          "manual": 2,
+          "already": "NIE: brak natywnego wpisu tej nazwy",
+          "dependencies": "2 actionids64015/64016; brak źródła placementów i canonical identity",
+          "difficulty": "S",
+          "notes": "To katalog techniczny, niepotwierdzona 1:1 nazwa Global; CLASSIC-2."
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "auto": 1,
+          "manual": 1,
+          "already": "CZĘŚCIOWO: mintwallincyclops reward claim",
+          "dependencies": "aid30008 (nie uid30008); 11 obiektów mostu; chest6138",
+          "difficulty": "M",
+          "notes": "Katalog łączy lever nazwany Devil Helmet i claim Mintwallin Cyclops; nie zakładać 1:1 katalog=tytuł."
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: tylko źródłowy stub speech wymaga adaptera",
+          "dependencies": "carried item19065/22739; pusty NPC; folder monster nie dowodzi encounter",
+          "difficulty": "S",
+          "notes": "CLASSIC-3: brak pełnego scenariusza w donorze; UglyMonsterDeath/Drop należy grave_danger."
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: brak natywnego bindingu quiver58103",
+          "dependencies": "mapa chest58103; quiver35562; jednorazowy storage58103",
+          "difficulty": "S",
+          "notes": "Agregat: tylko quiver w tym katalogu; nie przypisywać Katana/Rapier z innych katalogów; CLASSIC-4."
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "auto": 0,
+          "manual": 24,
+          "already": "CZĘŚCIOWO: katalog i greet NPC; brak wykonawcy misji",
+          "dependencies": "NPC; skinning/hammer/lucky charm; 6 napraw; net/mapa7merchants; timery; losowe nagrody; achievements",
+          "difficulty": "L",
+          "notes": "Między misjami są repeatable tasks z cooldown20h; nie zastępować stałą nagrodą ani last-hit."
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "auto": 1,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: katalog i4key claims; brak docelowego reward14091",
+          "dependencies": "przesuwanie pieca; coal3050; wall1270/1271; bag2853/items3295+3039; questKV+legacy",
+          "difficulty": "M",
+          "notes": "Istniejący callback outlaw-camp-door należy The Travelling Trader, więc nie liczy się jako ta implementacja."
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "auto": 16,
+          "manual": 35,
+          "already": "CZĘŚCIOWO:5supported claims,1item hold, standardowe drzwi; bez seal graph",
+          "dependencies": "wspólna sekwencja świata;120s/100s/3s timery według źródła;2Ghost+Skeleton+Warlocks; NPC;8door bindings;6chests",
+          "difficulty": "XL",
+          "notes": "CLASSIC-6 item3081; donorowe global storage, omission guards i spawn nie mieszczą się w samych callbackach."
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "auto": 0,
+          "manual": 7,
+          "already": "CZĘŚCIOWO: statyczne dialogi, bez state/equipment/timer adaptera",
+          "dependencies": "NPC Jerom/Chief; head5460/11585/13995; feet3079;mapa50365;item7754/646",
+          "difficulty": "M",
+          "notes": "Chief współdzielony z Threatened Dreams; root scala, nie nadpisywać."
+        }
+      ],
+      "oteryn_revision": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348"
+    },
+    "disposition": {
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "test_status": "ROOT_PG_PENDING_NOT_A_COMPLETION_CLAIM",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "NEW_NATIVE_NPC": 8,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 27
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 3,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 2,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 23
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 1,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "NEW_NATIVE_NPC": 6,
+          "NEW_EXISTING_CALLBACK": 3,
+          "EXISTING_QUALIFIED_DATA": 13,
+          "LEFT_OUT": 29
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 6
+        }
+      ]
+    }
+  },
+  "source_rows_sha256": "21b9f3e52aa13ef5e3d13c83b7073d3eaa8924d56d402991f5a71fd76ee43c7a",
+  "source_dispositions_sha256": "63106ad3d59694c5f3f79e037c8774d98284a970bfa304f86a6a52c6b4c1e264",
+  "summary": {
+    "inventory_rows": 2,
+    "new_pattern_rows_without_assigned_id": 0,
+    "import_kinds": {
+      "AUTO": 1,
+      "RĘCZNIE": 1
+    },
+    "normalized_status": {
+      "EXISTING": 1,
+      "LEFT_OUT": 1
+    },
+    "source_status": {
+      "EXISTING_QUALIFIED_DATA": 1,
+      "LEFT_OUT": 1
+    },
+    "complete_playable_quest_claimed": false
+  },
+  "rows": [
+    {
+      "ordinal": 1,
+      "element": "Jednorazowa dźwignia przejścia",
+      "source_row": {
+        "quest": "mintwallin_quest",
+        "step": "Jednorazowa dźwignia przejścia",
+        "patterns": [
+          "P01"
+        ],
+        "trigger": "use aid 30008 na (32600,32105,14)",
+        "condition": "brak storage/level guard",
+        "effect": "usuń użyty obiekt; utwórz 1270 na (32592,32105,14) i (32592,32106,14); usuń 1271 na x=32593..32601,y=32104,z=14",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-19",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:248-253"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 50,
+        "quest": "mintwallin_quest",
+        "step": "Jednorazowa dźwignia przejścia",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Jednorazowy aid30008 usuwa sam lever, tworzy2×1270 i usuwa9×1271. Obecne passages nie tworzą dowolnych nowych obiektów ani nie konsumują użytej dźwigni; W02 odłożony (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua:1-19",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:248-253"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Jednorazowy aid30008 usuwa sam lever, tworzy2×1270 i usuwa9×1271. Obecne passages nie tworzą dowolnych nowych obiektów ani nie konsumują użytej dźwigni; W02 odłożony (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+          "start_line": 1,
+          "end_line": 19,
+          "blob_sha256": "61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c",
+          "blob_line_count": 19,
+          "excerpt_sha256": "61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua#L1-L19"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/lever.lua",
+          "start_line": 248,
+          "end_line": 253,
+          "blob_sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e",
+          "blob_line_count": 1100,
+          "excerpt_sha256": "9a98d8e8ef731b709d09d091e5e46104075d4332975829ef74a42ce6ae5944a8",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua#L248-L253"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "element": "Mintwallin Cyclops: small diamond",
+      "source_row": {
+        "quest": "mintwallin_quest",
+        "step": "Mintwallin Cyclops: small diamond",
+        "patterns": [
+          "P05",
+          "P29"
+        ],
+        "trigger": "uid 6138, item2472 na (32591,32097,14)",
+        "condition": "jednorazowe questKV mintwallincyclops",
+        "effect": "+3028×1; completed=true",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1651-1657"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieją dane i supported_unqualified, brak testu tego World; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "AUTO",
+        "notes": "Nazwa questa z komentarza ChestUnique, nie z nazwy pliku actions_devil_helmet_lever."
+      },
+      "source_disposition": {
+        "index": 51,
+        "quest": "mintwallin_quest",
+        "step": "Mintwallin Cyclops: small diamond",
+        "original_import": "AUTO",
+        "status": "EXISTING_QUALIFIED_DATA",
+        "reason": "Istniejący wpis w bazie main, bez zmiany tożsamości/semantyki. Nie liczyć jako nowej implementacji.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1651-1657"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "EXISTING",
+        "delivery_kind": "QUALIFIED_DATA",
+        "source_status": "EXISTING_QUALIFIED_DATA",
+        "left_out": false,
+        "reason": "Istniejący wpis w bazie main, bez zmiany tożsamości/semantyki. Nie liczyć jako nowej implementacji.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/chest.lua",
+          "start_line": 1651,
+          "end_line": 1657,
+          "blob_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+          "blob_line_count": 3669,
+          "excerpt_sha256": "4ac682d8d4936a8766ed3b1267d3acd1cf957e84e7e36947b5ce96c607cc2290",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1651-L1657"
+        }
+      ]
+    }
+  ]
+}

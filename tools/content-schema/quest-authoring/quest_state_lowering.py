@@ -355,6 +355,8 @@ def expected(root):
     owned = owners(records)
     values = mission_values(records)
     quests = [lower_quest(d, owned, values) for d in records if (d.get('source_data') or {}).get('progress')]
+    import quests_2_emperor_state
+    quests_2_emperor_state.append_tracks(quests)
     append_source_herald_grouped_transitions(quests, records)
     quests.sort(key=lambda q: q['quest'])
     chests = chest_transitions(root, quests)
@@ -364,7 +366,7 @@ def expected(root):
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL)],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py')],
         'counts': {
             'quests': len(quests), 'tracks': sum(len(q['tracks']) for q in quests), 'transitions': len(transitions),
             'effects': {kind: effects.count(kind) for kind in sorted(set(effects))},

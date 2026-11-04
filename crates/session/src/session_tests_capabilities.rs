@@ -68,6 +68,8 @@ fn derived_gated_routes_match_previous_table() {
     // Compare sets because
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
+        (3, &[7, 8], &[7, 8]),
+        (51, &[60, 61], &[]),
         (40, &[40, 41], &[]),
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),
@@ -793,4 +795,56 @@ fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
         })?
         .join()
         .map_err(|_| "panel routes thread panicked")?
+}
+
+#[test]
+fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        block_on(async {
+            let npc = EntityRef { identity: [9; 16], generation: 2 };
+            let conversation = npc_service::NpcConversation { open: Some((npc, npc_service::NpcConversationState::Open)), lines: vec!["Trade?".into()] };
+            let window = npc_service::NpcTradeWindow { open: Some((npc, 7)), offers: vec![npc_service::NpcOffer { item_definition_ref: 5, side: NpcTradeSide::Buy, count: 1, unit_price: 12 }] };
+            let expected = window.clone();
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES, &[3, 51], &[], (1, spatial(0)), &[
+                    (7, 0, 1, npc_service::encode_npc_conversation(&Default::default()).map_err(|e| format!("conversation: {e:?}"))?),
+                    (8, 0, 1, npc_service::encode_npc_trade_window(&Default::default()).map_err(|e| format!("window: {e:?}"))?),
+                ]).await?;
+                let frame = read_frame(&mut server).await?;
+                let envelope = decode_wire_envelope(&frame)?;
+                let command = envelope.client_command(1)?;
+                assert_eq!(command.command_type, 7);
+                assert_eq!(npc_service::decode_npc_talk_intent(command.payload).map_err(|e| format!("talk: {e:?}"))?.text, "trade");
+                write_frame(&mut server, &encode_command_result(1, 41, 7, CommandStatus::Accepted, &npc_service::encode_npc_intent_result(NpcIntentDisposition::Ok))?).await?;
+                write_frame(&mut server, &encode_state_delta(1, 42, 7, 0, 1, 1, &npc_service::encode_npc_conversation(&conversation).map_err(|e| format!("conversation: {e:?}"))?)?).await?;
+                write_frame(&mut server, &encode_state_delta(1, 43, 8, 0, 1, 1, &npc_service::encode_npc_trade_window(&window).map_err(|e| format!("window: {e:?}"))?)?).await?;
+                let frame = read_frame(&mut server).await?;
+                let envelope = decode_wire_envelope(&frame)?;
+                let command = envelope.client_command(1)?;
+                assert_eq!(command.command_type, 60);
+                assert_eq!(staff::decode_envelope(command.payload)?.principal, "operator");
+                let result = staff::StaffResult { code: staff::StaffCode::TierInsufficient, disposition: 2, control_seq: 1, link_sha256: vec![3; 32], mute_until_ms: 0 };
+                write_frame(&mut server, &encode_state_delta(1, 44, 8, 1, 2, 1, &npc_service::encode_npc_trade_window(&Default::default()).map_err(|e| format!("window: {e:?}"))?)?).await?;
+                write_frame(&mut server, &encode_command_result(1, 45, 8, CommandStatus::Accepted, &staff::encode_result(&result)?)?).await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut admission = admission()?;
+            admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+            let mut session = Session::admit(client, admission).await?;
+            assert!(matches!(session.gated_command(81, 97, b"").await, Err(SessionError::CapabilityNotSelected { capability: 81 })));
+            let payload = npc_service::encode_npc_talk_intent(&npc_service::NpcTalkIntent { npc_actor: npc, text: "trade".into() }).map_err(|e| format!("talk: {e:?}"))?;
+            let result = session.gated_command(3, 7, &payload).await?;
+            assert_eq!(npc_service::decode_npc_intent_result(&result.payload).map_err(|e| format!("result: {e:?}"))?, NpcIntentDisposition::Ok);
+            let delta = session.read_gated_delta(8, 1).await?;
+            assert_eq!(npc_service::decode_npc_trade_window(&delta.payload).map_err(|e| format!("window: {e:?}"))?, expected);
+            assert!(matches!(session.take_events().as_slice(), [SessionEvent::NpcConversation(_)]));
+            let envelope = staff::SignedEnvelope { principal: "operator".into(), canonical: vec![1], signature: vec![2] };
+            let result = session.gated_command(51, 60, &staff::encode_envelope(&envelope)?).await?;
+            assert_eq!(staff::decode_result(&result.payload)?.code, staff::StaffCode::TierInsufficient);
+            assert!(matches!(session.take_events().as_slice(), [SessionEvent::NpcTradeWindow(_)]));
+            peer.await??;
+            Ok::<(), BoxError>(())
+        })?
+    })?.join().map_err(|_| "NPC session thread panicked")?
 }

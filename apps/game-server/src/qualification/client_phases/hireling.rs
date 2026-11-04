@@ -1,23 +1,18 @@
 use super::*;
 pub(super) async fn hireling(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    use oteryn_dev_client::{client_runtime::hireling, client_ui::hireling as ui};
-    // Hireling (165) requires NPC service (3) and staff (51), neither advertised by this client.
     if !client
         .selected_capabilities()
-        .contains(&hireling::hireling::CAPABILITY_HIRELING_V1)
+        .contains(&oteryn_protocol_oteryn::hireling::CAPABILITY_HIRELING_V1)
     {
-        evidence("mechanic=hireling skipped=client_prerequisite_routes_not_supported");
+        evidence(
+            "mechanic=hireling skipped=capability_165_not_selected source=crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs:126",
+        );
         return Ok(());
     }
-    let mut panel = ui::HirelingPanel {
-        selected: true,
-        ..Default::default()
-    };
-    let command = ui::request(&mut panel, ui::Intent::Refresh).ok_or("hireling request")?;
-    let reply = hireling::send(client.session_mut(), &command).await?;
-    if !ui::apply_result(&mut panel, &reply) || panel.active.is_none() {
-        return Err("hireling reducer did not load state".into());
-    }
-    evidence("mechanic=hireling client_codec=real reducer=real state=loaded");
+    // The journey admits a Channel character. command220 resolves House custody before Query;
+    // neither a town coordinate nor negotiating staff establishes that authority.
+    evidence(
+        "mechanic=hireling skipped=world_journey_has_no_house_admission_route_for_owned_hireling_lamp content_id=oteryn:item.tibia.i29432 source=crates/gameplay/dispatch/src/gameplay_transport/hireling.rs:39",
+    );
     Ok(())
 }

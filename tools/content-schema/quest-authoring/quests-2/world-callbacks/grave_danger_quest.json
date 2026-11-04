@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/grave-danger-cobra-access",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33384,
+          "y": 32627,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/cobra_bastion/access",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grave_danger/cobra_bastion/movements_access_storage.lua:3-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/grave-danger-zelos-lever-access",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32174,
+          "y": 31916,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33492,
+        "y": 31546,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/grave_danger/movements_teleport_king_zelos.lua:3-14"
+      ]
+    }
+  ]
+}

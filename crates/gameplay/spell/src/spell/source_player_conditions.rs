@@ -351,7 +351,7 @@ impl PlayerSpellState {
         definition: &native::ConditionDefinition,
         lineage: &native::ConditionLineage,
         facts: &native::ApplicationFacts<'_>,
-        element: values::DotElement,
+        element: impl Into<Option<values::DotElement>>,
     ) -> Option<(Self, Vec<native::ConditionTick<String>>)> {
         if self.health == 0
             || !facts.target_is_player
@@ -381,7 +381,7 @@ impl PlayerSpellState {
             facts.now,
             native::TickFacts {
                 in_protection_zone: false,
-                standing_on_field: Some(element),
+                standing_on_field: element.into(),
             },
             &source,
         );
@@ -397,7 +397,7 @@ impl PlayerSpellState {
         source: String,
         definition: &native::ConditionDefinition,
         facts: &native::ApplicationFacts<'_>,
-        element: values::DotElement,
+        element: impl Into<Option<values::DotElement>>,
         mut stage_hit: impl FnMut(
             &Self,
             u32,
@@ -433,27 +433,29 @@ impl PlayerSpellState {
             facts.now,
             native::TickFacts {
                 in_protection_zone: false,
-                standing_on_field: Some(element),
+                standing_on_field: element.into(),
             },
             &source,
         );
         let mut damage = 0u32;
         for tick in ticks {
-            let native::TickKind::Damage {
-                element: hit_element,
-                amount,
-                refused: false,
-                ..
-            } = tick.kind
-            else {
-                return None;
-            };
             if tick.provenance.source_kind != native::ConditionSourceKind::Creature
                 || tick.provenance.source.as_deref() != Some(source.as_str())
             {
                 return None;
             }
-            let (successor, hit) = stage_hit(&next, amount, hit_element, facts.now)?;
+            let (successor, hit) = match tick.kind {
+                native::TickKind::Damage {
+                    element,
+                    amount,
+                    refused: false,
+                } => stage_hit(&next, amount, element, facts.now)?,
+                native::TickKind::Agony {
+                    amount,
+                    refused: false,
+                } => super::actor_conditions::stage_agony_hit(&next, amount, facts.now).ok()?,
+                _ => return None,
+            };
             damage = damage.checked_add(hit.applied)?;
             next = successor;
             if next.health == 0 {
@@ -473,6 +475,92 @@ impl PlayerSpellState {
 mod creature_field_initial_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
+    #[test]
+    fn c08_agony_field_43297_applies_entry_and_residual_damage_bypassing_mana_shield() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let record = document["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["source"]["server"] == "crystal" && r["source"]["server_item_id"] == 43297)
+            .unwrap();
+        let recipe: oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition =
+            serde_json::from_value(record.clone()).unwrap();
+        let definition = native::ConditionDefinition::new(
+            "native.field.i43297",
+            1,
+            recipe.condition_values().unwrap().unwrap(),
+        )
+        .unwrap();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([9; 32]);
+        let facts = native::ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 500,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([9; 16]),
+        };
+        let state = PlayerSpellState::new(
+            super::super::cast::CharacterCastFacts {
+                vocation: super::super::Vocation::Knight,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap();
+        let shield = native::ConditionDefinition::new(
+            "test.c08.shield",
+            1,
+            values::ConditionValues::ManaShield {
+                duration_ms: 60_000,
+            },
+        )
+        .unwrap();
+        let state = state
+            .stage_owned_test_conditions(&[shield], &facts)
+            .unwrap();
+        let (next, damage) = state
+            .stage_creature_field_contact(
+                "creature:field:c08".into(),
+                &definition,
+                &facts,
+                recipe.element().unwrap(),
+                |_, _, _, _| None,
+            )
+            .expect("agony field contact");
+        assert_eq!(damage, 260);
+        assert_eq!(next.vitals().health, 740);
+        assert_eq!(next.vitals().mana, 500);
+        assert_eq!(
+            next.owned_conditions()
+                .get(values::ConflictKey::ManaShield)
+                .unwrap()
+                .mana_shield(),
+            (500, 500)
+        );
+        let mut conditions = next.owned_conditions().clone();
+        let ticks = conditions.take_due(5_000_000, native::TickFacts::default());
+        assert_eq!(ticks.len(), 1);
+        assert_eq!(
+            ticks[0].kind,
+            native::TickKind::Agony {
+                amount: 259,
+                refused: false
+            }
+        );
+    }
+
     #[test]
     fn global_field_step_in_entry_then_every_residual_tick() {
         use oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition;

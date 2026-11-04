@@ -43,6 +43,7 @@ mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
 mod composed_test_owner;
+mod condition_persistence;
 mod condition_snapshots;
 mod connection;
 mod consume_transform_use;
@@ -66,6 +67,7 @@ mod equipment_reflection;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
+mod furniture_catalog;
 pub mod gameplay_drain;
 mod gameplay_idle_presence;
 mod grizzly_boss;
@@ -209,6 +211,7 @@ pub use seam_rooms::SeamRooms;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
+pub use store::{StorePurchaseMode, with_store_offer};
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;
@@ -344,6 +347,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
+    pub store_purchases: StorePurchaseMode,
+    pub store: Option<crate::native_admission_source::store::StoreClient>,
     /// The composition root's leveled diagnostic writer.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
@@ -589,6 +594,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub spell_lane: crate::durability::spell_owner_commit::SpellLane,
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
+    pub store_purchases: StorePurchaseMode,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the

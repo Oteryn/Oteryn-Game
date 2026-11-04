@@ -4,7 +4,10 @@ pub mod attributes;
 use attributes::AttributeModifiers;
 
 /// The damage-over-time elements, one conflict key each (§3).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub enum DotElement {
     Poison,
     Fire,
@@ -35,7 +38,10 @@ impl DotElement {
 
 /// §3.5: the gate families `muted`, `pacified` and `powerless`, one conflict key each. The
 /// declaration order is the refusal order when several gates refuse the same action.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub enum ConditionGate {
     Muted,
     Pacified,
@@ -55,7 +61,10 @@ impl ConditionGate {
 
 /// At most one instance exists per conflict key. Source spell subids extend the
 /// candidate key vocabulary; the per-actor instance cap is `COND0-RL-01`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub enum ConflictKey {
     Status(StatusKind),
     Speed,
@@ -78,7 +87,10 @@ pub enum ConflictKey {
 
 /// The closed condition types. A creature's content immunities name these; haste and paralysis
 /// share the `speed` key but not an immunity.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub enum ConditionType {
     Status(StatusKind),
     Haste,
@@ -134,7 +146,8 @@ impl ConditionType {
 
 /// A speed range in thousandths: the target speed is drawn in
 /// `[a_min × (base − 40) + b_min, a_max × (base − 40) + b_max]` (§3).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SpeedRange {
     pub a_min: i32,
     pub b_min: i32,
@@ -146,7 +159,8 @@ pub struct SpeedRange {
 /// Bounded source-spell candidate cap: Curse needs 17 captured sequence groups.
 /// The accepted per-pass tick cap remains `COND0-RL-03`.
 pub const MAX_DOT_SEQUENCE_STEPS: usize = 32;
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DotSequenceStep {
     pub amount: u32,
     pub interval_ms: u32,
@@ -154,12 +168,14 @@ pub struct DotSequenceStep {
 }
 
 /// Exact source/content ratio, without quantization to thousandths.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExactSpeedRatio {
     pub numerator: i64,
     pub denominator: u64,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RationalSpeedRange {
     pub a_min: ExactSpeedRatio,
     pub b_min: i32,
@@ -191,6 +207,8 @@ impl RationalSpeedRange {
     clippy::large_enum_variant,
     reason = "transient owner result; boxing would add an allocation to the owner turn"
 )]
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum ConditionValues {
     DamageSchedule {
         element: DotElement,
@@ -293,6 +311,12 @@ pub enum ConditionValues {
         duration_ms: u32,
     },
     /// §3.5: damage over time of an undefined element, shaped like `DamageOverTime`.
+    AgonyRamp {
+        start: u32,
+        repetitions: u32,
+        interval_ms: u32,
+        delayed: bool,
+    },
     Agony {
         total_min: u32,
         total_max: u32,
@@ -337,7 +361,10 @@ pub enum ConditionRefusal {
     SequenceExhausted,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
+#[serde(deny_unknown_fields)]
 pub enum StatusKind {
     Invisible,
     Drunk,

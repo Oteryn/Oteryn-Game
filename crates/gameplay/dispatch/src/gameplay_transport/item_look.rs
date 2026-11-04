@@ -627,17 +627,22 @@ pub(super) fn map_look_target<F: MapFacts>(
         MapHandleTarget::Base {
             pos, placement_key, ..
         } => (pos, MapEntryKey::Base(placement_key)),
-        MapHandleTarget::Added { pos, .. } => {
+        MapHandleTarget::Added { pos, id } => {
             let entry = source
-                .overlay
-                .tile(pos)
-                .and_then(|tile| {
-                    tile.added()
-                        .iter()
-                        .find(|entry| ItemKey::MapAdded(entry.id().get()) == key)
+                .facts
+                .movement_item(id)
+                .filter(|(at, entry)| *at == pos && entry.get() == id)
+                .map(|(_, entry)| entry)
+                .or_else(|| {
+                    source.overlay.tile(pos).and_then(|tile| {
+                        tile.added()
+                            .iter()
+                            .find(|entry| ItemKey::MapAdded(entry.id().get()) == key)
+                            .map(|entry| entry.id())
+                    })
                 })
                 .ok_or(unavailable)?;
-            (pos, MapEntryKey::Added(entry.id()))
+            (pos, MapEntryKey::Added(entry))
         }
         MapHandleTarget::Ground {
             pos,

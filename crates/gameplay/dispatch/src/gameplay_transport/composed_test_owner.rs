@@ -68,6 +68,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
                 self.channel_id,
             ),
             store: None,
+            store_purchases: Default::default(),
             activity_runtimes: Default::default(),
         }
     }

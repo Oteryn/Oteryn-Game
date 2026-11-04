@@ -14,7 +14,7 @@ class Batch3WorldTests(unittest.TestCase):
         before = copy.deepcopy(existing)
         result, index = tool.compile_callbacks(existing, previous, {'source': {'schema': 1, 'callbacks': [owned]}})
         self.assertEqual(existing, before)
-        self.assertEqual(result['callbacks'], [foreign, owned])
+        self.assertEqual(result['callbacks'], [owned, foreign])
         again, same_index = tool.compile_callbacks(result, index, {'source': {'schema': 1, 'callbacks': [owned]}})
         self.assertEqual((again, same_index), (result, index))
 

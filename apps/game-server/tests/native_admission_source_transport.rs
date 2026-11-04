@@ -392,12 +392,13 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::ListPendingCharacterCommandsV1
                     | Operation::ReadCharacterCommandIntentV1
                     | Operation::PublishCharacterCommandReceiptV1
-                    | Operation::ListPendingStoreDeliveriesV1
-                    | Operation::ReadStoreDeliveryIntentV1
-                    | Operation::PublishStoreReceiptV1
+                    | Operation::ListPendingStoreOperationsV1
+                    | Operation::ReadStoreOperationIntentV1
+                    | Operation::PublishStoreDeliveryReceiptV1
                     | Operation::PurchaseStoreOfferV1
                     | Operation::ReadStoreBalanceV1
-                    | Operation::ReadStoreHistoryV1
+                    | Operation::ListStoreOperationStatesV1
+                    | Operation::ReadStoreHistoryPageV1
                     | Operation::PublishWorldHighscoresV1
                     | Operation::PublishCharacterProfileV1
                     | Operation::PublishWorldOnlineV1
@@ -456,12 +457,13 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::ListPendingCharacterCommandsV1
                 | Operation::ReadCharacterCommandIntentV1
                 | Operation::PublishCharacterCommandReceiptV1
-                | Operation::ListPendingStoreDeliveriesV1
-                | Operation::ReadStoreDeliveryIntentV1
-                | Operation::PublishStoreReceiptV1
+                | Operation::ListPendingStoreOperationsV1
+                | Operation::ReadStoreOperationIntentV1
+                | Operation::PublishStoreDeliveryReceiptV1
                 | Operation::PurchaseStoreOfferV1
                 | Operation::ReadStoreBalanceV1
-                | Operation::ReadStoreHistoryV1
+                | Operation::ListStoreOperationStatesV1
+                | Operation::ReadStoreHistoryPageV1
                 | Operation::PublishWorldHighscoresV1
                 | Operation::PublishCharacterProfileV1
                 | Operation::PublishWorldOnlineV1

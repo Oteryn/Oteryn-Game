@@ -1,0 +1,14 @@
+{
+  "id": 275,
+  "name": "EMPTY_OUTFIT_V1",
+  "owner_decision": "w1c17b; Crystal re-audit C17b",
+  "owner": "appearance observation owner",
+  "requires": [
+    6,
+    25
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "The composed appearance path offers EMPTY_OUTFIT_V1 with APPEARANCE_V1; only selected clients receive Look tag 3."
+}

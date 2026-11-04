@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -491,7 +492,7 @@ def unresolved_worktree_paths() -> list[str]:
         path
         for path in git("diff", "--name-only", "--diff-filter=U").splitlines()
         if not (ROOT / path).is_file()
-        or re.search(r"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_text(), re.M)
+        or re.search(rb"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_bytes(), re.M)
     ]
 
 
@@ -516,6 +517,10 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    # Source-backed field regeneration uses the same explicit source root as its tests.
+    # Without local donor checkouts the committed, pinned source catalogue is retained.
+    if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
+        run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     materialize_world()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])

@@ -7,6 +7,7 @@ Run with `python3 tools/content-migration/test_regenerate_content.py`.
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import os
@@ -14,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import regenerate_content as rc
 
@@ -271,8 +273,25 @@ def test_spells_manifest_conflict_on_one_key_fails_closed() -> None:
         assert (root / rc.SPELLS_MANIFEST).read_bytes() == before
 
 
+def test_no_stage_checks_binary_conflicts_without_decoding() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        compressed = root / "dialogue.json.gz"
+        compressed.write_bytes(gzip.compress(b'{"records": []}', mtime=0))
+        text = root / "quest.json"
+        text.write_text('{"records": []}\n')
+        paths = "dialogue.json.gz\nquest.json\n"
+        with patch.object(rc, "ROOT", root), patch.object(rc, "git", return_value=paths):
+            assert rc.unresolved_worktree_paths() == []
+            text.write_text("<<<<<<< ours\n{}\n=======\n{}\n>>>>>>> incoming\n")
+            assert rc.unresolved_worktree_paths() == ["quest.json"]
+            compressed.unlink()
+            assert rc.unresolved_worktree_paths() == ["dialogue.json.gz", "quest.json"]
+
+
 def main() -> None:
     tests = [
+        test_no_stage_checks_binary_conflicts_without_decoding,
         test_import_conflict_fails_closed_and_keeps_both_sides,
         test_interactions_index_conflict_fails_closed,
         test_derived_only_conflict_is_resolved,

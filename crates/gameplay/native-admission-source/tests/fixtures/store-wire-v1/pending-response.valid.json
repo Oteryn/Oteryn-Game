@@ -1,0 +1,15 @@
+{
+  "contract_version": 1,
+  "pending": [
+    {
+      "operation_kind": "DELIVER",
+      "operation_id": "0192b6a0-4c00-7000-8000-000000000707",
+      "source_revision": "102"
+    },
+    {
+      "operation_kind": "CLAIM",
+      "operation_id": "0192b6a0-4c00-7000-8000-000000000703",
+      "source_revision": "104"
+    }
+  ]
+}

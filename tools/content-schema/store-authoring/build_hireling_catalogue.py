@@ -73,7 +73,6 @@ def build(files: dict[str, str]) -> dict:
         raise ValueError(f"expected 16 distinct donor offers, got {len(offers)}")
     return {
         "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-        "catalog_revision": "store-hireling-crystal-201189f-v1",
         "source": {
             "repository": "zimbadev/crystalserver",
             "commit": COMMIT,

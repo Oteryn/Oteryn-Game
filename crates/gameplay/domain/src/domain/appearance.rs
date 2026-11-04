@@ -19,7 +19,8 @@ pub type Colours = [u16; 4];
 
 /// The selected appearance (§4.2). `addons` holds addon bits of the outfit; bit `i` is addon
 /// `i + 1`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AppearanceSelection<K> {
     pub outfit_key: K,
     pub colours: Colours,

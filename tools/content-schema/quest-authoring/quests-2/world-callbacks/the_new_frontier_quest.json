@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/new-frontier-mountain-passage-31532",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33082,
+          "y": 31532,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movement_wayout.lua:11-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-mountain-passage-31533",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33082,
+          "y": 31533,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movement_wayout.lua:11-20"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-snake-head-33004",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33004,
+          "y": 31540,
+          "floor": 0
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31347,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movements_snake_head_teleport.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-snake-head-33005",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33005,
+          "y": 31540,
+          "floor": 0
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33197,
+        "y": 31347,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/snake_head_teleport",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movements_snake_head_teleport.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-vine-4",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33021,
+          "y": 31536,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33022,
+        "y": 31536,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_vine.lua:1-21"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/new-frontier-vine-6",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33021,
+          "y": 31536,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33021,
+        "y": 31536,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_vine.lua:1-21"
+      ]
+    }
+  ]
+}

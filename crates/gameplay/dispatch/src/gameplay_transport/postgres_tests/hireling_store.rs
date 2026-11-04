@@ -1,6 +1,7 @@
 //! E12 Store: real client bytes, existing Platform port and committed Hireling receipts.
 // Assertions inspect native Inbox custody and durable state, not an in-memory substitute.
 #![allow(clippy::expect_used)] // Test fixture invariants use the neighbouring Store harness style.
+use super::store::{platform_balance, platform_answer, platform_intent, platform_bytes};
 use super::fixture::{Harness,debug,id,run};
 use super::{Dependencies,TestResult,prepare_current_session};
 use crate::foundation::{CommandStatus,MessageType,decode_wire_envelope};
@@ -14,7 +15,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc,Mutex as SyncMutex};
 use tokio::io::{AsyncReadExt,AsyncWriteExt};
 
-const REVISION:&str="store-hireling-crystal-201189f-v1";
+const REVISION:&str="e7e06a2b1ce23df40cc05be37882eb4b2d4139a5bbc112abd893e8eb526d890d";
 const LAMP:&str="oteryn:item.tibia.i29432";
 
 #[derive(Default)]
@@ -29,34 +30,36 @@ impl StoreTransport for FakePlatform {
     fn exchange<'a>(&'a mut self,operation:Operation,body:&'a str)->std::pin::Pin<Box<dyn std::future::Future<Output=Result<Vec<u8>,TransportFailure>>+Send+'a>> {
         let mut ledger=self.0.lock().expect("ledger");
         let request:serde_json::Value=serde_json::from_str(body).expect("request");
+        if operation == Operation::PurchaseStoreOfferV1 { assert_eq!(request["world_id"], ledger.world); }
         let answer=match operation {
-            Operation::ReadStoreBalanceV1=>serde_json::json!({"contract_version":1,"balance":{"currency":request["currency"],"balance":if request["currency"]=="TIBIA_COIN" {ledger.balance}else{0}}}),
+            Operation::ReadStoreBalanceV1=>platform_balance(&request, ledger.balance),
             Operation::PurchaseStoreOfferV1=>{
                 ledger.calls+=1;
                 let key=request["purchase_request_id"].as_str().expect("request id").to_owned();
                 if let Some(answer)=ledger.answers.get(&key) {answer.clone()} else {
-                    let price=request["price"].as_u64().expect("price");
-                    let answer=if price>ledger.balance {serde_json::json!({"contract_version":1,"result":"INSUFFICIENT_BALANCE"})} else {
+                    let price=request["unit_price"].as_str().expect("price string").parse::<u64>().expect("price") * request["quantity"].as_u64().expect("quantity");
+                    let answer=if price>ledger.balance {platform_answer(&request, None, ledger.balance, body)} else {
                         ledger.balance-=price;ledger.debits+=1;
                         let n=u8::try_from(ledger.debits).expect("bounded orders");
                         let operation=uuid(&id(100+n));
-                        let intent=serde_json::json!({"operation_id":operation,"account_id":request["account_id"],"character_id":request["character_id"],"world_id":ledger.world,"fulfilment_unit_id":format!("hireling-{n}"),"catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"]});
+                        let order=uuid(&id(130+n));
+                        let intent=platform_intent(&request,&operation,&order);
                         ledger.intents.insert(operation.clone(),intent);
-                        serde_json::json!({"contract_version":1,"result":"ACCEPTED","order_id":uuid(&id(130+n)),"operation_ids":[operation]})
+                        platform_answer(&request,Some((&order,&operation)),ledger.balance,body)
                     };
                     ledger.answers.insert(key,answer.clone());
                     if std::mem::take(&mut ledger.lose_next_answer) {return Box::pin(async{Err(TransportFailure::Unavailable)})}
                     answer
                 }
             }
-            Operation::ReadStoreDeliveryIntentV1=>{
+            Operation::ReadStoreOperationIntentV1=>{
                 let operation=request["operation_id"].as_str().expect("operation");
-                serde_json::json!({"contract_version":1,"intent":ledger.intents[operation]})
+                ledger.intents[operation].clone()
             }
-            Operation::PublishStoreReceiptV1=>serde_json::json!({"contract_version":1,"result":"accepted"}),
+            Operation::PublishStoreDeliveryReceiptV1=>serde_json::json!({"contract_version":1,"result":"accepted"}),
             _=>return Box::pin(async{Err(TransportFailure::NotFound)}),
         };
-        Box::pin(async move{Ok(answer.to_string().into_bytes())})
+        Box::pin(async move{Ok(platform_bytes(&answer))})
     }
 }
 
@@ -91,7 +94,7 @@ fn command(seed:u8,offer:u16,price:u64,custom:Option<wire::StoreHirelingCustomiz
 }
 fn new_hire(name:&str)->wire::StoreHirelingCustomization {wire::StoreHirelingCustomization{hireling_id:None,name:Some(name.into()),sex:Some(1)}}
 fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"store-catalogue-r1".into(),price:25,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d".into(),price:25,currency:"TIBIA_COIN".into()};
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,wire::encode_purchase_request(&request).map_err(debug)?))
 }
 async fn purchase(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,command:(u32,Vec<u8>))->TestResult<wire::StorePurchaseResult> {
@@ -111,7 +114,7 @@ pub(super) fn install_house_store(
         balance: 10000, world: uuid(world), ..Ledger::default()
     }));
     owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(
-        Box::new(FakePlatform(ledger.clone())),
+        Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into(),
     ))));
     HouseStoreProducer(ledger)
 }
@@ -229,7 +232,7 @@ pub(super) async fn house_scenario(
 }
 
 #[derive(Debug,Clone,Copy)]
-enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit}
+enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode}
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
 #[test]
 fn hireling_store_purchase_lamp_once_and_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-hire",||scenario(Case::Hire))}
@@ -251,6 +254,9 @@ fn hireling_store_full_inbox_refuses_before_debit_and_keeps_delivered_replay()->
 fn hireling_store_paid_lamp_retries_after_prepared_delivery_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-delivery-retry",||scenario(Case::DeliveryRetry))}
 #[test]
 fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-limit",||scenario(Case::Limit))}
+
+#[test]
+fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
 
 fn scenario(case:Case)->TestResult {
     run(async |admin| {
@@ -274,7 +280,7 @@ fn scenario(case:Case)->TestResult {
             OfferedCapability{id:154,requires:&[]},OfferedCapability{id:165,requires:&[3,51]},OfferedCapability{id:250,requires:&[165]},
         ],&[3,51,154,165,250]).ok_or("capability selection")?;
         let ledger=Arc::new(SyncMutex::new(Ledger{balance:10000,world:uuid(admitted.world_id.as_bytes()),..Ledger::default()}));
-        owner.store=Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(FakePlatform(ledger.clone()))))));
+        owner.store=Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into()))));
 
         // No Hireling means no purchasable skill; this must precede any Platform debit.
         let absent=purchase(&owner,&mut admitted,command(50,1001,250,None)?).await?;
@@ -348,6 +354,15 @@ fn scenario(case:Case)->TestResult {
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,0);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_entitlements WHERE entitlement_id=1004").await?,1);
             }
+            Case::LocalEncode=>{
+                // An invalid local authority identity fails encoding before transport.
+                owner.store=Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(FakePlatform(ledger.clone())), "".into()))));
+                let refused=purchase(&owner,&mut admitted,command(60,1002,900,None)?).await?;
+                assert_eq!(refused.code,wire::StorePurchaseCode::PurchaseDisabled);
+                assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,0);
+                assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=3").await?,1);
+                assert_eq!(ledger.lock().expect("ledger").debits,1,"only initial fixture hire debited");
+            }
             Case::Refusals=>{
                 let stale=purchase(&owner,&mut admitted,command(60,1002,899,None)?).await?;assert_eq!(stale.code,wire::StorePurchaseCode::StaleQuote);
                 let invalid=purchase(&owner,&mut admitted,command(61,25440,150,Some(new_hire("Game Master")))?).await?;assert_eq!(invalid.code,wire::StorePurchaseCode::OfferUnavailable);
@@ -394,7 +409,7 @@ fn scenario(case:Case)->TestResult {
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_item_character_inbox_locations").await?,20);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_house_hirelings").await?,1);
                 assert_eq!(count(&harness,"SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?,1);
-                let operation={let ledger=ledger.lock().expect("ledger");ledger.answers[&uuid(&id(90))]["operation_ids"][0].as_str().ok_or("paid operation")?.to_owned()};
+                let operation={let ledger=ledger.lock().expect("ledger");ledger.answers[&uuid(&id(90))]["units"][0]["delivery_operation_id"].as_str().ok_or("paid operation")?.to_owned()};
                 let failed:(String,String,i16)=sqlx::query_as("SELECT transaction_id::text,item_instance_ids[1]::text,work_units_used FROM game_reward_claim_inbox_mint_reservations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                     .bind(admitted.game_session_id.as_bytes().as_slice()).bind(failed_command.to_string()).fetch_one(&harness.pool).await?;
                 assert!((1..=3).contains(&failed.2));

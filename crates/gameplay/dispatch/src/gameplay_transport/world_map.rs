@@ -597,13 +597,16 @@ pub fn resolve_map_handle<F: MapFacts>(
             })
         }
         ItemKey::MapAdded(id) => source
-            .overlay
-            .tiles()
-            .find_map(|(pos, view)| {
-                view.added()
-                    .iter()
-                    .any(|entry| entry.id().get() == id)
-                    .then_some(MapHandleTarget::Added { pos, id })
+            .facts
+            .movement_item(id)
+            .map(|(pos, _)| MapHandleTarget::Added { pos, id })
+            .or_else(|| {
+                source.overlay.tiles().find_map(|(pos, view)| {
+                    view.added()
+                        .iter()
+                        .any(|entry| entry.id().get() == id)
+                        .then_some(MapHandleTarget::Added { pos, id })
+                })
             })
             .ok_or(stale),
         ItemKey::Instance(item_instance_id) => source

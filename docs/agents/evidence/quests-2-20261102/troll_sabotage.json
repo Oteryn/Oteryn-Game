@@ -1,0 +1,665 @@
+{
+  "schema": "OTERYN_QUESTS_2_REVIEW_SNAPSHOT/v1",
+  "classification": "DERIVED",
+  "quest": "troll_sabotage",
+  "lane": "classic",
+  "batch": "quests-2-20261102",
+  "scope": "Frozen source rows and author dispositions preserved verbatim as JSON values. IMPLEMENTED means the named code/data subset only; all limitations and validation claims remain in the source disposition.",
+  "input_documents": [
+    {
+      "path": "inventory_donor.json",
+      "sha256": "17c874ce448998e1f01793fd8e3775691b78e465b75a4fc2c341492f9f595ab9"
+    },
+    {
+      "path": "implementation-disposition-classic.json",
+      "sha256": "4a89189d7b66ee039cb556153a0b052550bc5996516ca0f5d07cbb8291720a42"
+    }
+  ],
+  "source_context": {
+    "inventory": {
+      "status": "REPORT_ETAP1_CURRENT_MAIN_VERIFIED",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "auto": 1,
+          "manual": 34,
+          "already": "CZĘŚCIOWO: logbook/key claims, statyczne dialogi, vocation owner; bez Morris quest adapterów",
+          "dependencies": "Dawnport/rookgaard mapa; 4 vocation chests; shovel/fishing; NPC Morris/Woblin/Menesto/Oressa/Inigo/Captain; Morris death events",
+          "difficulty": "XL",
+          "notes": "Historyczny Sanctuary i istniejąca nazwa Newhaven mają konflikt zakresu CLASSIC-1; pełny onboarding wymaga osobnej zgodności ownerów."
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "auto": 3,
+          "manual": 2,
+          "already": "CZĘŚCIOWO: 3 leaf reward claims",
+          "dependencies": "mapa uid25030; StepOut i utworzenie435; chest6139..6141",
+          "difficulty": "S",
+          "notes": "StepIn i StepOut są jedną parą; same nagrody nie kończą implementacji płyty."
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "auto": 3,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: 2 claims; draconia2 supported_unqualified; draconia1 hold",
+          "dependencies": "levers30006/30035; old dragonlord; offering3206/3723; item3284; mapowe4dźwignie",
+          "difficulty": "M",
+          "notes": "CLASSIC-5 item3284; source reward3081 operand5 to charge, nie pięć egzemplarzy."
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "auto": 0,
+          "manual": 2,
+          "already": "NIE: brak natywnego wpisu tej nazwy",
+          "dependencies": "2 actionids64015/64016; brak źródła placementów i canonical identity",
+          "difficulty": "S",
+          "notes": "To katalog techniczny, niepotwierdzona 1:1 nazwa Global; CLASSIC-2."
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "auto": 1,
+          "manual": 1,
+          "already": "CZĘŚCIOWO: mintwallincyclops reward claim",
+          "dependencies": "aid30008 (nie uid30008); 11 obiektów mostu; chest6138",
+          "difficulty": "M",
+          "notes": "Katalog łączy lever nazwany Devil Helmet i claim Mintwallin Cyclops; nie zakładać 1:1 katalog=tytuł."
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: tylko źródłowy stub speech wymaga adaptera",
+          "dependencies": "carried item19065/22739; pusty NPC; folder monster nie dowodzi encounter",
+          "difficulty": "S",
+          "notes": "CLASSIC-3: brak pełnego scenariusza w donorze; UglyMonsterDeath/Drop należy grave_danger."
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: brak natywnego bindingu quiver58103",
+          "dependencies": "mapa chest58103; quiver35562; jednorazowy storage58103",
+          "difficulty": "S",
+          "notes": "Agregat: tylko quiver w tym katalogu; nie przypisywać Katana/Rapier z innych katalogów; CLASSIC-4."
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "auto": 0,
+          "manual": 24,
+          "already": "CZĘŚCIOWO: katalog i greet NPC; brak wykonawcy misji",
+          "dependencies": "NPC; skinning/hammer/lucky charm; 6 napraw; net/mapa7merchants; timery; losowe nagrody; achievements",
+          "difficulty": "L",
+          "notes": "Między misjami są repeatable tasks z cooldown20h; nie zastępować stałą nagrodą ani last-hit."
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "auto": 1,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: katalog i4key claims; brak docelowego reward14091",
+          "dependencies": "przesuwanie pieca; coal3050; wall1270/1271; bag2853/items3295+3039; questKV+legacy",
+          "difficulty": "M",
+          "notes": "Istniejący callback outlaw-camp-door należy The Travelling Trader, więc nie liczy się jako ta implementacja."
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "auto": 16,
+          "manual": 35,
+          "already": "CZĘŚCIOWO:5supported claims,1item hold, standardowe drzwi; bez seal graph",
+          "dependencies": "wspólna sekwencja świata;120s/100s/3s timery według źródła;2Ghost+Skeleton+Warlocks; NPC;8door bindings;6chests",
+          "difficulty": "XL",
+          "notes": "CLASSIC-6 item3081; donorowe global storage, omission guards i spawn nie mieszczą się w samych callbackach."
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "auto": 0,
+          "manual": 7,
+          "already": "CZĘŚCIOWO: statyczne dialogi, bez state/equipment/timer adaptera",
+          "dependencies": "NPC Jerom/Chief; head5460/11585/13995; feet3079;mapa50365;item7754/646",
+          "difficulty": "M",
+          "notes": "Chief współdzielony z Threatened Dreams; root scala, nie nadpisywać."
+        }
+      ],
+      "oteryn_revision": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348"
+    },
+    "disposition": {
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "test_status": "ROOT_PG_PENDING_NOT_A_COMPLETION_CLAIM",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "NEW_NATIVE_NPC": 8,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 27
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 3,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 2,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 23
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 1,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "NEW_NATIVE_NPC": 6,
+          "NEW_EXISTING_CALLBACK": 3,
+          "EXISTING_QUALIFIED_DATA": 13,
+          "LEFT_OUT": 29
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 6
+        }
+      ]
+    }
+  },
+  "source_rows_sha256": "59c53fa4b09597363562f17265180523726f7bfa11fe987974eaa4cd73b20b73",
+  "source_dispositions_sha256": "a85b7205542faf26301c2e606d9445430f817d24f029090d8474a283eca65a41",
+  "summary": {
+    "inventory_rows": 7,
+    "new_pattern_rows_without_assigned_id": 0,
+    "import_kinds": {
+      "RĘCZNIE": 7
+    },
+    "normalized_status": {
+      "IMPLEMENTED": 1,
+      "LEFT_OUT": 6
+    },
+    "source_status": {
+      "LEFT_OUT": 6,
+      "NEW_NATIVE_NPC": 1
+    },
+    "complete_playable_quest_claimed": false
+  },
+  "rows": [
+    {
+      "ordinal": 1,
+      "element": "Jerom: rozpoczęcie",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Jerom: rozpoczęcie",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "mission/quest→yes;topic1",
+        "condition": "Questline<1 przy ofercie",
+        "effect": "Questline=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:67-84"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 134,
+        "quest": "troll_sabotage",
+        "step": "Jerom: rozpoczęcie",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:67-84"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jerom.lua",
+          "start_line": 67,
+          "end_line": 84,
+          "blob_sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3",
+          "blob_line_count": 139,
+          "excerpt_sha256": "c68f880f57b8ece7753ead698a07da467ac0832e83f448f1b7dccb7d5e3fb4e6",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/jerom.lua#L67-L84"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "element": "Ścieżka podwodna — trzy przejścia",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Ścieżka podwodna — trzy przejścia",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "aid50365 na(33234,31748,7),(33234,31749,7),(33241,31772,8)",
+        "condition": "head slot5460/11585/13995;bez head→cofnięcie;zły head bez teleportu",
+        "effect": "pierwsze2→(33247,31771,8);trzecie→(33228,31771,9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:30-80"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 135,
+        "quest": "troll_sabotage",
+        "step": "Ścieżka podwodna — trzy przejścia",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:30-80"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/troll_sabotage/movements_teleport.lua",
+          "start_line": 30,
+          "end_line": 80,
+          "blob_sha256": "6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+          "blob_line_count": 80,
+          "excerpt_sha256": "dbcd6165fa250bc9adde541e0ee2d3a31df4b8b19a1e89a5adc6d96641afabac",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage/movements_teleport.lua#L30-L80"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "element": "Rozpęd do skoku",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Rozpęd do skoku",
+        "patterns": [
+          "P17"
+        ],
+        "trigger": "aid50365 na(33231,31765,2)",
+        "condition": "wejście według callbacka",
+        "effect": "JumpTimer=now+1s",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:60-66"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 136,
+        "quest": "troll_sabotage",
+        "step": "Rozpęd do skoku",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:60-66"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/troll_sabotage/movements_teleport.lua",
+          "start_line": 60,
+          "end_line": 66,
+          "blob_sha256": "6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+          "blob_line_count": 80,
+          "excerpt_sha256": "f20f3561501afea6aa38819e34f7b9ec1c385170a79181c48acb14afa40f563c",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage/movements_teleport.lua#L60-L66"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "element": "Skok w przód",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Skok w przód",
+        "patterns": [
+          "P03",
+          "P17"
+        ],
+        "trigger": "aid50365 na(33231,31762,2)",
+        "condition": "feet3079;JumpTimer≥now;bez feet lub przeterminowany timer→cofnięcie",
+        "effect": "teleport(33231,31759,2);3POFF",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-28"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 137,
+        "quest": "troll_sabotage",
+        "step": "Skok w przód",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-28"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/troll_sabotage/movements_teleport.lua",
+          "start_line": 1,
+          "end_line": 28,
+          "blob_sha256": "6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+          "blob_line_count": 80,
+          "excerpt_sha256": "543594f1bfc593015e5eaed1734d56fc93da924bfc797d17fd4f733c36edc558",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage/movements_teleport.lua#L1-L28"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "element": "Skok powrotny",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Skok powrotny",
+        "patterns": [
+          "P03"
+        ],
+        "trigger": "aid50365 na(33231,31760,2)",
+        "condition": "feet3079;bez feet→cofnięcie;zły feet bez teleportu",
+        "effect": "teleport(33231,31763,2);3POFF",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-28",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:50-80"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 138,
+        "quest": "troll_sabotage",
+        "step": "Skok powrotny",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-28",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:50-80"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Ruch wymaga dokładnego HEAD/FEET sprzętu,1s timestampu JumpTime i różnych silent/return/failure branches. Zamknięty StepIn model nie ma equipment guards/tej pary czasowej; rozszerzenie poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/troll_sabotage/movements_teleport.lua",
+          "start_line": 1,
+          "end_line": 28,
+          "blob_sha256": "6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+          "blob_line_count": 80,
+          "excerpt_sha256": "543594f1bfc593015e5eaed1734d56fc93da924bfc797d17fd4f733c36edc558",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage/movements_teleport.lua#L1-L28"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/troll_sabotage/movements_teleport.lua",
+          "start_line": 50,
+          "end_line": 80,
+          "blob_sha256": "6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+          "blob_line_count": 80,
+          "excerpt_sha256": "42614c726a3ce2a0f5fba9cdc31e395ddd71671361b6b0f7c37623c669f88b1c",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/troll_sabotage/movements_teleport.lua#L50-L80"
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "element": "Grarkharok: przekazanie naszyjnika",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Grarkharok: przekazanie naszyjnika",
+        "patterns": [
+          "P09",
+          "P11"
+        ],
+        "trigger": "kill/hurt/pain→lady/queen/woman/cave/house→yes→dowolne imię",
+        "condition": "Questline=1 otwiera topic1; następnie topic2→3",
+        "effect": "Questline=2;+7754×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:73-110"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 139,
+        "quest": "troll_sabotage",
+        "step": "Grarkharok: przekazanie naszyjnika",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:73-110"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/chief_grarkharok.lua",
+          "start_line": 73,
+          "end_line": 110,
+          "blob_sha256": "4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09",
+          "blob_line_count": 173,
+          "excerpt_sha256": "b56ead6d9f09b402f3c18bb2cec88393eb7f277f60fffc9d1aad2ec60e11b1b8",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/chief_grarkharok.lua#L73-L110"
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "element": "Jerom: naszyjnik za linę",
+      "source_row": {
+        "quest": "troll_sabotage",
+        "step": "Jerom: naszyjnik za linę",
+        "patterns": [
+          "P10",
+          "P11"
+        ],
+        "trigger": "mission/quest",
+        "condition": "Questline=2 i udane removeItem7754×1",
+        "effect": "−7754×1;Questline=3;+646×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:75-79"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 140,
+        "quest": "troll_sabotage",
+        "step": "Jerom: naszyjnik za linę",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:75-79"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/jerom.lua",
+          "start_line": 75,
+          "end_line": 79,
+          "blob_sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3",
+          "blob_line_count": 139,
+          "excerpt_sha256": "a34feb58fd7dcd3409fb2cb5e2c79a2dd7ea939949be1360c5d4e9a32c4435ad",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/jerom.lua#L75-L79"
+        }
+      ]
+    }
+  ]
+}

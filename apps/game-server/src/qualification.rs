@@ -371,7 +371,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
         "content_revision": "content-s3b-1",
-        "map_revision": "map-s3b-1",
+        "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
     });
@@ -1281,7 +1281,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .await?;
             database.close().await?;
             evidence("node_boot characters=2 source=control_socket assignment=operator");
-            seam_clients(SeamClients {
+            let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
@@ -1299,8 +1299,13 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 url: &url,
                 runtime: None,
                 recovery: &recovery_key()?,
-            })
-            .await
+            };
+            if let Some(path) = std::env::var_os("NODE_BOOT_WORLD_BUNDLE") {
+                client_world::journeys(&clients, std::path::Path::new(&path)).await
+            } else {
+                seam_clients(clients).await
+            }
+
         })
 }
 
@@ -1680,6 +1685,8 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         },
         GameplaySeamOwners {
             gameplay_idle_policy: Default::default(),
+            store_purchases: Default::default(),
+            store: None,
             emit: crate::node::serve::emit,
             root: &root,
             character: &authority,
@@ -2468,7 +2475,7 @@ fn sign_recovery(
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
         "content_revision": "content-s3b-1",
-        "map_revision": "map-s3b-1",
+        "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
     });
     let signing_input = format!(
@@ -2596,11 +2603,32 @@ fn resume_frames(
 }
 
 /// The #823 `SEAM_PASS` client stages against one serving node.
+#[path = "qualification/client_phases/world.rs"]
+pub(crate) mod client_world;
+
 #[path = "qualification/client_phases/negatives.rs"]
 mod client_negatives;
 
 #[path = "qualification/client_phases/admission.rs"]
 mod client_admission;
+#[path = "qualification/client_phases/browse_field.rs"]
+mod client_browse_field;
+#[path = "qualification/client_phases/daily_boost.rs"]
+mod client_daily_boost;
+#[path = "qualification/client_phases/death.rs"]
+mod client_death;
+#[path = "qualification/client_phases/depot_search.rs"]
+mod client_depot_search;
+#[path = "qualification/client_phases/disconnect_resume.rs"]
+mod client_disconnect_resume;
+#[path = "qualification/client_phases/hotkey_equip.rs"]
+mod client_hotkey_equip;
+#[path = "qualification/client_phases/hunt.rs"]
+mod client_hunt;
+#[path = "qualification/client_phases/item_forge.rs"]
+mod client_item_forge;
+#[path = "qualification/client_phases/store.rs"]
+mod client_store;
 
 #[path = "qualification/client_phases/recovery.rs"]
 mod client_recovery;
@@ -2735,17 +2763,11 @@ fn dev_client_step_event(
 async fn dev_client_door_events(
     session: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
-    for _ in 0..20 {
-        session
-            .service_liveness(std::time::Duration::from_millis(250))
-            .await
-            .map_err(|error| format!("dev client idle read: {error}"))?;
-        let events = session.take_events();
-        if !events.is_empty() {
-            return Ok(events);
-        }
-    }
-    Err("dev client door delta never arrived".into())
+    session
+        .session_mut()
+        .wait_for_events(std::time::Duration::from_secs(20))
+        .await
+        .map_err(|error| format!("dev client door delta never arrived: {error}").into())
 }
 
 /// Durable session state, current loss epoch and grace seconds counted from that loss's decision.
