@@ -1,6 +1,6 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
 
-use super::{Outbox, public_class, step_direction};
+use super::{Outbox, feature_0043_vip::protocol::send_vip, public_class, step_direction};
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand};
 use oteryn_session::{
     LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome, WorldSpatialEntity,
@@ -527,22 +527,9 @@ pub async fn run_session<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Vip(request)) => match session.vip(&request).await {
+            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &request).await {
                 Ok(response) => {
-                    if let Some(refresh) =
-                        super::feature_0043_vip::protocol::refresh_after(&request, &response)
-                    {
-                        let refreshed = match session.vip(&refresh).await {
-                            Ok(response) => response,
-                            Err(error) => {
-                                outbox.end(public_class(&error));
-                                return;
-                            }
-                        };
-                        outbox.vip_result(&refreshed);
-                    } else {
-                        outbox.vip_result(&response);
-                    }
+                    outbox.vip_result(&response);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

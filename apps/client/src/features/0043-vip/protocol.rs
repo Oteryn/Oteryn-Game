@@ -27,3 +27,16 @@ pub(in crate::play) fn refresh_after(
         groups: vec![],
     })
 }
+
+/// Send one VIP action and obtain the authoritative view after successful changes.
+pub(in crate::play) async fn send_vip<T: crate::play::Stepper>(
+    session: &mut T,
+    command: &oteryn_client_runtime::vip::VipCommand,
+) -> Result<oteryn_client_runtime::vip::VipResponse, oteryn_session::SessionError> {
+    let response = session.vip(command).await?;
+    if let Some(refresh) = refresh_after(command, &response) {
+        session.vip(&refresh).await
+    } else {
+        Ok(response)
+    }
+}
