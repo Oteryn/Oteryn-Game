@@ -272,10 +272,7 @@ pub(in crate::gameplay_transport) fn equipped_regeneration(
                 modifiers.iter().find_map(|modifier| {
                     match (modifier.kind == kind, &modifier.parameter) {
                         (true, ReferenceItemField::Known(Parameter::Milliseconds(value))) => {
-                            Some(match u32::try_from(value.0) {
-                                Ok(value) => value,
-                                Err(_) => u32::MAX,
-                            })
+                            Some(u32::try_from(value.0).unwrap_or(u32::MAX))
                         }
                         _ => None,
                     }
