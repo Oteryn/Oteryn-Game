@@ -3,7 +3,9 @@
   "kind": "handlers",
   "id": "0285-store-purchase-history-page",
   "status": "unsupported",
-  "commands": [],
+  "commands": [
+    501
+  ],
   "not_applicable": {
     "view": "The native client has no Store purchase history tab yet.",
     "input": "The native client has no Store purchase history tab yet.",
