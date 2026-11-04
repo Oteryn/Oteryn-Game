@@ -1694,7 +1694,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(dependencies, (10, 10));
+        assert_eq!(dependencies, (11, 11));
         h.pool.execute(guard).await?;
         let refusal = Some("holds a privilege outside the highscore grants");
         let job = "oteryn_game_highscore_job";
