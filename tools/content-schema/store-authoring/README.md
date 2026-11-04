@@ -54,6 +54,13 @@ python store_census.py --reference-engine <canary@47dfd51f> --crystal <crystalse
 
 ## Product reference payload by offer_type
 
+`catalogue_revision.py <catalogue.json>` prints the D2(b) revision: SHA-256 of compact
+JSON with recursively sorted object keys and raw UTF-8 strings. All numbers must be
+integers, including source metadata. `samples/revision-utf8.json` and its Python-generated
+`.sha256` pin the same canonical form in the dispatch loader's Rust test.
+
+Run the revision tests with `python -m unittest discover -s tools/content-schema/store-authoring`.
+
 `item` (stackable/house/item_bed/item_unique/charges): `item_refs` (Oteryn `Item` keys,
 resolved through the Crystal id space) + exactly one of `count`/`charges`. `outfit`:
 `female_look_type`/`male_look_type` + `addon`. `mount`: `mount_id` (the engine `id`

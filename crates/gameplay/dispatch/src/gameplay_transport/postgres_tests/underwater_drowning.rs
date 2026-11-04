@@ -837,3 +837,145 @@ async fn seed_swimming_conditions(
     }
     Ok(())
 }
+
+#[test]
+fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
+    on_thread(|| {
+        let started = std::time::Instant::now();
+        let result = run(async |admin| {
+            reset();
+            let h =
+                Harness::create_with_admission_seed(admin, "m10_move_pillow", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+            let (controller, pin) = activated_with_loot_tables(world, None);
+            let active = controller.active().ok_or("active")?;
+            // Activated content digests (custody reads pin them), the test row's map binding.
+            let channel = Dependencies::new()?.admitted.channel_id;
+            let (bytes, mut pins) = underwater_row(false)?;
+            let mut bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
+            bundle.manifest.palette[4].key = "oteryn:item.tibia.i2397".into();
+            // Keep ground and place the pillow at the first dispatch destination.
+            bundle.sectors[0]
+                .tiles
+                .iter_mut()
+                .find(|tile| tile.x == 2)
+                .ok_or("tile")?
+                .items = vec![
+                oteryn_world_bundle::sector::Item {
+                    palette: 0,
+                    depth: 0,
+                    attrs: Default::default(),
+                },
+                oteryn_world_bundle::sector::Item {
+                    palette: 4,
+                    depth: 0,
+                    attrs: Default::default(),
+                },
+            ];
+            let bytes =
+                write(&bundle.manifest, &bundle.sectors, &Default::default()).map_err(debug)?;
+            pins.digest = oteryn_world_bundle::bundle::read(&bytes)
+                .map_err(debug)?
+                .digest;
+            let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+            let map = boot(
+                &bytes,
+                &BootPins {
+                    map_revision: crate::map::overlay::map_revision(&base),
+                    bundle: pins,
+                    start: TilePos {
+                        x: 1,
+                        y: 0,
+                        floor: -7,
+                    },
+                },
+                world,
+                channel,
+                |key| {
+                    let ids = [2397, 3482, 3944, 2147, 44529, 2146, 2148, 3481, 3945, 44530];
+                    let index = ids
+                        .iter()
+                        .position(|id| key == format!("oteryn:item.tibia.i{id}"))?;
+                    Some(crate::map::facts::ItemDefinition {
+                        reference: std::num::NonZeroU32::new(index as u32 + 1)?,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+                },
+            )
+            .map_err(debug)?;
+            let channel_pin = ChannelContentPin::from_activation(
+                world,
+                pin.activation_sequence(),
+                pin.identity().server_artifact_digest(),
+                pin.identity().client_artifact_digest(),
+                map.frame_binding_digest(world),
+                map.map_revision_digest(),
+                (1, 0, 7),
+            );
+            let deps = Dependencies::with_content(
+                channel_pin,
+                crate::content::qualify_native_entry_room(world).map_err(debug)?,
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
+            )?;
+            assert_eq!(deps.admitted.channel_id, channel);
+            // The activated room scopes the cells to the activated content digest.
+            let cells = map
+                .movement_cells(pin.qualified_room().movement_cells())
+                .map_err(debug)?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.active_generation = Some(active);
+            owner.movement_cells = &cells;
+            deps.initialize(&owner).await;
+            deps.runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
+            .bind(id(42).as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'fixm10-fixture')")
+            .bind(id(42).as_slice()).bind(1_i16).execute(&h.pool).await?;
+            let mover = (deps.admitted, deps.actor, deps.admitted.game_session_id);
+            step(&mut owner, mover, StepDirection::East, 2).await?;
+            let bundle = owner.bundle_map().ok_or("bundle")?;
+            let speech = bundle.facts.movement_speech_since(0);
+            assert_eq!(speech.len(), 1);
+            assert_eq!(
+                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
+                (deps.actor, "Faaart!", 36)
+            );
+            assert_eq!(
+                bundle
+                    .facts
+                    .movement_effects_since(0)
+                    .iter()
+                    .map(|(_, _, effect)| *effect)
+                    .collect::<Vec<_>>(),
+                vec![3],
+                "committed routed player STEP emits pillow poff"
+            );
+            Ok(())
+        });
+        eprintln!(
+            "M10_MOVE_PILLOW_POSTGRES duration={:.3}s result={}",
+            started.elapsed().as_secs_f64(),
+            if result.is_ok() { "GREEN" } else { "RED" }
+        );
+        result
+    })
+}

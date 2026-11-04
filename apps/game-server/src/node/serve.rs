@@ -414,6 +414,7 @@ struct Material {
     gameplay_key: PrivateKeyDer<'static>,
     evidence: FreshEvidenceSource,
     intents: ProducerDescriptor,
+    store: ProducerDescriptor,
     /// Runtime-status identity and declared epoch; `None` disables reporting.
     runtime_status: Option<(std::sync::Arc<RuntimeStatusDescriptor>, u64)>,
     /// `ListCharactersForAccount` publisher: its identity, source authority
@@ -743,6 +744,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         config,
         gameplay_chain,
         gameplay_key,
+        store: evidence.clone(),
         evidence: FreshEvidenceSource::new(evidence),
         intents,
         runtime_status,
@@ -2321,7 +2323,7 @@ fn boot_bundle_items(
 /// (`blocks_movement` false and `blocks_projectile` false); a profile that does not describe
 /// the open item leaves the door sealed, so the node refuses readiness instead of serving a
 /// doorway that opens in appearance only.
-fn boot_bundle_world(
+pub(crate) fn boot_bundle_world(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     channel: ChannelId,
@@ -2690,9 +2692,23 @@ async fn boot_and_serve(
     // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
+    // Local operator mode; the Platform runtime-status payload has a closed contract.
+    eprintln!(
+        "event=store_configuration store_purchases={}",
+        config.store_purchases.as_str()
+    );
     let owners = GameplaySeamOwners {
         activity_templates: &activity_templates,
         gameplay_idle_policy: config.gameplay_idle,
+        store_purchases: config.store_purchases,
+        store: Some(crate::native_admission_source::store::StoreClient::new(
+            Box::new(
+                crate::native_admission_source::store::MtlsStoreTransport::new(
+                    material.store.clone(),
+                ),
+            ),
+            material.store.source_authority().to_owned(),
+        )),
         emit,
         root,
         character: &authority,

@@ -1,6 +1,5 @@
 {
   "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
-  "catalog_revision": "store-hireling-crystal-201189f-v1",
   "source": {
     "repository": "zimbadev/crystalserver",
     "commit": "201189f871d23597b82caf88fd611454a2ddefb8",

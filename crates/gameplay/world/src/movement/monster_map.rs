@@ -1,4 +1,7 @@
 //! Current Map/Item/LocalObject facts, borrowed for one physical Item-owner transaction.
+#[cfg(test)]
+mod movement_script_tests;
+mod special_movement;
 #[cfg(any(test, feature = "test-support"))]
 mod transaction_test_support;
 
@@ -96,7 +99,9 @@ impl MonsterMap {
         decision.attempted = 1;
         decision.real_content_lookups = 1;
         decision.qualified = true;
-        decision.commit(&mut owner)
+        let moved = decision.commit(&mut owner)?;
+        special_movement::step_in(runtime, cells, actor, moved.position());
+        Ok(moved)
     }
     pub fn relocate(
         &self,

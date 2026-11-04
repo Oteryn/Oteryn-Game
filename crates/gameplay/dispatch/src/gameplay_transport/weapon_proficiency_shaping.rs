@@ -1,7 +1,7 @@
 //! Production [`ProficiencyShapingSource`] over the committed Global shaping values
 //! (PROFICIENCY-1C). A definition's shaping key resolves to its vocation's 64-perk pool. Only the
-//! evidenced cells are exposed: rank 0 and rank 10 values, the slot, reshape and clear costs and
-//! the orb count. Rank 1-9 values are unpublished, so `RANK_UP` answers `NOT_ADMITTED` (1C §3).
+//! donor-evidenced cells are exposed: rank 0 through rank 10 values, the slot, reshape and clear
+//! costs and the orb count.
 
 use super::ProductionProficiencyCatalogue;
 use crate::durability::character_proficiency_modification::ProficiencyShapingSource;
@@ -10,8 +10,7 @@ use oteryn_gameplay_content::content::{
     import_committed_proficiency_shaping, proficiency_perk_identity,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    PROFICIENCY_MODIFICATION_RANK_MAX, PROFICIENCY_MODIFICATION_RANKS, ProficiencyModifiedPerk,
-    ProficiencyShapingEntry, ProficiencyShapingRevision,
+    ProficiencyModifiedPerk, ProficiencyShapingEntry, ProficiencyShapingRevision,
 };
 use std::sync::{Arc, OnceLock};
 
@@ -30,6 +29,56 @@ fn committed() -> Option<&'static Arc<ImportedProficiencyShaping>> {
         .as_ref()
 }
 
+#[cfg(test)]
+fn retired_r1() -> Option<&'static Arc<ImportedProficiencyShaping>> {
+    static SHAPING: OnceLock<Option<Arc<ImportedProficiencyShaping>>> = OnceLock::new();
+    SHAPING
+        .get_or_init(|| {
+            oteryn_gameplay_content::content::import_retired_proficiency_shaping_r1()
+                .ok()
+                .map(Arc::new)
+        })
+        .as_ref()
+}
+
+fn revision(
+    shaping: &ImportedProficiencyShaping,
+    shaping_key: &str,
+) -> Option<ProficiencyShapingRevision> {
+    let definition = shaping_key
+        .strip_prefix("oteryn:proficiency-shaping.")
+        .map(|rest| format!("oteryn:proficiency.{rest}"))?;
+    let pool = shaping
+        .pools
+        .get(shaping.definition_vocations.get(&definition)?)?;
+    let [first, second] = shaping.modify_dust;
+    let revision = ProficiencyShapingRevision {
+        shaping_key: shaping_key.to_owned(),
+        revision: shaping.revision.clone(),
+        pool: Some(
+            pool.iter()
+                .map(|entry| ProficiencyShapingEntry {
+                    perk_identity: entry.identity.clone(),
+                    weight: Some(shaping.uniform_weight),
+                    rank_values: std::array::from_fn(|rank| {
+                        shaping.revision != "shaping-r1" || rank == 0 || rank == 10
+                    }),
+                })
+                .collect(),
+        ),
+        modify_cost: [Some(first), Some(second)],
+        rank_step_cost: if shaping.revision == "shaping-r1" {
+            [None; 10]
+        } else {
+            shaping.rank_step_dust.map(Some)
+        },
+        reshape_offer_cost: Some(shaping.reshape_offer_dust),
+        clear_cost: Some(shaping.clear_dust),
+        orb_count: Some(shaping.orb_count),
+    };
+    revision.is_well_formed().then_some(revision)
+}
+
 impl ProductionProficiencyShaping {
     pub fn embedded(catalogue: Arc<ProductionProficiencyCatalogue>) -> Option<Arc<Self>> {
         Some(Arc::new(Self {
@@ -39,9 +88,8 @@ impl ProductionProficiencyShaping {
     }
 }
 
-/// PROF-EFFECT-0 value of a stored modification row: its pool entry's identity, unit and rank 0
-/// or rank 10 value. The row must name `definition_key`'s shaping key and the committed
-/// revision; any other row, and an unpublished rank 1-9, has no known value.
+/// PROF-EFFECT-0 value of a stored modification row. The row must name `definition_key`'s shaping
+/// key and the committed revision; any other row has no known value.
 pub(super) fn modified_value(
     row: &ProficiencyModifiedPerk,
     definition_key: &str,
@@ -57,46 +105,13 @@ pub(super) fn modified_value(
         .pools
         .get(shaping.definition_vocations.get(definition_key)?)?
         .get(usize::from(row.entry_index))?;
-    let value = match row.rank {
-        0 => entry.rank0,
-        PROFICIENCY_MODIFICATION_RANK_MAX => entry.rank10,
-        _ => return None,
-    };
+    let value = *entry.rank_values.get(usize::from(row.rank))?;
     Some((entry.identity.as_str(), entry.unit, value))
 }
 
 impl ProficiencyShapingSource for ProductionProficiencyShaping {
     fn active(&self, shaping_key: &str) -> Option<ProficiencyShapingRevision> {
-        let definition = shaping_key
-            .strip_prefix("oteryn:proficiency-shaping.")
-            .map(|rest| format!("oteryn:proficiency.{rest}"))?;
-        let pool = self
-            .shaping
-            .pools
-            .get(self.shaping.definition_vocations.get(&definition)?)?;
-        let mut rank_values = [false; PROFICIENCY_MODIFICATION_RANKS];
-        rank_values[0] = true;
-        rank_values[usize::from(PROFICIENCY_MODIFICATION_RANK_MAX)] = true;
-        let [first, second] = self.shaping.modify_dust;
-        let revision = ProficiencyShapingRevision {
-            shaping_key: shaping_key.to_owned(),
-            revision: self.shaping.revision.clone(),
-            pool: Some(
-                pool.iter()
-                    .map(|entry| ProficiencyShapingEntry {
-                        perk_identity: entry.identity.clone(),
-                        weight: Some(self.shaping.uniform_weight),
-                        rank_values,
-                    })
-                    .collect(),
-            ),
-            modify_cost: [Some(first), Some(second)],
-            rank_step_cost: [None; PROFICIENCY_MODIFICATION_RANK_MAX as usize],
-            reshape_offer_cost: Some(self.shaping.reshape_offer_dust),
-            clear_cost: Some(self.shaping.clear_dust),
-            orb_count: Some(self.shaping.orb_count),
-        };
-        revision.is_well_formed().then_some(revision)
+        revision(&self.shaping, shaping_key)
     }
 
     fn perk_identity(
@@ -151,7 +166,7 @@ mod tests {
             ),
             (Some(250), Some(0), Some(1))
         );
-        // MODIFY lands on the evidenced rank 0; ranks 1-9 are unpublished, so RANK_UP is not.
+        // MODIFY lands on rank 0 and every donor-evidenced rank step is admitted.
         assert!(
             revision
                 .admitted(
@@ -161,7 +176,21 @@ mod tests {
                 )
                 .is_some()
         );
-        assert!(revision.rank_step_cost.iter().all(Option::is_none));
+        assert_eq!(
+            revision.rank_step_cost,
+            [
+                Some(125),
+                Some(200),
+                Some(275),
+                Some(350),
+                Some(425),
+                Some(500),
+                Some(575),
+                Some(650),
+                Some(725),
+                Some(800),
+            ]
+        );
         assert!(
             revision
                 .admitted(ProficiencyModificationCommandKind::Clear, 1, None)
@@ -170,9 +199,36 @@ mod tests {
     }
 
     #[test]
-    fn migration_0575_activates_exactly_the_shaped_definitions() {
+    fn shaping_r2_admits_rank_up_while_retained_r1_rejects_it() {
+        let row = ProficiencyModifiedPerk {
+            level: 0,
+            shaping_key: "oteryn:proficiency-shaping.tibia.p6".into(),
+            shaping_revision: "shaping-r2".into(),
+            entry_index: 0,
+            rank: 0,
+            pending_offer: None,
+        };
+        let current = source().active(&row.shaping_key).expect("current revision");
+        assert_eq!(current.revision, "shaping-r2");
+        assert!(
+            current
+                .admitted(ProficiencyModificationCommandKind::RankUp, 1, Some(&row))
+                .is_some()
+        );
+
+        let old = revision(retired_r1().expect("retained r1"), &row.shaping_key)
+            .expect("retained revision");
+        assert_eq!(old.revision, "shaping-r1");
+        assert!(
+            old.admitted(ProficiencyModificationCommandKind::RankUp, 1, Some(&row))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn migration_0915_activates_exactly_the_shaped_definitions() {
         const MIGRATION: &str = include_str!(
-            "../../../../../apps/game-server/migrations/0575_proficiency_perk_shaping.sql"
+            "../../../../../apps/game-server/migrations/0915_proficiency_shaping_r2.sql"
         );
         let shaping = import_committed_proficiency_shaping().expect("shaping");
         let list = &MIGRATION[MIGRATION.find("unnest(ARRAY[").expect("activation list")..];
@@ -190,7 +246,7 @@ mod tests {
             shaped.iter().map(String::as_str).collect(),
             "a shaping.json definition change needs a forward activation migration"
         );
-        assert!(MIGRATION.contains(&format!("'{}', NULL)", shaping.revision)));
+        assert!(MIGRATION.contains(&format!("'{}', ARRAY['shaping-r1']", shaping.revision)));
     }
 
     #[test]

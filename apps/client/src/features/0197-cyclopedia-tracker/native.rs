@@ -6,7 +6,10 @@ use std::{
     ptr::{null, null_mut},
     time::Duration,
 };
-use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+use windows_sys::Win32::{
+    Foundation::*,
+    UI::{Controls::BST_CHECKED, WindowsAndMessaging::*},
+};
 fn w(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
@@ -72,19 +75,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                     if msg.message == WM_COMMAND {
                         let id = msg.wParam & 0xffff;
-                        if matches!(id, 103..=105) {
-                            if let Some(s) = weak.upgrade() {
-                                let mut m = lock(&s);
-                                m.cyclopedia_tracker.creature_key = text(key);
-                                m.cyclopedia_tracker.boss =
-                                    SendMessageW(boss, BM_GETCHECK, 0, 0) == BST_CHECKED as isize;
-                                let intent = match id {
-                                    103 => Intent::Add,
-                                    104 => Intent::Remove,
-                                    _ => Intent::Read,
-                                };
-                                super::super::input::enqueue(&mut m, &commands, intent);
-                            }
+                        if matches!(id, 103..=105)
+                            && let Some(s) = weak.upgrade()
+                        {
+                            let mut m = lock(&s);
+                            m.cyclopedia_tracker.creature_key = text(key);
+                            m.cyclopedia_tracker.boss =
+                                SendMessageW(boss, BM_GETCHECK, 0, 0) == BST_CHECKED as isize;
+                            let intent = match id {
+                                103 => Intent::Add,
+                                104 => Intent::Remove,
+                                _ => Intent::Read,
+                            };
+                            super::super::input::enqueue(&mut m, &commands, intent);
                         }
                     }
                     TranslateMessage(&msg);

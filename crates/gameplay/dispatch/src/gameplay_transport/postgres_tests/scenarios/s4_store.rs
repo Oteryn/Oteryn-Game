@@ -1,4 +1,7 @@
 //! S4: Platform purchase -> durable Inbox -> backpack -> depot -> successor admission.
+use super::super::store::{
+    platform_answer, platform_balance, platform_bytes, platform_intent, sha256,
+};
 use super::*;
 use crate::native_admission_source::descriptor::Operation;
 use crate::native_admission_source::store::{StoreClient, StoreTransport, TransportFailure};
@@ -25,34 +28,42 @@ impl StoreTransport for Platform {
             let mut ledger = self.0.lock().map_err(|_| TransportFailure::NotFound)?;
             let request: serde_json::Value =
                 serde_json::from_str(body).map_err(|_| TransportFailure::NotFound)?;
+            assert_eq!(request["source_authority"], "oteryn-game/store-consumer");
             let answer = match operation {
-                Operation::ReadStoreBalanceV1 => {
-                    serde_json::json!({"contract_version":1,"balance":{"currency":request["currency"],"balance":ledger.balance}})
-                }
+                Operation::ReadStoreBalanceV1 => platform_balance(&request, ledger.balance),
                 Operation::PurchaseStoreOfferV1 => {
-                    let price = request["price"]
-                        .as_u64()
+                    let price = request["unit_price"]
+                        .as_str()
+                        .and_then(|price| price.parse::<u64>().ok())
+                        .and_then(|price| price.checked_mul(request["quantity"].as_u64()?))
                         .ok_or(TransportFailure::NotFound)?;
                     ledger.purchases += 1;
                     ledger.balance = ledger
                         .balance
                         .checked_sub(price)
                         .ok_or(TransportFailure::NotFound)?;
-                    ledger.intent = Some(
-                        serde_json::json!({"operation_id":crate::gameplay_transport::canonical_uuid(&id(101)),"account_id":request["account_id"],"character_id":request["character_id"],"world_id":crate::gameplay_transport::canonical_uuid(&id(42)),"fulfilment_unit_id":"unit-1","catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"]}),
-                    );
-                    serde_json::json!({"contract_version":1,"result":"ACCEPTED","order_id":crate::gameplay_transport::canonical_uuid(&id(121)),"operation_ids":[crate::gameplay_transport::canonical_uuid(&id(101))]})
+                    let operation = crate::gameplay_transport::canonical_uuid(&id(101));
+                    let order = crate::gameplay_transport::canonical_uuid(&id(121));
+                    ledger.intent = Some(platform_intent(&request, &operation, &order));
+                    platform_answer(&request, Some((&order, &operation)), ledger.balance, body)
                 }
-                Operation::ReadStoreDeliveryIntentV1 => {
-                    serde_json::json!({"contract_version":1,"intent":ledger.intent})
+                Operation::ReadStoreOperationIntentV1 => {
+                    let intent = ledger.intent.as_ref().ok_or(TransportFailure::NotFound)?;
+                    assert_eq!(request["operation_id"], intent["operation_id"]);
+                    assert_eq!(request["operation_kind"], intent["operation_kind"]);
+                    intent.clone()
                 }
-                Operation::PublishStoreReceiptV1 => {
+                Operation::PublishStoreDeliveryReceiptV1 => {
+                    let intent = ledger.intent.as_ref().ok_or(TransportFailure::NotFound)?;
+                    assert_eq!(request["operation_id"], intent["operation_id"]);
+                    assert_eq!(request["binding_digest"], sha256(&platform_bytes(intent)));
+                    assert_eq!(request["result_code"], "STORE_OK");
                     ledger.receipts += 1;
                     serde_json::json!({"contract_version":1,"result":"accepted"})
                 }
                 _ => return Err(TransportFailure::NotFound),
             };
-            Ok(answer.to_string().into_bytes())
+            Ok(platform_bytes(&answer))
         })();
         Box::pin(async { result })
     }
@@ -86,6 +97,7 @@ fn scenario() -> TestResult {
         }));
         owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(
             Box::new(Platform(platform.clone())),
+            "oteryn-game/store-consumer".into(),
         ))));
         let account: Vec<u8> = sqlx::query_scalar("SELECT decode(replace(account_id::text,'-',''),'hex') FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         let mut controller = admitted.controller.ok_or("controller")?;
@@ -102,7 +114,8 @@ fn scenario() -> TestResult {
         let purchase = wire::encode_purchase_request(&wire::StorePurchaseRequest {
             purchase_request_id: id(62),
             offer_key: "store:exercise-sword".into(),
-            catalog_revision: "store-catalogue-r1".into(),
+            catalog_revision: "1f6ee35b3b46aa4e5e1a36d7eb0e0b76ce08fa78907a91e3aac5ad22bb11050d"
+                .into(),
             price: 25,
             currency: "TIBIA_COIN".into(),
         })

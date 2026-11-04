@@ -5,6 +5,29 @@ use super::storage::{PurchaseRequestState, StoreDurabilityError};
 use sqlx::Row;
 
 impl DurabilityRoot {
+    /// Read-only restore gate. Existence permits only the normal retry path, which still
+    /// checks the immutable binding before reconciliation; this never creates a request.
+    pub async fn has_store_purchase_request(
+        &self,
+        purchase_request_id: [u8; 16],
+        account_id: [u8; 16],
+        character_id: [u8; 16],
+    ) -> Result<bool, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                let retained: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM store_purchase_requests \
+                     WHERE purchase_request_id=encode($1,'hex')::uuid \
+                     AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid)"
+                ).bind(purchase_request_id.as_slice()).bind(account_id.as_slice())
+                    .bind(character_id.as_slice()).fetch_one(&mut *tx).await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(retained))
+            })
+        }).await?
+    }
+
     /// Retain the first immutable purchase binding; retries return its saved answer.
     pub async fn record_purchase_request(
         &self,

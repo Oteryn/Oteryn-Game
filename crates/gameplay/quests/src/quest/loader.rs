@@ -202,6 +202,16 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::classic_dialogue::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::liquid_black::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::grave_danger::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::wrath_sleeping_dragon::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::grizzly_adams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -538,5 +548,29 @@ mod tests {
                 QuestCatalogueError::InvalidContentRevision
             ))
         ));
+    }
+    #[test]
+    fn liquid_black_native_start_has_both_source_storage_effects() -> Result<(), String> {
+        let lowered =
+            load_embedded_quest_state("liquid-black-red").map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        let transition = catalogue
+            .transition("oteryn:quest-transition/liquid-black/visitor-start")
+            .ok_or("missing source-qualified Liquid Black start")?;
+        let changes = catalogue
+            .evaluate(transition, &BTreeMap::new(), 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(changes.len(), 2);
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track.ends_with("/questline") && change.after == 1)
+        );
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track.ends_with("/visitor") && change.after == 1)
+        );
+        Ok(())
     }
 }

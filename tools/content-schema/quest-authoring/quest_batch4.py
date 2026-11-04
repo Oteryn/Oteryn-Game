@@ -107,7 +107,7 @@ NATIVE_BINDINGS = {
 }
 KEY = re.compile(r'oteryn:[A-Za-z0-9._:/-]+\Z')
 SOURCE = re.compile(re.escape(SOURCE_PREFIX) + r'([^:\r\n]+):([1-9][0-9]*)(?:-([1-9][0-9]*))?\Z')
-MAX_CALLBACKS = 127  # The runtime adds its existing dynamic Rotten Blood altar.
+MAX_CALLBACKS = 255  # The runtime adds its existing dynamic Rotten Blood altar.
 MAX_EFFECTS = 8
 
 
@@ -394,7 +394,7 @@ def expected_files(root, selected=None, available=False):
         excluded = {row['key'] for row in packet['runtime_exclusions']}
         merged['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
         outputs[NPC_OUTPUT_DIRECTORY / (packet['quest_directory'] + '.json')] = encoded(packet['npc_source'])
-    require(len(merged['callbacks']) <= MAX_CALLBACKS, 'callback cap is 127, reserving one dynamic altar')
+    require(len(merged['callbacks']) <= MAX_CALLBACKS, f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
     outputs[CALLBACK_OUTPUT] = encoded(merged)
     return outputs
 

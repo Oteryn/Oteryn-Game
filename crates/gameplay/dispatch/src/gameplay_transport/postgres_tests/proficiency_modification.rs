@@ -1,7 +1,7 @@
 //! P08 perk modification through the production command owner (commands 379, 380, 392-395)
 //! with the Global shaping values and migration 0575's activation: MODIFY spends 250 dust and
 //! lands on rank 0, ORB_RANK burns one carried Lunar Ascension Orb with its line, a replay burns
-//! nothing, RANK_UP stays not admitted, CLEAR frees the slot and ORB_RANK without an orb is
+//! nothing, RANK_UP advances with donor-evidenced values, CLEAR frees the slot and ORB_RANK without an orb is
 //! `NO_ORB`.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -262,12 +262,11 @@ fn scenario() -> TestResult {
         assert_eq!((slot.level, slot.rank, slot.pending_offer), (0, 0, None));
         assert_eq!(dust().await?, 750);
         live_agrees(Some(0)).await?;
-        // RANK_UP reads unpublished rank 1-9 values: not admitted, nothing spent.
-        assert_eq!(
-            modify(11, ModificationOperation::RankUp).await?.result,
-            ModificationResult::NotAdmitted
-        );
-        assert_eq!(dust().await?, 750);
+        // shaping-r2 admits the donor-evidenced 0→1 step and spends its 125 dust.
+        let ranked_once = modify(11, ModificationOperation::RankUp).await?;
+        assert_eq!(ranked_once.result, ModificationResult::Accepted);
+        assert_eq!(ranked_once.slot.map(|slot| slot.rank), Some(1));
+        assert_eq!(dust().await?, 625);
 
         // ORB_RANK burns the carried orb with its line in one transaction (1C §5, 0575).
         let before_orb = track_revision().await?;
@@ -301,7 +300,8 @@ fn scenario() -> TestResult {
         // CLEAR is free and frees the slot (TibiaWiki Updates/15.30.a30dad).
         let cleared = modify(14, ModificationOperation::Clear).await?;
         assert_eq!((cleared.result, cleared.slot), (ModificationResult::Accepted, None));
-        assert_eq!(dust().await?, 750);
+        // CLEAR refunds nothing: the 125 dust of the shaping-r2 RANK_UP above stays spent.
+        assert_eq!(dust().await?, 625);
         live_agrees(None).await?;
 
         // A second MODIFY, then ORB_RANK burns the last orb; a third finds none.
@@ -327,7 +327,8 @@ fn scenario() -> TestResult {
             modify(19, ModificationOperation::OrbRank).await?.result,
             ModificationResult::NoOrb
         );
-        assert_eq!((dust().await?, burns().await?), (250, 2));
+        // Two more MODIFYs at 250 each from 625 (shaping-r2 RANK_UP spent 125 above).
+        assert_eq!((dust().await?, burns().await?), (125, 2));
         eprintln!("proficiency_modification: cases executed");
         Ok(())
     })

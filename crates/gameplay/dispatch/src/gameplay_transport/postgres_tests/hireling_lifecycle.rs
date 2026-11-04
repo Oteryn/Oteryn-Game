@@ -50,7 +50,7 @@ mod position;
 
 const OTHER_HOUSE: &str = "oteryn:content.house.admiral_s_avenue_2";
 #[derive(Clone, Copy)]
-enum Case { Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied }
+enum Case { Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied, BedRest }
 
 #[test]
 fn hireling_postgres_native_inbox_lamp_fences_replay_and_return() -> TestResult {
@@ -132,13 +132,18 @@ fn hireling_postgres_house_acl_loss_gourmet_logout_and_fresh_refusal_cleanup() -
 fn hireling_postgres_house_fresh_restore_refuses_current_hireling_collision() -> TestResult {
     run_case(Case::PositionOccupied)
 }
+pub(super) async fn bed_rest_fresh(owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>, admitted: crate::gameplay_transport::connection::AdmittedSession) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
+    position::fresh(owner, admitted, 20, 12).await
+}
+pub(super) fn bed_rest_case() -> TestResult { run_case(Case::BedRest) }
+
 fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     std::thread::Builder::new().stack_size(256 << 20).spawn(move || {
         run(async move |admin| {
             // The fresh-relog composition case obtains its progression from the
             // actual native admission owner, not the generic level-50 row seed.
-            let initialized = !matches!(case, Case::PositionRelog);
+            let initialized = !matches!(case, Case::PositionRelog | Case::BedRest);
             let h = Harness::create_with_admission_seed(admin, "hireling_lifecycle", initialized, false).await?;
             let result = scenario(&h, case).await;
             h.cleanup().await?;
@@ -161,7 +166,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id)?;
     // Qualify movement under the very same full native input as the active
     // Item provider. The small Dependencies::new entry artifact has another
     // digest and cannot authorize a STEP against this full generation.
@@ -171,8 +175,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     // This scenario boots its genuine bounded BundleWorld separately.
     input.source_world = None;
+    if matches!(case, Case::BedRest) { super::bed_sleep_fixture::bed_profiles(&mut input)?; }
     if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
-        | Case::PositionAcl | Case::PositionOccupied) {
+        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
         // Use the same qualified training fixture as the existing native
         // death/relog tests: source formula bytes are unchanged, while its
         // binding names this fixture's actual Character interpretation.
@@ -213,6 +218,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             frame_binding_digest: room.frame_binding().digest(),
         },
     ).await.map_err(debug)?);
+    let bed_index = if matches!(case, Case::BedRest) { generation.native_gameplay().and_then(|n| n.item_index()) } else { None };
+    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id, bed_index.map(|i| i.as_ref()))?;
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     use sha2::Digest as _;
     let map_digest = sha2::Sha256::digest(cells.scope().map_revision.as_str().as_bytes()).into();
@@ -226,7 +233,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         (32309, 32805, 7),
     );
     let deps = Dependencies::with_content(pin, room, base.spells)?;
+    let bed_premium = if matches!(case, Case::BedRest) {
+        let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+        Some(crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer,Some(clock),Some(activation),Some(h.root.clone())))
+    } else {None};
     let mut owner = deps.owner(h, &authority);
+    owner.premium_coordinator = bed_premium.as_ref();
     owner.movement_cells = &cells;
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(generation);
@@ -270,6 +283,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
+    if matches!(case, Case::BedRest) { owner.admit_premium(id(40), deps.admitted.game_session_id); }
     {
         let mut runtime = owner.runtime.lock().await;
         runtime
@@ -337,11 +351,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await.map_err(debug)?;
     assert!(equipment.items.is_empty());
     if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
-        | Case::PositionAcl | Case::PositionOccupied) {
+        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
         // This source is really positioned in its Channel. Use the ordinary
         // native login settlement and runtime install before the House handoff.
         // Other service fixtures deliberately retain their revision-one seed.
-        if matches!(case, Case::PositionRelog) {
+        if matches!(case, Case::PositionRelog | Case::BedRest) {
             owner.admit_progression_session(&mut admitted).await;
             assert!(owner.progression_binding(admitted.game_session_id).is_some(),
                 "the genuine initial source binds the production progression policy");
@@ -373,6 +387,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         return super::hireling_store::house_scenario(
             h, &owner, admitted, house_store.ok_or("House Store producer")?,
         ).await;
+    }
+    if matches!(case, Case::BedRest) {
+        return super::bed_sleep_dispatch::production_rest(h, &owner, admitted, deps.actor).await;
     }
     if matches!(case, Case::PositionCapture) {
         return position::capture(h, &owner, admitted, deps.actor).await;
@@ -786,6 +803,7 @@ impl ItemWeightLookup for LampWeights {
 fn hireling_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
+    bed_index: Option<&crate::content::item_ref::ItemDefinitionIndex>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -817,6 +835,17 @@ fn hireling_bundle(
     furniture_cell.house = 3437;
     furniture_cell.items.truncate(1);
     sector.tiles.push(furniture_cell);
+    if let Some(index) = bed_index {
+        for (key, x) in [("oteryn:item.tibia.i696", 32310), ("oteryn:item.tibia.i697", 32311)] {
+            let mut entry = data.manifest.palette[3].clone();
+            entry.key = key.into();
+            entry.id = index.definition_ref("Item", key, "definition-r1").ok_or("bed index")?.get()-1;
+            let palette = data.manifest.palette.len() as u32;
+            data.manifest.palette.push(entry);
+            sector.tiles.iter_mut().find(|t| t.x == x && t.y == 32804).ok_or("bed tile")?
+                .items.push(oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()});
+        }
+    }
     entrance.x = 32309;
     entrance.y = 32805;
     sector.tiles.push(entrance);
@@ -848,7 +877,13 @@ fn hireling_bundle(
         },
         world,
         channel,
-        fixture::door_items,
+        |key| {
+            if let Some(reference) = bed_index.and_then(|index| index.definition_ref("Item",key,"definition-r1"))
+                .filter(|_| matches!(key,"oteryn:item.tibia.i696"|"oteryn:item.tibia.i697")) {
+                return Some(crate::map::facts::ItemDefinition {reference,solid:Some(false),blocks_projectile:false,pickupable:false,door:false});
+            }
+            fixture::door_items(key)
+        },
     )
     .map_err(debug)
 }

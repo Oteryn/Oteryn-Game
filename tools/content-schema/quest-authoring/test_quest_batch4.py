@@ -239,13 +239,13 @@ class QuestBatch4Tests(unittest.TestCase):
 
     def test_callback_cap_reserves_the_dynamic_altar(self):
         self.packets['cults_of_tibia']['callbacks'] = [
-            callback('cults_of_tibia', f'bounded-{index}') for index in range(108)
+            callback('cults_of_tibia', f'bounded-{index}') for index in range(tool.MAX_CALLBACKS - 19)
         ]
-        with self.assertRaisesRegex(ValueError, '127'):
+        with self.assertRaisesRegex(ValueError, str(tool.MAX_CALLBACKS)):
             self.run_generator()
         self.packets['cults_of_tibia']['callbacks'].pop()
         self.run_generator()
-        self.assertEqual(len(self.output()['callbacks']), 127)
+        self.assertEqual(len(self.output()['callbacks']), tool.MAX_CALLBACKS)
 
     def test_check_reports_stale_output_without_writing(self):
         self.run_generator()

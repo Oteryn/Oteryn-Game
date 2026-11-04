@@ -34,6 +34,23 @@ pub enum ItemFluidOutcome {
     AlreadyCommitted,
 }
 
+/// A donor splash (Crystal `fluids.lua:66-81`) placed on the selected map tile.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ItemFluidSplash {
+    pub placement: Vec<u8>,
+    pub fluid_subtype: u8,
+    pub splash_item_id: u32,
+    pub lifetime_millis: u64,
+}
+
+/// A non-expired splash projected into the map-object view.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveItemFluidSplash {
+    pub placement: Vec<u8>,
+    pub fluid_subtype: u8,
+    pub splash_item_id: u32,
+}
+
 impl ItemFluidChange {
     fn valid(&self) -> bool {
         check_uuid_v7(&self.item_instance_id).is_ok()
@@ -70,6 +87,63 @@ impl ItemFluidRequest {
 }
 
 impl DurabilityRoot {
+    /// Map/object-view read of the active splash objects for this Channel.
+    pub async fn refresh_item_fluid_splashes(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        channel: [u8; 16],
+    ) -> Result<Vec<ActiveItemFluidSplash>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let rows = sqlx::query("SELECT placement,fluid_subtype,splash_item_id FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at>clock_timestamp() ORDER BY placement,transaction_id LIMIT 256")
+                        .bind(world.as_slice()).bind(channel.as_slice()).fetch_all(&mut **tx).await?;
+                    let mut active = Vec::with_capacity(rows.len());
+                    for row in rows {
+                        active.push(ActiveItemFluidSplash {
+                            placement: row.try_get("placement")?,
+                            fluid_subtype: u8::try_from(row.try_get::<i16, _>("fluid_subtype")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            splash_item_id: u32::try_from(row.try_get::<i32, _>("splash_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                        });
+                    }
+                    tx.commit(deadline).await?;
+                    Ok(Ok(active))
+                })
+            })
+            .await?
+    }
+
+    /// Periodic Channel tick owner for donor splash expiry. Reads never perform this mutation:
+    /// an invalid or out-of-range USE_WITH therefore cannot change durable map state.
+    pub async fn expire_item_fluid_splashes(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        world: [u8; 16],
+        channel: [u8; 16],
+    ) -> Result<u64> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let deleted = sqlx::query("DELETE FROM game_item_fluid_splashes WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND expires_at<=clock_timestamp()")
+                        .bind(world.as_slice()).bind(channel.as_slice()).execute(&mut **tx).await?.rows_affected();
+                    tx.commit(deadline).await?;
+                    Ok(Ok(deleted))
+                })
+            })
+            .await?
+    }
+
     /// Commit one fluid command on containers in the holder's backpack tree. Each container must
     /// be live, of the planned definition, a single item, and hold its `fluid_before`; anything
     /// else is `StaleState` with nothing written.
@@ -80,7 +154,27 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemFluidRequest,
     ) -> Result<ItemFluidOutcome> {
+        self.commit_item_fluid_at(authority, node, fence, request, None)
+            .await
+    }
+
+    pub async fn commit_item_fluid_at(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemFluidRequest,
+        splash: Option<ItemFluidSplash>,
+    ) -> Result<ItemFluidOutcome> {
         request.validate()?;
+        if splash.as_ref().is_some_and(|s| {
+            s.placement.is_empty()
+                || s.fluid_subtype == 0
+                || s.splash_item_id != 2886
+                || s.lifetime_millis != 10_000
+        }) {
+            return Err(ItemUseError::InvalidInput);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
@@ -96,7 +190,7 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
                     }
-                    match write_fluid(&mut tx, &fence, &request).await {
+                    match write_fluid(&mut tx, &fence, &request, splash.as_ref()).await {
                         Ok(outcome) => {
                             tx.commit(deadline).await?;
                             Ok(Ok(outcome))
@@ -170,8 +264,9 @@ async fn write_fluid(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     request: &ItemFluidRequest,
+    splash: Option<&ItemFluidSplash>,
 ) -> Result<ItemFluidOutcome> {
-    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+    let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
         return Err(ItemUseError::AuthorityRejected);
     };
     let holder = *fence.character_id.as_bytes();
@@ -228,6 +323,25 @@ async fn write_fluid(
     }
     for change in request.changes() {
         write_change(connection, fence, request, change, &holder, &world).await?;
+    }
+    if let Some(splash) = splash {
+        sqlx::query(
+            "WITH moment AS (SELECT clock_timestamp() AS at) \
+             INSERT INTO game_item_fluid_splashes(transaction_id,item_instance_id,world_id,channel_id,placement,\
+             fluid_subtype,splash_item_id,created_at,expires_at) SELECT encode($1,'hex')::uuid,\
+             encode($8,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,at,\
+             at+$7 * interval '1 second' FROM moment",
+        )
+        .bind(request.transaction_id.as_slice())
+        .bind(world.as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(&splash.placement)
+        .bind(i16::from(splash.fluid_subtype))
+        .bind(i32::try_from(splash.splash_item_id).map_err(|_| ItemUseError::InvalidInput)?)
+        .bind(i32::try_from(splash.lifetime_millis / 1_000).map_err(|_| ItemUseError::InvalidInput)?)
+        .bind(request.change.item_instance_id.as_slice())
+        .execute(&mut *connection)
+        .await?;
     }
     Ok(ItemFluidOutcome::Written)
 }

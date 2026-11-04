@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from unittest.mock import patch
 from pathlib import Path
 
 import regenerate_content as rc
@@ -271,6 +272,39 @@ def test_spells_manifest_conflict_on_one_key_fails_closed() -> None:
         assert (root / rc.SPELLS_MANIFEST).read_bytes() == before
 
 
+def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        directory = "tools/content-schema/quest-authoring/samples/completion242/"
+        callback = "content/quests/world-callbacks.json"
+        proof = [{"path": callback, "sha256": "old"}, {"path": "other", "sha256": "kept"}]
+        approval = {"proof_inputs": proof, "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
+        receipt = {"proof_inputs": proof, "changes": ["reviewed"],
+                   "approval": {"path": directory + "source-fix-approval.json", "sha256": "old"}}
+        write(root, callback, {"schema": 1, "callbacks": []})
+        write(root, directory + "source-fix-approval.json", approval)
+        write(root, directory + "source-fix-receipt.json", receipt)
+        with patch.object(rc, "ROOT", root):
+            rc.refresh_quest_callback_proof()
+            paths = [root / (directory + name) for name in ("source-fix-approval.json", "source-fix-receipt.json")]
+            first = [path.read_bytes() for path in paths]
+            rc.refresh_quest_callback_proof()
+            assert first == [path.read_bytes() for path in paths]
+        approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
+        receipt["approval"]["sha256"] = hashlib.sha256(first[0]).hexdigest()
+        assert json.loads(first[0]) == approval
+        assert json.loads(first[1]) == receipt
+
+
+def test_unstaged_binary_conflict_does_not_require_text_decoding() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        (root / "packet.json.gz").write_bytes(b"\x1f\x8b\xff\x00")
+        (root / "conflicted.json").write_bytes(b"<<<<<<< HEAD\n{}\n=======\n[]\n>>>>>>> main\n")
+        with patch.object(rc, "ROOT", root), patch.object(rc, "git", return_value="packet.json.gz\nconflicted.json\n"):
+            assert rc.unresolved_worktree_paths() == ["conflicted.json"]
+
+
 def main() -> None:
     tests = [
         test_import_conflict_fails_closed_and_keeps_both_sides,
@@ -281,6 +315,8 @@ def main() -> None:
         test_git_failure_while_enumerating_conflicts_fails_closed,
         test_spells_manifest_conflict_merges_keys_and_rehashes_pins,
         test_spells_manifest_conflict_on_one_key_fails_closed,
+        test_callback_proof_refresh_preserves_reviewed_snapshots,
+        test_unstaged_binary_conflict_does_not_require_text_decoding,
     ]
     for test in tests:
         test()

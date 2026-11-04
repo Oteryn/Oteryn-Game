@@ -28,14 +28,17 @@ pub(super) struct PreparedCreatureThink {
 impl CreatureAiState {
     pub(super) fn current_flee_health(&self, runtime: &ChannelRuntimeV1) -> u64 {
         let base_flee = self.profile.behavior().targeting.flee_health;
-        if runtime.echo_variant(self.actor)
-            == Some(oteryn_gameplay_domain::domain::echo_warden::EchoVariant::Warden)
-        {
-            // Crystal's applyEchoWarden scales the absolute flee threshold with HP.
-            base_flee.saturating_mul(4)
-        } else {
-            base_flee
-        }
+        let Ok(snapshot) = runtime.companion_snapshot(self.actor) else {
+            return base_flee;
+        };
+        flee_health_for_maximum(
+            base_flee,
+            snapshot.state.policy.maximum_health,
+            snapshot.maximum_health,
+            runtime.echo_variant(self.actor)
+                == Some(oteryn_gameplay_domain::domain::echo_warden::EchoVariant::Warden)
+                && snapshot.forge.is_none(),
+        )
     }
 
     pub(super) fn select_think(
@@ -372,6 +375,27 @@ impl CreatureAiState {
     }
 }
 
+fn flee_health_for_maximum(
+    authored: u64,
+    authored_maximum: i64,
+    current_maximum: i64,
+    scales_with_maximum: bool,
+) -> u64 {
+    // Crystal monster.cpp:52-54 applies the type health multiplier to max HP and
+    // runAwayHealth together. Forge applyStacks at :2752-2757 changes only max HP,
+    // while applyEchoWarden at :2699-2701 changes both.
+    if authored == 0
+        || !scales_with_maximum
+        || authored_maximum <= 0
+        || current_maximum <= authored_maximum
+    {
+        return authored;
+    }
+    let numerator = u128::from(authored).saturating_mul(current_maximum as u128);
+    let denominator = authored_maximum as u128;
+    u64::try_from(numerator.div_ceil(denominator)).unwrap_or(u64::MAX)
+}
+
 impl CreatureAiTable {
     /// Production one-pass thinking. Awaited Map reads precede sequence/deadline publication.
     #[allow(clippy::too_many_arguments)]
@@ -462,5 +486,22 @@ impl CreatureAiTable {
             }
         }
         reports
+    }
+}
+
+#[cfg(test)]
+mod flee_health_tests {
+    use super::flee_health_for_maximum;
+
+    #[test]
+    fn health_multiplier_scales_every_positive_authored_flee_threshold() {
+        assert_eq!(flee_health_for_maximum(5, 100, 400, true), 20);
+        assert_eq!(flee_health_for_maximum(3, 100, 151, true), 5);
+        assert_eq!(flee_health_for_maximum(0, 100, 400, true), 0);
+    }
+
+    #[test]
+    fn forge_health_stacks_keep_the_authored_flee_threshold() {
+        assert_eq!(flee_health_for_maximum(5, 100, 360, false), 5);
     }
 }

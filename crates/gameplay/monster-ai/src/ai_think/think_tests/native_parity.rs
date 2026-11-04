@@ -238,7 +238,8 @@ fn native_fleeing_keeps_ranged_spells_and_returns_to_fighting_after_heal() {
 #[test]
 fn admitted_native_profiles_keep_every_source_attack_and_defence_slot() {
     use crate::content::{
-        ProjectV2AuthoringProfileData, native_gameplay::CreatureProfilesDocument,
+        ProjectV2AuthoringProfileData, ProjectV2BehaviorEvent,
+        native_gameplay::CreatureProfilesDocument,
     };
     let document: CreatureProfilesDocument = serde_json::from_slice(include_bytes!(
         "../../../../../../content/creatures/definitions/spell-native-profiles.json"
@@ -253,6 +254,14 @@ fn admitted_native_profiles_keep_every_source_attack_and_defence_slot() {
             refused.push(format!("{}: missing behavior", record.profile.target.key));
             continue;
         };
+        assert!(
+            source
+                .event_bindings
+                .iter()
+                .all(|binding| binding.event != ProjectV2BehaviorEvent::Think),
+            "{} has an admitted scripted think callback",
+            record.profile.target.key
+        );
         let profile = match super::super::native_profile::project_native_record(record) {
             Ok(profile) => profile,
             Err(error) => {

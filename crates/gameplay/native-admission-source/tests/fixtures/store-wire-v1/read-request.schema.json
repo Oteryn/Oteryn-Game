@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.read_request.v1.json",
+  "title": "oteryn.store_wire.read_request.v1",
+  "description": "Request body of POST /internal/v1/products-entitlements/store/operations/read (ReadStoreOperationIntentV1). At most 512 bytes. The 200 body is the stored intent bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "operation",
+    "source_authority",
+    "issuer_authority",
+    "operation_kind",
+    "operation_id"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "operation": {
+      "const": "ReadStoreOperationIntentV1"
+    },
+    "source_authority": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+    },
+    "issuer_authority": {
+      "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+    },
+    "operation_kind": {
+      "enum": [
+        "DELIVER",
+        "CLAIM",
+        "REVOKE_UNCLAIMED",
+        "RECLAIM",
+        "FLAG"
+      ]
+    },
+    "operation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  }
+}

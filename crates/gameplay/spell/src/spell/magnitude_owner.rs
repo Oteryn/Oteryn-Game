@@ -1368,15 +1368,19 @@ impl PreparedMagnitudeOwner {
         let Some(effects) = &self.resolved_attributes.wheel_effects else {
             return Ok(value);
         };
-        // Crystal 201189f game.cpp:7681-7685,7708-7721 adds own Ascetic after
+        // Crystal 201189f game.cpp:7681-7685,7708-7721 adds Ascetic after
         // normal Wheel flat damage and before Sanctuary for each damage component.
-        // player_wheel.cpp:4194-4210 reads only the six-slot getMantraTotal.
-        let ascetic = self.caster.ascetic_attack_bonus(
+        // Canary 47dfd51f party.cpp:308-322 also supplies integer-half Mantra
+        // from the party's Guiding Presence holder.
+        let ascetic = self.caster.ascetic_attack_bonus_at(
             effects
                 .revelation_stages
                 .get("ascetic")
                 .copied()
                 .unwrap_or(0),
+            self.now_ms
+                .checked_mul(1_000)
+                .ok_or(Error::InvalidMagnitude)?,
         );
         let value = value
             .checked_add(i64::from(ascetic))

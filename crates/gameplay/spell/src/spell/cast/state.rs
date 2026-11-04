@@ -607,10 +607,18 @@ impl PlayerSpellState {
     pub fn equipped_mantra(&self) -> u32 {
         self.equipped_mantra
     }
-    /// Crystal 201189f player_wheel.cpp:4194-4210 uses only getMantraTotal,
-    /// whose six positive own-equipment slots are player.cpp:12772-12784.
-    pub fn ascetic_attack_bonus_at(&self, stage: u8, _now: u64) -> u32 {
-        self.ascetic_attack_bonus(stage)
+    /// Canary 47dfd51f party.cpp:308-322 projects the Guiding holder's integer-half
+    /// Mantra to other party players. Own equipment remains authoritative when present.
+    pub fn ascetic_attack_bonus_at(&self, stage: u8, now: u64) -> u32 {
+        if self.equipped_mantra > 0 {
+            self.ascetic_attack_bonus(stage)
+        } else if stage <= 3 {
+            self.virtue_party_bonuses(now)
+                .mantra
+                .saturating_mul(u32::from(stage))
+        } else {
+            0
+        }
     }
     pub fn sustain_healing_percent(&self) -> u32 {
         if self.stance
