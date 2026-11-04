@@ -5,7 +5,8 @@ use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPositi
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
 };
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
