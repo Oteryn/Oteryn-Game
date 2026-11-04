@@ -62,6 +62,68 @@ pub struct RegenerationState {
     pub regen_mana_ms: u32,
 }
 
+/// One worn item's regeneration (Crystal CONDITION_REGENERATION params). A zero gain or zero
+/// ticks disables that pool.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EquipmentRegeneration {
+    pub health_gain: u32,
+    pub health_ticks_ms: u32,
+    pub mana_gain: u32,
+    pub mana_ticks_ms: u32,
+}
+
+/// One slot's runtime condition: its params and its own internal tick counters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EquipmentRegenerationClock {
+    pub slot: u8,
+    pub regeneration: EquipmentRegeneration,
+    pub health_ms: u32,
+    pub mana_ms: u32,
+}
+
+/// One 1000 ms tick of every worn regeneration condition, in slice order.
+pub fn credit_equipment_second(
+    state: &mut RegenerationState,
+    clocks: &mut [EquipmentRegenerationClock],
+    max_health: u32,
+    max_mana: u32,
+    in_protection_zone: bool,
+    effective_streak: u32,
+) {
+    if state.health == 0 {
+        return;
+    }
+    for clock in clocks {
+        clock.health_ms = clock.health_ms.saturating_add(FOOD_TICK_MS);
+        clock.mana_ms = clock.mana_ms.saturating_add(FOOD_TICK_MS);
+        let regeneration = clock.regeneration;
+        if (!in_protection_zone || effective_streak >= 2)
+            && regeneration.health_gain > 0
+            && regeneration.health_ticks_ms > 0
+            && clock.health_ms >= regeneration.health_ticks_ms
+        {
+            clock.health_ms = 0;
+            let multiplier = u32::from(in_protection_zone && effective_streak >= 5) + 1;
+            state.health = state
+                .health
+                .saturating_add(regeneration.health_gain.saturating_mul(multiplier))
+                .min(max_health);
+        }
+        if (!in_protection_zone || effective_streak >= 3)
+            && regeneration.mana_gain > 0
+            && regeneration.mana_ticks_ms > 0
+            && clock.mana_ms >= regeneration.mana_ticks_ms
+        {
+            clock.mana_ms = 0;
+            let multiplier = u32::from(in_protection_zone && effective_streak >= 6) + 1;
+            state.mana = state
+                .mana
+                .saturating_add(regeneration.mana_gain.saturating_mul(multiplier))
+                .min(max_mana);
+        }
+    }
+}
+
 /// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(
     state: &mut RegenerationState,
@@ -170,5 +232,111 @@ mod tests {
             }
             assert_eq!((state.health, state.mana), expected);
         }
+    }
+
+    #[test]
+    fn equipment_regeneration_resets_to_zero_and_respects_zones_and_streaks() {
+        let regeneration = EquipmentRegeneration {
+            health_gain: 6,
+            health_ticks_ms: 6_000,
+            mana_gain: 24,
+            mana_ticks_ms: 6_000,
+        };
+        let mut state = RegenerationState {
+            health: 10,
+            mana: 10,
+            regen_health_ms: 0,
+            regen_mana_ms: 0,
+        };
+        let mut clocks = [EquipmentRegenerationClock {
+            slot: 8,
+            regeneration,
+            health_ms: 0,
+            mana_ms: 0,
+        }];
+        for _ in 0..5 {
+            credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        }
+        assert_eq!((state.health, state.mana), (10, 10));
+        assert_eq!((clocks[0].health_ms, clocks[0].mana_ms), (5_000, 5_000));
+        credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        assert_eq!((state.health, state.mana), (16, 34));
+        assert_eq!((clocks[0].health_ms, clocks[0].mana_ms), (0, 0));
+        for _ in 0..6 {
+            credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        }
+        assert_eq!((state.health, state.mana), (22, 58));
+
+        for _ in 0..7 {
+            credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, true, 0);
+        }
+        assert_eq!((state.health, state.mana), (22, 58));
+        assert_eq!((clocks[0].health_ms, clocks[0].mana_ms), (7_000, 7_000));
+        credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        assert_eq!((state.health, state.mana), (28, 82));
+        assert_eq!((clocks[0].health_ms, clocks[0].mana_ms), (0, 0));
+
+        for (streak, expected) in [(2, (16, 10)), (5, (22, 34)), (6, (22, 58))] {
+            let mut tier = RegenerationState {
+                health: 10,
+                mana: 10,
+                ..state
+            };
+            let mut tier_clocks = [EquipmentRegenerationClock {
+                slot: 8,
+                regeneration,
+                health_ms: 5_000,
+                mana_ms: 5_000,
+            }];
+            credit_equipment_second(&mut tier, &mut tier_clocks, 1_000, 1_000, true, streak);
+            assert_eq!((tier.health, tier.mana), expected, "streak {streak}");
+        }
+
+        state.health = 995;
+        clocks[0].health_ms = 5_000;
+        credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        assert_eq!(state.health, 1_000);
+        state.health = 0;
+        let before = clocks;
+        credit_equipment_second(&mut state, &mut clocks, 1_000, 1_000, false, 0);
+        assert_eq!(clocks, before);
+    }
+
+    #[test]
+    fn two_worn_regeneration_items_keep_separate_counters() {
+        let mut state = RegenerationState {
+            health: 10,
+            mana: 10,
+            regen_health_ms: 0,
+            regen_mana_ms: 0,
+        };
+        let mut clocks = [
+            EquipmentRegenerationClock {
+                slot: 8,
+                regeneration: EquipmentRegeneration {
+                    health_gain: 2,
+                    health_ticks_ms: 6_000,
+                    mana_gain: 0,
+                    mana_ticks_ms: 0,
+                },
+                health_ms: 0,
+                mana_ms: 0,
+            },
+            EquipmentRegenerationClock {
+                slot: 9,
+                regeneration: EquipmentRegeneration {
+                    health_gain: 0,
+                    health_ticks_ms: 0,
+                    mana_gain: 5,
+                    mana_ticks_ms: 3_000,
+                },
+                health_ms: 0,
+                mana_ms: 0,
+            },
+        ];
+        for _ in 0..6 {
+            credit_equipment_second(&mut state, &mut clocks, 100, 100, false, 0);
+        }
+        assert_eq!((state.health, state.mana), (12, 20));
     }
 }

@@ -103,6 +103,9 @@ pub struct PlayerSpellState {
     pub(super) regeneration_next_tick_us: Option<u64>,
     /// Owner-qualified daily streak for the current resting tile; runtime-only.
     pub(super) resting_streak: u32,
+    /// I05-r1: one runtime regeneration condition per worn regenerating item; runtime-only.
+    pub(super) equipped_regeneration:
+        Vec<oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock>,
     pub(super) soul: u32,
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
@@ -198,6 +201,7 @@ impl PlayerSpellState {
                 regen_mana_ms: 0,
                 regeneration_next_tick_us: None,
                 resting_streak: 0,
+                equipped_regeneration: Vec::new(),
                 premium_current: false,
                 stored_promotion: false,
                 premium_valid_until_micros: None,
@@ -240,6 +244,7 @@ impl PlayerSpellState {
 }
 
 mod equipped_armor;
+mod equipped_regeneration;
 mod gate;
 mod level_up_vitals;
 mod live_skill;
