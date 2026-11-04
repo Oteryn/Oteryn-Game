@@ -146,6 +146,9 @@ mod tests {
     use crate::map::facts::MonsterStep;
     use crate::map::overlay::TilePos;
     use crate::map::view::MapFacts;
+    use oteryn_gameplay_content::content::creature_policy::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+    };
     use std::num::NonZeroU32;
 
     type BoxError = Box<dyn std::error::Error + Send + Sync>;
@@ -222,11 +225,49 @@ mod tests {
             floor: 7,
         };
         let away = MovementLocalPosition { x: 5, ..at };
+        let server_digest = runtime.content_pin().server_artifact_digest();
+        runtime.install_companion_policies(CompiledCreaturePolicies::from_active_artifact(
+            server_digest,
+            vec![CompiledCreaturePolicy {
+                definition_key: "oteryn:creature.rat".into(),
+                definition_revision: "fixture:1".into(),
+                display_name: "Rat".into(),
+                maximum_health: 1_000,
+                forge_difficulty: None,
+                base_speed: 220,
+                outfit_look_type: 21,
+                object_look_type: None,
+                summonable: false,
+                convinceable: false,
+                mana_cost: None,
+                is_familiar: false,
+                condition_immunities: vec![],
+                defense: Some(0),
+                armor: Some(0),
+                mitigation: Some(CreatureExactRatio {
+                    numerator: 0,
+                    denominator: 1,
+                }),
+                resistances: vec![],
+                damage_immunities: vec![],
+                healing_from_damage: vec![],
+                flags: CreatureFlags {
+                    attackable: true,
+                    illusionable: false,
+                    health_hidden: false,
+                },
+                preferred_distance: Some(1),
+                reward_boss: Some(false),
+                blocked_by_nearby_players: false,
+            }],
+        ))?;
         let rat = runtime
             .admit_pinned_monster_lab_creature(at, "oteryn:creature.rat", 1_000)
             .map_err(|error| format!("{error:?}"))?;
+        runtime.install_creature_policy(rat, "oteryn:creature.rat")?;
         let states = ChannelSpellStates::default();
-        let health_before = runtime.companion_snapshot(rat)?.health;
+        let health_before =
+            i64::try_from(runtime.live_creature_health(rat).ok_or("rat before hit")?)?;
         assert!(map.facts.record_monster_step(MonsterStep {
             actor: rat,
             from: away,
@@ -238,7 +279,8 @@ mod tests {
             .base_entry(pos, 1, 0)
             .ok_or("trap after step-in")?
             .appearance_id;
-        let health_after = runtime.companion_snapshot(rat)?.health;
+        let health_after =
+            i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?;
         assert!(map.facts.record_monster_step(MonsterStep {
             actor: rat,
             from: at,
@@ -261,10 +303,10 @@ mod tests {
             .spawn(|| -> Result<(), BoxError> {
                 let (closed, reopened, before, after) = trap_case(2145, false)?;
                 assert_eq!((closed, reopened), (2146, 2145));
-                assert!(after <= before);
+                assert!(after < before);
                 let (closed, reopened, before, after) = trap_case(3944, false)?;
                 assert_eq!((closed, reopened), (3945, 3944));
-                assert!(after <= before);
+                assert!(after < before);
                 Ok(())
             })?
             .join()
