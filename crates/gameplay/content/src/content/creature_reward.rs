@@ -326,6 +326,7 @@ fn lower_loot_entries(
                     unique: entry.unique,
                     creature_product: facts.creature_product,
                     gut_bonus_hundredths: 0,
+                    rated_probability_ppm: None,
                 },
             })
         })
