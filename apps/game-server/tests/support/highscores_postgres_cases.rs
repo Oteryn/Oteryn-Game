@@ -1672,6 +1672,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
             ("game_account_achievement_grant_requests", "SELECT"),
             ("game_account_achievements", "SELECT"),
             ("game_character_bestiary_progress", "SELECT"),
+            ("game_character_bosstiary_progress", "SELECT"),
             ("game_character_build_state", "SELECT"),
             ("game_character_progression_state", "SELECT"),
             ("game_character_roots", "SELECT"),

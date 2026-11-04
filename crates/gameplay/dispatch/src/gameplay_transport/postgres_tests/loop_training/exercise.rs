@@ -706,7 +706,7 @@ fn scenario() -> TestResult {
         )
         .await
         .ok_or("nine-second restart refusal")?;
-        assert_eq!(refused.disposition, 2);
+        assert_eq!(refused.disposition, 4);
         let receipts_after: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_exercise_receipts")
                 .fetch_one(&h.pool)
