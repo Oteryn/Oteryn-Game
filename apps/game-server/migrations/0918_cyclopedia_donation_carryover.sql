@@ -30,31 +30,33 @@ ALTER TABLE game_item_craft_records
  ADD CHECK (ingredient_item_instance_id IS NULL OR ingredient_item_instance_id<>source_item_instance_id);
 
 DO $migration$
-DECLARE n TEXT; body TEXT; arm TEXT; begin_at INT;
+DECLARE n TEXT; body TEXT; arm TEXT; before TEXT; after TEXT; begin_at INT;
 BEGIN
  -- Admit the second item only while its exact row and direct main-backpack custody still match.
  body:=pg_get_functiondef('game_item_craft_admit()'::regprocedure);
- body:=replace(body,
-  E' THEN RAISE EXCEPTION \'craft requires unchanged plain carried input\'',
-  E'    OR (NEW.ingredient_item_instance_id IS NOT NULL AND (\n'
-  E'      NOT EXISTS(SELECT 1 FROM game_item_instances x JOIN game_item_container_entries e USING(item_instance_id)\n'
-  E'        JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id\n'
-  E'       WHERE x.item_instance_id=NEW.ingredient_item_instance_id AND to_jsonb(x)=NEW.ingredient_before_item\n'
-  E'         AND x.lifecycle=1 AND x.quantity>0 AND x.world_id=NEW.world_id AND e.character_id=NEW.character_id\n'
-  E'         AND e.world_id=NEW.world_id AND b.world_id=NEW.world_id AND e.parent_item_instance_id=NEW.parent_item_instance_id)))\n'
-  E' THEN RAISE EXCEPTION \'craft requires unchanged plain carried input\'');
+ before:=E' THEN RAISE EXCEPTION \'craft requires unchanged plain carried input\'';
+ after:=E'    OR (NEW.ingredient_item_instance_id IS NOT NULL AND (\n'
+  || E'      NOT EXISTS(SELECT 1 FROM game_item_instances x JOIN game_item_container_entries e USING(item_instance_id)\n'
+  || E'        JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id\n'
+  || E'       WHERE x.item_instance_id=NEW.ingredient_item_instance_id AND to_jsonb(x)=NEW.ingredient_before_item\n'
+  || E'         AND x.lifecycle=1 AND x.quantity>0 AND x.world_id=NEW.world_id AND e.character_id=NEW.character_id\n'
+  || E'         AND e.world_id=NEW.world_id AND b.world_id=NEW.world_id AND e.parent_item_instance_id=NEW.parent_item_instance_id)))\n'
+  || E' THEN RAISE EXCEPTION \'craft requires unchanged plain carried input\'';
+ IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft carried-input guard'; END IF;
+ body:=replace(body,before,after);
  EXECUTE body;
 
  -- The completion constraint counts and checks both decrements for a carried recipe.
  body:=pg_get_functiondef('game_item_craft_complete(uuid)'::regprocedure);
- body:=replace(body,
-  $find$OR (SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>1$find$,
-  $replacement$OR (SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>CASE WHEN r.ingredient_item_instance_id IS NULL THEN 1 ELSE 2 END
+ before:=$find$(SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>(CASE WHEN r.consume_source THEN 1 ELSE 0 END)$find$;
+ after:=$replacement$(SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>(CASE WHEN r.consume_source THEN 1 ELSE 0 END)+(CASE WHEN r.ingredient_item_instance_id IS NULL THEN 0 ELSE 1 END)
     OR (r.ingredient_item_instance_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM game_item_instances x WHERE x.item_instance_id=r.ingredient_item_instance_id
       AND x.quantity=(r.ingredient_before_item->>'quantity')::bigint-1 AND x.lifecycle=CASE WHEN x.quantity=0 THEN 2 ELSE 1 END
       AND x.last_transaction_id=r.transaction_id AND (to_jsonb(x)-ARRAY['quantity','lifecycle','last_transaction_id']) IS NOT DISTINCT FROM
           (r.ingredient_before_item-ARRAY['quantity','lifecycle','last_transaction_id'])
-      AND (x.quantity>0 OR NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=x.item_instance_id))))$replacement$);
+      AND (x.quantity>0 OR NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=x.item_instance_id))))$replacement$;
+ IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft write count'; END IF;
+ body:=replace(body,before,after);
  EXECUTE body;
 
  -- Extend the existing craft proof arms; do not create a parallel item mutation path.

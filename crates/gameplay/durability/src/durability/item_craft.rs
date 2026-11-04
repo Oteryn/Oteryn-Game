@@ -12,15 +12,17 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_items::item_craft::{carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion};
+use oteryn_gameplay_items::item_craft::{
+    carried_cooking_conversion_with_sub_type, cooking_conversion, fishing_conversion,
+};
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
-pub mod soulpit;
 mod enchanting;
+pub mod soulpit;
 pub use enchanting::EnchantingCraft;
 
 #[derive(Debug, Clone)]
@@ -63,7 +65,8 @@ impl DurabilityRoot {
         probe: bool,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        self.craft_item_owned::<C, ()>(recovery, node, fence, request, native, content, probe, None).await
+        self.craft_item_owned::<C, ()>(recovery, node, fence, request, native, content, probe, None)
+            .await
     }
 
     /// The same craft owner, with a retained live-state successor around COMMIT.
@@ -91,7 +94,9 @@ impl DurabilityRoot {
         {
             return Ok(Some(UseDisposition::Rejected));
         }
-        if let Some(window) = &window { window.permit().check_scope(fence.runtime_scope)?; }
+        if let Some(window) = &window {
+            window.permit().check_scope(fence.runtime_scope)?;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -158,8 +163,7 @@ async fn write<C: ItemLoopContent>(
         let bait = if gathering.mutation.tool_key == "oteryn:item.tibia.i9306"
             && u16::try_from(gathering.mutation.before).is_ok_and(|target| {
                 oteryn_gameplay_items::fishing::MECHANICAL_FISHING_WATER.contains(&target)
-            })
-        {
+            }) {
             oteryn_gameplay_items::fishing::NAIL
         } else {
             oteryn_gameplay_items::fishing::WORM
@@ -227,9 +231,24 @@ async fn write<C: ItemLoopContent>(
                     }
                     let ingredient = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
                         .bind(ingredient_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-                    ingredient.and_then(|row| carried_cooking_conversion_with_sub_type(native, &definition, &TypedDefinitionRef { family: row.try_get("definition_family").ok()?, production_key: row.try_get("definition_production_key").ok()?, revision_ref: row.try_get("definition_revision_ref").ok()? }, ingredient_fluid_subtype(row.try_get::<Option<i16>,_>("fluid_subtype").ok()?)))
-                } else { cooking_conversion(native, &definition, station) }
-            },
+                    ingredient.and_then(|row| {
+                        carried_cooking_conversion_with_sub_type(
+                            native,
+                            &definition,
+                            &TypedDefinitionRef {
+                                family: row.try_get("definition_family").ok()?,
+                                production_key: row.try_get("definition_production_key").ok()?,
+                                revision_ref: row.try_get("definition_revision_ref").ok()?,
+                            },
+                            ingredient_fluid_subtype(
+                                row.try_get::<Option<i16>, _>("fluid_subtype").ok()?,
+                            ),
+                        )
+                    })
+                } else {
+                    cooking_conversion(native, &definition, station)
+                }
+            }
             (None, _) => reward_bag_conversion(
                 native,
                 &definition,
@@ -409,10 +428,7 @@ async fn write<C: ItemLoopContent>(
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
     let achievement = if let Some(gathering) = &request.gathering {
-        achievement_granters::gathering(
-            &gathering.mutation.tool_key,
-            gathering.attempt.yield_item,
-        )
+        achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
     } else {
         (conversion.recipe == "oteryn:fishing.global.standard")
             .then_some(achievement_granters::HERE_FISHY_FISHY)
